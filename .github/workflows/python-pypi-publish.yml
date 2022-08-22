@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: pypi publish
 
 on:
   workflow_dispatch:
@@ -34,4 +34,8 @@ jobs:
     - name: Install dependencies
       run: poetry install
     - run: poetry run pytest
+    - name: Setup pipy token
+      run: peotry config pypi-token.pypi ${{ secrets.SuperSecret }}
+    - run: poetry build
+    - run: poetry publish
 
