@@ -35,7 +35,7 @@ jobs:
       run: poetry install
     - run: poetry run pytest
     - name: Setup pipy token
-      run: peotry config pypi-token.pypi ${{ secrets.SuperSecret }}
+      run: poetry config pypi-token.pypi ${{ secrets.SuperSecret }}
     - run: poetry build
     - run: poetry publish
 
