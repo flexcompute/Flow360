@@ -38,7 +38,7 @@ jobs:
       run: poetry install
     - run: poetry run pytest
     - name: Setup pipy token
-      run: poetry config pypi-token.pypi ${PIPY_TOKEN}
+      run: poetry config pypi-token.pypi "${PIPY_TOKEN}"
     - run: poetry build
     - run: poetry publish
 
