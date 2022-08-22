@@ -23,9 +23,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup security
-      env:
-        PIPY_TOKEN: ${{ secrets.SuperSecret }}
     - uses: actions/checkout@v3
 
     - name: Install poetry
@@ -38,7 +35,11 @@ jobs:
       run: poetry install
     - run: poetry run pytest
     - name: Setup pipy token
-      run: poetry config pypi-token.pypi "${PIPY_TOKEN}"
+      shell: bash
+      env:
+        PIPY_TOKEN: ${{ secrets.SuperSecret }}
+      run: |
+        poetry config pypi-token.pypi "${PIPY_TOKEN}"
     - run: poetry build
     - run: poetry publish
 
