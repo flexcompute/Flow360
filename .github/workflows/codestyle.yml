@@ -13,13 +13,19 @@ on:
   workflow_dispatch:
     
 jobs:
-  deploy:
-
+  format:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: Install black
-      run: pipx install black
+      run: pipx install pylint
     - name: Run black
       run: black . --check
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install black
+      run: pipx install pylint
+    - name: Run black
+      run: pylint flow360 tests
