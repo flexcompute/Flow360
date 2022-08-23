@@ -5,14 +5,38 @@ description = ""
 authors = ["An Li <kidylee@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7.2"
 pydantic = "^1.9.2"
 pytest = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
+autohooks = "^22.8.1"
+autohooks-plugin-black = "^22.8.1"
+autohooks-plugin-pylint = "^22.8.1"
+autohooks-plugin-isort = "^22.8.0"
 
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 100
+target-version = ["py37", "py38", "py39", "py310"]
+exclude = '''
+/(
+    \.git
+)/
+'''
+
+[tool.autohooks]
+mode = "poetry"
+pre-commit = ["autohooks.plugins.black", "autohooks.plugins.isort", "autohooks.plugins.pylint"]
+
+[tool.autohooks.plugins.pylint]
+arguments = ["--rcfile=.pylintrc"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
