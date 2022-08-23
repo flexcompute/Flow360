@@ -1,4 +1,4 @@
-name: Flow360Tests
+name: unit testing
 
 on:
   workflow_dispatch:
@@ -9,7 +9,10 @@ on:
   workflow_call:
 
 jobs:
-  build:
+  code-style:
+    uses: ./.github/workflows/codestyle.yml
+  testing:
+    needs: code-style
     name: test ${{ matrix.python-version }} - ${{ matrix.platform }}
     runs-on: ${{ matrix.platform }}
     strategy:
