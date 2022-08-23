@@ -18,10 +18,13 @@ permissions:
   contents: read
 
 jobs:
+  unit-test:
+    uses: ./.github/workflows/test.yaml
+  code-style:
+    uses: ./.github/workflows/codestyle.yaml
   deploy:
-
     runs-on: ubuntu-latest
-
+    needs: [unit-test, code-style]
     steps:
     - uses: actions/checkout@v3
 
@@ -33,7 +36,6 @@ jobs:
         cache: 'poetry'
     - name: Install dependencies
       run: poetry install
-    - run: poetry run pytest
     - name: Setup pipy token
       shell: bash
       env:
