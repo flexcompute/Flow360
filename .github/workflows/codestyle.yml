@@ -19,10 +19,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v3
+    - uses: actions/setup-python@v4
       with:
-        python-version: '3.7'
+        python-version: '3.9'
+        cache: 'poetry'
+    - name: Install dependencies
+      run: poetry install
     - name: Black Check
       uses: jpetrucciani/black-check@21.12b0
       with:
