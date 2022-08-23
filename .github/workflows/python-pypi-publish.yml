@@ -19,9 +19,9 @@ permissions:
 
 jobs:
   unit-test:
-    uses: ./.github/workflows/test.yaml
+    uses: ./.github/workflows/test.yml
   code-style:
-    uses: ./.github/workflows/codestyle.yaml
+    uses: ./.github/workflows/codestyle.yml
   deploy:
     runs-on: ubuntu-latest
     needs: [unit-test, code-style]
