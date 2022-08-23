@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install black
-      run: pipx install pylint
+      run: pipx install black
     - name: Run black
       run: black . --check
   lint:
