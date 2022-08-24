@@ -10,9 +10,17 @@ name: publish to pypi
 
 on:
   workflow_dispatch:
-  
-  release:
-    types: [published]
+    inputs:
+      version:
+        description: "Semantic release number"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: "Semantic release number"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -36,6 +44,8 @@ jobs:
         cache: 'poetry'
     - name: Install dependencies
       run: poetry install
+    - name: Pump version number
+      run: poetry version ${{ inputs.version }}
     - name: Setup pipy token
       shell: bash
       env:
