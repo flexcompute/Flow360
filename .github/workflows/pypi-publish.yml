@@ -9,12 +9,6 @@
 name: publish to pypi
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Semantic release number"
-        required: true
-        type: string
   workflow_call:
     inputs:
       version:
