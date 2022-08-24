@@ -9,9 +9,12 @@
 name: Auto Release by Tagging
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SemVer without leading 'v',eg: 1.0.1, 1.1.1"
+        required: true
+        type: string
 
 jobs:
 
