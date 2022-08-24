@@ -26,13 +26,8 @@ permissions:
   contents: read
 
 jobs:
-  unit-test:
-    uses: ./.github/workflows/test.yml
-  code-style:
-    uses: ./.github/workflows/codestyle.yml
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    needs: [unit-test, code-style]
     steps:
     - uses: actions/checkout@v3
 
