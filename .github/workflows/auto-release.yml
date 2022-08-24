@@ -1,0 +1,35 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Auto Release by Tagging
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+
+#   code-style:
+#     uses: ./.github/workflows/codestyle.yml
+#   unit-test:
+#     needs: [code-style]
+#     uses: ./.github/workflows/test.yml
+#   pypi-publish:
+#     needs: [unit-test]
+#     uses: ./.github/workflows/pypi-publish.yml
+#     with:
+#       version: ${{ github.ref_name }}
+  release:
+#     needs: [pypi-publish]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Release
+      uses: softprops/action-gh-release@v1
+   
