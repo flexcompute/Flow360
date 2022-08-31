@@ -1,6 +1,6 @@
 """
 http utils. Example:
-http
+http.get(path)
 """
 import requests
 
