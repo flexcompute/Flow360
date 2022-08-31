@@ -2,34 +2,22 @@
 http utils.
 """
 import requests
-from requests.auth import AuthBase
 
 from flow360 import Env
 from flow360.cloud.security import api_key
 
 
-# pylint: disable=too-few-public-methods
-class APIKeyAuth(AuthBase):
+def api_key_auth(request):
     """
-    http authentication for api key way.
+    Set the authentication.
+    :param request:
+    :return:
     """
-
-    def __init__(self):
-        """
-        Initialize the authentication.
-        """
-
-    def __call__(self, r):
-        """
-        Set the authentication.
-        :param r:
-        :return:
-        """
-        key = api_key()
-        if not key:
-            raise ValueError("API key not found, please set it by commandline: flow360 configure.")
-        r.headers["simcloud-api-key"] = key
-        return r
+    key = api_key()
+    if not key:
+        raise ValueError("API key not found, please set it by commandline: flow360 configure.")
+    request.headers["simcloud-api-key"] = key
+    return request
 
 
 class Http:
@@ -47,7 +35,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.get(Env.current.get_real_url(path), auth=APIKeyAuth(), json=json)
+        return self.session.get(Env.current.get_real_url(path), auth=api_key_auth, json=json)
 
     def post(self, path: str, json):
         """
@@ -56,7 +44,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.post(Env.current.get_real_url(path), data=json, auth=APIKeyAuth())
+        return self.session.post(Env.current.get_real_url(path), data=json, auth=api_key_auth)
 
     def put(self, path: str, json):
         """
@@ -65,7 +53,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.put(Env.current.get_real_url(path), data=json, auth=APIKeyAuth())
+        return self.session.put(Env.current.get_real_url(path), data=json, auth=api_key_auth)
 
     def delete(self, path: str):
         """
@@ -73,7 +61,7 @@ class Http:
         :param path:
         :return:
         """
-        return self.session.delete(Env.current.get_real_url(path), auth=APIKeyAuth())
+        return self.session.delete(Env.current.get_real_url(path), auth=api_key_auth)
 
 
 http = Http(requests.Session)
