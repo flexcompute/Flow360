@@ -45,4 +45,4 @@ jobs:
       - name: Install black
         run: pipx install pylint
       - name: Run black
-        run: pylint flow360 tests
+        run: pylint flow360 --rcfile .pylintrc
