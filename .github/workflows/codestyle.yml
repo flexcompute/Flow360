@@ -46,5 +46,5 @@ jobs:
         run: pipx install pylint
       - name: Run pylint
         run: |
-        poetry shell
-        pylint flow360 --rcfile .pylintrc
+          poetry shell
+          pylint flow360 --rcfile .pylintrc
