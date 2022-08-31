@@ -1,6 +1,7 @@
 """
 Environment Setup
 """
+
 from pydantic import BaseModel
 
 
@@ -18,6 +19,14 @@ class EnvironmentConfig(BaseModel):
         :return:
         """
         Env.set_current(self)
+
+    def get_real_url(self, path: str):
+        """
+        Get the real url for the particular environment.
+        :param path:
+        :return:
+        """
+        return "/".join([self.web_api_endpoint, path])
 
 
 dev = EnvironmentConfig(name="dev", web_api_endpoint="https://dev-tidy3d-api.simulation.cloud")
