@@ -33,5 +33,7 @@ jobs:
           cache: 'poetry'
       - name: Install dependencies
         run: poetry install
+      - name: Install pylint
+        run: pip install pylint
       - name: Run pylint
         run: pylint flow360 --rcfile .pylintrc
