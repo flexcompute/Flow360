@@ -42,7 +42,9 @@ jobs:
           cache: 'poetry'
       - name: Install dependencies
         run: poetry install
-      - name: Install black
+      - name: Install pylint
         run: pipx install pylint
-      - name: Run black
-        run: pylint flow360 --rcfile .pylintrc
+      - name: Run pylint
+        run: |
+        poetry shell
+        pylint flow360 --rcfile .pylintrc
