@@ -12,6 +12,7 @@ class EnvironmentConfig(BaseModel):
 
     name: str
     web_api_endpoint: str
+    aws_region: str
 
     def active(self):
         """
@@ -29,11 +30,23 @@ class EnvironmentConfig(BaseModel):
         return "/".join([self.web_api_endpoint, path])
 
 
-dev = EnvironmentConfig(name="dev", web_api_endpoint="https://flow360-api.dev-simulation.cloud")
+dev = EnvironmentConfig(
+    name="dev",
+    web_api_endpoint="https://flow360-api.dev-simulation.cloud",
+    aws_region="us-gov-west-1",
+)
 
-uat = EnvironmentConfig(name="uat", web_api_endpoint="https://uat-flow360-api.simulation.cloud")
+uat = EnvironmentConfig(
+    name="uat",
+    web_api_endpoint="https://uat-flow360-api.simulation.cloud",
+    aws_region="us-gov-west-1",
+)
 
-prod = EnvironmentConfig(name="prod", web_api_endpoint="https://prod-flow360-api.simulation.cloud")
+prod = EnvironmentConfig(
+    name="prod",
+    web_api_endpoint="https://prod-flow360-api.simulation.cloud",
+    aws_region="us-east-1",
+)
 
 
 class Environment:
