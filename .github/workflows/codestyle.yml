@@ -17,15 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
           cache: 'poetry'
-      - name: Install dependencies
-        run: poetry install
-
       - name: Install black
         run: pipx install black
       - name: Run black
@@ -42,7 +37,5 @@ jobs:
           cache: 'poetry'
       - name: Install dependencies
         run: poetry install
-      - name: Install pylint
-        run: pipx install pylint
       - name: Run pylint
         run: pylint flow360 --rcfile .pylintrc
