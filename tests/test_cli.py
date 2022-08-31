@@ -8,8 +8,10 @@ home = expanduser("~")
 
 
 class TestClass:
-    def test_configure(self):
+    def test_no_configure(self):
         runner = CliRunner()
+        if os.path.exists(f"{home}/.flow360/config.toml"):
+            os.remove(f"{home}/.flow360/config.toml")
         from flow360.cli import flow360
 
         result = runner.invoke(flow360, ["configure"], input="apikey")
