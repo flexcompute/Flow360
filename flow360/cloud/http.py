@@ -1,5 +1,6 @@
 """
-http utils.
+http utils. Example:
+http
 """
 import requests
 
@@ -35,7 +36,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.get(Env.current.get_real_url(path), auth=api_key_auth, json=json)
+        return self.session.get(url=Env.current.get_real_url(path), auth=api_key_auth, json=json)
 
     def post(self, path: str, json):
         """
@@ -64,4 +65,4 @@ class Http:
         return self.session.delete(Env.current.get_real_url(path), auth=api_key_auth)
 
 
-http = Http(requests.Session)
+http = Http(requests.Session())

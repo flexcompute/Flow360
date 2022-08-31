@@ -29,11 +29,11 @@ class EnvironmentConfig(BaseModel):
         return "/".join([self.web_api_endpoint, path])
 
 
-dev = EnvironmentConfig(name="dev", web_api_endpoint="https://dev-tidy3d-api.simulation.cloud")
+dev = EnvironmentConfig(name="dev", web_api_endpoint="https://flow360-api.dev-simulation.cloud")
 
-uat = EnvironmentConfig(name="uat", web_api_endpoint="https://uat-tidy3d-api.simulation.cloud")
+uat = EnvironmentConfig(name="uat", web_api_endpoint="https://uat-flow360-api.simulation.cloud")
 
-prod = EnvironmentConfig(name="prod", web_api_endpoint="https://prod-tidy3d-api.simulation.cloud")
+prod = EnvironmentConfig(name="prod", web_api_endpoint="https://prod-flow360-api.simulation.cloud")
 
 
 class Environment:
