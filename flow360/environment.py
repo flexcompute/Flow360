@@ -33,7 +33,7 @@ class EnvironmentConfig(BaseModel):
 dev = EnvironmentConfig(
     name="dev",
     web_api_endpoint="https://flow360-api.dev-simulation.cloud",
-    aws_region="us-gov-west-1",
+    aws_region="us-east-1",
 )
 
 uat = EnvironmentConfig(
@@ -45,7 +45,7 @@ uat = EnvironmentConfig(
 prod = EnvironmentConfig(
     name="prod",
     web_api_endpoint="https://prod-flow360-api.simulation.cloud",
-    aws_region="us-east-1",
+    aws_region="us-gov-west-1",
 )
 
 

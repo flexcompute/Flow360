@@ -29,6 +29,27 @@ _s3_config = TransferConfig(
 )
 
 
+def create_base_folder(path: str, target_name: str, to_file: str = ".", keep_folder: bool = True):
+    """
+    :param path: source id
+    :param target_name: path to file on cloud, same value as key for s3 client download.
+    :param to_file: could be either folder or file name.
+    :param keep_folder: If true, the downloaded file will
+    be put in the same folder as the file on cloud. Only work
+    when file_name is a folder name.
+    :return:
+    """
+    if os.path.isdir(to_file):
+        to_file = (
+            os.path.join(to_file, path, target_name)
+            if keep_folder
+            else os.path.join(to_file, os.path.basename(target_name))
+        )
+
+    os.makedirs(os.path.dirname(to_file), exist_ok=True)
+    return to_file
+
+
 class _S3Action(Enum):
     """
     Enum for s3 action
@@ -165,14 +186,19 @@ class S3TransferType(Enum):
                 Config=_s3_config,
             )
 
-    def download_file(self, resource_id: str, remote_file_name: str, to_file: str):
+    def download_file(
+        self, resource_id: str, remote_file_name: str, to_file: str, keep_folder: bool = True
+    ):
         """
         Download a file from s3.
         :param resource_id:
-        :param remote_file_name:
-        :param to_file:
+        :param remote_file_name: file name with path in s3
+        :param to_file: local file name or local folder name.
+        :param keep_folder: If true, the downloaded file will be put
+        in the same folder as the file on cloud. Only works when to_file is a folder name.
         :return:
         """
+        to_file = create_base_folder(resource_id, remote_file_name, to_file, keep_folder)
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
@@ -186,8 +212,6 @@ class S3TransferType(Enum):
 
             def _call_back(bytes_in_chunk):
                 progress.update(task_id, advance=bytes_in_chunk)
-
-            os.makedirs(os.path.dirname(os.path.abspath(to_file)), exist_ok=True)
 
             client.download_file(
                 Bucket=token.get_bucket(),
