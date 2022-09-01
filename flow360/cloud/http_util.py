@@ -2,6 +2,8 @@
 http utils. Example:
 http.get(path)
 """
+from functools import wraps
+
 import requests
 
 from flow360 import Env
@@ -21,6 +23,34 @@ def api_key_auth(request):
     return request
 
 
+def http_interceptor(func):
+    """
+    Intercept the response and raise an exception if the status code is not 200.
+    :param func:
+    :return:
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """A wrapper function"""
+
+        # Extend some capabilities of func
+        resp = func(*args, **kwargs)
+        if resp.status_code == 401:
+            raise Exception("Unauthorized.")
+
+        if resp.status_code == 404:
+            return None
+
+        if resp.status_code == 200:
+            result = resp.json()
+            return result.get("data")
+
+        raise Exception(f"Unexpected response: {resp.status_code}")
+
+    return wrapper
+
+
 class Http:
     """
     Http util class.
@@ -29,6 +59,7 @@ class Http:
     def __init__(self, session: requests.Session):
         self.session = session
 
+    @http_interceptor
     def get(self, path: str, json=None):
         """
         Get the resource.
@@ -38,15 +69,17 @@ class Http:
         """
         return self.session.get(url=Env.current.get_real_url(path), auth=api_key_auth, json=json)
 
-    def post(self, path: str, json):
+    @http_interceptor
+    def post(self, path: str, json=None):
         """
         Create the resource.
         :param path:
         :param json:
         :return:
         """
-        return self.session.post(Env.current.get_real_url(path), data=json, auth=api_key_auth)
+        return self.session.post(Env.current.get_real_url(path), json=json, auth=api_key_auth)
 
+    @http_interceptor
     def put(self, path: str, json):
         """
         Update the resource.
@@ -56,6 +89,7 @@ class Http:
         """
         return self.session.put(Env.current.get_real_url(path), data=json, auth=api_key_auth)
 
+    @http_interceptor
     def delete(self, path: str):
         """
         Delete the resource.
