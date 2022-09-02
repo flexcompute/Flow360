@@ -29,9 +29,7 @@ def test_download():
 
 def test_create_update():
     Env.dev.active()
-    mesh = SurfaceMesh.from_surface_mesh(
-        "test_name", "3f358de7-432e-4a1f-af26-ad53a3b84088/geometry.csm"
-    )
+    mesh = SurfaceMesh.from_file("test_name", "3f358de7-432e-4a1f-af26-ad53a3b84088/geometry.csm")
     assert mesh
     mesh.submit()
 
