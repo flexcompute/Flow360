@@ -6,7 +6,7 @@ from functools import wraps
 
 import requests
 
-from flow360 import Env
+from flow360 import Env, __version__
 from flow360.cloud.security import api_key
 
 
@@ -20,6 +20,7 @@ def api_key_auth(request):
     if not key:
         raise ValueError("API key not found, please set it by commandline: flow360 configure.")
     request.headers["simcloud-api-key"] = key
+    request.headers["flow360-python-version"] = __version__
     return request
 
 
