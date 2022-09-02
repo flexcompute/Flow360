@@ -3,31 +3,23 @@ Surface mesh component
 """
 import json
 import os
-from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import Extra, Field
 
 from flow360.cloud.http_util import http
 from flow360.cloud.s3_utils import S3TransferType
+from flow360.component.flow360_base_model import Flow360BaseModel
 
 
-class SurfaceMesh(BaseModel, extra=Extra.allow):
+class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
     """
     Surface mesh component
     """
 
     surface_mesh_id: Optional[str] = Field(alias="id")
-    name: str
     status: Optional[str]
-    user_id: Optional[str] = Field(alias="userId")
-    solver_version: Optional[str] = Field(alias="solverVersion")
     config: Optional[str]
-    tags: Optional[List[str]]
-    created_at: Optional[str] = Field(alias="createdAt")
-    updated_at: Optional[datetime] = Field(alias="updatedAt")
-    updated_by: Optional[str] = Field(alias="updatedBy")
-    user_upload_file_name: Optional[str]
 
     def download(self, file_name: str, to_file=".", keep_folder: bool = True):
         """
@@ -76,7 +68,7 @@ class SurfaceMesh(BaseModel, extra=Extra.allow):
         return None
 
     @classmethod
-    def from_surface_mesh(
+    def from_file(
         cls, surface_mesh_name: str, file_name: str, solver_version: str = None, tags: [str] = None
     ):
         """
