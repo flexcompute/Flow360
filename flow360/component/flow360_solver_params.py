@@ -66,19 +66,4 @@ class Flow360Params(BaseModel, extra=Extra.allow):
     Flow360 solver parameters
     """
 
-    boundaries: Dict[str, BoundaryType]
-    actuator_disks: Optional[List[ActuatorDisk]] = Field(alias="actuatorDisks")
-    geometry: Any
-    run_control: Any = Field(alias="runControl")
-    freestream: Any = Field(alias="freestream")
-    volume_output: Any = Field(alias="volumeOutput")
-    surface_output: Any = Field(alias="surfaceOutput")
-    slice_output: Any = Field(alias="sliceOutput")
-    navier_stokes_solver: Any = Field(alias="navierStokesSolver")
-    turbulence_model_solver: Any = Field(alias="turbulenceModelSolver")
-    transition_model_solver: Any = Field(alias="transitionModelSolver")
-    initial_condition: Any = Field(alias="initialCondition")
-    time_stepping: Any = Field(alias="timeStepping")
-    sliding_interfaces: Any = Field(alias="slidingInterfaces")
-    BET_disks: Any = Field(alias="BETDisks")
-    porous_media: Any = Field(alias="porousMedia")
+    boundaries: Optional[Dict[str, BoundaryType]]
