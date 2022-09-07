@@ -1,7 +1,7 @@
 import os
 
 from flow360 import Env
-from flow360.component.flow360_solver_params import Flow360MeshParams
+from flow360.component.flow360_solver_params import Flow360MeshParams, Flow360Params
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.volume_mesh import (
     VolumeMesh,
@@ -84,4 +84,66 @@ def test_ugrid_file():
     mesh = VolumeMesh.from_ugrid_file(
         "test_ugrid", "3f358de7-432e-4a1f-af26-ad53a3b84088/geometry.csm", params
     )
+    assert mesh
+
+
+def test_cgns_file():
+    Env.dev.active()
+
+    params = Flow360MeshParams.parse_raw(
+        """
+        {
+        "boundaries": {
+            "noSlipWalls": [
+                "fluid/periodic_0_l",
+                "fluid/wall",
+                "fluid/periodic_0_r"
+            ]
+        }
+    }
+        """
+    )
+    mesh = VolumeMesh.from_cgns_file("test_cgns", "data/cylinder.cgns", params)
+    assert mesh
+
+    params = Flow360MeshParams.parse_raw(
+        """
+        {
+        "slidingInterfaces": {
+            "stationaryPatches": [
+                "fluid/periodic_0_l",
+                "fluid/wall",
+                "fluid/periodic_0_r"
+            ]
+        }
+    }
+        """
+    )
+
+    mesh = VolumeMesh.from_cgns_file("test_cgns", "data/cylinder.cgns", params)
+    assert mesh
+
+    params = Flow360Params.parse_raw(
+        """
+        {
+        "boundaries": {
+        "fluid/periodic_0_l": {
+            "type": "NoSlipWall"
+        },
+        "fluid/wall": {
+            "type": "NoSlipWall"
+        }
+    },
+        "slidingInterfaces": {
+            "stationaryPatches": [
+                "fluid/periodic_0_l",
+                "fluid/wall",
+                "fluid/periodic_0_r"
+            ]
+        }
+    }
+        """
+    )
+
+    mesh = VolumeMesh.from_cgns_file("test_cgns", "data/cylinder.cgns", params)
     assert mesh
