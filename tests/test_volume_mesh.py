@@ -1,3 +1,4 @@
+import os
 from sys import exc_info
 
 import pytest
@@ -15,6 +16,11 @@ from flow360.component.volume_mesh import (
     get_no_slip_walls,
     validate_cgns,
 )
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 def test_get_boundary_names():
