@@ -22,6 +22,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    -   name: github environment
+        run: |
+            git_hash=$(git rev-parse --short HEAD) 
+            echo "GIT_SHORT_SHA=$git_hash" >> $GITHUB_ENV
+            echo "GIT_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+    -   name: echo action used variables
+        run: |
+            echo '${{  toJSON(env) }}' 
+            echo "::notice ::Git Short Sha: ${{env.GIT_SHORT_SHA}}"
+            echo "::notice ::Git Branch: ${{env.GIT_BRANCH}}"
+            echo "::notice ::Semantic release number: ${{github.event.inputs.version}}"
+
     - name: Install poetry
       run: pipx install poetry
     - uses: actions/setup-python@v4

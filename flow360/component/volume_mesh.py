@@ -1,18 +1,19 @@
 """
-Surface mesh component
+Volume mesh component
 """
-import json
 import os.path
-import warnings
 from enum import Enum
 from typing import Optional, Union
 
 import numpy as np
-from pydantic import Extra, Field
+from pydantic import Extra, Field, validator
 
-from flow360.cloud.http_util import http
 from flow360.cloud.s3_utils import S3TransferType
-from flow360.component.flow360_base_model import Flow360BaseModel
+from flow360.component.flow360_base_model import (
+    Flow360BaseModel,
+    Flow360Resource,
+    on_cloud_resource_only,
+)
 from flow360.component.flow360_solver_params import (
     Flow360MeshParams,
     Flow360Params,
@@ -178,15 +179,6 @@ class VolumeMeshDownloadable(Enum):
     CONFIG_JSON = "config.json"
 
 
-class UGRIDEndianness(Enum):
-    """
-    UGRID endianness
-    """
-
-    LITTLE = "little"
-    BIG = "big"
-
-
 class VolumeMeshFileFormat(Enum):
     """
     Volume mesh file format
@@ -195,19 +187,148 @@ class VolumeMeshFileFormat(Enum):
     UGRID = "aflr3"
     CGNS = "cgns"
 
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is VolumeMeshFileFormat.UGRID:
+            return ".ugrid"
+        if self is VolumeMeshFileFormat.CGNS:
+            return ".cgns"
+        return ""
 
-class VolumeMesh(Flow360BaseModel, extra=Extra.allow):
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects mesh format from filename
+        """
+        ext = os.path.splitext(file)[1]
+        if ext == VolumeMeshFileFormat.UGRID.ext():
+            return VolumeMeshFileFormat.UGRID
+        if ext == VolumeMeshFileFormat.CGNS.ext():
+            return VolumeMeshFileFormat.CGNS
+        raise RuntimeError(f"Unsupported file format {file}")
+
+
+class UGRIDEndianness(Enum):
     """
-    Surface mesh component
+    UGRID endianness
     """
 
-    volume_mesh_id: Optional[str] = Field(alias="id")
+    LITTLE = "little"
+    BIG = "big"
+    NONE = None
+
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is UGRIDEndianness.LITTLE:
+            return ".lb8"
+        if self is UGRIDEndianness.BIG:
+            return ".b8"
+        return ""
+
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects endianess UGRID mesh from filename
+        """
+        if VolumeMeshFileFormat.detect(file) is not VolumeMeshFileFormat.UGRID:
+            return UGRIDEndianness.NONE
+        basename = os.path.splitext(file)[0]
+        ext = os.path.splitext(basename)[1]
+        if ext == UGRIDEndianness.LITTLE.ext():
+            return UGRIDEndianness.LITTLE
+        if ext == UGRIDEndianness.BIG.ext():
+            return UGRIDEndianness.BIG
+        raise RuntimeError(f"Unknown endianness for file {file}")
+
+
+class CompressionFormat(Enum):
+    """
+    Volume mesh file format
+    """
+
+    GZ = "gz"
+    BZ2 = "bz2"
+    NONE = None
+
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is CompressionFormat.GZ:
+            return ".gz"
+        if self is CompressionFormat.BZ2:
+            return ".bz2"
+        return ""
+
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects compression from filename
+        """
+        file_name, ext = os.path.splitext(file)
+        if ext == CompressionFormat.GZ.ext():
+            return CompressionFormat.GZ, file_name
+        if ext == CompressionFormat.BZ2.ext():
+            return CompressionFormat.BZ2, file_name
+        return CompressionFormat.NONE, file
+
+
+# pylint: disable=E0213
+class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
+    """
+    VolumeMeshMeta component
+    """
+
+    id: str = Field(alias="meshId")
     name: str = Field(alias="meshName")
-    status: Optional[str] = Field(alias="meshStatus")
+    status: str = Field(alias="meshStatus")
+    created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
-    mesh_params: Optional[str] = Field(alias="meshParams")
+    mesh_params: str = Field(alias="meshParams")
+    mesh_format: VolumeMeshFileFormat = Field(alias="meshFormat")
+    endianness: UGRIDEndianness = Field(alias="meshEndianness")
+    compression: CompressionFormat = Field(alias="meshCompression")
 
-    def download(
+    @validator("endianness", pre=True)
+    def init_endianness(cls, value):
+        """
+        validator for endianess
+        """
+        return UGRIDEndianness(value) or UGRIDEndianness.NONE
+
+    @validator("compression", pre=True)
+    def init_compression(cls, value):
+        """
+        validator for compression
+        """
+        return CompressionFormat(value) or CompressionFormat.NONE
+
+
+class VolumeMesh(Flow360Resource):
+    """
+    Volume mesh component
+    """
+
+    def __init__(self, mesh_id: str = None):
+        super().__init__(
+            resource_type="Volume Mesh",
+            info_type_class=VolumeMeshMeta,
+            s3_transfer_method=S3TransferType.VOLUME_MESH,
+            endpoint="volumemeshes",
+            id=mesh_id,
+        )
+        if mesh_id is not None:
+            self.get_info()
+
+    @on_cloud_resource_only
+    def download_file(
         self, file_name: Union[str, VolumeMeshDownloadable], to_file=".", keep_folder: bool = True
     ):
         """
@@ -217,13 +338,21 @@ class VolumeMesh(Flow360BaseModel, extra=Extra.allow):
         :param keep_folder:
         :return:
         """
-        assert self.volume_mesh_id
         if isinstance(file_name, VolumeMeshDownloadable):
             file_name = file_name.value
-        S3TransferType.VOLUME_MESH.download_file(
-            self.volume_mesh_id, file_name, to_file, keep_folder
-        )
+        super().download_file(file_name, to_file, keep_folder)
 
+    @on_cloud_resource_only
+    def download(self, to_file=".", keep_folder: bool = True):
+        """
+        Download volume mesh file
+        :param to_file:
+        :param keep_folder:
+        :return:
+        """
+        super().download_file(self._remote_file_name(), to_file, keep_folder)
+
+    @on_cloud_resource_only
     def download_log(self, log: VolumeMeshLog, to_file=".", keep_folder: bool = True):
         """
         Download log
@@ -234,78 +363,87 @@ class VolumeMesh(Flow360BaseModel, extra=Extra.allow):
         :return:
         """
 
-        self.download(f"logs/{log.value}", to_file, keep_folder)
+        self.download_file(f"logs/{log.value}", to_file, keep_folder)
 
-    def submit(self):
+    @on_cloud_resource_only
+    def _complete_upload(self, remote_file_name):
         """
-        Submit surface mesh
+        Complete volume mesh upload
         :return:
         """
-        assert self.volume_mesh_id
-        http.post(
-            f"volumemeshes/{self.volume_mesh_id}/completeUpload?fileName={self.user_upload_file_name}"
-        )
+        resp = self.post({}, method=f"completeUpload?fileName={remote_file_name}")
+        self._info = VolumeMeshMeta(**resp)
 
     @classmethod
-    def from_cloud(cls, surface_mesh_id: str):
+    def from_cloud(cls, mesh_id: str):
         """
-        Get surface mesh info from cloud
-        :param surface_mesh_id:
+        Get volume mesh info from cloud
+        :param mesh_id:
         :return:
         """
-        resp = http.get(f"volumemeshes/{surface_mesh_id}")
-        if resp:
-            return cls(**resp)
-        return None
+        return cls(mesh_id)
 
     # pylint: disable=too-many-arguments
-    @classmethod
-    def from_surface_mesh(
-        cls,
-        volume_mesh_name: str,
-        surface_mesh_id: str,
-        config_file: str,
-        tags: [str] = None,
-        solver_version=None,
-    ):
+    # @classmethod
+    # def from_surface_mesh(
+    #     cls,
+    #     volume_mesh_name: str,
+    #     surface_mesh_id: str,
+    #     config_file: str,
+    #     tags: [str] = None,
+    #     solver_version=None,
+    # ):
+    #     """
+    #     Create volume mesh from surface mesh
+    #     :param volume_mesh_name:
+    #     :param surface_mesh_id:
+    #     :param config_file:
+    #     :param tags:
+    #     :param solver_version:
+    #     :return:
+    #     """
+    #     assert volume_mesh_name
+    #     assert os.path.exists(config_file)
+    #     assert surface_mesh_id
+    #     with open(config_file, "r", encoding="utf-8") as config_f:
+    #         json_content = json.load(config_f)
+    #     body = {
+    #         "name": volume_mesh_name,
+    #         "tags": tags,
+    #         "surfaceMeshId": surface_mesh_id,
+    #         "config": json.dumps(json_content),
+    #         "format": "cgns",
+    #     }
+
+    #     if solver_version:
+    #         body["solverVersion"] = solver_version
+
+    #     resp = http.post("volumemeshes", body)
+    #     if resp:
+    #         return cls(**resp)
+    #     return None
+
+    @on_cloud_resource_only
+    def _remote_file_name(self, mesh_format=None, compression=None, endianness=None):
         """
-        Create volume mesh from surface mesh
-        :param volume_mesh_name:
-        :param surface_mesh_id:
-        :param config_file:
-        :param tags:
-        :param solver_version:
-        :return:
+        mesh filename on cloud
         """
-        assert volume_mesh_name
-        assert os.path.exists(config_file)
-        assert surface_mesh_id
-        with open(config_file, "r", encoding="utf-8") as config_f:
-            json_content = json.load(config_f)
-        body = {
-            "name": volume_mesh_name,
-            "tags": tags,
-            "surfaceMeshId": surface_mesh_id,
-            "config": json.dumps(json_content),
-            "format": "cgns",
-        }
+        compression = compression or self.info.compression
+        mesh_format = mesh_format or self.info.mesh_format
+        endianness = endianness or self.info.endianness
 
-        if solver_version:
-            body["solverVersion"] = solver_version
+        remote_file_name = "mesh"
+        if mesh_format is VolumeMeshFileFormat.CGNS:
+            remote_file_name = self.info.name
 
-        resp = http.post("volumemeshes", body)
-        if resp:
-            return cls(**resp)
-        return None
+        return f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
 
-    # pylint: disable=too-many-arguments
     @classmethod
-    def from_ugrid_file(
+    def from_file(
         cls,
-        volume_mesh_name: str,
         file_name: str,
-        params: Union[Flow360Params, Flow360MeshParams],
-        endianness: UGRIDEndianness = UGRIDEndianness.BIG,
+        params: Flow360MeshParams,
+        name: str = None,
         tags: [str] = None,
         solver_version=None,
     ):
@@ -314,20 +452,25 @@ class VolumeMesh(Flow360BaseModel, extra=Extra.allow):
         :param volume_mesh_name:
         :param file_name:
         :param params:
-        :param endianness:
         :param tags:
         :param solver_version:
         :return:
         """
-        assert volume_mesh_name
         assert os.path.exists(file_name)
         assert params
-        assert endianness
+
+        if name is None:
+            name = os.path.splitext(os.path.basename(file_name))[0]
+
+        mesh = cls()
+        compression, file_name_no_compression = CompressionFormat.detect(file_name)
+        mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
+        endianness = UGRIDEndianness.detect(file_name_no_compression)
 
         body = {
-            "meshName": volume_mesh_name,
+            "meshName": name,
             "meshTags": tags,
-            "meshFormat": "aflr3",
+            "meshFormat": mesh_format.value,
             "meshEndianness": endianness.value,
             "meshParams": params.json(),
         }
@@ -335,54 +478,61 @@ class VolumeMesh(Flow360BaseModel, extra=Extra.allow):
         if solver_version:
             body["solverVersion"] = solver_version
 
-        resp = http.post("volumemeshes", body)
-        if resp:
-            return cls(**resp)
-        return None
+        resp = mesh.post(body)
 
-        # pylint: disable=too-many-arguments
+        if not resp:
+            return None
 
-    @classmethod
-    def from_cgns_file(
-        cls,
-        volume_mesh_name: str,
-        file_name: str,
-        params: Union[Flow360Params, Flow360MeshParams],
-        tags: [str] = None,
-        solver_version=None,
-    ):
-        """
-        Create volume mesh from ugrid file
-        :param volume_mesh_name:
-        :param file_name:
-        :param params:
-        :param tags:
-        :param solver_version:
-        :return:
-        """
-        assert volume_mesh_name
-        assert os.path.exists(file_name)
-        assert params
+        mesh._info = VolumeMeshMeta(**resp)
+        mesh.init_id(mesh._info.id)
+        remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
+        mesh.upload_file(remote_file_name, file_name)
+        mesh._complete_upload(remote_file_name)
+        return mesh
 
-        if _H5PY_AVAILABLE:
-            validate_cgns(file_name, params, solver_version=solver_version)
-        else:
-            warnings.warn(
-                "Could not check consistency between mesh file and"
-                " Flow360.json file. h5py module not found. This is optional functionality"
-            )
+    #     # pylint: disable=too-many-arguments
 
-        body = {
-            "meshName": volume_mesh_name,
-            "meshTags": tags,
-            "meshFormat": "aflr3",
-            "meshParams": params.json(),
-        }
+    # @classmethod
+    # def from_cgns_file(
+    #     cls,
+    #     volume_mesh_name: str,
+    #     file_name: str,
+    #     params: Union[Flow360Params, Flow360MeshParams],
+    #     tags: [str] = None,
+    #     solver_version=None,
+    # ):
+    #     """
+    #     Create volume mesh from ugrid file
+    #     :param volume_mesh_name:
+    #     :param file_name:
+    #     :param params:
+    #     :param tags:
+    #     :param solver_version:
+    #     :return:
+    #     """
+    #     assert volume_mesh_name
+    #     assert os.path.exists(file_name)
+    #     assert params
 
-        if solver_version:
-            body["solverVersion"] = solver_version
+    #     if _H5PY_AVAILABLE:
+    #         validate_cgns(file_name, params, solver_version=solver_version)
+    #     else:
+    #         warnings.warn(
+    #             "Could not check consistency between mesh file and"
+    #             " Flow360.json file. h5py module not found. This is optional functionality"
+    #         )
 
-        resp = http.post("volumemeshes", body)
-        if resp:
-            return cls(**resp)
-        return None
+    #     body = {
+    #         "meshName": volume_mesh_name,
+    #         "meshTags": tags,
+    #         "meshFormat": "cgns",
+    #         "meshParams": params.json(),
+    #     }
+
+    #     if solver_version:
+    #         body["solverVersion"] = solver_version
+
+    #     resp = http.post("volumemeshes", body)
+    #     if resp:
+    #         return cls(**resp)
+    #     return None
