@@ -15,6 +15,9 @@ from flow360.component.volume_mesh import (
     get_boundries_from_sliding_interfaces,
     get_no_slip_walls,
     validate_cgns,
+    VolumeMeshFileFormat,
+    CompressionFormat,
+    UGRIDEndianness,
 )
 
 
@@ -88,3 +91,33 @@ def test_validate_cgns():
 
     validate_cgns("data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0")
     validate_cgns("data/cylinder.cgns", param)
+
+
+def test_mesh_filename_detection():
+    files_correct = [
+        ("sdfdlkjd/kjsdf.lb8.ugrid.gz", ".lb8.ugrid.gz"),
+        ("sdfdlkjd/kjsdf.b8.ugrid.gz", ".b8.ugrid.gz"),
+        ("sdfdlkjd/kjsdf.lb8.ugrid.bz2", ".lb8.ugrid.bz2"),
+        ("sdfdlkjd/kjsdf.lb8.ugrid", ".lb8.ugrid"),
+        ("sdfdlkjd/kjsdf.lb8.cgns", ".cgns"),
+        ("sdfdlkjd/kjsdf.cgns", ".cgns"),
+        ("sdfdlkjd/kjsdf.cgns.gz", ".cgns.gz"),
+        ("sdfdlkjd/kjsdf.cgns.bz2", ".cgns.bz2"),
+    ]
+
+    for file, expected in files_correct:
+        cmp, filename = CompressionFormat.detect(file)
+        mesh_format = VolumeMeshFileFormat.detect(filename)
+        endianess = UGRIDEndianness.detect(filename)
+        assert expected == f"{endianess.ext()}{mesh_format.ext()}{cmp.ext()}"
+
+    file = "sdfdlkjd/kjsdf.cgns.ad"
+    cmp, filename = CompressionFormat.detect(file)
+    with pytest.raises(RuntimeError):
+        mesh_format = VolumeMeshFileFormat.detect(filename)
+
+    file = "sdfdlkjd/kjsdf.ugrid"
+    cmp, filename = CompressionFormat.detect(file)
+    mesh_format = VolumeMeshFileFormat.detect(filename)
+    with pytest.raises(RuntimeError):
+        endianess = UGRIDEndianness.detect(filename)

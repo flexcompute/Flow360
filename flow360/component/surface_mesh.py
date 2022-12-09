@@ -20,6 +20,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
     surface_mesh_id: Optional[str] = Field(alias="id")
     status: Optional[str]
     config: Optional[str]
+    user_upload_file_name: Optional[str]
 
     def download(self, file_name: str, to_file=".", keep_folder: bool = True):
         """

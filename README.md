@@ -8,7 +8,14 @@
 2. ``black .``
 3. ``pylint flow360 --rcfile .pylintrc``
 
-## client config api key
 
-1. ``pip install flow360``
-2. ``flow360 configure``
+## install
+``pip install flow360``
+
+## client config api-key
+You can set your *api-key* by the following methods:
+1. Set globaly for your acount: ``flow360 configure`` will store *api-key* in ~/.flow360
+2. In shell: ``export FLOW360_APIKEY="my api-key"``
+3. In python script: ``os.environ["FLOW360_APIKEY"] = "my api-key"`` before `import flow360`
+
+

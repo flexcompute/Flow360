@@ -45,7 +45,7 @@ uat = EnvironmentConfig(
 
 prod = EnvironmentConfig(
     name="prod",
-    web_api_endpoint="https://prod-flow360-api.simulation.cloud",
+    web_api_endpoint="https://flow360-api.simulation.cloud",
     aws_region="us-gov-west-1",
 )
 
