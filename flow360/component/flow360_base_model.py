@@ -2,12 +2,12 @@
 Flow360 base Model
 """
 from datetime import datetime
-from typing import List, Optional
 from functools import wraps
+from typing import List, Optional
 
 from pydantic import BaseModel, Extra, Field
 
-from flow360.cloud.rest_api import RestApi
+from ..cloud.rest_api import RestApi
 
 
 class Flow360BaseModel(BaseModel, extra=Extra.allow, allow_mutation=False):

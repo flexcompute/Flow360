@@ -8,18 +8,14 @@ from typing import Optional, Union
 import numpy as np
 from pydantic import Extra, Field, validator
 
-from flow360.cloud.s3_utils import S3TransferType
-from flow360.component.flow360_base_model import (
+from ..cloud.s3_utils import S3TransferType
+from ..version import Flow360Version
+from .flow360_base_model import (
     Flow360BaseModel,
     Flow360Resource,
     on_cloud_resource_only,
 )
-from flow360.component.flow360_solver_params import (
-    Flow360MeshParams,
-    Flow360Params,
-    NoSlipWall,
-)
-from flow360.version import Flow360Version
+from .flow360_solver_params import Flow360MeshParams, Flow360Params, NoSlipWall
 
 try:
     import h5py

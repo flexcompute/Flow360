@@ -2,20 +2,22 @@
 Case component
 """
 from __future__ import annotations
-import math
+
 import json
+import math
+
 from pydantic import Extra, Field
 
-from flow360.cloud.http_util import http
-from flow360.component.flow360_base_model import (
+from ..cloud.http_util import http
+from ..cloud.s3_utils import S3TransferType
+from .flow360_base_model import (
     Flow360BaseModel,
     Flow360Resource,
     before_submit_only,
     is_object_cloud_resource,
 )
-from flow360.component.flow360_solver_params import Flow360Params
-from flow360.component.utils import is_valid_uuid
-from flow360.cloud.s3_utils import S3TransferType
+from .flow360_solver_params import Flow360Params
+from .utils import is_valid_uuid
 
 
 class CaseMeta(Flow360BaseModel, extra=Extra.allow):

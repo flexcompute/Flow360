@@ -18,8 +18,8 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
-from flow360.cloud.http_util import http
-from flow360.environment import Env
+from ..environment import Env
+from .http_util import http
 
 _s3_config = TransferConfig(
     multipart_threshold=1024 * 25,

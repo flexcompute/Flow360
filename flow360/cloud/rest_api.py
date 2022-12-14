@@ -1,8 +1,8 @@
 """
 RestApi
 """
-from flow360.cloud.http_util import http
-from flow360.component.utils import is_valid_uuid
+from ..component.utils import is_valid_uuid
+from .http_util import http
 
 
 class RestApi:
