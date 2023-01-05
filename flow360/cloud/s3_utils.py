@@ -8,6 +8,9 @@ from enum import Enum
 
 import boto3
 from boto3.s3.transfer import TransferConfig
+
+# pylint: disable=unused-import
+from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic import BaseModel, Field
 from rich.progress import (
     BarColumn,
@@ -186,8 +189,14 @@ class S3TransferType(Enum):
                 Config=_s3_config,
             )
 
+    # pylint: disable=too-many-arguments
     def download_file(
-        self, resource_id: str, remote_file_name: str, to_file: str, keep_folder: bool = True
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        to_file: str,
+        keep_folder: bool = True,
+        overwrite: bool = True,
     ):
         """
         Download a file from s3.
@@ -196,9 +205,13 @@ class S3TransferType(Enum):
         :param to_file: local file name or local folder name.
         :param keep_folder: If true, the downloaded file will be put
         in the same folder as the file on cloud. Only works when to_file is a folder name.
+        :param overwrite: if True overwrite if file exists, otherwise don't download
         :return:
         """
         to_file = create_base_folder(resource_id, remote_file_name, to_file, keep_folder)
+        if os.path.exists(to_file) and not overwrite:
+            print(f"Skipping {remote_file_name}, file exists.")
+            return
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
