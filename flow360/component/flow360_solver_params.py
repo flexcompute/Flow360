@@ -17,6 +17,10 @@ class MeshBoundary(BaseModel):
 
     no_slip_walls: Union[List[str], List[int]] = Field(alias="noSlipWalls")
 
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
+
 
 class Boundary(BaseModel):
     """
@@ -136,10 +140,14 @@ class Geometry(BaseModel):
     moment_center: Optional[List[float]] = Field(alias="momentCenter", default=[0, 0, 0])
     moment_length: List[float] = Field(alias="momentLength")
 
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
+
 
 class Freestream(BaseModel):
     """
-    Geometry component
+    Freestream component
     """
 
     Reynolds: Optional[float] = Field()
@@ -147,6 +155,10 @@ class Freestream(BaseModel):
     Temperature: float
     alpha: float = Field(alias="alphaAngle", default=0)
     beta: float = Field(alias="betaAngle", default=0)
+
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
 
 
 class NavierStokesSolver(BaseModel, extra=Extra.allow):
@@ -167,7 +179,7 @@ class TurbulenceModelModelType(str, Enum):
     SST = "kOmegaSST"
 
 
-class TurbulenceModelSolver(BaseModel, extra=Extra.allow):
+class TurbulenceModelSolver(BaseModel):
     """
     TurbulenceModelSolver component
     """
@@ -178,8 +190,13 @@ class TurbulenceModelSolver(BaseModel, extra=Extra.allow):
     absolute_tolerance: Optional[float] = Field(alias="absoluteTolerance", default=1e-10)
     kappaMUSCL: Optional[float] = Field(default=-1.0)
 
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
+        extra = Extra.allow
 
-class Flow360Params(BaseModel, extra=Extra.allow):
+
+class Flow360Params(BaseModel):
     """
     Flow360 solver parameters
     """
@@ -195,6 +212,8 @@ class Flow360Params(BaseModel, extra=Extra.allow):
         alias="turbulenceModelSolver", default=TurbulenceModelSolver()
     )
     freestream: Optional[Freestream] = Field()
+    bet_disks: Optional[List] = Field(alias="betDisks")
+    actuator_disks: Optional[List] = Field(alias="actuatorDisks")
 
     def json(self, *args, **kwargs):
         """
@@ -217,14 +236,23 @@ class Flow360Params(BaseModel, extra=Extra.allow):
         raise NotImplementedError
         # return cls.from_file("case.default.json")
 
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
+        extra = Extra.allow
+
 
 class Flow360MeshParams(BaseModel):
     """
     Flow360 mesh parameters
     """
 
-    boundaries: Optional[MeshBoundary] = Field()
-    sliding_interfaces: Optional[SlidingInterface] = Field(alias="slidingInterfaces")
+    boundaries: MeshBoundary = Field()
+    sliding_interfaces: Optional[List[SlidingInterface]] = Field(alias="slidingInterfaces")
+
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
 
     def json(self, *args, **kwargs):
         """

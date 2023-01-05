@@ -1,4 +1,4 @@
-from flow360.version import Flow360Version
+from flow360.solver_version import Flow360Version
 
 
 def test_flow360version():

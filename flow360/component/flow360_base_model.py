@@ -2,8 +2,8 @@
 Flow360 base Model
 """
 from datetime import datetime
+from typing import List, Optional, Union
 from functools import wraps
-from typing import List, Optional
 
 from pydantic import BaseModel, Extra, Field
 
@@ -17,7 +17,7 @@ class Flow360BaseModel(BaseModel, extra=Extra.allow, allow_mutation=False):
 
     name: str
     user_id: str = Field(alias="userId")
-    solver_version: str = Field(alias="solverVersion")
+    solver_version: Union[str, None] = Field(alias="solverVersion")
     status: str
     tags: Optional[List[str]]
     created_at: Optional[str] = Field(alias="createdAt")
@@ -127,11 +127,15 @@ class Flow360Resource(RestApi):
         return self.info.solver_version
 
     @on_cloud_resource_only
-    def download_file(self, file_name, to_file=".", keep_folder: bool = True):
+    def download_file(
+        self, file_name, to_file=".", keep_folder: bool = True, overwrite: bool = True
+    ):
         """
         general download functionality
         """
-        self.s3_transfer_method.download_file(self.id, file_name, to_file, keep_folder)
+        self.s3_transfer_method.download_file(
+            self.id, file_name, to_file, keep_folder, overwrite=overwrite
+        )
 
     @on_cloud_resource_only
     def upload_file(self, remote_file_name: str, file_name: str):

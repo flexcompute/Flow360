@@ -35,11 +35,11 @@ class RestApi:
         else:
             raise RuntimeError('"id" already set, change of "id" is not allowed.')
 
-    def get(self, path=None, method=None, json=None):
+    def get(self, path=None, method=None, json=None, params=None):
         """
         Resource get
         """
-        return http.get(path or self._url(method), json=json)
+        return http.get(path or self._url(method), json=json, params=params)
 
     def post(self, json, path=None, method=None):
         """

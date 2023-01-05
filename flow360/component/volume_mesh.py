@@ -1,21 +1,29 @@
 """
 Volume mesh component
 """
+from __future__ import annotations
 import os.path
+import json
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 from pydantic import Extra, Field, validator
 
 from ..cloud.s3_utils import S3TransferType
-from ..version import Flow360Version
+from ..cloud.rest_api import RestApi
+from ..solver_version import Flow360Version
 from .flow360_base_model import (
     Flow360BaseModel,
     Flow360Resource,
     on_cloud_resource_only,
 )
-from .flow360_solver_params import Flow360MeshParams, Flow360Params, NoSlipWall
+from .flow360_solver_params import (
+    Flow360MeshParams,
+    Flow360Params,
+    MeshBoundary,
+    NoSlipWall,
+)
 
 try:
     import h5py
@@ -287,10 +295,20 @@ class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
     status: str = Field(alias="meshStatus")
     created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
-    mesh_params: str = Field(alias="meshParams")
+    mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
     mesh_format: VolumeMeshFileFormat = Field(alias="meshFormat")
     endianness: UGRIDEndianness = Field(alias="meshEndianness")
     compression: CompressionFormat = Field(alias="meshCompression")
+    boundaries: Union[List, None]
+
+    @validator("mesh_params", pre=True)
+    def init_mesh_params(cls, value):
+        """
+        validator for mesh_params
+        """
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
 
     @validator("endianness", pre=True)
     def init_endianness(cls, value):
@@ -304,7 +322,16 @@ class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
         """
         validator for compression
         """
-        return CompressionFormat(value) or CompressionFormat.NONE
+        try:
+            return CompressionFormat(value)
+        except ValueError:
+            return CompressionFormat.NONE
+
+    def to_volume_mesh(self) -> VolumeMesh:
+        """
+        returns VolumeMesh object from volume mesh meta info
+        """
+        return VolumeMesh(self.id)
 
 
 class VolumeMesh(Flow360Resource):
@@ -322,10 +349,46 @@ class VolumeMesh(Flow360Resource):
         )
         if mesh_id is not None:
             self.get_info()
+            try:
+                self._params = Flow360MeshParams(**self.info.mesh_params.dict())
+            except AttributeError:
+                self._params = Flow360MeshParams(boundaries=MeshBoundary(no_slip_walls=[]))
+
+    @property
+    def info(self) -> VolumeMeshMeta:
+        return super().info
+
+    @property
+    @on_cloud_resource_only
+    def params(self) -> Flow360MeshParams:
+        """
+        returns mesh params
+        """
+        return self._params
+
+    @property
+    @on_cloud_resource_only
+    def no_slip_walls(self):
+        """
+        returns mesh no_slip_walls
+        """
+        return self._params.boundaries.no_slip_walls
+
+    @property
+    @on_cloud_resource_only
+    def all_boundaries(self):
+        """
+        returns mesh no_slip_walls
+        """
+        return self.info.boundaries
 
     @on_cloud_resource_only
     def download_file(
-        self, file_name: Union[str, VolumeMeshDownloadable], to_file=".", keep_folder: bool = True
+        self,
+        file_name: Union[str, VolumeMeshDownloadable],
+        to_file=".",
+        keep_folder: bool = True,
+        overwrite: bool = True,
     ):
         """
         Download file from surface mesh
@@ -336,7 +399,7 @@ class VolumeMesh(Flow360Resource):
         """
         if isinstance(file_name, VolumeMeshDownloadable):
             file_name = file_name.value
-        super().download_file(file_name, to_file, keep_folder)
+        super().download_file(file_name, to_file, keep_folder, overwrite=overwrite)
 
     @on_cloud_resource_only
     def download(self, to_file=".", keep_folder: bool = True):
@@ -480,6 +543,7 @@ class VolumeMesh(Flow360Resource):
             return None
 
         mesh._info = VolumeMeshMeta(**resp)
+        mesh._params = Flow360MeshParams(**mesh._info.mesh_params.dict())
         mesh.init_id(mesh._info.id)
         remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
         mesh.upload_file(remote_file_name, file_name)
@@ -532,3 +596,35 @@ class VolumeMesh(Flow360Resource):
     #     if resp:
     #         return cls(**resp)
     #     return None
+
+
+class VolumeMeshList(list, RestApi):
+    """
+    VolumeMesh List component
+    """
+
+    def __init__(self, from_cloud: bool = True, include_deleted: bool = False):
+        RestApi.__init__(self, endpoint="volumemeshes")
+
+        if from_cloud:
+            resp = self.get(params={"includeDeleted": include_deleted})
+            list.__init__(self, [VolumeMeshMeta(**item) for item in resp])
+
+    def filter(self):
+        """
+        flitering list, not implemented yet
+        """
+        # resp = list(filter(lambda i: i['caseStatus'] != 'deleted', resp))
+
+    def __getitem__(self, index) -> VolumeMeshMeta:
+        """
+        returns VolumeMeshMeta item of the list
+        """
+        return super().__getitem__(index)
+
+    @classmethod
+    def from_cloud(cls):
+        """
+        get VolumeMeshList from cloud
+        """
+        return cls(from_cloud=True)

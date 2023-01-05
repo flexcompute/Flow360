@@ -6,8 +6,10 @@ from functools import wraps
 
 import requests
 
-from flow360 import Env, __version__
-from flow360.cloud.security import api_key
+from ..environment import Env
+from ..version import __version__
+
+from .security import api_key
 
 
 def api_key_auth(request):
@@ -61,14 +63,16 @@ class Http:
         self.session = session
 
     @http_interceptor
-    def get(self, path: str, json=None):
+    def get(self, path: str, json=None, params=None):
         """
         Get the resource.
         :param path:
         :param json:
         :return:
         """
-        return self.session.get(url=Env.current.get_real_url(path), auth=api_key_auth, json=json)
+        return self.session.get(
+            url=Env.current.get_real_url(path), auth=api_key_auth, json=json, params=params
+        )
 
     @http_interceptor
     def post(self, path: str, json=None):
