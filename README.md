@@ -23,7 +23,7 @@ You can set your *api-key* by the following methods:
 2. Install dependencies: ``poetry install``
 
 ## run examples
-``poetry run python examples/case_results.py
+``poetry run python examples/case_results.py``
 
 ## check in
 1. ``poetry run pytest``
