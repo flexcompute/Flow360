@@ -37,6 +37,15 @@ async def test_async_download():
     await mesh.async_download(file_name="geometry.csm")
 
 
+def test_thread_download():
+    Env.dev.active()
+    mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
+    t = mesh.thread_download(file_name="geometry.csm")
+
+    # wait for thread to finish, this is not necessary if your main thread doesn't stop
+    t.join()
+
+
 def test_create_update():
     Env.dev.active()
     mesh = SurfaceMesh.from_file("test_name", "3f358de7-432e-4a1f-af26-ad53a3b84088/geometry.csm")

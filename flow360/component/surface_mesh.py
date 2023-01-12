@@ -10,6 +10,7 @@ from pydantic import Extra, Field
 from flow360.cloud.http_util import http
 from flow360.cloud.s3_utils import S3TransferType
 from flow360.component.flow360_base_model import Flow360BaseModel
+import threading
 
 
 class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
@@ -44,6 +45,20 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
         :return:
         """
         self.download(file_name, to_file, keep_folder)
+
+    def thread_download(self, file_name: str, to_file=".", keep_folder: bool = True):
+        """
+        Download file from surface mesh
+        :param file_name:
+        :param to_file:
+        :param keep_folder:
+        :return:
+        """
+
+        self.download(file_name, to_file, keep_folder)
+        thread = threading.Thread(target=self.download, args=(file_name, to_file, keep_folder))
+        thread.start()
+        return thread
 
     def download_log(self, to_file=".", keep_folder: bool = True):
         """
