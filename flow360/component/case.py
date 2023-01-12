@@ -590,13 +590,15 @@ class CaseResults:
         """
         return self._plotter
 
-    def download_file(self, downloadable: CaseDownloadable, overwrite: bool = True):
+    def download_file(self, downloadable: CaseDownloadable, overwrite: bool = True, **kwargs):
         """
         download specific file by filename
         :param downloadable: filename to download
         :param overwrite: when True, overwrites existing file, otherwise skip
         """
-        return self._case.download_file(f"results/{downloadable.value}", overwrite=overwrite)
+        return self._case.download_file(
+            f"results/{downloadable.value}", overwrite=overwrite, **kwargs
+        )
 
     def download_volumetric(self):
         """

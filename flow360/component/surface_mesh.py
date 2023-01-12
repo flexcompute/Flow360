@@ -22,7 +22,9 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
     config: Optional[str]
     user_upload_file_name: Optional[str]
 
-    def download(self, file_name: str, to_file=".", keep_folder: bool = True):
+    def download(
+        self, file_name: str, to_file=".", keep_folder: bool = True, progress_callback=None
+    ):
         """
         Download file from surface mesh
         :param file_name:
@@ -32,7 +34,11 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
         """
         assert self.surface_mesh_id
         S3TransferType.SURFACE_MESH.download_file(
-            self.surface_mesh_id, file_name, to_file, keep_folder
+            self.surface_mesh_id,
+            file_name,
+            to_file,
+            keep_folder,
+            progress_callback=progress_callback,
         )
 
     def download_log(self, to_file=".", keep_folder: bool = True):
