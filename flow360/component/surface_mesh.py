@@ -35,6 +35,16 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
             self.surface_mesh_id, file_name, to_file, keep_folder
         )
 
+    async def async_download(self, file_name: str, to_file=".", keep_folder: bool = True):
+        """
+        Download file from surface mesh
+        :param file_name:
+        :param to_file:
+        :param keep_folder:
+        :return:
+        """
+        self.download(file_name, to_file, keep_folder)
+
     def download_log(self, to_file=".", keep_folder: bool = True):
         """
         Download log

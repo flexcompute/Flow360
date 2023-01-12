@@ -233,6 +233,18 @@ class S3TransferType(Enum):
                 Callback=_call_back,
             )
 
+    async def download_file_async(
+            self,
+            resource_id: str,
+            remote_file_name: str,
+            to_file: str,
+            keep_folder: bool = True,
+            overwrite: bool = True,):
+        """
+        Download a file from s3.
+        """
+        self.download_file(resource_id, remote_file_name, to_file, keep_folder, overwrite)
+
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"
         if session_key not in _s3_sts_tokens or _s3_sts_tokens[session_key].is_expired():

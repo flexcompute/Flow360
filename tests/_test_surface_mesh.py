@@ -1,7 +1,10 @@
 import os
 
+import pytest
+
 from flow360 import Env
 from flow360.component.surface_mesh import SurfaceMesh
+import asyncio
 
 
 def test_from_cloud():
@@ -25,6 +28,13 @@ def test_download():
     Env.dev.active()
     mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
     mesh.download(file_name="geometry.csm")
+
+
+@pytest.mark.asyncio
+async def test_async_download():
+    Env.dev.active()
+    mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
+    await mesh.async_download(file_name="geometry.csm")
 
 
 def test_create_update():
