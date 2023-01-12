@@ -32,7 +32,8 @@ def configure(apikey):
     :param apikey:
     :return:
     """
-
+    if not os.path.exists(f"{home}/.flow360"):
+        os.makedirs(f"{home}/.flow360")
     with open(f"{home}/.flow360/config.toml", "w+", encoding="utf-8") as config_file:
         toml_config = toml.loads(config_file.read())
         toml_config.update({"default": {"apikey": apikey}})
