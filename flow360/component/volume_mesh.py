@@ -382,6 +382,7 @@ class VolumeMesh(Flow360Resource):
         """
         return self.info.boundaries
 
+    # pylint: disable=too-many-arguments
     @on_cloud_resource_only
     def download_file(
         self,
@@ -389,6 +390,7 @@ class VolumeMesh(Flow360Resource):
         to_file=".",
         keep_folder: bool = True,
         overwrite: bool = True,
+        progress_callback=None,
     ):
         """
         Download file from surface mesh
@@ -399,7 +401,13 @@ class VolumeMesh(Flow360Resource):
         """
         if isinstance(file_name, VolumeMeshDownloadable):
             file_name = file_name.value
-        super().download_file(file_name, to_file, keep_folder, overwrite=overwrite)
+        return super().download_file(
+            file_name,
+            to_file,
+            keep_folder=keep_folder,
+            overwrite=overwrite,
+            progress_callback=progress_callback,
+        )
 
     @on_cloud_resource_only
     def download(self, to_file=".", keep_folder: bool = True):
@@ -505,6 +513,7 @@ class VolumeMesh(Flow360Resource):
         name: str = None,
         tags: [str] = None,
         solver_version=None,
+        progress_callback=None,
     ):
         """
         Create volume mesh from ugrid file
@@ -546,7 +555,7 @@ class VolumeMesh(Flow360Resource):
         mesh._params = Flow360MeshParams(**mesh._info.mesh_params.dict())
         mesh.init_id(mesh._info.id)
         remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
-        mesh.upload_file(remote_file_name, file_name)
+        mesh.upload_file(remote_file_name, file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
         return mesh
 
