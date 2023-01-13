@@ -23,6 +23,19 @@ from rich.progress import (
 
 from ..environment import Env
 from .http_util import http
+from abc import ABC, abstractmethod
+
+
+class ProgressCallbackInterface(ABC):
+
+    @abstractmethod
+    def total(self, total: int):
+        pass
+
+    @abstractmethod
+    def __call__(self, bytes_transferred):
+        pass
+
 
 _s3_config = TransferConfig(
     multipart_threshold=1024 * 25,
@@ -128,8 +141,8 @@ class _S3STSToken(BaseModel):
         :return:
         """
         return (
-            self.user_credential.expiration
-            - datetime.now(tz=self.user_credential.expiration.tzinfo)
+                self.user_credential.expiration
+                - datetime.now(tz=self.user_credential.expiration.tzinfo)
         ).total_seconds() > 300
 
 
@@ -191,12 +204,13 @@ class S3TransferType(Enum):
 
     # pylint: disable=too-many-arguments
     def download_file(
-        self,
-        resource_id: str,
-        remote_file_name: str,
-        to_file: str,
-        keep_folder: bool = True,
-        overwrite: bool = True,
+            self,
+            resource_id: str,
+            remote_file_name: str,
+            to_file: str,
+            keep_folder: bool = True,
+            overwrite: bool = True,
+            progress_callback=None
     ):
         """
         Download a file from s3.
@@ -215,23 +229,32 @@ class S3TransferType(Enum):
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
-        with _get_progress(_S3Action.DOWNLOADING) as progress:
-            progress.start()
-            task_id = progress.add_task(
-                "download",
-                filename=os.path.basename(remote_file_name),
-                total=meta_data.get("ContentLength", 0),
-            )
-
-            def _call_back(bytes_in_chunk):
-                progress.update(task_id, advance=bytes_in_chunk)
-
+        if progress_callback:
+            progress_callback.total = meta_data.get("ContentLength", 0)
             client.download_file(
                 Bucket=token.get_bucket(),
                 Filename=to_file,
                 Key=token.get_s3_key(),
-                Callback=_call_back,
+                Callback=progress_callback,
             )
+        else:
+            with _get_progress(_S3Action.DOWNLOADING) as progress:
+                progress.start()
+                task_id = progress.add_task(
+                    "download",
+                    filename=os.path.basename(remote_file_name),
+                    total=meta_data.get("ContentLength", 0),
+                )
+
+                def _call_back(bytes_in_chunk):
+                    progress.update(task_id, advance=bytes_in_chunk)
+
+                client.download_file(
+                    Bucket=token.get_bucket(),
+                    Filename=to_file,
+                    Key=token.get_s3_key(),
+                    Callback=_call_back,
+                )
 
     async def download_file_async(
             self,
@@ -239,7 +262,7 @@ class S3TransferType(Enum):
             remote_file_name: str,
             to_file: str,
             keep_folder: bool = True,
-            overwrite: bool = True,):
+            overwrite: bool = True, ):
         """
         Download a file from s3.
         """

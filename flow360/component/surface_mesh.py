@@ -23,7 +23,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
     config: Optional[str]
     user_upload_file_name: Optional[str]
 
-    def download(self, file_name: str, to_file=".", keep_folder: bool = True):
+    def download(self, file_name: str, to_file=".", keep_folder: bool = True, progress_callback = None):
         """
         Download file from surface mesh
         :param file_name:
@@ -33,7 +33,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
         """
         assert self.surface_mesh_id
         S3TransferType.SURFACE_MESH.download_file(
-            self.surface_mesh_id, file_name, to_file, keep_folder
+            self.surface_mesh_id, file_name, to_file, keep_folder, progress_callback = progress_callback
         )
 
     async def async_download(self, file_name: str, to_file=".", keep_folder: bool = True):
@@ -46,7 +46,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
         """
         self.download(file_name, to_file, keep_folder)
 
-    def thread_download(self, file_name: str, to_file=".", keep_folder: bool = True):
+    def thread_download(self, file_name: str, to_file=".", keep_folder: bool = True, progress_callback=None):
         """
         Download file from surface mesh
         :param file_name:
@@ -55,8 +55,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
         :return:
         """
 
-        self.download(file_name, to_file, keep_folder)
-        thread = threading.Thread(target=self.download, args=(file_name, to_file, keep_folder))
+        thread = threading.Thread(target=self.download, args=(file_name, to_file, keep_folder, progress_callback))
         thread.start()
         return thread
 
@@ -95,7 +94,7 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
 
     @classmethod
     def from_file(
-        cls, surface_mesh_name: str, file_name: str, solver_version: str = None, tags: [str] = None
+            cls, surface_mesh_name: str, file_name: str, solver_version: str = None, tags: [str] = None
     ):
         """
         Create a surface mesh from a local file
@@ -127,12 +126,12 @@ class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
     # pylint: disable=too-many-arguments
     @classmethod
     def from_geometry(
-        cls,
-        surface_mesh_name: str,
-        geometry_file: str,
-        converter_json_file: str,
-        solver_version: str = None,
-        tags: [str] = None,
+            cls,
+            surface_mesh_name: str,
+            geometry_file: str,
+            converter_json_file: str,
+            solver_version: str = None,
+            tags: [str] = None,
     ):
         """
         Create surface mesh from geometry file
