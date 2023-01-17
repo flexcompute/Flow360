@@ -33,7 +33,7 @@ class ProgressCallbackInterface(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, bytes_transferred):
+    def __call__(self, bytes_chunk_transferred):
         pass
 
 
@@ -262,11 +262,13 @@ class S3TransferType(Enum):
             remote_file_name: str,
             to_file: str,
             keep_folder: bool = True,
-            overwrite: bool = True, ):
+            overwrite: bool = True, 
+            progress_callback=None
+        ):
         """
         Download a file from s3.
         """
-        self.download_file(resource_id, remote_file_name, to_file, keep_folder, overwrite)
+        self.download_file(resource_id, remote_file_name, to_file, keep_folder, overwrite, progress_callback=progress_callback)
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"
