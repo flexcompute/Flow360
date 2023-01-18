@@ -174,7 +174,7 @@ class S3TransferType(Enum):
 
         return None
 
-    def upload_file(self, resource_id: str, remote_file_name: str, file_name: str):
+    def upload_file(self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None):
         """
         Upload a file to s3.
         :param resource_id:
@@ -183,24 +183,37 @@ class S3TransferType(Enum):
         :return:
         """
         if not os.path.exists(file_name):
-            print(f"mesh file {file_name} does not Exist!")
+            print(f"file {file_name} does not Exist!")
             raise FileNotFoundError()
-        with _get_progress(_S3Action.UPLOADING) as progress:
-            task_id = progress.add_task(
-                "upload", filename=os.path.basename(file_name), total=os.path.getsize(file_name)
-            )
 
-            def _call_back(bytes_in_chunk):
-                progress.update(task_id, advance=bytes_in_chunk)
-
-            token = self._get_s3_sts_token(resource_id, remote_file_name)
-            token.get_client().upload_file(
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        if progress_callback:
+            progress_callback.total = float(os.path.getsize(file_name))
+            client.upload_file(
                 Bucket=token.get_bucket(),
                 Filename=file_name,
                 Key=token.get_s3_key(),
-                Callback=_call_back,
+                Callback=progress_callback,
                 Config=_s3_config,
             )
+        else:
+            with _get_progress(_S3Action.UPLOADING) as progress:
+                task_id = progress.add_task(
+                    "upload", filename=os.path.basename(file_name), total=os.path.getsize(file_name)
+                )
+
+                def _call_back(bytes_in_chunk):
+                    progress.update(task_id, advance=bytes_in_chunk)
+
+                token = self._get_s3_sts_token(resource_id, remote_file_name)
+                client.upload_file(
+                    Bucket=token.get_bucket(),
+                    Filename=file_name,
+                    Key=token.get_s3_key(),
+                    Callback=_call_back,
+                    Config=_s3_config,
+                )
 
     # pylint: disable=too-many-arguments
     def download_file(
@@ -256,19 +269,6 @@ class S3TransferType(Enum):
                     Callback=_call_back,
                 )
 
-    async def download_file_async(
-            self,
-            resource_id: str,
-            remote_file_name: str,
-            to_file: str,
-            keep_folder: bool = True,
-            overwrite: bool = True, 
-            progress_callback=None
-        ):
-        """
-        Download a file from s3.
-        """
-        self.download_file(resource_id, remote_file_name, to_file, keep_folder, overwrite, progress_callback=progress_callback)
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"

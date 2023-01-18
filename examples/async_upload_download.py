@@ -1,14 +1,18 @@
-import asyncio
 import threading
-
+import time
 
 from flow360.component.case import CaseList
-from flow360 import ProgressCallbackInterface
+from flow360 import VolumeMesh, Flow360MeshParams, ProgressCallbackInterface
 from flow360.component.case import CaseDownloadable
+
+from testcases import OM6test
+
+OM6test.get_files()
+
 
 my_cases = CaseList()
 case1 = my_cases[0].to_case()
-case2 = my_cases[2].to_case()
+case2 = my_cases[1].to_case()
 
 print(case1)
 print(case2)
@@ -29,30 +33,6 @@ class ProgressCallback(ProgressCallbackInterface):
 
 
 
-
-async def download1():
-    await case1.results.download_file_async(CaseDownloadable.VOLUME, progress_callback=ProgressCallback('volume case1'))
-
-async def download2():
-    await case1.results.download_file_async(CaseDownloadable.VOLUME, progress_callback=ProgressCallback('volume case2'))
-
-async def other_function():
-    for _ in range(5):
-        print('this is concurrenctly running process')
-        await asyncio.sleep(1)
-
-
-
-async def test_async_download():
-    await asyncio.gather(
-        download1(),
-        download2(),
-        other_function())
-
-
-asyncio.run(test_async_download())
-
-
 def thread_download1():
     thread = threading.Thread(target=case1.results.download_file, args=[CaseDownloadable.VOLUME], kwargs={"progress_callback": ProgressCallback('volume case1')})
     thread.start()
@@ -64,9 +44,25 @@ def thread_download2():
     return thread
 
 
+def thread_upload():
+    meshParams = Flow360MeshParams.from_file(OM6test.mesh_json)
+    thread = threading.Thread(target=VolumeMesh.from_file, args=[OM6test.mesh_filename, meshParams, "OM6wing-mesh"], kwargs={"progress_callback": ProgressCallback('mesh upload')})
+    thread.start()
+    return thread
+
+
 t1 = thread_download1()
 t2 = thread_download2()
+t3 = thread_upload()
+
+
+
+for _ in range(10):
+    print('This thread continues while upload/download progress')
+    time.sleep(1)
+
 
 # wait for thread to finish, this is not necessary if your main thread doesn't stop
 t1.join()
 t2.join()
+t3.join()

@@ -133,27 +133,16 @@ class Flow360Resource(RestApi):
         """
         general download functionality
         """
-        self.s3_transfer_method.download_file(
+        return self.s3_transfer_method.download_file(
             self.id, file_name, to_file, keep_folder, overwrite=overwrite, progress_callback=progress_callback
         )
 
-    async def async_download_file(self, file_name: str, to_file=".", keep_folder: bool = True, overwrite: bool = True):
-        """
-        general download functionality
-        """
-        self.s3_transfer_method.download_file(
-            self.id, file_name, to_file, keep_folder, overwrite=overwrite
-        )
-
-
     @on_cloud_resource_only
-    def upload_file(self, remote_file_name: str, file_name: str):
+    def upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """
         general upload functionality
         """
-        self.s3_transfer_method.upload_file(self.id, remote_file_name, file_name)
-
-
+        self.s3_transfer_method.upload_file(self.id, remote_file_name, file_name, progress_callback=progress_callback)
 
 
 

@@ -1,10 +1,7 @@
 import os
 
-import pytest
-
-from flow360 import Env, ProgressCallbackInterface
+from flow360 import Env
 from flow360.component.surface_mesh import SurfaceMesh
-import asyncio
 
 
 def test_from_cloud():
@@ -28,34 +25,6 @@ def test_download():
     Env.dev.active()
     mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
     mesh.download(file_name="geometry.csm")
-
-
-@pytest.mark.asyncio
-async def test_async_download():
-    Env.dev.active()
-    mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
-    await mesh.async_download(file_name="geometry.csm")
-
-
-class ProgressCallback(ProgressCallbackInterface):
-    def __init__(self):
-        self.total = 0
-
-    def total(self, total: int):
-        print(total)
-        self.total = total
-
-    def __call__(self, bytes_transferred):
-        print(f"progress:{bytes_transferred / self.total * 100} %")
-
-
-def test_thread_download():
-    Env.dev.active()
-    mesh = SurfaceMesh.from_cloud("3f358de7-432e-4a1f-af26-ad53a3b84088")
-    t = mesh.thread_download(file_name="geometry.csm", progress_callback=ProgressCallback())
-
-    # wait for thread to finish, this is not necessary if your main thread doesn't stop
-    t.join()
 
 
 def test_create_update():

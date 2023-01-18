@@ -598,15 +598,6 @@ class CaseResults:
         """
         return self._case.download_file(f"results/{downloadable.value}", overwrite=overwrite, **kwargs)
 
-    async def download_file_async(self, downloadable: CaseDownloadable, overwrite: bool = True, **kwargs):
-        """
-        download specific file by filename
-        :param downloadable: filename to download
-        :param overwrite: when True, overwrites existing file, otherwise skip
-        """
-        return self._case.download_file(f"results/{downloadable.value}", overwrite=overwrite, **kwargs)
-
-
     def download_volumetric(self):
         """
         download volumetric results data
