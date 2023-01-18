@@ -126,15 +126,26 @@ class Flow360Resource(RestApi):
         """
         return self.info.solver_version
 
+    # pylint: disable=too-many-arguments
     @on_cloud_resource_only
     def download_file(
-        self, file_name, to_file=".", keep_folder: bool = True, overwrite: bool = True, progress_callback=None
+        self,
+        file_name,
+        to_file=".",
+        keep_folder: bool = True,
+        overwrite: bool = True,
+        progress_callback=None,
     ):
         """
         general download functionality
         """
         return self.s3_transfer_method.download_file(
-            self.id, file_name, to_file, keep_folder, overwrite=overwrite, progress_callback=progress_callback
+            self.id,
+            file_name,
+            to_file,
+            keep_folder,
+            overwrite=overwrite,
+            progress_callback=progress_callback,
         )
 
     @on_cloud_resource_only
@@ -142,8 +153,9 @@ class Flow360Resource(RestApi):
         """
         general upload functionality
         """
-        self.s3_transfer_method.upload_file(self.id, remote_file_name, file_name, progress_callback=progress_callback)
-
+        self.s3_transfer_method.upload_file(
+            self.id, remote_file_name, file_name, progress_callback=progress_callback
+        )
 
 
 def is_object_cloud_resource(resource: Flow360Resource):

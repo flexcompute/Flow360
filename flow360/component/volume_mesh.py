@@ -382,6 +382,7 @@ class VolumeMesh(Flow360Resource):
         """
         return self.info.boundaries
 
+    # pylint: disable=too-many-arguments
     @on_cloud_resource_only
     def download_file(
         self,
@@ -389,7 +390,7 @@ class VolumeMesh(Flow360Resource):
         to_file=".",
         keep_folder: bool = True,
         overwrite: bool = True,
-        **kwargs
+        progress_callback=None,
     ):
         """
         Download file from surface mesh
@@ -400,7 +401,13 @@ class VolumeMesh(Flow360Resource):
         """
         if isinstance(file_name, VolumeMeshDownloadable):
             file_name = file_name.value
-        super().download_file(file_name, to_file, keep_folder, overwrite=overwrite, **kwargs)
+        return super().download_file(
+            file_name,
+            to_file,
+            keep_folder=keep_folder,
+            overwrite=overwrite,
+            progress_callback=progress_callback,
+        )
 
     @on_cloud_resource_only
     def download(self, to_file=".", keep_folder: bool = True):

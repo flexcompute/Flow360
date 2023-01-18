@@ -32,21 +32,33 @@ class ProgressCallback(ProgressCallbackInterface):
         print(f"progress {self.name}: {self.bytes_transferred / self.total * 100} %")
 
 
-
 def thread_download1():
-    thread = threading.Thread(target=case1.results.download_file, args=[CaseDownloadable.VOLUME], kwargs={"progress_callback": ProgressCallback('volume case1')})
+    thread = threading.Thread(
+        target=case1.results.download_file,
+        args=[CaseDownloadable.VOLUME],
+        kwargs={"progress_callback": ProgressCallback("volume case1")},
+    )
     thread.start()
     return thread
 
+
 def thread_download2():
-    thread = threading.Thread(target=case2.results.download_file, args=[CaseDownloadable.VOLUME], kwargs={"progress_callback": ProgressCallback('volume case2')})
+    thread = threading.Thread(
+        target=case2.results.download_file,
+        args=[CaseDownloadable.VOLUME],
+        kwargs={"progress_callback": ProgressCallback("volume case2")},
+    )
     thread.start()
     return thread
 
 
 def thread_upload():
     meshParams = Flow360MeshParams.from_file(OM6test.mesh_json)
-    thread = threading.Thread(target=VolumeMesh.from_file, args=[OM6test.mesh_filename, meshParams, "OM6wing-mesh"], kwargs={"progress_callback": ProgressCallback('mesh upload')})
+    thread = threading.Thread(
+        target=VolumeMesh.from_file,
+        args=[OM6test.mesh_filename, meshParams, "OM6wing-mesh"],
+        kwargs={"progress_callback": ProgressCallback("mesh upload")},
+    )
     thread.start()
     return thread
 
@@ -56,9 +68,8 @@ t2 = thread_download2()
 t3 = thread_upload()
 
 
-
 for _ in range(10):
-    print('This thread continues while upload/download progress')
+    print("This thread continues while upload/download progress")
     time.sleep(1)
 
 

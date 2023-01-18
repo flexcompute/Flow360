@@ -5,6 +5,7 @@ import os
 import urllib
 from datetime import datetime
 from enum import Enum
+from abc import ABC, abstractmethod
 
 import boto3
 from boto3.s3.transfer import TransferConfig
@@ -23,14 +24,18 @@ from rich.progress import (
 
 from ..environment import Env
 from .http_util import http
-from abc import ABC, abstractmethod
 
 
 class ProgressCallbackInterface(ABC):
+    """
+    Progress callback abstract class
+    """
 
     @abstractmethod
     def total(self, total: int):
-        pass
+        """
+        total bytes to transfer
+        """
 
     @abstractmethod
     def __call__(self, bytes_chunk_transferred):
@@ -141,8 +146,8 @@ class _S3STSToken(BaseModel):
         :return:
         """
         return (
-                self.user_credential.expiration
-                - datetime.now(tz=self.user_credential.expiration.tzinfo)
+            self.user_credential.expiration
+            - datetime.now(tz=self.user_credential.expiration.tzinfo)
         ).total_seconds() > 300
 
 
@@ -174,7 +179,9 @@ class S3TransferType(Enum):
 
         return None
 
-    def upload_file(self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None):
+    def upload_file(
+        self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None
+    ):
         """
         Upload a file to s3.
         :param resource_id:
@@ -217,13 +224,13 @@ class S3TransferType(Enum):
 
     # pylint: disable=too-many-arguments
     def download_file(
-            self,
-            resource_id: str,
-            remote_file_name: str,
-            to_file: str,
-            keep_folder: bool = True,
-            overwrite: bool = True,
-            progress_callback=None
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        to_file: str,
+        keep_folder: bool = True,
+        overwrite: bool = True,
+        progress_callback=None,
     ):
         """
         Download a file from s3.
@@ -233,6 +240,7 @@ class S3TransferType(Enum):
         :param keep_folder: If true, the downloaded file will be put
         in the same folder as the file on cloud. Only works when to_file is a folder name.
         :param overwrite: if True overwrite if file exists, otherwise don't download
+        :param progress_callback: provide custom callback for progress
         :return:
         """
         to_file = create_base_folder(resource_id, remote_file_name, to_file, keep_folder)
@@ -268,7 +276,6 @@ class S3TransferType(Enum):
                     Key=token.get_s3_key(),
                     Callback=_call_back,
                 )
-
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"

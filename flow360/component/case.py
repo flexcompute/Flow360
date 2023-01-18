@@ -596,7 +596,9 @@ class CaseResults:
         :param downloadable: filename to download
         :param overwrite: when True, overwrites existing file, otherwise skip
         """
-        return self._case.download_file(f"results/{downloadable.value}", overwrite=overwrite, **kwargs)
+        return self._case.download_file(
+            f"results/{downloadable.value}", overwrite=overwrite, **kwargs
+        )
 
     def download_volumetric(self):
         """
