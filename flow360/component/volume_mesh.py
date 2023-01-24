@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Optional, Union, List
 
 import numpy as np
-from pydantic import Extra, Field, validator
+from pydantic import Extra, Field, validator, ValidationError
 
 from ..cloud.s3_utils import S3TransferType
 from ..cloud.rest_api import RestApi
@@ -306,9 +306,20 @@ class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
         """
         validator for mesh_params
         """
+        params = value
         if isinstance(value, str):
-            return json.loads(value)
-        return value
+            try:
+                params = json.loads(value)
+            except json.decoder.JSONDecodeError:
+                return None
+        try:
+            Flow360MeshParams(**params)
+        except ValidationError:
+            return None
+        except TypeError:
+            return None
+
+        return params
 
     @validator("endianness", pre=True)
     def init_endianness(cls, value):
