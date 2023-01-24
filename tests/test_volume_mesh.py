@@ -18,7 +18,10 @@ from flow360.component.volume_mesh import (
     VolumeMeshFileFormat,
     CompressionFormat,
     UGRIDEndianness,
+    VolumeMeshMeta,
 )
+
+from tests.data.volume_mesh_list import volume_mesh_list_raw
 
 
 @pytest.fixture(autouse=True)
@@ -121,3 +124,33 @@ def test_mesh_filename_detection():
     mesh_format = VolumeMeshFileFormat.detect(filename)
     with pytest.raises(RuntimeError):
         endianess = UGRIDEndianness.detect(filename)
+
+
+def test_volume_mesh_list_with_incorrect_data():
+    v = VolumeMeshMeta(**volume_mesh_list_raw[0])
+    assert v.status == "uploaded"
+    assert type(v.mesh_params) is Flow360MeshParams
+    assert type(v.mesh_params.boundaries) is MeshBoundary
+    assert v.mesh_params.boundaries.no_slip_walls == ["1", "wall"]
+
+    v = VolumeMeshMeta(**volume_mesh_list_raw[1])
+    assert v.status == "uploaded"
+    assert type(v.mesh_params) is Flow360MeshParams
+    assert type(v.mesh_params.boundaries) is MeshBoundary
+    assert v.mesh_params.boundaries.no_slip_walls == ["4"]
+
+    v = VolumeMeshMeta(**volume_mesh_list_raw[2])
+    assert v.status == "uploaded"
+    assert type(v.mesh_params) is Flow360MeshParams
+    assert type(v.mesh_params.boundaries) is MeshBoundary
+    assert v.mesh_params.boundaries.no_slip_walls == ["1"]
+
+    item_incorrect1 = volume_mesh_list_raw[3]
+    v = VolumeMeshMeta(**item_incorrect1)
+    assert v.status == "error"
+    assert v.mesh_params is None
+
+    item_incorrect2 = volume_mesh_list_raw[4]
+    v = VolumeMeshMeta(**item_incorrect2)
+    assert v.status == "error"
+    assert v.mesh_params is None

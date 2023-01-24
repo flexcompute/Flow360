@@ -250,10 +250,6 @@ class Flow360MeshParams(BaseModel):
     boundaries: MeshBoundary = Field()
     sliding_interfaces: Optional[List[SlidingInterface]] = Field(alias="slidingInterfaces")
 
-    # pylint: disable=C0115,R0903
-    class Config:
-        allow_population_by_field_name = True
-
     def json(self, *args, **kwargs):
         """
         to json
@@ -266,3 +262,7 @@ class Flow360MeshParams(BaseModel):
         read model from json file
         """
         return cls.parse_file(file)
+
+    # pylint: disable=C0115,R0903
+    class Config:
+        allow_population_by_field_name = True
