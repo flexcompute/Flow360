@@ -1,0 +1,16 @@
+axisOfRotation:
+- 0
+- 0
+- 1
+centerOfRotation:
+- 0.0
+- 0.0
+- 0.0
+omega:
+    unit: rad/s
+    v: 1.0
+rotatingPatches:
+- patch2
+stationaryPatches:
+- patch1
+volumeName: volume1

@@ -159,7 +159,6 @@ class S3TransferType(Enum):
     VOLUME_MESH = "VolumeMesh"
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
-    STUDIO = "Studio"
 
     def _get_grant_url(self, resource_id, file_name: str) -> str:
         """
@@ -174,8 +173,6 @@ class S3TransferType(Enum):
             return f"surfacemeshes/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.CASE:
             return f"cases/{resource_id}/file?filename={file_name}"
-        if self is S3TransferType.STUDIO:
-            return f"volumemeshes/{resource_id}/file?filename={file_name}"
 
         return None
 

@@ -5,25 +5,34 @@ from __future__ import annotations
 import os.path
 import json
 from enum import Enum
-from typing import Optional, Union, List
-
+from typing import Optional, Union, List, Iterator
 import numpy as np
 from pydantic import Extra, Field, validator, ValidationError
 
 from ..cloud.s3_utils import S3TransferType
 from ..cloud.rest_api import RestApi
 from ..solver_version import Flow360Version
-from .flow360_base_model import (
-    Flow360BaseModel,
+from .resource_base import (
+    Flow360ResourceBaseModel,
     Flow360Resource,
+    Flow360ResourceListBase,
+    Flow360Status,
+    ResourceDraft,
     on_cloud_resource_only,
 )
-from .flow360_solver_params import (
+from .flow360_params import (
     Flow360MeshParams,
     Flow360Params,
-    MeshBoundary,
     NoSlipWall,
+    _GenericBoundaryWrapper,
 )
+
+from .case import Case, CaseDraft
+
+from ..log import log
+from ..exceptions import ValueError as FlValueError
+from ..exceptions import FileError as FlFileError
+from ..exceptions import Flow360NotImplementedError
 
 try:
     import h5py
@@ -53,6 +62,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
     :return:
     """
     assert params
+
     if (
         isinstance(params, Flow360MeshParams)
         and params.boundaries
@@ -63,8 +73,8 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
     if isinstance(params, Flow360Params) and params.boundaries:
         return [
             wall_name
-            for wall_name, wall in params.boundaries.items()
-            if isinstance(wall, NoSlipWall)
+            for wall_name, wall in params.boundaries.dict().items()
+            if _GenericBoundaryWrapper(v=wall).v.type == NoSlipWall().type
         ]
 
     return []
@@ -150,16 +160,21 @@ def validate_cgns(
     boundaries_in_file = get_boundaries_from_file(cgns_file, solver_version)
 
     boundaries_in_params = get_no_slip_walls(params) + get_boundries_from_sliding_interfaces(params)
+    print(get_no_slip_walls(params), boundaries_in_params)
+
     boundaries_in_file = set(boundaries_in_file)
     boundaries_in_params = set(boundaries_in_params)
+
+    print(boundaries_in_file, boundaries_in_params)
+
     if not boundaries_in_file.issuperset(boundaries_in_params):
-        raise ValueError(
+        raise FlValueError(
             "The following input boundary names from mesh json are not found in mesh:"
             + f" {' '.join(boundaries_in_params - boundaries_in_file)}."
             + f" Boundary names in cgns: {' '.join(boundaries_in_file)}"
             + f" Boundary names in params: {' '.join(boundaries_in_file)}"
         )
-    print(
+    log.info(
         f'Notice: {" ".join(boundaries_in_file - boundaries_in_params)} is '
         + "tagged as wall in cgns file, but not in input params"
     )
@@ -284,14 +299,14 @@ class CompressionFormat(Enum):
 
 
 # pylint: disable=E0213
-class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
+class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     """
     VolumeMeshMeta component
     """
 
     id: str = Field(alias="meshId")
     name: str = Field(alias="meshName")
-    status: str = Field(alias="meshStatus")
+    status: Flow360Status
     created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
     mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
@@ -344,48 +359,199 @@ class VolumeMeshMeta(Flow360BaseModel, extra=Extra.allow):
         return VolumeMesh(self.id)
 
 
-class VolumeMesh(Flow360Resource):
+# pylint: disable=too-few-public-methods
+class VolumeMeshBase:
+    """VolumeMeshBase base class"""
+
+    _endpoint = "volumemeshes"
+
+
+class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
     """
     Volume mesh component
     """
 
-    def __init__(self, mesh_id: str = None):
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        file_name: str,
+        params: Flow360MeshParams,
+        name: str = None,
+        tags: List[str] = None,
+        solver_version=None,
+        endianess: UGRIDEndianness = None,
+        isascii: bool = False,
+    ):
+        if not os.path.exists(file_name):
+            raise FlFileError(f"{file_name} not found.")
+
+        if endianess is not None:
+            raise Flow360NotImplementedError(
+                "endianess selections not supported, it is inferred from filename"
+            )
+
+        if isascii is True:
+            raise Flow360NotImplementedError("isascii not supported")
+
+        self.params = None
+        if params is not None:
+            self.params = params.copy(deep=True)
+
+        # if not params or not isinstance(params, Flow360MeshParams):
+        #     raise ValueError(f'params={params} are not of type Flow360MeshParams')
+
+        if name is None:
+            name = os.path.splitext(os.path.basename(file_name))[0]
+
+        self.file_name = file_name
+        self.name = name
+        self.tags = tags
+        self.solver_version = solver_version
+        self._id = None
+
+    # pylint: disable=too-many-arguments
+    # @classmethod
+    # def from_surface_mesh(
+    #     cls,
+    #     volume_mesh_name: str,
+    #     surface_mesh_id: str,
+    #     config_file: str,
+    #     tags: [str] = None,
+    #     solver_version=None,
+    # ):
+    #     """
+    #     Create volume mesh from surface mesh
+    #     :param volume_mesh_name:
+    #     :param surface_mesh_id:
+    #     :param config_file:
+    #     :param tags:
+    #     :param solver_version:
+    #     :return:
+    #     """
+    #     assert volume_mesh_name
+    #     assert os.path.exists(config_file)
+    #     assert surface_mesh_id
+    #     with open(config_file, "r", encoding="utf-8") as config_f:
+    #         json_content = json.load(config_f)
+    #     body = {
+    #         "name": volume_mesh_name,
+    #         "tags": tags,
+    #         "surfaceMeshId": surface_mesh_id,
+    #         "config": json.dumps(json_content),
+    #         "format": "cgns",
+    #     }
+
+    #     if solver_version:
+    #         body["solverVersion"] = solver_version
+
+    #     resp = http.post("volumemeshes", body)
+    #     if resp:
+    #         return cls(**resp)
+    #     return None
+
+    # pylint: disable=protected-access
+    def submit(self, progress_callback=None) -> VolumeMesh:
+        """submit mesh to cloud
+
+        Parameters
+        ----------
+        progress_callback : callback, optional
+            Use for custom progress bar, by default None
+
+        Returns
+        -------
+        VolumeMesh
+            VolumeMesh object with id
+        """
+        assert os.path.exists(self.file_name)
+
+        compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
+        mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
+        endianness = UGRIDEndianness.detect(file_name_no_compression)
+
+        name = self.name
+        if name is None:
+            name = os.path.splitext(os.path.basename(self.file_name))[0]
+
+        body = {
+            "meshName": name,
+            "meshTags": self.tags,
+            "meshFormat": mesh_format.value,
+            "meshEndianness": endianness.value,
+        }
+        if self.params:
+            body["meshParams"] = self.params.json()
+
+        if self.solver_version:
+            body["solverVersion"] = self.solver_version
+
+        resp = RestApi(self._endpoint).post(body)
+        if not resp:
+            return None
+
+        info = VolumeMeshMeta(**resp)
+        self._id = info.id
+        mesh = VolumeMesh(self.id)
+        remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
+        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+        mesh._complete_upload(remote_file_name)
+        return mesh
+
+
+class VolumeMesh(VolumeMeshBase, Flow360Resource):
+    """
+    Volume mesh component
+    """
+
+    def __init__(self, mesh_id: str = None, meta_info: VolumeMeshMeta = None):
+        if (mesh_id is None and meta_info is None) or (
+            mesh_id is not None and meta_info is not None
+        ):
+            raise ValueError("You must provide case_id OR meta_info to constructor.")
+
+        if meta_info is not None:
+            mesh_id = meta_info.id
+
+        assert mesh_id is not None
+
         super().__init__(
             resource_type="Volume Mesh",
             info_type_class=VolumeMeshMeta,
             s3_transfer_method=S3TransferType.VOLUME_MESH,
-            endpoint="volumemeshes",
+            endpoint=self._endpoint,
             id=mesh_id,
         )
-        if mesh_id is not None:
-            self.get_info()
-            try:
-                self._params = Flow360MeshParams(**self.info.mesh_params.dict())
-            except AttributeError:
-                self._params = Flow360MeshParams(boundaries=MeshBoundary(no_slip_walls=[]))
+
+        if meta_info is not None:
+            self._info = meta_info
+
+        self._params = None
 
     @property
     def info(self) -> VolumeMeshMeta:
         return super().info
 
     @property
-    @on_cloud_resource_only
     def params(self) -> Flow360MeshParams:
         """
         returns mesh params
         """
+        if self._params is None:
+            # print(self.get())
+            self._params = self.info.mesh_params
+            print(self._params)
         return self._params
 
     @property
-    @on_cloud_resource_only
     def no_slip_walls(self):
         """
         returns mesh no_slip_walls
         """
-        return self._params.boundaries.no_slip_walls
+        if self.params is None:
+            return None
+        return self.params.boundaries.no_slip_walls
 
     @property
-    @on_cloud_resource_only
     def all_boundaries(self):
         """
         returns mesh no_slip_walls
@@ -393,7 +559,6 @@ class VolumeMesh(Flow360Resource):
         return self.info.boundaries
 
     # pylint: disable=too-many-arguments
-    @on_cloud_resource_only
     def download_file(
         self,
         file_name: Union[str, VolumeMeshDownloadable],
@@ -419,7 +584,6 @@ class VolumeMesh(Flow360Resource):
             progress_callback=progress_callback,
         )
 
-    @on_cloud_resource_only
     def download(self, to_file=".", keep_folder: bool = True):
         """
         Download volume mesh file
@@ -429,20 +593,18 @@ class VolumeMesh(Flow360Resource):
         """
         super().download_file(self._remote_file_name(), to_file, keep_folder)
 
-    @on_cloud_resource_only
-    def download_log(self, log: VolumeMeshLog, to_file=".", keep_folder: bool = True):
+    def download_log(self, log_file: VolumeMeshLog, to_file=".", keep_folder: bool = True):
         """
-        Download log
-        :param log:
+        Download logs
+        :param log_file:
         :param to_file: file name on local disk, could be either folder or file name.
         :param keep_folder: If true, the downloaded file will be put in the same folder as the file on cloud. Only work
         when file_name is a folder name.
         :return:
         """
 
-        self.download_file(f"logs/{log.value}", to_file, keep_folder)
+        self.download_file(f"logs/{log_file.value}", to_file, keep_folder)
 
-    @on_cloud_resource_only
     def _complete_upload(self, remote_file_name):
         """
         Complete volume mesh upload
@@ -450,6 +612,20 @@ class VolumeMesh(Flow360Resource):
         """
         resp = self.post({}, method=f"completeUpload?fileName={remote_file_name}")
         self._info = VolumeMeshMeta(**resp)
+
+    @classmethod
+    def _meta_class(cls):
+        """
+        returns volume mesh meta info class: VolumeMeshMeta
+        """
+        return VolumeMeshMeta
+
+    @classmethod
+    def _params_ancestor_id_name(cls):
+        """
+        returns surfaceMeshId name
+        """
+        return "surfaceMeshId"
 
     @classmethod
     def from_cloud(cls, mesh_id: str):
@@ -519,12 +695,13 @@ class VolumeMesh(Flow360Resource):
     def from_file(
         cls,
         file_name: str,
-        params: Flow360MeshParams,
+        params: Union[Flow360MeshParams, None] = None,
         name: str = None,
-        tags: [str] = None,
+        tags: List[str] = None,
         solver_version=None,
-        progress_callback=None,
-    ):
+        endianess: UGRIDEndianness = None,
+        isascii: bool = False,
+    ) -> VolumeMeshDraft:
         """
         Create volume mesh from ugrid file
         :param volume_mesh_name:
@@ -534,116 +711,72 @@ class VolumeMesh(Flow360Resource):
         :param solver_version:
         :return:
         """
-        assert os.path.exists(file_name)
-        assert params
 
-        if name is None:
-            name = os.path.splitext(os.path.basename(file_name))[0]
+        new_mesh = VolumeMeshDraft(
+            file_name=file_name,
+            name=name,
+            tags=tags,
+            solver_version=solver_version,
+            params=params,
+            endianess=endianess,
+            isascii=isascii,
+        )
 
-        mesh = cls()
-        compression, file_name_no_compression = CompressionFormat.detect(file_name)
-        mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
-        endianness = UGRIDEndianness.detect(file_name_no_compression)
+        return new_mesh
 
-        body = {
-            "meshName": name,
-            "meshTags": tags,
-            "meshFormat": mesh_format.value,
-            "meshEndianness": endianness.value,
-            "meshParams": params.json(),
-        }
+    def new_case(
+        self,
+        name: str,
+        params: Flow360Params,
+        tags: List[str] = None,
+    ) -> CaseDraft:
+        """
+        Create new case
+        :param name:
+        :param params:
+        :param tags:
+        :return:
+        """
 
-        if solver_version:
-            body["solverVersion"] = solver_version
-
-        resp = mesh.post(body)
-
-        if not resp:
-            return None
-
-        mesh._info = VolumeMeshMeta(**resp)
-        mesh._params = Flow360MeshParams(**mesh._info.mesh_params.dict())
-        mesh.init_id(mesh._info.id)
-        remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
-        mesh.upload_file(remote_file_name, file_name, progress_callback=progress_callback)
-        mesh._complete_upload(remote_file_name)
-        return mesh
-
-    #     # pylint: disable=too-many-arguments
-
-    # @classmethod
-    # def from_cgns_file(
-    #     cls,
-    #     volume_mesh_name: str,
-    #     file_name: str,
-    #     params: Union[Flow360Params, Flow360MeshParams],
-    #     tags: [str] = None,
-    #     solver_version=None,
-    # ):
-    #     """
-    #     Create volume mesh from ugrid file
-    #     :param volume_mesh_name:
-    #     :param file_name:
-    #     :param params:
-    #     :param tags:
-    #     :param solver_version:
-    #     :return:
-    #     """
-    #     assert volume_mesh_name
-    #     assert os.path.exists(file_name)
-    #     assert params
-
-    #     if _H5PY_AVAILABLE:
-    #         validate_cgns(file_name, params, solver_version=solver_version)
-    #     else:
-    #         warnings.warn(
-    #             "Could not check consistency between mesh file and"
-    #             " Flow360.json file. h5py module not found. This is optional functionality"
-    #         )
-
-    #     body = {
-    #         "meshName": volume_mesh_name,
-    #         "meshTags": tags,
-    #         "meshFormat": "cgns",
-    #         "meshParams": params.json(),
-    #     }
-
-    #     if solver_version:
-    #         body["solverVersion"] = solver_version
-
-    #     resp = http.post("volumemeshes", body)
-    #     if resp:
-    #         return cls(**resp)
-    #     return None
+        return Case.new(name, params, volume_mesh_id=self.id, tags=tags)
 
 
-class VolumeMeshList(list, RestApi):
+class VolumeMeshList(Flow360ResourceListBase):
     """
     VolumeMesh List component
     """
 
-    def __init__(self, from_cloud: bool = True, include_deleted: bool = False):
-        RestApi.__init__(self, endpoint="volumemeshes")
-
-        if from_cloud:
-            resp = self.get(params={"includeDeleted": include_deleted})
-            list.__init__(self, [VolumeMeshMeta(**item) for item in resp])
+    def __init__(
+        self,
+        surface_mesh_id: str = None,
+        from_cloud: bool = True,
+        include_deleted: bool = False,
+        limit=100,
+    ):
+        super().__init__(
+            ancestor_id=surface_mesh_id,
+            from_cloud=from_cloud,
+            include_deleted=include_deleted,
+            limit=limit,
+            endpoint="volumemeshes",
+            resourceClass=VolumeMesh,
+        )
 
     def filter(self):
         """
         flitering list, not implemented yet
         """
+        raise NotImplementedError("Filters are not implemented yet")
+
         # resp = list(filter(lambda i: i['caseStatus'] != 'deleted', resp))
 
-    def __getitem__(self, index) -> VolumeMeshMeta:
+    # pylint: disable=useless-parent-delegation
+    def __getitem__(self, index) -> VolumeMesh:
         """
         returns VolumeMeshMeta item of the list
         """
         return super().__getitem__(index)
 
-    @classmethod
-    def from_cloud(cls):
-        """
-        get VolumeMeshList from cloud
-        """
-        return cls(from_cloud=True)
+    # pylint: disable=useless-parent-delegation
+    def __iter__(self) -> Iterator[VolumeMesh]:
+        return super().__iter__()

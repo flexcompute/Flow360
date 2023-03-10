@@ -1,10 +1,9 @@
-from flow360.component.volume_mesh import VolumeMeshList
+import flow360 as fl
 
-meshes = VolumeMeshList()
-mesh = meshes[0].to_volume_mesh()
+meshes = fl.MyVolumeMeshes()
+mesh = meshes[0]
 
-for item in meshes:
-    mesh = item.to_volume_mesh()
+for mesh in meshes:
     print(
         mesh.id,
         "status:",

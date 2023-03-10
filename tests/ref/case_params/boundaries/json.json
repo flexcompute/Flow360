@@ -1,0 +1,11 @@
+{
+    "fluid/ fuselage": {
+        "type": "NoSlipWall"
+    },
+    "fluid/leftWing": {
+        "type": "NoSlipWall"
+    },
+    "fluid/rightWing": {
+        "type": "NoSlipWall"
+    }
+}

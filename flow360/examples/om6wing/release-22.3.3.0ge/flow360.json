@@ -1,0 +1,86 @@
+{
+    "geometry" : {
+        "refArea" : 1.15315084119231,
+        "momentCenter" : [0.0, 0.0, 0.0],
+        "momentLength" : [1.47602, 0.801672958512342, 1.47602]
+    },
+    "volumeOutput" : {
+        "outputFormat" : "tecplot",
+        "animationFrequency" : -1,
+        "primitiveVars" : true,
+        "vorticity" : false,
+        "residualNavierStokes" : false,
+        "residualTurbulence" : false,
+        "T" : false,
+        "s" : false,
+        "Cp" : false,
+        "mut" : false,
+        "mutRatio" : false,
+        "Mach" : true
+    },
+    "surfaceOutput" : {
+        "outputFormat" : "tecplot",
+        "animationFrequency" : -1,
+        "primitiveVars" : true,
+        "Cp" : true,
+        "Cf" : true,
+        "CfVec" : false,
+        "yPlus" : false,
+        "wallDistance" : false
+    },
+
+    "sliceOutput": {
+        "outputFormat": "tecplot",
+        "animationFrequency": 10,
+        "primitiveVars": true,
+        "Cp": true,
+        "Mach": true,
+        "slices": [
+            {
+              "sliceNormal": [ 0, 1, 0 ],
+              "sliceOrigin": [ 0, 0, 0 ],
+              "sliceName": "ExampleSlice1"
+            }
+        ]
+    },
+ 
+    "navierStokesSolver" : {
+        "absoluteTolerance" : 1e-10,
+        "kappaMUSCL" : -1.0
+    },
+    "turbulenceModelSolver" : {
+        "modelType" : "SpalartAllmaras",
+        "absoluteTolerance" : 1e-8,
+        "kappaMUSCL" : -1.0
+    },
+    "freestream" :
+    {
+        "Reynolds" : 14.6e6,
+        "Mach" : 0.84,
+        "Temperature" : 288.15,
+        "alphaAngle" : 3.06,
+        "betaAngle" : 0.0
+    },
+    "boundaries" : {
+        "1" : {
+		    "type" : "NoSlipWall",
+            "name" : "wing"
+		},
+		"2" : {
+			"type" : "SlipWall",
+            "name" : "symmetry"
+		},
+		"3" : {
+			"type" : "Freestream",
+            "name" : "freestream"
+		}
+    },
+    "timeStepping" : {                                                              
+        "maxPseudoSteps" : 500,
+        "CFL" : {                                                                   
+            "initial" : 5,                                                          
+            "final": 200,                                                           
+            "rampSteps" : 40                                                        
+        }
+    }
+}

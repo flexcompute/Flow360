@@ -1,6 +1,6 @@
 from flow360 import Env
 from flow360.component.case import Case
-from flow360.component.flow360_solver_params import Flow360Params, TimeStepping
+from flow360.component.flow360_params import Flow360Params, TimeStepping
 
 
 def test_from_cloud():

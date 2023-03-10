@@ -13,6 +13,7 @@ class EnvironmentConfig(BaseModel):
     name: str
     web_api_endpoint: str
     aws_region: str
+    apikey_profile: str
 
     def active(self):
         """
@@ -33,20 +34,22 @@ class EnvironmentConfig(BaseModel):
 dev = EnvironmentConfig(
     name="dev",
     web_api_endpoint="https://flow360-api.dev-simulation.cloud",
-    # web_api_endpoint="http://127.0.0.1:5000",
     aws_region="us-east-1",
+    apikey_profile="dev",
 )
 
 uat = EnvironmentConfig(
     name="uat",
     web_api_endpoint="https://uat-flow360-api.simulation.cloud",
     aws_region="us-gov-west-1",
+    apikey_profile="default",
 )
 
 prod = EnvironmentConfig(
     name="prod",
     web_api_endpoint="https://flow360-api.simulation.cloud",
     aws_region="us-gov-west-1",
+    apikey_profile="default",
 )
 
 

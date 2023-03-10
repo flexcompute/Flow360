@@ -1,49 +1,26 @@
-from flow360 import VolumeMesh, Case
-from flow360 import Flow360MeshParams, MeshBoundary, Flow360Params
+import flow360 as fl
+from flow360.examples import OM6wing
 
-from testcases import OM6test
+OM6wing.get_files()
 
-OM6test.get_files()
+volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
+volume_mesh = volume_mesh.submit()
 
-# submit mesh with manual configuration
-meshParams = Flow360MeshParams(boundaries=MeshBoundary(noSlipWalls=[1]))
-volumeMesh = VolumeMesh.from_file(OM6test.mesh_filename, meshParams, name="OM6wing-mesh")
-print(volumeMesh)
-
-
-# submit case manual configuration
-
-from flow360.component.flow360_solver_params import (
-    Geometry,
-    TimeStepping,
-    Freestream,
-    NoSlipWall,
-    SlipWall,
-    FreestreamBoundary,
+params = fl.Flow360Params(
+    geometry=fl.Geometry(
+        ref_area=1.15315084119231,
+        moment_length=(1.47602, 0.801672958512342, 1.47602),
+        mesh_unit="m",
+    ),
+    freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
+    time_stepping=fl.TimeStepping(max_pseudo_steps=500),
+    boundaries={
+        "1": fl.NoSlipWall(name="wing"),
+        "2": fl.SlipWall(name="symmetry"),
+        "3": fl.FreestreamBoundary(name="freestream"),
+    },
 )
 
-params = Flow360Params()
+case = volume_mesh.new_case("OM6wing", params)
+case = case.submit()
 
-params.geometry = Geometry(
-    refArea=1.15315084119231, momentLength=[1.47602, 0.801672958512342, 1.47602]
-)
-params.freestream = Freestream(
-    muRef=4.2925193198151646e-8, Mach=0.84, Temperature=288.15, alpha=3.06
-)
-params.time_stepping = TimeStepping(maxPseudoSteps=500)
-params.boundaries = {
-    "1": NoSlipWall(name="wing"),
-    "2": SlipWall(name="symmetry"),
-    "3": FreestreamBoundary(name="freestream"),
-}
-
-print(params.geometry)
-print(params.freestream)
-print(params.navier_stokes_solver)
-print(params.turbulence_model_solver)
-print(params.time_stepping)
-print(params.boundaries)
-
-case = Case.new("OM6wing", params, volumeMesh.id)
-case.submit()
-print(case)

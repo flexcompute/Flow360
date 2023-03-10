@@ -1,0 +1,515 @@
+"""
+Flow360 solver parameters
+"""
+from __future__ import annotations
+from typing import Literal, Any, Optional, List
+from functools import wraps
+import json
+import rich
+import yaml
+import numpy as np
+from pydantic import BaseModel
+from pydantic.fields import ModelField
+import pydantic as pd
+
+from .types import TYPE_TAG_STR
+from ..exceptions import FileError, ConfigError
+from ..log import log
+
+
+def export_to_flow360(func):
+    """wraps to_flow360_json() function to set correct
+
+    Parameters
+    ----------
+    func : function
+        to_flow360_json() function which exports JSON format for flow360
+
+    Returns
+    -------
+    func
+        wrapper
+    """
+
+    @wraps(func)
+    def wrapper_func(*args, **kwargs):
+        args[0].Config.will_export = True
+        try:
+            value = func(*args, **kwargs)
+        except:
+            args[0].Config.will_export = False
+            raise
+        return value
+
+    return wrapper_func
+
+
+class Flow360BaseModel(BaseModel):
+    """Base pydantic model that all Flow360 components inherit from.
+    Defines configuration for handling data structures
+    as well as methods for imporing, exporting, and hashing Flow360 objects.
+    For more details on pydantic base models, see:
+    `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`_
+    """
+
+    def __init__(self, filename: str = None, **kwargs):
+        if filename:
+            obj = self.from_file(filename=filename)
+            super().__init__(**obj.dict())
+        else:
+            super().__init__(**kwargs)
+
+        self.Config.will_export = False
+
+    def __init_subclass__(cls) -> None:
+        """Things that are done to each of the models."""
+
+        cls.add_type_field()
+        cls.generate_docstring()
+
+    class Config:  # pylint: disable=too-few-public-methods
+        """Sets config for all :class:`Flow360BaseModel` objects.
+
+        Configuration Options
+        ---------------------
+        allow_population_by_field_name : bool = True
+            Allow properties to stand in for fields(?).
+        arbitrary_types_allowed : bool = True
+            Allow types like numpy arrays.
+        extra : str = 'forbid'
+            Forbid extra kwargs not specified in model.
+        json_encoders : Dict[type, Callable]
+            Defines how to encode type in json file.
+        validate_all : bool = True
+            Validate default values just to be safe.
+        validate_assignment : bool
+            Re-validate after re-assignment of field in model.
+        """
+
+        arbitrary_types_allowed = True
+        validate_all = True
+        extra = "forbid"
+        validate_assignment = True
+        allow_population_by_field_name = True
+        json_encoders = {
+            np.ndarray: lambda x: tuple(x.tolist()),
+        }
+        allow_mutation = True
+        copy_on_model_validation = "none"
+        underscore_attrs_are_private = True
+        exclude_on_flow360_export: Optional[Any] = None
+        will_export: Optional[bool] = False
+        require_one_of: Optional[List[str]] = []
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def one_of(cls, values):
+        """root validator for require one of"""
+        if cls.Config.require_one_of:
+            set_values = [key for key, v in values.items() if v is not None]
+            intersection = list(set(set_values) & set(cls.Config.require_one_of))
+            if len(intersection) == 0:
+                raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
+        return values
+
+    def copy(self, **kwargs) -> Flow360BaseModel:
+        """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
+        if "deep" in kwargs and kwargs["deep"] is False:
+            raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
+        kwargs.update(dict(deep=True))
+        new_copy = BaseModel.copy(self, **kwargs)
+        return self.validate(new_copy.dict())
+
+    def help(self, methods: bool = False) -> None:
+        """Prints message describing the fields and methods of a :class:`Flow360BaseModel`.
+
+        Parameters
+        ----------
+        methods : bool = False
+            Whether to also print out information about object's methods.
+
+        Example
+        -------
+        >>> solver_params.help(methods=True) # doctest: +SKIP
+        """
+        rich.inspect(self, methods=methods)
+
+    @classmethod
+    def from_file(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+        """Loads a :class:`Flow360BaseModel` from .json, or .yaml file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml or .json file to load the :class:`Flow360BaseModel` from.
+        **parse_obj_kwargs
+            Keyword arguments passed to either pydantic's ``parse_obj`` function when loading model.
+
+        Returns
+        -------
+        :class:`Flow360BaseModel`
+            An instance of the component class calling `load`.
+
+        Example
+        -------
+        >>> simulation = Simulation.from_file(filename='folder/sim.json') # doctest: +SKIP
+        """
+        model_dict = cls.dict_from_file(filename=filename)
+        return cls.parse_obj(model_dict, **parse_obj_kwargs)
+
+    @classmethod
+    def dict_from_file(cls, filename: str) -> dict:
+        """Loads a dictionary containing the model from a .json or .yaml file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml or .json file to load the :class:`Flow360BaseModel` from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the model.
+
+        Example
+        -------
+        >>> params = Flow360Params.from_file(filename='folder/flow360.json') # doctest: +SKIP
+        """
+
+        if ".json" in filename:
+            return cls.dict_from_json(filename=filename)
+        if ".yaml" in filename:
+            return cls.dict_from_yaml(filename=filename)
+
+        raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+
+    def to_file(self, filename: str) -> None:
+        """Exports :class:`Flow360BaseModel` instance to .json or .yaml file
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .json or .yaml or file to save the :class:`Flow360BaseModel` to.
+
+        Example
+        -------
+        >>> params.to_file(filename='folder/flow360.json') # doctest: +SKIP
+        """
+
+        if ".json" in filename:
+            return self.to_json(filename=filename)
+        if ".yaml" in filename:
+            return self.to_yaml(filename=filename)
+
+        raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+
+    @classmethod
+    def from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+        """Load a :class:`Flow360BaseModel` from .json file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .json file to load the :class:`Flow360BaseModel` from.
+
+        Returns
+        -------
+        :class:`Flow360BaseModel`
+            An instance of the component class calling `load`.
+        **parse_obj_kwargs
+            Keyword arguments passed to pydantic's ``parse_obj`` method.
+
+        Example
+        -------
+        >>> params = Flow360Params.from_json(filename='folder/flow360.json') # doctest: +SKIP
+        """
+        model_dict = cls.dict_from_json(filename=filename)
+        return cls.parse_obj(model_dict, **parse_obj_kwargs)
+
+    @classmethod
+    def dict_from_json(cls, filename: str) -> dict:
+        """Load dictionary of the model from a .json file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .json file to load the :class:`Flow360BaseModel` from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the model.
+
+        Example
+        -------
+        >>> params_dict = Flow360Params.dict_from_json(filename='folder/flow360.json') # doctest: +SKIP
+        """
+        with open(filename, "r", encoding="utf-8") as json_fhandle:
+            model_dict = json.load(json_fhandle)
+        return model_dict
+
+    def to_json(self, filename: str) -> None:
+        """Exports :class:`Flow360BaseModel` instance to .json file
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .json file to save the :class:`Flow360BaseModel` to.
+
+        Example
+        -------
+        >>> params.to_json(filename='folder/flow360.json') # doctest: +SKIP
+        """
+        json_string = self.json(indent=4)
+        with open(filename, "w", encoding="utf-8") as file_handle:
+            file_handle.write(json_string)
+
+    @classmethod
+    def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+        """Loads :class:`Flow360BaseModel` from .yaml file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml file to load the :class:`Flow360BaseModel` from.
+        **parse_obj_kwargs
+            Keyword arguments passed to pydantic's ``parse_obj`` method.
+
+        Returns
+        -------
+        :class:`Flow360BaseModel`
+            An instance of the component class calling `from_yaml`.
+
+        Example
+        -------
+        >>> params = Flow360Params.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        """
+        model_dict = cls.dict_from_yaml(filename=filename)
+        return cls.parse_obj(model_dict, **parse_obj_kwargs)
+
+    @classmethod
+    def dict_from_yaml(cls, filename: str) -> dict:
+        """Load dictionary of the model from a .yaml file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml file to load the :class:`Flow360BaseModel` from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the model.
+
+        Example
+        -------
+        >>> params_dict = Flow360Params.dict_from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        """
+        with open(filename, "r", encoding="utf-8") as yaml_in:
+            model_dict = yaml.safe_load(yaml_in)
+        return model_dict
+
+    def to_yaml(self, filename: str) -> None:
+        """Exports :class:`Flow360BaseModel` instance to .yaml file.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml file to save the :class:`Flow360BaseModel` to.
+
+        Example
+        -------
+        >>> params.to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        """
+        json_string = self.json()
+        model_dict = json.loads(json_string)
+        with open(filename, "w+", encoding="utf-8") as file_handle:
+            yaml.dump(model_dict, file_handle, indent=4)
+
+    def _handle_export_exclude(self, exclude):
+        if exclude:
+            exclude = {TYPE_TAG_STR, *exclude}
+        else:
+            exclude = {TYPE_TAG_STR}
+
+        if self.Config.will_export:
+            if self.Config.exclude_on_flow360_export:
+                exclude = {*exclude, *self.Config.exclude_on_flow360_export}
+            self.Config.will_export = False
+        return exclude
+
+    def dict(self, *args, exclude=None, **kwargs) -> dict:
+        """Returns dict representation of the model.
+
+        Parameters
+        ----------
+
+        *args
+            Arguments passed to pydantic's ``dict`` method.
+
+        **kwargs
+            Keyword arguments passed to pydantic's ``dict`` method.
+
+        Returns
+        -------
+        dict
+            A formatted dict.
+
+        Example
+        -------
+        >>> params.dict() # doctest: +SKIP
+        """
+
+        exclude = self._handle_export_exclude(exclude)
+        return super().dict(*args, exclude=exclude, **kwargs)
+
+    def json(self, *args, exclude=None, **kwargs):
+        """Returns json representation of the model.
+
+        Parameters
+        ----------
+
+        *args
+            Arguments passed to pydantic's ``json`` method.
+
+        **kwargs
+            Keyword arguments passed to pydantic's ``json`` method.
+
+        Returns
+        -------
+        json
+            A formatted json.
+            Sets default vaules by_alias=True, exclude_none=True
+
+        Example
+        -------
+        >>> params.json() # doctest: +SKIP
+        """
+
+        exclude = self._handle_export_exclude(exclude)
+        return super().json(*args, by_alias=True, exclude_none=True, exclude=exclude, **kwargs)
+
+    @export_to_flow360
+    def to_flow360_json(self, return_json: bool = True):
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Parameters
+        ----------
+        return_json : bool, optional
+            whether to return value or return None, by default True
+
+        Returns
+        -------
+        json
+            If return_json==True, returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+        if return_json:
+            return self.json()
+        return None
+
+    # pylint: disable=unnecessary-dunder-call
+    def append(self, params: Flow360BaseModel, overwrite: bool = False):
+        """append parametrs to the model
+
+        Parameters
+        ----------
+        params : Flow360BaseModel
+            Flow360BaseModel parameters to be appended
+        overwrite : bool, optional
+            Whether to overwrite if key exists, by default False
+        """
+        additional_config = params.dict(exclude_unset=True, exclude_none=True)
+        for key, value in additional_config.items():
+            if self.__getattribute__(key) and not overwrite:
+                log.warning(
+                    f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
+                )
+                continue
+            self.__setattr__(key, value)
+
+    @classmethod
+    def add_type_field(cls) -> None:
+        """Automatically place "type" field with model name in the model field dictionary."""
+
+        value = cls.__name__
+        annotation = Literal[value]
+
+        tag_field = ModelField.infer(
+            name=TYPE_TAG_STR,
+            value=value,
+            annotation=annotation,
+            class_validators=None,
+            config=cls.__config__,
+        )
+        cls.__fields__[TYPE_TAG_STR] = tag_field
+
+    @classmethod
+    def generate_docstring(cls) -> str:
+        """Generates a docstring for a Flow360 mode and saves it to the __doc__ of the class."""
+
+        # store the docstring in here
+        doc = ""
+
+        # if the model already has a docstring, get the first lines and save the rest
+        original_docstrings = []
+        if cls.__doc__:
+            original_docstrings = cls.__doc__.split("\n\n")
+            class_description = original_docstrings.pop(0)
+            doc += class_description
+        original_docstrings = "\n\n".join(original_docstrings)
+
+        # create the list of parameters (arguments) for the model
+        doc += "\n\n    Parameters\n    ----------\n"
+        for field_name, field in cls.__fields__.items():
+            # ignore the type tag
+            if field_name == TYPE_TAG_STR:
+                continue
+
+            # get data type
+            data_type = field._type_display()  # pylint:disable=protected-access
+
+            # get default values
+            default_val = field.get_default()
+            if "=" in str(default_val):
+                # handle cases where default values are pydantic models
+                default_val = f"{default_val.__class__.__name__}({default_val})"
+                default_val = (", ").join(default_val.split(" "))
+
+            # make first line: name : type = default
+            default_str = "" if field.required else f" = {default_val}"
+            doc += f"    {field_name} : {data_type}{default_str}\n"
+
+            # get field metadata
+            field_info = field.field_info
+            doc += "        "
+
+            # add units (if present)
+            units = field_info.extra.get("units")
+            if units is not None:
+                if isinstance(units, (tuple, list)):
+                    unitstr = "("
+                    for unit in units:
+                        unitstr += str(unit)
+                        unitstr += ", "
+                    unitstr = unitstr[:-2]
+                    unitstr += ")"
+                else:
+                    unitstr = units
+                doc += f"[units = {unitstr}].  "
+
+            # add description
+            description_str = field_info.description
+            if description_str is not None:
+                doc += f"{description_str}\n"
+
+        # add in remaining things in the docs
+        if original_docstrings:
+            doc += "\n"
+            doc += original_docstrings
+
+        doc += "\n"
+        cls.__doc__ = doc

@@ -1,12 +1,19 @@
 from pylab import *
 
-from flow360.component.case import CaseList
+from flow360 import MyCases
 
 
-my_cases = CaseList()
-case = my_cases[0].to_case()
+my_cases = MyCases()
+
+for case in my_cases:
+    print(case)
+    if case.is_finished():
+        break
+    else:
+        print(f"Skipping case {case.name} because status={case.status}")
 
 print(case)
+print(case.params)
 
 # get residuals:
 residuals = case.results.residuals

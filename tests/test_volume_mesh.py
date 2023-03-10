@@ -3,8 +3,12 @@ from sys import exc_info
 
 import pytest
 
-from flow360.component.flow360_solver_params import (
+from flow360.component.volume_mesh import VolumeMesh, VolumeMeshList
+
+
+from flow360.component.flow360_params import (
     Flow360MeshParams,
+    MeshSlidingInterface,
     Flow360Params,
     MeshBoundary,
     NoSlipWall,
@@ -20,6 +24,10 @@ from flow360.component.volume_mesh import (
     UGRIDEndianness,
     VolumeMeshMeta,
 )
+from flow360.exceptions import ValueError
+
+
+from .utils import to_file_from_file_test, compare_to_ref
 
 from tests.data.volume_mesh_list import volume_mesh_list_raw
 
@@ -56,18 +64,11 @@ def test_get_no_slip_walls():
             "fluid/rightWing": NoSlipWall(),
         }
     )
+
+    to_file_from_file_test(param)
+    to_file_from_file_test(param.boundaries)
+
     walls = get_no_slip_walls(param)
-    assert walls
-    assert len(walls) == 3
-
-
-def test_get_walls_from_sliding_interfaces():
-    param = Flow360Params(
-        sliding_interfaces=SlidingInterface.parse_obj(
-            {"stationaryPatches": ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]}
-        )
-    )
-    walls = get_boundries_from_sliding_interfaces(param)
     assert walls
     assert len(walls) == 3
 
@@ -128,29 +129,38 @@ def test_mesh_filename_detection():
 
 def test_volume_mesh_list_with_incorrect_data():
     v = VolumeMeshMeta(**volume_mesh_list_raw[0])
-    assert v.status == "uploaded"
+    assert v.status.value == "uploaded"
     assert type(v.mesh_params) is Flow360MeshParams
     assert type(v.mesh_params.boundaries) is MeshBoundary
     assert v.mesh_params.boundaries.no_slip_walls == ["1", "wall"]
 
     v = VolumeMeshMeta(**volume_mesh_list_raw[1])
-    assert v.status == "uploaded"
+    assert v.status.value == "uploaded"
     assert type(v.mesh_params) is Flow360MeshParams
     assert type(v.mesh_params.boundaries) is MeshBoundary
     assert v.mesh_params.boundaries.no_slip_walls == ["4"]
 
     v = VolumeMeshMeta(**volume_mesh_list_raw[2])
-    assert v.status == "uploaded"
+    assert v.status.value == "uploaded"
     assert type(v.mesh_params) is Flow360MeshParams
     assert type(v.mesh_params.boundaries) is MeshBoundary
     assert v.mesh_params.boundaries.no_slip_walls == ["1"]
 
     item_incorrect1 = volume_mesh_list_raw[3]
     v = VolumeMeshMeta(**item_incorrect1)
-    assert v.status == "error"
+    assert v.status.value == "error"
     assert v.mesh_params is None
 
     item_incorrect2 = volume_mesh_list_raw[4]
     v = VolumeMeshMeta(**item_incorrect2)
-    assert v.status == "error"
+    assert v.status.value == "error"
     assert v.mesh_params is None
+
+
+def test_volume_mesh_json():
+    param = Flow360MeshParams("ref/flow360mesh/eg1.json")
+    assert param.boundaries.no_slip_walls[0] == "1"
+
+    for file in ["ref/flow360mesh/eg2.json", "ref/flow360mesh/eg3.json"]:
+        param = Flow360MeshParams(file)
+        compare_to_ref(param, file, content_only=True)
