@@ -1,7 +1,7 @@
 import os
 
 from flow360 import Env
-from flow360.component.flow360_solver_params import Flow360MeshParams, Flow360Params
+from flow360.component.flow360_params import Flow360MeshParams, Flow360Params
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.volume_mesh import (
     VolumeMesh,

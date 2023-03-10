@@ -1,13 +1,8 @@
 {
     "geometry" : {
-        "meshName" : "cylinder.cgns",
-        "endianness" : "big",
         "refArea" : 20.0,
         "momentCenter" : [0.0, 0.0, 0.0],
         "momentLength" : [1.0, 1.0, 1.0]
-    },
-    "runControl" : {
-        "restart" : false
     },
     "volumeOutput" : {
     "outputFormat" : "paraview",    

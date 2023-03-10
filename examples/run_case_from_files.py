@@ -1,18 +1,17 @@
-from flow360 import VolumeMesh, Case
-from flow360 import Flow360MeshParams, Flow360Params
+import flow360 as fl
 
-from testcases import OM6test
 
-OM6test.get_files()
+from flow360.examples import OM6wing
+
+OM6wing.get_files()
 
 # submit mesh using mesh JSON from file
-meshParams = Flow360MeshParams.from_file(OM6test.mesh_json)
-volumeMesh = VolumeMesh.from_file(OM6test.mesh_filename, meshParams, name="OM6wing-mesh")
-print(volumeMesh)
+volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
+volume_mesh = volume_mesh.submit()
+print(volume_mesh)
 
-
-# submit case using json file
-params = Flow360Params.from_file(OM6test.case_json)
-case = Case.new("OM6wing", params, volumeMesh.id)
-case.submit()
+# # submit case using json file
+params = fl.Flow360Params(OM6wing.case_json)
+case = fl.Case.new("OM6wing", params, volume_mesh.id)
+case = case.submit()
 print(case)

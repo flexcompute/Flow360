@@ -9,10 +9,10 @@ from pydantic import Extra, Field
 
 from flow360.cloud.http_util import http
 from flow360.cloud.s3_utils import S3TransferType
-from flow360.component.flow360_base_model import Flow360BaseModel
+from flow360.component.resource_base import Flow360ResourceBaseModel
 
 
-class SurfaceMesh(Flow360BaseModel, extra=Extra.allow):
+class SurfaceMesh(Flow360ResourceBaseModel, extra=Extra.allow):
     """
     Surface mesh component
     """

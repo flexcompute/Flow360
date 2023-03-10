@@ -1,0 +1,79 @@
+boundaries:
+    '1':
+        name: wing
+        type: NoSlipWall
+    '2':
+        name: symmetry
+        type: SlipWall
+    '3':
+        name: freestream
+        type: Freestream
+freestream:
+    Mach: 0.8404497144189707
+    Temperature: 288.15
+    alphaAngle: 3.06
+    betaAngle: 0.0
+    density: 1.225
+    speed:
+        unit: m/s
+        v: 286.0
+geometry:
+    meshUnit: m
+    momentLength:
+    - 1.47602
+    - 0.801672958512342
+    - 1.47602
+    refArea: 1.15315084119231
+navierStokesSolver:
+    linearIterations: 10
+sliceOutput:
+    outputFields:
+    - Cp
+    outputFormat: tecplot
+    slices:
+        x0:
+            outputFields:
+            - Mach
+            sliceNormal:
+            - 1
+            - 0
+            - 0
+            sliceOrigin:
+            - 0
+            - 0
+            - 0
+        y1:
+            outputFields:
+            - T
+            sliceNormal:
+            - 0
+            - 1
+            - 0
+            sliceOrigin:
+            - 2
+            - 1
+            - 0
+surfaceOutput:
+    outputFields:
+    - yPlus
+    - primitiveVars
+    outputFormat: tecplot
+    surfaces:
+        freestream:
+            outputFields:
+            - Cp
+            - Mach
+        symmetry:
+            outputFields:
+            - T
+            - heatFlux
+        wing:
+            outputFields:
+            - CfVec
+timeStepping:
+    timeStepSize: inf
+volumeOutput:
+    outputFields:
+    - Mach
+    - primitiveVars
+    outputFormat: tecplot

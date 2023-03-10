@@ -15,7 +15,6 @@ class RestApi:
         is_valid_uuid(id, ignore_none=True)
         self._id = id
         self._endpoint = endpoint
-        self._info = None
 
     def _url(self, method):
         url = f"{self._endpoint}"

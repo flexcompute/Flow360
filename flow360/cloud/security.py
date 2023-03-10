@@ -7,7 +7,7 @@ from os.path import expanduser
 import toml
 
 
-def api_key():
+def api_key(profile="default"):
     """
     Get the api key for the current environment.
     :return:
@@ -16,7 +16,7 @@ def api_key():
     apikey = os.environ.get("FLOW360_APIKEY", None)
 
     if apikey is None:
-        profile = os.environ.get("SIMCLOUD_PROFILE", "default")
+        profile = os.environ.get("SIMCLOUD_PROFILE", profile)
         if os.path.exists(f"{expanduser('~')}/.flow360/config.toml"):
             with open(
                 f"{expanduser('~')}/.flow360/config.toml", "r", encoding="utf-8"
