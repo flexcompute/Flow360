@@ -27,7 +27,9 @@ params = Flow360Params()
 params.geometry = Geometry(
     refArea=1.15315084119231, momentLength=[1.47602, 0.801672958512342, 1.47602]
 )
-params.freestream = Freestream(Reynolds=14.6e6, Mach=0.84, Temperature=288.15, alpha=3.06)
+params.freestream = Freestream(
+    muRef=4.2925193198151646e-8, Mach=0.84, Temperature=288.15, alpha=3.06
+)
 params.time_stepping = TimeStepping(maxPseudoSteps=500)
 params.boundaries = {
     "1": NoSlipWall(name="wing"),
