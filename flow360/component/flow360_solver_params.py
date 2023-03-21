@@ -97,7 +97,7 @@ class TimeStepping(BaseModel):
     Time stepping component
     """
 
-    physical_steps: Optional[int] = Field(alias="physicalSteps", default=1)
+    physical_steps: Optional[int] = Field(alias="physicalSteps")
     max_pseudo_steps: Optional[int] = Field(alias="maxPseudoSteps")
     time_step_size: Optional[Union[float, str]] = Field(alias="timeStepSize", default="inf")
     CFL: Optional[TimeSteppingCFL] = Field(default=TimeSteppingCFL())
