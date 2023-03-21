@@ -152,6 +152,8 @@ class Freestream(BaseModel):
 
     Reynolds: Optional[float] = Field()
     Mach: float = Field()
+    MachRef: Optional[float] = Field()
+    mu_ref: Optional[float] = Field(alias="muRef")
     Temperature: float
     alpha: float = Field(alias="alphaAngle", default=0)
     beta: float = Field(alias="betaAngle", default=0)
