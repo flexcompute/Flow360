@@ -4,6 +4,8 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/Flow360/pypi-publish.yml)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/Flow360)](https://pypi.python.org/pypi/flow360/)
 
+![](https://raw.githubusercontent.com/flexcompute/Flow360/main/img/Flow360-logo.svg)
+
 
 # How to use Flow360 python client
 
