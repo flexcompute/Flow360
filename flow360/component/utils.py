@@ -3,6 +3,7 @@ Utility functions
 """
 import uuid
 
+
 # pylint: disable=redefined-builtin
 def is_valid_uuid(id, ignore_none=False):
     """

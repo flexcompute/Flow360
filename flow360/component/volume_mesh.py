@@ -129,7 +129,6 @@ def get_boundaries_from_file(cgns_file: str, solver_version: str = None):
                     if section.attrs["label"].decode() != "ZoneBC_t":
                         continue
                     for bc_name, bc_zone in section.items():
-
                         if bc_zone.attrs["label"].decode() == "BC_t":
                             names.append(f"{zone_name}/{bc_name}")
 
