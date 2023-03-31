@@ -1,7 +1,7 @@
 # Flow360
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/flow360/test.yml?label=tests)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/Flow360/pypi-publish.yml)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/flow360/test.yml?label=tests)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/Flow360)](https://pypi.python.org/pypi/flow360/)
 
 ![](https://raw.githubusercontent.com/flexcompute/Flow360/main/img/Flow360-logo.svg)
