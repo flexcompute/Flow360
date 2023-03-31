@@ -1,7 +1,7 @@
 # Flow360
 
-![tests](https://github.com/flexcompute/Flow360/actions/workflows//test.yml/badge.svg)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/Flow360/[pypi-publish.yml)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/flow360/test.yml?label=tests)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/Flow360/pypi-publish.yml)
 ![PyPI](https://img.shields.io/pypi/v/Flow360)
 
 # How to use Flow360 python client
