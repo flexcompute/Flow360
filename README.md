@@ -26,13 +26,13 @@ You can set your *api-key* by the following methods:
 # Development
 ## setup
 0. clone repo
-1. Install poetry
+1. Install poetry ``pip install poetry``
 2. Install dependencies: ``poetry install``
 
 ## run examples
 ``poetry run python examples/case_results.py``
 
 ## check in
-1. ``poetry run pytest``
+1. ``poetry run pytest -rA``
 2. ``black .``
 3. ``pylint flow360 --rcfile .pylintrc``
