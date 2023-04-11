@@ -13,7 +13,6 @@ from ..cloud.rest_api import RestApi
 from .resource_base import (
     Flow360ResourceBaseModel,
     Flow360Resource,
-    Flow360Status,
     Flow360ResourceListBase,
     ResourceDraft,
     before_submit_only,
@@ -98,7 +97,6 @@ class CaseMeta(Flow360ResourceBaseModel):
 
     id: str = Field(alias="caseId")
     case_mesh_id: str = Field(alias="caseMeshId")
-    status: Flow360Status
     parent_id: str = Field(alias="parentId")
 
     def to_case(self) -> Case:
@@ -239,7 +237,8 @@ class CaseDraft(CaseBase, ResourceDraft):
             is_object_cloud_resource(self.other_case)
             is_object_cloud_resource(self.parent_case)
 
-    def validator_api(self, params: Flow360Params, volume_mesh_id):
+    @classmethod
+    def validator_api(cls, params: Flow360Params, volume_mesh_id):
         """
         validation api: validates case parameters before submitting
         """

@@ -25,7 +25,12 @@ def version_parse(str):
     return Flow360Version(str.strip("lgte"))
 
 
-class url(ABC):
+class url_base(ABC):
+    @property
+    @abstractmethod
+    def geometry(self):
+        pass
+
     @property
     @abstractmethod
     def mesh(self):
@@ -46,6 +51,14 @@ class url(ABC):
     def case_yaml(self):
         pass
 
+    @abstractmethod
+    def surface_json(self):
+        pass
+
+    @abstractmethod
+    def surface_yaml(self):
+        pass
+
 
 class BaseTestCase(ABC):
     _solver_version = None
@@ -57,7 +70,7 @@ class BaseTestCase(ABC):
 
     @property
     @abstractstaticmethod
-    def url(cls) -> url:
+    def url(cls) -> url_base:
         pass
 
     @classmethod
@@ -102,6 +115,11 @@ class BaseTestCase(ABC):
 
     @classmethod
     @property
+    def _geometry_filename(cls):
+        return cls._real_path(os.path.basename(cls.url.geometry))
+
+    @classmethod
+    @property
     def _mesh_filename(cls):
         return cls._real_path(os.path.basename(cls.url.mesh))
 
@@ -124,10 +142,27 @@ class BaseTestCase(ABC):
         return cls._real_path(versionPrefix, os.path.basename(cls.url.case_yaml))
 
     @classmethod
+    @property
+    def _surface_json(cls):
+        versionPrefix = cls._get_version_prefix()
+        return cls._real_path(versionPrefix, os.path.basename(cls.url.surface_json))
+
+    @classmethod
+    @property
+    def _volume_json(cls):
+        versionPrefix = cls._get_version_prefix()
+        return cls._real_path(versionPrefix, os.path.basename(cls.url.volume_json))
+
+    @classmethod
     def is_file_downloaded(cls, file):
         if not os.path.exists(file):
             raise RuntimeError(f"File not found. Run get_files() first to download files.")
         return file
+
+    @classmethod
+    @property
+    def geometry(cls):
+        return cls.is_file_downloaded(cls._geometry_filename)
 
     @classmethod
     @property
@@ -150,16 +185,41 @@ class BaseTestCase(ABC):
         return cls.is_file_downloaded(cls._case_yaml)
 
     @classmethod
+    @property
+    def surface_json(cls):
+        return cls.is_file_downloaded(cls._surface_json)
+
+    @classmethod
+    @property
+    def volume_json(cls):
+        return cls.is_file_downloaded(cls._volume_json)
+
+    @classmethod
     def set_version(cls, version):
         cls._solver_version = version
 
     @classmethod
     def get_files(cls):
-        if not os.path.exists(cls._mesh_filename):
-            download(cls.url.mesh, cls._mesh_filename)
-        if not os.path.exists(cls._mesh_json):
-            download(cls.url.mesh_json, cls._mesh_json)
-        if not os.path.exists(cls._case_json):
-            download(cls.url.case_json, cls._case_json)
-        if not os.path.exists(cls._case_yaml):
-            download(cls.url.case_yaml, cls._case_yaml)
+        try:
+            if not os.path.exists(cls._mesh_filename):
+                download(cls.url.mesh, cls._mesh_filename)
+        except AttributeError:
+            pass
+
+        try:
+            if not os.path.exists(cls._mesh_json):
+                download(cls.url.mesh_json, cls._mesh_json)
+        except AttributeError:
+            pass
+
+        try:
+            if not os.path.exists(cls._case_json):
+                download(cls.url.case_json, cls._case_json)
+        except AttributeError:
+            pass
+
+        try:
+            if not os.path.exists(cls._case_yaml):
+                download(cls.url.case_yaml, cls._case_yaml)
+        except AttributeError:
+            pass

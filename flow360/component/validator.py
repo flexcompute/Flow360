@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Union
 
 from .flow360_params import Flow360Params
+from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from ..cloud.rest_api import RestApi
 from ..exceptions import ValueError as FlValueError
 from ..exceptions import ValidationError
@@ -20,9 +21,9 @@ class Validator(Enum):
 
     def _get_url(self):
         if self is Validator.VOLUME_MESH:
-            return "validator/volume_mesh/validate"
+            return "validator/volumemesh/validate"
         if self is Validator.SURFACE_MESH:
-            return "validator/surface_mesh/validate"
+            return "validator/surfacemesh/validate"
         if self is Validator.CASE:
             return "validator/case/validate"
 
@@ -30,13 +31,16 @@ class Validator(Enum):
 
     # pylint: disable=anomalous-backslash-in-string
     def validate(
-        self, params: Union[Flow360Params, dict], solver_version: str = None, mesh_id=None
+        self,
+        params: Union[Flow360Params, SurfaceMeshingParams, VolumeMeshingParams],
+        solver_version: str = None,
+        mesh_id=None,
     ):
         """API validator
 
         Parameters
         ----------
-        params : Union[Flow360Params, dict]
+        params : Union[Flow360Params, SurfaceMeshingParams]
             flow360 parameters to validate
         solver_version : str, optional
             solver version, by default None
@@ -55,8 +59,17 @@ class Validator(Enum):
         ValidationError
             when validation API fails
         """
-        if not isinstance(params, Flow360Params):
-            raise FlValueError("params must be instance of Flow360Params")
+        if (
+            not isinstance(params, Flow360Params)
+            and not isinstance(params, SurfaceMeshingParams)
+            and not isinstance(params, VolumeMeshingParams)
+        ):
+            raise FlValueError(
+                f"""
+                params must be instance of [Flow360Params, SurfaceMeshingParams, VolumeMeshingParams,
+                but {params}, type={type(params)} got.
+                """
+            )
 
         api = RestApi(self._get_url())
         body = {"jsonConfig": params.to_flow360_json(), "version": solver_version}

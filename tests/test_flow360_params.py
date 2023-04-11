@@ -87,6 +87,46 @@ def test_case_boundary():
             }
         )
 
+    with pytest.raises(ValidationError):
+        param = Flow360Params.parse_raw(
+            """
+            {
+                "boundaries": {
+                    "fluid/fuselage": {
+                        "type": "UnsupportedBC"
+                    },
+                    "fluid/leftWing": {
+                        "type": "NoSlipWall"
+                    },
+                    "fluid/rightWing": {
+                        "type": "NoSlipWall"
+                    } 
+                }
+            }
+            """
+        )
+        print(param)
+
+    param = Flow360Params.parse_raw(
+        """
+        {
+            "boundaries": {
+                "fluid/fuselage": {
+                    "type": "SlipWall"
+                },
+                "fluid/leftWing": {
+                    "type": "NoSlipWall"
+                },
+                "fluid/rightWing": {
+                    "type": "NoSlipWall"
+                } 
+            }
+        }
+        """
+    )
+
+    assert param
+
     boundaries = fl.Boundaries(
         wing=NoSlipWall(), symmetry=SlipWall(), freestream=FreestreamBoundary()
     )

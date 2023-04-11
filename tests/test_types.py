@@ -67,9 +67,18 @@ def test_size_correct():
     a = Model(size=(1, 1, 1))
 
 
+def test_size_correct1():
+    a = Model(size=[1, 1, 1])
+
+
 def test_size_incorrect():
     with pytest.raises(ValidationError):
         a = Model(size=(0, 0, 0))
+
+
+def test_size_incorrect1():
+    with pytest.raises(ValidationError):
+        a = Model(size=[0, 0, 0])
 
 
 def test_size_incorrect2():
@@ -80,3 +89,8 @@ def test_size_incorrect2():
 def test_size_correct3():
     with pytest.raises(ValidationError):
         a = Model(size=(1, 1, 1, 1))
+
+
+def test_size_correct4():
+    with pytest.raises(ValidationError):
+        a = Model(size=[1, 1, 1, 1])

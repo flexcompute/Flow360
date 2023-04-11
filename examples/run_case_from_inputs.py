@@ -23,4 +23,3 @@ params = fl.Flow360Params(
 
 case = volume_mesh.new_case("OM6wing", params)
 case = case.submit()
-

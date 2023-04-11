@@ -1,7 +1,7 @@
 """ Defines 'types' that various fields can be """
 
-from typing import Tuple, Union, List, Optional, Literal
-from typing_extensions import Annotated
+from typing import Tuple, Union, List, Optional
+from typing_extensions import Annotated, Literal
 
 import pydantic as pd
 from ..exceptions import ValidationError
@@ -16,6 +16,7 @@ def annotate_type(UnionType):  # pylint:disable=invalid-name
 
 
 PositiveFloat = pd.PositiveFloat
+NonNegativeFloat = pd.NonNegativeFloat
 PositiveInt = pd.PositiveInt
 NonNegativeInt = pd.NonNegativeInt
 Size = Tuple[PositiveFloat, PositiveFloat, PositiveFloat]

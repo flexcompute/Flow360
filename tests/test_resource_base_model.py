@@ -21,19 +21,23 @@ def test_status():
 
 
 def test_base_model():
-    model = Flow360ResourceBaseModel(status="completed", name="name", userId="userId", deleted=True)
+    model = Flow360ResourceBaseModel(
+        status="completed", name="name", userId="userId", deleted=True, id="0"
+    )
     assert model.status.is_final()
 
-    model = Flow360ResourceBaseModel(status="running", name="name", userId="userId", deleted=True)
+    model = Flow360ResourceBaseModel(
+        status="running", name="name", userId="userId", deleted=True, id="0"
+    )
     assert not model.status.is_final()
 
     model = Flow360ResourceBaseModel.parse_obj(
-        {"status": "completed", "name": "name", "userId": "userId", "deleted": True}
+        {"status": "completed", "name": "name", "userId": "userId", "deleted": True, "id": "0"}
     )
     assert model.status.is_final()
 
     model = Flow360ResourceBaseModel.parse_obj(
-        {"status": "running", "name": "name", "userId": "userId", "deleted": True}
+        {"status": "running", "name": "name", "userId": "userId", "deleted": True, "id": "0"}
     )
     assert not model.status.is_final()
 
