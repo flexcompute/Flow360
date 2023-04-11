@@ -3,11 +3,10 @@ Volume mesh component
 """
 from __future__ import annotations
 import os.path
-import json
 from enum import Enum
 from typing import Optional, Union, List, Iterator
 import numpy as np
-from pydantic import Extra, Field, validator, ValidationError
+from pydantic import Extra, Field, validator
 
 from ..cloud.s3_utils import S3TransferType
 from ..cloud.rest_api import RestApi
@@ -16,9 +15,7 @@ from .resource_base import (
     Flow360ResourceBaseModel,
     Flow360Resource,
     Flow360ResourceListBase,
-    Flow360Status,
     ResourceDraft,
-    on_cloud_resource_only,
 )
 from .flow360_params import (
     Flow360MeshParams,
@@ -26,8 +23,10 @@ from .flow360_params import (
     NoSlipWall,
     _GenericBoundaryWrapper,
 )
-
+from .meshing.params import VolumeMeshingParams
 from .case import Case, CaseDraft
+from .params_base import params_generic_validator
+from .validator import Validator
 
 from ..log import log
 from ..exceptions import ValueError as FlValueError
@@ -306,7 +305,6 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
 
     id: str = Field(alias="meshId")
     name: str = Field(alias="meshName")
-    status: Flow360Status
     created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
     mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
@@ -320,20 +318,7 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
         """
         validator for mesh_params
         """
-        params = value
-        if isinstance(value, str):
-            try:
-                params = json.loads(value)
-            except json.decoder.JSONDecodeError:
-                return None
-        try:
-            Flow360MeshParams(**params)
-        except ValidationError:
-            return None
-        except TypeError:
-            return None
-
-        return params
+        return params_generic_validator(value, Flow360MeshParams)
 
     @validator("endianness", pre=True)
     def init_endianness(cls, value):
@@ -368,21 +353,22 @@ class VolumeMeshBase:
 
 class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
     """
-    Volume mesh component
+    Volume mesh draft component (before submit)
     """
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        file_name: str,
-        params: Flow360MeshParams,
+        file_name: str = None,
+        params: Union[Flow360MeshParams, VolumeMeshingParams] = None,
         name: str = None,
+        surface_mesh_id=None,
         tags: List[str] = None,
         solver_version=None,
         endianess: UGRIDEndianness = None,
         isascii: bool = False,
     ):
-        if not os.path.exists(file_name):
+        if file_name is not None and not os.path.exists(file_name):
             raise FlFileError(f"{file_name} not found.")
 
         if endianess is not None:
@@ -400,69 +386,40 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         # if not params or not isinstance(params, Flow360MeshParams):
         #     raise ValueError(f'params={params} are not of type Flow360MeshParams')
 
-        if name is None:
+        if name is None and file_name is not None:
             name = os.path.splitext(os.path.basename(file_name))[0]
 
         self.file_name = file_name
         self.name = name
+        self.surface_mesh_id = surface_mesh_id
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
 
-    # pylint: disable=too-many-arguments
-    # @classmethod
-    # def from_surface_mesh(
-    #     cls,
-    #     volume_mesh_name: str,
-    #     surface_mesh_id: str,
-    #     config_file: str,
-    #     tags: [str] = None,
-    #     solver_version=None,
-    # ):
-    #     """
-    #     Create volume mesh from surface mesh
-    #     :param volume_mesh_name:
-    #     :param surface_mesh_id:
-    #     :param config_file:
-    #     :param tags:
-    #     :param solver_version:
-    #     :return:
-    #     """
-    #     assert volume_mesh_name
-    #     assert os.path.exists(config_file)
-    #     assert surface_mesh_id
-    #     with open(config_file, "r", encoding="utf-8") as config_f:
-    #         json_content = json.load(config_f)
-    #     body = {
-    #         "name": volume_mesh_name,
-    #         "tags": tags,
-    #         "surfaceMeshId": surface_mesh_id,
-    #         "config": json.dumps(json_content),
-    #         "format": "cgns",
-    #     }
+    def _submit_from_surface(self):
+        self.validator_api(self.params, solver_version=self.solver_version)
+        body = {
+            "name": self.name,
+            "tags": self.tags,
+            "surfaceMeshId": self.surface_mesh_id,
+            "config": self.params.to_flow360_json(),
+            "format": "cgns",
+        }
 
-    #     if solver_version:
-    #         body["solverVersion"] = solver_version
+        if self.solver_version:
+            body["solverVersion"] = self.solver_version
 
-    #     resp = http.post("volumemeshes", body)
-    #     if resp:
-    #         return cls(**resp)
-    #     return None
+        resp = RestApi(self._endpoint).post(body)
+        if not resp:
+            return None
+
+        info = VolumeMeshMeta(**resp)
+        self._id = info.id
+        mesh = VolumeMesh(self.id)
+        return mesh
 
     # pylint: disable=protected-access
-    def submit(self, progress_callback=None) -> VolumeMesh:
-        """submit mesh to cloud
-
-        Parameters
-        ----------
-        progress_callback : callback, optional
-            Use for custom progress bar, by default None
-
-        Returns
-        -------
-        VolumeMesh
-            VolumeMesh object with id
-        """
+    def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
         compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
@@ -480,7 +437,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
             "meshEndianness": endianness.value,
         }
         if self.params:
-            body["meshParams"] = self.params.json()
+            body["meshParams"] = self.params.to_flow360_json()
 
         if self.solver_version:
             body["solverVersion"] = self.solver_version
@@ -497,6 +454,38 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         mesh._complete_upload(remote_file_name)
         return mesh
 
+    def submit(self, progress_callback=None) -> VolumeMesh:
+        """submit mesh to cloud
+
+        Parameters
+        ----------
+        progress_callback : callback, optional
+            Use for custom progress bar, by default None
+
+        Returns
+        -------
+        VolumeMesh
+            VolumeMesh object with id
+        """
+        print(self.surface_mesh_id, self.name, self.params, self.file_name)
+
+        if self.file_name is not None:
+            return self._submit_upload_mesh(progress_callback)
+
+        if self.surface_mesh_id is not None and self.name is not None and self.params is not None:
+            return self._submit_from_surface()
+
+        raise FlValueError(
+            "You must provide volume mesh file for upload or surface mesh Id with meshing parameters."
+        )
+
+    @classmethod
+    def validator_api(cls, params: VolumeMeshingParams, solver_version=None):
+        """
+        validation api: validates surface meshing parameters before submitting
+        """
+        return Validator.VOLUME_MESH.validate(params, solver_version=solver_version)
+
 
 class VolumeMesh(VolumeMeshBase, Flow360Resource):
     """
@@ -507,7 +496,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         if (mesh_id is None and meta_info is None) or (
             mesh_id is not None and meta_info is not None
         ):
-            raise ValueError("You must provide case_id OR meta_info to constructor.")
+            raise ValueError("You must provide mesh_id OR meta_info to constructor.")
 
         if meta_info is not None:
             mesh_id = meta_info.id
@@ -525,31 +514,29 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         if meta_info is not None:
             self._info = meta_info
 
-        self._params = None
+        self.__mesh_params = None
 
     @property
     def info(self) -> VolumeMeshMeta:
         return super().info
 
     @property
-    def params(self) -> Flow360MeshParams:
+    def _mesh_params(self) -> Flow360MeshParams:
         """
         returns mesh params
         """
-        if self._params is None:
-            # print(self.get())
-            self._params = self.info.mesh_params
-            print(self._params)
-        return self._params
+        if self.__mesh_params is None:
+            self.__mesh_params = self.info.mesh_params
+        return self.__mesh_params
 
     @property
     def no_slip_walls(self):
         """
         returns mesh no_slip_walls
         """
-        if self.params is None:
+        if self._mesh_params is None:
             return None
-        return self.params.boundaries.no_slip_walls
+        return self._mesh_params.boundaries.no_slip_walls
 
     @property
     def all_boundaries(self):
@@ -636,47 +623,6 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         """
         return cls(mesh_id)
 
-    # pylint: disable=too-many-arguments
-    # @classmethod
-    # def from_surface_mesh(
-    #     cls,
-    #     volume_mesh_name: str,
-    #     surface_mesh_id: str,
-    #     config_file: str,
-    #     tags: [str] = None,
-    #     solver_version=None,
-    # ):
-    #     """
-    #     Create volume mesh from surface mesh
-    #     :param volume_mesh_name:
-    #     :param surface_mesh_id:
-    #     :param config_file:
-    #     :param tags:
-    #     :param solver_version:
-    #     :return:
-    #     """
-    #     assert volume_mesh_name
-    #     assert os.path.exists(config_file)
-    #     assert surface_mesh_id
-    #     with open(config_file, "r", encoding="utf-8") as config_f:
-    #         json_content = json.load(config_f)
-    #     body = {
-    #         "name": volume_mesh_name,
-    #         "tags": tags,
-    #         "surfaceMeshId": surface_mesh_id,
-    #         "config": json.dumps(json_content),
-    #         "format": "cgns",
-    #     }
-
-    #     if solver_version:
-    #         body["solverVersion"] = solver_version
-
-    #     resp = http.post("volumemeshes", body)
-    #     if resp:
-    #         return cls(**resp)
-    #     return None
-
-    @on_cloud_resource_only
     def _remote_file_name(self, mesh_format=None, compression=None, endianness=None):
         """
         mesh filename on cloud
@@ -703,7 +649,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         isascii: bool = False,
     ) -> VolumeMeshDraft:
         """
-        Create volume mesh from ugrid file
+        Upload volume mesh from file
         :param volume_mesh_name:
         :param file_name:
         :param params:
@@ -712,7 +658,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         :return:
         """
 
-        new_mesh = VolumeMeshDraft(
+        return VolumeMeshDraft(
             file_name=file_name,
             name=name,
             tags=tags,
@@ -722,7 +668,26 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
             isascii=isascii,
         )
 
-        return new_mesh
+    @classmethod
+    def new(
+        cls,
+        name: str,
+        params: VolumeMeshingParams,
+        surface_mesh_id,
+        tags: List[str] = None,
+        solver_version=None,
+    ) -> VolumeMeshDraft:
+        """
+        Create volume mesh from surface mesh
+        """
+
+        return VolumeMeshDraft(
+            name=name,
+            surface_mesh_id=surface_mesh_id,
+            solver_version=solver_version,
+            params=params,
+            tags=tags,
+        )
 
     def new_case(
         self,
@@ -758,7 +723,6 @@ class VolumeMeshList(Flow360ResourceListBase):
             from_cloud=from_cloud,
             include_deleted=include_deleted,
             limit=limit,
-            endpoint="volumemeshes",
             resourceClass=VolumeMesh,
         )
 

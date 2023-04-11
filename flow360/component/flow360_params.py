@@ -2,11 +2,11 @@
 Flow360 solver parameters
 """
 from __future__ import annotations
-from typing import Dict, List, Optional, Union, Literal
+from typing import Dict, List, Optional, Union
 from enum import Enum
 import math
-import json
 from abc import ABC
+from typing_extensions import Literal
 import pydantic as pd
 
 from .types import (
@@ -21,7 +21,7 @@ from .types import (
     Velocity,
     TimeStep,
 )
-from .params_base import Flow360BaseModel, export_to_flow360
+from .params_base import Flow360BaseModel, Flow360SortableBaseModel, export_to_flow360
 from .utils import beta_feature, _get_value_or_none
 from .constants import constants
 from ..exceptions import ValidationError, ConfigError, Flow360NotImplementedError
@@ -67,27 +67,27 @@ class Boundary(ABC, Flow360BaseModel):
 class NoSlipWall(Boundary):
     """No slip wall boundary"""
 
-    type: str = "NoSlipWall"
+    type = pd.Field("NoSlipWall", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
 
-    type = "SlipWall"
+    type = pd.Field("SlipWall", const=True)
 
 
 class FreestreamBoundary(Boundary):
     """Freestream boundary"""
 
-    type = "Freestream"
+    type = pd.Field("Freestream", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
-    type = "IsothermalWall"
+    type = pd.Field("IsothermalWall", const=True)
     Temperature: Union[PositiveFloat, str]
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
@@ -95,21 +95,21 @@ class IsothermalWall(Boundary):
 class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
-    type = "SubsonicOutflowPressure"
+    type = pd.Field("SubsonicOutflowPressure", const=True)
     staticPressureRatio: PositiveFloat
 
 
 class SubsonicOutflowMach(Boundary):
     """SubsonicOutflowMach boundary"""
 
-    type = "SubsonicOutflowMach"
+    type = pd.Field("SubsonicOutflowMach", const=True)
     Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
 class SubsonicInflow(Boundary):
     """SubsonicInflow boundary"""
 
-    type = "SubsonicInflow"
+    type = pd.Field("SubsonicInflow", const=True)
     totalPressureRatio: PositiveFloat
     totalTemperatureRatio: PositiveFloat
     rampSteps: PositiveInt
@@ -118,15 +118,15 @@ class SubsonicInflow(Boundary):
 class SlidingInterfaceBoundary(Boundary):
     """SlidingInterface boundary"""
 
-    type = "SlidingInterface"
+    type = pd.Field("SlidingInterface", const=True)
 
 
 class WallFunction(Boundary):
     """WallFunction boundary"""
 
-    type = "WallFunction"
+    type = pd.Field("WallFunction", const=True)
 
-    @beta_feature(type)
+    @beta_feature(type.default)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -134,14 +134,14 @@ class WallFunction(Boundary):
 class MassInflow(Boundary):
     """MassInflow boundary"""
 
-    type = "MassInflow"
+    type = pd.Field("MassInflow", const=True)
     massFlowRate: PositiveFloat
 
 
 class MassOutflow(Boundary):
     """MassOutflow boundary"""
 
-    type = "MassOutflow"
+    type = pd.Field("MassOutflow", const=True)
     massFlowRate: PositiveFloat
 
 
@@ -503,16 +503,11 @@ class TimeStepping(Flow360BaseModel):
         return value
 
 
-def json_dumps(v, *args, **kwargs):
-    """custom json dump with sort_keys=True"""
-    return json.dumps(v, sort_keys=True, *args, **kwargs)
-
-
 class _GenericBoundaryWrapper(Flow360BaseModel):
     v: BoundaryType
 
 
-class Boundaries(Flow360BaseModel):
+class Boundaries(Flow360SortableBaseModel):
     """:class:`Boundaries` class for setting up Boundaries
 
     Parameters
@@ -553,11 +548,6 @@ class Boundaries(Flow360BaseModel):
                     f"{v} (type={type(v)}) is not any of supported boundary types."
                 ) from exc
         return values
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        extra = "allow"
-        json_dumps = json_dumps
 
 
 class Geometry(Flow360BaseModel):

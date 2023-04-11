@@ -55,8 +55,9 @@ class Flow360ResourceBaseModel(BaseModel):
     Flow360 base Model
     """
 
-    name: str
+    name: str = Field()
     user_id: str = Field(alias="userId")
+    id: str = Field()
     solver_version: Union[str, None] = Field(alias="solverVersion")
     status: Flow360Status
     tags: Optional[List[str]]
@@ -259,7 +260,6 @@ class Flow360ResourceListBase(list, RestApi):
         from_cloud: bool = True,
         include_deleted: bool = False,
         limit: int = 100,
-        endpoint=None,
         resourceClass: Flow360Resource = None,
     ):
         if from_cloud:

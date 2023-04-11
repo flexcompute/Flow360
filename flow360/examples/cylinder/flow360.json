@@ -53,15 +53,12 @@
 		]
 	},
 	"navierStokesSolver": {
-		"tolerance": 1e-9,
+		"absoluteTolerance": 1e-9,
 		"linearIterations": 25,
 		"kappaMUSCL": -1
 	},
 	"turbulenceModelSolver": {
-		"modelType": "None",
-		"tolerance": 1e-8,
-		"linearIterations": 15,
-		"kappaMUSCL": -1
+		"modelType": "None"
 	},
 	"freestream": {
 		"Reynolds": 50,

@@ -2,9 +2,10 @@
 Flow360 solver parameters
 """
 from __future__ import annotations
-from typing import Literal, Any, Optional, List
+from typing import Any, Optional, List
 from functools import wraps
 import json
+from typing_extensions import Literal
 import rich
 import yaml
 import numpy as np
@@ -13,8 +14,42 @@ from pydantic.fields import ModelField
 import pydantic as pd
 
 from .types import TYPE_TAG_STR
-from ..exceptions import FileError, ConfigError
+from ..exceptions import FileError, ConfigError, ValidationError
 from ..log import log
+
+
+def json_dumps(value, *args, **kwargs):
+    """custom json dump with sort_keys=True"""
+    return json.dumps(value, sort_keys=True, *args, **kwargs)
+
+
+# pylint: disable=invalid-name
+def params_generic_validator(value, ExpectedParamsType):
+    """generic validator for params comming from webAPI
+
+    Parameters
+    ----------
+    value : dict
+        value to validate
+    ExpectedParamsType : SurfaceMeshingParams, Flow360MeshParams
+        expected type of params
+    """
+    params = value
+    if isinstance(value, str):
+        try:
+            params = json.loads(value)
+        except json.decoder.JSONDecodeError:
+            return None
+    try:
+        ExpectedParamsType(**params)
+    except ValidationError:
+        return None
+    except pd.ValidationError:
+        return None
+    except TypeError:
+        return None
+
+    return params
 
 
 def export_to_flow360(func):
@@ -112,12 +147,12 @@ class Flow360BaseModel(BaseModel):
                 raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
         return values
 
-    def copy(self, **kwargs) -> Flow360BaseModel:
+    def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
         if "deep" in kwargs and kwargs["deep"] is False:
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
         kwargs.update(dict(deep=True))
-        new_copy = BaseModel.copy(self, **kwargs)
+        new_copy = BaseModel.copy(self, update=update, **kwargs)
         return self.validate(new_copy.dict())
 
     def help(self, methods: bool = False) -> None:
@@ -513,3 +548,12 @@ class Flow360BaseModel(BaseModel):
 
         doc += "\n"
         cls.__doc__ = doc
+
+
+class Flow360SortableBaseModel(Flow360BaseModel):
+    """:class:`Flow360SortableBaseModel` class for setting up parameters by names, eg. boundary names"""
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        extra = "allow"
+        json_dumps = json_dumps
