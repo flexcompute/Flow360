@@ -13,7 +13,7 @@ class datafiles:
     boundaries = os.path.join(here, "boundaries.yaml")
 
 
-# submit mesh using mesh JSON from file
+# submit mesh
 volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
 volume_mesh = volume_mesh.submit()
 print(volume_mesh)

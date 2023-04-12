@@ -3,7 +3,7 @@ from flow360.examples import Cylinder
 
 Cylinder.get_files()
 
-# submit mesh using mesh JSON from file
+# submit mesh
 volume_mesh = fl.VolumeMesh.from_file(Cylinder.mesh_filename, name="cylinder-mesh")
 volume_mesh = volume_mesh.submit()
 print(volume_mesh)
