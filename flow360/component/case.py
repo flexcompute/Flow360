@@ -21,6 +21,7 @@ from .resource_base import (
 from .flow360_params import Flow360Params
 from .utils import is_valid_uuid
 from .validator import Validator
+from ..log import log
 
 
 class CaseBase:
@@ -312,17 +313,17 @@ class Case(CaseBase, Flow360Resource):
         """
         return self._results
 
-    def download_log(self, log, to_file=".", keep_folder: bool = True):
+    def download_log(self, log_file, to_file=".", keep_folder: bool = True):
         """
         Download log
-        :param log:
+        :param log_file:
         :param to_file: file name on local disk, could be either folder or file name.
         :param keep_folder: If true, the downloaded file will be put in the same folder as the file on cloud. Only work
         when file_name is a folder name.
         :return:
         """
 
-        self.download_file(f"logs/{log.value}", to_file, keep_folder)
+        self.download_file(f"logs/{log_file.value}", to_file, keep_folder)
 
     def is_steady(self):
         """
@@ -725,9 +726,9 @@ class CaseResults:
             except CloudFileNotFoundError as err:
                 if not self._case.has_bet_disks():
                     if bet_forces:
-                        print("Case does not have any BET disks.")
+                        log.warning("Case does not have any BET disks.")
                 else:
-                    print("A problem occured when trying to download bet disk forces.")
+                    log.error("A problem occured when trying to download bet disk forces.")
                     raise err
 
         if actuator_disk_output or all:
@@ -736,9 +737,9 @@ class CaseResults:
             except CloudFileNotFoundError as err:
                 if not self._case.has_actuator_disks():
                     if actuator_disk_output:
-                        print("Case does not have any actuator disks.")
+                        log.warning("Case does not have any actuator disks.")
                 else:
-                    print("A problem occured when trying to download actuator disk results")
+                    log.error("A problem occured when trying to download actuator disk results")
                     raise err
 
 

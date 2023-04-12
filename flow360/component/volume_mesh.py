@@ -157,14 +157,9 @@ def validate_cgns(
     assert cgns_file
     assert params
     boundaries_in_file = get_boundaries_from_file(cgns_file, solver_version)
-
     boundaries_in_params = get_no_slip_walls(params) + get_boundries_from_sliding_interfaces(params)
-    print(get_no_slip_walls(params), boundaries_in_params)
-
     boundaries_in_file = set(boundaries_in_file)
     boundaries_in_params = set(boundaries_in_params)
-
-    print(boundaries_in_file, boundaries_in_params)
 
     if not boundaries_in_file.issuperset(boundaries_in_params):
         raise FlValueError(
@@ -467,7 +462,6 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         VolumeMesh
             VolumeMesh object with id
         """
-        print(self.surface_mesh_id, self.name, self.params, self.file_name)
 
         if self.file_name is not None:
             return self._submit_upload_mesh(progress_callback)
