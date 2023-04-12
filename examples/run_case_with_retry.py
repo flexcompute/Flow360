@@ -3,7 +3,7 @@ from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-# submit mesh with manual configuration
+# submit mesh
 volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
 volume_mesh = volume_mesh.submit()
 print(volume_mesh)
