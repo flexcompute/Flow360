@@ -10,7 +10,13 @@
 # How to use Flow360 python client
 
 ## install
+### Using pip (recommended)
 ``pip install flow360``
+
+### install pre-release version
+``pip install -U flow360 --pre``
+
+
 
 ## client config api-key
 You can set your *api-key* by the following methods:
