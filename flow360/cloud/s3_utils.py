@@ -24,6 +24,7 @@ from rich.progress import (
 
 from ..environment import Env
 from .http_util import http
+from ..log import log
 
 
 class ProgressCallbackInterface(ABC):
@@ -187,8 +188,7 @@ class S3TransferType(Enum):
         :return:
         """
         if not os.path.exists(file_name):
-            print(f"file {file_name} does not Exist!")
-            raise FileNotFoundError()
+            raise FileNotFoundError(f"file {file_name} does not Exist!")
 
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
@@ -242,7 +242,7 @@ class S3TransferType(Enum):
         """
         to_file = create_base_folder(resource_id, remote_file_name, to_file, keep_folder)
         if os.path.exists(to_file) and not overwrite:
-            print(f"Skipping {remote_file_name}, file exists.")
+            log.info(f"Skipping {remote_file_name}, file exists.")
             return
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
