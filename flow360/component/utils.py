@@ -1,8 +1,8 @@
 """
 Utility functions
 """
-from functools import wraps
 import uuid
+from functools import wraps
 
 from ..log import log
 

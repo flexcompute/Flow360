@@ -2,7 +2,6 @@ from pylab import *
 
 from flow360 import MyCases
 
-
 my_cases = MyCases()
 
 for case in my_cases:

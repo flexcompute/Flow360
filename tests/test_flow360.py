@@ -1,6 +1,4 @@
-from flow360 import (
-    __version__,
-)
+from flow360 import __version__
 
 
 def test_version():

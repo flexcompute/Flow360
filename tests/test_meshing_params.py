@@ -1,17 +1,18 @@
 import pytest
+
 from flow360.component.meshing.params import (
-    SurfaceMeshingParams,
-    Edges,
     Aniso,
-    ProjectAniso,
-    Faces,
-    Face,
-    VolumeMeshingParams,
     BoxRefinement,
+    Edges,
+    Face,
+    Faces,
+    ProjectAniso,
+    SurfaceMeshingParams,
+    VolumeMeshingParams,
 )
+from flow360.exceptions import ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
-from flow360.exceptions import ValidationError
 
 
 @pytest.fixture(autouse=True)

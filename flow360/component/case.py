@@ -2,26 +2,28 @@
 Case component
 """
 from __future__ import annotations
+
 import json
 from enum import Enum
 from typing import Iterator, List
+
 from pydantic import Field
 from pylab import show, subplots
 
-from ..cloud.s3_utils import S3TransferType, CloudFileNotFoundError
 from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import CloudFileNotFoundError, S3TransferType
+from ..log import log
+from .flow360_params import Flow360Params
 from .resource_base import (
-    Flow360ResourceBaseModel,
     Flow360Resource,
+    Flow360ResourceBaseModel,
     Flow360ResourceListBase,
     ResourceDraft,
     before_submit_only,
     is_object_cloud_resource,
 )
-from .flow360_params import Flow360Params
 from .utils import is_valid_uuid
 from .validator import Validator
-from ..log import log
 
 
 class CaseBase:

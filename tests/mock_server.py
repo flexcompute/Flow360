@@ -1,12 +1,11 @@
-import os
-import pytest
 import json
+import os
 
+import pytest
 
 from flow360.cloud import http_util
-from flow360.environment import Env
 from flow360.cloud.http_util import http
-
+from flow360.environment import Env
 
 here = os.path.dirname(os.path.abspath(__file__))
 

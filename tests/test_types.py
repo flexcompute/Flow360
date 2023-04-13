@@ -1,9 +1,9 @@
-import pytest
-
-from pydantic import BaseModel, ValidationError
 from typing import Optional
 
-from flow360.component.types import Axis, Vector, Coordinate, Size
+import pytest
+from pydantic import BaseModel, ValidationError
+
+from flow360.component.types import Axis, Coordinate, Size, Vector
 
 
 class Model(BaseModel):

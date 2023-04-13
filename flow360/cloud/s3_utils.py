@@ -3,9 +3,9 @@ s3 util file for material uploading and downloading.
 """
 import os
 import urllib
+from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from abc import ABC, abstractmethod
 
 import boto3
 from boto3.s3.transfer import TransferConfig
@@ -23,8 +23,8 @@ from rich.progress import (
 )
 
 from ..environment import Env
-from .http_util import http
 from ..log import log
+from .http_util import http
 
 
 class ProgressCallbackInterface(ABC):

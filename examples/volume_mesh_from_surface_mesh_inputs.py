@@ -1,7 +1,6 @@
 import flow360 as fl
 from flow360.examples import Airplane
 
-
 params = fl.SurfaceMeshingParams(
     max_edge_length=0.16,
     edges={

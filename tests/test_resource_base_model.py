@@ -1,5 +1,5 @@
-from flow360.component.resource_base import Flow360Status, Flow360ResourceBaseModel
 from flow360.component.case import CaseMeta
+from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
 
 
 def test_status():

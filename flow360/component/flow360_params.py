@@ -2,29 +2,31 @@
 Flow360 solver parameters
 """
 from __future__ import annotations
-from typing import Dict, List, Optional, Union
-from enum import Enum
+
 import math
 from abc import ABC
-from typing_extensions import Literal
-import pydantic as pd
+from enum import Enum
+from typing import Dict, List, Optional, Union
 
+import pydantic as pd
+from typing_extensions import Literal
+
+from ..exceptions import ConfigError, Flow360NotImplementedError, ValidationError
+from .constants import constants
+from .params_base import Flow360BaseModel, Flow360SortableBaseModel, export_to_flow360
 from .types import (
     Axis,
-    Coordinate,
-    PositiveFloat,
-    MomentLengthType,
     BoundaryVelocityType,
-    PositiveInt,
+    Coordinate,
+    MomentLengthType,
     NonNegativeInt,
     Omega,
-    Velocity,
+    PositiveFloat,
+    PositiveInt,
     TimeStep,
+    Velocity,
 )
-from .params_base import Flow360BaseModel, Flow360SortableBaseModel, export_to_flow360
-from .utils import beta_feature, _get_value_or_none
-from .constants import constants
-from ..exceptions import ValidationError, ConfigError, Flow360NotImplementedError
+from .utils import _get_value_or_none, beta_feature
 
 
 # pylint: disable=invalid-name

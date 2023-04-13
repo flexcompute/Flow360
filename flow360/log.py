@@ -1,10 +1,9 @@
 """Logging for Flow360."""
 
 from typing import Union
-from typing_extensions import Literal
 
 from rich.console import Console
-
+from typing_extensions import Literal
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 LogValue = Union[int, LogLevel]
