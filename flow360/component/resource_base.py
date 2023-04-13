@@ -1,11 +1,12 @@
 """
 Flow360 base Model
 """
+from abc import ABC
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Union
 from functools import wraps
-from abc import ABC
+from typing import List, Optional, Union
+
 from pydantic import BaseModel, Extra, Field
 
 from ..cloud.rest_api import RestApi

@@ -3,11 +3,12 @@ base component for examples
 """
 
 
-import os
-import requests
 import glob
-from pathlib import Path
+import os
 from abc import ABC, abstractmethod, abstractstaticmethod
+from pathlib import Path
+
+import requests
 
 from ..solver_version import Flow360Version
 

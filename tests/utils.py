@@ -1,7 +1,7 @@
 import difflib
 import json
-import tempfile
 import os
+import tempfile
 
 from flow360.cloud.rest_api import RestApi
 

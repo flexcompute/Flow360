@@ -7,10 +7,9 @@ from functools import wraps
 import requests
 
 from ..environment import Env
-from ..version import __version__
-from ..exceptions import AuthorisationError, WebNotFoundError, WebError
+from ..exceptions import AuthorisationError, WebError, WebNotFoundError
 from ..log import log
-
+from ..version import __version__
 from .security import api_key
 
 

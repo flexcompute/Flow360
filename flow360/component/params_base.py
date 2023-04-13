@@ -2,20 +2,22 @@
 Flow360 solver parameters
 """
 from __future__ import annotations
-from typing import Any, Optional, List
-from functools import wraps
+
 import json
-from typing_extensions import Literal
+from functools import wraps
+from typing import Any, List, Optional
+
+import numpy as np
+import pydantic as pd
 import rich
 import yaml
-import numpy as np
 from pydantic import BaseModel
 from pydantic.fields import ModelField
-import pydantic as pd
+from typing_extensions import Literal
 
-from .types import TYPE_TAG_STR
-from ..exceptions import FileError, ConfigError, ValidationError
+from ..exceptions import ConfigError, FileError, ValidationError
 from ..log import log
+from .types import TYPE_TAG_STR
 
 
 def json_dumps(value, *args, **kwargs):

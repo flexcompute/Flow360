@@ -1,13 +1,9 @@
-import pytest
 import unittest
 
-from flow360.component.meshing.params import (
-    SurfaceMeshingParams,
-    Face,
-)
+import pytest
 
 from flow360 import exceptions as ex
-
+from flow360.component.meshing.params import Face, SurfaceMeshingParams
 from flow360.component.surface_mesh import SurfaceMesh
 
 assertions = unittest.TestCase("__init__")

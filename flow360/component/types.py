@@ -1,9 +1,10 @@
 """ Defines 'types' that various fields can be """
 
-from typing import Tuple, Union, List, Optional
-from typing_extensions import Annotated, Literal
+from typing import List, Optional, Tuple, Union
 
 import pydantic as pd
+from typing_extensions import Annotated, Literal
+
 from ..exceptions import ValidationError
 
 # type tag default name

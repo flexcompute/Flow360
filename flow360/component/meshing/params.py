@@ -1,14 +1,14 @@
 """
 Flow360 meshing parameters
 """
-from typing import Optional, Union, List
-from typing_extensions import Literal
+from typing import List, Optional, Union
+
 import pydantic as pd
+from typing_extensions import Literal
 
-from ..types import PositiveFloat, NonNegativeFloat, Coordinate, Axis, Size
-
-from ..params_base import Flow360BaseModel, Flow360SortableBaseModel
 from ...exceptions import ValidationError
+from ..params_base import Flow360BaseModel, Flow360SortableBaseModel
+from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
 
 
 class Aniso(Flow360BaseModel):

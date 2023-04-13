@@ -2,25 +2,27 @@
 Surface mesh component
 """
 from __future__ import annotations
+
 import os
 from enum import Enum
-from typing import Union, List, Iterator
+from typing import Iterator, List, Union
+
 import pydantic as pd
 
+from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import S3TransferType
+from ..exceptions import FileError as FlFileError
+from ..exceptions import ValueError as FlValueError
+from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
+from .params_base import params_generic_validator
 from .resource_base import (
-    Flow360ResourceBaseModel,
     Flow360Resource,
+    Flow360ResourceBaseModel,
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .params_base import params_generic_validator
-from .volume_mesh import VolumeMeshDraft
-from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .validator import Validator
-from ..cloud.s3_utils import S3TransferType
-from ..cloud.rest_api import RestApi
-from ..exceptions import FileError as FlFileError
-from ..exceptions import ValueError as FlValueError
+from .volume_mesh import VolumeMeshDraft
 
 
 class SurfaceMeshDownloadable(Enum):

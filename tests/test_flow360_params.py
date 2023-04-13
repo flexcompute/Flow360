@@ -1,42 +1,40 @@
-import pytest
-import unittest
-
 import json
 import math
+import unittest
+
 import pydantic as pd
+import pytest
 
 import flow360 as fl
-
 from flow360.component.flow360_params import (
-    Flow360MeshParams,
-    MeshSlidingInterface,
-    Flow360Params,
-    Geometry,
-    Freestream,
-    MeshBoundary,
-    TimeStepping,
     ActuatorDisk,
+    Flow360MeshParams,
+    Flow360Params,
     ForcePerArea,
-    SlidingInterface,
-    NavierStokesSolver,
-    TurbulenceModelSolver,
-    NoSlipWall,
-    SlipWall,
+    Freestream,
     FreestreamBoundary,
+    Geometry,
     IsothermalWall,
-    SubsonicOutflowPressure,
-    SubsonicOutflowMach,
-    SubsonicInflow,
-    SlidingInterfaceBoundary,
-    WallFunction,
     MassInflow,
     MassOutflow,
+    MeshBoundary,
+    MeshSlidingInterface,
+    NavierStokesSolver,
+    NoSlipWall,
+    SlidingInterface,
+    SlidingInterfaceBoundary,
+    SlipWall,
+    SubsonicInflow,
+    SubsonicOutflowMach,
+    SubsonicOutflowPressure,
+    TimeStepping,
+    TurbulenceModelSolver,
+    WallFunction,
 )
+from flow360.component.types import TimeStep
+from flow360.exceptions import ConfigError, ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
-from flow360.exceptions import ValidationError, ConfigError
-from flow360.component.types import TimeStep
-
 
 assertions = unittest.TestCase("__init__")
 

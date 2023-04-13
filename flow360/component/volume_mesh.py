@@ -2,21 +2,22 @@
 Volume mesh component
 """
 from __future__ import annotations
+
 import os.path
 from enum import Enum
-from typing import Optional, Union, List, Iterator
+from typing import Iterator, List, Optional, Union
+
 import numpy as np
 from pydantic import Extra, Field, validator
 
-from ..cloud.s3_utils import S3TransferType
 from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import S3TransferType
+from ..exceptions import FileError as FlFileError
+from ..exceptions import Flow360NotImplementedError
+from ..exceptions import ValueError as FlValueError
+from ..log import log
 from ..solver_version import Flow360Version
-from .resource_base import (
-    Flow360ResourceBaseModel,
-    Flow360Resource,
-    Flow360ResourceListBase,
-    ResourceDraft,
-)
+from .case import Case, CaseDraft
 from .flow360_params import (
     Flow360MeshParams,
     Flow360Params,
@@ -24,14 +25,14 @@ from .flow360_params import (
     _GenericBoundaryWrapper,
 )
 from .meshing.params import VolumeMeshingParams
-from .case import Case, CaseDraft
 from .params_base import params_generic_validator
+from .resource_base import (
+    Flow360Resource,
+    Flow360ResourceBaseModel,
+    Flow360ResourceListBase,
+    ResourceDraft,
+)
 from .validator import Validator
-
-from ..log import log
-from ..exceptions import ValueError as FlValueError
-from ..exceptions import FileError as FlFileError
-from ..exceptions import Flow360NotImplementedError
 
 try:
     import h5py

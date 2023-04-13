@@ -1,7 +1,6 @@
 from flow360 import Case
 from flow360.log import log
 
-
 from .mock_server import mock_response
 
 

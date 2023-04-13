@@ -4,12 +4,12 @@ Validator API
 from enum import Enum
 from typing import Union
 
+from ..cloud.rest_api import RestApi
+from ..exceptions import ValidationError
+from ..exceptions import ValueError as FlValueError
+from ..log import log
 from .flow360_params import Flow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
-from ..cloud.rest_api import RestApi
-from ..exceptions import ValueError as FlValueError
-from ..exceptions import ValidationError
-from ..log import log
 
 
 class Validator(Enum):

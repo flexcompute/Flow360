@@ -1,4 +1,5 @@
 import os
+
 import flow360 as fl
 from flow360.examples import OM6wing
 

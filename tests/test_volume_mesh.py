@@ -3,33 +3,30 @@ from sys import exc_info
 
 import pytest
 
-from flow360.component.volume_mesh import VolumeMesh, VolumeMeshList
-
-
 from flow360.component.flow360_params import (
     Flow360MeshParams,
-    MeshSlidingInterface,
     Flow360Params,
     MeshBoundary,
+    MeshSlidingInterface,
     NoSlipWall,
     SlidingInterface,
 )
 from flow360.component.volume_mesh import (
+    CompressionFormat,
+    UGRIDEndianness,
+    VolumeMesh,
+    VolumeMeshFileFormat,
+    VolumeMeshList,
+    VolumeMeshMeta,
     get_boundaries_from_file,
     get_boundries_from_sliding_interfaces,
     get_no_slip_walls,
     validate_cgns,
-    VolumeMeshFileFormat,
-    CompressionFormat,
-    UGRIDEndianness,
-    VolumeMeshMeta,
 )
 from flow360.exceptions import ValueError
-
-
-from .utils import to_file_from_file_test, compare_to_ref
-
 from tests.data.volume_mesh_list import volume_mesh_list_raw
+
+from .utils import compare_to_ref, to_file_from_file_test
 
 
 @pytest.fixture(autouse=True)
