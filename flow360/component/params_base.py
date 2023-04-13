@@ -153,7 +153,7 @@ class Flow360BaseModel(BaseModel):
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
         if "deep" in kwargs and kwargs["deep"] is False:
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
-        kwargs.update(dict(deep=True))
+        kwargs.update({"deep": True})
         new_copy = BaseModel.copy(self, update=update, **kwargs)
         return self.validate(new_copy.dict())
 
