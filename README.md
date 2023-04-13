@@ -19,7 +19,11 @@
 
 
 ## client config api-key
-You can set your *api-key* by the following methods:
+Get your *api-key* from [flow360.simulation.cloud](https://flow360.simulation.cloud)
+
+<img src="https://user-images.githubusercontent.com/83596707/231739277-0f863e5a-b8b7-4f45-bd9b-6bfa32b8bdcb.gif" width="60%">
+
+You can set your *api-key* by ONE of the following methods:
 1. Set globaly for your acount: ``flow360 configure`` will store *api-key* in ~/.flow360
 2. In shell: ``export FLOW360_APIKEY="my api-key"``
 3. In python script: ``os.environ["FLOW360_APIKEY"] = "my api-key"`` before `import flow360`
@@ -42,5 +46,6 @@ You can set your *api-key* by the following methods:
 
 ## check in
 1. ``poetry run pytest -rA``
-2. ``black .``
-3. ``pylint flow360 --rcfile .pylintrc``
+2. ``black .`` - performs auto-formatting
+3. ``isort .`` - sorts imports
+4. ``pylint flow360 --rcfile .pylintrc`` - checks code style
