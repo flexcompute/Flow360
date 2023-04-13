@@ -25,7 +25,7 @@ def api_key_auth(request):
     request.headers["flow360-python-version"] = __version__
     return request
 
-
+# pylint: disable=broad-exception-raised
 def http_interceptor(func):
     """
     Intercept the response and raise an exception if the status code is not 200.
