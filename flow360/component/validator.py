@@ -8,7 +8,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import ValidationError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
-from .flow360_params import Flow360Params
+from .flow360_params.flow360_params import Flow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 
 

@@ -17,7 +17,7 @@ params = fl.SurfaceMeshingParams(
     },
 )
 
-surface_mesh = fl.SurfaceMesh.new(
+surface_mesh = fl.SurfaceMesh.create(
     Airplane.geometry, params=params, name="airplane-new-python-client"
 )
 surface_mesh = surface_mesh.submit()
@@ -58,5 +58,5 @@ params = fl.VolumeMeshingParams(
     rotor_disks=[rotor_disk_left, rotor_disk_right],
 )
 
-volume_mesh = surface_mesh.new_volume_mesh("airplane-new-python-client", params=params)
+volume_mesh = surface_mesh.create_volume_mesh("airplane-new-python-client", params=params)
 volume_mesh = volume_mesh.submit()

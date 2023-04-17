@@ -6,7 +6,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params import (
+from flow360.component.flow360_params.flow360_params import (
     ActuatorDisk,
     Flow360MeshParams,
     Flow360Params,
@@ -611,7 +611,7 @@ def test_tuple_from_yaml():
     assert fs
 
 
-def test_append_from_multiple_files():
+def test_update_from_multiple_files():
     params = fl.Flow360Params(
         geometry=fl.Geometry("data/case_params/geometry.yaml"),
         boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
@@ -626,3 +626,33 @@ def test_append_from_multiple_files():
     to_file_from_file_test(params)
     compare_to_ref(params, "ref/case_params/params.yaml")
     compare_to_ref(params, "ref/case_params/params.json", content_only=True)
+
+
+def test_update_from_multiple_files_dont_overwrite():
+    params = fl.Flow360Params(
+        geometry=fl.Geometry("data/case_params/geometry.yaml"),
+        boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+        freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
+        navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+    )
+
+    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs.geometry = fl.Geometry(ref_area=2)
+    params.append(outputs)
+
+    assert params.geometry.ref_area == 1.15315084119231
+
+
+def test_update_from_multiple_files_overwrite():
+    params = fl.Flow360Params(
+        geometry=fl.Geometry("data/case_params/geometry.yaml"),
+        boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+        freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
+        navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+    )
+
+    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs.geometry = fl.Geometry(ref_area=2)
+    params.append(outputs, overwrite=True)
+
+    assert params.geometry.ref_area == 2

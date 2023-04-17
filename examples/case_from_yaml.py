@@ -8,6 +8,6 @@ volume_mesh = volume_mesh.submit()
 print(volume_mesh)
 
 params = fl.Flow360Params(OM6wing.case_yaml)
-case = volume_mesh.new_case("om6wing-from-yaml", params)
+case = volume_mesh.create_case("om6wing-from-yaml", params)
 case = case.submit()
 print(case)

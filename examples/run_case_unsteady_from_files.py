@@ -10,6 +10,6 @@ print(volume_mesh)
 
 # # submit case using json file
 params = fl.Flow360Params(Cylinder.case_json)
-case = fl.Case.new("cylinder-Re100", params, volume_mesh.id)
+case = fl.Case.create("cylinder-Re100", params, volume_mesh.id)
 case = case.submit()
 print(case)

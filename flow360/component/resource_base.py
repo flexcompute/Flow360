@@ -1,6 +1,7 @@
 """
 Flow360 base Model
 """
+import traceback
 from abc import ABC
 from datetime import datetime
 from enum import Enum
@@ -10,6 +11,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Extra, Field
 
 from ..cloud.rest_api import RestApi
+from ..log import log
 
 
 class Flow360Status(Enum):
@@ -111,6 +113,13 @@ class ResourceDraft(ABC):
     """
 
     _id = None
+    traceback = None
+
+    def __init__(self):
+        # remove from traceback:
+        # 1. This line (self.traceback)
+        # 2. Call of this init
+        self.traceback = traceback.format_stack()[:-2]
 
     @property
     def id(self):
@@ -130,6 +139,16 @@ class ResourceDraft(ABC):
         if self.id is None:
             return False
         return True
+
+    def __del__(self):
+        if self.is_cloud_resource() is False and self.traceback is not None:
+            log.warning(
+                f"\
+You have not submitted your {self.__class__.__name__} to cloud. \
+It will not be process. Please run .submit() after .create()"
+            )
+            for line in self.traceback:
+                print(line.strip())
 
 
 class Flow360Resource(RestApi):

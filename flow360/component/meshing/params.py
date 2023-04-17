@@ -7,7 +7,7 @@ import pydantic as pd
 from typing_extensions import Literal
 
 from ...exceptions import ValidationError
-from ..params_base import Flow360BaseModel, Flow360SortableBaseModel
+from ..flow360_params.params_base import Flow360BaseModel, Flow360SortableBaseModel
 from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
 
 

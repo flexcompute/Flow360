@@ -5,6 +5,8 @@ import tempfile
 
 from flow360.cloud.rest_api import RestApi
 
+mock_id = "00000000-0000-0000-0000-000000000000"
+
 
 def file_compare(file1, file2):
     with open(file1) as fh1:

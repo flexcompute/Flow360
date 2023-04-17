@@ -13,8 +13,8 @@ from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import S3TransferType
 from ..exceptions import FileError as FlFileError
 from ..exceptions import ValueError as FlValueError
+from .flow360_params.params_base import params_generic_validator
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
-from .params_base import params_generic_validator
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
@@ -84,6 +84,7 @@ class SurfaceMeshDraft(SurfaceMeshBase, ResourceDraft):
         self.params = params
         self._validate()
         self.params = params.copy(deep=True)
+        ResourceDraft.__init__(self)
 
     def _validate(self):
         _, ext = os.path.splitext(self.geometry_file)
@@ -272,7 +273,7 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
         return cls(surface_mesh_id)
 
     @classmethod
-    def new(
+    def create(
         cls,
         geometry_file: str,
         params: SurfaceMeshingParams,
@@ -280,7 +281,7 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
         tags: List[str] = None,
         solver_version: str = None,
     ) -> SurfaceMeshDraft:
-        """ "New surface mesh from geometry"
+        """ "Create new surface mesh from geometry"
 
         Parameters
         ----------
@@ -309,7 +310,7 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
         )
         return new_surface_mesh
 
-    def new_volume_mesh(
+    def create_volume_mesh(
         self,
         name: str,
         params: VolumeMeshingParams,

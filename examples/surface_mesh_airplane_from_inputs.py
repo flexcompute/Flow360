@@ -17,7 +17,7 @@ params = fl.SurfaceMeshingParams(
     },
 )
 
-surface_mesh = fl.SurfaceMesh.new(
+surface_mesh = fl.SurfaceMesh.create(
     Airplane.geometry, params=params, name="airplane-new-python-client"
 )
 surface_mesh = surface_mesh.submit()

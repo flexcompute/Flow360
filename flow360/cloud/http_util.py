@@ -21,7 +21,9 @@ def api_key_auth(request):
     """
     key = api_key(Env.current.apikey_profile)
     if not key:
-        raise ValueError("API key not found, please set it by commandline: flow360 configure.")
+        raise AuthorisationError(
+            "API key not found, please set it by commandline: flow360 configure."
+        )
     request.headers["simcloud-api-key"] = key
     request.headers["flow360-python-version"] = __version__
     return request

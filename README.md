@@ -49,3 +49,4 @@ You can set your *api-key* by ONE of the following methods:
 2. ``black .`` - performs auto-formatting
 3. ``isort .`` - sorts imports
 4. ``pylint flow360 --rcfile .pylintrc`` - checks code style
+5. ``poetry run pytest tests --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report
