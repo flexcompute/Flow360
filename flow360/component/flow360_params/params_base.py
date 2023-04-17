@@ -15,9 +15,9 @@ from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
-from ..exceptions import ConfigError, FileError, ValidationError
-from ..log import log
-from .types import TYPE_TAG_STR
+from ...exceptions import ConfigError, FileError, ValidationError
+from ...log import log
+from ..types import TYPE_TAG_STR
 
 
 def json_dumps(value, *args, **kwargs):

@@ -13,7 +13,7 @@ from pylab import show, subplots
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError, S3TransferType
 from ..log import log
-from .flow360_params import Flow360Params
+from .flow360_params.flow360_params import Flow360Params
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
@@ -60,12 +60,12 @@ class CaseBase:
 
         name = name or self.name or self.info.name
         params = params or self.params.copy(deep=True)
-        new_case = Case.new(name, params, other_case=self, tags=tags)
+        new_case = Case.create(name, params, other_case=self, tags=tags)
         return new_case
 
     def continuation(
         self, name: str = None, params: Flow360Params = None, tags: List[str] = None
-    ) -> Case:
+    ) -> CaseDraft:
         """
         Alias for fork a case to continue simulation
         :param name:
@@ -90,7 +90,7 @@ class CaseBase:
 
         name = name or self.name or self.info.name
         params = params or self.params.copy(deep=True)
-        return Case.new(name, params, parent_case=self, tags=tags)
+        return Case.create(name, params, parent_case=self, tags=tags)
 
 
 class CaseMeta(Flow360ResourceBaseModel):
@@ -115,13 +115,31 @@ class CaseDraft(CaseBase, ResourceDraft):
     Case Draft component (before submission)
     """
 
-    def __init__(self):
-        self.other_case = None
-        self.parent_case = None
-        self.parent_id = None
-        self.tags = None
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        name: str,
+        params: Flow360Params,
+        volume_mesh_id: str = None,
+        tags: List[str] = None,
+        parent_id=None,
+        other_case: Case = None,
+        parent_case: Case = None,
+        solver_version: str = None,
+    ):
+        self.name = name
+        self.params = params
+        self.volume_mesh_id = volume_mesh_id
+        self.parent_case = parent_case
+        self.parent_id = parent_id
+        self.other_case = other_case
+        self.tags = tags
+        self.solver_version = solver_version
         self._id = None
         self._submitted_case = None
+        ResourceDraft.__init__(self)
+
+        self.validate_case_inputs()
 
     def __str__(self):
         return self.params.__str__()
@@ -202,14 +220,19 @@ class CaseDraft(CaseBase, ResourceDraft):
         is_valid_uuid(parent_id, ignore_none=True)
         self.validator_api(self.params, volume_mesh_id=volume_mesh_id)
 
+        data = {
+            "name": self.name,
+            "meshId": volume_mesh_id,
+            "runtimeParams": self.params.to_flow360_json(),
+            "tags": self.tags,
+            "parentId": parent_id,
+        }
+
+        if self.solver_version:
+            data["solverVersion"] = self.solver_version
+
         resp = RestApi(self._endpoint).post(
-            json={
-                "name": self.name,
-                "meshId": volume_mesh_id,
-                "runtimeParams": self.params.to_flow360_json(),
-                "tags": self.tags,
-                "parentId": parent_id,
-            },
+            json=data,
             path=f"volumemeshes/{volume_mesh_id}/case",
         )
         info = CaseMeta(**resp)
@@ -380,7 +403,7 @@ class Case(CaseBase, Flow360Resource):
 
     # pylint: disable=too-many-arguments
     @classmethod
-    def new(
+    def create(
         cls,
         name: str,
         params: Flow360Params,
@@ -389,6 +412,7 @@ class Case(CaseBase, Flow360Resource):
         parent_id=None,
         other_case: Case = None,
         parent_case: Case = None,
+        solver_version: str = None,
     ) -> CaseDraft:
         """
         Create new case
@@ -409,17 +433,16 @@ class Case(CaseBase, Flow360Resource):
         if not isinstance(params, Flow360Params):
             raise ValueError("params are not of type Flow360Params.")
 
-        new_case = CaseDraft()
-        new_case.name = name
-        new_case.volume_mesh_id = volume_mesh_id
-        new_case.other_case = other_case
-        new_case.params = params.copy(deep=True)
-        new_case.tags = tags
-        new_case.parent_id = parent_id
-        new_case.parent_case = parent_case
-
-        new_case.validate_case_inputs()
-
+        new_case = CaseDraft(
+            name=name,
+            volume_mesh_id=volume_mesh_id,
+            params=params.copy(),
+            parent_id=parent_id,
+            other_case=other_case,
+            parent_case=parent_case,
+            tags=tags,
+            solver_version=solver_version,
+        )
         return new_case
 
 

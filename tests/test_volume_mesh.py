@@ -1,25 +1,18 @@
-import os
-from sys import exc_info
-
 import pytest
 
-from flow360.component.flow360_params import (
+from flow360.component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     MeshBoundary,
-    MeshSlidingInterface,
     NoSlipWall,
-    SlidingInterface,
 )
 from flow360.component.volume_mesh import (
     CompressionFormat,
     UGRIDEndianness,
     VolumeMesh,
     VolumeMeshFileFormat,
-    VolumeMeshList,
     VolumeMeshMeta,
     get_boundaries_from_file,
-    get_boundries_from_sliding_interfaces,
     get_no_slip_walls,
     validate_cgns,
 )
@@ -161,3 +154,8 @@ def test_volume_mesh_json():
     for file in ["ref/flow360mesh/eg2.json", "ref/flow360mesh/eg3.json"]:
         param = Flow360MeshParams(file)
         compare_to_ref(param, file, content_only=True)
+
+
+def test_volume_mesh():
+    params = Flow360MeshParams(boundaries=MeshBoundary(no_slip_walls=[1]))
+    vm = VolumeMesh.from_file(file_name="data/cylinder.cgns", params=params)

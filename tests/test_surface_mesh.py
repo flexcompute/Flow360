@@ -16,15 +16,15 @@ def change_test_dir(request, monkeypatch):
 
 def test_draft_surface_mesh():
     with pytest.raises(ex.ValueError):
-        sm = SurfaceMesh.new("file.unsupported", params=None)
+        sm = SurfaceMesh.create("file.unsupported", params=None)
 
     with pytest.raises(ex.FileError):
-        sm = SurfaceMesh.new("file_does_not_exist.csm", params=None)
+        sm = SurfaceMesh.create("file_does_not_exist.csm", params=None)
 
     with pytest.raises(ex.ValueError):
-        sm = SurfaceMesh.new("data/surface_mesh/test.csm", params=None)
+        sm = SurfaceMesh.create("data/surface_mesh/test.csm", params=None)
 
-    sm = SurfaceMesh.new(
+    sm = SurfaceMesh.create(
         "data/surface_mesh/test.csm",
         params=SurfaceMeshingParams(
             max_edge_length=0.1, faces={"mysphere": Face(max_edge_length=0.05)}

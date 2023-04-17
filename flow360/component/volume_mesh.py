@@ -18,14 +18,14 @@ from ..exceptions import ValueError as FlValueError
 from ..log import log
 from ..solver_version import Flow360Version
 from .case import Case, CaseDraft
-from .flow360_params import (
+from .flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     NoSlipWall,
     _GenericBoundaryWrapper,
 )
+from .flow360_params.params_base import params_generic_validator
 from .meshing.params import VolumeMeshingParams
-from .params_base import params_generic_validator
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
@@ -58,7 +58,6 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
     """
     Get wall boundary names
     :param params:
-    :param solver_version:
     :return:
     """
     assert params
@@ -84,7 +83,6 @@ def get_boundries_from_sliding_interfaces(params: Union[Flow360Params, Flow360Me
     """
     Get wall boundary names
     :param params:
-    :param solver_version:
     :return:
     """
     assert params
@@ -304,7 +302,7 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
     mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
-    mesh_format: VolumeMeshFileFormat = Field(alias="meshFormat")
+    mesh_format: Union[VolumeMeshFileFormat, None] = Field(alias="meshFormat")
     endianness: UGRIDEndianness = Field(alias="meshEndianness")
     compression: CompressionFormat = Field(alias="meshCompression")
     boundaries: Union[List, None]
@@ -365,7 +363,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         isascii: bool = False,
     ):
         if file_name is not None and not os.path.exists(file_name):
-            raise FlFileError(f"{file_name} not found.")
+            raise FlFileError(f"File '{file_name}' not found.")
 
         if endianess is not None:
             raise Flow360NotImplementedError(
@@ -377,10 +375,9 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
 
         self.params = None
         if params is not None:
+            if not isinstance(params, Flow360MeshParams):
+                raise ValueError(f"params={params} are not of type Flow360MeshParams")
             self.params = params.copy(deep=True)
-
-        # if not params or not isinstance(params, Flow360MeshParams):
-        #     raise ValueError(f'params={params} are not of type Flow360MeshParams')
 
         if name is None and file_name is not None:
             name = os.path.splitext(os.path.basename(file_name))[0]
@@ -391,6 +388,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
+        ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):
         self.validator_api(self.params, solver_version=self.solver_version)
@@ -664,7 +662,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         )
 
     @classmethod
-    def new(
+    def create(
         cls,
         name: str,
         params: VolumeMeshingParams,
@@ -684,11 +682,12 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
             tags=tags,
         )
 
-    def new_case(
+    def create_case(
         self,
         name: str,
         params: Flow360Params,
         tags: List[str] = None,
+        solver_version: str = None,
     ) -> CaseDraft:
         """
         Create new case
@@ -698,7 +697,9 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         :return:
         """
 
-        return Case.new(name, params, volume_mesh_id=self.id, tags=tags)
+        return Case.create(
+            name, params, volume_mesh_id=self.id, tags=tags, solver_version=solver_version
+        )
 
 
 class VolumeMeshList(Flow360ResourceListBase):

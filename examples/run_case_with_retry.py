@@ -11,7 +11,7 @@ print(volume_mesh)
 
 # submit case using json file
 params = fl.Flow360Params(OM6wing.case_json)
-case = fl.Case.new("OM6wing", params, volume_mesh.id)
+case = fl.Case.create("OM6wing", params, volume_mesh.id)
 case.submit()
 
 # retry from submited case

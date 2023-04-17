@@ -3,10 +3,11 @@ This module is flow360.
 """
 from .cli import flow360
 from .cloud.s3_utils import ProgressCallbackInterface
-from .component import flow360_params, meshing
+from .component import meshing
 from .component.case import Case
 from .component.case import CaseList as MyCases
-from .component.flow360_params import (
+from .component.flow360_params import solvers
+from .component.flow360_params.flow360_params import (
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
@@ -43,6 +44,6 @@ from .version import __version__
 class turbulence:
     """turbulece models shortcut: eg. flow360.turbulence.SA"""
 
-    SA = flow360_params.TurbulenceModelModelType.SA
-    SST = flow360_params.TurbulenceModelModelType.SST
-    NONE = flow360_params.TurbulenceModelModelType.NONE
+    SA = solvers.TurbulenceModelModelType.SA
+    SST = solvers.TurbulenceModelModelType.SST
+    NONE = solvers.TurbulenceModelModelType.NONE
