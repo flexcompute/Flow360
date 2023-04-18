@@ -441,12 +441,32 @@ class TimeStepping(Flow360BaseModel):
     Time stepping component
     """
 
-    physical_steps: Optional[int] = pd.Field(alias="physicalSteps")
-    max_pseudo_steps: Optional[int] = pd.Field(alias="maxPseudoSteps")
+    physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
+    max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
     time_step_size: Optional[
         Union[pd.confloat(gt=0, allow_inf_nan=False), TimeStep, Literal["inf"]]
     ] = pd.Field(alias="timeStepSize", default="inf")
     CFL: Optional[TimeSteppingCFL] = pd.Field()
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def handle_max_physical_steps(cls, values):
+        """
+        root validator to handle maxPhysicalSteps (deprecated) alias for physical_steps
+        """
+
+        max_physical_steps = values.get("maxPhysicalSteps", None)
+        physical_steps = values.get("physicalSteps", values.get("physical_steps", None))
+
+        if max_physical_steps is not None:
+            if physical_steps is not None:
+                allowed = ["maxPhysicalSteps", "physicalSteps"]
+                raise ValidationError(f"Only one of {allowed} can be used.")
+
+            values["physical_steps"] = max_physical_steps
+            values.pop("maxPhysicalSteps")
+
+        return values
 
     @classmethod
     def default_steady(cls):
