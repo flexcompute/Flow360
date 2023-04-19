@@ -12,6 +12,7 @@ from pydantic import BaseModel, Extra, Field
 
 from ..cloud.rest_api import RestApi
 from ..log import log
+from ..user_config import user_config
 
 
 class Flow360Status(Enum):
@@ -121,6 +122,16 @@ class ResourceDraft(ABC):
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
 
+        if not user_config.suppress_submit_warning():
+            log.warning(
+                f"""\
+Remeber to submit your {self.__class__.__name__} to cloud to have it processed.
+Please run .submit() after .create()
+To suppress this message run: flow360 configure --suppress-submit-warning"""
+            )
+            for line in self.traceback:
+                print(line.strip())
+
     @property
     def id(self):
         """
@@ -142,9 +153,9 @@ class ResourceDraft(ABC):
 
     def __del__(self):
         if self.is_cloud_resource() is False and self.traceback is not None:
-            log.warning(
+            print(
                 f"\
-You have not submitted your {self.__class__.__name__} to cloud. \
+WARNING: You have not submitted your {self.__class__.__name__} to cloud. \
 It will not be process. Please run .submit() after .create()"
             )
             for line in self.traceback:
