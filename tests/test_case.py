@@ -1,5 +1,4 @@
 from flow360 import Case, Flow360Params
-from flow360.log import log
 
 from .utils import mock_id
 
