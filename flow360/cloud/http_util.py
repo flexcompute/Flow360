@@ -27,6 +27,8 @@ def api_key_auth(request):
         )
     request.headers["simcloud-api-key"] = key
     request.headers["flow360-python-version"] = __version__
+    if Env.impersonate:
+        request.headers["FLOW360ACCESSUSER"] = Env.impersonate
     return request
 
 

@@ -68,6 +68,7 @@ class Environment:
         """
         Initialize the environment.
         """
+        self._impersonate = None
         self._current = prod
 
     @property
@@ -109,6 +110,22 @@ class Environment:
         :return:
         """
         self._current = config
+
+    @property
+    def impersonate(self):
+        """
+        Get the impersonate environment.
+        :return:
+        """
+        return self._impersonate
+
+    @impersonate.setter
+    def impersonate(self, value):
+        self._impersonate = value
+
+    @impersonate.deleter
+    def impersonate(self):
+        self._impersonate = None
 
 
 Env = Environment()
