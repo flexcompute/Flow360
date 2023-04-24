@@ -33,6 +33,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .validator import Validator
+from .types import COMMENTS
 
 try:
     import h5py
@@ -73,7 +74,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
         return [
             wall_name
             for wall_name, wall in params.boundaries.dict().items()
-            if _GenericBoundaryWrapper(v=wall).v.type == NoSlipWall().type
+            if wall_name != COMMENTS and _GenericBoundaryWrapper(v=wall).v.type == NoSlipWall().type
         ]
 
     return []

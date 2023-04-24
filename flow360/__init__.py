@@ -30,6 +30,7 @@ from .component.flow360_params.flow360_params import (
     TimeSteppingCFL,
     TurbulenceModelSolver,
     WallFunction,
+    UnvalidatedFlow360Params
 )
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .component.surface_mesh import SurfaceMesh
@@ -37,6 +38,7 @@ from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
 from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
+from .user_config import UserConfig
 from .version import __version__
 
 

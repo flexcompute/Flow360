@@ -17,7 +17,7 @@ from typing_extensions import Literal
 
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
-from ..types import TYPE_TAG_STR
+from ..types import TYPE_TAG_STR, COMMENTS
 
 
 def json_dumps(value, *args, **kwargs):
@@ -81,6 +81,46 @@ def export_to_flow360(func):
     return wrapper_func
 
 
+def _self_named_property_validator(values: dict, validator: BaseModel, msg: str="") -> dict:
+    """When model uses custom, user defined property names, for example boundary names.
+
+    Parameters
+    ----------
+    values : dict
+        pydantic root validator values
+    validator : BaseModel
+        pydantic BaseModel with field 'v' for validating entry of this class properites
+    msg : str, optional
+        Additional message to be displayed on error, by default ""
+
+    Returns
+    -------
+    dict
+        values to be passed to next pydantic root validator
+
+    Raises
+    ------
+    ValidationError
+        When validation fails
+    """
+    for key, v in values.items():
+        # allow for comments
+        if key == COMMENTS:
+            continue
+        try:
+            values[key] = validator(v=v).v
+        except Exception as exc:
+            raise ValidationError(
+                f"{v} (type={type(v)}) {msg}"
+            ) from exc
+    return values
+
+
+class DeprecatedAlias(BaseModel):
+    name: str
+    deprecated: str
+
+
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -88,6 +128,9 @@ class Flow360BaseModel(BaseModel):
     For more details on pydantic base models, see:
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`_
     """
+
+    # comments is allowed property at every level
+    comments: Optional[Any] = pd.Field()
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -137,9 +180,11 @@ class Flow360BaseModel(BaseModel):
         exclude_on_flow360_export: Optional[Any] = None
         will_export: Optional[bool] = False
         require_one_of: Optional[List[str]] = []
+        allow_but_remove: Optional[List[str]] = []
+        deprecated_aliases: Optional[List[DeprecatedAlias]] = []
 
     # pylint: disable=no-self-argument
-    @pd.root_validator(pre=True)
+    @pd.root_validator()
     def one_of(cls, values):
         """root validator for require one of"""
         if cls.Config.require_one_of:
@@ -148,6 +193,55 @@ class Flow360BaseModel(BaseModel):
             if len(intersection) == 0:
                 raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
         return values
+
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def allow_but_remove(cls, values):
+        """root validator for allow_but_remove, e.g., legacy properties that are no longer in use"""
+        if cls.Config.allow_but_remove:
+            for field in cls.Config.allow_but_remove:
+                values.pop(field, None)
+        return values
+
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def handle_depracated_aliases(cls, values):
+        """
+        root validator to handle deprecated aliases
+        """
+        if cls.Config.deprecated_aliases:
+            for deprecated_alias in cls.Config.deprecated_aliases:
+                values = cls._handle_depracated_alias(values, deprecated_alias)
+        return values
+
+
+    @classmethod
+    def _get_field_alias(cls, field_name: str = None):
+        if field_name is not None:
+            alias = [field.alias for field in cls.__fields__.values() if field.name == field_name]
+            if len(alias) > 0:
+                return alias[0]
+        return None
+
+    @classmethod
+    def _handle_depracated_alias(cls, values, deprecated_alias: DeprecatedAlias = None):
+        deprecated_value = values.get(deprecated_alias.deprecated, None)
+        alias = cls._get_field_alias(field_name=deprecated_alias.name)
+        actual_value =  values.get(deprecated_alias.name, values.get(alias, None))
+
+        if deprecated_value is not None:
+            if actual_value is not None and actual_value != deprecated_value:
+                allowed = [deprecated_alias.deprecated, deprecated_alias.name]
+                raise ValidationError(f"Only one of {allowed} can be used.")
+            if actual_value is None:
+                log.warning(f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" instead.')
+                values[deprecated_alias.name] = deprecated_value
+            values.pop(deprecated_alias.deprecated)
+
+        return values
+
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""

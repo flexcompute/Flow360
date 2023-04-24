@@ -1,7 +1,7 @@
 """
 Security related functions.
 """
-from ..user_config import user_config
+from ..user_config import UserConfig
 
 
 def api_key():
@@ -10,5 +10,5 @@ def api_key():
     :return:
     """
 
-    apikey = user_config.apikey()
+    apikey = UserConfig.apikey()
     return apikey

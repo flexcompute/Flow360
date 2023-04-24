@@ -9,7 +9,7 @@ import requests
 from ..environment import Env
 from ..exceptions import AuthorisationError, WebError, WebNotFoundError
 from ..log import log
-from ..user_config import user_config
+from ..user_config import UserConfig
 from ..version import __version__
 from .security import api_key
 
@@ -23,7 +23,7 @@ def api_key_auth(request):
     key = api_key()
     if not key:
         raise AuthorisationError(
-            f"API key not found for profile={user_config.profile}, please set it by commandline: flow360 configure."
+            f"API key not found for profile={UserConfig.profile}, please set it by commandline: flow360 configure."
         )
     request.headers["simcloud-api-key"] = key
     request.headers["flow360-python-version"] = __version__

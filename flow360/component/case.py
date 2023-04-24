@@ -7,23 +7,25 @@ import json
 from enum import Enum
 from typing import Iterator, List
 
-from pydantic import Field
+import pydantic as pd
 from pylab import show, subplots
 
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError, S3TransferType
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params
+from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
     Flow360ResourceListBase,
+    Flow360Status,
     ResourceDraft,
     before_submit_only,
     is_object_cloud_resource,
 )
 from .utils import is_valid_uuid
 from .validator import Validator
+from ..exceptions import ValidationError
 
 
 class CaseBase:
@@ -98,9 +100,9 @@ class CaseMeta(Flow360ResourceBaseModel):
     CaseMeta data component
     """
 
-    id: str = Field(alias="caseId")
-    case_mesh_id: str = Field(alias="caseMeshId")
-    parent_id: str = Field(alias="parentId")
+    id: str = pd.Field(alias="caseId")
+    case_mesh_id: str = pd.Field(alias="caseMeshId")
+    parent_id: str = pd.Field(alias="parentId")
 
     def to_case(self) -> Case:
         """
@@ -156,7 +158,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         """
         sets case params (before submit only)
         """
-        if not isinstance(value, Flow360Params):
+        if not isinstance(value, Flow360Params) and not isinstance(value, UnvalidatedFlow360Params):
             raise ValueError("params are not of type Flow360Params.")
         self._params = value
 
@@ -189,7 +191,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         self._volume_mesh_id = value
 
     @before_submit_only
-    def submit(self) -> Case:
+    def submit(self, force_submit: bool=False) -> Case:
         """
         submits case to cloud for running
         """
@@ -218,7 +220,7 @@ class CaseDraft(CaseBase, ResourceDraft):
 
         is_valid_uuid(volume_mesh_id)
         is_valid_uuid(parent_id, ignore_none=True)
-        self.validator_api(self.params, volume_mesh_id=volume_mesh_id)
+        self.validator_api(self.params, volume_mesh_id=volume_mesh_id, raise_on_error=(not force_submit))
 
         data = {
             "name": self.name,
@@ -264,11 +266,11 @@ class CaseDraft(CaseBase, ResourceDraft):
             is_object_cloud_resource(self.parent_case)
 
     @classmethod
-    def validator_api(cls, params: Flow360Params, volume_mesh_id):
+    def validator_api(cls, params: Flow360Params, volume_mesh_id, raise_on_error: bool=True):
         """
         validation api: validates case parameters before submitting
         """
-        return Validator.CASE.validate(params, mesh_id=volume_mesh_id)
+        return Validator.CASE.validate(params, mesh_id=volume_mesh_id, raise_on_error=raise_on_error)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -307,7 +309,16 @@ class Case(CaseBase, Flow360Resource):
         returns case params
         """
         if self._params is None:
-            self._params = Flow360Params(**json.loads(self.get(method="runtimeParams")["content"]))
+            raw_params = json.loads(self.get(method="runtimeParams")["content"])
+            try:
+                self._params = Flow360Params(**raw_params)
+            except pd.ValidationError as err:
+                if self.status is Flow360Status.ERROR:
+                    log.error(f'{err}')
+                    self._params = raw_params
+                else:
+                    raise ValidationError(f'{err}') from err
+
         return self._params
 
     @property
@@ -430,7 +441,7 @@ class Case(CaseBase, Flow360Resource):
         assert volume_mesh_id or other_case or parent_id or parent_case
         assert params
 
-        if not isinstance(params, Flow360Params):
+        if not isinstance(params, Flow360Params) and not isinstance(params, UnvalidatedFlow360Params):
             raise ValueError("params are not of type Flow360Params.")
 
         new_case = CaseDraft(
