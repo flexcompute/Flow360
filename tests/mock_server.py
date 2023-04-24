@@ -95,7 +95,6 @@ class MockResponseCaseSubmit(MockResponse):
         return res
 
 
-
 class MockResponseInfoNotFound(MockResponse):
     """response if web.getinfo(case_id) and case_id not found"""
 
@@ -110,7 +109,6 @@ def mock_webapi(url, params):
     method = url.split("flow360")[-1]
 
     print(method)
-
 
     if method.startswith("/volumemeshes/00000000-0000-0000-0000-000000000000/case"):
         return MockResponseCaseSubmit()

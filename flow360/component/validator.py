@@ -35,7 +35,7 @@ class Validator(Enum):
         params: Union[Flow360Params, SurfaceMeshingParams, VolumeMeshingParams],
         solver_version: str = None,
         mesh_id=None,
-        raise_on_error: bool=True
+        raise_on_error: bool = True,
     ):
         """API validator
 
@@ -97,7 +97,7 @@ class Validator(Enum):
                 res_str = str(res).replace("[", "\[")
                 if raise_on_error:
                     raise ValidationError(f"Error when validating: {res_str}")
-                else:
-                    ValidationError(f"Error when validating: {res_str}")
+                # pylint: disable=pointless-exception-statement
+                ValidationError(f"Error when validating: {res_str}")
 
         return None

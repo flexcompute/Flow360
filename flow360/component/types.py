@@ -11,6 +11,7 @@ from ..exceptions import ValidationError
 TYPE_TAG_STR = "_type"
 COMMENTS = "comments"
 
+
 def annotate_type(UnionType):  # pylint:disable=invalid-name
     """Annotated union type using TYPE_TAG_STR as discriminator."""
     return Annotated[UnionType, pd.Field(discriminator=TYPE_TAG_STR)]
