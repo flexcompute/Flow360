@@ -393,6 +393,9 @@ def test_time_stepping():
     with pytest.raises(pd.ValidationError):
         ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size="infinity")
 
+    ts = TimeStepping(time_step_size='inf')
+    to_file_from_file_test(ts)
+
     ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size=(0.01, "s"))
     assert isinstance(ts.time_step_size, TimeStep)
 

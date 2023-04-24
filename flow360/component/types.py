@@ -9,7 +9,7 @@ from ..exceptions import ValidationError
 
 # type tag default name
 TYPE_TAG_STR = "_type"
-
+COMMENTS = "comments"
 
 def annotate_type(UnionType):  # pylint:disable=invalid-name
     """Annotated union type using TYPE_TAG_STR as discriminator."""

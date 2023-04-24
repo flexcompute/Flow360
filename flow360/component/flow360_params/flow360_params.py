@@ -20,13 +20,18 @@ from ..types import (
     Omega,
     PositiveFloat,
     PositiveInt,
+    NonNegativeFloat,
     TimeStep,
     Velocity,
 )
 from ..utils import _get_value_or_none, beta_feature
-from .params_base import Flow360BaseModel, Flow360SortableBaseModel, export_to_flow360
+from .params_base import (
+    Flow360BaseModel, Flow360SortableBaseModel, DeprecatedAlias, export_to_flow360, _self_named_property_validator
+)
 from .solvers import NavierStokesSolver, TurbulenceModelSolver
 
+from ...user_config import UserConfig
+from ...log import log
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -419,6 +424,7 @@ class TimeSteppingCFL(Flow360BaseModel):
     initial: Optional[int] = pd.Field()
     final: Optional[int] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
+    randomizer: Optional[Dict] = pd.Field()
 
     @classmethod
     def default_steady(cls):
@@ -447,26 +453,6 @@ class TimeStepping(Flow360BaseModel):
         Union[pd.confloat(gt=0, allow_inf_nan=False), TimeStep, Literal["inf"]]
     ] = pd.Field(alias="timeStepSize", default="inf")
     CFL: Optional[TimeSteppingCFL] = pd.Field()
-
-    # pylint: disable=no-self-argument
-    @pd.root_validator(pre=True)
-    def handle_max_physical_steps(cls, values):
-        """
-        root validator to handle maxPhysicalSteps (deprecated) alias for physical_steps
-        """
-
-        max_physical_steps = values.get("maxPhysicalSteps", None)
-        physical_steps = values.get("physicalSteps", values.get("physical_steps", None))
-
-        if max_physical_steps is not None:
-            if physical_steps is not None:
-                allowed = ["maxPhysicalSteps", "physicalSteps"]
-                raise ValidationError(f"Only one of {allowed} can be used.")
-
-            values["physical_steps"] = max_physical_steps
-            values.pop("maxPhysicalSteps")
-
-        return values
 
     @classmethod
     def default_steady(cls):
@@ -524,6 +510,11 @@ class TimeStepping(Flow360BaseModel):
         return value
 
 
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
+
+
 class _GenericBoundaryWrapper(Flow360BaseModel):
     v: BoundaryType
 
@@ -561,14 +552,7 @@ class Boundaries(Flow360SortableBaseModel):
         ValidationError
             When boundary is incorrect
         """
-        for key, v in values.items():
-            try:
-                values[key] = _GenericBoundaryWrapper(v=v).v
-            except Exception as exc:
-                raise ValidationError(
-                    f"{v} (type={type(v)}) is not any of supported boundary types."
-                ) from exc
-        return values
+        return _self_named_property_validator(values, _GenericBoundaryWrapper, msg='is not any of supported boundary types.')
 
 
 class Geometry(Flow360BaseModel):
@@ -615,7 +599,8 @@ class Geometry(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = {"mesh_unit", "mesh_unit_length"}
+        exclude_on_flow360_export = ["mesh_unit", "mesh_unit_length"]
+        allow_but_remove = ["meshName", 'endianness']
 
 
 class Freestream(Flow360BaseModel):
@@ -624,7 +609,7 @@ class Freestream(Flow360BaseModel):
     """
 
     Reynolds: Optional[PositiveFloat] = pd.Field()
-    Mach: Optional[PositiveFloat] = pd.Field()
+    Mach: Optional[NonNegativeFloat] = pd.Field()
     MachRef: Optional[PositiveFloat] = pd.Field()
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
@@ -632,7 +617,7 @@ class Freestream(Flow360BaseModel):
     speed: Optional[Union[Velocity, PositiveFloat]]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulentViscosityRatio: Optional[PositiveFloat]
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias='turbulentViscosityRatio')
 
     @pd.validator("speed", pre=True, always=True)
     def validate_speed(cls, v):
@@ -716,7 +701,7 @@ class Freestream(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = {"speed", "density"}
+        exclude_on_flow360_export = ["speed", "density"]
         require_one_of = ["Mach", "speed"]
 
 
@@ -727,6 +712,7 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
+    initial_condition: Optional[Dict] = pd.Field(alias='initialCondition')
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
@@ -735,11 +721,15 @@ class Flow360Params(Flow360BaseModel):
     )
     transition_model_solver: Optional[Dict] = pd.Field(alias="transitionModelSolver")
     freestream: Optional[Freestream] = pd.Field()
-    bet_disks: Optional[List] = pd.Field(alias="betDisks")
-    actuator_disks: Optional[List] = pd.Field(alias="actuatorDisks")
+    bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
+    actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
+    porous_media: Optional[List[Dict]] = pd.Field(alias="porousMedia")
+    user_defined_dynamics: Optional[List[Dict]] = pd.Field(alias="userDefinedDynamics")
     surface_output: Optional[Dict] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[Dict] = pd.Field(alias="volumeOutput")
     slice_output: Optional[Dict] = pd.Field(alias="sliceOutput")
+    iso_surface_output: Optional[Dict] = pd.Field(alias="isoSurfaceOutput")
+    monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
 
     # pylint: disable=invalid-name
     def _get_non_dimensionalisation(self):
@@ -789,6 +779,11 @@ class Flow360Params(Flow360BaseModel):
         raise Flow360NotImplementedError("Default flow360 params are not yet implemented.")
 
 
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        allow_but_remove = ["runControl", "testControl"]
+
+
 class Flow360MeshParams(Flow360BaseModel):
     """
     Flow360 mesh parameters
@@ -796,3 +791,20 @@ class Flow360MeshParams(Flow360BaseModel):
 
     boundaries: MeshBoundary = pd.Field()
     sliding_interfaces: Optional[List[MeshSlidingInterface]] = pd.Field(alias="slidingInterfaces")
+
+
+
+class UnvalidatedFlow360Params(Flow360BaseModel):
+
+    def __init__(self, filename: str = None, **kwargs):
+        if UserConfig.do_validation:
+            raise ConfigError("This is DEV feature. To use it activate by: fl.UserConfig.disable_validation().")
+        log.warning('This is DEV feature, use it only when you know what you are doing.')
+        super().__init__(filename, **kwargs)
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        extra = "allow"
+
+
+

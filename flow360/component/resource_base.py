@@ -12,7 +12,7 @@ from pydantic import BaseModel, Extra, Field
 
 from ..cloud.rest_api import RestApi
 from ..log import log
-from ..user_config import user_config
+from ..user_config import UserConfig
 
 
 class Flow360Status(Enum):
@@ -122,7 +122,7 @@ class ResourceDraft(ABC):
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
 
-        if not user_config.suppress_submit_warning():
+        if not UserConfig.suppress_submit_warning():
             log.warning(
                 f"""\
 Remeber to submit your {self.__class__.__name__} to cloud to have it processed.

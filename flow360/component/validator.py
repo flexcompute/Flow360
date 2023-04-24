@@ -8,7 +8,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import ValidationError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params
+from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 
 
@@ -35,6 +35,7 @@ class Validator(Enum):
         params: Union[Flow360Params, SurfaceMeshingParams, VolumeMeshingParams],
         solver_version: str = None,
         mesh_id=None,
+        raise_on_error: bool=True
     ):
         """API validator
 
@@ -63,6 +64,7 @@ class Validator(Enum):
             not isinstance(params, Flow360Params)
             and not isinstance(params, SurfaceMeshingParams)
             and not isinstance(params, VolumeMeshingParams)
+            and not isinstance(params, UnvalidatedFlow360Params)
         ):
             raise FlValueError(
                 f"""
@@ -93,6 +95,9 @@ class Validator(Enum):
         if "success" in res and res["success"] is False:
             if "validationError" in res and res["validationError"] is not None:
                 res_str = str(res).replace("[", "\[")
-                raise ValidationError(f"Error when validating: {res_str}")
+                if raise_on_error:
+                    raise ValidationError(f"Error when validating: {res_str}")
+                else:
+                    ValidationError(f"Error when validating: {res_str}")
 
         return None

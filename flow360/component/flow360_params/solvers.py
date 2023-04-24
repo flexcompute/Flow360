@@ -4,13 +4,14 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, Dict
 
 import pydantic as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeInt, PositiveFloat, PositiveInt
-from .params_base import Flow360BaseModel
+from .params_base import Flow360BaseModel, DeprecatedAlias
+
 
 
 class GenericSolverSettings(Flow360BaseModel):
@@ -26,6 +27,11 @@ class GenericSolverSettings(Flow360BaseModel):
     )
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
     kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
+    randomizer: Optional[Dict] = pd.Field()
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
 
 
 class NavierStokesSolver(GenericSolverSettings):
@@ -86,6 +92,8 @@ class NavierStokesSolver(GenericSolverSettings):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
+    extra_dissipation: Optional[float] = pd.Field(alias='extraDissipation')
+    viscous_wave_speed_scale: Optional[float] = pd.Field(alias='viscousWaveSpeedScale')
 
 
 class TurbulenceModelModelType(str, Enum):

@@ -85,6 +85,17 @@ class MockResponseCaseRuntimeParams(MockResponse):
         return res
 
 
+class MockResponseCaseSubmit(MockResponse):
+    """response if Case.submit() volume_mesh_id="00000000-0000-0000-0000-000000000000" """
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/case_meta_resp.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
+
 class MockResponseInfoNotFound(MockResponse):
     """response if web.getinfo(case_id) and case_id not found"""
 
@@ -99,6 +110,10 @@ def mock_webapi(url, params):
     method = url.split("flow360")[-1]
 
     print(method)
+
+
+    if method.startswith("/volumemeshes/00000000-0000-0000-0000-000000000000/case"):
+        return MockResponseCaseSubmit()
 
     if method.startswith("/volumemeshes/page"):
         if params["includeDeleted"]:
@@ -125,7 +140,7 @@ def mock_webapi(url, params):
 def mock_response(monkeypatch):
     """Requests.get() mocked to return {'mock_key':'mock_response'}."""
 
-    def get_response(url: str, params, **kwargs) -> str:
+    def get_response(url: str, params=None, **kwargs) -> str:
         """Get the method path from a full url."""
         preamble = Env.current.web_api_endpoint
         method = url.split(preamble)[-1]

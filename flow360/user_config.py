@@ -14,7 +14,7 @@ config_file = f"{home}/.flow360/config.toml"
 DEFAULT_PROFILE = "default"
 
 
-class UserConfig:
+class BasicUserConfig:
     """
     Basic User Configuration.
     """
@@ -25,7 +25,8 @@ class UserConfig:
         self._check_env_profile()
         self._apikey = None
         self._check_env_apikey()
-
+        self.enable_validation()
+        
     def _check_env_profile(self):
         simcloud_profile = os.environ.get("SIMCLOUD_PROFILE", None)
         if simcloud_profile is not None and simcloud_profile != self.profile:
@@ -84,6 +85,17 @@ class UserConfig:
             whether to suppress submit warnings
         """
         return self.config.get("user", {}).get("config", {}).get("suppress_submit_warning", False)
+    
+
+    @property
+    def do_validation(self):
+        return self._do_validation
+
+    def disable_validation(self):
+        self._do_validation = False
+
+    def enable_validation(self):
+        self._do_validation = True
 
 
-user_config = UserConfig()
+UserConfig = BasicUserConfig()
