@@ -25,8 +25,8 @@ class BasicUserConfig:
         self._check_env_profile()
         self._apikey = None
         self._check_env_apikey()
-        self.enable_validation()
-        
+        self._do_validation = True
+
     def _check_env_profile(self):
         simcloud_profile = os.environ.get("SIMCLOUD_PROFILE", None)
         if simcloud_profile is not None and simcloud_profile != self.profile:
@@ -85,16 +85,24 @@ class BasicUserConfig:
             whether to suppress submit warnings
         """
         return self.config.get("user", {}).get("config", {}).get("suppress_submit_warning", False)
-    
 
     @property
     def do_validation(self):
+        """for handling user side validation (pydantic)
+
+        Returns
+        -------
+        bool
+            whether to do user side validation
+        """
         return self._do_validation
 
     def disable_validation(self):
+        """disable user side validation (pydantic)"""
         self._do_validation = False
 
     def enable_validation(self):
+        """enable user side validation (pydantic)"""
         self._do_validation = True
 
 

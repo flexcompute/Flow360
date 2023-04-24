@@ -4,14 +4,13 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import pydantic as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeInt, PositiveFloat, PositiveInt
-from .params_base import Flow360BaseModel, DeprecatedAlias
-
+from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
 class GenericSolverSettings(Flow360BaseModel):
@@ -92,8 +91,8 @@ class NavierStokesSolver(GenericSolverSettings):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
-    extra_dissipation: Optional[float] = pd.Field(alias='extraDissipation')
-    viscous_wave_speed_scale: Optional[float] = pd.Field(alias='viscousWaveSpeedScale')
+    extra_dissipation: Optional[float] = pd.Field(alias="extraDissipation")
+    viscous_wave_speed_scale: Optional[float] = pd.Field(alias="viscousWaveSpeedScale")
 
 
 class TurbulenceModelModelType(str, Enum):

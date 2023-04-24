@@ -11,27 +11,31 @@ import pydantic as pd
 from typing_extensions import Literal
 
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
+from ...log import log
+from ...user_config import UserConfig
 from ..constants import constants
 from ..types import (
     Axis,
     BoundaryVelocityType,
     Coordinate,
     MomentLengthType,
+    NonNegativeFloat,
     Omega,
     PositiveFloat,
     PositiveInt,
-    NonNegativeFloat,
     TimeStep,
     Velocity,
 )
 from ..utils import _get_value_or_none, beta_feature
 from .params_base import (
-    Flow360BaseModel, Flow360SortableBaseModel, DeprecatedAlias, export_to_flow360, _self_named_property_validator
+    DeprecatedAlias,
+    Flow360BaseModel,
+    Flow360SortableBaseModel,
+    _self_named_property_validator,
+    export_to_flow360,
 )
 from .solvers import NavierStokesSolver, TurbulenceModelSolver
 
-from ...user_config import UserConfig
-from ...log import log
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -509,7 +513,6 @@ class TimeStepping(Flow360BaseModel):
             return TimeStep(v=value[0], unit=value[1])
         return value
 
-
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
@@ -552,7 +555,9 @@ class Boundaries(Flow360SortableBaseModel):
         ValidationError
             When boundary is incorrect
         """
-        return _self_named_property_validator(values, _GenericBoundaryWrapper, msg='is not any of supported boundary types.')
+        return _self_named_property_validator(
+            values, _GenericBoundaryWrapper, msg="is not any of supported boundary types."
+        )
 
 
 class Geometry(Flow360BaseModel):
@@ -600,7 +605,7 @@ class Geometry(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["mesh_unit", "mesh_unit_length"]
-        allow_but_remove = ["meshName", 'endianness']
+        allow_but_remove = ["meshName", "endianness"]
 
 
 class Freestream(Flow360BaseModel):
@@ -617,7 +622,9 @@ class Freestream(Flow360BaseModel):
     speed: Optional[Union[Velocity, PositiveFloat]]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias='turbulentViscosityRatio')
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
 
     @pd.validator("speed", pre=True, always=True)
     def validate_speed(cls, v):
@@ -712,7 +719,7 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[Dict] = pd.Field(alias='initialCondition')
+    initial_condition: Optional[Dict] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
@@ -778,7 +785,6 @@ class Flow360Params(Flow360BaseModel):
         """
         raise Flow360NotImplementedError("Default flow360 params are not yet implemented.")
 
-
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["runControl", "testControl"]
@@ -793,18 +799,15 @@ class Flow360MeshParams(Flow360BaseModel):
     sliding_interfaces: Optional[List[MeshSlidingInterface]] = pd.Field(alias="slidingInterfaces")
 
 
-
 class UnvalidatedFlow360Params(Flow360BaseModel):
-
     def __init__(self, filename: str = None, **kwargs):
         if UserConfig.do_validation:
-            raise ConfigError("This is DEV feature. To use it activate by: fl.UserConfig.disable_validation().")
-        log.warning('This is DEV feature, use it only when you know what you are doing.')
+            raise ConfigError(
+                "This is DEV feature. To use it activate by: fl.UserConfig.disable_validation()."
+            )
+        log.warning("This is DEV feature, use it only when you know what you are doing.")
         super().__init__(filename, **kwargs)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         extra = "allow"
-
-
-

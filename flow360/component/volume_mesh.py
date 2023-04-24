@@ -32,8 +32,8 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .validator import Validator
 from .types import COMMENTS
+from .validator import Validator
 
 try:
     import h5py

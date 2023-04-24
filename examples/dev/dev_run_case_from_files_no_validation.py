@@ -1,4 +1,5 @@
 import os
+
 import flow360 as fl
 from flow360.examples import OM6wing
 
@@ -13,7 +14,9 @@ print(volume_mesh)
 
 # # submit case using json file
 here = os.path.dirname(os.path.abspath(__file__))
-params = fl.UnvalidatedFlow360Params(os.path.join(here,'../../tests/data/case_params/incorrect.json'))
+params = fl.UnvalidatedFlow360Params(
+    os.path.join(here, "../../tests/data/case_params/incorrect.json")
+)
 case = fl.Case.create("OM6wing", params, volume_mesh.id, solver_version="release-23.2.1.0")
 case = case.submit(force_submit=True)
 print(case)

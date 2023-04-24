@@ -6,8 +6,11 @@ from typing import List, Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
-from ...exceptions import ValidationError
-from ..flow360_params.params_base import Flow360BaseModel, Flow360SortableBaseModel, _self_named_property_validator
+from ..flow360_params.params_base import (
+    Flow360BaseModel,
+    Flow360SortableBaseModel,
+    _self_named_property_validator,
+)
 from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
 
 
@@ -69,7 +72,9 @@ class Edges(Flow360SortableBaseModel):
         ValidationError
             When edge is incorrect
         """
-        return _self_named_property_validator(values, _GenericEdgeWrapper, msg='is not any of supported edge types.')
+        return _self_named_property_validator(
+            values, _GenericEdgeWrapper, msg="is not any of supported edge types."
+        )
 
 
 class Face(Flow360BaseModel):
@@ -115,8 +120,9 @@ class Faces(Flow360SortableBaseModel):
             When face is incorrect
         """
 
-
-        return _self_named_property_validator(values, _GenericFaceWrapper, msg='is not any of supported face types.')
+        return _self_named_property_validator(
+            values, _GenericFaceWrapper, msg="is not any of supported face types."
+        )
 
 
 class SurfaceMeshingParams(Flow360BaseModel):

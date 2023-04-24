@@ -29,8 +29,8 @@ from .component.flow360_params.flow360_params import (
     TimeStepping,
     TimeSteppingCFL,
     TurbulenceModelSolver,
+    UnvalidatedFlow360Params,
     WallFunction,
-    UnvalidatedFlow360Params
 )
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .component.surface_mesh import SurfaceMesh
