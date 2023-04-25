@@ -36,7 +36,11 @@ class CaseBase:
     _endpoint = "cases"
 
     def copy(
-        self, name: str = None, params: Flow360Params = None, tags: List[str] = None
+        self,
+        name: str = None,
+        params: Flow360Params = None,
+        solver_version: str = None,
+        tags: List[str] = None,
     ) -> CaseDraft:
         """
         Alias for retry case
@@ -46,11 +50,15 @@ class CaseBase:
         :return:
         """
 
-        return self.retry(name, params, tags)
+        return self.retry(name, params, solver_version=solver_version, tags=tags)
 
     # pylint: disable=no-member
     def retry(
-        self, name: str = None, params: Flow360Params = None, tags: List[str] = None
+        self,
+        name: str = None,
+        params: Flow360Params = None,
+        solver_version: str = None,
+        tags: List[str] = None,
     ) -> CaseDraft:
         """
         Retry case
@@ -62,7 +70,9 @@ class CaseBase:
 
         name = name or self.name or self.info.name
         params = params or self.params.copy(deep=True)
-        new_case = Case.create(name, params, other_case=self, tags=tags)
+        new_case = Case.create(
+            name, params, other_case=self, solver_version=solver_version, tags=tags
+        )
         return new_case
 
     def continuation(
@@ -221,7 +231,10 @@ class CaseDraft(CaseBase, ResourceDraft):
         is_valid_uuid(volume_mesh_id)
         is_valid_uuid(parent_id, ignore_none=True)
         self.validator_api(
-            self.params, volume_mesh_id=volume_mesh_id, raise_on_error=(not force_submit)
+            self.params,
+            volume_mesh_id=volume_mesh_id,
+            solver_version=self.solver_version,
+            raise_on_error=(not force_submit),
         )
 
         data = {
@@ -268,12 +281,21 @@ class CaseDraft(CaseBase, ResourceDraft):
             is_object_cloud_resource(self.parent_case)
 
     @classmethod
-    def validator_api(cls, params: Flow360Params, volume_mesh_id, raise_on_error: bool = True):
+    def validator_api(
+        cls,
+        params: Flow360Params,
+        volume_mesh_id,
+        solver_version: str = None,
+        raise_on_error: bool = True,
+    ):
         """
         validation api: validates case parameters before submitting
         """
         return Validator.CASE.validate(
-            params, mesh_id=volume_mesh_id, raise_on_error=raise_on_error
+            params,
+            mesh_id=volume_mesh_id,
+            solver_version=solver_version,
+            raise_on_error=raise_on_error,
         )
 
 
