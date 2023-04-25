@@ -425,10 +425,30 @@ class TimeSteppingCFL(Flow360BaseModel):
     CFL for time stepping component
     """
 
+    type: Optional[Literal["ramp", "adaptive"]] = pd.Field()
     initial: Optional[int] = pd.Field()
     final: Optional[int] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
+    min: Optional[PositiveFloat] = pd.Field()
+    max: Optional[PositiveFloat] = pd.Field()
+    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange")
+    convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+        alias="convergenceLimitingFactor"
+    )
     randomizer: Optional[Dict] = pd.Field()
+
+    @classmethod
+    def adaptive(cls):
+        """
+        returns default adaptive CFL settings
+        """
+        return cls(
+            type="adaptive",
+            min=0.1,
+            max=10000,
+            max_relative_change=1,
+            convergence_limiting_factor=0.25,
+        )
 
     @classmethod
     def default_steady(cls):

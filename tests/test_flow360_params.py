@@ -437,6 +437,22 @@ def test_time_stepping():
         ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
 
+def test_time_stepping_cfl():
+    cfl = fl.TimeSteppingCFL(rampSteps=20, initial=10, final=100)
+    assert cfl
+
+    cfl = fl.TimeSteppingCFL(type="ramp", rampSteps=20, initial=10, final=100)
+    assert cfl
+
+    cfl = fl.TimeSteppingCFL(
+        type="adaptive", min=0.1, max=2000, max_relative_change=1, convergence_limiting_factor=0.25
+    )
+    assert cfl
+
+    cfl = fl.TimeSteppingCFL.adaptive()
+    assert cfl
+
+
 def test_navier_stokes():
     with pytest.raises(pd.ValidationError):
         ns = NavierStokesSolver(kappaMUSCL=-2)
