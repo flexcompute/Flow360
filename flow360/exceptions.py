@@ -17,8 +17,16 @@ class ValueError(Flow360Error):
     """Error with value."""
 
 
+class TypeError(Flow360Error):
+    """Error with type."""
+
+
 class ConfigError(Flow360Error):
     """Error when configuring Flow360."""
+
+
+class RuntimeError(Flow360Error):
+    """Error when runtime."""
 
 
 class Flow360KeyError(Flow360Error):
@@ -31,6 +39,10 @@ class ValidationError(Flow360Error):
 
 class FileError(Flow360Error):
     """Error reading or writing to file."""
+
+
+class CloudFileError(Flow360Error):
+    """Error when getting file from cloud."""
 
 
 class WebError(Flow360Error):

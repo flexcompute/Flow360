@@ -13,6 +13,7 @@ from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import S3TransferType
 from ..exceptions import FileError as FlFileError
 from ..exceptions import ValueError as FlValueError
+from ..log import log
 from .flow360_params.params_base import params_generic_validator
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .resource_base import (
@@ -21,6 +22,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
+from .utils import validate_type
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
 
@@ -147,7 +149,7 @@ class SurfaceMeshDraft(SurfaceMeshBase, ResourceDraft):
             remote_file_name, self.geometry_file, progress_callback=progress_callback
         )
         submitted_mesh._complete_upload(remote_file_name)
-
+        log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
 
     @classmethod
@@ -163,29 +165,23 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
     Surface mesh component
     """
 
-    def __init__(self, surface_mesh_id: str = None, meta_info: SurfaceMeshMeta = None):
-        if (surface_mesh_id is None and meta_info is None) or (
-            surface_mesh_id is not None and meta_info is not None
-        ):
-            raise ValueError("You must provide surface_mesh_id OR meta_info to constructor.")
-
-        if meta_info is not None:
-            surface_mesh_id = meta_info.id
-
-        assert surface_mesh_id is not None
-
+    # pylint: disable=redefined-builtin
+    def __init__(self, id: str):
         super().__init__(
             resource_type="Surface Mesh",
             info_type_class=SurfaceMeshMeta,
             s3_transfer_method=S3TransferType.SURFACE_MESH,
             endpoint=self._endpoint,
-            id=surface_mesh_id,
+            id=id,
         )
-
-        if meta_info is not None:
-            self._info = meta_info
-
         self._params = None
+
+    @classmethod
+    def _from_meta(cls, meta: SurfaceMeshMeta):
+        validate_type(meta, "meta", SurfaceMeshMeta)
+        surface_mesh = cls(id=meta.id)
+        surface_mesh._set_meta(meta)
+        return surface_mesh
 
     @property
     def info(self) -> SurfaceMeshMeta:

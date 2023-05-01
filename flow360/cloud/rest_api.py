@@ -24,16 +24,6 @@ class RestApi:
             url += f"/{method}"
         return url
 
-    # pylint: disable=redefined-builtin
-    def init_id(self, id):
-        """
-        Init id, run only once
-        """
-        if self._id is None:
-            self._id = id
-        else:
-            raise RuntimeError('"id" already set, change of "id" is not allowed.')
-
     def get(self, path=None, method=None, json=None, params=None):
         """
         Resource get

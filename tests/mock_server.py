@@ -105,13 +105,21 @@ class MockResponseInfoNotFound(MockResponse):
         return {"data": None}
 
 
+RESPONSE_MAP = {
+    "/volumemeshes/00000000-0000-0000-0000-000000000000/case": MockResponseCaseSubmit,
+    "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
+    "/cases/00000000-0000-0000-0000-000000000000": MockResponseCase,
+    "/cases/c58e7a75-e349-476a-9020-247af6b2e92b": MockResponseCase,
+}
+
+
 def mock_webapi(url, params):
     method = url.split("flow360")[-1]
 
     print(method)
 
-    if method.startswith("/volumemeshes/00000000-0000-0000-0000-000000000000/case"):
-        return MockResponseCaseSubmit()
+    if method in RESPONSE_MAP.keys():
+        return RESPONSE_MAP[method]()
 
     if method.startswith("/volumemeshes/page"):
         if params["includeDeleted"]:
@@ -122,12 +130,6 @@ def mock_webapi(url, params):
         if params["includeDeleted"]:
             return MockResponseVolumeMeshesWithDeleted()
         return MockResponseVolumeMeshes()
-
-    if method.startswith("/cases/00000000-0000-0000-0000-000000000000/runtimeParams"):
-        return MockResponseCaseRuntimeParams()
-
-    if method.startswith("/cases/00000000-0000-0000-0000-000000000000"):
-        return MockResponseCase()
 
     else:
         return MockResponseInfoNotFound()
