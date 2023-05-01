@@ -1,5 +1,10 @@
-from flow360.component.case import CaseMeta
+import pytest
+
+from flow360.component.case import Case, CaseMeta
 from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
+from flow360.exceptions import RuntimeError
+
+from .utils import mock_id
 
 
 def test_status():
@@ -197,3 +202,23 @@ def test_case_meta_model():
     }
     model = CaseMeta.parse_obj(resp)
     assert model.status.is_final()
+
+
+def test_set_meta():
+    meta = CaseMeta.parse_obj(
+        {
+            "status": "completed",
+            "name": "name",
+            "userId": "userId",
+            "deleted": True,
+            "caseId": "caseID",
+            "caseMeshId": "caseMeshId",
+            "parentId": "None",
+        }
+    )
+
+    case = Case(mock_id)
+    case._set_meta(meta)
+
+    with pytest.raises(RuntimeError):
+        case._set_meta(meta)

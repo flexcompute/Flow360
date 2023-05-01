@@ -576,7 +576,7 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def generate_docstring(cls) -> str:
-        """Generates a docstring for a Flow360 mode and saves it to the __doc__ of the class."""
+        """Generates a docstring for a Flow360 model and saves it to the __doc__ of the class."""
 
         # store the docstring in here
         doc = ""

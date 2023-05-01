@@ -426,8 +426,8 @@ class TimeSteppingCFL(Flow360BaseModel):
     """
 
     type: Optional[Literal["ramp", "adaptive"]] = pd.Field()
-    initial: Optional[int] = pd.Field()
-    final: Optional[int] = pd.Field()
+    initial: Optional[PositiveFloat] = pd.Field()
+    final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
     min: Optional[PositiveFloat] = pd.Field()
     max: Optional[PositiveFloat] = pd.Field()

@@ -8,11 +8,14 @@ from enum import Enum
 from functools import wraps
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, Extra, Field
+import pydantic as pd
 
+from .. import error_messages
 from ..cloud.rest_api import RestApi
+from ..exceptions import RuntimeError as FlRuntimeError
 from ..log import log
 from ..user_config import UserConfig
+from .utils import is_valid_uuid, validate_type
 
 
 class Flow360Status(Enum):
@@ -54,25 +57,33 @@ class Flow360Status(Enum):
         return False
 
 
-class Flow360ResourceBaseModel(BaseModel):
+class Flow360ResourceBaseModel(pd.BaseModel):
     """
     Flow360 base Model
     """
 
-    name: str = Field()
-    user_id: str = Field(alias="userId")
-    id: str = Field()
-    solver_version: Union[str, None] = Field(alias="solverVersion")
+    name: str = pd.Field()
+    user_id: str = pd.Field(alias="userId")
+    id: str = pd.Field()
+    solver_version: Union[str, None] = pd.Field(alias="solverVersion")
     status: Flow360Status
     tags: Optional[List[str]]
-    created_at: Optional[str] = Field(alias="createdAt")
-    updated_at: Optional[datetime] = Field(alias="updatedAt")
-    updated_by: Optional[str] = Field(alias="updatedBy")
+    created_at: Optional[str] = pd.Field(alias="createdAt")
+    updated_at: Optional[datetime] = pd.Field(alias="updatedAt")
+    updated_by: Optional[str] = pd.Field(alias="updatedBy")
     deleted: bool
+
+    # pylint: disable=no-self-argument
+    @pd.validator("*", pre=True)
+    def handle_none_str(cls, value):
+        """handle None strings"""
+        if value == "None":
+            value = None
+        return value
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config:
-        extra = Extra.allow
+        extra = pd.Extra.allow
         allow_mutation = False
 
 
@@ -84,7 +95,7 @@ def on_cloud_resource_only(func):
     @wraps(func)
     def wrapper(obj, *args, **kwargs):
         if not obj.is_cloud_resource():
-            raise RuntimeError(
+            raise FlRuntimeError(
                 'Resource does not have "id", it is not a cloud resource. Provide "id" before calling this function.'
             )
         return func(obj, *args, **kwargs)
@@ -100,7 +111,7 @@ def before_submit_only(func):
     @wraps(func)
     def wrapper(obj, *args, **kwargs):
         if obj.is_cloud_resource():
-            raise RuntimeError(
+            raise FlRuntimeError(
                 'Resource already have "id", cannot call this method. To modify and re-submit create a copy.'
             )
         return func(obj, *args, **kwargs)
@@ -121,16 +132,8 @@ class ResourceDraft(ABC):
         # 1. This line (self.traceback)
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
-
-        if not UserConfig.suppress_submit_warning():
-            log.warning(
-                f"""\
-Remeber to submit your {self.__class__.__name__} to cloud to have it processed.
-Please run .submit() after .create()
-To suppress this message run: flow360 configure --suppress-submit-warning"""
-            )
-            for line in self.traceback:
-                print(line.strip())
+        if not UserConfig.is_suppress_submit_warning():
+            log.warning(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
     def id(self):
@@ -153,11 +156,7 @@ To suppress this message run: flow360 configure --suppress-submit-warning"""
 
     def __del__(self):
         if self.is_cloud_resource() is False and self.traceback is not None:
-            print(
-                f"\
-WARNING: You have not submitted your {self.__class__.__name__} to cloud. \
-It will not be process. Please run .submit() after .create()"
-            )
+            print(error_messages.submit_warning(self.__class__.__name__))
             for line in self.traceback:
                 print(line.strip())
 
@@ -167,12 +166,16 @@ class Flow360Resource(RestApi):
     Flow360 base resource model
     """
 
-    def __init__(self, resource_type, info_type_class, *args, s3_transfer_method=None, **kwargs):
+    # pylint: disable=redefined-builtin
+    def __init__(
+        self, resource_type, info_type_class, *args, s3_transfer_method=None, id=None, **kwargs
+    ):
+        is_valid_uuid(id, ignore_none=False)
         self._resource_type = resource_type
         self.s3_transfer_method = s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, id=id, **kwargs)
 
     def __str__(self):
         return self.info.__str__()
@@ -186,8 +189,24 @@ class Flow360Resource(RestApi):
         """
         return self.id is not None
 
+    def _set_meta(self, meta: Flow360ResourceBaseModel):
+        """
+        set metadata info for resource
+        """
+        if self._info is None:
+            validate_type(meta, "meta", self.info_type_class)
+            self._info = meta
+        else:
+            raise FlRuntimeError(f"Resource already have metadata {self._info}. Cannot assign.")
+
+    @classmethod
+    def _from_meta(cls, meta):
+        raise NotImplementedError(
+            "This is abstract method. Needs to be implemented by specialised class."
+        )
+
     @on_cloud_resource_only
-    def get_info(self, force=False):
+    def get_info(self, force=False) -> Flow360ResourceBaseModel:
         """
         returns metadata info for resource
         """
@@ -196,7 +215,7 @@ class Flow360Resource(RestApi):
         return self._info
 
     @property
-    def info(self):
+    def info(self) -> Flow360ResourceBaseModel:
         """
         returns metadata info for resource
         """
@@ -225,6 +244,20 @@ class Flow360Resource(RestApi):
         returns name of resource
         """
         return self.info.name
+
+    def short_description(self) -> str:
+        """short_description
+
+        Returns
+        -------
+        str
+            generates short description of resource (name, id, status)
+        """
+        return f"""
+        name   = {self.name}
+        id     = {self.id}
+        status = {self.status.value}
+        """
 
     @property
     @on_cloud_resource_only
@@ -270,11 +303,9 @@ def is_object_cloud_resource(resource: Flow360Resource):
     """
     checks if object is cloud resource, raises RuntimeError
     """
-    msg = "Reference resource is not a cloud resource. "
-    msg += "If a case was retried or forked from other case, submit the other case first before submitting this case."
     if resource is not None:
         if not resource.is_cloud_resource():
-            raise RuntimeError(msg)
+            raise FlRuntimeError(error_messages.not_a_cloud_resource)
         return True
     return False
 
@@ -315,7 +346,7 @@ class Flow360ResourceListBase(list, RestApi):
             list.__init__(
                 self,
                 [
-                    resourceClass(meta_info=resourceClass._meta_class().parse_obj(item))
+                    resourceClass._from_meta(meta=resourceClass._meta_class().parse_obj(item))
                     for item in resp[:limit]
                 ],
             )

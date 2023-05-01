@@ -4,6 +4,8 @@ Utility functions
 import uuid
 from functools import wraps
 
+from ..exceptions import TypeError as FlTypeError
+from ..exceptions import ValueError as FlValueError
 from ..log import log
 
 
@@ -17,7 +19,7 @@ def is_valid_uuid(id, ignore_none=False):
     try:
         uuid.UUID(str(id))
     except Exception as exc:
-        raise ValueError(f"{id} is not a valid UUID.") from exc
+        raise FlValueError(f"{id} is not a valid UUID.") from exc
 
 
 def beta_feature(feature_name: str):
@@ -47,3 +49,26 @@ def _get_value_or_none(callable):
         return callable()
     except:
         return None
+
+
+def validate_type(value, parameter_name: str, expected_type):
+    """validate type
+
+    Parameters
+    ----------
+    value :
+        value to be validated
+    parameter_name : str
+        paremeter name - used for error message
+    expected_type : type
+        expected type for value
+
+    Raises
+    ------
+    TypeError
+        when value is not expected_type
+    """
+    if not isinstance(value, expected_type):
+        raise FlTypeError(
+            f"Expected type={expected_type} for {parameter_name}, but got value={value} (type={type(value)})"
+        )

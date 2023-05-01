@@ -33,6 +33,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
+from .utils import validate_type
 from .validator import Validator
 
 try:
@@ -304,6 +305,7 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
     mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
     mesh_format: Union[VolumeMeshFileFormat, None] = Field(alias="meshFormat")
+    file_name: Union[str, None] = Field(alias="fileName")
     endianness: UGRIDEndianness = Field(alias="meshEndianness")
     compression: CompressionFormat = Field(alias="meshCompression")
     boundaries: Union[List, None]
@@ -376,8 +378,12 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
 
         self.params = None
         if params is not None:
-            if not isinstance(params, Flow360MeshParams):
-                raise ValueError(f"params={params} are not of type Flow360MeshParams")
+            if not isinstance(params, Flow360MeshParams) and not isinstance(
+                params, VolumeMeshingParams
+            ):
+                raise ValueError(
+                    f"params={params} are not of type Flow360MeshParams OR VolumeMeshingParams"
+                )
             self.params = params.copy(deep=True)
 
         if name is None and file_name is not None:
@@ -411,6 +417,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
+        log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
     # pylint: disable=protected-access
@@ -447,6 +454,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
         mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
+        log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
     def submit(self, progress_callback=None) -> VolumeMesh:
@@ -486,29 +494,23 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
     Volume mesh component
     """
 
-    def __init__(self, mesh_id: str = None, meta_info: VolumeMeshMeta = None):
-        if (mesh_id is None and meta_info is None) or (
-            mesh_id is not None and meta_info is not None
-        ):
-            raise ValueError("You must provide mesh_id OR meta_info to constructor.")
-
-        if meta_info is not None:
-            mesh_id = meta_info.id
-
-        assert mesh_id is not None
-
+    # pylint: disable=redefined-builtin
+    def __init__(self, id: str):
         super().__init__(
             resource_type="Volume Mesh",
             info_type_class=VolumeMeshMeta,
             s3_transfer_method=S3TransferType.VOLUME_MESH,
             endpoint=self._endpoint,
-            id=mesh_id,
+            id=id,
         )
-
-        if meta_info is not None:
-            self._info = meta_info
-
         self.__mesh_params = None
+
+    @classmethod
+    def _from_meta(cls, meta: VolumeMeshMeta):
+        validate_type(meta, "meta", VolumeMeshMeta)
+        volume_mesh = cls(id=meta.id)
+        volume_mesh._set_meta(meta)
+        return volume_mesh
 
     @property
     def info(self) -> VolumeMeshMeta:
@@ -565,14 +567,21 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
             progress_callback=progress_callback,
         )
 
-    def download(self, to_file=".", keep_folder: bool = True):
+    def download(self, to_file=".", keep_folder: bool = True, overwrite: bool = True):
         """
         Download volume mesh file
         :param to_file:
         :param keep_folder:
         :return:
         """
-        super().download_file(self._remote_file_name(), to_file, keep_folder)
+        status = self.status
+        if not status.is_final():
+            log.warning(f"Cannot download file because status={status}")
+        else:
+            remote_file_name = self.info.file_name
+            if remote_file_name is None:
+                remote_file_name = self._remote_file_name()
+            super().download_file(remote_file_name, to_file, keep_folder, overwrite=overwrite)
 
     def download_log(self, log_file: VolumeMeshLog, to_file=".", keep_folder: bool = True):
         """

@@ -132,7 +132,7 @@ def set_logging_console(stderr: bool = False) -> None:
         previous_level = log.handlers["console"].level
     else:
         previous_level = DEFAULT_LEVEL
-    log.handlers["console"] = LogHandler(Console(stderr=stderr), previous_level)
+    log.handlers["console"] = LogHandler(Console(stderr=stderr, log_path=False), previous_level)
 
 
 def set_logging_file(
@@ -170,7 +170,7 @@ def set_logging_file(
         log.error(f"File {fname} could not be opened")
         return
 
-    log.handlers["file"] = LogHandler(Console(file=file), level)
+    log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level)
 
 
 # Set default logging output

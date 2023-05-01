@@ -5,14 +5,17 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterator, List
+from typing import Iterator, List, Union
 
 import pydantic as pd
 from pylab import show, subplots
 
+from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError, S3TransferType
+from ..exceptions import RuntimeError as FlRuntimeError
 from ..exceptions import ValidationError
+from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .resource_base import (
@@ -24,7 +27,7 @@ from .resource_base import (
     before_submit_only,
     is_object_cloud_resource,
 )
-from .utils import is_valid_uuid
+from .utils import is_valid_uuid, validate_type
 from .validator import Validator
 
 
@@ -112,7 +115,7 @@ class CaseMeta(Flow360ResourceBaseModel):
 
     id: str = pd.Field(alias="caseId")
     case_mesh_id: str = pd.Field(alias="caseMeshId")
-    parent_id: str = pd.Field(alias="parentId")
+    parent_id: Union[str, None] = pd.Field(alias="parentId")
 
     def to_case(self) -> Case:
         """
@@ -134,7 +137,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         params: Flow360Params,
         volume_mesh_id: str = None,
         tags: List[str] = None,
-        parent_id=None,
+        parent_id: str = None,
         other_case: Case = None,
         parent_case: Case = None,
         solver_version: str = None,
@@ -169,7 +172,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         sets case params (before submit only)
         """
         if not isinstance(value, Flow360Params) and not isinstance(value, UnvalidatedFlow360Params):
-            raise ValueError("params are not of type Flow360Params.")
+            raise FlValueError("params are not of type Flow360Params.")
         self._params = value
 
     @property
@@ -200,6 +203,25 @@ class CaseDraft(CaseBase, ResourceDraft):
         """
         self._volume_mesh_id = value
 
+    def to_case(self) -> Case:
+        """Return Case from CaseDraft (must be after .submit())
+
+        Returns
+        -------
+        Case
+            Case representation
+
+        Raises
+        ------
+        RuntimeError
+            Raises error when case is before submission, i.e., is in draft state
+        """
+        if not self.is_cloud_resource():
+            raise FlRuntimeError(
+                f"Case name={self.name} is in draft state. Run .submit() before calling this function."
+            )
+        return Case(self.id)
+
     @before_submit_only
     def submit(self, force_submit: bool = False) -> Case:
         """
@@ -217,14 +239,27 @@ class CaseDraft(CaseBase, ResourceDraft):
             self.parent_case = Case(self.parent_id)
 
         if isinstance(self.parent_case, CaseDraft):
-            self.parent_case = Case(self.parent_case.id)
+            self.parent_case = self.parent_case.to_case()
 
         if isinstance(self.other_case, CaseDraft):
-            self.other_case = Case(self.other_case.id)
+            self.other_case = self.other_case.to_case()
+
+        if self.other_case is not None and self.other_case.has_parent():
+            self.parent_case = self.other_case.parent
 
         if self.parent_case is not None:
             parent_id = self.parent_case.id
             volume_mesh_id = self.parent_case.volume_mesh_id
+
+            if (
+                self.solver_version is not None
+                and self.parent_case.solver_version != self.solver_version
+            ):
+                raise FlRuntimeError(
+                    error_messages.change_solver_version_error(
+                        self.parent_case.solver_version, self.solver_version
+                    )
+                )
 
         volume_mesh_id = volume_mesh_id or self.other_case.volume_mesh_id
 
@@ -245,7 +280,7 @@ class CaseDraft(CaseBase, ResourceDraft):
             "parentId": parent_id,
         }
 
-        if self.solver_version:
+        if self.solver_version is not None:
             data["solverVersion"] = self.solver_version
 
         resp = RestApi(self._endpoint).post(
@@ -256,6 +291,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         self._id = info.id
 
         self._submitted_case = Case(self.id)
+        log.info(f"Case successfully submitted: {self._submitted_case.short_description()}")
         return self._submitted_case
 
     def validate_case_inputs(self, pre_submit_checks=False):
@@ -263,14 +299,14 @@ class CaseDraft(CaseBase, ResourceDraft):
         validates case inputs (before submit only)
         """
         if self.volume_mesh_id is not None and self.other_case is not None:
-            raise ValueError("You cannot specify both volume_mesh_id AND other_case.")
+            raise FlValueError("You cannot specify both volume_mesh_id AND other_case.")
 
         if self.parent_id is not None and self.parent_case is not None:
-            raise ValueError("You cannot specify both parent_id AND parent_case.")
+            raise FlValueError("You cannot specify both parent_id AND parent_case.")
 
         if self.parent_id is not None or self.parent_case is not None:
             if self.volume_mesh_id is not None or self.other_case is not None:
-                raise ValueError(
+                raise FlValueError(
                     "You cannot specify volume_mesh_id OR other_case when parent case provided."
                 )
 
@@ -305,29 +341,25 @@ class Case(CaseBase, Flow360Resource):
     Case component
     """
 
-    def __init__(self, case_id: str = None, meta_info: CaseMeta = None):
-        if (case_id is None and meta_info is None) or (
-            case_id is not None and meta_info is not None
-        ):
-            raise ValueError("You must provide case_id OR meta_info to constructor.")
-
-        if meta_info is not None:
-            case_id = meta_info.id
-
-        assert case_id is not None
-
+    # pylint: disable=redefined-builtin
+    def __init__(self, id: str):
         super().__init__(
             resource_type="Case",
             info_type_class=CaseMeta,
             s3_transfer_method=S3TransferType.CASE,
             endpoint=self._endpoint,
-            id=case_id,
+            id=id,
         )
 
-        if meta_info is not None:
-            self._info = meta_info
         self._params = None
         self._results = CaseResults(self)
+
+    @classmethod
+    def _from_meta(cls, meta: CaseMeta):
+        validate_type(meta, "meta", CaseMeta)
+        case = cls(id=meta.id)
+        case._set_meta(meta)
+        return case
 
     @property
     def params(self) -> Flow360Params:
@@ -347,12 +379,34 @@ class Case(CaseBase, Flow360Resource):
 
         return self._params
 
+    def has_parent(self) -> bool:
+        """Check if case has parent case
+
+        Returns
+        -------
+        bool
+            True when case has parent, False otherwise
+        """
+        print(f"has_parent {self.info.parent_id} (type={type(self.info.parent_id)})")
+        return self.info.parent_id is not None
+
     @property
-    def name(self) -> str:
+    def parent(self) -> Case:
+        """parent case
+
+        Returns
+        -------
+        Case
+            parent case object
+
+        Raises
+        ------
+        RuntimeError
+            When case does not have parent
         """
-        returns case name
-        """
-        return self.info.name
+        if self.has_parent():
+            return Case(self.info.parent_id)
+        raise FlRuntimeError("Case does not have parent case.")
 
     @property
     def info(self) -> CaseMeta:
@@ -446,7 +500,7 @@ class Case(CaseBase, Flow360Resource):
         params: Flow360Params,
         volume_mesh_id: str = None,
         tags: List[str] = None,
-        parent_id=None,
+        parent_id: str = None,
         other_case: Case = None,
         parent_case: Case = None,
         solver_version: str = None,
@@ -470,7 +524,7 @@ class Case(CaseBase, Flow360Resource):
         if not isinstance(params, Flow360Params) and not isinstance(
             params, UnvalidatedFlow360Params
         ):
-            raise ValueError("params are not of type Flow360Params.")
+            raise FlValueError("params are not of type Flow360Params.")
 
         new_case = CaseDraft(
             name=name,

@@ -23,6 +23,7 @@ from rich.progress import (
 )
 
 from ..environment import Env
+from ..exceptions import CloudFileError
 from ..log import log
 from .http_util import http
 
@@ -246,7 +247,11 @@ class S3TransferType(Enum):
             return
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
-        meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
+        try:
+            meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
+        except CloudFileNotFoundError as err:
+            raise CloudFileError(f"{remote_file_name} not found. id={resource_id}") from err
+
         if progress_callback:
             progress_callback.total = meta_data.get("ContentLength", 0)
             client.download_file(

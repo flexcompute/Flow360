@@ -26,6 +26,7 @@ class BasicUserConfig:
         self._apikey = None
         self._check_env_apikey()
         self._do_validation = True
+        self._suppress_submit_warning = None
 
     def _check_env_profile(self):
         simcloud_profile = os.environ.get("SIMCLOUD_PROFILE", None)
@@ -45,7 +46,7 @@ class BasicUserConfig:
         return self._profile
 
     def set_profile(self, profile: str = DEFAULT_PROFILE):
-        """_summary_
+        """set_profile
 
         Parameters
         ----------
@@ -77,6 +78,18 @@ class BasicUserConfig:
         return self.config.get(self.profile, {}).get("apikey", "")
 
     def suppress_submit_warning(self):
+        """locally suppress submit warning"""
+        self._suppress_submit_warning = True
+
+    def cancel_local_submit_warning_settings(self):
+        """cancel local submit warning settings"""
+        self._suppress_submit_warning = None
+
+    def show_submit_warning(self):
+        """locally show submit warning"""
+        self._suppress_submit_warning = False
+
+    def is_suppress_submit_warning(self):
         """suppress submit warning config
 
         Returns
@@ -84,6 +97,8 @@ class BasicUserConfig:
         bool
             whether to suppress submit warnings
         """
+        if self._suppress_submit_warning is not None:
+            return self._suppress_submit_warning
         return self.config.get("user", {}).get("config", {}).get("suppress_submit_warning", False)
 
     @property
