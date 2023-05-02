@@ -229,6 +229,7 @@ class S3TransferType(Enum):
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
+        log_error=True,
     ):
         """
         Download a file from s3.
@@ -249,8 +250,10 @@ class S3TransferType(Enum):
         client = token.get_client()
         try:
             meta_data = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
-        except CloudFileNotFoundError as err:
-            raise CloudFileError(f"{remote_file_name} not found. id={resource_id}") from err
+        except CloudFileNotFoundError:
+            if log_error:
+                log.error(f"{remote_file_name} not found. id={resource_id}")
+            raise
 
         if progress_callback:
             progress_callback.total = meta_data.get("ContentLength", 0)

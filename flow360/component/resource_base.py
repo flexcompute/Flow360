@@ -27,6 +27,7 @@ class Flow360Status(Enum):
     ERROR = "error"
     DIVERGED = "diverged"
     UPLOADED = "uploaded"
+    CASE_UPLOADED = "case_uploaded"
     UPLOADING = "uploading"
     RUNNING = "running"
     PREPROCESSING = "preprocessing"
@@ -66,7 +67,7 @@ class Flow360ResourceBaseModel(pd.BaseModel):
     user_id: str = pd.Field(alias="userId")
     id: str = pd.Field()
     solver_version: Union[str, None] = pd.Field(alias="solverVersion")
-    status: Flow360Status
+    status: Flow360Status = pd.Field()
     tags: Optional[List[str]]
     created_at: Optional[str] = pd.Field(alias="createdAt")
     updated_at: Optional[datetime] = pd.Field(alias="updatedAt")
@@ -276,6 +277,7 @@ class Flow360Resource(RestApi):
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
+        **kwargs,
     ):
         """
         general download functionality
@@ -287,6 +289,7 @@ class Flow360Resource(RestApi):
             keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
+            **kwargs,
         )
 
     @on_cloud_resource_only

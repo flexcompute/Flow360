@@ -8,6 +8,7 @@ from .utils import mock_id
 
 
 def test_status():
+    print(Flow360Status("uploaded").is_final())
     assert Flow360Status("error").is_final()
     assert Flow360Status("uploaded").is_final()
     assert Flow360Status("processed").is_final()
@@ -18,6 +19,7 @@ def test_status():
     assert Flow360Status.PROCESSED.is_final()
     assert Flow360Status.DIVERGED.is_final()
 
+    assert not Flow360Status.CASE_UPLOADED.is_final()
     assert not Flow360Status.PREPROCESSING.is_final()
     assert not Flow360Status.RUNNING.is_final()
     assert not Flow360Status.UPLOADING.is_final()
@@ -26,6 +28,11 @@ def test_status():
 
 
 def test_base_model():
+    model = Flow360ResourceBaseModel(
+        status="uploaded", name="name", userId="userId", deleted=True, id="0"
+    )
+    assert model.status.is_final()
+
     model = Flow360ResourceBaseModel(
         status="completed", name="name", userId="userId", deleted=True, id="0"
     )
@@ -48,6 +55,17 @@ def test_base_model():
 
 
 def test_case_meta_model():
+    model = CaseMeta(
+        status="uploaded",
+        name="name",
+        userId="userId",
+        deleted=True,
+        caseId="caseID",
+        caseMeshId="caseMeshId",
+        parentId="None",
+    )
+    assert not model.status.is_final()
+
     model = CaseMeta(
         status="completed",
         name="name",
