@@ -549,6 +549,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
+        **kwargs,
     ):
         """
         Download file from surface mesh
@@ -565,6 +566,7 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
             keep_folder=keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
+            **kwargs,
         )
 
     def download(self, to_file=".", keep_folder: bool = True, overwrite: bool = True):

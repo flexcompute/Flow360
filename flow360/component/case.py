@@ -116,6 +116,15 @@ class CaseMeta(Flow360ResourceBaseModel):
     id: str = pd.Field(alias="caseId")
     case_mesh_id: str = pd.Field(alias="caseMeshId")
     parent_id: Union[str, None] = pd.Field(alias="parentId")
+    status: Flow360Status = pd.Field()
+
+    # pylint: disable=no-self-argument
+    @pd.validator("status")
+    def set_status_type(cls, value: Flow360Status):
+        """set_status_type when case uploaded"""
+        if value is Flow360Status.UPLOADED:
+            return Flow360Status.CASE_UPLOADED
+        return value
 
     def to_case(self) -> Case:
         """
@@ -840,24 +849,35 @@ class CaseResults:
 
         if bet_forces or all:
             try:
-                self.download_file(CaseDownloadable.BET_FORCES, overwrite=overwrite)
+                self.download_file(
+                    CaseDownloadable.BET_FORCES, overwrite=overwrite, log_error=False
+                )
             except CloudFileNotFoundError as err:
                 if not self._case.has_bet_disks():
                     if bet_forces:
                         log.warning("Case does not have any BET disks.")
                 else:
-                    log.error("A problem occured when trying to download bet disk forces.")
+                    log.error(
+                        f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
+                    )
                     raise err
 
         if actuator_disk_output or all:
             try:
-                self.download_file(CaseDownloadable.ACTUATOR_DISK_OUTPUT, overwrite=overwrite)
+                self.download_file(
+                    CaseDownloadable.ACTUATOR_DISK_OUTPUT, overwrite=overwrite, log_error=False
+                )
             except CloudFileNotFoundError as err:
                 if not self._case.has_actuator_disks():
                     if actuator_disk_output:
                         log.warning("Case does not have any actuator disks.")
                 else:
-                    log.error("A problem occured when trying to download actuator disk results")
+                    log.error(
+                        (
+                            "A problem occured when trying to download actuator disk results:"
+                            f"{CaseDownloadable.ACTUATOR_DISK_OUTPUT}"
+                        )
+                    )
                     raise err
 
 
