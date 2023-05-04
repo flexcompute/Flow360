@@ -67,6 +67,15 @@ def generate_mock_webapi_data_volumemesh():
         json.dump({"data": resp}, fh, indent=4)
 
 
+def generate_mock_webapi_data_one_volumemesh():
+    id = "6504db70-0edc-4eb0-ab26-5d90c1e2a049"
+    resp = RestApi(endpoint=f"volumemeshes/{id}").get()
+    print(resp)
+
+    with open("volume_mesh_meta.json", "w") as fh:
+        json.dump({"data": resp}, fh, indent=4)
+
+
 def generate_mock_webapi_data_one_case():
     id = "c58e7a75-e349-476a-9020-247af6b2e92b"
     resp = RestApi(endpoint=f"cases/{id}").get()

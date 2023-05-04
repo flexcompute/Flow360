@@ -285,10 +285,37 @@ def test_sliding_interface():
         axis=(0, 0, 1),
         stationary_patches=["patch1"],
         rotating_patches=["patch2"],
-        volume_name="volume1",
+        volume_name=1,
         omega=1,
         rpm=1,
     )
+
+    assert si
+
+    si = SlidingInterface(
+        center=(0, 0, 0),
+        axis=(0, 0, 1),
+        stationary_patches=["patch1"],
+        rotating_patches=["patch2"],
+        volume_name=["volume1", "volume2"],
+        omega=1,
+        rpm=1,
+    )
+
+    assert si
+    to_file_from_file_test(si)
+
+    si = SlidingInterface(
+        center=(0, 0, 0),
+        axis=(0, 0, 1),
+        stationary_patches=["patch1"],
+        rotating_patches=["patch2"],
+        volume_name=[0, 1],
+        omega=1,
+        rpm=1,
+    )
+
+    assert si
 
     si = SlidingInterface(
         center=(0, 0, 0),

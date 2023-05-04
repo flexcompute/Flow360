@@ -12,7 +12,7 @@ class RestApi:
 
     # pylint: disable=redefined-builtin
     def __init__(self, endpoint, id=None):
-        is_valid_uuid(id, ignore_none=True)
+        is_valid_uuid(id, allow_none=True)
         self._id = id
         self._endpoint = endpoint
 

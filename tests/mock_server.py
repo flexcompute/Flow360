@@ -75,6 +75,16 @@ class MockResponseCase(MockResponse):
         return res
 
 
+class MockResponseVolumeMesh(MockResponse):
+    """response if VolumeMesh(id="00000000-0000-0000-0000-000000000000")"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/volume_mesh_meta.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseCaseRuntimeParams(MockResponse):
     """response if Case(id="00000000-0000-0000-0000-000000000000").params"""
 
@@ -106,9 +116,14 @@ class MockResponseInfoNotFound(MockResponse):
 
 
 RESPONSE_MAP = {
+    "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff/case": MockResponseCaseSubmit,
     "/volumemeshes/00000000-0000-0000-0000-000000000000/case": MockResponseCaseSubmit,
+    "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff": MockResponseVolumeMesh,
+    "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
     "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/00000000-0000-0000-0000-000000000000": MockResponseCase,
+    "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb": MockResponseCase,
+    "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/c58e7a75-e349-476a-9020-247af6b2e92b": MockResponseCase,
 }
 

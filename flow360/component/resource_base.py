@@ -12,6 +12,7 @@ import pydantic as pd
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
+from ..component.interfaces import BaseInterface
 from ..exceptions import RuntimeError as FlRuntimeError
 from ..log import log
 from ..user_config import UserConfig
@@ -168,15 +169,13 @@ class Flow360Resource(RestApi):
     """
 
     # pylint: disable=redefined-builtin
-    def __init__(
-        self, resource_type, info_type_class, *args, s3_transfer_method=None, id=None, **kwargs
-    ):
-        is_valid_uuid(id, ignore_none=False)
-        self._resource_type = resource_type
-        self.s3_transfer_method = s3_transfer_method
+    def __init__(self, interface: BaseInterface, info_type_class, id=None):
+        is_valid_uuid(id, allow_none=False)
+        self._resource_type = interface.resource_type
+        self.s3_transfer_method = interface.s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
-        super().__init__(*args, id=id, **kwargs)
+        super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
         return self.info.__str__()
@@ -328,7 +327,7 @@ class Flow360ResourceListBase(list, RestApi):
         resourceClass: Flow360Resource = None,
     ):
         if from_cloud:
-            endpoint = resourceClass._endpoint
+            endpoint = resourceClass._interface().endpoint
             if limit is not None and not include_deleted:
                 endpoint += "/page"
 
