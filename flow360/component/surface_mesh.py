@@ -10,11 +10,11 @@ from typing import Iterator, List, Union
 import pydantic as pd
 
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import S3TransferType
 from ..exceptions import FileError as FlFileError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
+from .interfaces import SurfaceMeshInterface
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .resource_base import (
     Flow360Resource,
@@ -57,14 +57,7 @@ class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
         return SurfaceMesh(self.id)
 
 
-# pylint: disable=too-few-public-methods
-class SurfaceMeshBase:
-    """SurfaceMeshBase base class"""
-
-    _endpoint = "surfacemeshes"
-
-
-class SurfaceMeshDraft(SurfaceMeshBase, ResourceDraft):
+class SurfaceMeshDraft(ResourceDraft):
     """
     Surface Mesh Draft component
     """
@@ -138,7 +131,7 @@ class SurfaceMeshDraft(SurfaceMeshBase, ResourceDraft):
 
         self.validator_api(self.params, solver_version=self.solver_version)
 
-        resp = RestApi(self._endpoint).post(data)
+        resp = RestApi(SurfaceMeshInterface.endpoint).post(data)
         info = SurfaceMeshMeta(**resp)
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
@@ -160,7 +153,7 @@ class SurfaceMeshDraft(SurfaceMeshBase, ResourceDraft):
         return Validator.SURFACE_MESH.validate(params, solver_version=solver_version)
 
 
-class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
+class SurfaceMesh(Flow360Resource):
     """
     Surface mesh component
     """
@@ -168,10 +161,8 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
-            resource_type="Surface Mesh",
+            interface=SurfaceMeshInterface,
             info_type_class=SurfaceMeshMeta,
-            s3_transfer_method=S3TransferType.SURFACE_MESH,
-            endpoint=self._endpoint,
             id=id,
         )
         self._params = None
@@ -243,6 +234,10 @@ class SurfaceMesh(SurfaceMeshBase, Flow360Resource):
         """
 
         self.download_file("logs/flow360_surface_mesh.user.log", to_file, keep_folder)
+
+    @classmethod
+    def _interface(cls):
+        return SurfaceMeshInterface
 
     @classmethod
     def _meta_class(cls):

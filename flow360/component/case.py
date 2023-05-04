@@ -12,12 +12,13 @@ from pylab import show, subplots
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import CloudFileNotFoundError, S3TransferType
+from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import RuntimeError as FlRuntimeError
 from ..exceptions import ValidationError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
+from .interfaces import CaseInterface, VolumeMeshInterface
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
@@ -35,8 +36,6 @@ class CaseBase:
     """
     Case Base component
     """
-
-    _endpoint = "cases"
 
     def copy(
         self,
@@ -269,11 +268,17 @@ class CaseDraft(CaseBase, ResourceDraft):
                         self.parent_case.solver_version, self.solver_version
                     )
                 )
+            self.solver_version = self.parent_case.solver_version
 
         volume_mesh_id = volume_mesh_id or self.other_case.volume_mesh_id
 
+        if self.solver_version is None:
+            volume_mesh_info = Flow360ResourceBaseModel(
+                **RestApi(VolumeMeshInterface.endpoint, id=volume_mesh_id).get()
+            )
+            self.solver_version = volume_mesh_info.solver_version
+
         is_valid_uuid(volume_mesh_id)
-        is_valid_uuid(parent_id, ignore_none=True)
         self.validator_api(
             self.params,
             volume_mesh_id=volume_mesh_id,
@@ -292,7 +297,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         if self.solver_version is not None:
             data["solverVersion"] = self.solver_version
 
-        resp = RestApi(self._endpoint).post(
+        resp = RestApi(CaseInterface.endpoint).post(
             json=data,
             path=f"volumemeshes/{volume_mesh_id}/case",
         )
@@ -319,7 +324,7 @@ class CaseDraft(CaseBase, ResourceDraft):
                     "You cannot specify volume_mesh_id OR other_case when parent case provided."
                 )
 
-        is_valid_uuid(self.volume_mesh_id, ignore_none=True)
+        is_valid_uuid(self.volume_mesh_id, allow_none=True)
 
         if pre_submit_checks:
             is_object_cloud_resource(self.other_case)
@@ -353,14 +358,13 @@ class Case(CaseBase, Flow360Resource):
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
-            resource_type="Case",
+            interface=CaseInterface,
             info_type_class=CaseMeta,
-            s3_transfer_method=S3TransferType.CASE,
-            endpoint=self._endpoint,
             id=id,
         )
 
         self._params = None
+        self._raw_params = None
         self._results = CaseResults(self)
 
     @classmethod
@@ -376,17 +380,22 @@ class Case(CaseBase, Flow360Resource):
         returns case params
         """
         if self._params is None:
-            raw_params = json.loads(self.get(method="runtimeParams")["content"])
+            self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
             try:
-                self._params = Flow360Params(**raw_params)
+                self._params = Flow360Params(**self._raw_params)
             except pd.ValidationError as err:
-                if self.status is Flow360Status.ERROR:
-                    log.error(f"{err}")
-                    self._params = raw_params
-                else:
-                    raise ValidationError(f"{err}") from err
+                raise ValidationError(error_messages.params_fetching_error(err)) from err
 
         return self._params
+
+    @property
+    def params_as_dict(self) -> dict:
+        """
+        returns case params as dictionary
+        """
+        if self._raw_params is None:
+            self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
+        return self._raw_params
 
     def has_parent(self) -> bool:
         """Check if case has parent case
@@ -479,6 +488,10 @@ class Case(CaseBase, Flow360Resource):
         returns False when case is in running or preprocessing state
         """
         return self.status.is_final()
+
+    @classmethod
+    def _interface(cls):
+        return CaseInterface
 
     @classmethod
     def _meta_class(cls):

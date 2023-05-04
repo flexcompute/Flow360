@@ -274,7 +274,7 @@ class SlidingInterface(Flow360BaseModel):
     rotating_patches : List[str]
         A list of dynamic patch names of an interface
 
-    volume_name : str
+    volume_name : Union[str, int, List[str], List[int]]
         A list of dynamic volume zones related to the above {omega, centerOfRotation, axisOfRotation}
 
     name: str, optional
@@ -328,7 +328,7 @@ class SlidingInterface(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
     stationary_patches: List[str] = pd.Field(alias="stationaryPatches")
     rotating_patches: List[str] = pd.Field(alias="rotatingPatches")
-    volume_name: str = pd.Field(alias="volumeName")
+    volume_name: Union[str, int, List[str], List[int]] = pd.Field(alias="volumeName")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
     name: Optional[str] = pd.Field(alias="interfaceName")
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")

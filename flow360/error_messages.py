@@ -19,6 +19,14 @@ You need to run sequence of all cases starting from mesh
 """
 
 
+def params_fetching_error(err_msg):
+    return f"""\
+There was a problem when fetching params for this case
+{err_msg}
+run .params_as_dict to get parameters as a raw dictionary
+    """
+
+
 def submit_reminder(class_name):
     return f"""\
 Remember to submit your {class_name} to cloud to have it processed.

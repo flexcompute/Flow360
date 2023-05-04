@@ -10,11 +10,11 @@ from ..log import log
 
 
 # pylint: disable=redefined-builtin
-def is_valid_uuid(id, ignore_none=False):
+def is_valid_uuid(id, allow_none=False):
     """
     Checks if id is valid
     """
-    if id is None and ignore_none:
+    if id is None and allow_none:
         return
     try:
         uuid.UUID(str(id))

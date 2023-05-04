@@ -11,7 +11,6 @@ import numpy as np
 from pydantic import Extra, Field, validator
 
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import S3TransferType
 from ..exceptions import FileError as FlFileError
 from ..exceptions import Flow360NotImplementedError
 from ..exceptions import ValueError as FlValueError
@@ -25,6 +24,7 @@ from .flow360_params.flow360_params import (
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
+from .interfaces import VolumeMeshInterface
 from .meshing.params import VolumeMeshingParams
 from .resource_base import (
     Flow360Resource,
@@ -341,14 +341,7 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
         return VolumeMesh(self.id)
 
 
-# pylint: disable=too-few-public-methods
-class VolumeMeshBase:
-    """VolumeMeshBase base class"""
-
-    _endpoint = "volumemeshes"
-
-
-class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
+class VolumeMeshDraft(ResourceDraft):
     """
     Volume mesh draft component (before submit)
     """
@@ -410,7 +403,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         if self.solver_version:
             body["solverVersion"] = self.solver_version
 
-        resp = RestApi(self._endpoint).post(body)
+        resp = RestApi(VolumeMeshInterface.endpoint).post(body)
         if not resp:
             return None
 
@@ -444,7 +437,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         if self.solver_version:
             body["solverVersion"] = self.solver_version
 
-        resp = RestApi(self._endpoint).post(body)
+        resp = RestApi(VolumeMeshInterface.endpoint).post(body)
         if not resp:
             return None
 
@@ -489,7 +482,7 @@ class VolumeMeshDraft(VolumeMeshBase, ResourceDraft):
         return Validator.VOLUME_MESH.validate(params, solver_version=solver_version)
 
 
-class VolumeMesh(VolumeMeshBase, Flow360Resource):
+class VolumeMesh(Flow360Resource):
     """
     Volume mesh component
     """
@@ -497,10 +490,8 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
-            resource_type="Volume Mesh",
+            interface=VolumeMeshInterface,
             info_type_class=VolumeMeshMeta,
-            s3_transfer_method=S3TransferType.VOLUME_MESH,
-            endpoint=self._endpoint,
             id=id,
         )
         self.__mesh_params = None
@@ -604,6 +595,10 @@ class VolumeMesh(VolumeMeshBase, Flow360Resource):
         """
         resp = self.post({}, method=f"completeUpload?fileName={remote_file_name}")
         self._info = VolumeMeshMeta(**resp)
+
+    @classmethod
+    def _interface(cls):
+        return VolumeMeshInterface
 
     @classmethod
     def _meta_class(cls):
