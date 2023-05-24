@@ -48,6 +48,8 @@ def http_interceptor(func):
 
         resp = func(*args, **kwargs)
 
+        log.debug(f"response: {resp}")
+
         if resp.status_code == 400:
             raise WebError(f"Web {args[1]}: Bad request error: {resp.json()['error']}")
 

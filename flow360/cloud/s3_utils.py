@@ -68,8 +68,9 @@ def create_base_folder(path: str, target_name: str, to_file: str = ".", keep_fol
             if keep_folder
             else os.path.join(to_file, os.path.basename(target_name))
         )
-
-    os.makedirs(os.path.dirname(to_file), exist_ok=True)
+    dirname = os.path.dirname(to_file)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
     return to_file
 
 
@@ -281,6 +282,7 @@ class S3TransferType(Enum):
                     Key=token.get_s3_key(),
                     Callback=_call_back,
                 )
+        log.info(f"Saved to {to_file}")
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"

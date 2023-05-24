@@ -10,7 +10,9 @@ from typing import Iterator, List, Optional, Union
 import numpy as np
 from pydantic import Extra, Field, validator
 
+from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
+from ..exceptions import CloudFileError
 from ..exceptions import FileError as FlFileError
 from ..exceptions import Flow360NotImplementedError
 from ..exceptions import ValueError as FlValueError
@@ -421,30 +423,35 @@ class VolumeMeshDraft(ResourceDraft):
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
 
+        if mesh_format is VolumeMeshFileFormat.CGNS:
+            remote_file_name = "volumeMesh"
+        else:
+            remote_file_name = "mesh"
+        remote_file_name = (
+            f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        )
+
         name = self.name
         if name is None:
             name = os.path.splitext(os.path.basename(self.file_name))[0]
 
-        body = {
-            "meshName": name,
-            "meshTags": self.tags,
-            "meshFormat": mesh_format.value,
-            "meshEndianness": endianness.value,
-        }
-        if self.params:
-            body["meshParams"] = self.params.to_flow360_json()
-
-        if self.solver_version:
-            body["solverVersion"] = self.solver_version
-
-        resp = RestApi(VolumeMeshInterface.endpoint).post(body)
+        req = NewVolumeMeshRequest(
+            name=name,
+            file_name=remote_file_name,
+            tags=self.tags,
+            format=mesh_format.value,
+            endianness=endianness.value,
+            compression=compression.value,
+            params=self.params,
+            solver_version=self.solver_version,
+        )
+        resp = RestApi(VolumeMeshInterface.endpoint).post(req.dict())
         if not resp:
             return None
 
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
-        remote_file_name = mesh._remote_file_name(mesh_format, compression, endianness)
         mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
@@ -574,6 +581,13 @@ class VolumeMesh(Flow360Resource):
             remote_file_name = self.info.file_name
             if remote_file_name is None:
                 remote_file_name = self._remote_file_name()
+
+            if to_file != ".":
+                _, file_ext = os.path.splitext(remote_file_name)
+                _, to_file_ext = os.path.splitext(to_file)
+                if to_file_ext != file_ext:
+                    to_file = to_file + self._get_file_extention()
+
             super().download_file(remote_file_name, to_file, keep_folder, overwrite=overwrite)
 
     def download_log(self, log_file: VolumeMeshLog, to_file=".", keep_folder: bool = True):
@@ -623,19 +637,30 @@ class VolumeMesh(Flow360Resource):
         """
         return cls(mesh_id)
 
-    def _remote_file_name(self, mesh_format=None, compression=None, endianness=None):
+    def _get_file_extention(self):
+        compression = self.info.compression
+        mesh_format = self.info.mesh_format
+        endianness = self.info.endianness
+        return f"{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+
+    def _remote_file_name(self):
         """
         mesh filename on cloud
         """
-        compression = compression or self.info.compression
-        mesh_format = mesh_format or self.info.mesh_format
-        endianness = endianness or self.info.endianness
 
-        remote_file_name = "mesh"
-        if mesh_format is VolumeMeshFileFormat.CGNS:
-            remote_file_name = self.info.name
+        remote_file_name = None
+        for file in self.get_download_file_list():
+            _, file_name_no_compression = CompressionFormat.detect(file["fileName"])
+            try:
+                VolumeMeshFileFormat.detect(file_name_no_compression)
+                remote_file_name = file["fileName"]
+            except RuntimeError:
+                continue
 
-        return f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        if remote_file_name is None:
+            raise CloudFileError(f"No volume mesh file found for id={self.id}")
+
+        return remote_file_name
 
     @classmethod
     def from_file(

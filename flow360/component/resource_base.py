@@ -1,6 +1,7 @@
 """
 Flow360 base Model
 """
+import os
 import traceback
 from abc import ABC
 from datetime import datetime
@@ -267,6 +268,16 @@ class Flow360Resource(RestApi):
         """
         return self.info.solver_version
 
+    def get_download_file_list(self) -> List:
+        """return list of files available for download
+
+        Returns
+        -------
+        List
+            List of files available for download
+        """
+        return self.get(method="files")
+
     # pylint: disable=too-many-arguments
     @on_cloud_resource_only
     def download_file(
@@ -281,6 +292,13 @@ class Flow360Resource(RestApi):
         """
         general download functionality
         """
+
+        if to_file != ".":
+            _, file_ext = os.path.splitext(file_name)
+            _, to_file_ext = os.path.splitext(to_file)
+            if to_file_ext != file_ext:
+                to_file = to_file + file_ext
+
         return self.s3_transfer_method.download_file(
             self.id,
             file_name,
