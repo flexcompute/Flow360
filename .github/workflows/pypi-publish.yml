@@ -45,6 +45,15 @@ jobs:
       run: poetry install
     - name: Pump version number
       run: poetry version ${{ inputs.version }}
+    - name: check version
+      run: |
+          version=$(poetry run python -c "import flow360; print(flow360.__version__)")
+          if [ "$version" != "${{ inputs.version }}" ]; then
+              echo "version in flow360.__version__ does not match to release version "${{ inputs.version }}"
+              exit 1
+          else
+              echo "version match"
+          fi
     - name: Setup pipy token
       shell: bash
       env:
