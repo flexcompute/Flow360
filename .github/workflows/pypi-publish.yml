@@ -53,9 +53,6 @@ jobs:
           if [ "$version" != "$publish_version" ]; then
               echo "version ${version}!=${publish_version} in flow360.__version__ does not match to release version ${{ inputs.version }}"
               exit 1
-          else
-              echo "version match"
-              exit 1
           fi
     - name: Setup pipy token
       shell: bash
