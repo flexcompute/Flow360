@@ -9,7 +9,7 @@ def test_get_supported_server_versions():
     # Prepare mock data
     mock_response = MagicMock()
     mock_response.__iter__.return_value = iter(
-        [{"version": "v1.0.0"}, {"version": "v2.0.3b5"}])
+        [{"version": "1.0.0"}, {"version": "2.0.3b5"}])
     # Mock the http_util.Http.get method
     with patch('flow360.version_check.http_util.Http.get') as mock_get:
         mock_get.return_value = mock_response
@@ -17,7 +17,7 @@ def test_get_supported_server_versions():
         versions = flow360.version_check.get_supported_server_versions(
             "flow360-python-client-v2")
         # Add appropriate assertions based on the expected behavior
-        assert versions == ["v1.0.0", "v2.0.3b5"]
+        assert versions == ["1.0.0", "2.0.3b5"]
 
         # Test with an HTTPError
         mock_get.side_effect = requests.exceptions.HTTPError()

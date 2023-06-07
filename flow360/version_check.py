@@ -19,6 +19,9 @@ class VersionSupported(Enum):
 
 
 def get_supported_server_versions(appName):
+    """
+    fetch list of supported versions
+    """
     try:
         session = requests.Session()
         http = http_util.Http(session)
@@ -67,6 +70,10 @@ def check_client_version(appName):
 
 
 def client_version_get_info(appName):
+    """
+    Get information on if the client version is 1)supported 2)the latest version
+    throw SystemExit 0 error if client version is not supported
+    """
     version_status, version = check_client_version(appName)
 
     if version_status == VersionSupported.NO:
