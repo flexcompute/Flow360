@@ -1,13 +1,15 @@
 import sys
 import re
 from enum import Enum
-from distutils.version import LooseVersion
+from . solver_version import Flow360Version as sv
+from packaging.version import Version
 
 from requests import HTTPError
 
 from .version import __version__
 
-from .httputils import portalApiGet
+from .cloud import http_util
+import requests
 
 
 class VersionSupported(Enum):
@@ -16,9 +18,11 @@ class VersionSupported(Enum):
     CAN_UPGRADE = 3
 
 
-def get_supported_server_versions():
+def get_supported_server_versions(appName):
     try:
-        response = portalApiGet("versions?appName=flow360-python-client")
+        session = requests.Session()
+        http = http_util.Http(session)
+        response = http.get(f"versions?appName={appName}")
     except HTTPError:
         raise HTTPError('Error in connecting server')
 
@@ -30,26 +34,40 @@ def get_supported_server_versions():
     return versions
 
 
-def check_client_version():
-    supported_versions = get_supported_server_versions()
+def check_client_version(appName):
+    """
+    appName: the appName for filtering the versions
+    check the current version with available versions
+    if the current version is no loger supported, return VersionSupported.NO, current_version
+    if the current version can be upgraded, return VersionSupported.CAN_UPGRADE, latest_version
+    otherwise, return VersionSupported.YES, current_version
+    """
+    supported_versions = get_supported_server_versions(appName)
     latest_version = supported_versions[0]
     current_version = __version__
-
-    is_supported = any([LooseVersion(current_version) == LooseVersion(v)
-                        for v in supported_versions])
+    if appName == "flow360-python-client-v2":
+        current_version = Version(current_version)
+        is_supported = any([current_version == Version(v)
+                            for v in supported_versions])
+        can_upgrade = current_version < Version(latest_version)
+    else:
+        current_version = sv(current_version)
+        is_supported = any([current_version == sv(v)
+                            for v in supported_versions])
+        can_upgrade = current_version < sv(latest_version)
 
     if not is_supported:
         return VersionSupported.NO, current_version
 
-    elif LooseVersion(current_version) < LooseVersion(latest_version):
+    elif can_upgrade:
         return VersionSupported.CAN_UPGRADE, latest_version
 
     else:
         return VersionSupported.YES, current_version
 
 
-def client_version_get_info():
-    version_status, version = check_client_version()
+def client_version_get_info(appName):
+    version_status, version = check_client_version(appName)
 
     if version_status == VersionSupported.NO:
         print("\nYour version of CLI ({}) is no longer supported.".format(version))
@@ -67,6 +85,3 @@ def client_version_get_info():
 
     if version_status == VersionSupported.NO:
         sys.exit(0)
-
-
-client_version_get_info()
