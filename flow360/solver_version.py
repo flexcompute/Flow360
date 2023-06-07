@@ -17,11 +17,15 @@ class Flow360Version:
         ret = re.findall("^([a-zA-Z0-9\-]+)-([0-9\.]+)$", version)
         if len(ret) != 1:
             print("matched version = " + str(ret))
-            raise RuntimeError("solver version is not valid: {}".format(version))
+            raise RuntimeError(
+                "solver version is not valid: {}".format(version))
         self.head = ret[0][0]
         self.tail = [int(i) for i in ret[0][1].strip().split(".")]
         if self.head == "master":
             self.tail = [i * 100 for i in self.tail]
+
+    def __str__(self):
+        return self.full
 
     def __lt__(self, other):
         return self.tail < other.tail
