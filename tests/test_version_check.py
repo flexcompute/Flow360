@@ -117,28 +117,32 @@ def test_check_client_version():
             assert version_status == VersionSupported.CAN_UPGRADE
             assert str(version) == latest_version
 
-# def test_client_version_get_info(capsys):
-#     # Test VersionSupported.NO
-#     with patch('version_check.check_client_version') as mock_check_client_version:
-#         mock_check_client_version.return_value = (VersionSupported.NO, "1.0")
-#         client_version_get_info()
-#         captured = capsys.readouterr()
-#         assert "Your version of CLI (1.0) is no longer supported." in captured.out
 
-#     # Test VersionSupported.CAN_UPGRADE
-#     with patch('version_check.check_client_version') as mock_check_client_version:
-#         mock_check_client_version.return_value = (
-#             VersionSupported.CAN_UPGRADE, "2.0")
-#         client_version_get_info()
-#         captured = capsys.readouterr()
-#         assert "New version of CLI (2.0) is now available." in captured.out
+def test_client_version_get_info(capsys):
+    # Test VersionSupported.NO
+    with patch('flow360.version_check.check_client_version') as mock_check_client_version:
+        with pytest.raises(SystemExit) as exc_info:
+            mock_check_client_version.return_value = (
+                VersionSupported.NO, "1.0")
+            client_version_get_info("solver")
+            captured = capsys.readouterr()
+            assert "Your version of CLI (1.0) is no longer supported." in captured.out
+
+    # Test VersionSupported.CAN_UPGRADE
+    with patch('flow360.version_check.check_client_version') as mock_check_client_version:
+        mock_check_client_version.return_value = (
+            VersionSupported.CAN_UPGRADE, "2.0")
+        client_version_get_info("appName")
+        captured = capsys.readouterr()
+        assert "New version of CLI (2.0) is now available." in captured.out
+
+    # Test VersionSupported.YES
+    with patch('flow360.version_check.check_client_version') as mock_check_client_version:
+        mock_check_client_version.return_value = (VersionSupported.YES, "1.0")
+        client_version_get_info("appName")
+        captured = capsys.readouterr()
+        assert captured.out == ""
 
 
-#     # Test VersionSupported.YES
-#     with patch('version_check.check_client_version') as mock_check_client_version:
-#         mock_check_client_version.return_value = (VersionSupported.YES, "1.0")
-#         client_version_get_info()
-#         captured = capsys.readouterr()
-#         assert captured.out == ""
 # Run the tests
 pytest.main()
