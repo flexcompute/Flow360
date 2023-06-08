@@ -74,8 +74,8 @@ class Environment:
     """
     Environment decorator for user interactive.
     For example:
-        Env.dev.active()
-        Env.current.name == "dev"
+    Env.dev.active()
+    Env.current.name == "dev"
     """
 
     def __init__(self):
