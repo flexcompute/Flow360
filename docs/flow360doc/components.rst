@@ -1,8 +1,8 @@
 .. toctree::
    :caption: Contents:
 
-   ./flow360doc/component/flow360_params
-   ./flow360doc/component/meshing
+   ./component/flow360_params
+   ./component/meshing
 
 
 component
@@ -16,8 +16,6 @@ Module contents
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
 
 Case module
 -------------------------

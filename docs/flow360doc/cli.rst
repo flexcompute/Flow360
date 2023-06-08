@@ -9,13 +9,13 @@ Module contents
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
 
-flow360.cli.app module
+Commandline App module
 -------------------------
 
 .. automodule:: flow360.cli.app 
    :members:
    :undoc-members:
    :show-inheritance:
+.. autofunction:: flow360.cli.app.flow360
+.. autofunction:: flow360.cli.app.configure

@@ -9,8 +9,6 @@ Module contents
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
 
 http utils module
 -------------------------
