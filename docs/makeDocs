@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This line will create rst files for all modules and functions:
+#sphinx-apidoc -f -o ./src ../flow360client]
+
+# This line reads all rst files and injects 'docstrings':
+python3 autodoc.py
