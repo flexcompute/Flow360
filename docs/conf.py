@@ -36,17 +36,6 @@ extensions = [
 ]
 
 
-autosummary_generate = ["sphinx.ext.autosummary",
-                        ".flow360.environment.Environment.set_current",
-                        ".flow360.environment.EnvironmentConfig.active",
-                        ".flow360.environment.EnvironmentConfig.construct",
-                        ".flow360.environment.EnvironmentConfig.copy",
-                        ".flow360.environment.EnvironmentConfig.dict",
-                        ".flow360.environment.EnvironmentConfig.get_real_url",
-                        ".flow360.environment.EnvironmentConfig.json",
-                        ]
-
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -61,13 +50,7 @@ language = 'en'
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-autodoc_mock_imports = [
-    'flow360.component.surface_mesh',
-    'flow360.component.volume_mesh',
-    'flow360.component.types',
-    'flow360.component.surface_mesh.SurfaceMeshMeta',
-    'flow360.component.surface_mesh.SurfaceMesh',
-]
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -79,8 +62,9 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
+numpydoc_show_class_members = False
 
 # -- Extension configuration -------------------------------------------------
 
