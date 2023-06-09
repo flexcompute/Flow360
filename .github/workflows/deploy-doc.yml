@@ -3,7 +3,7 @@ name: Build and Deploy New Documentation
 on:
   push:
     branches:
-      - develop
+      - lin/doc
 
 jobs:
   build:
