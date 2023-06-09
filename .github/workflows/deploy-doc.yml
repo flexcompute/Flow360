@@ -27,7 +27,7 @@ jobs:
       run:  make html
 
     - name: Pushes to another repository
-      # uses: jinlin-flex/jinlinflex.github.io@main
+      uses: flexcompute/Flow360@lin/doc
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       with:
