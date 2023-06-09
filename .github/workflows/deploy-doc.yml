@@ -27,7 +27,7 @@ jobs:
       run:  make html
 
     - name: Pushes to another repository
-      uses: flexcompute/Flow360@lin/doc
+      uses: flexcompute/Flow360@lin/.github/workflows
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       with:
