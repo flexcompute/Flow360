@@ -44,15 +44,17 @@ jobs:
       run:
         git clone https://github.com/jinlin-flex/jinlinflex.github.io.git target-repo
 
-    - name: commit code
-      # uses: flexcompute/Flow360@lin/.github/workflows
-      env:
-        SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
-      run:
-        cp -r ./docs/_build/html target-repo
-        cd target-repo
-        git add .
-        git commit -m "update documentation"
+    - name: Copy files to target repository
+      run: cp -r ./docs/_build/html target-repo
+
+    - name: Change directory to target repository
+      run: cd target-repo
+
+    - name: Add changes to Git
+      run: git add .
+
+    - name: Commit changes
+      run: git commit -m "update documentation"
 
     - name: push
       # uses: flexcompute/Flow360@lin/.github/workflows
