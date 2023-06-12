@@ -30,14 +30,10 @@ jobs:
       # uses: flexcompute/Flow360@lin/.github/workflows
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
-      with:
-        source-directory: './docs/_build/html/'
-        destination-github-username: 'jinlin-flex'
-        destination-repository-name: 'jinlinflex/github.io'
-        user-email: lin@flexcompute.com
-        target-branch: main
       run:
-        git clone https://github.com/${{github.destination-github-username}}/${{github.destination-repository-name}} target-repo
+        git config --global user.email "lin@flexcompute.com"
+        git config --global user.name "jinlin-flex"
+        git clone https://github.com/jinlin-flex/jinlinflex/github.io target-repo
         cd target-repo
         p -r ../../docs/_build/html .
         git add .
