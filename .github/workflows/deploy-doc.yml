@@ -30,17 +30,33 @@ jobs:
       working-directory: ./docs
       run:  make html
 
-    - name: Pushes to another repository
+    - name: Config user name and email
+      # uses: flexcompute/Flow360@lin/.github/workflows
+      run:
+        git config --global user.email "lin@flexcompute.com"
+        git config --global user.name "jinlin-flex"
+
+    - name: clone repository
       # uses: flexcompute/Flow360@lin/.github/workflows
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       run:
-        git config --global user.email "lin@flexcompute.com"
-        git config --global user.name "jinlin-flex"
         git clone https://github.com/jinlin-flex/jinlinflex/github.io target-repo
+
+    - name: commit code
+      # uses: flexcompute/Flow360@lin/.github/workflows
+      env:
+        SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
+      run:
+        cp -r ./docs/_build/html target-repo
         cd target-repo
-        p -r ./docs/_build/html .
         git add .
         git commit -m "update documentation"
+
+    - name: push
+      # uses: flexcompute/Flow360@lin/.github/workflows
+      env:
+        SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
+      run:
         git push origin main
         
