@@ -33,6 +33,7 @@ jobs:
     - name: Config user name and email
       # uses: flexcompute/Flow360@lin/.github/workflows
       run:
+        git --version
         git config user.email "lin@flexcompute.com"
         git config user.name "jinlin-flex"
         git config --list
