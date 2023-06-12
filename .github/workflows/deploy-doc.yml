@@ -30,12 +30,6 @@ jobs:
       working-directory: ./docs
       run:  make html
 
-    # - name: Config user name and email
-    #   # uses: flexcompute/Flow360@lin/.github/workflows
-    #   run:
-    #     git --version
-
-
     - name: clone repository
       # uses: flexcompute/Flow360@lin/.github/workflows
       env:
@@ -52,13 +46,14 @@ jobs:
     - name: Add changes to Git
       run: git add .
 
-    - name: Commit changes
-    
-      run: 
+    - name: Config user name and email
+      run:
         git --version
         git config user.email "lin@flexcompute.com"
         git config user.name "jinlin-flex"
-        git commit -m "update documentation"
+        
+    - name: Commit changes
+      run: git commit -m "update documentation"
 
     - name: push
       # uses: flexcompute/Flow360@lin/.github/workflows
