@@ -51,7 +51,12 @@ jobs:
         git --version
         git config user.email "lin@flexcompute.com"
         git config user.name "jinlin-flex"
-        
+      
+    - name: Check user name and email are set
+      run:
+        git config user.email
+        git config user.name
+
     - name: Commit changes
       run: git commit -m "update documentation"
 
