@@ -35,6 +35,7 @@ jobs:
       run:
         git config --global user.email "lin@flexcompute.com"
         git config --global user.name "jinlin-flex"
+        git config --global --list
 
     - name: clone repository
       # uses: flexcompute/Flow360@lin/.github/workflows
