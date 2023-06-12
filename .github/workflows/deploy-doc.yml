@@ -32,7 +32,7 @@ jobs:
 
     - uses: cpina/github-action-push-to-another-repository@main
       env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        API_TOKEN_DOC_REPO: ${{ secrets.API_TOKEN_DOC_REPO }}
       with:
         source-directory: './docs/_build/html/'
         destination-github-username: 'jinlin-flex'
