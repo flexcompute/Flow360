@@ -36,6 +36,6 @@ jobs:
       with:
         source-directory: './docs/_build/html/'
         destination-github-username: 'jinlin-flex'
-        destination-repository-name: 'jinlinflex/github.io'
+        destination-repository-name: 'jinlinflex.github.io'
         user-email: lin@flexcompute.com
         target-branch: main
