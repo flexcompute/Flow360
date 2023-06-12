@@ -27,7 +27,7 @@ jobs:
       run:  make html
 
     - name: Pushes to another repository
-      uses: flexcompute/Flow360@lin/.github/workflows
+      # uses: flexcompute/Flow360@lin/.github/workflows
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       with:
@@ -36,3 +36,11 @@ jobs:
         destination-repository-name: 'jinlinflex/github.io'
         user-email: lin@flexcompute.com
         target-branch: main
+      run:
+        git clone https://github.com/${{github.destination-github-username}}/${{github.destination-repository-name}} target-repo
+        cd target-repo
+        p -r ../../docs/_build/html .
+        git add .
+        git commit -m "update documentation"
+        git push origin main
+        
