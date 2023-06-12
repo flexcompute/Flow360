@@ -22,10 +22,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install sphinx
 
-    -name: Install numpydoc
+    - name: Install numpydoc
       run: |
         pip install numpydoc
-        
+
     - name: creates output
       working-directory: ./docs
       run:  make html
