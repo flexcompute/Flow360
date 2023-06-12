@@ -42,7 +42,7 @@ jobs:
       env:
         SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       run:
-        git clone https://github.com/jinlin-flex/jinlinflex/github.io target-repo
+        git clone git@github.com:jinlin-flex/jinlinflex.github.io.git target-repo
 
     - name: commit code
       # uses: flexcompute/Flow360@lin/.github/workflows
