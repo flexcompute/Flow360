@@ -55,6 +55,7 @@ jobs:
     - name: Commit changes
     
       run: 
+        git --version
         git config user.email "lin@flexcompute.com"
         git config user.name "jinlin-flex"
         git commit -m "update documentation"
