@@ -23,7 +23,7 @@ jobs:
         pip install sphinx
 
     - name: creates output
-      working-directory: ../../docs
+      working-directory: ./docs
       run:  make html
 
     - name: Pushes to another repository
@@ -35,7 +35,7 @@ jobs:
         git config --global user.name "jinlin-flex"
         git clone https://github.com/jinlin-flex/jinlinflex/github.io target-repo
         cd target-repo
-        p -r ../../docs/_build/html .
+        p -r ./docs/_build/html .
         git add .
         git commit -m "update documentation"
         git push origin main
