@@ -49,7 +49,7 @@ jobs:
     - name: Config user name and email
       run:
         git --version
-        git config --global user.email "lin@flexcompute.com"
+        git config user.email "lin@flexcompute.com"
         git config user.name "jinlin-flex"
       
     # - name: Check user name and email are set
