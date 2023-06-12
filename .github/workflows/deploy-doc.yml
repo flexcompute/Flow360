@@ -46,18 +46,20 @@ jobs:
     - name: Add changes to Git
       run: git add .
 
-    - name: Config user name and email
-      run:
-        git --version
-        git config user.email "lin@flexcompute.com"
-        git config user.name "jinlin-flex"
+    # - name: Config user name and email
+    #   run:
+    #     git --version
+    #     git config --global user.email "lin@flexcompute.com"
+    #     git config user.name "jinlin-flex"
       
-    - name: Check user name and email are set
-      run:
-        git config user.email
-        git config user.name
+    # - name: Check user name and email are set
+    #   run:
+    #     git config user.email
+    #     git config user.name
 
     - name: Commit changes
+      env:
+          SSH_DEPLOY_KEY: ${{ secrets.API_TOKEN_GITHUB }}
       run: git commit -m "update documentation"
 
     - name: push
