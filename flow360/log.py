@@ -86,27 +86,33 @@ class Logger:
 
     def debug(self, message: str, *args) -> None:
         """Log (message) % (args) at debug level"""
-        self._log(_level_value["DEBUG"], "DEBUG", message % args)
+        message = message % args
+        message = f"[white]{message}[/white]"
+        self._log(_level_value["DEBUG"], "DEBUG", message)
 
     def info(self, message: str, *args) -> None:
         """Log (message) % (args) at info level"""
-        color_message = f"[cyan]{message}[/cyan]"
-        self._log(_level_value["INFO"], "INFO", color_message % args)
+        message = message % args
+        message = f"[cyan]{message}[/cyan]"
+        self._log(_level_value["INFO"], "INFO", message)
 
     def warning(self, message: str, *args) -> None:
         """Log (message) % (args) at warning level"""
-        color_message = f"[yellow]{message}[/yellow]"
-        self._log(_level_value["WARNING"], "WARNING", color_message % args)
+        message = message % args
+        message = f"[yellow]{message}[/yellow]"
+        self._log(_level_value["WARNING"], "WARNING", message)
 
     def error(self, message: str, *args) -> None:
         """Log (message) % (args) at error level"""
-        color_message = f"[bold red]{message}[/bold red]"
-        self._log(_level_value["ERROR"], "ERROR", color_message % args)
+        message = message % args
+        message = f"[bold red]{message}[/bold red]"
+        self._log(_level_value["ERROR"], "ERROR", message)
 
     def critical(self, message: str, *args) -> None:
         """Log (message) % (args) at critical level"""
-        color_message = f"[bold underline red]{message}[/bold underline red]"
-        self._log(_level_value["CRITICAL"], "CRITICAL", color_message % args)
+        message = message % args
+        message = f"[bold underline red]{message}[/bold underline red]"
+        self._log(_level_value["CRITICAL"], "CRITICAL", message)
 
 
 # Initialize FLow360's logger
