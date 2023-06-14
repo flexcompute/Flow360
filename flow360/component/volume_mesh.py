@@ -4,6 +4,7 @@ Volume mesh component
 from __future__ import annotations
 
 import os.path
+import zipfile
 from enum import Enum
 from typing import Iterator, List, Optional, Union
 
@@ -452,7 +453,14 @@ class VolumeMeshDraft(ResourceDraft):
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
-        mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+
+        # upload mesh
+        with zipfile.ZipFile(self.file_name + ".zip", "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(self.file_name, arcname=self.file_name)
+
+        mesh.upload_file(
+            remote_file_name, self.file_name + ".zip", progress_callback=progress_callback
+        )
         mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
