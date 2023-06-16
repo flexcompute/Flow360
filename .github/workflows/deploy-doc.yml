@@ -1,9 +1,7 @@
 name: Build and Deploy New Documentation
 
 on:
-  push:
-    branches:
-      - lin/doc
+  workflow_dispatch:
 
 jobs:
   build:
