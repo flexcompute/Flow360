@@ -55,6 +55,18 @@ def compare_to_ref(obj, ref_path, content_only=False):
 
 
 # for generating MOCK WEBAPI data:
+def generate_mock_webapi_data_version_check():
+    current_directory = os.path.dirname(__file__)
+    relative_path = os.path.join(current_directory, "data", "mock_webapi", "versions.json")
+    with open(relative_path, "w") as fh:
+        json.dump({"data": [{"version": "1.0.0"}, {"version": "2.0.3b5"}]}, fh, indent=4)
+
+
+def empty_mock_webapi_data_version_check():
+    current_directory = os.path.dirname(__file__)
+    relative_path = os.path.join(current_directory, "data", "mock_webapi", "versions.json")
+    with open(relative_path, "w") as fh:
+        json.dump({"data": []}, fh, indent=4)
 
 
 def generate_mock_webapi_data_volumemesh():

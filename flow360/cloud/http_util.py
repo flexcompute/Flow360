@@ -77,6 +77,18 @@ class Http:
         self.session = session
 
     @http_interceptor
+    def portal_api_get(self, path: str, json=None, params=None):
+        """
+        Get the resource.
+        :param path:
+        :param json:
+        :return:
+        """
+        return self.session.get(
+            url=Env.current.get_portal_real_url(path), json=json, params=params, auth=api_key_auth
+        )
+
+    @http_interceptor
     def get(self, path: str, json=None, params=None):
         """
         Get the resource.

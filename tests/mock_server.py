@@ -23,6 +23,16 @@ class MockResponse:
         pass
 
 
+class MockResponseVersions(MockResponse):
+    """response if get_supported_server_versions()"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/versions.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseVolumeMeshesPage(MockResponse):
     """response if VolumeMeshList()"""
 
@@ -125,16 +135,21 @@ RESPONSE_MAP = {
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb": MockResponseCase,
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/c58e7a75-e349-476a-9020-247af6b2e92b": MockResponseCase,
+    "-python-client-v2": MockResponseVersions,
 }
 
 
 def mock_webapi(url, params):
     method = url.split("flow360")[-1]
+    print("<><><><><><<><<><<><><>><<>")
 
     print(method)
 
     if method in RESPONSE_MAP.keys():
         return RESPONSE_MAP[method]()
+
+    if method.startswith("-python-client-v2"):
+        return MockResponseVersions
 
     if method.startswith("/volumemeshes/page"):
         if params["includeDeleted"]:
