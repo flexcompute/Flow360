@@ -23,6 +23,9 @@ class Flow360Version:
         if self.head == "master":
             self.tail = [i * 100 for i in self.tail]
 
+    def __str__(self):
+        return self.full
+
     def __lt__(self, other):
         return self.tail < other.tail
 

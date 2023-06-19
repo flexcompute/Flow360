@@ -66,7 +66,7 @@ class DataError(Flow360Error):
 
 
 class Flow360ImportError(Flow360Error):
-    """Error importing a package needed for tidy3d."""
+    """Error importing a package needed for Flow360."""
 
 
 class Flow360NotImplementedError(Flow360Error):
