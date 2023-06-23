@@ -403,11 +403,11 @@ class RemoteResourceLogs:
 
     def __init__(self, flow360: Flow360Resource):
         self.path = None
-        self.flow360 = flow360
+        self.flow360_resource = flow360
         self.dir_path = None
         self.paths = []
 
-    def download_log(
+    def download(
         self,
         to_file="./logs/",
     ):
@@ -421,12 +421,12 @@ class RemoteResourceLogs:
         :param kwargs: Additional keyword arguments passed to Flow360Resource.download_file().
         """
         self.dir_path = to_file
-        file_list = self.flow360.get_download_file_list()
+        file_list = self.flow360_resource.get_download_file_list()
         regex = re.compile(r"logs/.*\.log")
-        for fname in file_list:
-            if regex.match(fname):
-                self.flow360.download_file(fname, to_file)
-            self.path = to_file + fname
+        for file_name in file_list:
+            if regex.match(file_name):
+                self.flow360_resource.download_file(file_name, to_file)
+            self.path = to_file + file_name
             self.paths.append(self.path)
 
     def clean(self):
@@ -451,7 +451,7 @@ class RemoteResourceLogs:
         except OSError as error:
             log.error(f"OS error when removing temporary log files {error}")
 
-    def get_log_by_pos(self, pos: Position = None, num_lines: int = 100, fname: str = None):
+    def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100, file_name: str = None):
         """
         Get log lines based on position (head, tail, all).
 
@@ -460,9 +460,9 @@ class RemoteResourceLogs:
         :return: List of log lines.
         """
         try:
-            self.download_log()
-            if len(self.paths) >= 1 and fname is not None:
-                self.path = fname
+            self.download()
+            if len(self.paths) >= 1 and file_name is not None:
+                self.path = file_name
             with open(self.path, "r", encoding="utf-8") as file:
                 if pos == Position.HEAD:
                     return file.readlines()[:num_lines]
@@ -474,7 +474,7 @@ class RemoteResourceLogs:
             log.error("invalid path to log files", error)
             return None
 
-    def get_log_by_level(self, level: LogLevel = None, fname: str = None):
+    def _get_log_by_level(self, level: LogLevel = None, file_name: str = None):
         """
         Get log lines filtered by log level.
 
@@ -482,9 +482,9 @@ class RemoteResourceLogs:
         :return: List of filtered log lines.
         """
         try:
-            self.download_log()
-            if len(self.paths) >= 1 and fname is not None:
-                self.path = fname
+            self.download()
+            if len(self.paths) >= 1 and file_name is not None:
+                self.path = file_name
             with open(self.path, "r", encoding="utf-8") as file:
                 log_contents = file.read()
                 if level == "ERROR":
@@ -507,7 +507,7 @@ class RemoteResourceLogs:
 
         :param num_lines: Number of lines to print.
         """
-        log_message = self.get_log_by_pos(Position.HEAD, num_lines)
+        log_message = self._get_log_by_pos(Position.HEAD, num_lines)
         print("\n".join(log_message), end="")
         self.clean()
 
@@ -517,7 +517,7 @@ class RemoteResourceLogs:
 
         :param num_lines: Number of lines to print.
         """
-        log_message = self.get_log_by_pos(Position.TAIL, num_lines)
+        log_message = self._get_log_by_pos(Position.TAIL, num_lines)
         print("\n".join(log_message), end="")
         self.clean()
 
@@ -525,7 +525,7 @@ class RemoteResourceLogs:
         """
         Print the entire log file.
         """
-        log_message = self.get_log_by_pos(Position.ALL)
+        log_message = self._get_log_by_pos(Position.ALL)
         print("\n".join(log_message), end="")
         self.clean()
 
@@ -533,7 +533,7 @@ class RemoteResourceLogs:
         """
         Print log lines containing error messages.
         """
-        log_message = self.get_log_by_level("ERROR")
+        log_message = self._get_log_by_level("ERROR")
         print("\n".join(log_message), end="")
         self.clean()
 
@@ -541,7 +541,7 @@ class RemoteResourceLogs:
         """
         Print log lines containing warning messages.
         """
-        log_message = self.get_log_by_level("WARNING")
+        log_message = self._get_log_by_level("WARNING")
         print("\n".join(log_message), end="")
         self.clean()
 
@@ -549,27 +549,27 @@ class RemoteResourceLogs:
         """
         Print log lines containing info messages.
         """
-        log_message = self.get_log_by_level("INFO")
+        log_message = self._get_log_by_level("INFO")
         print("\n".join(log_message), end="")
         self.clean()
 
-    def log_to_file(self, fname: str):
+    def log_to_file(self, file_name: str):
         """
         Write log lines to a file.
 
-        :param fname: File name or path to write the log lines.
+        :param file_name: File name or path to write the log lines.
         """
         try:
-            log_message = self.get_log_by_pos()
-            with open(fname, "w", encoding="utf-8") as file:
+            log_message = self._get_log_by_pos()
+            with open(file_name, "w", encoding="utf-8") as file:
                 file.writelines(f"{string}\n" for string in log_message)
             self.clean()
         except FileNotFoundError as error:
             log.error("File not found or incorrect path.", error)
         except PermissionError as error:
-            log.error(f"Permission denied. You do not have write access to {fname}.", error)
+            log.error(f"Permission denied. You do not have write access to {file_name}.", error)
         except IsADirectoryError as error:
-            log.error(f"{fname} corresponds to a directory, not a file.", error)
+            log.error(f"{file_name} corresponds to a directory, not a file.", error)
         except UnicodeEncodeError as error:
             log.error(
                 "Error encoding the content. Check the encoding or handle non-ASCII characters.",
