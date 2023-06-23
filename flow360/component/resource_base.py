@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import List, Optional, Union
+from tempfile import TemporaryFile
 
 import pydantic as pd
 
@@ -405,29 +406,33 @@ class RemoteResourceLogs:
         self.path = None
         self.flow360_resource = flow360
         self.dir_path = None
-        self.paths = []
 
-    def download(
-        self,
-        to_file="./logs/",
-    ):
-        """
-        Download log file from surface mesh.
-
-        :param to_file: Destination folder path to save the log file(s).
-        :param keep_folder: Flag to indicate whether to keep the folder structure while downloading.
-        :param overwrite: Flag to indicate whether to overwrite existing files.
-        :param progress_callback: Optional callback function for progress updates.
-        :param kwargs: Additional keyword arguments passed to Flow360Resource.download_file().
-        """
-        self.dir_path = to_file
-        file_list = self.flow360_resource.get_download_file_list()
         regex = re.compile(r"logs/.*\.log")
-        for file_name in file_list:
-            if regex.match(file_name):
-                self.flow360_resource.download_file(file_name, to_file)
-            self.path = to_file + file_name
-            self.paths.append(self.path)
+        file_list = self.flow360_resource.get_download_file_list()
+
+        self.paths = [s for s in file_list if regex.match(s)]
+
+    # def self.download((
+    #     self,
+    #     to_file="./logs/",
+    # ):
+    #     """
+    #     Download log file from surface mesh.
+
+    #     :param to_file: Destination folder path to save the log file(s).
+    #     :param keep_folder: Flag to indicate whether to keep the folder structure while self.download()ing.
+    #     :param overwrite: Flag to indicate whether to overwrite existing files.
+    #     :param progress_callback: Optional callback function for progress updates.
+    #     :param kwargs: Additional keyword arguments passed to Flow360Resource.self.download()_file().
+    #     """
+    #     self.dir_path = to_file
+    #     file_list = self.flow360_resource.get_self.download()_file_list()
+    #     regex = re.compile(r"logs/.*\.log")
+    #     for file_name in file_list:
+    #         if regex.match(file_name):
+    #             self.flow360_resource.self.download()_file(file_name, to_file)
+    #         self.path = to_file + file_name
+    #         self.paths.append(self.path)
 
     def clean(self):
         """
@@ -460,15 +465,16 @@ class RemoteResourceLogs:
         :return: List of log lines.
         """
         try:
-            self.download()
             if len(self.paths) >= 1 and file_name is not None:
                 self.path = file_name
-            with open(self.path, "r", encoding="utf-8") as file:
+            with TemporaryFile() as temp_file:
+                self.flow360_resource.download_file(self.path, temp_file)
+                lines = temp_file.read().decode("utf-8").splitlines()
                 if pos == Position.HEAD:
-                    return file.readlines()[:num_lines]
+                    return lines[:num_lines]
                 if pos == Position.TAIL:
-                    return file.readlines()[-num_lines:]
-                return file.readlines()[:]
+                    return lines[-num_lines:]
+                return lines
 
         except (OSError, IOError) as error:
             log.error("invalid path to log files", error)
@@ -482,7 +488,6 @@ class RemoteResourceLogs:
         :return: List of filtered log lines.
         """
         try:
-            self.download()
             if len(self.paths) >= 1 and file_name is not None:
                 self.path = file_name
             with open(self.path, "r", encoding="utf-8") as file:
@@ -509,7 +514,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_pos(Position.HEAD, num_lines)
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def tail(self, num_lines: int = 100):
         """
@@ -519,7 +524,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_pos(Position.TAIL, num_lines)
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def print(self):
         """
@@ -527,7 +532,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_pos(Position.ALL)
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def errors(self):
         """
@@ -535,7 +540,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_level("ERROR")
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def warnings(self):
         """
@@ -543,7 +548,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_level("WARNING")
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def info(self):
         """
@@ -551,7 +556,7 @@ class RemoteResourceLogs:
         """
         log_message = self._get_log_by_level("INFO")
         print("\n".join(log_message), end="")
-        self.clean()
+        # self.clean()
 
     def to_file(self, file_name: str):
         """
@@ -563,7 +568,7 @@ class RemoteResourceLogs:
             log_message = self._get_log_by_pos()
             with open(file_name, "w", encoding="utf-8") as file:
                 file.writelines(f"{string}\n" for string in log_message)
-            self.clean()
+            # self.clean()
         except FileNotFoundError as error:
             log.error("File not found or incorrect path.", error)
         except PermissionError as error:
