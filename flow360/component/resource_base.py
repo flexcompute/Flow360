@@ -15,7 +15,7 @@ from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..component.interfaces import BaseInterface
 from ..exceptions import RuntimeError as FlRuntimeError
-from ..log import log
+from ..log import Logger, log
 from ..user_config import UserConfig
 from .utils import is_valid_uuid, validate_type
 
@@ -176,6 +176,7 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method = interface.s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
+        self.log = Logger()
         super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
