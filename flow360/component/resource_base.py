@@ -553,7 +553,7 @@ class RemoteResourceLogs:
         print("\n".join(log_message), end="")
         self.clean()
 
-    def log_to_file(self, file_name: str):
+    def to_file(self, file_name: str):
         """
         Write log lines to a file.
 

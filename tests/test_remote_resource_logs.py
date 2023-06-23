@@ -168,7 +168,7 @@ class TestRemoteResourceLogs:
         os.makedirs("./logs/", exist_ok=True)
         self.remote_logs._get_log_by_pos = Mock(return_value=["Line 1", "Line 2", "Line 3"])
         self.remote_logs.clean = Mock(return_value=None)
-        self.remote_logs.log_to_file("./logs/test_write_to_file.log")
+        self.remote_logs.to_file("./logs/test_write_to_file.log")
         with open("./logs/test_write_to_file.log", "r", encoding="utf-8") as file:
             assert file.readlines()[:] == ["Line 1\n", "Line 2\n", "Line 3\n"]
 
