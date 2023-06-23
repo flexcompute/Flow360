@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import List, Optional, Union
+
 from tempfile import TemporaryFile
 
 import pydantic as pd
@@ -407,10 +408,15 @@ class RemoteResourceLogs:
         self.flow360_resource = flow360
         self.dir_path = None
 
-        regex = re.compile(r"logs/.*\.log")
-        file_list = self.flow360_resource.get_download_file_list()
-
-        self.paths = [s for s in file_list if regex.match(s)]
+    def _has_multiple_files(self) -> bool:
+        count = False
+        for s in self.flow360_resource.get_download_file_list():
+            regex = re.compile(r"logs/.*\.log")
+            if regex.match(s):
+                if count:
+                    return True
+                count = True
+        return False
 
     def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100, file_name: str = None):
         """
@@ -421,8 +427,9 @@ class RemoteResourceLogs:
         :return: List of log lines.
         """
         try:
-            if len(self.paths) >= 1 and file_name is not None:
+            if self._has_multiple_files() and file_name is not None:
                 self.path = file_name
+            print(self._has_multiple_files(), file_name)
             with TemporaryFile() as temp_file:
                 self.flow360_resource.download_file(self.path, temp_file)
                 lines = temp_file.read().decode("utf-8").splitlines()
@@ -444,7 +451,7 @@ class RemoteResourceLogs:
         :return: List of filtered log lines.
         """
         try:
-            if len(self.paths) >= 1 and file_name is not None:
+            if self._has_multiple_files() and file_name is not None:
                 self.path = file_name
             with TemporaryFile() as temp_file:
                 self.flow360_resource.download_file(self.path, temp_file)

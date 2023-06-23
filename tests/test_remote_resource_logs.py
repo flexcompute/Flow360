@@ -25,24 +25,24 @@ def create_file(file_name: str, to_file):
 class TestRemoteResourceLogs:
     def setup_method(self):
         self.flow360_resource = Mock(spec=Flow360Resource)
-        self.flow360_resource.get_download_file_list.return_value = ["file1.log", "file2.log"]
         self.flow360_resource.download_file.side_effect = lambda file_name, temp_file: create_file(
             file_name=file_name, to_file=temp_file
         )
-
         self.remote_logs = RemoteResourceLogs(self.flow360_resource)
         self.remote_logs.path = "file1.log"
-        self.remote_logs.paths = ["file1.log"]
 
     def test_get_log_by_pos(self):
         # Mock the necessary methods and attributes
         # Test head
+        self.flow360_resource.get_download_file_list.return_value = ["logs/file1.log"]
         log_lines = self.remote_logs._get_log_by_pos(Position.HEAD, num_lines=5)
         assert log_lines == ["Info:file1.log"] * 2 + ["Debug:file1.log"] * 2 + ["Warning:file1.log"]
 
         # Test tail with different number of lines
-        self.remote_logs.paths.append("file2.log")
-        print(self.remote_logs.paths)
+        self.flow360_resource.get_download_file_list.return_value = [
+            "logs/file1.log",
+            "logs/file2.log",
+        ]
         log_lines = self.remote_logs._get_log_by_pos(
             Position.TAIL, num_lines=2, file_name="file2.log"
         )
@@ -63,6 +63,7 @@ class TestRemoteResourceLogs:
 
     def test_get_log_by_level(self):
         # Mock the necessary methods and attributes
+        self.flow360_resource.get_download_file_list.return_value = ["logs/file1.log"]
         self.remote_logs.path = "file1.log"
 
         # Test error
@@ -72,7 +73,10 @@ class TestRemoteResourceLogs:
         log_lines = self.remote_logs._get_log_by_level("WARNING")
         assert log_lines == (["Warning:file1.log"] * 2 + ["Error:file1.log"] * 2) * 3
 
-        self.remote_logs.paths = ["file1.log", "file2.log"]
+        self.flow360_resource.get_download_file_list.return_value = [
+            "logs/file1.log",
+            "logs/file2.log",
+        ]
         log_lines = self.remote_logs._get_log_by_level("INFO", "file2.log")
         assert (
             log_lines
