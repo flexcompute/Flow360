@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 from unittest.mock import Mock
+
 import pytest
 
 from flow360.component.resource_base import (

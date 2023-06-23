@@ -8,9 +8,8 @@ from abc import ABC
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import List, Optional, Union
-
 from tempfile import TemporaryFile
+from typing import List, Optional, Union
 
 import pydantic as pd
 
@@ -410,9 +409,9 @@ class RemoteResourceLogs:
 
     def _has_multiple_files(self) -> bool:
         count = False
-        for s in self.flow360_resource.get_download_file_list():
+        for string in self.flow360_resource.get_download_file_list():
             regex = re.compile(r"logs/.*\.log")
-            if regex.match(s):
+            if regex.match(string):
                 if count:
                     return True
                 count = True
