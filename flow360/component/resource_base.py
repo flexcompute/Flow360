@@ -2,6 +2,7 @@
 Flow360 base Model
 """
 import os
+import re
 import traceback
 from abc import ABC
 from datetime import datetime
@@ -15,7 +16,7 @@ from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..component.interfaces import BaseInterface
 from ..exceptions import RuntimeError as FlRuntimeError
-from ..log import Logger, log
+from ..log import LogLevel, log
 from ..user_config import UserConfig
 from .utils import is_valid_uuid, validate_type
 
@@ -176,7 +177,7 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method = interface.s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
-        self.log = Logger()
+        self.log = RemoteResourceLogs(self)
         super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
@@ -331,6 +332,21 @@ def is_object_cloud_resource(resource: Flow360Resource):
     return False
 
 
+class Position(Enum):
+    """
+    Enumeration class for log file positions.
+
+    Available positions:
+    - HEAD: Specifies the head position, representing the first lines of the log file.
+    - TAIL: Specifies the tail position, representing the last lines of the log file.
+    - ALL: Specifies the all position, representing the entire log file.
+    """
+
+    HEAD = "head"
+    TAIL = "tail"
+    ALL = "all"
+
+
 class Flow360ResourceListBase(list, RestApi):
     """
     Flow360 ResourceList base component
@@ -378,3 +394,183 @@ class Flow360ResourceListBase(list, RestApi):
         get ResourceList from cloud
         """
         return cls(from_cloud=True)
+
+
+class RemoteResourceLogs:
+    """
+    Logs class for managing log files.
+    """
+
+    def __init__(self, flow360: Flow360Resource):
+        self.path = None
+        self.flow360 = flow360
+        self.dir_path = None
+        self.paths = []
+
+    def download_log(
+        self,
+        to_file="./logs/",
+    ):
+        """
+        Download log file from surface mesh.
+
+        :param to_file: Destination folder path to save the log file(s).
+        :param keep_folder: Flag to indicate whether to keep the folder structure while downloading.
+        :param overwrite: Flag to indicate whether to overwrite existing files.
+        :param progress_callback: Optional callback function for progress updates.
+        :param kwargs: Additional keyword arguments passed to Flow360Resource.download_file().
+        """
+        file_list = self.flow360.get_download_file_list()
+        regex = re.compile(r"logs/.*\.log")
+        for fname in file_list:
+            if regex.match(fname):
+                self.flow360.download_file(fname, to_file)
+            self.path = to_file + fname
+            self.paths.append(self.path)
+
+    def clean(self):
+        """
+        Clean up the log file and associated folder.
+        """
+        try:
+            for root, dirs, files in os.walk(self.dir_path, topdown=False):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    os.remove(file_path)
+                for directory in dirs:
+                    dir_path = os.path.join(root, directory)
+                    os.rmdir(dir_path)
+                os.rmdir(self.dir_path)
+            os.rmdir(self.path)
+            self.path = None
+        except FileNotFoundError:
+            self.path = None
+        except PermissionError as error:
+            log.error(f"cannot remove temporary log file under {self.dir_path}", error)
+        except OSError as error:
+            log.error(f"OS error when removing temporary log files {error}")
+
+    def get_log_by_pos(self, pos: Position = None, num_lines: int = 100, fname: str = None):
+        """
+        Get log lines based on position (head, tail, all).
+
+        :param pos: Position enum (HEAD, TAIL, or ALL).
+        :param num_lines: Number of lines to retrieve (for HEAD and TAIL positions).
+        :return: List of log lines.
+        """
+        try:
+            self.download_log()
+            if len(self.paths) >= 1 and fname is not None:
+                self.path = fname
+            with open(self.path, "r", encoding="utf-8") as file:
+                if pos == Position.HEAD:
+                    return file.readlines()[:num_lines]
+                if pos == Position.TAIL:
+                    return file.readlines()[-num_lines:]
+                return file.readlines()[:]
+
+        except (OSError, IOError) as error:
+            log.error("invalid path to log files", error)
+            return None
+
+    def get_log_by_level(self, level: LogLevel = None, fname: str = None):
+        """
+        Get log lines filtered by log level.
+
+        :param level: Log level (ERROR, WARNING, INFO, or None for all).
+        :return: List of filtered log lines.
+        """
+        try:
+            self.download_log()
+            if len(self.paths) >= 1 and fname is not None:
+                self.path = fname
+            with open(self.path, "r", encoding="utf-8") as file:
+                log_contents = file.read()
+                if level == "ERROR":
+                    filt = r"(Error:.+)"
+                elif level == "WARNING":
+                    filt = r"(?:Error|Warning):.+"
+                elif level == "INFO":
+                    filt = r"(?:Error|Warning|Info):.+"
+                else:
+                    filt = r".+"
+                return re.findall(filt, log_contents)
+
+        except (OSError, IOError) as error:
+            log.error("invalid path to log files", error)
+            return None
+
+    def head(self, num_lines: int = 100):
+        """
+        Print the first n lines of the log file.
+
+        :param num_lines: Number of lines to print.
+        """
+        log_message = self.get_log_by_pos(Position.HEAD, num_lines)
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def tail(self, num_lines: int = 100):
+        """
+        Print the last n lines of the log file.
+
+        :param num_lines: Number of lines to print.
+        """
+        log_message = self.get_log_by_pos(Position.TAIL, num_lines)
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def print(self):
+        """
+        Print the entire log file.
+        """
+        log_message = self.get_log_by_pos(Position.ALL)
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def errors(self):
+        """
+        Print log lines containing error messages.
+        """
+        log_message = self.get_log_by_level("ERROR")
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def warnings(self):
+        """
+        Print log lines containing warning messages.
+        """
+        log_message = self.get_log_by_level("WARNING")
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def info(self):
+        """
+        Print log lines containing info messages.
+        """
+        log_message = self.get_log_by_level("INFO")
+        print("\n".join(log_message), end="")
+        self.clean()
+
+    def log_to_file(self, fname: str):
+        """
+        Write log lines to a file.
+
+        :param fname: File name or path to write the log lines.
+        """
+        try:
+            log_message = self.get_log_by_pos()
+            with open(fname, "w", encoding="utf-8") as file:
+                file.writelines(f"{string}\n" for string in log_message)
+            self.clean()
+        except FileNotFoundError as error:
+            log.error("File not found or incorrect path.", error)
+        except PermissionError as error:
+            log.error(f"Permission denied. You do not have write access to {fname}.", error)
+        except IsADirectoryError as error:
+            log.error(f"{fname} corresponds to a directory, not a file.", error)
+        except UnicodeEncodeError as error:
+            log.error(
+                "Error encoding the content. Check the encoding or handle non-ASCII characters.",
+                error,
+            )
