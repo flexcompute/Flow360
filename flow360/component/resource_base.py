@@ -412,50 +412,6 @@ class RemoteResourceLogs:
 
         self.paths = [s for s in file_list if regex.match(s)]
 
-    # def self.download((
-    #     self,
-    #     to_file="./logs/",
-    # ):
-    #     """
-    #     Download log file from surface mesh.
-
-    #     :param to_file: Destination folder path to save the log file(s).
-    #     :param keep_folder: Flag to indicate whether to keep the folder structure while self.download()ing.
-    #     :param overwrite: Flag to indicate whether to overwrite existing files.
-    #     :param progress_callback: Optional callback function for progress updates.
-    #     :param kwargs: Additional keyword arguments passed to Flow360Resource.self.download()_file().
-    #     """
-    #     self.dir_path = to_file
-    #     file_list = self.flow360_resource.get_self.download()_file_list()
-    #     regex = re.compile(r"logs/.*\.log")
-    #     for file_name in file_list:
-    #         if regex.match(file_name):
-    #             self.flow360_resource.self.download()_file(file_name, to_file)
-    #         self.path = to_file + file_name
-    #         self.paths.append(self.path)
-
-    def clean(self):
-        """
-        Clean up the log file and associated folder.
-        """
-        try:
-            for root, dirs, files in os.walk(self.dir_path, topdown=False):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    os.remove(file_path)
-                for directory in dirs:
-                    dir_path = os.path.join(root, directory)
-                    os.rmdir(dir_path)
-                os.rmdir(self.dir_path)
-            os.rmdir(self.path)
-            self.path = None
-        except FileNotFoundError:
-            self.path = None
-        except PermissionError as error:
-            log.error(f"cannot remove temporary log file under {self.dir_path}", error)
-        except OSError as error:
-            log.error(f"OS error when removing temporary log files {error}")
-
     def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100, file_name: str = None):
         """
         Get log lines based on position (head, tail, all).
@@ -490,8 +446,9 @@ class RemoteResourceLogs:
         try:
             if len(self.paths) >= 1 and file_name is not None:
                 self.path = file_name
-            with open(self.path, "r", encoding="utf-8") as file:
-                log_contents = file.read()
+            with TemporaryFile() as temp_file:
+                self.flow360_resource.download_file(self.path, temp_file)
+                log_contents = temp_file.read().decode("utf-8")
                 if level == "ERROR":
                     filt = r"(Error:.+)"
                 elif level == "WARNING":

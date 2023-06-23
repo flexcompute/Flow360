@@ -61,45 +61,44 @@ class TestRemoteResourceLogs:
             * 3
         )
 
-    # def test_get_log_by_level(self):
-    #     # Mock the necessary methods and attributes
-    #     self.setup_files()
-    #     self.remote_logs.path = "./logs/file1.log"
+    def test_get_log_by_level(self):
+        # Mock the necessary methods and attributes
+        self.remote_logs.path = "file1.log"
 
-    #     # Test error
-    #     log_lines = self.remote_logs._get_log_by_level("ERROR")
-    #     assert log_lines == ["Error:file1.log"] * 6
+        # Test error
+        log_lines = self.remote_logs._get_log_by_level("ERROR")
+        assert log_lines == ["Error:file1.log"] * 6
 
-    #     log_lines = self.remote_logs._get_log_by_level("WARNING")
-    #     assert log_lines == (["Warning:file1.log"] * 2 + ["Error:file1.log"] * 2) * 3
+        log_lines = self.remote_logs._get_log_by_level("WARNING")
+        assert log_lines == (["Warning:file1.log"] * 2 + ["Error:file1.log"] * 2) * 3
 
-    #     self.remote_logs.paths = ["./logs/file1.log", "./logs/file2.log"]
-    #     log_lines = self.remote_logs._get_log_by_level("INFO", "./logs/file2.log")
-    #     assert (
-    #         log_lines
-    #         == (["Info:file2.log"] * 2 + ["Warning:file2.log"] * 2 + ["Error:file2.log"] * 2) * 3
-    #     )
+        self.remote_logs.paths = ["file1.log", "file2.log"]
+        log_lines = self.remote_logs._get_log_by_level("INFO", "file2.log")
+        assert (
+            log_lines
+            == (["Info:file2.log"] * 2 + ["Warning:file2.log"] * 2 + ["Error:file2.log"] * 2) * 3
+        )
 
-    #     log_lines = self.remote_logs._get_log_by_level(file_name="./logs/file1.log")
-    #     print(
-    #         (
-    #             ["Info:file1.log"] * 2
-    #             + ["Debug:file1.log"] * 2
-    #             + ["Warning:file1.log"] * 2
-    #             + ["Error:file1.log"] * 2
-    #         )
-    #         * 3
-    #     )
-    #     assert (
-    #         log_lines
-    #         == (
-    #             ["Info:file1.log"] * 2
-    #             + ["Debug:file1.log"] * 2
-    #             + ["Warning:file1.log"] * 2
-    #             + ["Error:file1.log"] * 2
-    #         )
-    #         * 3
-    #     )
+        log_lines = self.remote_logs._get_log_by_level(file_name="file1.log")
+        print(
+            (
+                ["Info:file1.log"] * 2
+                + ["Debug:file1.log"] * 2
+                + ["Warning:file1.log"] * 2
+                + ["Error:file1.log"] * 2
+            )
+            * 3
+        )
+        assert (
+            log_lines
+            == (
+                ["Info:file1.log"] * 2
+                + ["Debug:file1.log"] * 2
+                + ["Warning:file1.log"] * 2
+                + ["Error:file1.log"] * 2
+            )
+            * 3
+        )
 
     def test_head_tail_print(self):
         # Mock the necessary methods and attributes
@@ -115,23 +114,23 @@ class TestRemoteResourceLogs:
         self.remote_logs.print()
         self.remote_logs._get_log_by_pos.assert_called_with(Position.ALL)
 
-    # def test_errors_warnings_info(self):
-    #     # Mock the necessary methods and attributes
-    #     self.remote_logs._get_log_by_level = Mock(
-    #         return_value=[
-    #             "Error: Something went wrong",
-    #             "Warning: This is a warning",
-    #             "Info: Hey",
-    #         ]
-    #     )
-    #     # self.remote_logs.clean = Mock(return_value=None)
-    #     # Call the method under test
-    #     self.remote_logs.errors()
-    #     self.remote_logs._get_log_by_level.assert_called_with("ERROR")
-    #     self.remote_logs.warnings()
-    #     self.remote_logs._get_log_by_level.assert_called_with("WARNING")
-    #     self.remote_logs.info()
-    #     self.remote_logs._get_log_by_level.assert_called_with("INFO")
+    def test_errors_warnings_info(self):
+        # Mock the necessary methods and attributes
+        self.remote_logs._get_log_by_level = Mock(
+            return_value=[
+                "Error: Something went wrong",
+                "Warning: This is a warning",
+                "Info: Hey",
+            ]
+        )
+        # self.remote_logs.clean = Mock(return_value=None)
+        # Call the method under test
+        self.remote_logs.errors()
+        self.remote_logs._get_log_by_level.assert_called_with("ERROR")
+        self.remote_logs.warnings()
+        self.remote_logs._get_log_by_level.assert_called_with("WARNING")
+        self.remote_logs.info()
+        self.remote_logs._get_log_by_level.assert_called_with("INFO")
 
     def test_write_to_file(self):
         os.makedirs("./logs/", exist_ok=True)
