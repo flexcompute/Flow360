@@ -177,7 +177,7 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method = interface.s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
-        self.log = RemoteResourceLogs(self)
+        self.logs = RemoteResourceLogs(self)
         super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
@@ -398,7 +398,7 @@ class Flow360ResourceListBase(list, RestApi):
 
 class RemoteResourceLogs:
     """
-    Logs class for managing log files.
+    Logs class for getting remote logs from flow360 resources
     """
 
     def __init__(self, flow360: Flow360Resource):
@@ -420,6 +420,7 @@ class RemoteResourceLogs:
         :param progress_callback: Optional callback function for progress updates.
         :param kwargs: Additional keyword arguments passed to Flow360Resource.download_file().
         """
+        self.dir_path = to_file
         file_list = self.flow360.get_download_file_list()
         regex = re.compile(r"logs/.*\.log")
         for fname in file_list:

@@ -1,10 +1,12 @@
 import os
 import unittest
 from unittest.mock import Mock
-from flow360.component.resource_base import RemoteResourceLogs, Flow360Resource, Position
-from flow360.log import LogLevel
-import unittest
-from unittest import mock
+
+from flow360.component.resource_base import (
+    Flow360Resource,
+    Position,
+    RemoteResourceLogs,
+)
 
 
 class TestRemoteResourceLogs(unittest.TestCase):
