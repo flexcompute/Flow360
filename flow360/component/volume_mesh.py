@@ -416,6 +416,37 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
+    def _compress_and_upload_chunk(
+        self, mesh: VolumeMesh, remote_file_name: str, chunk_data, upload_id: str, part_number: int
+    ):
+        compressed_chunk = bz2.compress(chunk_data)
+        mesh.upload_part(remote_file_name, upload_id, part_number, compressed_chunk)
+
+    def _compress_and_upload_chunks(
+        self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 64 * 1024
+    ):
+        upload_id = mesh.create_multipart_upload(remote_file_name, self.file_name)
+        with open(self.file_name, "rb") as file:
+            # Initialize a counter for the chunk number and part number
+            part_number = 1
+
+            while True:
+                # Read binary data in chunks of specified length
+                chunk_data = file.read(chunk_length)
+
+                # Exit the loop if the end of file is reached
+                if not chunk_data:
+                    break
+
+                # Compress and upload the chunk as a part of the multipart upload
+                response = self._compress_and_upload_chunk(
+                    mesh, remote_file_name, chunk_data, upload_id, part_number
+                )
+                part_number += 1
+        mesh.complete_multipart_upload(
+            remote_file_name, upload_id, response["ETag"], response["PartNumber"]
+        )
+
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
@@ -424,16 +455,6 @@ class VolumeMeshDraft(ResourceDraft):
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
 
-        if compression == CompressionFormat.NONE:
-            try:
-                with open(self.file_name, "rb") as file_in, bz2.open(
-                    self.file_name + ".bz2", "wb"
-                ) as file_out:
-                    file_out.write(file_in.read())
-                if os.path.exists(self.file_name + ".bz2"):
-                    compression = CompressionFormat.BZ2
-            except Exception as error:
-                log.error(error)
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
@@ -465,12 +486,12 @@ class VolumeMeshDraft(ResourceDraft):
         mesh = VolumeMesh(self.id)
 
         # upload mesh
-
-        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
-        mesh._complete_upload(remote_file_name)
+        if compression == CompressionFormat.NONE:
+            self._compress_and_upload_chunks(mesh, remote_file_name)
+        else:
+            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+            mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
-        if os.path.exists(self.file_name + ".bz2"):
-            os.remove(self.file_name + ".bz2")
         return mesh
 
     def submit(self, progress_callback=None) -> VolumeMesh:
