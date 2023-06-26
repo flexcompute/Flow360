@@ -3,8 +3,8 @@ Volume mesh component
 """
 from __future__ import annotations
 
+import bz2
 import os.path
-import zipfile
 from enum import Enum
 from typing import Iterator, List, Optional, Union
 
@@ -424,6 +424,16 @@ class VolumeMeshDraft(ResourceDraft):
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
 
+        if compression == CompressionFormat.NONE:
+            try:
+                with open(self.file_name, "rb") as file_in, bz2.open(
+                    self.file_name + ".bz2", "wb"
+                ) as file_out:
+                    file_out.write(file_in.read())
+                if os.path.exists(self.file_name + ".bz2"):
+                    compression = CompressionFormat.BZ2
+            except Exception as error:
+                log.error(error)
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
@@ -455,14 +465,12 @@ class VolumeMeshDraft(ResourceDraft):
         mesh = VolumeMesh(self.id)
 
         # upload mesh
-        with zipfile.ZipFile(self.file_name + ".zip", "w", zipfile.ZIP_DEFLATED) as zipf:
-            zipf.write(self.file_name, arcname=self.file_name)
 
-        mesh.upload_file(
-            remote_file_name, self.file_name + ".zip", progress_callback=progress_callback
-        )
+        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
+        if os.path.exists(self.file_name + ".bz2"):
+            os.remove(self.file_name + ".bz2")
         return mesh
 
     def submit(self, progress_callback=None) -> VolumeMesh:
