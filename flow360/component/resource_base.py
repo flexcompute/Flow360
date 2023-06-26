@@ -325,6 +325,28 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, file_name, progress_callback=progress_callback
         )
 
+    @on_cloud_resource_only
+    def create_multipart_upload(self, remote_file_name: str, file_name: str):
+        self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name, file_name)
+
+    @on_cloud_resource_only
+    def upload_part(
+        self,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        self.s3_transfer_method.upload_part(
+            self.id, remote_file_name, upload_id, part_number, compressed_chunk
+        )
+
+    @on_cloud_resource_only
+    def complete_multipart_upload(self, remote_file_name: str, upload_id: str, ETag, PartNumber):
+        self.s3_transfer_method.complete_multipart_upload(
+            self.id, remote_file_name, upload_id, ETag, PartNumber
+        )
+
 
 def is_object_cloud_resource(resource: Flow360Resource):
     """

@@ -209,6 +209,51 @@ class S3TransferType(Enum):
 
         return None
 
+    def create_multipart_upload(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+    ):
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        return client.create_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+        )["UploadId"]
+
+    def upload_part(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        response = client.upload_part(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key() + f"chunk_{part_number}",
+            PartNumber=part_number,
+            UploadId=upload_id,
+            Body=compressed_chunk,
+        )
+
+        # Return the ETag of the uploaded part
+        return {"ETag": response["ETag"], "PartNumber": part_number}
+
+    def complete_multipart_upload(
+        self, resource_id: str, remote_file_name: str, upload_id: str, ETag: str, PartNumber: int
+    ):
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        client.complete_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+            UploadId=upload_id,
+            MultipartUpload={"Parts": [{"ETag": ETag, "PartNumber": PartNumber}]},
+        )
+
     def upload_file(
         self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None
     ):
