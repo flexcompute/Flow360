@@ -8,7 +8,7 @@ from abc import ABC
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from tempfile import TemporaryFile
+from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
 import pydantic as pd
@@ -397,25 +397,61 @@ class Flow360ResourceListBase(list, RestApi):
         return cls(from_cloud=True)
 
 
+class TemporaryLogDirectory:
+    def __init__(self):
+        self._dir = TemporaryDirectory()
+
+    @property
+    def name(self):
+        return self._dir.name
+
+    def delete_file(self):
+        if os.path.exists(self.name):
+            self._dir.cleanup()
+    
+    def __del__(self):
+        self.delete_file()
+
+
 class RemoteResourceLogs:
     """
     Logs class for getting remote logs from flow360 resources
     """
 
-    def __init__(self, flow360: Flow360Resource):
-        self.path = None
-        self.flow360_resource = flow360
-        self.dir_path = None
+    def __init__(self, flow360_resource: Flow360Resource):
+        self.flow360_resource = flow360_resource
+        self._tmp_file_name = None
+        self._tmp_dir = None
+        self._remote_file_name = None
+
+    def _get_log_file_names(self) -> List[str]:
+        file_names = [file['fileName'] for file in self.flow360_resource.get_download_file_list() if 'fileName' in file]
+        pattern = re.compile(r"logs/.*\.log")
+        log_file_names = [string for string in file_names if pattern.match(string)]
+        return log_file_names
+
 
     def _has_multiple_files(self) -> bool:
-        count = False
-        for string in self.flow360_resource.get_download_file_list():
-            regex = re.compile(r"logs/.*\.log")
-            if regex.match(string):
-                if count:
-                    return True
-                count = True
-        return False
+        return len(self._get_log_file_names()) > 1
+
+    def _get_tmp_file_name(self):
+        if self._tmp_file_name is None:
+            if self._tmp_dir is None:
+                self._tmp_dir = TemporaryLogDirectory()
+            if self._remote_file_name is None:
+                self._remote_file_name = self._get_log_file_names()[0]    
+            self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
+        return self._tmp_file_name
+
+    def _refresh_file(self):
+        tmp_file = self._get_tmp_file_name()
+        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=True)
+
+    @property
+    def _cached_file(self):
+        tmp_file = self._get_tmp_file_name()
+        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=False)
+        return tmp_file
 
     def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100, file_name: str = None):
         """
@@ -426,12 +462,16 @@ class RemoteResourceLogs:
         :return: List of log lines.
         """
         try:
-            if self._has_multiple_files() and file_name is not None:
-                self.path = file_name
-            print(self._has_multiple_files(), file_name)
-            with TemporaryFile() as temp_file:
-                self.flow360_resource.download_file(self.path, temp_file)
-                lines = temp_file.read().decode("utf-8").splitlines()
+            # if self._has_multiple_files() and file_name is not None:
+            #     self.path = file_name
+            # print(self._has_multiple_files(), file_name)
+            # self.path = self._get_log_file_names()[0]
+            # with TemporaryFile() as temp_file:
+            # temp_file = os.path.join(self.dir_path.dir.name, self.path)
+            # print(self.path, temp_file)
+            # self.flow360_resource.download_file(self.path, temp_file)
+            with open(self._cached_file) as fh:
+                lines = fh.read().splitlines()
                 if pos == Position.HEAD:
                     return lines[:num_lines]
                 if pos == Position.TAIL:
@@ -450,11 +490,11 @@ class RemoteResourceLogs:
         :return: List of filtered log lines.
         """
         try:
-            if self._has_multiple_files() and file_name is not None:
-                self.path = file_name
-            with TemporaryFile() as temp_file:
-                self.flow360_resource.download_file(self.path, temp_file)
-                log_contents = temp_file.read().decode("utf-8")
+            # if self._has_multiple_files() and file_name is not None:
+            #     self.path = file_name
+            with open(self._cached_file) as fh:
+
+                log_contents = fh.read()
                 if level == "ERROR":
                     filt = r"(Error:.+)"
                 elif level == "WARNING":
@@ -476,7 +516,7 @@ class RemoteResourceLogs:
         :param num_lines: Number of lines to print.
         """
         log_message = self._get_log_by_pos(Position.HEAD, num_lines)
-        print("\n".join(log_message), end="")
+        print("\n".join(log_message))
         # self.clean()
 
     def tail(self, num_lines: int = 100):
@@ -486,7 +526,7 @@ class RemoteResourceLogs:
         :param num_lines: Number of lines to print.
         """
         log_message = self._get_log_by_pos(Position.TAIL, num_lines)
-        print("\n".join(log_message), end="")
+        print("\n".join(log_message))
         # self.clean()
 
     def print(self):
@@ -494,7 +534,7 @@ class RemoteResourceLogs:
         Print the entire log file.
         """
         log_message = self._get_log_by_pos(Position.ALL)
-        print("\n".join(log_message), end="")
+        print("\n".join(log_message))
         # self.clean()
 
     def errors(self):
