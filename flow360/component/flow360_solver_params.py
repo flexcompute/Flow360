@@ -161,6 +161,7 @@ class Freestream(BaseModel):
     # pylint: disable=C0115,R0903
     class Config:
         allow_population_by_field_name = True
+        extra = Extra.allow
 
 
 class NavierStokesSolver(BaseModel, extra=Extra.allow):
