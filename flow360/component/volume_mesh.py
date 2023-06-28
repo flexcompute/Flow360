@@ -420,7 +420,7 @@ class VolumeMeshDraft(ResourceDraft):
         self, mesh: VolumeMesh, remote_file_name: str, chunk_data, upload_id: str, part_number: int
     ):
         compressed_chunk = bz2.compress(chunk_data)
-        mesh.upload_part(remote_file_name, upload_id, part_number, compressed_chunk)
+        return mesh.upload_part(remote_file_name, upload_id, part_number, compressed_chunk)
 
     def _compress_and_upload_chunks(
         self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 64 * 1024
@@ -444,7 +444,7 @@ class VolumeMeshDraft(ResourceDraft):
                 )
                 part_number += 1
         mesh.complete_multipart_upload(
-            remote_file_name, upload_id, response["ETag"], response["PartNumber"]
+            remote_file_name, upload_id, response["e_tag"], response["part_number"]
         )
 
     # pylint: disable=protected-access
