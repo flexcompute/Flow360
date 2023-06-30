@@ -1,13 +1,17 @@
-import sys, os
-import flow360 as fl
-import time
-import gzip
-import pgzip
-import zlib
-import pigz
-import tempfile
-from shutil import copyfileobj
 import bz2
+import gzip
+import os
+import sys
+import tempfile
+import time
+import zlib
+from shutil import copyfileobj
+
+import flow360 as fl
+
+# import pgzip
+# import pigz_python
+
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))
@@ -122,12 +126,12 @@ input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_te
 # os.remove(compressed_file_path)
 
 
-start = time.time()
+# start = time.time()
 
-vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file").submit()
+# vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file").submit()
 
 
-end = time.time()
-print(f"upload took: {end - start} seconds")
+# end = time.time()
+# print(f"upload took: {end - start} seconds")
 
 # os.remove(compressed_file_path)
