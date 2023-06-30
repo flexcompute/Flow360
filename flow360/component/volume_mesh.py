@@ -4,6 +4,7 @@ Volume mesh component
 from __future__ import annotations
 
 import bz2
+import concurrent.futures
 import os.path
 from enum import Enum
 from typing import Iterator, List, Optional, Union
@@ -425,10 +426,13 @@ class VolumeMeshDraft(ResourceDraft):
     def _compress_and_upload_chunks(
         self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 64 * 1024
     ):
-        upload_id = mesh.create_multipart_upload(remote_file_name, self.file_name)
+        upload_id = mesh.create_multipart_upload(remote_file_name)
+        print("upload_id 1:", upload_id)
+        chunk_futures = []
         with open(self.file_name, "rb") as file:
             # Initialize a counter for the chunk number and part number
             part_number = 1
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
             while True:
                 # Read binary data in chunks of specified length
@@ -439,12 +443,35 @@ class VolumeMeshDraft(ResourceDraft):
                     break
 
                 # Compress and upload the chunk as a part of the multipart upload
-                response = self._compress_and_upload_chunk(
-                    mesh, remote_file_name, chunk_data, upload_id, part_number
+                # response = self._compress_and_upload_chunk(
+                #     mesh, remote_file_name, chunk_data, upload_id, part_number
+                # )
+                future = executor.submit(
+                    self._compress_and_upload_chunk,
+                    mesh,
+                    remote_file_name,
+                    chunk_data,
+                    upload_id,
+                    part_number,
                 )
+
                 part_number += 1
+                chunk_futures.append(future)
+            concurrent.futures.wait(chunk_futures)
+            uploaded_parts = []
+            for future in chunk_futures:
+                response = future.result()
+                uploaded_parts.append(
+                    {
+                        "e_tag": response["e_tag"],
+                        "part_number": response["part_number"],
+                    }
+                )
         mesh.complete_multipart_upload(
-            remote_file_name, upload_id, response["e_tag"], response["part_number"]
+            remote_file_name,
+            upload_id,
+            [part["e_tag"] for part in uploaded_parts],
+            [part["part_number"] for part in uploaded_parts],
         )
 
     # pylint: disable=protected-access

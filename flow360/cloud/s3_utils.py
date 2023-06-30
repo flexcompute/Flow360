@@ -227,7 +227,7 @@ class S3TransferType(Enum):
         response = client.upload_part(
             Bucket=token.get_bucket(),
             Key=token.get_s3_key() + f"chunk_{part_number}",
-            part_number=part_number,
+            PartNumber=part_number,
             UploadId=upload_id,
             Body=compressed_chunk,
         )

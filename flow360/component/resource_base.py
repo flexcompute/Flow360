@@ -323,7 +323,7 @@ class Flow360Resource(RestApi):
         )
 
     @on_cloud_resource_only
-    def create_multipart_upload(self, remote_file_name: str, file_name: str):
+    def create_multipart_upload(self, remote_file_name: str):
         """
         Creates a multipart upload for the specified remote file name and file.
 
@@ -332,9 +332,9 @@ class Flow360Resource(RestApi):
             file_name (str): The name of the local file to upload.
 
         Returns:
-            None
+            UploadID
         """
-        self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name, file_name)
+        return self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name)
 
     @on_cloud_resource_only
     def upload_part(
