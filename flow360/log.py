@@ -86,15 +86,11 @@ class Logger:
 
     def debug(self, message: str, *args) -> None:
         """Log (message) % (args) at debug level"""
-        message = message % args
-        message = f"[white]{message}[/white]"
-        self._log(_level_value["DEBUG"], "DEBUG", message)
+        self._log(_level_value["DEBUG"], "DEBUG", message % args)
 
     def info(self, message: str, *args) -> None:
         """Log (message) % (args) at info level"""
-        message = message % args
-        message = f"[white]{message}[/white]"
-        self._log(_level_value["INFO"], "INFO", message)
+        self._log(_level_value["INFO"], "INFO", message % args)
 
     def warning(self, message: str, *args) -> None:
         """Log (message) % (args) at warning level"""
