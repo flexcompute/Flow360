@@ -1,22 +1,19 @@
 import bz2
 import gzip
-import lz4.frame
+import lzma
 import os
+import subprocess
 import sys
 import tempfile
 import time
-import zlib
 import zipfile
+import zlib
 from shutil import copyfileobj
+
+import lz4.frame
 import py7zr
-import lzma
+
 import flow360 as fl
-import subprocess
-
-
-# import pgzip
-import pigz_python
-
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))
