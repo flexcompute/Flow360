@@ -94,15 +94,21 @@ class Logger:
 
     def warning(self, message: str, *args) -> None:
         """Log (message) % (args) at warning level"""
-        self._log(_level_value["WARNING"], "WARNING", message % args)
+        message = message % args
+        message = f"[white]{message}[/white]"
+        self._log(_level_value["WARNING"], "WARNING", message)
 
     def error(self, message: str, *args) -> None:
         """Log (message) % (args) at error level"""
-        self._log(_level_value["ERROR"], "ERROR", message % args)
+        message = message % args
+        message = f"[white]{message}[/white]"
+        self._log(_level_value["ERROR"], "ERROR", message)
 
     def critical(self, message: str, *args) -> None:
         """Log (message) % (args) at critical level"""
-        self._log(_level_value["CRITICAL"], "CRITICAL", message % args)
+        message = message % args
+        message = f"[white]{message}[/white]"
+        self._log(_level_value["CRITICAL"], "CRITICAL", message)
 
 
 # Initialize FLow360's logger
