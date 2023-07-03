@@ -1,5 +1,6 @@
 import bz2
 import gzip
+import lz4.frame
 import os
 import sys
 import tempfile
@@ -8,8 +9,10 @@ import zlib
 import zipfile
 from shutil import copyfileobj
 import py7zr
+import lzma
 import flow360 as fl
 import subprocess
+
 
 # import pgzip
 import pigz_python
@@ -83,7 +86,7 @@ def compress_file_pigz(input_file, output_file_path=None, num_threads=5):
         output_file.close()
     with open(output_file_path, "wb") as output_file:
         process = subprocess.run(
-            ["pigz", "-p", str(num_threads), "-c", input_file_path], stdout=subprocess.PIPE
+            ["pigz", "-8", "-p", str(num_threads), "-c", input_file_path], stdout=subprocess.PIPE
         )
         output_file.write(process.stdout)
     input_file_size = print_file_sizes(input_file, output_file_path)
@@ -101,6 +104,28 @@ def compress_file_zlib(input_file):
             f_out.write(compressed_chunk)
         compressed_final_chunk = compressor.flush()
         f_out.write(compressed_final_chunk)
+
+    input_file_size = print_file_sizes(input_file, output_file_path)
+    return output_file_path, input_file_size
+
+
+def compress_file_lzma(input_file, output_file_path=None):
+    if output_file_path is None:
+        output_file = tempfile.NamedTemporaryFile(delete=False)
+        output_file_path = output_file.name + ".xz"
+    with open(input_file, "rb") as f_in, lzma.open(output_file_path, "wb") as f_out:
+        f_out.write(f_in.read())
+
+    input_file_size = print_file_sizes(input_file, output_file_path)
+    return output_file_path, input_file_size
+
+
+def compress_file_lz4(input_file, output_file_path=None):
+    if output_file_path is None:
+        output_file = tempfile.NamedTemporaryFile(delete=False)
+        output_file_path = output_file.name + ".lz4"
+    with open(input_file, "rb") as f_in, lz4.frame.open(output_file_path, "wb") as f_out:
+        f_out.write(f_in.read())
 
     input_file_size = print_file_sizes(input_file, output_file_path)
     return output_file_path, input_file_size
@@ -162,13 +187,33 @@ input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_te
 # os.remove(compressed_file_path)
 
 
-print("start gzip")
-start = time.time()
+# print("start gzip")
+# start = time.time()
 
-compressed_file_path, input_file_size = compress_file_gzip(input_file_path)
-end = time.time()
-print(f"compress with gzip took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
-os.remove(compressed_file_path)
+# compressed_file_path, input_file_size = compress_file_gzip(input_file_path)
+# end = time.time()
+# print(f"compress with gzip took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
+# os.remove(compressed_file_path)
+
+# print("start lzma")
+# start = time.time()
+# compressed_file_path, input_file_size = compress_file_lzma(
+#     input_file_path, output_file_path=f"{input_file_path}.gz"
+# )
+# end = time.time()
+# print(
+#     f"compress with lzma took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
+# )
+
+# print("start lz4")
+# start = time.time()
+# compressed_file_path, input_file_size = compress_file_lz4(
+#     input_file_path, output_file_path=f"{input_file_path}.lz4"
+# )
+# end = time.time()
+# print(
+#     f"compress with lzma took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
+# )
 
 
 # start = time.time()
