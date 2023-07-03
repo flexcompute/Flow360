@@ -417,63 +417,6 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    def _compress_and_upload_chunk(
-        self, mesh: VolumeMesh, remote_file_name: str, chunk_data, upload_id: str, part_number: int
-    ):
-        compressed_chunk = bz2.compress(chunk_data)
-        return mesh.upload_part(remote_file_name, upload_id, part_number, compressed_chunk)
-
-    def _compress_and_upload_chunks(
-        self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 64 * 1024
-    ):
-        upload_id = mesh.create_multipart_upload(remote_file_name)
-        print("upload_id 1:", upload_id)
-        chunk_futures = []
-        with open(self.file_name, "rb") as file:
-            # Initialize a counter for the chunk number and part number
-            part_number = 1
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-
-            while True:
-                # Read binary data in chunks of specified length
-                chunk_data = file.read(chunk_length)
-
-                # Exit the loop if the end of file is reached
-                if not chunk_data:
-                    break
-
-                # Compress and upload the chunk as a part of the multipart upload
-                # response = self._compress_and_upload_chunk(
-                #     mesh, remote_file_name, chunk_data, upload_id, part_number
-                # )
-                future = executor.submit(
-                    self._compress_and_upload_chunk,
-                    mesh,
-                    remote_file_name,
-                    chunk_data,
-                    upload_id,
-                    part_number,
-                )
-
-                part_number += 1
-                chunk_futures.append(future)
-            concurrent.futures.wait(chunk_futures)
-            uploaded_parts = []
-            for future in chunk_futures:
-                response = future.result()
-                uploaded_parts.append(
-                    {
-                        "e_tag": response["e_tag"],
-                        "part_number": response["part_number"],
-                    }
-                )
-        mesh.complete_multipart_upload(
-            remote_file_name,
-            upload_id,
-            [part["e_tag"] for part in uploaded_parts],
-            [part["part_number"] for part in uploaded_parts],
-        )
-
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
@@ -514,7 +457,8 @@ class VolumeMeshDraft(ResourceDraft):
 
         # upload mesh
         if compression == CompressionFormat.NONE:
-            self._compress_and_upload_chunks(mesh, remote_file_name)
+            # TODO stream upload
+            pass
         else:
             mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
             mesh._complete_upload(remote_file_name)
