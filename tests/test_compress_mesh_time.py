@@ -10,7 +10,6 @@ import zipfile
 import zlib
 from shutil import copyfileobj
 
-import lz4.frame
 import py7zr
 
 import flow360 as fl
@@ -117,17 +116,6 @@ def compress_file_lzma(input_file, output_file_path=None):
     return output_file_path, input_file_size
 
 
-def compress_file_lz4(input_file, output_file_path=None):
-    if output_file_path is None:
-        output_file = tempfile.NamedTemporaryFile(delete=False)
-        output_file_path = output_file.name + ".lz4"
-    with open(input_file, "rb") as f_in, lz4.frame.open(output_file_path, "wb") as f_out:
-        f_out.write(f_in.read())
-
-    input_file_size = print_file_sizes(input_file, output_file_path)
-    return output_file_path, input_file_size
-
-
 input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_tetra.8M.lb8.ugrid"
 
 # print("start py7zr")
@@ -196,16 +184,6 @@ input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_te
 # start = time.time()
 # compressed_file_path, input_file_size = compress_file_lzma(
 #     input_file_path, output_file_path=f"{input_file_path}.gz"
-# )
-# end = time.time()
-# print(
-#     f"compress with lzma took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
-# )
-
-# print("start lz4")
-# start = time.time()
-# compressed_file_path, input_file_size = compress_file_lz4(
-#     input_file_path, output_file_path=f"{input_file_path}.lz4"
 # )
 # end = time.time()
 # print(
