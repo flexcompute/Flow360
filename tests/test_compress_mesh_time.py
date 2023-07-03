@@ -5,12 +5,14 @@ import sys
 import tempfile
 import time
 import zlib
+import zipfile
 from shutil import copyfileobj
-
+import py7zr
 import flow360 as fl
+import subprocess
 
 # import pgzip
-# import pigz_python
+import pigz_python
 
 
 fl.Env.dev.active()
@@ -40,25 +42,50 @@ def compress_file_bz2(input_file, output_file_path=None):
     return output_file_path, input_file_size
 
 
-def compress_file_gzip(input_file):
-    output_file = tempfile.NamedTemporaryFile(delete=False)
-    output_file_path = output_file.name + ".gz"
-    with open(input_file, "rb") as f_in, gzip.open(output_file_path, "wb") as f_out:
-        f_out.write(f_in)
+def compress_file_zipfile(input_file, output_file_path=None):
+    if output_file_path is None:
+        output_file = tempfile.NamedTemporaryFile(delete=False)
+        output_file_path = output_file.name + ".zip"
+    with zipfile.ZipFile(output_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(input_file_path, arcname=input_file_path)
 
     input_file_size = print_file_sizes(input_file, output_file_path)
     return output_file_path, input_file_size
 
 
-def compress_file_pgzip(input_file):
+def compress_file_py7zr(input_file, output_file_path=None):
+    if output_file_path is None:
+        output_file = tempfile.NamedTemporaryFile(delete=False)
+        output_file_path = output_file.name + ".7z"
+
+    with py7zr.SevenZipFile(output_file_path, "w") as archive:
+        archive.write(input_file_path)
+
+    input_file_size = print_file_sizes(input_file, output_file_path)
+    return output_file_path, input_file_size
+
+
+def compress_file_gzip(input_file):
     output_file = tempfile.NamedTemporaryFile(delete=False)
     output_file_path = output_file.name + ".gz"
-    with open(input_file, "rb") as f_in, pgzip.open(
-        output_file_path, "wb", blocksize=2 * 10**8
-    ) as f_out:
+    with open(input_file, "rb") as f_in, gzip.open(output_file_path, "wb") as f_out:
         f_out.write(f_in.read())
-        # copyfileobj(f_in, f_out)
 
+    input_file_size = print_file_sizes(input_file, output_file_path)
+    return output_file_path, input_file_size
+
+
+def compress_file_pigz(input_file, output_file_path=None, num_threads=5):
+    output_file = tempfile.NamedTemporaryFile(delete=False)
+    if output_file_path is None:
+        output_file = tempfile.NamedTemporaryFile(delete=False)
+        output_file_path = output_file.name + ".gz"
+        output_file.close()
+    with open(output_file_path, "wb") as output_file:
+        process = subprocess.run(
+            ["pigz", "-p", str(num_threads), "-c", input_file_path], stdout=subprocess.PIPE
+        )
+        output_file.write(process.stdout)
     input_file_size = print_file_sizes(input_file, output_file_path)
     return output_file_path, input_file_size
 
@@ -80,50 +107,68 @@ def compress_file_zlib(input_file):
 
 
 input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_tetra.8M.lb8.ugrid"
+
+# print("start py7zr")
+# start = time.time()
+# compressed_file_path, input_file_size = compress_file_py7zr(
+#     input_file_path, output_file_path=f"{input_file_path}.7z"
+# )
+# end = time.time()
+# print(
+#     f"compress with py7zr took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
+# )
+
+# print("start zipfile")
+# start = time.time()
+# compressed_file_path, input_file_size = compress_file_zipfile(
+#     input_file_path, output_file_path=f"{input_file_path}.zip"
+# )
+# end = time.time()
+# print(
+#     f"compress with zipfile took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
+# )
+
+# print("start pigz")
+# start = time.time()
+# compressed_file_path, input_file_size = compress_file_pigz(
+#     input_file_path, output_file_path=f"{input_file_path}.gz"
+# )
+# end = time.time()
+# print(
+#     f"compress with zipfile took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
+# )
+
+
 # input_file_path = AirplaneTest.meshFilePath
 
 
+# print("start bz2")
 # start = time.time()
 
 # compressed_file_path, input_file_size = compress_file_bz2(
 #     input_file_path, output_file_path=f"{input_file_path}.bz2"
 # )
-# print(f"Compressed file saved to: {compressed_file_path}")
-
 # end = time.time()
 # print(
 #     f"compress with bz2 took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
 # )
 
-
-# start = time.time()
-
-# compressed_file_path, input_file_size = compress_file_pgzip(input_file_path)
-# print(f"Compressed file saved to: {compressed_file_path}")
-
-# end = time.time()
-# print(f"compress with pgzip took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
-# os.remove(compressed_file_path)
-
-
+# print("start zlib")
 # start = time.time()
 
 # compressed_file_path, input_file_size = compress_file_zlib(input_file_path)
-# print(f"Compressed file saved to: {compressed_file_path}")
-
 # end = time.time()
 # print(f"compress with zlib took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
 # os.remove(compressed_file_path)
 
 
-# start = time.time()
+print("start gzip")
+start = time.time()
 
-# compressed_file_path, input_file_size = compress_file_zlib(input_file_path)
-# print(f"Compressed file saved to: {compressed_file_path}")
-
-# end = time.time()
-# print(f"compress with zlib took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
-# os.remove(compressed_file_path)
+compressed_file_path, input_file_size = compress_file_gzip(input_file_path)
+end = time.time()
+print(f"compress with gzip took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
+os.remove(compressed_file_path)
 
 
 # start = time.time()
