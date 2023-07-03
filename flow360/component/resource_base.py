@@ -2,11 +2,14 @@
 Flow360 base Model
 """
 import os
+import re
+import shutil
 import traceback
 from abc import ABC
 from datetime import datetime
 from enum import Enum
 from functools import wraps
+from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
 import pydantic as pd
@@ -15,7 +18,7 @@ from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..component.interfaces import BaseInterface
 from ..exceptions import RuntimeError as FlRuntimeError
-from ..log import log
+from ..log import LogLevel, log
 from ..user_config import UserConfig
 from .utils import is_valid_uuid, validate_type
 
@@ -176,6 +179,7 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method = interface.s3_transfer_method
         self.info_type_class = info_type_class
         self._info = None
+        self.logs = RemoteResourceLogs(self)
         super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
@@ -330,6 +334,21 @@ def is_object_cloud_resource(resource: Flow360Resource):
     return False
 
 
+class Position(Enum):
+    """
+    Enumeration class for log file positions.
+
+    Available positions:
+    - HEAD: Specifies the head position, representing the first lines of the log file.
+    - TAIL: Specifies the tail position, representing the last lines of the log file.
+    - ALL: Specifies the all position, representing the entire log file.
+    """
+
+    HEAD = "head"
+    TAIL = "tail"
+    ALL = "all"
+
+
 class Flow360ResourceListBase(list, RestApi):
     """
     Flow360 ResourceList base component
@@ -377,3 +396,226 @@ class Flow360ResourceListBase(list, RestApi):
         get ResourceList from cloud
         """
         return cls(from_cloud=True)
+
+
+class TemporaryLogDirectory:
+    """
+    A class representing a temporary log directory.
+
+    This class creates a temporary directory for storing log files and provides methods for managing the directory.
+
+    Attributes:
+        _dir (TemporaryDirectory): A temporary directory object created using the `tempfile.TemporaryDirectory` class.
+
+    Properties:
+        name (str): The name of the temporary directory.
+
+    Methods:
+        delete_file(): Deletes the temporary directory if it exists.
+
+    """
+
+    # pylint: disable=consider-using-with
+    def __init__(self):
+        """
+        Initializes a new instance of the TemporaryLogDirectory class.
+
+        Upon initialization, a temporary directory is created using the `tempfile.TemporaryDirectory` class.
+
+        """
+        self._dir = TemporaryDirectory()
+
+    @property
+    def name(self):
+        """
+        str: Returns the name of the temporary directory.
+        """
+        return self._dir.name
+
+    def delete_file(self):
+        """
+        Deletes the temporary directory if it exists.
+
+        This method checks if the temporary directory exists and deletes it if it does.
+        """
+        if os.path.exists(self.name):
+            self._dir.cleanup()
+
+    def __del__(self):
+        """
+        Destructor method for the TemporaryLogDirectory class.
+
+        When the instance of the class is destroyed, this method is automatically
+        called to clean up the temporary directory.
+        """
+        self.delete_file()
+
+
+class RemoteResourceLogs:
+    """
+    Logs class for getting remote logs from flow360 resources
+    """
+
+    def __init__(self, flow360_resource: Flow360Resource):
+        self.flow360_resource = flow360_resource
+        self._tmp_file_name = None
+        self._tmp_dir = None
+        self._remote_file_name = None
+
+    def _get_log_file_names(self) -> List[str]:
+        file_names = [
+            file["fileName"]
+            for file in self.flow360_resource.get_download_file_list()
+            if "fileName" in file
+        ]
+        pattern = re.compile(r"logs/(.*\.log)")
+        log_file_names = [
+            pattern.search(string).group(1) for string in file_names if pattern.search(string)
+        ]
+        return log_file_names
+
+    def set_remote_log_file_name(self, file_name: str):
+        """
+        Set the name of the remote log file.
+
+        This method sets the name of the log file that is stored remotely.
+
+        Args:
+            file_name (str): The name of the remote log file.
+
+        Returns:
+            None
+        """
+        self._remote_file_name = file_name
+
+    def _has_multiple_files(self) -> bool:
+        logs = self._get_log_file_names()
+        if len(logs) > 1:
+            log.warning(
+                f"There are multiple log files: {logs}. \n The default file will be {logs[0]}."
+                "Call set_remote_log_file_name(file_name) to override the default log file."
+            )
+            return True
+        return False
+
+    def _get_tmp_file_name(self):
+        if self._tmp_file_name is None:
+            if self._tmp_dir is None:
+                self._tmp_dir = TemporaryLogDirectory()
+            if self._remote_file_name is None:
+                self._remote_file_name = self._get_log_file_names()[0]
+            self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
+        return self._tmp_file_name
+
+    def _refresh_file(self):
+        tmp_file = self._get_tmp_file_name()
+        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=True)
+
+    @property
+    def _cached_file(self):
+        tmp_file = self._get_tmp_file_name()
+        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=False)
+        return tmp_file
+
+    def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100):
+        """
+        Get log lines based on position (head, tail, all).
+
+        :param pos: Position enum (HEAD, TAIL, or ALL).
+        :param num_lines: Number of lines to retrieve (for HEAD and TAIL positions).
+        :return: List of log lines.
+        """
+        try:
+            with open(self._cached_file, encoding="utf-8") as file:
+                lines = file.read().splitlines()
+                if pos == Position.HEAD:
+                    return lines[:num_lines]
+                if pos == Position.TAIL:
+                    return lines[-num_lines:]
+                return lines
+
+        except (OSError, IOError) as error:
+            log.error("invalid path to log files", error)
+            return None
+
+    def _get_log_by_level(self, level: LogLevel = None):
+        """
+        Get log lines filtered by log level.
+
+        :param level: Log level (ERROR, WARNING, INFO, or None for all).
+        :return: List of filtered log lines.
+        """
+        try:
+            with open(self._cached_file, encoding="utf-8") as file:
+                log_contents = file.read()
+                if level == "ERROR":
+                    filt = r"(?mi)^(.*?error.*)$"
+                elif level == "WARNING":
+                    filt = r"(?mi)^.*?(?:error|warning).+$"
+                elif level == "INFO":
+                    filt = r"(?mi)^(?!.*USERDBG)(?=.*\S).*$"
+                else:
+                    filt = r".*"
+                return [line for line in re.findall(filt, log_contents) if line.strip() != ""]
+        except (OSError, IOError) as error:
+            log.error("invalid path to log files", error)
+            return None
+
+    def head(self, num_lines: int = 100):
+        """
+        Print the first n lines of the log file.
+
+        :param num_lines: Number of lines to print.
+        """
+        log_message = self._get_log_by_pos(Position.HEAD, num_lines)
+        print("\n".join(log_message))
+
+    def tail(self, num_lines: int = 100):
+        """
+        Print the last n lines of the log file.
+
+        :param num_lines: Number of lines to print.
+        """
+        log_message = self._get_log_by_pos(Position.TAIL, num_lines)
+        print("\n".join(log_message))
+
+    def print(self):
+        """
+        Print the entire log file.
+        """
+        log_message = self._get_log_by_pos(Position.ALL)
+        print("\n".join(log_message))
+
+    def errors(self):
+        """
+        Print log lines containing error messages.
+        """
+        log_message = self._get_log_by_level("ERROR")
+        print("\n".join(log_message))
+
+    def warnings(self):
+        """
+        Print log lines containing warning messages.
+        """
+        log_message = self._get_log_by_level("WARNING")
+        print("\n".join(log_message))
+
+    def info(self):
+        """
+        Print log lines containing info messages.
+        """
+        log_message = self._get_log_by_level("INFO")
+        print("\n".join(log_message))
+
+    def to_file(self, file_name: str):
+        """
+        Write log lines to a file.
+
+        :param file_name: File name or path to write the log lines.
+        """
+        try:
+            shutil.copyfile(self._cached_file, file_name)
+        except shutil.SameFileError as error:
+            log.error(f"Write to a different file location, {error}")
+        except OSError as error:
+            log.error(f"{file_name} not writable {error}")
