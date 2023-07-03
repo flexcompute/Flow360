@@ -3,8 +3,6 @@ Volume mesh component
 """
 from __future__ import annotations
 
-import bz2
-import concurrent.futures
 import os.path
 from enum import Enum
 from typing import Iterator, List, Optional, Union
@@ -457,7 +455,7 @@ class VolumeMeshDraft(ResourceDraft):
 
         # upload mesh
         if compression == CompressionFormat.NONE:
-            # TODO stream upload
+            # to do stream upload
             pass
         else:
             mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
