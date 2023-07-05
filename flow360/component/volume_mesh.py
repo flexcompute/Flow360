@@ -7,6 +7,8 @@ import os.path
 from enum import Enum
 from typing import Iterator, List, Optional, Union
 import bz2
+import zipfile
+import sys
 import numpy as np
 from pydantic import Extra, Field, validator
 
@@ -417,6 +419,7 @@ class VolumeMeshDraft(ResourceDraft):
 
     def _pigz_compress(self, file_path):
         try:
+            print("called!")
             # Run pigz to compress the file
             subprocess.run(["pigz", "-k", "-3", file_path])
             compressed_file_path = file_path + ".gz"
@@ -428,12 +431,16 @@ class VolumeMeshDraft(ResourceDraft):
             log.error("Error: pigz command not found. Make sure pigz is installed.")
 
     def _compress_and_upload_chunks(
-        self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 1024 * 1024
+        self,
+        upload_id: str,
+        mesh: VolumeMesh,
+        remote_file_name: str,
+        chunk_length: int = 25 * 1024 * 1024,
     ):
-        upload_id = mesh.create_multipart_upload(remote_file_name)
         with open(self.file_name, "rb") as file:
             # Initialize a counter for the chunk number and part number
             part_number = 1
+            uploaded_parts = []
 
             while True:
                 # Read binary data in chunks of specified length
@@ -443,14 +450,20 @@ class VolumeMeshDraft(ResourceDraft):
                 if not chunk_data:
                     break
 
-                # Compress and upload the chunk as a part of the multipart upload
+                # Compress the chunk using pigz
+                compressed_chunk = subprocess.run(
+                    ["pigz", "-c"], input=chunk_data, capture_output=True
+                ).stdout
+
+                # Upload the compressed chunk as a part of the multipart upload
                 response = mesh.upload_part(
-                    remote_file_name, upload_id, part_number, bz2.compress(chunk_data)
+                    remote_file_name, upload_id, part_number, compressed_chunk
                 )
+                uploaded_parts.append({"PartNumber": part_number, "ETag": response["ETag"]})
                 part_number += 1
-        mesh.complete_multipart_upload(
-            remote_file_name, upload_id, response["e_tag"], response["part_number"]
-        )
+
+        # Complete the multipart upload
+        mesh.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
 
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
@@ -462,7 +475,7 @@ class VolumeMeshDraft(ResourceDraft):
         # Compress then upload with pigz
         # if compression == CompressionFormat.NONE:
         #     self.file_name = self._pigz_compress(self.file_name)
-        #     compression = CompressionFormat.detect(self.file_name)
+        #     compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
 
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
@@ -496,7 +509,8 @@ class VolumeMeshDraft(ResourceDraft):
 
         # parallel compress and upload
         if compression == CompressionFormat.NONE:
-            self._compress_and_upload_chunks(mesh, remote_file_name)
+            upload_id = mesh.create_multipart_upload(remote_file_name)
+            self._compress_and_upload_chunks(upload_id, mesh, remote_file_name)
         else:
             mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
             mesh._complete_upload(remote_file_name)
@@ -727,7 +741,6 @@ class VolumeMesh(Flow360Resource):
         :param solver_version:
         :return:
         """
-
         return VolumeMeshDraft(
             file_name=file_name,
             name=name,

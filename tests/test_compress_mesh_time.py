@@ -191,12 +191,12 @@ input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_te
 # )
 
 
-# start = time.time()
-
-# vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file").submit()
-
-
-# end = time.time()
-# print(f"upload took: {end - start} seconds")
+print("start upload")
+vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
+print("finish init")
+start = time.time()
+vm.submit()
+end = time.time()
+print(f"upload took: {end - start} seconds")
 
 # os.remove(compressed_file_path)
