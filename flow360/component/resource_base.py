@@ -354,28 +354,30 @@ class Flow360Resource(RestApi):
             compressed_chunk: The compressed chunk data to upload.
 
         Returns:
-            {"e_tag": response["e_tag"], "part_number": part_number}
+            {"ETag": response["ETag"], "PartNumber": part_number}
         """
         return self.s3_transfer_method.upload_part(
             self.id, remote_file_name, upload_id, part_number, compressed_chunk
         )
 
     @on_cloud_resource_only
-    def complete_multipart_upload(self, remote_file_name: str, upload_id: str, e_tag, part_number):
+    def complete_multipart_upload(
+        self, remote_file_name: str, upload_id: str, uploaded_parts: dict
+    ):
         """
         Completes a multipart upload for the specified remote file name and upload ID.
 
         Args:
             remote_file_name (str): The name of the remote file.
             upload_id (str): The ID of the multipart upload.
-            e_tag: The e_tag of the completed upload.
+            ETag: The ETag of the completed upload.
             part_number: The part number of the completed upload.
 
         Returns:
             None
         """
         self.s3_transfer_method.complete_multipart_upload(
-            self.id, remote_file_name, upload_id, e_tag, part_number
+            self.id, remote_file_name, upload_id, uploaded_parts
         )
 
 
