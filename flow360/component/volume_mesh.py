@@ -6,7 +6,7 @@ import subprocess
 import os.path
 from enum import Enum
 from typing import Iterator, List, Optional, Union
-
+import bz2
 import numpy as np
 from pydantic import Extra, Field, validator
 
@@ -427,6 +427,31 @@ class VolumeMeshDraft(ResourceDraft):
         except FileNotFoundError as e:
             log.error("Error: pigz command not found. Make sure pigz is installed.")
 
+    def _compress_and_upload_chunks(
+        self, mesh: VolumeMesh, remote_file_name: str, chunk_length: int = 1024 * 1024
+    ):
+        upload_id = mesh.create_multipart_upload(remote_file_name)
+        with open(self.file_name, "rb") as file:
+            # Initialize a counter for the chunk number and part number
+            part_number = 1
+
+            while True:
+                # Read binary data in chunks of specified length
+                chunk_data = file.read(chunk_length)
+
+                # Exit the loop if the end of file is reached
+                if not chunk_data:
+                    break
+
+                # Compress and upload the chunk as a part of the multipart upload
+                response = mesh.upload_part(
+                    remote_file_name, upload_id, part_number, bz2.compress(chunk_data)
+                )
+                part_number += 1
+        mesh.complete_multipart_upload(
+            remote_file_name, upload_id, response["e_tag"], response["part_number"]
+        )
+
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
@@ -434,9 +459,10 @@ class VolumeMeshDraft(ResourceDraft):
         compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
-        if compression == CompressionFormat.NONE:
-            self.file_name = self._pigz_compress(self.file_name)
-            compression = CompressionFormat.detect(self.file_name)
+        # Compress then upload with pigz
+        # if compression == CompressionFormat.NONE:
+        #     self.file_name = self._pigz_compress(self.file_name)
+        #     compression = CompressionFormat.detect(self.file_name)
 
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
@@ -468,9 +494,12 @@ class VolumeMeshDraft(ResourceDraft):
         self._id = info.id
         mesh = VolumeMesh(self.id)
 
-        # upload mesh
-        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
-        mesh._complete_upload(remote_file_name)
+        # parallel compress and upload
+        if compression == CompressionFormat.NONE:
+            self._compress_and_upload_chunks(mesh, remote_file_name)
+        else:
+            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+            mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
