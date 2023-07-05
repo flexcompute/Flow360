@@ -418,7 +418,7 @@ class VolumeMeshDraft(ResourceDraft):
     def _pigz_compress(self, file_path):
         try:
             # Run pigz to compress the file
-            subprocess.run(["pigz", "-k", file_path])
+            subprocess.run(["pigz", "-k", "-3", file_path])
             compressed_file_path = file_path + ".gz"
 
             return compressed_file_path
