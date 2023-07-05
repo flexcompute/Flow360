@@ -2,7 +2,7 @@
 Volume mesh component
 """
 from __future__ import annotations
-
+import subprocess
 import os.path
 from enum import Enum
 from typing import Iterator, List, Optional, Union
@@ -415,6 +415,18 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
+    def _pigz_compress(self, file_path):
+        try:
+            # Run pigz to compress the file
+            subprocess.run(["pigz", "-k", file_path])
+            compressed_file_path = file_path + ".gz"
+
+            return compressed_file_path
+        except subprocess.CalledProcessError as e:
+            log.error(f"Error occurred while compressing the file: {e}")
+        except FileNotFoundError as e:
+            log.error("Error: pigz command not found. Make sure pigz is installed.")
+
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
@@ -422,6 +434,9 @@ class VolumeMeshDraft(ResourceDraft):
         compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
+        if compression == CompressionFormat.NONE:
+            self.file_name = self._pigz_compress(self.file_name)
+            compression = CompressionFormat.detect(self.file_name)
 
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
@@ -454,12 +469,8 @@ class VolumeMeshDraft(ResourceDraft):
         mesh = VolumeMesh(self.id)
 
         # upload mesh
-        if compression == CompressionFormat.NONE:
-            # to do stream upload
-            pass
-        else:
-            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
-            mesh._complete_upload(remote_file_name)
+        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+        mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
