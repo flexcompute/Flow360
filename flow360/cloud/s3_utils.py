@@ -209,6 +209,87 @@ class S3TransferType(Enum):
 
         return None
 
+    def create_multipart_upload(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+    ):
+        """
+        Creates a multipart upload for the specified resource ID and remote file name.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+
+        Returns:
+            str: The upload ID of the multipart upload.
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        return client.create_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+        )["UploadId"]
+
+    def upload_part(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        """
+        Uploads a part of the file as part of a multipart upload.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            part_number (int): The part number of the upload.
+            compressed_chunk: The compressed chunk data to upload.
+
+        Returns:
+            dict: A dictionary containing the e_tag and part_number of the uploaded part.
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        response = client.upload_part(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+            PartNumber=part_number,
+            UploadId=upload_id,
+            Body=compressed_chunk,
+        )
+
+        # Return the e_tag of the uploaded part
+        return {"e_tag": response["e_tag"], "part_number": part_number}
+
+    def complete_multipart_upload(
+        self, resource_id: str, remote_file_name: str, upload_id: str, e_tag: str, part_number: int
+    ):
+        """
+        Completes a multipart upload for the specified resource ID, remote file name, upload ID, e_tag, and part number.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            e_tag (str): The e_tag of the uploaded part.
+            part_number (int): The part number of the completed upload.
+
+        Returns:
+            None
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        client.complete_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+            UploadId=upload_id,
+            MultipartUpload={"Parts": [{"e_tag": e_tag, "part_number": part_number}]},
+        )
+
     def upload_file(
         self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None
     ):
