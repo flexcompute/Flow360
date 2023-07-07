@@ -2,16 +2,16 @@
 Volume mesh component
 """
 from __future__ import annotations
-import subprocess
+
+import concurrent.futures
 import os.path
+import subprocess
 from enum import Enum
 from typing import Iterator, List, Optional, Union
-import bz2
-import zipfile
-import sys
+
 import numpy as np
 from pydantic import Extra, Field, validator
-import concurrent.futures
+
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import CloudFileError
@@ -417,24 +417,12 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    def _pigz_compress(self, file_path):
-        try:
-            print("called!")
-            # Run pigz to compress the file
-            subprocess.run(["pigz", "-k", "-3", file_path])
-            compressed_file_path = file_path + ".gz"
-
-            return compressed_file_path
-        except subprocess.CalledProcessError as e:
-            log.error(f"Error occurred while compressing the file: {e}")
-        except FileNotFoundError as e:
-            log.error("Error: pigz command not found. Make sure pigz is installed.")
-
     def _compress_and_upload_chunks(
         self,
         upload_id: str,
         mesh: VolumeMesh,
         remote_file_name: str,
+        max_workers: int = 50,
         chunk_length: int = 25 * 1024 * 1024,
     ):
         uploaded_parts = []  # Initialize an empty list to store the uploaded parts
@@ -448,11 +436,11 @@ class VolumeMeshDraft(ResourceDraft):
                     break
 
                 compressed_chunk = subprocess.run(
-                    ["pigz", "-c"], input=chunk_data, capture_output=True
+                    ["pigz", "-c"], input=chunk_data, capture_output=True, check=True
                 ).stdout
                 parts.append((part_number, compressed_chunk))
                 part_number += 1
-                executor = concurrent.futures.ThreadPoolExecutor(max_workers=50)
+                executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
                 future = executor.submit(
                     mesh.upload_part, remote_file_name, upload_id, part_number, compressed_chunk
                 )
@@ -470,11 +458,6 @@ class VolumeMeshDraft(ResourceDraft):
         compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
-        # Compress then upload with pigz
-        # if compression == CompressionFormat.NONE:
-        #     self.file_name = self._pigz_compress(self.file_name)
-        #     compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
-
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:

@@ -226,12 +226,12 @@ class S3TransferType(Enum):
         """
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
-        print("create multipart upload")
         return client.create_multipart_upload(
             Bucket=token.get_bucket(),
             Key=token.get_s3_key(),
         )["UploadId"]
 
+    # pylint: disable=too-many-arguments
     def upload_part(
         self,
         resource_id: str,
@@ -253,7 +253,6 @@ class S3TransferType(Enum):
         Returns:
             dict: A dictionary containing the e_tag and part_number of the uploaded part.
         """
-        print("upload part", part_number)
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         response = client.upload_part(
@@ -283,7 +282,6 @@ class S3TransferType(Enum):
         Returns:
             None
         """
-        print("complete multipart upload")
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         client.complete_multipart_upload(
