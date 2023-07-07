@@ -11,7 +11,7 @@ import zipfile
 import sys
 import numpy as np
 from pydantic import Extra, Field, validator
-
+import concurrent.futures
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import CloudFileError
@@ -437,32 +437,30 @@ class VolumeMeshDraft(ResourceDraft):
         remote_file_name: str,
         chunk_length: int = 25 * 1024 * 1024,
     ):
+        uploaded_parts = []  # Initialize an empty list to store the uploaded parts
+
         with open(self.file_name, "rb") as file:
-            # Initialize a counter for the chunk number and part number
+            parts = []
             part_number = 1
-            uploaded_parts = []
-
             while True:
-                # Read binary data in chunks of specified length
                 chunk_data = file.read(chunk_length)
-
-                # Exit the loop if the end of file is reached
                 if not chunk_data:
                     break
 
-                # Compress the chunk using pigz
                 compressed_chunk = subprocess.run(
                     ["pigz", "-c"], input=chunk_data, capture_output=True
                 ).stdout
-
-                # Upload the compressed chunk as a part of the multipart upload
-                response = mesh.upload_part(
-                    remote_file_name, upload_id, part_number, compressed_chunk
-                )
-                uploaded_parts.append({"PartNumber": part_number, "ETag": response["ETag"]})
+                parts.append((part_number, compressed_chunk))
                 part_number += 1
+                executor = concurrent.futures.ThreadPoolExecutor(max_workers=50)
+                future = executor.submit(
+                    mesh.upload_part, remote_file_name, upload_id, part_number, compressed_chunk
+                )
+                uploaded_parts.append(future)
 
-        # Complete the multipart upload
+        concurrent.futures.wait(uploaded_parts)
+
+        uploaded_parts = [future.result() for future in uploaded_parts]
         mesh.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
 
     # pylint: disable=protected-access
