@@ -2,7 +2,7 @@
 Flow360 solver parameters
 """
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Literal
 from enum import Enum
 import math
 
@@ -99,7 +99,7 @@ class TimeStepping(BaseModel):
 
     physical_steps: Optional[int] = Field(alias="physicalSteps")
     max_pseudo_steps: Optional[int] = Field(alias="maxPseudoSteps")
-    time_step_size: Optional[Union[float, str]] = Field(alias="timeStepSize", default="inf")
+    time_step_size: Optional[Union[float, Literal['inf']]] = Field(alias="timeStepSize", default="inf")
     CFL: Optional[TimeSteppingCFL] = Field(default=TimeSteppingCFL())
 
     @validator("time_step_size")
