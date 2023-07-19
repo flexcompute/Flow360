@@ -8,8 +8,9 @@ import tempfile
 import time
 import zipfile
 import zlib
+import zstandard as zstd
 from shutil import copyfileobj
-
+from flow360.component.volume_mesh import CompressMethod
 import py7zr
 
 import flow360 as fl
@@ -116,7 +117,42 @@ def compress_file_lzma(input_file, output_file_path=None):
     return output_file_path, input_file_size
 
 
-input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_tetra.8M.lb8.ugrid"
+def decompress_if_needed(file_path: str):
+    # Check if the file is compressed with bz2
+    if file_path.endswith(".bz2"):
+        print("decompress bz2")
+        start = time.time()
+        with open(file_path, "rb") as file:
+            x = bz2.decompress(file.read())
+            end = time.time()
+            print(f"decompress with bz2 took {end - start} second")
+            return x
+
+    # Check if the file is compressed with zstandard
+    if file_path.endswith(".zst"):
+        print("decompress zst")
+        start = time.time()
+        with open(file_path, "rb") as file:
+            dctx = zstd.ZstdDecompressor()
+            x = dctx.decompress(file.read())
+            end = time.time()
+            print(f"decompress with zst took {end - start} second")
+            return x
+
+    # Return the file content as is if it's not compressed
+    with open(file_path, "rb") as file:
+        return file.read()
+
+
+def compare_ugrid_files(file_path1, file_path2):
+    content1 = decompress_if_needed(file_path1)
+    with open(file_path2, "rb") as file2:
+        content2 = file2.read()
+
+    return content1 == content2
+
+
+input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/wing_tetra.8M.lb8.ugrid")
 
 # print("start py7zr")
 # start = time.time()
@@ -193,10 +229,16 @@ input_file_path = "/Users/linjin/Desktop/Flow360/tests/upload_test_files/wing_te
 
 # print("start upload")
 # vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
+# # vm.compress_method = CompressMethod.BZ2
+# vm.compress_method = CompressMethod.ZSTD
 # print("finish init")
 # start = time.time()
 # vm.submit()
 # end = time.time()
 # print(f"upload took: {end - start} seconds")
-
-# os.remove(compressed_file_path)
+# print(
+#     compare_ugrid_files(
+#         "/Users/linjin/Downloads/accae1ec-9650-4f1d-9a1c-1f4fa80a639b_mesh.lb8.ugrid.zst",
+#         input_file_path,
+#     )
+# )

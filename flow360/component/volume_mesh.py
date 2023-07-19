@@ -2,13 +2,13 @@
 Volume mesh component
 """
 from __future__ import annotations
-
+import bz2
 import concurrent.futures
 import os.path
 import subprocess
 from enum import Enum
 from typing import Iterator, List, Optional, Union
-
+import zstandard as zstd
 import numpy as np
 from pydantic import Extra, Field, validator
 
@@ -297,6 +297,11 @@ class CompressionFormat(Enum):
         return CompressionFormat.NONE, file
 
 
+class CompressMethod(Enum):
+    BZ2 = "bz2"
+    ZSTD = "zstd"
+
+
 # pylint: disable=E0213
 class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     """
@@ -392,6 +397,7 @@ class VolumeMeshDraft(ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
+        self.compress_method = CompressMethod.BZ2
         ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):
@@ -426,7 +432,7 @@ class VolumeMeshDraft(ResourceDraft):
         chunk_length: int = 25 * 1024 * 1024,
     ):
         uploaded_parts = []  # Initialize an empty list to store the uploaded parts
-
+        min_upload_size = 5 * 1024 * 1024
         with open(self.file_name, "rb") as file:
             parts = []
             part_number = 1
@@ -434,10 +440,10 @@ class VolumeMeshDraft(ResourceDraft):
                 chunk_data = file.read(chunk_length)
                 if not chunk_data:
                     break
-
-                compressed_chunk = subprocess.run(
-                    ["pigz", "-c"], input=chunk_data, capture_output=True, check=True
-                ).stdout
+                compressed_chunk = bz2.compress(chunk_data)
+                while len(compressed_chunk) < min_upload_size and chunk_data:
+                    chunk_data = file.read(chunk_length)
+                    compressed_chunk += bz2.compress(chunk_data)
                 parts.append((part_number, compressed_chunk))
                 part_number += 1
                 executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
@@ -450,6 +456,26 @@ class VolumeMeshDraft(ResourceDraft):
 
         uploaded_parts = [future.result() for future in uploaded_parts]
         mesh.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
+
+    def _zstd_compress(self, file_path, compression_level=3):
+        try:
+            with open(file_path, "rb") as infile:
+                data = infile.read()
+
+            # Compress the data using Zstandard
+            cctx = zstd.ZstdCompressor(level=compression_level)
+            compressed_data = cctx.compress(data)
+
+            # Save the compressed data to a new file
+            compressed_file_path = file_path + ".zst"
+            with open(compressed_file_path, "wb") as outfile:
+                outfile.write(compressed_data)
+
+            return compressed_file_path
+        except FileNotFoundError as e:
+            log.error("Error: File not found.")
+        except Exception as e:
+            log.error(f"Error occurred while compressing the file: {e}")
 
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
@@ -489,12 +515,21 @@ class VolumeMeshDraft(ResourceDraft):
         mesh = VolumeMesh(self.id)
 
         # parallel compress and upload
-        if compression == CompressionFormat.NONE:
+        if compression == CompressionFormat.NONE and (self.compress_method == CompressMethod.BZ2):
             upload_id = mesh.create_multipart_upload(remote_file_name)
             self._compress_and_upload_chunks(upload_id, mesh, remote_file_name)
-        else:
-            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
             mesh._complete_upload(remote_file_name)
+        else:
+            if compression == CompressionFormat.NONE:
+                self._zstd_compress(self.file_name)
+                mesh.upload_file(
+                    remote_file_name, self.file_name + ".zst", progress_callback=progress_callback
+                )
+            else:
+                mesh.upload_file(
+                    remote_file_name, self.file_name, progress_callback=progress_callback
+                )
+
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
