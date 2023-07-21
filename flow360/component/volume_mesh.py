@@ -272,6 +272,7 @@ class CompressionFormat(Enum):
 
     GZ = "gz"
     BZ2 = "bz2"
+    ZST = "zst"
     NONE = None
 
     def ext(self) -> str:
@@ -296,13 +297,6 @@ class CompressionFormat(Enum):
         if ext == CompressionFormat.BZ2.ext():
             return CompressionFormat.BZ2, file_name
         return CompressionFormat.NONE, file
-
-
-class CompressMethod(Enum):
-    """Enumeration for log file compression methods: BZ2 and ZSTD."""
-
-    BZ2 = "bz2"
-    ZSTD = "zstd"
 
 
 # pylint: disable=E0213
@@ -401,7 +395,7 @@ class VolumeMeshDraft(ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
-        self.compress_method = CompressMethod.BZ2
+        self.compress_method = CompressionFormat.BZ2
         ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):
@@ -485,13 +479,18 @@ class VolumeMeshDraft(ResourceDraft):
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
-        compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
+        original_compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
             remote_file_name = "mesh"
+        compression = (
+            original_compression
+            if original_compression != CompressionFormat.NONE
+            else self.compress_method
+        )
         remote_file_name = (
             f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
         )
@@ -519,12 +518,15 @@ class VolumeMeshDraft(ResourceDraft):
         mesh = VolumeMesh(self.id)
 
         # parallel compress and upload
-        if compression == CompressionFormat.NONE and (self.compress_method == CompressMethod.BZ2):
+        if (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.BZ2
+        ):
             upload_id = mesh.create_multipart_upload(remote_file_name)
             self._compress_and_upload_chunks(upload_id, mesh, remote_file_name)
             mesh._complete_upload(remote_file_name)
         else:
-            if compression == CompressionFormat.NONE:
+            if original_compression == CompressionFormat.NONE:
                 compressed_file_name = self._zstd_compress(self.file_name)
                 compressed_file_name = (
                     compressed_file_name if compressed_file_name is not None else self.file_name

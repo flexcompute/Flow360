@@ -14,7 +14,7 @@ import py7zr
 import zstandard as zstd
 
 import flow360 as fl
-from flow360.component.volume_mesh import CompressMethod
+from flow360.component.volume_mesh import CompressionFormat
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))
@@ -230,8 +230,8 @@ input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/wing_tetra.
 
 # print("start upload")
 # vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
-# # vm.compress_method = CompressMethod.BZ2
-# vm.compress_method = CompressMethod.ZSTD
+# vm.compress_method = CompressionFormat.BZ2
+# # vm.compress_method = CompressionFormat.ZST
 # print("finish init")
 # start = time.time()
 # vm.submit()
