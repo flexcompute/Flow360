@@ -8,12 +8,13 @@ import tempfile
 import time
 import zipfile
 import zlib
-import zstandard as zstd
 from shutil import copyfileobj
-from flow360.component.volume_mesh import CompressMethod
+
 import py7zr
+import zstandard as zstd
 
 import flow360 as fl
+from flow360.component.volume_mesh import CompressMethod
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))

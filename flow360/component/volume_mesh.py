@@ -2,14 +2,15 @@
 Volume mesh component
 """
 from __future__ import annotations
+
 import bz2
 import concurrent.futures
 import os.path
-import subprocess
 from enum import Enum
 from typing import Iterator, List, Optional, Union
-import zstandard as zstd
+
 import numpy as np
+import zstandard as zstd
 from pydantic import Extra, Field, validator
 
 from ..cloud.requests import NewVolumeMeshRequest
@@ -298,6 +299,8 @@ class CompressionFormat(Enum):
 
 
 class CompressMethod(Enum):
+    """Enumeration for log file compression methods: BZ2 and ZSTD."""
+
     BZ2 = "bz2"
     ZSTD = "zstd"
 
@@ -356,6 +359,7 @@ class VolumeMeshDraft(ResourceDraft):
     """
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         file_name: str = None,
@@ -472,10 +476,10 @@ class VolumeMeshDraft(ResourceDraft):
                 outfile.write(compressed_data)
 
             return compressed_file_path
-        except FileNotFoundError as e:
-            log.error("Error: File not found.")
-        except Exception as e:
-            log.error(f"Error occurred while compressing the file: {e}")
+        # pylint: disable=broad-exception-caught
+        except Exception as error:
+            log.error(f"Error occurred while compressing the file: {error}")
+            return None
 
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
@@ -521,9 +525,12 @@ class VolumeMeshDraft(ResourceDraft):
             mesh._complete_upload(remote_file_name)
         else:
             if compression == CompressionFormat.NONE:
-                self._zstd_compress(self.file_name)
+                compressed_file_name = self._zstd_compress(self.file_name)
+                compressed_file_name = (
+                    compressed_file_name if compressed_file_name is not None else self.file_name
+                )
                 mesh.upload_file(
-                    remote_file_name, self.file_name + ".zst", progress_callback=progress_callback
+                    remote_file_name, compressed_file_name, progress_callback=progress_callback
                 )
             else:
                 mesh.upload_file(
