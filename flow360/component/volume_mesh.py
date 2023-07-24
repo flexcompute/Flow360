@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import os.path
 import shutil
-import tempfile
 from enum import Enum
 from typing import Iterator, List, Optional, Union
+
 import numpy as np
 from pydantic import Extra, Field, validator
 
@@ -37,7 +37,6 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-
 from .types import COMMENTS
 from .utils import validate_type, zstd_compress
 from .validator import Validator
@@ -421,7 +420,7 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-locals
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
