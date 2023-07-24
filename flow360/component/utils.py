@@ -3,13 +3,13 @@ Utility functions
 """
 import uuid
 from functools import wraps
+from tempfile import NamedTemporaryFile, mkdtemp
+
+import zstandard as zstd
 
 from ..exceptions import TypeError as FlTypeError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
-import zstandard as zstd
-from tempfile import NamedTemporaryFile
-from flow360.file_path import flow360_dir
 
 
 # pylint: disable=redefined-builtin
@@ -77,15 +77,29 @@ def validate_type(value, parameter_name: str, expected_type):
         )
 
 
+# pylint: disable=consider-using-with
 def zstd_compress(file_path, output_file_path=None, compression_level=3):
+    """
+    Compresses the file located at 'file_path' using Zstandard compression.
+
+    Args:
+        file_path (str): The path to the input file that needs to be compressed.
+        output_file_path (str, optional): The path where the compressed data will be written as a new file.
+                                         If not provided, a temporary file with a ".zst" suffix will be created.
+        compression_level (int, optional): The compression level used by the Zstandard compressor (default is 3).
+
+    Returns:
+        str or None: The path to the compressed file if successful, or None if an error occurred.
+    """
     try:
         compressor = zstd.ZstdCompressor(level=compression_level)
         if not output_file_path:
-            output_file_path = NamedTemporaryFile(suffix=".zst", dir=flow360_dir).name
+            temp_dir = mkdtemp()
+            output_file_path = NamedTemporaryFile(suffix=".zst", dir=temp_dir).name
         with open(file_path, "rb") as f_in:
             with open(output_file_path, "wb") as f_out:
                 compressor.copy_stream(f_in, f_out)
-        return output_file_path
+        return output_file_path, temp_dir
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
-        return None
+        return None, temp_dir

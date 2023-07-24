@@ -1,21 +1,18 @@
 import bz2
 import gzip
+import io
 import lzma
 import os
-import subprocess
 import sys
 import tempfile
 import time
-import zipfile
-import zlib
-from shutil import copyfileobj
-import io
-import py7zr
+from shutil import copyfileobj, rmtree
+
 import zstandard as zstd
 
 import flow360 as fl
-from flow360.component.volume_mesh import CompressionFormat
 from flow360.component.utils import zstd_compress
+from flow360.component.volume_mesh import CompressionFormat
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))
@@ -44,65 +41,11 @@ def compress_file_bz2(input_file, output_file_path=None):
     return output_file_path, input_file_size
 
 
-def compress_file_zipfile(input_file, output_file_path=None):
-    if output_file_path is None:
-        output_file = tempfile.NamedTemporaryFile(delete=False)
-        output_file_path = output_file.name + ".zip"
-    with zipfile.ZipFile(output_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-        zipf.write(input_file_path, arcname=input_file_path)
-
-    input_file_size = print_file_sizes(input_file, output_file_path)
-    return output_file_path, input_file_size
-
-
-def compress_file_py7zr(input_file, output_file_path=None):
-    if output_file_path is None:
-        output_file = tempfile.NamedTemporaryFile(delete=False)
-        output_file_path = output_file.name + ".7z"
-
-    with py7zr.SevenZipFile(output_file_path, "w") as archive:
-        archive.write(input_file_path)
-
-    input_file_size = print_file_sizes(input_file, output_file_path)
-    return output_file_path, input_file_size
-
-
 def compress_file_gzip(input_file):
     output_file = tempfile.NamedTemporaryFile(delete=False)
     output_file_path = output_file.name + ".gz"
     with open(input_file, "rb") as f_in, gzip.open(output_file_path, "wb") as f_out:
         f_out.write(f_in.read())
-
-    input_file_size = print_file_sizes(input_file, output_file_path)
-    return output_file_path, input_file_size
-
-
-def compress_file_pigz(input_file, output_file_path=None, num_threads=5):
-    output_file = tempfile.NamedTemporaryFile(delete=False)
-    if output_file_path is None:
-        output_file = tempfile.NamedTemporaryFile(delete=False)
-        output_file_path = output_file.name + ".gz"
-        output_file.close()
-    with open(output_file_path, "wb") as output_file:
-        process = subprocess.run(
-            ["pigz", "-8", "-p", str(num_threads), "-c", input_file_path], stdout=subprocess.PIPE
-        )
-        output_file.write(process.stdout)
-    input_file_size = print_file_sizes(input_file, output_file_path)
-    return output_file_path, input_file_size
-
-
-def compress_file_zlib(input_file):
-    output_file = tempfile.NamedTemporaryFile(delete=False)
-    output_file_path = output_file.name + ".gz"
-
-    with open(input_file, "rb") as f_in, open(output_file_path, "wb") as f_out:
-        compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
-        for chunk in iter(lambda: f_in.read(1024), b""):
-            compressed_chunk = compressor.compress(chunk)
-            f_out.write(compressed_chunk)
-        compressed_final_chunk = compressor.flush()
-        f_out.write(compressed_final_chunk)
 
     input_file_size = print_file_sizes(input_file, output_file_path)
     return output_file_path, input_file_size
@@ -155,46 +98,13 @@ def compare_ugrid_files(file_path1: str, file_path2: str) -> bool:
             print("NOT equal")
 
 
-input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/wing_tetra.8M.lb8.ugrid")
-output_file = zstd_compress(input_file_path)
-compare_ugrid_files(
-    output_file,
-    input_file_path,
-)
-
-# print("start py7zr")
-# start = time.time()
-# compressed_file_path, input_file_size = compress_file_py7zr(
-#     input_file_path, output_file_path=f"{input_file_path}.7z"
+input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/CRMHL_Wingbody_7v.cgns")
+# output_file, tempfile = zstd_compress(input_file_path)
+# compare_ugrid_files(
+#     output_file,
+#     input_file_path,
 # )
-# end = time.time()
-# print(
-#     f"compress with py7zr took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
-# )
-
-# print("start zipfile")
-# start = time.time()
-# compressed_file_path, input_file_size = compress_file_zipfile(
-#     input_file_path, output_file_path=f"{input_file_path}.zip"
-# )
-# end = time.time()
-# print(
-#     f"compress with zipfile took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
-# )
-
-# print("start pigz")
-# start = time.time()
-# compressed_file_path, input_file_size = compress_file_pigz(
-#     input_file_path, output_file_path=f"{input_file_path}.gz"
-# )
-# end = time.time()
-# print(
-#     f"compress with zipfile took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
-# )
-
-
-# input_file_path = AirplaneTest.meshFilePath
-
+# rmtree(tempfile)
 
 # print("start bz2")
 # start = time.time()
@@ -207,42 +117,16 @@ compare_ugrid_files(
 #     f"compress with bz2 took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
 # )
 
-# print("start zlib")
-# start = time.time()
 
-# compressed_file_path, input_file_size = compress_file_zlib(input_file_path)
-# end = time.time()
-# print(f"compress with zlib took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
-# os.remove(compressed_file_path)
-
-
-# print("start gzip")
-# start = time.time()
-
-# compressed_file_path, input_file_size = compress_file_gzip(input_file_path)
-# end = time.time()
-# print(f"compress with gzip took: {end - start}, {input_file_size/(1024**2)/(end - start)}MB/s")
-# os.remove(compressed_file_path)
-
-# print("start lzma")
-# start = time.time()
-# compressed_file_path, input_file_size = compress_file_lzma(
-#     input_file_path, output_file_path=f"{input_file_path}.gz"
-# )
-# end = time.time()
-# print(
-#     f"compress with lzma took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
-# )
-
-# print("start upload")
-# vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
+print("start upload")
+vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
 # vm.compress_method = CompressionFormat.BZ2
-# # vm.compress_method = CompressionFormat.ZST
-# print("finish init")
-# start = time.time()
-# vm.submit()
-# end = time.time()
-# print(f"upload took: {end - start} seconds")
+vm.compress_method = CompressionFormat.ZST
+print("finish init")
+start = time.time()
+vm.submit()
+end = time.time()
+print(f"upload took: {end - start} seconds, {4143.68/(end - start)}MB/s")
 # print(
 #     compare_ugrid_files(
 #         "/Users/linjin/Downloads/accae1ec-9650-4f1d-9a1c-1f4fa80a639b_mesh.lb8.ugrid.zst",

@@ -3,15 +3,15 @@ Volume mesh component
 """
 from __future__ import annotations
 
-import bz2
-import concurrent.futures
 import os.path
+import shutil
+import tempfile
 from enum import Enum
 from typing import Iterator, List, Optional, Union
-
 import numpy as np
-import zstandard as zstd
 from pydantic import Extra, Field, validator
+
+from flow360.component.compress_upload import compress_and_upload_chunks
 
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
@@ -37,6 +37,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
+
 from .types import COMMENTS
 from .utils import validate_type, zstd_compress
 from .validator import Validator
@@ -420,44 +421,6 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    def _compress_and_upload_chunks(
-        self,
-        upload_id: str,
-        remote_resource: Flow360ResourceBaseModel,
-        remote_file_name: str,
-        max_workers: int = 50,
-        chunk_length: int = 25 * 1024 * 1024,
-    ):
-        uploaded_parts = []  # Initialize an empty list to store the uploaded parts
-        min_upload_size = 5 * 1024 * 1024
-        with open(self.file_name, "rb") as file:
-            parts = []
-            part_number = 1
-            while True:
-                chunk_data = file.read(chunk_length)
-                if not chunk_data:
-                    break
-                compressed_chunk = bz2.compress(chunk_data)
-                while len(compressed_chunk) < min_upload_size and chunk_data:
-                    chunk_data = file.read(chunk_length)
-                    compressed_chunk += bz2.compress(chunk_data)
-                parts.append((part_number, compressed_chunk))
-                part_number += 1
-                executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
-                future = executor.submit(
-                    remote_resource.upload_part,
-                    remote_file_name,
-                    upload_id,
-                    part_number,
-                    compressed_chunk,
-                )
-                uploaded_parts.append(future)
-
-        concurrent.futures.wait(uploaded_parts)
-
-        uploaded_parts = [future.result() for future in uploaded_parts]
-        remote_resource.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
-
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
@@ -506,21 +469,22 @@ class VolumeMeshDraft(ResourceDraft):
             and self.compress_method == CompressionFormat.BZ2
         ):
             upload_id = mesh.create_multipart_upload(remote_file_name)
-            self._compress_and_upload_chunks(upload_id, mesh, remote_file_name)
-            mesh._complete_upload(remote_file_name)
+            compress_and_upload_chunks(self.file_name, upload_id, mesh, remote_file_name)
         else:
             if original_compression == CompressionFormat.NONE:
-                compressed_file_name = zstd_compress(self.file_name)
+                compressed_file_name, temp_dir = zstd_compress(self.file_name)
                 compressed_file_name = (
                     compressed_file_name if compressed_file_name is not None else self.file_name
                 )
                 mesh.upload_file(
                     remote_file_name, compressed_file_name, progress_callback=progress_callback
                 )
+                shutil.rmtree(temp_dir)
             else:
                 mesh.upload_file(
                     remote_file_name, self.file_name, progress_callback=progress_callback
                 )
+            mesh._complete_upload(remote_file_name)
 
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
