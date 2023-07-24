@@ -332,7 +332,6 @@ class Flow360Resource(RestApi):
 
         Args:
             remote_file_name (str): The name of the remote file.
-            file_name (str): The name of the local file to upload.
 
         Returns:
             UploadID
@@ -373,8 +372,12 @@ class Flow360Resource(RestApi):
         Args:
             remote_file_name (str): The name of the remote file.
             upload_id (str): The ID of the multipart upload.
-            ETag: The ETag of the completed upload.
-            part_number: The part number of the completed upload.
+            uploaded_parts (dict): A dictionary containing information about the uploaded parts.
+                The dictionary should have the following structure:
+                {
+                    "ETag": "string",       # The ETag of each uploaded part.
+                    "part_number": int      # The part number of each uploaded part.
+                }
 
         Returns:
             None
