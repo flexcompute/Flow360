@@ -2,10 +2,12 @@ import pytest
 
 from flow360 import Case
 from flow360.exceptions import RuntimeError
-from flow360.log import log
+from flow360.log import Logger, log
 
 from .mock_server import mock_response
 from .utils import mock_id
+
+Logger.log_to_file = False
 
 
 def test_case(mock_response):
@@ -22,3 +24,6 @@ def test_case(mock_response):
     assert not case.has_parent()
     with pytest.raises(RuntimeError):
         case.parent
+
+
+Logger.log_to_file = True
