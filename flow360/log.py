@@ -1,9 +1,14 @@
 """Logging for Flow360."""
-
+import os
+import time
+from datetime import datetime
 from typing import Union
 
 from rich.console import Console
 from typing_extensions import Literal
+
+from .file_path import flow360_dir
+from .version import __version__ as version
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 LogValue = Union[int, LogLevel]
@@ -51,29 +56,167 @@ def _get_level_int(level: LogValue) -> int:
 
 
 # pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
 class LogHandler:
     """Handle log messages depending on log level"""
 
-    def __init__(self, console: Console, level: LogValue):
+    def __init__(
+        self,
+        console: Console,
+        level: LogValue,
+        fname: str = None,
+    ):
         self.level = _get_level_int(level)
         self.console = console
+        self.backup_count = 10
+        self.max_bytes = 10000
+        self.fname = fname
+        self.previous_logged_time = None
+        self.previous_logged_version = None
 
-    def handle(self, level, level_name, message):
+    def handle(self, level, level_name, message, log_time=False):
         """Output log messages depending on log level"""
+        try:
+            if self.fname is not None and self.should_roll_over(message):
+                self.do_roll_over()
+        except OSError as error:
+            self.console.log(
+                _level_print_style.get(_level_value["ERROR"], "unknown"),
+                "Fail to Rollover " + str(error),
+                sep=": ",
+            )
+        current_time = datetime.now().strftime("%Y-%m-%d-%H")
         if level >= self.level:
-            self.console.log(_level_print_style.get(level_name, "unknown"), message, sep=": ")
+            if log_time and (
+                self.previous_logged_time != current_time or self.previous_logged_version != version
+            ):
+                self.previous_logged_time = current_time
+                self.previous_logged_version = version
+                self.console.log(f"{current_time}, version {version}\n")
+            self.console.log(
+                _level_print_style.get(level_name, "unknown"),
+                message,
+                sep=": ",
+            )
+
+    def rotate(self, source, dest):
+        """
+        Rotate a log file by renaming the source file to the destination file.
+
+        Args:
+            source (str): Path of the source log file.
+            dest (str): Path of the destination log file.
+
+        Returns:
+            None
+        """
+        if os.path.exists(source) and not os.path.exists(dest):
+            max_wait_time = 5
+            retry_delay = 0.1
+            start_time = time.time()
+            while time.time() - start_time < max_wait_time:
+                try:
+                    os.rename(source, dest)
+                    break
+                except (
+                    PermissionError,
+                    FileExistsError,
+                    IsADirectoryError,
+                    NotADirectoryError,
+                ) as error:
+                    if time.time() - start_time > max_wait_time:
+                        self.console.log(
+                            _level_print_style.get(_level_value["ERROR"], "unknown"),
+                            str(error),
+                            sep=": ",
+                        )
+                        break
+
+                    time.sleep(retry_delay)
+
+    def rotation_filename(self, name, counter):
+        """
+        Generate a rotated filename based on the original filename and a counter.
+
+        Args:
+            name (str): Original filename or base filename.
+            counter (int): Counter value to be included in the rotated filename.
+
+        Returns:
+            str: Rotated filename with the format "{name}{formatted_time}.{counter}".
+
+        """
+
+        return name + str(counter)
+
+    def do_roll_over(self):
+        """
+        Generate a rotated filename based on the original filename and a counter.
+
+        Args:
+            name (str): Original filename or base filename.
+            counter (int): Counter value to be included in the rotated filename.
+
+        Returns:
+            str: Rotated filename with the format "{name}{formatted_time}.{counter}".
+
+        """
+        if self.backup_count > 0:
+            for i in range(self.backup_count - 1, 0, -1):
+                sfn = self.rotation_filename(self.fname, i)
+                dfn = self.rotation_filename(self.fname, i + 1)
+                if os.path.isfile(sfn):
+                    if os.path.isfile(dfn):
+                        os.remove(dfn)
+                    self.rotate(sfn, dfn)
+            dfn = self.rotation_filename(self.fname, 1)
+            if os.path.isfile(dfn):
+                os.remove(dfn)
+            self.rotate(self.fname, dfn)
+
+    def should_roll_over(self, message):
+        """
+        Determine if a rollover should occur based on the supplied message.
+
+        Args:
+            message (str): The message to be logged.
+
+        Returns:
+            bool: True if a rollover should occur, False otherwise.
+        """
+        # See bpo-45401: Never rollover anything other than regular files
+        if not os.path.exists(self.fname) or not os.path.isfile(self.fname):
+            return False
+        if self.max_bytes > 0:  # are we rolling over?
+            try:
+                if os.path.getsize(self.fname) + len(message) >= self.max_bytes:
+                    return True
+            except OSError as error:
+                self.console.log(
+                    _level_print_style.get(_level_value["ERROR"], "unknown"),
+                    str(error),
+                    sep=": ",
+                )
+        return False
 
 
 class Logger:
     """Custom logger to avoid the complexities of the logging module"""
+
+    log_to_file = True
 
     def __init__(self):
         self.handlers = {}
 
     def _log(self, level: int, level_name: str, message: str) -> None:
         """Distribute log messages to all handlers"""
-        for handler in self.handlers.values():
-            handler.handle(level, level_name, message)
+        for handler_type, handler in self.handlers.items():
+            if handler_type == "file":
+                if not self.log_to_file:
+                    continue
+                handler.handle(level, level_name, message, True)
+            else:
+                handler.handle(level, level_name, message)
 
     def log(self, level: LogValue, message: str, *args) -> None:
         """Log (message) % (args) with given level"""
@@ -143,8 +286,10 @@ def set_logging_console(stderr: bool = False) -> None:
 
 def set_logging_file(
     fname: str,
-    filemode: str = "w",
+    filemode: str = "a",
     level: LogValue = DEFAULT_LEVEL,
+    back_up_count: int = 10,
+    max_bytes: int = 10000,
 ) -> None:
     """Set a file to write log to, independently from the stdout and stderr
     output chosen using :meth:`set_logging_level`.
@@ -176,8 +321,14 @@ def set_logging_file(
         log.error(f"File {fname} could not be opened")
         return
 
-    log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level)
+    log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level, fname)
+    log.handlers["file"].back_up_count = back_up_count
+    log.handlers["file"].max_bytes = max_bytes
 
 
 # Set default logging output
 set_logging_console()
+log_dir = flow360_dir + "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")

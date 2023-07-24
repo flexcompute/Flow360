@@ -6,11 +6,10 @@ import os
 
 import toml
 
+from .file_path import flow360_dir
 from .log import log
 
-home = os.path.expanduser("~")
-config_file = f"{home}/.flow360/config.toml"
-
+config_file = os.path.join(flow360_dir, "config.toml")
 DEFAULT_PROFILE = "default"
 
 
