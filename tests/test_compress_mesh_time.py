@@ -118,15 +118,15 @@ input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/CRMHL_Wingb
 # )
 
 
-print("start upload")
-vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
-# vm.compress_method = CompressionFormat.BZ2
-vm.compress_method = CompressionFormat.ZST
-print("finish init")
-start = time.time()
-vm.submit()
-end = time.time()
-print(f"upload took: {end - start} seconds, {4143.68/(end - start)}MB/s")
+# print("start upload")
+# vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
+# # vm.compress_method = CompressionFormat.BZ2
+# vm.compress_method = CompressionFormat.ZST
+# print("finish init")
+# start = time.time()
+# vm.submit()
+# end = time.time()
+# print(f"upload took: {end - start} seconds, {4143.68/(end - start)}MB/s")
 # print(
 #     compare_ugrid_files(
 #         "/Users/linjin/Downloads/accae1ec-9650-4f1d-9a1c-1f4fa80a639b_mesh.lb8.ugrid.zst",
