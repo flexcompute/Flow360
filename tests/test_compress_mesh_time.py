@@ -9,12 +9,13 @@ import time
 import zipfile
 import zlib
 from shutil import copyfileobj
-
+import io
 import py7zr
 import zstandard as zstd
 
 import flow360 as fl
 from flow360.component.volume_mesh import CompressionFormat
+from flow360.component.utils import zstd_compress
 
 fl.Env.dev.active()
 here = os.path.dirname(os.path.abspath(__file__))
@@ -124,10 +125,10 @@ def decompress_if_needed(file_path: str):
         print("decompress bz2")
         start = time.time()
         with open(file_path, "rb") as file:
-            x = bz2.decompress(file.read())
+            content = bz2.decompress(file.read())
             end = time.time()
-            print(f"decompress with bz2 took {end - start} second")
-            return x
+            print(f"Decompression with bz2 took {end - start} second")
+            return io.BytesIO(content)
 
     # Check if the file is compressed with zstandard
     if file_path.endswith(".zst"):
@@ -135,25 +136,31 @@ def decompress_if_needed(file_path: str):
         start = time.time()
         with open(file_path, "rb") as file:
             dctx = zstd.ZstdDecompressor()
-            x = dctx.decompress(file.read())
+            decompressor = dctx.decompressobj()
+            content = decompressor.decompress(file.read())
             end = time.time()
-            print(f"decompress with zst took {end - start} second")
-            return x
+            print(f"Decompression with zst took {end - start} second")
+            return io.BytesIO(content)
 
     # Return the file content as is if it's not compressed
-    with open(file_path, "rb") as file:
-        return file.read()
+    return open(file_path, "rb")
 
 
-def compare_ugrid_files(file_path1, file_path2):
-    content1 = decompress_if_needed(file_path1)
-    with open(file_path2, "rb") as file2:
-        content2 = file2.read()
-
-    return content1 == content2
+def compare_ugrid_files(file_path1: str, file_path2: str) -> bool:
+    print(f"Comparing {file_path1} and {file_path2}")
+    with decompress_if_needed(file_path1) as file1, decompress_if_needed(file_path2) as file2:
+        if file1.read() == file2.read():
+            print("Equal")
+        else:
+            print("NOT equal")
 
 
 input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/wing_tetra.8M.lb8.ugrid")
+output_file = zstd_compress(input_file_path)
+compare_ugrid_files(
+    output_file,
+    input_file_path,
+)
 
 # print("start py7zr")
 # start = time.time()
@@ -226,7 +233,6 @@ input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/wing_tetra.
 # print(
 #     f"compress with lzma took: {end - start} seconds, {input_file_size/(1024**2)/(end - start)}MB/s"
 # )
-
 
 # print("start upload")
 # vm = fl.VolumeMesh.from_file(input_file_path, name="test-upload-compressed-file")
