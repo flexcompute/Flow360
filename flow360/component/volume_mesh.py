@@ -38,7 +38,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import validate_type
+from .utils import validate_type, zstd_compress
 from .validator import Validator
 
 try:
@@ -352,8 +352,7 @@ class VolumeMeshDraft(ResourceDraft):
     Volume mesh draft component (before submit)
     """
 
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_name: str = None,
@@ -424,7 +423,7 @@ class VolumeMeshDraft(ResourceDraft):
     def _compress_and_upload_chunks(
         self,
         upload_id: str,
-        mesh: VolumeMesh,
+        remote_resource: Flow360ResourceBaseModel,
         remote_file_name: str,
         max_workers: int = 50,
         chunk_length: int = 25 * 1024 * 1024,
@@ -446,34 +445,18 @@ class VolumeMeshDraft(ResourceDraft):
                 part_number += 1
                 executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
                 future = executor.submit(
-                    mesh.upload_part, remote_file_name, upload_id, part_number, compressed_chunk
+                    remote_resource.upload_part,
+                    remote_file_name,
+                    upload_id,
+                    part_number,
+                    compressed_chunk,
                 )
                 uploaded_parts.append(future)
 
         concurrent.futures.wait(uploaded_parts)
 
         uploaded_parts = [future.result() for future in uploaded_parts]
-        mesh.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
-
-    def _zstd_compress(self, file_path, compression_level=3):
-        try:
-            with open(file_path, "rb") as infile:
-                data = infile.read()
-
-            # Compress the data using Zstandard
-            cctx = zstd.ZstdCompressor(level=compression_level)
-            compressed_data = cctx.compress(data)
-
-            # Save the compressed data to a new file
-            compressed_file_path = file_path + ".zst"
-            with open(compressed_file_path, "wb") as outfile:
-                outfile.write(compressed_data)
-
-            return compressed_file_path
-        # pylint: disable=broad-exception-caught
-        except Exception as error:
-            log.error(f"Error occurred while compressing the file: {error}")
-            return None
+        remote_resource.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
 
     # pylint: disable=protected-access
     def _submit_upload_mesh(self, progress_callback=None):
@@ -527,7 +510,7 @@ class VolumeMeshDraft(ResourceDraft):
             mesh._complete_upload(remote_file_name)
         else:
             if original_compression == CompressionFormat.NONE:
-                compressed_file_name = self._zstd_compress(self.file_name)
+                compressed_file_name = zstd_compress(self.file_name)
                 compressed_file_name = (
                     compressed_file_name if compressed_file_name is not None else self.file_name
                 )
