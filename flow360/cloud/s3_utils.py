@@ -151,7 +151,7 @@ class _S3STSToken(BaseModel):
         return (
             self.user_credential.expiration
             - datetime.now(tz=self.user_credential.expiration.tzinfo)
-        ).total_seconds() > 300
+        ).total_seconds() < 300
 
 
 class S3TransferType(Enum):
