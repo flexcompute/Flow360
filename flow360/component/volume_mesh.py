@@ -452,7 +452,7 @@ class VolumeMeshDraft(ResourceDraft):
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
-        mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+        mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
@@ -539,11 +539,12 @@ class VolumeMesh(Flow360Resource):
         """
         return self.info.boundaries
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,R0801
     def download_file(
         self,
         file_name: Union[str, VolumeMeshDownloadable],
         to_file=".",
+        to_folder=".",
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
@@ -558,16 +559,20 @@ class VolumeMesh(Flow360Resource):
         """
         if isinstance(file_name, VolumeMeshDownloadable):
             file_name = file_name.value
-        return super().download_file(
+        return super()._download_file(
             file_name,
-            to_file,
+            to_file=to_file,
+            to_folder=to_folder,
             keep_folder=keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
             **kwargs,
         )
 
-    def download(self, to_file=".", keep_folder: bool = True, overwrite: bool = True):
+    # pylint: disable=R0801
+    def download(
+        self, to_file=".", to_folder=".", keep_folder: bool = True, overwrite: bool = True
+    ):
         """
         Download volume mesh file
         :param to_file:
@@ -588,19 +593,13 @@ class VolumeMesh(Flow360Resource):
                 if to_file_ext != file_ext:
                     to_file = to_file + self._get_file_extention()
 
-            super().download_file(remote_file_name, to_file, keep_folder, overwrite=overwrite)
-
-    def download_log(self, log_file: VolumeMeshLog, to_file=".", keep_folder: bool = True):
-        """
-        Download logs
-        :param log_file:
-        :param to_file: file name on local disk, could be either folder or file name.
-        :param keep_folder: If true, the downloaded file will be put in the same folder as the file on cloud. Only work
-        when file_name is a folder name.
-        :return:
-        """
-
-        self.download_file(f"logs/{log_file.value}", to_file, keep_folder)
+            super()._download_file(
+                remote_file_name,
+                to_file=to_file,
+                to_folder=to_folder,
+                keep_folder=keep_folder,
+                overwrite=overwrite,
+            )
 
     def _complete_upload(self, remote_file_name):
         """

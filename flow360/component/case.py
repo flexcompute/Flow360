@@ -447,18 +447,6 @@ class Case(CaseBase, Flow360Resource):
         """
         return self._results
 
-    def download_log(self, log_file, to_file=".", keep_folder: bool = True):
-        """
-        Download log
-        :param log_file:
-        :param to_file: file name on local disk, could be either folder or file name.
-        :param keep_folder: If true, the downloaded file will be put in the same folder as the file on cloud. Only work
-        when file_name is a folder name.
-        :return:
-        """
-
-        self.download_file(f"logs/{log_file.value}", to_file, keep_folder)
-
     def is_steady(self):
         """
         returns True when case is steady state
@@ -770,30 +758,52 @@ class CaseResults:
         """
         return self._plotter
 
-    def download_file(self, downloadable: CaseDownloadable, overwrite: bool = True, **kwargs):
+    # pylint: disable=protected-access
+    def _download_file(
+        self,
+        downloadable: CaseDownloadable,
+        to_file=".",
+        to_folder=".",
+        overwrite: bool = True,
+        **kwargs,
+    ):
         """
-        download specific file by filename
-        :param downloadable: filename to download
-        :param overwrite: when True, overwrites existing file, otherwise skip
+        Download a specific file associated with the case.
+
+        Parameters
+        ----------
+        downloadable : flow360.CaseDownloadable
+            The type of file to be downloaded (e.g., surface, volume, forces, etc.).
+
+        to_file : str, optional
+            File path to save the downloaded file. If None, the file will be saved in the current directory.
+            If provided without an extension, the extension will be automatically added based on the file type.
+
+        to_folder : str, optional
+            Folder name to save the downloaded file. If None, the file will be saved in the current directory.
+
+        overwrite : bool, optional
+            If True, overwrite existing files with the same name in the destination.
+
+        **kwargs : dict, optional
+            Additional arguments to be passed to the download process.
+
+        Returns
+        -------
+        str
+            File path of the downloaded file.
         """
-        return self._case.download_file(
-            f"results/{downloadable.value}", overwrite=overwrite, **kwargs
+
+        return self._case._download_file(
+            f"results/{downloadable.value}",
+            to_file=to_file,
+            to_folder=to_folder,
+            overwrite=overwrite,
+            **kwargs,
         )
 
-    def download_volumetric(self):
-        """
-        download volumetric results data
-        """
-        self.download_file(CaseDownloadable.VOLUME)
-
-    def download_surface(self):
-        """
-        download surface results data
-        """
-        self.download_file(CaseDownloadable.SURFACE)
-
     # pylint: disable=redefined-builtin,too-many-locals,too-many-arguments
-    def download_manager(
+    def download(
         self,
         surface: bool = False,
         volume: bool = False,
@@ -807,42 +817,44 @@ class CaseResults:
         actuator_disk_output: bool = False,
         all: bool = False,
         overwrite: bool = False,
+        destination: str = ".",
     ):
-        """download manager for downloading many files at once
+        """
+        Download result files associated with the case.
 
         Parameters
         ----------
         surface : bool, optional
-            _description_, by default False
+            Download surface result file if True.
         volume : bool, optional
-            _description_, by default False
+            Download volume result file if True.
         nonlinear_residuals : bool, optional
-            _description_, by default False
+            Download nonlinear residuals file if True.
         linear_residuals : bool, optional
-            _description_, by default False
+            Download linear residuals file if True.
         cfl : bool, optional
-            _description_, by default False
+            Download CFL file if True.
         minmax_state : bool, optional
-            _description_, by default False
+            Download minmax state file if True.
         surface_forces : bool, optional
-            _description_, by default False
+            Download surface forces file if True.
         total_forces : bool, optional
-            _description_, by default False
+            Download total forces file if True.
         bet_forces : bool, optional
-            _description_, by default False
+            Download BET (Blade Element Theory) forces file if True.
         actuator_disk_output : bool, optional
-            _description_, by default False
+            Download actuator disk output file if True.
         all : bool, optional
-            _description_, by default False
+            Download all result files if True (ignores other parameters).
         overwrite : bool, optional
-            _description_, by default False
+            If True, overwrite existing files with the same name in the destination.
+        destination : str, optional
+            Location to save downloaded files. If None, files will be saved in the current directory under ID folder.
 
-        Raises
-        ------
-        e
-            _description_
-        e
-            _description_
+        Returns
+        -------
+        List of str
+            File paths of the downloaded files.
         """
 
         download_map = [
@@ -855,15 +867,22 @@ class CaseResults:
             (surface_forces, CaseDownloadable.SURFACE_FORCES),
             (total_forces, CaseDownloadable.TOTAL_FORCES),
         ]
-
+        downloaded_files = []
         for do_download, filename in download_map:
             if do_download or all:
-                self.download_file(filename, overwrite=overwrite)
+                downloaded_files.append(
+                    self._download_file(filename, to_folder=destination, overwrite=overwrite)
+                )
 
         if bet_forces or all:
             try:
-                self.download_file(
-                    CaseDownloadable.BET_FORCES, overwrite=overwrite, log_error=False
+                downloaded_files.append(
+                    self._download_file(
+                        CaseDownloadable.BET_FORCES,
+                        to_folder=destination,
+                        overwrite=overwrite,
+                        log_error=False,
+                    )
                 )
             except CloudFileNotFoundError as err:
                 if not self._case.has_bet_disks():
@@ -877,8 +896,13 @@ class CaseResults:
 
         if actuator_disk_output or all:
             try:
-                self.download_file(
-                    CaseDownloadable.ACTUATOR_DISK_OUTPUT, overwrite=overwrite, log_error=False
+                downloaded_files.append(
+                    self._download_file(
+                        CaseDownloadable.ACTUATOR_DISK_OUTPUT,
+                        to_folder=destination,
+                        overwrite=overwrite,
+                        log_error=False,
+                    )
                 )
             except CloudFileNotFoundError as err:
                 if not self._case.has_actuator_disks():
@@ -892,6 +916,8 @@ class CaseResults:
                         )
                     )
                     raise err
+
+        return downloaded_files
 
 
 class CaseList(Flow360ResourceListBase):

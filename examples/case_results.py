@@ -27,15 +27,12 @@ print(case.results.linear_residuals.raw)
 print(case.results.minmax_state.raw)
 
 # download all result files of the case:
-case.results.download_manager(all=True)
+downloaded_files = case.results.download(all=True, destination=case.name)
+print(downloaded_files)
+
 
 # download specific result files of the case:
-case.results.download_manager(bet_forces=True, actuator_disk_output=True)
-
-# alternative way of downloading using dedicated functions:
-case.results.download_surface()
-case.results.download_volumetric()
-
+case.results.download(bet_forces=True, actuator_disk_output=True)
 
 try:
     case.results.total_forces.plot()
