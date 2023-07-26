@@ -93,22 +93,6 @@ class Flow360ResourceBaseModel(pd.BaseModel):
         allow_mutation = False
 
 
-def on_cloud_resource_only(func):
-    """
-    Wrapper for cloud functions only
-    """
-
-    @wraps(func)
-    def wrapper(obj, *args, **kwargs):
-        if not obj.is_cloud_resource():
-            raise FlRuntimeError(
-                'Resource does not have "id", it is not a cloud resource. Provide "id" before calling this function.'
-            )
-        return func(obj, *args, **kwargs)
-
-    return wrapper
-
-
 def before_submit_only(func):
     """
     Wrapper for before submit functions only
@@ -210,7 +194,6 @@ class Flow360Resource(RestApi):
             "This is abstract method. Needs to be implemented by specialised class."
         )
 
-    @on_cloud_resource_only
     def get_info(self, force=False) -> Flow360ResourceBaseModel:
         """
         returns metadata info for resource
@@ -227,7 +210,6 @@ class Flow360Resource(RestApi):
         return self.get_info()
 
     @property
-    @on_cloud_resource_only
     def status(self) -> Flow360Status:
         """
         returns status for resource
@@ -243,7 +225,6 @@ class Flow360Resource(RestApi):
         return self._id
 
     @property
-    @on_cloud_resource_only
     def name(self):
         """
         returns name of resource
@@ -265,7 +246,6 @@ class Flow360Resource(RestApi):
         """
 
     @property
-    @on_cloud_resource_only
     def solver_version(self):
         """
         returns solver version of resource
@@ -283,18 +263,41 @@ class Flow360Resource(RestApi):
         return self.get(method="files")
 
     # pylint: disable=too-many-arguments
-    @on_cloud_resource_only
-    def download_file(
+    def _download_file(
         self,
         file_name,
         to_file=".",
+        to_folder=".",
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
         **kwargs,
     ):
         """
-        general download functionality
+        Download a specific file associated with the resource.
+
+        Parameters
+        ----------
+        file_name : str
+            Name of the file to be downloaded.
+        to_file : str, optional
+            File name or path to save the downloaded file. If None, the file will be saved in the current directory.
+            If provided without an extension, the extension will be automatically added based on the file type.
+        to_folder : str, optional
+            Folder name to save the downloaded file. If None, the file will be saved in the current directory.
+        keep_folder : bool, optional
+            If True, preserve the original folder structure of the file in the destination.
+        overwrite : bool, optional
+            If True, overwrite existing files with the same name in the destination.
+        progress_callback : callable, optional
+            A callback function to track the download progress.
+        **kwargs : dict, optional
+            Additional arguments to be passed to the download process.
+
+        Returns
+        -------
+        str
+            File path of the downloaded file.
         """
 
         if to_file != ".":
@@ -306,15 +309,15 @@ class Flow360Resource(RestApi):
         return self.s3_transfer_method.download_file(
             self.id,
             file_name,
-            to_file,
-            keep_folder,
+            to_file=to_file,
+            to_folder=to_folder,
+            keep_folder=keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
             **kwargs,
         )
 
-    @on_cloud_resource_only
-    def upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
+    def _upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """
         general upload functionality
         """
@@ -507,14 +510,16 @@ class RemoteResourceLogs:
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
 
+    # pylint: disable=protected-access
     def _refresh_file(self):
         tmp_file = self._get_tmp_file_name()
-        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=True)
+        self.flow360_resource._download_file(self._remote_file_name, tmp_file, overwrite=True)
 
+    # pylint: disable=protected-access
     @property
     def _cached_file(self):
         tmp_file = self._get_tmp_file_name()
-        self.flow360_resource.download_file(self._remote_file_name, tmp_file, overwrite=False)
+        self.flow360_resource._download_file(self._remote_file_name, tmp_file, overwrite=False)
         return tmp_file
 
     def _get_log_by_pos(self, pos: Position = None, num_lines: int = 100):

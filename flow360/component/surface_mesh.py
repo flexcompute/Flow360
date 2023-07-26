@@ -138,7 +138,7 @@ class SurfaceMeshDraft(ResourceDraft):
 
         _, ext = os.path.splitext(self.geometry_file)
         remote_file_name = f"geometry{ext}"
-        submitted_mesh.upload_file(
+        submitted_mesh._upload_file(
             remote_file_name, self.geometry_file, progress_callback=progress_callback
         )
         submitted_mesh._complete_upload(remote_file_name)
@@ -223,17 +223,6 @@ class SurfaceMesh(Flow360Resource):
     #     :return:
     #     """
     #     super().download_file(, to_file, keep_folder)
-
-    def download_log(self, to_file=".", keep_folder: bool = True):
-        """
-        Download log
-        :param to_file: file name on local disk, could be either folder or file name.
-        :param keep_folder: If true, the downloaded file will be put in the same folder as the file on cloud. Only work
-        when file_name is a folder name.
-        :return:
-        """
-
-        self.download_file("logs/flow360_surface_mesh.user.log", to_file, keep_folder)
 
     @classmethod
     def _interface(cls):

@@ -27,7 +27,7 @@ def create_file(file_name: str, to_file):
 class TestRemoteResourceLogs:
     def setup_method(self):
         self.flow360_resource = Mock(spec=Flow360Resource)
-        self.flow360_resource.download_file.side_effect = (
+        self.flow360_resource._download_file.side_effect = (
             lambda file_name, temp_file, overwrite: create_file(
                 file_name=file_name, to_file=temp_file
             )

@@ -23,7 +23,7 @@ from rich.progress import (
 )
 
 from ..environment import Env
-from ..exceptions import CloudFileError
+from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .http_util import http
 
@@ -52,17 +52,47 @@ _s3_config = TransferConfig(
 )
 
 
-def create_base_folder(path: str, target_name: str, to_file: str = ".", keep_folder: bool = True):
+def create_base_folder(
+    path: str, target_name: str, to_file: str = ".", to_folder: str = ".", keep_folder: bool = True
+):
     """
-    :param path: source id
-    :param target_name: path to file on cloud, same value as key for s3 client download.
-    :param to_file: could be either folder or file name.
-    :param keep_folder: If true, the downloaded file will
-    be put in the same folder as the file on cloud. Only work
-    when file_name is a folder name.
-    :return:
+    Create a base folder and return the target file path for downloading cloud data.
+
+    Parameters
+    ----------
+    path : str
+        Source ID or the path to the source file on the cloud.
+
+    target_name : str
+        The file path on the cloud, same value as the key for S3 client download.
+
+    to_file : str, optional
+        The destination folder or file path where the downloaded file will be saved. If None, the current directory
+        will be used.
+
+    to_folder : str, optional
+        The folder name to save the downloaded file. If provided, the downloaded file will be saved inside this folder.
+        If None, the value of `to_file` will be considered as a folder or file path.
+
+    keep_folder : bool, optional
+        If True, the downloaded file will be put in the same folder as the file on the cloud (only works when
+        `target_name` is a folder name).
+
+    Returns
+    -------
+    str
+        The target file path for downloading cloud data.
+
     """
-    if os.path.isdir(to_file):
+
+    if to_folder != ".":
+        to_file = (
+            os.path.join(to_folder, target_name)
+            if keep_folder
+            else os.path.join(to_folder, os.path.basename(target_name))
+        )
+
+    elif os.path.isdir(to_file):
         to_file = (
             os.path.join(to_file, path, target_name)
             if keep_folder
@@ -226,7 +256,8 @@ class S3TransferType(Enum):
         self,
         resource_id: str,
         remote_file_name: str,
-        to_file: str,
+        to_file: str = ".",
+        to_folder: str = ".",
         keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
@@ -243,10 +274,14 @@ class S3TransferType(Enum):
         :param progress_callback: provide custom callback for progress
         :return:
         """
-        to_file = create_base_folder(resource_id, remote_file_name, to_file, keep_folder)
+        if to_file != "." and to_folder != ".":
+            raise FlValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
+
+        to_file = create_base_folder(resource_id, remote_file_name, to_file, to_folder, keep_folder)
         if os.path.exists(to_file) and not overwrite:
             log.info(f"Skipping {remote_file_name}, file exists.")
-            return
+            return to_file
+
         token = self._get_s3_sts_token(resource_id, remote_file_name)
         client = token.get_client()
         try:
@@ -283,6 +318,7 @@ class S3TransferType(Enum):
                     Callback=_call_back,
                 )
         log.info(f"Saved to {to_file}")
+        return to_file
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}:{file_name}"
