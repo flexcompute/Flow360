@@ -82,7 +82,8 @@ def decompress_if_needed(file_path: str):
             return io.BytesIO(content)
 
     # Return the file content as is if it's not compressed
-    return open(file_path, "rb")
+    with open(file_path, "rb") as file:
+        return io.BytesIO(file.read())
 
 
 def compare_ugrid_files(file_path1: str, file_path2: str) -> bool:
@@ -95,6 +96,11 @@ def compare_ugrid_files(file_path1: str, file_path2: str) -> bool:
 
 
 input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/CRMHL_Wingbody_7v.cgns")
+output_file = zstd_compress(input_file_path)
+compare_ugrid_files(input_file_path, output_file)
+os.remove(output_file)
+# os.rmdir(y)
+print(output_file)
 # output_file, tempfile = zstd_compress(input_file_path)
 # compare_ugrid_files(
 #     output_file,

@@ -94,12 +94,11 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
     try:
         compressor = zstd.ZstdCompressor(level=compression_level)
         if not output_file_path:
-            temp_dir = mkdtemp()
-            output_file_path = NamedTemporaryFile(suffix=".zst", dir=temp_dir).name
+            output_file_path = NamedTemporaryFile(suffix=".zst").name
         with open(file_path, "rb") as f_in:
             with open(output_file_path, "wb") as f_out:
                 compressor.copy_stream(f_in, f_out)
-        return output_file_path, temp_dir
+        return output_file_path
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
-        return None, temp_dir
+        return None
