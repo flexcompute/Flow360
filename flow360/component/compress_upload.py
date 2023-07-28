@@ -45,13 +45,14 @@ def compress_and_upload_chunks(
         part_number = 1
         while True:
             chunk_data = file.read(chunk_length)
+            pbar.update(chunk_length)
             if not chunk_data:
                 break
             compressed_chunk = bz2.compress(chunk_data)
             while len(compressed_chunk) < min_upload_size and chunk_data:
                 chunk_data = file.read(chunk_length)
                 compressed_chunk += bz2.compress(chunk_data)
-                pbar.update(len(chunk_data))
+                pbar.update(chunk_length)
             parts.append((part_number, compressed_chunk))
             part_number += 1
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
@@ -63,6 +64,11 @@ def compress_and_upload_chunks(
                 compressed_chunk,
             )
             uploaded_parts.append(future)
+        pbar = tqdm(total=len(uploaded_parts), desc="Uploading", unit="part")
+        for future in concurrent.futures.as_completed(uploaded_parts):
+            pbar.update()
+
+        pbar.close()
 
     concurrent.futures.wait(uploaded_parts)
 
