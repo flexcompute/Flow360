@@ -14,10 +14,6 @@ import flow360 as fl
 from flow360.component.utils import zstd_compress
 from flow360.component.volume_mesh import CompressionFormat
 
-fl.Env.dev.active()
-here = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(here, "..")))
-
 
 def print_file_sizes(input_file, output_file_path):
     input_file_size = os.path.getsize(input_file)
