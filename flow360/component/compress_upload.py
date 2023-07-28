@@ -4,7 +4,7 @@ Parallel Compress and Multiupload Flow360Resource to S3
 import bz2
 import concurrent.futures
 import os
-
+from tqdm import tqdm
 from flow360.component.resource_base import Flow360Resource
 
 
@@ -38,7 +38,9 @@ def compress_and_upload_chunks(
     assert os.path.isfile(file_name)
     uploaded_parts = []  # Initialize an empty list to store the uploaded parts
     min_upload_size = 5 * 1024 * 1024
-    with open(file_name, "rb") as file:
+    with open(file_name, "rb") as file, tqdm(
+        total=os.path.getsize(file_name), unit="B", unit_scale=True
+    ) as pbar:
         parts = []
         part_number = 1
         while True:
@@ -49,6 +51,7 @@ def compress_and_upload_chunks(
             while len(compressed_chunk) < min_upload_size and chunk_data:
                 chunk_data = file.read(chunk_length)
                 compressed_chunk += bz2.compress(chunk_data)
+                pbar.update(len(chunk_data))
             parts.append((part_number, compressed_chunk))
             part_number += 1
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)

@@ -284,6 +284,8 @@ class CompressionFormat(Enum):
             return ".gz"
         if self is CompressionFormat.BZ2:
             return ".bz2"
+        if self is CompressionFormat.ZST:
+            return ".zst"
         return ""
 
     @classmethod
@@ -296,6 +298,8 @@ class CompressionFormat(Enum):
             return CompressionFormat.GZ, file_name
         if ext == CompressionFormat.BZ2.ext():
             return CompressionFormat.BZ2, file_name
+        if ext == CompressionFormat.ZST.ext():
+            return CompressionFormat.ZST, file_name
         return CompressionFormat.NONE, file
 
 

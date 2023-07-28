@@ -14,6 +14,8 @@ import flow360 as fl
 from flow360.component.utils import zstd_compress
 from flow360.component.volume_mesh import CompressionFormat
 
+fl.Env.dev.active()
+
 
 def print_file_sizes(input_file, output_file_path):
     input_file_size = os.path.getsize(input_file)
@@ -96,11 +98,11 @@ def compare_ugrid_files(file_path1: str, file_path2: str) -> bool:
 
 
 input_file_path = os.path.join(os.getcwd(), "tests/upload_test_files/CRMHL_Wingbody_7v.cgns")
-output_file = zstd_compress(input_file_path)
-compare_ugrid_files(input_file_path, output_file)
-os.remove(output_file)
-# os.rmdir(y)
-print(output_file)
+# output_file = zstd_compress(input_file_path)
+# compare_ugrid_files(input_file_path, output_file)
+# os.remove(output_file)
+# # os.rmdir(y)
+# print(output_file)
 # output_file, tempfile = zstd_compress(input_file_path)
 # compare_ugrid_files(
 #     output_file,
@@ -129,9 +131,8 @@ print(output_file)
 # vm.submit()
 # end = time.time()
 # print(f"upload took: {end - start} seconds, {4143.68/(end - start)}MB/s")
-# print(
-#     compare_ugrid_files(
-#         "/Users/linjin/Downloads/accae1ec-9650-4f1d-9a1c-1f4fa80a639b_mesh.lb8.ugrid.zst",
-#         input_file_path,
-#     )
+
+# compare_ugrid_files(
+#     "/Users/linjin/Downloads/f650bee0-9678-41de-a284-bf9fb2295e1c_volumeMesh.cgns.zst",
+#     input_file_path,
 # )

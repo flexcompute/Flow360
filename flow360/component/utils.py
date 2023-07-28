@@ -98,6 +98,7 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
         if not output_file_path:
             output_file_path = NamedTemporaryFile(suffix=".zst").name
         with open(file_path, "rb") as f_in, open(output_file_path, "wb") as f_out:
+            # cctx.copy_stream(f_in, f_out)
             with cctx.stream_writer(f_out) as compressor, tqdm(
                 total=os.path.getsize(file_path), unit="B", unit_scale=True
             ) as pbar:
