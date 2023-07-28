@@ -469,21 +469,22 @@ class VolumeMeshDraft(ResourceDraft):
         ):
             upload_id = mesh.create_multipart_upload(remote_file_name)
             compress_and_upload_chunks(self.file_name, upload_id, mesh, remote_file_name)
+        elif (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.ZST
+        ):
+            compressed_file_name, temp_dir = zstd_compress(self.file_name)
+            compressed_file_name = (
+                compressed_file_name if compressed_file_name is not None else self.file_name
+            )
+            mesh.upload_file(
+                remote_file_name, compressed_file_name, progress_callback=progress_callback
+            )
+            shutil.rmtree(temp_dir)
+
         else:
-            if original_compression == CompressionFormat.NONE:
-                compressed_file_name, temp_dir = zstd_compress(self.file_name)
-                compressed_file_name = (
-                    compressed_file_name if compressed_file_name is not None else self.file_name
-                )
-                mesh.upload_file(
-                    remote_file_name, compressed_file_name, progress_callback=progress_callback
-                )
-                shutil.rmtree(temp_dir)
-            else:
-                mesh.upload_file(
-                    remote_file_name, self.file_name, progress_callback=progress_callback
-                )
-            mesh._complete_upload(remote_file_name)
+            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+        mesh._complete_upload(remote_file_name)
 
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
