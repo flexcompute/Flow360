@@ -4,10 +4,10 @@ Utility functions
 import os
 import uuid
 from functools import wraps
-from tempfile import NamedTemporaryFile, mkdtemp
-from tqdm import tqdm
+from tempfile import NamedTemporaryFile
 
 import zstandard as zstd
+from rich.progress import Progress
 
 from ..exceptions import TypeError as FlTypeError
 from ..exceptions import ValueError as FlValueError
@@ -99,15 +99,14 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
             output_file_path = NamedTemporaryFile(suffix=".zst").name
         with open(file_path, "rb") as f_in, open(output_file_path, "wb") as f_out:
             # cctx.copy_stream(f_in, f_out)
-            with cctx.stream_writer(f_out) as compressor, tqdm(
-                total=os.path.getsize(file_path), unit="B", unit_scale=True
-            ) as pbar:
+            with cctx.stream_writer(f_out) as compressor, Progress() as progress:
+                task_id = progress.add_task("Compressing file", total=os.path.getsize(file_path))
                 while True:
                     chunk = f_in.read(1024)
                     if not chunk:
                         break
                     compressor.write(chunk)
-                    pbar.update(len(chunk))
+                    progress.update(task_id, advance=len(chunk))
         return output_file_path
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")

@@ -325,7 +325,6 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, file_name, progress_callback=progress_callback
         )
 
-    @on_cloud_resource_only
     def create_multipart_upload(self, remote_file_name: str):
         """
         Creates a multipart upload for the specified remote file name and file.
@@ -338,7 +337,6 @@ class Flow360Resource(RestApi):
         """
         return self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name)
 
-    @on_cloud_resource_only
     def upload_part(
         self,
         remote_file_name: str,
@@ -362,7 +360,6 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, upload_id, part_number, compressed_chunk
         )
 
-    @on_cloud_resource_only
     def complete_multipart_upload(
         self, remote_file_name: str, upload_id: str, uploaded_parts: dict
     ):

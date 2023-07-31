@@ -4,11 +4,13 @@ Parallel Compress and Multiupload Flow360Resource to S3
 import bz2
 import concurrent.futures
 import os
-from tqdm import tqdm
+
+from rich.progress import Progress
+
 from flow360.component.resource_base import Flow360Resource
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-locals
 def compress_and_upload_chunks(
     file_name: str,
     upload_id: str,
@@ -38,21 +40,20 @@ def compress_and_upload_chunks(
     assert os.path.isfile(file_name)
     uploaded_parts = []  # Initialize an empty list to store the uploaded parts
     min_upload_size = 5 * 1024 * 1024
-    with open(file_name, "rb") as file, tqdm(
-        total=os.path.getsize(file_name), unit="B", unit_scale=True
-    ) as pbar:
+    with open(file_name, "rb") as file, Progress() as progress:
+        task_id = progress.add_task("[cyan]Compressing...", total=os.path.getsize(file_name))
         parts = []
         part_number = 1
         while True:
             chunk_data = file.read(chunk_length)
-            pbar.update(chunk_length)
+            progress.update(task_id, advance=chunk_length)
             if not chunk_data:
                 break
             compressed_chunk = bz2.compress(chunk_data)
             while len(compressed_chunk) < min_upload_size and chunk_data:
                 chunk_data = file.read(chunk_length)
                 compressed_chunk += bz2.compress(chunk_data)
-                pbar.update(chunk_length)
+                progress.update(task_id, advance=chunk_length)
             parts.append((part_number, compressed_chunk))
             part_number += 1
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
@@ -64,11 +65,9 @@ def compress_and_upload_chunks(
                 compressed_chunk,
             )
             uploaded_parts.append(future)
-        pbar = tqdm(total=len(uploaded_parts), desc="Uploading", unit="part")
+        task_id = progress.add_task("Uploading...", total=len(uploaded_parts))
         for future in concurrent.futures.as_completed(uploaded_parts):
-            pbar.update()
-
-        pbar.close()
+            progress.update(task_id, advance=1)
 
     concurrent.futures.wait(uploaded_parts)
 

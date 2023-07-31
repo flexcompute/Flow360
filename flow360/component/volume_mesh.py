@@ -4,7 +4,6 @@ Volume mesh component
 from __future__ import annotations
 
 import os.path
-import shutil
 from enum import Enum
 from typing import Iterator, List, Optional, Union
 
@@ -479,12 +478,12 @@ class VolumeMeshDraft(ResourceDraft):
             and self.compress_method == CompressionFormat.ZST
         ):
             compressed_file_name = zstd_compress(self.file_name)
-            mesh.upload_file(
+            mesh._upload_file(
                 remote_file_name, compressed_file_name, progress_callback=progress_callback
             )
             os.remove(compressed_file_name)
         else:
-            mesh.upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+            mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
 
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
