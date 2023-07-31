@@ -1,6 +1,10 @@
 """
 This module is flow360.
 """
+
+
+from flow360 import global_exception_handler  # This sets the global exception handler
+
 from .cli import flow360
 from .cloud.s3_utils import ProgressCallbackInterface
 from .component import meshing
