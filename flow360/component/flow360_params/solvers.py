@@ -77,6 +77,9 @@ class NavierStokesSolver(GenericSolverSettings):
     limitPressureDensity :
         Limiter for pressure and density
 
+    numericalDissipationFactor :
+        A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.
+        The recommended starting value for most low-dissipation runs is 0.2
 
     Returns
     -------
@@ -93,6 +96,9 @@ class NavierStokesSolver(GenericSolverSettings):
     limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
     extra_dissipation: Optional[float] = pd.Field(alias="extraDissipation")
     viscous_wave_speed_scale: Optional[float] = pd.Field(alias="viscousWaveSpeedScale")
+    numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
+        alias="numericalDissipationFactor"
+    )
 
 
 class TurbulenceModelModelType(str, Enum):
