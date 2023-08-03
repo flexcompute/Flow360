@@ -509,6 +509,7 @@ def test_navier_stokes():
         order_of_accuracy=2,
         limit_velocity=True,
         limit_pressure_density=False,
+        numerical_dissipation_factor=0.2,
     )
     p = Flow360Params(
         navier_stokes_solver=ns,
