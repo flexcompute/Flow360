@@ -1,11 +1,12 @@
 """
 Parallel Compress and Multiupload Flow360Resource to S3
 """
+import time
 import bz2
 import concurrent.futures
 import os
 
-from rich.progress import Progress
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TransferSpeedColumn
 
 from flow360.component.resource_base import Flow360Resource
 
@@ -39,6 +40,7 @@ def compress_and_upload_chunks(
     """
 
     def upload_and_update(part_number, chunk):
+        upload_start_time = time.time()
         future = executor.submit(
             remote_resource.upload_part,
             remote_file_name,
@@ -48,37 +50,47 @@ def compress_and_upload_chunks(
         )
         # Wait for the upload to finish and update the progress
         result = future.result()
-        progress.update(task_id1, advance=1)
+        progress.update(task_id1, advance=len(chunk))
         return result
 
     assert os.path.isfile(file_name)
     uploaded_parts = []  # Initialize an empty list to store the uploaded parts
     futures = []
     min_upload_size = 5 * 1024 * 1024
-
-    with Progress() as progress:
+    compressed_bytes = 0
+    with Progress(
+        TextColumn("[text.bold.green]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TransferSpeedColumn(),
+    ) as progress:
         task_id = progress.add_task("[cyan]Compressing...", total=os.path.getsize(file_name))
-        task_id1 = progress.add_task(
-            "Uploading...", total=os.path.getsize(file_name) // chunk_length
-        )
+        # Rough estimate of size of compressed file
+        task_id1 = progress.add_task("Uploading...", total=os.path.getsize(file_name) * 0.37)
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         part_number = 1
         with open(file_name, "rb") as file:
             while True:
+                # Read Chunk
                 chunk_data = file.read(chunk_length)
                 progress.update(task_id, advance=chunk_length)
                 if not chunk_data:
                     break
+                # Compress Chunk
                 compressed_chunk = bz2.compress(chunk_data)
+                compressed_bytes += len(compressed_chunk)
+                # Ensure compressed chunk is at least min_upload_size
                 while len(compressed_chunk) < min_upload_size and chunk_data:
                     chunk_data = file.read(chunk_length)
                     compressed_chunk += bz2.compress(chunk_data)
+                    compressed_bytes += len(compressed_chunk)
                     progress.update(task_id, advance=chunk_length)
                 # Call the upload function for each part without waiting for the result
                 futures.append(executor.submit(upload_and_update, part_number, compressed_chunk))
                 part_number += 1
-        progress.update(task_id1, total=part_number - 1)
+        # Update upload progress bar with accurate total part_number
+        progress.update(task_id1, total=compressed_bytes)
         concurrent.futures.wait(futures)
-    uploaded_parts = [future.result() for future in futures]
 
+    uploaded_parts = [future.result() for future in futures]
     remote_resource.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
