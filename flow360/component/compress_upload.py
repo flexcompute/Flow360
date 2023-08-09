@@ -37,39 +37,48 @@ def compress_and_upload_chunks(
     Raises:
         AssertionError: If the input 'file_name' does not exist or is not a regular file.
     """
+
+    def upload_and_update(part_number, chunk):
+        future = executor.submit(
+            remote_resource.upload_part,
+            remote_file_name,
+            upload_id,
+            part_number,
+            chunk,
+        )
+        # Wait for the upload to finish and update the progress
+        result = future.result()
+        progress.update(task_id1, advance=1)
+        return result
+
     assert os.path.isfile(file_name)
     uploaded_parts = []  # Initialize an empty list to store the uploaded parts
+    futures = []
     min_upload_size = 5 * 1024 * 1024
-    with open(file_name, "rb") as file, Progress() as progress:
+
+    with Progress() as progress:
         task_id = progress.add_task("[cyan]Compressing...", total=os.path.getsize(file_name))
-        parts = []
+        task_id1 = progress.add_task(
+            "Uploading...", total=os.path.getsize(file_name) // chunk_length
+        )
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         part_number = 1
-        while True:
-            chunk_data = file.read(chunk_length)
-            progress.update(task_id, advance=chunk_length)
-            if not chunk_data:
-                break
-            compressed_chunk = bz2.compress(chunk_data)
-            while len(compressed_chunk) < min_upload_size and chunk_data:
+        with open(file_name, "rb") as file:
+            while True:
                 chunk_data = file.read(chunk_length)
-                compressed_chunk += bz2.compress(chunk_data)
                 progress.update(task_id, advance=chunk_length)
-            parts.append((part_number, compressed_chunk))
-            part_number += 1
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
-            future = executor.submit(
-                remote_resource.upload_part,
-                remote_file_name,
-                upload_id,
-                part_number,
-                compressed_chunk,
-            )
-            uploaded_parts.append(future)
-        task_id = progress.add_task("Uploading...", total=len(uploaded_parts))
-        for future in concurrent.futures.as_completed(uploaded_parts):
-            progress.update(task_id, advance=1)
+                if not chunk_data:
+                    break
+                compressed_chunk = bz2.compress(chunk_data)
+                while len(compressed_chunk) < min_upload_size and chunk_data:
+                    chunk_data = file.read(chunk_length)
+                    compressed_chunk += bz2.compress(chunk_data)
+                    progress.update(task_id, advance=chunk_length)
+                # Call the upload function for each part without waiting for the result
+                futures.append(executor.submit(upload_and_update, part_number, compressed_chunk))
+                part_number += 1
+        progress.update(task_id1, total=part_number - 1)
+        concurrent.futures.wait(futures)
+    uploaded_parts = [future.result() for future in futures]
 
-    concurrent.futures.wait(uploaded_parts)
-
-    uploaded_parts = [future.result() for future in uploaded_parts]
     remote_resource.complete_multipart_upload(remote_file_name, upload_id, uploaded_parts)
