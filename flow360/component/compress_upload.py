@@ -4,7 +4,6 @@ Parallel Compress and Multiupload Flow360Resource to S3
 import bz2
 import concurrent.futures
 import os
-import time
 
 from rich.progress import (
     BarColumn,
