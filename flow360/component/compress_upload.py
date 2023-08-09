@@ -1,18 +1,18 @@
 """
 Parallel Compress and Multiupload Flow360Resource to S3
 """
-import time
 import bz2
 import concurrent.futures
 import os
+import time
 
 from rich.progress import (
-    Progress,
-    TextColumn,
     BarColumn,
+    Progress,
     TaskProgressColumn,
-    TransferSpeedColumn,
+    TextColumn,
     TimeRemainingColumn,
+    TransferSpeedColumn,
 )
 
 from flow360.component.resource_base import Flow360Resource
@@ -47,7 +47,6 @@ def compress_and_upload_chunks(
     """
 
     def upload_and_update(part_number, chunk):
-        upload_start_time = time.time()
         future = executor.submit(
             remote_resource.upload_part,
             remote_file_name,
