@@ -6,7 +6,14 @@ import bz2
 import concurrent.futures
 import os
 
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TransferSpeedColumn
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TransferSpeedColumn,
+    TimeRemainingColumn,
+)
 
 from flow360.component.resource_base import Flow360Resource
 
@@ -63,6 +70,7 @@ def compress_and_upload_chunks(
         BarColumn(),
         TaskProgressColumn(),
         TransferSpeedColumn(),
+        TimeRemainingColumn(),
     ) as progress:
         task_id = progress.add_task("[cyan]Compressing...", total=os.path.getsize(file_name))
         # Rough estimate of size of compressed file
