@@ -325,6 +325,64 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, file_name, progress_callback=progress_callback
         )
 
+    def create_multipart_upload(self, remote_file_name: str):
+        """
+        Creates a multipart upload for the specified remote file name and file.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+
+        Returns:
+            UploadID
+        """
+        return self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name)
+
+    def upload_part(
+        self,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        """
+        Uploads a part of the file as part of a multipart upload.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            part_number (int): The part number of the upload.
+            compressed_chunk: The compressed chunk data to upload.
+
+        Returns:
+            {"ETag": response["ETag"], "PartNumber": part_number}
+        """
+        return self.s3_transfer_method.upload_part(
+            self.id, remote_file_name, upload_id, part_number, compressed_chunk
+        )
+
+    def complete_multipart_upload(
+        self, remote_file_name: str, upload_id: str, uploaded_parts: dict
+    ):
+        """
+        Completes a multipart upload for the specified remote file name and upload ID.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            uploaded_parts (dict): A dictionary containing information about the uploaded parts.
+                The dictionary should have the following structure:
+                {
+                    "ETag": "string",       # The ETag of each uploaded part.
+                    "part_number": int      # The part number of each uploaded part.
+                }
+
+        Returns:
+            None
+        """
+        self.s3_transfer_method.complete_multipart_upload(
+            self.id, remote_file_name, upload_id, uploaded_parts
+        )
+
 
 def is_object_cloud_resource(resource: Flow360Resource):
     """
