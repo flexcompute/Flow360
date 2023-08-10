@@ -7,8 +7,8 @@ from functools import wraps
 from tempfile import NamedTemporaryFile
 
 import zstandard as zstd
-from rich.progress import Progress
 
+from ..cloud.utils import _get_progress, _S3Action
 from ..exceptions import TypeError as FlTypeError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
@@ -99,8 +99,14 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
             output_file_path = NamedTemporaryFile(suffix=".zst").name
         with open(file_path, "rb") as f_in, open(output_file_path, "wb") as f_out:
             # cctx.copy_stream(f_in, f_out)
-            with cctx.stream_writer(f_out) as compressor, Progress() as progress:
-                task_id = progress.add_task("Compressing file", total=os.path.getsize(file_path))
+            with cctx.stream_writer(f_out) as compressor, _get_progress(
+                _S3Action.COMPRESSING
+            ) as progress:
+                task_id = progress.add_task(
+                    "Compressing file",
+                    filename=os.path.basename(file_path),
+                    total=os.path.getsize(file_path),
+                )
                 while True:
                     chunk = f_in.read(1024)
                     if not chunk:

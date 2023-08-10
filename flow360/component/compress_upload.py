@@ -5,16 +5,9 @@ import bz2
 import concurrent.futures
 import os
 
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
-
 from flow360.component.resource_base import Flow360Resource
+
+from ..cloud.utils import _get_progress, _S3Action
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -63,16 +56,18 @@ def compress_and_upload_chunks(
     futures = []
     min_upload_size = 5 * 1024 * 1024
     compressed_bytes = 0
-    with Progress(
-        TextColumn("[text.bold.green]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TransferSpeedColumn(),
-        TimeRemainingColumn(),
-    ) as progress:
-        task_id = progress.add_task("[cyan]Compressing...", total=os.path.getsize(file_name))
+    with _get_progress() as progress:
+        task_id = progress.add_task(
+            _S3Action.COMPRESSING.value,
+            filename=os.path.basename(file_name),
+            total=os.path.getsize(file_name),
+        )
         # Rough estimate of size of compressed file
-        task_id1 = progress.add_task("Uploading...", total=os.path.getsize(file_name) * 0.37)
+        task_id1 = progress.add_task(
+            _S3Action.UPLOADING.value,
+            filename=os.path.basename(file_name),
+            total=os.path.getsize(file_name) * 0.37,
+        )
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         part_number = 1
         with open(file_name, "rb") as file:

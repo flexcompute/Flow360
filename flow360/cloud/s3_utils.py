@@ -13,19 +13,12 @@ from boto3.s3.transfer import TransferConfig
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic import BaseModel, Field
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TextColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
 
 from ..environment import Env
 from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .http_util import http
+from .utils import _get_progress, _S3Action
 
 
 class ProgressCallbackInterface(ABC):
@@ -102,35 +95,6 @@ def create_base_folder(
     if dirname:
         os.makedirs(dirname, exist_ok=True)
     return to_file
-
-
-class _S3Action(Enum):
-    """
-    Enum for s3 action
-    """
-
-    UPLOADING = "↑"
-    DOWNLOADING = "↓"
-
-
-def _get_progress(action: _S3Action):
-    col = (
-        TextColumn(f"[bold green]{_S3Action.DOWNLOADING.value}")
-        if action == _S3Action.DOWNLOADING
-        else TextColumn(f"[bold red]{_S3Action.UPLOADING.value}")
-    )
-    return Progress(
-        col,
-        TextColumn("[bold blue]{task.fields[filename]}"),
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.1f}%",
-        "•",
-        DownloadColumn(),
-        "•",
-        TransferSpeedColumn(),
-        "•",
-        TimeRemainingColumn(),
-    )
 
 
 class _UserCredential(BaseModel):
