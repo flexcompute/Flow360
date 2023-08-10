@@ -10,6 +10,8 @@ from typing import Iterator, List, Optional, Union
 import numpy as np
 from pydantic import Extra, Field, validator
 
+from flow360.component.compress_upload import compress_and_upload_chunks
+
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import CloudFileError
@@ -35,7 +37,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import validate_type
+from .utils import validate_type, zstd_compress
 from .validator import Validator
 
 try:
@@ -269,6 +271,7 @@ class CompressionFormat(Enum):
 
     GZ = "gz"
     BZ2 = "bz2"
+    ZST = "zst"
     NONE = None
 
     def ext(self) -> str:
@@ -280,6 +283,8 @@ class CompressionFormat(Enum):
             return ".gz"
         if self is CompressionFormat.BZ2:
             return ".bz2"
+        if self is CompressionFormat.ZST:
+            return ".zst"
         return ""
 
     @classmethod
@@ -292,6 +297,8 @@ class CompressionFormat(Enum):
             return CompressionFormat.GZ, file_name
         if ext == CompressionFormat.BZ2.ext():
             return CompressionFormat.BZ2, file_name
+        if ext == CompressionFormat.ZST.ext():
+            return CompressionFormat.ZST, file_name
         return CompressionFormat.NONE, file
 
 
@@ -348,7 +355,7 @@ class VolumeMeshDraft(ResourceDraft):
     Volume mesh draft component (before submit)
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_name: str = None,
@@ -390,6 +397,7 @@ class VolumeMeshDraft(ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
+        self.compress_method = CompressionFormat.BZ2
         ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):
@@ -415,18 +423,22 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-locals
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
-        compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
+        original_compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
-
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
             remote_file_name = "mesh"
+        compression = (
+            original_compression
+            if original_compression != CompressionFormat.NONE
+            else self.compress_method
+        )
         remote_file_name = (
             f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
         )
@@ -452,8 +464,28 @@ class VolumeMeshDraft(ResourceDraft):
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
-        mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+
+        # parallel compress and upload
+        if (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.BZ2
+        ):
+            upload_id = mesh.create_multipart_upload(remote_file_name)
+            compress_and_upload_chunks(self.file_name, upload_id, mesh, remote_file_name)
+
+        elif (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.ZST
+        ):
+            compressed_file_name = zstd_compress(self.file_name)
+            mesh._upload_file(
+                remote_file_name, compressed_file_name, progress_callback=progress_callback
+            )
+            os.remove(compressed_file_name)
+        else:
+            mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
+
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
@@ -681,7 +713,6 @@ class VolumeMesh(Flow360Resource):
         :param solver_version:
         :return:
         """
-
         return VolumeMeshDraft(
             file_name=file_name,
             name=name,

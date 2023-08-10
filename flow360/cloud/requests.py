@@ -16,7 +16,7 @@ class NewVolumeMeshRequest(pd.BaseModel):
     tags: Optional[List[str]] = pd.Field(alias="meshTags")
     format: Literal["aflr3", "cgns"] = pd.Field(alias="meshFormat")
     endianness: Optional[Literal["little", "big"]] = pd.Field(alias="meshEndianness")
-    compression: Optional[Literal["gz", "bz2"]] = pd.Field(alias="meshCompression")
+    compression: Optional[Literal["gz", "bz2", "zst"]] = pd.Field(alias="meshCompression")
     mesh_params: Optional[Flow360MeshParams] = pd.Field(alias="meshParams")
     solver_version: Optional[str] = pd.Field(alias="solverVersion")
 
