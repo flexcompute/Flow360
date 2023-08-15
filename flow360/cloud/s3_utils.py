@@ -79,11 +79,7 @@ def create_base_folder(
     """
 
     if to_folder != ".":
-        to_file = (
-            os.path.join(to_folder, target_name)
-            if keep_folder
-            else os.path.join(to_folder, os.path.basename(target_name))
-        )
+        to_file = os.path.join(to_folder, os.path.basename(target_name))
 
     elif os.path.isdir(to_file):
         to_file = (

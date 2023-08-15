@@ -182,7 +182,7 @@ class Flow360BaseModel(BaseModel):
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
 
     # pylint: disable=no-self-argument
-    @pd.root_validator()
+    @pd.root_validator(pre=True)
     def one_of(cls, values):
         """root validator for require one of"""
         if cls.Config.require_one_of:
@@ -231,9 +231,14 @@ class Flow360BaseModel(BaseModel):
                 allowed = [deprecated_alias.deprecated, deprecated_alias.name]
                 raise ValidationError(f"Only one of {allowed} can be used.")
             if actual_value is None:
-                log.warning(
-                    f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" instead.'
-                )
+                if alias and alias != deprecated_alias.name:
+                    log.warning(
+                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" OR "{alias}" instead.'
+                    )
+                else:
+                    log.warning(
+                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" instead.'
+                    )
                 values[deprecated_alias.name] = deprecated_value
             values.pop(deprecated_alias.deprecated)
 

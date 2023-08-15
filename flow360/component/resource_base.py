@@ -286,7 +286,7 @@ class Flow360Resource(RestApi):
         to_folder : str, optional
             Folder name to save the downloaded file. If None, the file will be saved in the current directory.
         keep_folder : bool, optional
-            If True, preserve the original folder structure of the file in the destination.
+            If True, preserve the original folder structure of the file in the destination. Does not work with to_folder
         overwrite : bool, optional
             If True, overwrite existing files with the same name in the destination.
         progress_callback : callable, optional

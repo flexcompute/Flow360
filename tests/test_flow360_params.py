@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import unittest
 
 import pydantic as pd
@@ -224,8 +225,10 @@ def test_freesteam():
     assert fs
     with pytest.raises(ConfigError):
         print(fs.to_flow360_json())
-
     assert fs.to_flow360_json(mesh_unit_length=1)
+
+    with pytest.raises(pd.ValidationError):
+        fs = Freestream(Mach=-1, Temperature=100)
 
     fs = Freestream.from_speed(speed=(10, "m/s"))
     to_file_from_file_test(fs)
@@ -715,3 +718,23 @@ def test_update_from_multiple_files_overwrite():
     params.append(outputs, overwrite=True)
 
     assert params.geometry.ref_area == 2
+
+
+def clear_formattig(message):
+    # Remove color formatting escape codes
+    ansi_escape = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]")
+    cleared = ansi_escape.sub("", message).replace("\n", "")
+    cleared = re.sub(r" +", " ", cleared)
+    return cleared
+
+
+def test_depracated(capfd):
+    ns = fl.NavierStokesSolver(tolerance=1e-8)
+    captured = capfd.readouterr()
+    expected = f'WARNING: "tolerance" is deprecated. Use "absolute_tolerance" OR "absoluteTolerance" instead'
+    assert expected in clear_formattig(captured.out)
+
+    ns = fl.TimeStepping(maxPhysicalSteps=10)
+    captured = capfd.readouterr()
+    expected = f'WARNING: "maxPhysicalSteps" is deprecated. Use "physical_steps" OR "physicalSteps" instead'
+    assert expected in clear_formattig(captured.out)
