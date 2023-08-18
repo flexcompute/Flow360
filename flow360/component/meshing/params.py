@@ -220,6 +220,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     """
 
     volume: Volume = pd.Field()
+    refinement_factor: Optional[PositiveFloat] = pd.Field(alias="refinementFactor")
     farfield: Optional[Farfield] = pd.Field()
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")

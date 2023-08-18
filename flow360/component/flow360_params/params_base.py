@@ -187,7 +187,9 @@ class Flow360BaseModel(BaseModel):
         """root validator for require one of"""
         if cls.Config.require_one_of:
             set_values = [key for key, v in values.items() if v is not None]
-            intersection = list(set(set_values) & set(cls.Config.require_one_of))
+            aliases = [cls._get_field_alias(field_name=name) for name in cls.Config.require_one_of]
+            aliases = [item for item in aliases if item is not None]
+            intersection = list(set(set_values) & set(cls.Config.require_one_of + aliases))
             if len(intersection) == 0:
                 raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
         return values
