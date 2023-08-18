@@ -295,6 +295,21 @@ def test_sliding_interface():
 
     assert si
 
+    si = SlidingInterface.parse_raw(
+        """
+    {
+        "stationaryPatches" : ["farField/rotationInterface"],
+        "rotatingPatches" : ["innerRotating/rotationInterface"],
+        "axisOfRotation" : [0,0,-1],
+        "centerOfRotation" : [0,0,0],
+        "omegaRadians" : 1.84691e-01,
+        "volumeName" : ["innerRotating"]
+    }
+    """
+    )
+
+    assert si
+
     si = SlidingInterface(
         center=(0, 0, 0),
         axis=(0, 0, 1),
@@ -314,7 +329,7 @@ def test_sliding_interface():
         stationary_patches=["patch1"],
         rotating_patches=["patch2"],
         volume_name=[0, 1],
-        omega=1,
+        omegaRadians=1,
         rpm=1,
     )
 
