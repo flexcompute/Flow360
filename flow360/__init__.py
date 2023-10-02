@@ -25,6 +25,7 @@ from .component.flow360_params.flow360_params import (
     NoSlipWall,
     SlidingInterface,
     SlidingInterfaceBoundary,
+    ReferenceFrame,
     SlipWall,
     SubsonicInflow,
     SubsonicOutflowMach,
@@ -34,6 +35,9 @@ from .component.flow360_params.flow360_params import (
     TurbulenceModelSolver,
     UnvalidatedFlow360Params,
     WallFunction,
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    VolumeZones,
 )
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .component.surface_mesh import SurfaceMesh

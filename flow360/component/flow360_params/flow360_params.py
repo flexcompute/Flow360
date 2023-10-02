@@ -580,6 +580,138 @@ class Boundaries(Flow360SortableBaseModel):
         )
 
 
+class VolumeZoneType(ABC, Flow360BaseModel):
+    """Basic Boundary class"""
+
+    model_type: str
+
+class InitialConditionHeatTransfer(Flow360BaseModel):
+    """InitialConditionHeatTransfer"""
+
+    T_solid: Union[PositiveFloat, str]
+
+class HeatTransferVolumeZone(VolumeZoneType):
+    """HeatTransferVolumeZone type"""
+
+    model_type = pd.Field("HeatTransfer", const=True)
+    thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
+    volumetric_heat_source: Optional[Union[NonNegativeFloat, str]] = pd.Field(alias="volumetricHeatSource")
+    heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
+    initial_condition: Optional[InitialConditionHeatTransfer] =  pd.Field(alias="initialCondition")
+
+class ReferenceFrame(Flow360BaseModel):
+    """:class:`ReferenceFrame` class for setting up reference frame
+
+    Parameters
+    ----------
+    center : Coordinate
+        Coordinate representing the origin of rotation, eg. (0, 0, 0)
+
+    axis : Axis
+        Axis of rotation, eg. (0, 0, 1)
+
+    parent_volume_name : str, optional
+        Name of the volume zone that the rotating reference frame is contained in, used to compute the acceleration in
+        the nested rotating reference frame
+
+    theta_radians : str, optional
+        Expression for rotation angle (in radians) as a function of time
+
+    theta_degrees : str, optional
+        Expression for rotation angle (in degrees) as a function of time
+
+    omega_radians
+        Nondimensional rotating speed, radians/nondim-unit-time
+
+    omega_degrees
+        Nondimensional rotating speed, degrees/nondim-unit-time
+
+    is_dynamic
+        Whether rotation of this interface is dictated by userDefinedDynamics
+
+
+    Returns
+    -------
+    :class:`ReferenceFrame`
+        An instance of the component class ReferenceFrame.
+
+    Example
+    -------
+    >>> rf = ReferenceFrame(
+            center=(0, 0, 0),
+            axis=(0, 0, 1),
+            omega_radians=1
+        )
+    """
+
+
+    theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
+    theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
+    omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
+    omega_degrees: Optional[float] = pd.Field(alias="omegaDegrees")
+    center: Coordinate = pd.Field(alias="centerOfRotation")
+    axis: Axis = pd.Field(alias="axisOfRotation")
+    parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
+    is_dynamic: Optional[bool] = pd.Field(alias="isDynamic")
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        require_one_of = [
+            "omega_radians",
+            "omega_degrees",
+            "theta_radians",
+            "theta_degrees",
+            "is_dynamic",
+        ]
+
+
+class FluidDynamicsVolumeZone(VolumeZoneType):
+    """FluidDynamicsVolumeZone type"""
+
+    model_type = pd.Field("FluidDynamics", const=True)
+    reference_frame: Optional[ReferenceFrame] =  pd.Field(alias="ReferenceFrame")
+
+
+
+
+class _GenericVolumeZonesWrapper(Flow360BaseModel):
+    v: Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+
+
+class VolumeZones(Flow360SortableBaseModel):
+    """:class:`VolumeZones` class for setting up volume zones
+
+    Parameters
+    ----------
+    <zone_name> : Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+
+    Returns
+    -------
+    :class:`VolumeZones`
+        An instance of the component class VolumeZones.
+
+    Example
+    -------
+    >>> zones = VolumeZones(
+            zone1=FluidDynamicsVolumeZone(),
+            zone2=HeatTransferVolumeZone(thermal_conductivity=1)
+        )
+    """
+
+
+    @pd.root_validator(pre=True)
+    def validate_zone(cls, values):
+        """Validator for zone list section
+
+        Raises
+        ------
+        ValidationError
+            When zone is incorrect
+        """
+        return _self_named_property_validator(values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types.")
+
+
+
 class Geometry(Flow360BaseModel):
     """
     Geometry component
@@ -757,6 +889,8 @@ class Flow360Params(Flow360BaseModel):
     slice_output: Optional[Dict] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[Dict] = pd.Field(alias="isoSurfaceOutput")
     monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
+    volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
+
 
     # pylint: disable=invalid-name
     def _get_non_dimensionalisation(self):

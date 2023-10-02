@@ -24,6 +24,7 @@ from flow360.component.flow360_params.flow360_params import (
     NoSlipWall,
     SlidingInterface,
     SlidingInterfaceBoundary,
+    ReferenceFrame,
     SlipWall,
     SubsonicInflow,
     SubsonicOutflowMach,
@@ -31,6 +32,10 @@ from flow360.component.flow360_params.flow360_params import (
     TimeStepping,
     TurbulenceModelSolver,
     WallFunction,
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    InitialConditionHeatTransfer,
+    VolumeZones
 )
 from flow360.component.types import TimeStep
 from flow360.exceptions import ConfigError, ValidationError
@@ -676,6 +681,46 @@ def test_flow360param():
     assert mesh
 
 
+def test_volume_zones():
+    with pytest.raises(ConfigError):
+        rf = ReferenceFrame(
+                center=(0, 0, 0),
+                axis=(0, 0, 1),
+            )
+        
+    rf = ReferenceFrame(
+            center=(0, 0, 0),
+            axis=(0, 0, 1),
+            omega_radians=1
+        )
+    assert rf
+
+
+
+
+    zones = VolumeZones(
+                zone1=FluidDynamicsVolumeZone(),
+                zone2=HeatTransferVolumeZone(thermal_conductivity=1)
+            )
+
+    assert zones
+
+    to_file_from_file_test(zones)
+
+    zones = VolumeZones(
+                zone1=FluidDynamicsVolumeZone(reference_frame=rf),
+                zone2=HeatTransferVolumeZone(thermal_conductivity=1, heat_capacity=1, initial_condition=InitialConditionHeatTransfer(T_solid=100))
+            )
+
+    assert zones
+
+    to_file_from_file_test(zones)
+
+
+
+
+
+
 def test_flow360param1():
     params = Flow360Params(freestream=Freestream.from_speed(10))
     assert params.time_stepping.max_pseudo_steps is None
@@ -735,7 +780,7 @@ def test_update_from_multiple_files_overwrite():
     assert params.geometry.ref_area == 2
 
 
-def clear_formattig(message):
+def clear_formatting(message):
     # Remove color formatting escape codes
     ansi_escape = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]")
     cleared = ansi_escape.sub("", message).replace("\n", "")
@@ -747,9 +792,9 @@ def test_depracated(capfd):
     ns = fl.NavierStokesSolver(tolerance=1e-8)
     captured = capfd.readouterr()
     expected = f'WARNING: "tolerance" is deprecated. Use "absolute_tolerance" OR "absoluteTolerance" instead'
-    assert expected in clear_formattig(captured.out)
+    assert expected in clear_formatting(captured.out)
 
     ns = fl.TimeStepping(maxPhysicalSteps=10)
     captured = capfd.readouterr()
     expected = f'WARNING: "maxPhysicalSteps" is deprecated. Use "physical_steps" OR "physicalSteps" instead'
-    assert expected in clear_formattig(captured.out)
+    assert expected in clear_formatting(captured.out)
