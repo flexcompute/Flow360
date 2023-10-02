@@ -1,7 +1,7 @@
 """Logging for Flow360."""
 import os
-import time
 import platform
+import time
 from datetime import datetime
 from typing import Union
 
@@ -332,7 +332,7 @@ set_logging_console()
 log_dir = flow360_dir + "logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
-# TODO: Fix Windows log file write performance
+
 # Writing log files on Windows is currently very slow, toggled off until a fix is implemented
 if platform.system() != "Windows":
     set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")

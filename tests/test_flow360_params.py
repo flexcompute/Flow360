@@ -9,12 +9,16 @@ import pytest
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     ActuatorDisk,
+    AeroacousticOutput,
     Flow360MeshParams,
     Flow360Params,
+    FluidDynamicsVolumeZone,
     ForcePerArea,
     Freestream,
     FreestreamBoundary,
     Geometry,
+    HeatTransferVolumeZone,
+    InitialConditionHeatTransfer,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -22,20 +26,17 @@ from flow360.component.flow360_params.flow360_params import (
     MeshSlidingInterface,
     NavierStokesSolver,
     NoSlipWall,
+    ReferenceFrame,
     SlidingInterface,
     SlidingInterfaceBoundary,
-    ReferenceFrame,
     SlipWall,
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
     TimeStepping,
     TurbulenceModelSolver,
+    VolumeZones,
     WallFunction,
-    FluidDynamicsVolumeZone,
-    HeatTransferVolumeZone,
-    InitialConditionHeatTransfer,
-    VolumeZones
 )
 from flow360.component.types import TimeStep
 from flow360.exceptions import ConfigError, ValidationError
@@ -684,41 +685,108 @@ def test_flow360param():
 def test_volume_zones():
     with pytest.raises(ConfigError):
         rf = ReferenceFrame(
-                center=(0, 0, 0),
-                axis=(0, 0, 1),
-            )
-        
-    rf = ReferenceFrame(
             center=(0, 0, 0),
             axis=(0, 0, 1),
-            omega_radians=1
         )
+
+    rf = ReferenceFrame(center=(0, 0, 0), axis=(0, 0, 1), omega_radians=1)
+
     assert rf
 
+    with pytest.raises(pd.ValidationError):
+        zone = HeatTransferVolumeZone(thermal_conductivity=-1)
 
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=0)
 
+    assert zone
+
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source="0")
+
+    assert zone
+
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=1)
+
+    assert zone.volumetric_heat_source == 1
 
     zones = VolumeZones(
-                zone1=FluidDynamicsVolumeZone(),
-                zone2=HeatTransferVolumeZone(thermal_conductivity=1)
-            )
+        zone1=FluidDynamicsVolumeZone(), zone2=HeatTransferVolumeZone(thermal_conductivity=1)
+    )
 
     assert zones
 
     to_file_from_file_test(zones)
 
     zones = VolumeZones(
-                zone1=FluidDynamicsVolumeZone(reference_frame=rf),
-                zone2=HeatTransferVolumeZone(thermal_conductivity=1, heat_capacity=1, initial_condition=InitialConditionHeatTransfer(T_solid=100))
-            )
+        zone1=FluidDynamicsVolumeZone(reference_frame=rf),
+        zone2=HeatTransferVolumeZone(
+            thermal_conductivity=1,
+            heat_capacity=1,
+            initial_condition=InitialConditionHeatTransfer(T_solid=100),
+        ),
+    )
 
     assert zones
 
     to_file_from_file_test(zones)
 
 
+def test_aeroacoustic_output():
+    with pytest.raises(pd.ValidationError):
+        output = AeroacousticOutput()
 
+    output = AeroacousticOutput(observers=[(0, 0, 0), (0, 1, 1)])
 
+    to_file_from_file_test(output)
+
+    assert output
+
+    output = AeroacousticOutput(observers=[])
+
+    to_file_from_file_test(output)
+
+    assert output
+
+    with pytest.raises(pd.ValidationError):
+        output = AeroacousticOutput(observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=0)
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=-2
+    )
+
+    assert output
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=2
+    )
+
+    assert output
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=0
+    )
+
+    assert output
+
+    to_file_from_file_test(output)
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)],
+        animation_frequency=1,
+        animation_frequency_offset=-2,
+        patch_type="solid",
+    )
+
+    assert output
+
+    to_file_from_file_test(output)
+
+    with pytest.raises(pd.ValidationError):
+        output = AeroacousticOutput(
+            observers=[(0, 0, 0), (0, 1, 1)],
+            animation_frequency=1,
+            animation_frequency_offset=-2,
+            patch_type="other",
+        )
 
 
 def test_flow360param1():
