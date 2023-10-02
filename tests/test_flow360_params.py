@@ -706,13 +706,23 @@ def test_volume_zones():
 
     zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=1)
 
-    assert zone.volumetric_heat_source == 1
+    assert zone
+
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source="1")
+
+    assert zone
+
+    with pytest.raises(pd.ValidationError):
+        zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=-1)
 
     zones = VolumeZones(
         zone1=FluidDynamicsVolumeZone(), zone2=HeatTransferVolumeZone(thermal_conductivity=1)
     )
 
     assert zones
+
+    with pytest.raises(pd.ValidationError):
+        zone = HeatTransferVolumeZone(thermal_conductivity=-1)
 
     to_file_from_file_test(zones)
 

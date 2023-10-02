@@ -8,6 +8,7 @@ from abc import ABC
 from typing import Dict, List, Optional, Union
 
 import pydantic as pd
+from pydantic import StrictStr
 from typing_extensions import Literal
 
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
@@ -589,7 +590,7 @@ class VolumeZoneType(ABC, Flow360BaseModel):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, str]
+    T_solid: Union[PositiveFloat, StrictStr]
 
 
 class HeatTransferVolumeZone(VolumeZoneType):
@@ -597,7 +598,7 @@ class HeatTransferVolumeZone(VolumeZoneType):
 
     model_type = pd.Field("HeatTransfer", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
-    volumetric_heat_source: Optional[Union[NonNegativeFloat, str]] = pd.Field(
+    volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource"
     )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
