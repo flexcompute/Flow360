@@ -585,19 +585,24 @@ class VolumeZoneType(ABC, Flow360BaseModel):
 
     model_type: str
 
+
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
     T_solid: Union[PositiveFloat, str]
+
 
 class HeatTransferVolumeZone(VolumeZoneType):
     """HeatTransferVolumeZone type"""
 
     model_type = pd.Field("HeatTransfer", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
-    volumetric_heat_source: Optional[Union[NonNegativeFloat, str]] = pd.Field(alias="volumetricHeatSource")
+    volumetric_heat_source: Optional[Union[NonNegativeFloat, str]] = pd.Field(
+        alias="volumetricHeatSource"
+    )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
-    initial_condition: Optional[InitialConditionHeatTransfer] =  pd.Field(alias="initialCondition")
+    initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
+
 
 class ReferenceFrame(Flow360BaseModel):
     """:class:`ReferenceFrame` class for setting up reference frame
@@ -644,7 +649,6 @@ class ReferenceFrame(Flow360BaseModel):
         )
     """
 
-
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
     omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
@@ -669,9 +673,7 @@ class FluidDynamicsVolumeZone(VolumeZoneType):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", const=True)
-    reference_frame: Optional[ReferenceFrame] =  pd.Field(alias="ReferenceFrame")
-
-
+    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="ReferenceFrame")
 
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
@@ -698,7 +700,6 @@ class VolumeZones(Flow360SortableBaseModel):
         )
     """
 
-
     @pd.root_validator(pre=True)
     def validate_zone(cls, values):
         """Validator for zone list section
@@ -708,8 +709,35 @@ class VolumeZones(Flow360SortableBaseModel):
         ValidationError
             When zone is incorrect
         """
-        return _self_named_property_validator(values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types.")
+        return _self_named_property_validator(
+            values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types."
+        )
 
+
+class AeroacousticOutput(Flow360BaseModel):
+    """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
+
+    Parameters
+    ----------
+    observers : List[Coordinate]
+        List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
+        file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
+        the simulation domain.
+
+    Returns
+    -------
+    :class:`AeroacousticOutput`
+        An instance of the component class AeroacousticOutput.
+
+    Example
+    -------
+    >>> aeroacoustics = AeroacousticOutput()
+    """
+
+    animation_frequency: Optional[PositiveInt] = pd.Field(alias="animationFrequency")
+    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
+    patch_type: Optional[str] = pd.Field("solid", const=True)
+    observers: List[Coordinate] = pd.Field(alias="observers")
 
 
 class Geometry(Flow360BaseModel):
@@ -890,7 +918,7 @@ class Flow360Params(Flow360BaseModel):
     iso_surface_output: Optional[Dict] = pd.Field(alias="isoSurfaceOutput")
     monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
-
+    aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     # pylint: disable=invalid-name
     def _get_non_dimensionalisation(self):
