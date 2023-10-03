@@ -69,15 +69,16 @@ class LogHandler:
         self.level = _get_level_int(level)
         self.console = console
         self.backup_count = 10
-        self.max_bytes = 10000
+        self.max_bytes = 1000000
         self.fname = fname
         self.previous_logged_time = None
         self.previous_logged_version = None
+        self.is_rotating = True
 
     def handle(self, level, level_name, message, log_time=False):
         """Output log messages depending on log level"""
         try:
-            if self.fname is not None and self.should_roll_over(message):
+            if self.fname is not None and self.is_rotating and self.should_roll_over(message):
                 self.do_roll_over()
         except OSError as error:
             self.console.log(
@@ -289,7 +290,7 @@ def set_logging_file(
     filemode: str = "a",
     level: LogValue = DEFAULT_LEVEL,
     back_up_count: int = 10,
-    max_bytes: int = 10000,
+    max_bytes: int = 1000000,
 ) -> None:
     """Set a file to write log to, independently from the stdout and stderr
     output chosen using :meth:`set_logging_level`.
@@ -302,6 +303,10 @@ def set_logging_file(
     level : str
         One of ``{'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}``. This is set for the file
         independently of the console output level set by :meth:`set_logging_level`.
+    back_up_count : int
+        How many backup log files are preserved when rotating log files
+    max_bytes : int
+        Maximum log file size in bytes before a log rotation is performed
     """
     if filemode not in "wa":
         raise ValueError("filemode must be either 'w' or 'a'")
