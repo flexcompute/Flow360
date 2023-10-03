@@ -724,6 +724,10 @@ class AeroacousticOutput(Flow360BaseModel):
         List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
         file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
         the simulation domain.
+    animation_frequency: Union[PositiveInt, Literal[-1]], optional
+        Frame frequency in the animation
+    animation_frequency_offset: int, optional
+        Animation frequency offset
 
     Returns
     -------
@@ -732,13 +736,15 @@ class AeroacousticOutput(Flow360BaseModel):
 
     Example
     -------
-    >>> aeroacoustics = AeroacousticOutput()
+    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
     """
 
-    animation_frequency: Optional[PositiveInt] = pd.Field(alias="animationFrequency")
+    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+        alias="animationFrequency"
+    )
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    patch_type: Optional[str] = pd.Field("solid", const=True)
-    observers: List[Coordinate] = pd.Field(alias="observers")
+    patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
+    observers: List[Coordinate] = pd.Field()
 
 
 class Geometry(Flow360BaseModel):
