@@ -22,7 +22,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .utils import validate_type
+from .utils import shared_account_confirm_proceed, validate_type
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
 
@@ -120,6 +120,9 @@ class SurfaceMeshDraft(ResourceDraft):
         name = self.name
         if name is None:
             name = os.path.splitext(os.path.basename(self.geometry_file))[0]
+
+        if not shared_account_confirm_proceed():
+            raise FlValueError("User aborted resource submit.")
 
         data = {
             "name": self.name,

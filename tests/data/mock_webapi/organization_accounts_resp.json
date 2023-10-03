@@ -1,0 +1,28 @@
+{
+  "data": {
+    "credit": 100000000000.0,
+    "s3Usage": 0,
+    "totalTaskCount": 0,
+    "monthlyTaskCount": 0,
+    "creditExpiration": "2029-05-31T07:28:31.829Z",
+    "accountType": "tenant",
+    "tenantId": "0000000-0000-0000-0000-000000000000",
+    "tenantName": "Test",
+    "clientAdmin": true,
+    "allowanceCurrentCycleAmount": null,
+    "allowanceCurrentCycleTotalAmount": null,
+    "allowanceCurrentCycleStartDate": null,
+    "allowanceCurrentCycleEndDate": null,
+    "allowanceNextCycleStartDate": null,
+    "allowanceAllCycleStartDate": null,
+    "allowanceAllCycleEndDate": null,
+    "tenantMembers": [
+      {"userIdentity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "userId": "AAAAAAAAAAAAAAAAAAAAA", "userEmail": "user1@test.com"},
+      {"userIdentity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "userId": "BBBBBBBBBBBBBBBBBBBBB", "userEmail": "user2@test.com"}],
+    "intraCompanySharingEnabled": true,
+    "taskDeInfo": null,
+    "userId": "ABCDEFGHIJKLMNOPRSTUV",
+    "internal": true
+  }
+}
+

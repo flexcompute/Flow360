@@ -8,7 +8,9 @@ from tempfile import NamedTemporaryFile
 
 import zstandard as zstd
 
+from ..accounts_utils import Accounts
 from ..cloud.utils import _get_progress, _S3Action
+from ..error_messages import shared_submit_warning
 from ..exceptions import TypeError as FlTypeError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
@@ -46,6 +48,31 @@ def beta_feature(feature_name: str):
         return wrapper_func
 
     return wrapper
+
+
+def shared_account_confirm_proceed():
+    """
+    Prompts confirmation from user when submitting a resource from a shared account
+    """
+    email = Accounts.shared_account_info()
+    if email is not None and not Accounts.shared_account_submit_is_confirmed():
+        log.warning(shared_submit_warning(email))
+        print("Are you sure you want to proceed? (y/n): ")
+        while True:
+            try:
+                value = input()
+                if value.lower() == "y":
+                    Accounts.shared_account_confirm_submit()
+                    return True
+                if value.lower() == "n":
+                    return False
+                print("Enter a valid value (y/n): ")
+                continue
+            except ValueError:
+                print("Invalid input type")
+                continue
+    else:
+        return True
 
 
 # pylint: disable=bare-except

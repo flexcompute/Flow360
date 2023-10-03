@@ -75,6 +75,16 @@ class MockResponseVolumeMeshesWithDeleted(MockResponse):
         return res
 
 
+class MockResponseOrganizationAccounts(MockResponse):
+    """response to retrieving shared account list"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/organization_accounts_resp.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseCase(MockResponse):
     """response if Case(id="00000000-0000-0000-0000-000000000000")"""
 
@@ -136,6 +146,7 @@ RESPONSE_MAP = {
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/c58e7a75-e349-476a-9020-247af6b2e92b": MockResponseCase,
     "-python-client-v2": MockResponseVersions,
+    "/account": MockResponseOrganizationAccounts,
 }
 
 

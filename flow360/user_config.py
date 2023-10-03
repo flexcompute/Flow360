@@ -80,10 +80,6 @@ class BasicUserConfig:
         """locally suppress submit warning"""
         self._suppress_submit_warning = True
 
-    def cancel_local_submit_warning_settings(self):
-        """cancel local submit warning settings"""
-        self._suppress_submit_warning = None
-
     def show_submit_warning(self):
         """locally show submit warning"""
         self._suppress_submit_warning = False
@@ -99,6 +95,10 @@ class BasicUserConfig:
         if self._suppress_submit_warning is not None:
             return self._suppress_submit_warning
         return self.config.get("user", {}).get("config", {}).get("suppress_submit_warning", False)
+
+    def cancel_local_submit_warning_settings(self):
+        """cancel local submit warning settings"""
+        self._suppress_submit_warning = None
 
     @property
     def do_validation(self):
