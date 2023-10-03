@@ -28,7 +28,7 @@ from .resource_base import (
     before_submit_only,
     is_object_cloud_resource,
 )
-from .utils import is_valid_uuid, validate_type
+from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
 from .validator import Validator
 
 
@@ -240,6 +240,9 @@ class CaseDraft(CaseBase, ResourceDraft):
         assert self.params
 
         self.validate_case_inputs(pre_submit_checks=True)
+
+        if not shared_account_confirm_proceed():
+            raise FlValueError("User aborted resource submit.")
 
         volume_mesh_id = self.volume_mesh_id
         parent_id = self.parent_id

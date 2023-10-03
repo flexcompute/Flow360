@@ -37,7 +37,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import validate_type, zstd_compress
+from .utils import shared_account_confirm_proceed, validate_type, zstd_compress
 from .validator import Validator
 
 try:
@@ -502,6 +502,9 @@ class VolumeMeshDraft(ResourceDraft):
         VolumeMesh
             VolumeMesh object with id
         """
+
+        if not shared_account_confirm_proceed():
+            raise FlValueError("User aborted resource submit.")
 
         if self.file_name is not None:
             return self._submit_upload_mesh(progress_callback)

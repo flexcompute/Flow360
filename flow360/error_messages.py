@@ -19,6 +19,13 @@ You need to run sequence of all cases starting from mesh
 """
 
 
+def shared_submit_warning(email):
+    return f"""\
+You are submitting a resource to a shared account {email}.
+This message will not be shown again for this session if you confirm.
+"""
+
+
 def params_fetching_error(err_msg):
     return f"""\
 There was a problem when fetching params for this case
