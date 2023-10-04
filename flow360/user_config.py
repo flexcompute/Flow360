@@ -62,7 +62,7 @@ class BasicUserConfig:
             with open(config_file, "r", encoding="utf-8") as file_handler:
                 self.config = toml.loads(file_handler.read())
 
-    def apikey(self):
+    def apikey(self, env):
         """get apikey
 
         Returns
@@ -70,11 +70,16 @@ class BasicUserConfig:
         str
             apikey from config.toml file. If found env variable FLOW360_APIKEY, it will be returned
         """
+
         self._check_env_profile()
         self._check_env_apikey()
         if self._apikey is not None:
             return self._apikey
-        return self.config.get(self.profile, {}).get("apikey", "")
+        # Check if environment-specific apikey exists
+        key = self.config.get(self.profile, {})
+        if key and env.name == "dev":
+            key = key.get("dev")
+        return None if key is None else key.get("apikey", "")
 
     def suppress_submit_warning(self):
         """locally suppress submit warning"""

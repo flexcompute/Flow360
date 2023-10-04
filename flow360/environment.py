@@ -4,8 +4,6 @@ Environment Setup
 
 from pydantic import BaseModel
 
-from .user_config import UserConfig
-
 
 class EnvironmentConfig(BaseModel):
     """
@@ -24,7 +22,6 @@ class EnvironmentConfig(BaseModel):
         :return:
         """
         Env.set_current(self)
-        UserConfig.set_profile(self.apikey_profile)
 
     def get_real_url(self, path: str):
         """
