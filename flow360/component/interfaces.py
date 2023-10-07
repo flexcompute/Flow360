@@ -1,5 +1,7 @@
 """webAPI interface definitions
 """
+from typing import Union
+
 from pydantic import BaseModel
 
 from ..cloud.s3_utils import S3TransferType
@@ -11,7 +13,7 @@ class BaseInterface(BaseModel):
     """
 
     resource_type: str
-    s3_transfer_method: S3TransferType
+    s3_transfer_method: Union[S3TransferType, None]
     endpoint: str
 
 
@@ -31,3 +33,6 @@ VolumeMeshInterface = BaseInterface(
 CaseInterface = BaseInterface(
     resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="cases"
 )
+
+
+FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None, endpoint="folders")

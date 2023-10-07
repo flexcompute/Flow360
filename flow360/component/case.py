@@ -11,6 +11,7 @@ import pydantic as pd
 from pylab import show, subplots
 
 from .. import error_messages
+from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import RuntimeError as FlRuntimeError
@@ -18,7 +19,8 @@ from ..exceptions import ValidationError
 from ..exceptions import ValueError as FlValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
-from .interfaces import CaseInterface, VolumeMeshInterface
+from .folder import Folder
+from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
 from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
@@ -479,6 +481,31 @@ class Case(CaseBase, Flow360Resource):
         returns False when case is in running or preprocessing state
         """
         return self.status.is_final()
+
+    def move_to_folder(self, folder: Folder):
+        """
+        Move the current case to the specified folder.
+
+        Parameters
+        ----------
+        folder : Folder
+            The destination folder where the item will be moved.
+
+        Returns
+        -------
+        self
+            Returns the modified item after it has been moved to the new folder.
+
+        Notes
+        -----
+        This method sends a REST API request to move the current item to the specified folder.
+        The `folder` parameter should be an instance of the `Folder` class with a valid ID.
+        """
+        RestApi(FolderInterface.endpoint).put(
+            MoveToFolderRequest(dest_folder_id=folder.id, items=[MoveCaseItem(id=self.id)]).dict(),
+            method="move",
+        )
+        return self
 
     @classmethod
     def _interface(cls):

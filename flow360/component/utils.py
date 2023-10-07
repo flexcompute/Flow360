@@ -24,8 +24,10 @@ def is_valid_uuid(id, allow_none=False):
     if id is None and allow_none:
         return
     try:
+        if id and id.startswith("folder-"):
+            id = id[len("folder-") :]
         uuid.UUID(str(id))
-    except Exception as exc:
+    except ValueError as exc:
         raise FlValueError(f"{id} is not a valid UUID.") from exc
 
 

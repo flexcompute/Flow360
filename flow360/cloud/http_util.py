@@ -122,7 +122,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.put(Env.current.get_real_url(path), data=json, auth=api_key_auth)
+        return self.session.put(Env.current.get_real_url(path), json=json, auth=api_key_auth)
 
     @http_interceptor
     def delete(self, path: str):

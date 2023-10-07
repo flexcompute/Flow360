@@ -41,6 +41,7 @@ from .component.flow360_params.flow360_params import (
     VolumeZones,
     WallFunction,
 )
+from .component.folder import Folder
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .component.surface_mesh import SurfaceMesh
 from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
