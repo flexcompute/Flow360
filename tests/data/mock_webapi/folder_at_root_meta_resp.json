@@ -1,0 +1,23 @@
+{
+  "data": {
+    "id": "folder-3834758b-3d39-4a4a-ad85-710b7652267c",
+    "name": "folder-python-level-A",
+    "type": "folder",
+    "parentFolderId": "ROOT.FLOW360",
+    "createdAt": "2023-10-13T18:59:14.309704Z",
+    "updatedAt": "2023-10-13T18:59:14.309704Z",
+    "tags": "None",
+    "detail": "None",
+    "parentFolders": [
+      {
+        "userId": "AIDAXWCOWJGJINZTEEEIP",
+        "name": "ROOT.FLOW360",
+        "tags": "None",
+        "id": "ROOT.FLOW360",
+        "parentFolderId": "None",
+        "createdAt": "2023-09-01T07:06:01.236303Z",
+        "updatedAt": "2023-09-01T07:06:01.236303Z"
+      }
+    ]
+  }
+}

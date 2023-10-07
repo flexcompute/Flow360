@@ -8,7 +8,25 @@ from typing_extensions import Literal
 from ..component.flow360_params.flow360_params import Flow360MeshParams
 
 
-class NewVolumeMeshRequest(pd.BaseModel):
+class Flow360Requests(pd.BaseModel):
+    """
+    Represents a request for Flow360 WEBAPI.
+
+    This class extends `pd.BaseModel` and provides a method for converting the request
+    object into a dictionary representation.
+    """
+
+    def dict(self, *args, **kwargs) -> dict:
+        """returns dict representation of request"""
+        return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
+
+    class Config:  # pylint: disable=too-few-public-methods
+        """config"""
+
+        allow_population_by_field_name = True
+
+
+class NewVolumeMeshRequest(Flow360Requests):
     """request for new volume mesh"""
 
     name: str = pd.Field(alias="meshName")
@@ -28,11 +46,32 @@ class NewVolumeMeshRequest(pd.BaseModel):
             return value.to_flow360_json()
         return value
 
-    def dict(self, *args, **kwargs) -> dict:
-        """returns dict representation of request"""
-        return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
 
-    class Config:  # pylint: disable=too-few-public-methods
-        """config"""
+class NewFolderRequest(Flow360Requests):
+    """request for new folder"""
 
-        allow_population_by_field_name = True
+    name: str = pd.Field()
+    tags: Optional[List[str]] = pd.Field(alias="tags")
+    parent_folder_id: Optional[str] = pd.Field(alias="parentFolderId", default="ROOT.FLOW360")
+    type: Literal["folder"] = pd.Field("folder", const=True)
+
+
+class MoveCaseItem(pd.BaseModel):
+    """move case item"""
+
+    id: str
+    type: Literal["case"] = pd.Field("case", const=True)
+
+
+class MoveFolderItem(pd.BaseModel):
+    """move folder item"""
+
+    id: str
+    type: Literal["folder"] = pd.Field("folder", const=True)
+
+
+class MoveToFolderRequest(Flow360Requests):
+    """request for move to folder"""
+
+    dest_folder_id: str = pd.Field(alias="destFolderId")
+    items: List[Union[MoveCaseItem, MoveFolderItem]] = pd.Field()
