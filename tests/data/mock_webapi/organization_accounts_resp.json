@@ -17,8 +17,17 @@
     "allowanceAllCycleStartDate": null,
     "allowanceAllCycleEndDate": null,
     "tenantMembers": [
-      {"userIdentity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "userId": "AAAAAAAAAAAAAAAAAAAAA", "userEmail": "user1@test.com"},
-      {"userIdentity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "userId": "BBBBBBBBBBBBBBBBBBBBB", "userEmail": "user2@test.com"}],
+        {
+            "userIdentity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "userId": "AAAAAAAAAAAAAAAAAAAAA",
+            "userEmail": "user1@test.com"
+        },
+        {
+            "userIdentity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "userId": "BBBBBBBBBBBBBBBBBBBBB",
+            "userEmail": "user2@test.com"
+        }
+    ],
     "intraCompanySharingEnabled": true,
     "taskDeInfo": null,
     "userId": "ABCDEFGHIJKLMNOPRSTUV",

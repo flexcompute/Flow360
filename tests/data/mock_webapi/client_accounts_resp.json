@@ -1,0 +1,19 @@
+{
+    "data": {
+        "guestUsers": [
+            {
+                "identity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                "userId": "AAAAAAAAAAAAAAAAAAAAA",
+                "email": "user3@test.com"
+            },
+            {
+                "identity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                "userId": "BBBBBBBBBBBBBBBBBBBBB",
+                "email": "user4@test.com"
+            }
+
+        ]
+
+    }
+}
+
