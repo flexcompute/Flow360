@@ -17,4 +17,4 @@ def test_shared_account(mock_response):
     assert Env.impersonate is None
 
     with pytest.raises(ValueError):
-        Accounts.choose_shared_account("user3@test.com")
+        Accounts.choose_shared_account("user5@test.com")

@@ -85,6 +85,16 @@ class MockResponseOrganizationAccounts(MockResponse):
         return res
 
 
+class MockResponseClientAccounts(MockResponse):
+    """response to retrieving shared account list"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/client_accounts_resp.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseCase(MockResponse):
     """response if Case(id="00000000-0000-0000-0000-000000000000")"""
 
@@ -171,6 +181,9 @@ def mock_webapi(url, params):
         if params["includeDeleted"]:
             return MockResponseVolumeMeshesWithDeleted()
         return MockResponseVolumeMeshes()
+
+    if method.endswith("auth/credential"):
+        return MockResponseClientAccounts()
 
     else:
         return MockResponseInfoNotFound()

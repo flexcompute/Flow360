@@ -14,6 +14,7 @@ due to multi-threaded rotation being unsupported at this time
 
 def pytest_configure():
     fo = tempfile.NamedTemporaryFile()
+    fo.close()  # Windows workaround for shared files
     pytest.tmp_log_file = fo.name
     pytest.log_test_file = os.path.join(flow360_dir, "logs", "flow360_log_test.log")
     if os.path.exists(pytest.log_test_file):

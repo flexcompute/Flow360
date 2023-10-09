@@ -53,14 +53,14 @@ class AccountsUtils:
                 print("Invalid input type, please input an integer value:")
                 continue
 
-    # Requires fixing from the backend side - support for portal webapi calls with apikey authentication
     @staticmethod
     def _get_supported_users():
         try:
-            response = http.portal_api_get("auth")
-            access = response.json()["data"]
-            keys = access["user"]
-            supported_users = keys["guestUsers"]
+            response = http.portal_api_get("auth/credential")
+            supported_users = response["guestUsers"]
+            for entry in supported_users:
+                entry["userEmail"] = entry.pop("email")
+                entry["userIdentity"] = entry.pop("identity")
             if supported_users:
                 return supported_users
             return []
@@ -108,7 +108,7 @@ class AccountsUtils:
            user email to impersonate (if email exists among shared accounts),
            if email is not provided user can select the account interactively
         """
-        shared_accounts = self._get_company_users()
+        shared_accounts = self._get_company_users() + self._get_supported_users()
 
         if len(shared_accounts) == 0:
             log.info("There are no accounts shared with the current user")
@@ -140,11 +140,6 @@ class AccountsUtils:
         retrieve current shared account name, if possible
         """
         self._check_state_consistency()
-
-        if self._current_email is not None:
-            log.info(f"Currently operating as {self._current_email}")
-        else:
-            log.info("Currently not logged into a shared account")
 
         return self._current_email
 
