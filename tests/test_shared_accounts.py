@@ -1,3 +1,5 @@
+from io import StringIO
+
 import pytest
 
 from flow360 import Accounts, Env
@@ -22,7 +24,7 @@ def test_shared_account(mock_response, monkeypatch):
     assert Accounts.shared_account_info() is None
     assert Env.impersonate is None
 
-    monkeypatch.setattr('builtins.input', lambda _: "0")
+    monkeypatch.setattr("sys.stdin", StringIO("0\n"))
 
     assert Accounts.shared_account_submit_is_confirmed()
 
@@ -47,7 +49,7 @@ def test_shared_account(mock_response, monkeypatch):
 
     assert Accounts.shared_account_info() is None
 
-    monkeypatch.setattr('builtins.input', lambda _: "q")
+    monkeypatch.setattr("sys.stdin", StringIO("q\n"))
 
     with pytest.raises(ValueError):
         Accounts.choose_shared_account()
