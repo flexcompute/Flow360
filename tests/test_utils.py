@@ -4,9 +4,9 @@ import pytest
 
 from flow360 import Accounts
 from flow360.cli.dict_utils import merge_overwrite
-from flow360.component.utils import shared_account_confirm_proceed, validate_type
+from flow360.component.utils import shared_account_confirm_proceed, is_valid_uuid, validate_type
 from flow360.component.volume_mesh import VolumeMeshMeta
-from flow360.exceptions import TypeError
+from flow360.exceptions import TypeError, ValueError
 
 from .mock_server import mock_response
 
@@ -54,3 +54,15 @@ def test_shared_confirm_proceed(mock_response, monkeypatch):
     assert shared_account_confirm_proceed()
 
     assert Accounts.shared_account_submit_is_confirmed()
+
+    
+def test_valid_uuid():
+    is_valid_uuid("123e4567-e89b-12d3-a456-426614174000")
+    is_valid_uuid("folder-123e4567-e89b-12d3-a456-426614174000")
+    with pytest.raises(ValueError):
+        is_valid_uuid("not-a-valid-uuid")
+
+    with pytest.raises(ValueError):
+        is_valid_uuid(None)
+
+    is_valid_uuid(None, allow_none=True)

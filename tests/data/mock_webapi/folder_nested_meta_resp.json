@@ -1,0 +1,32 @@
+{
+  "data": {
+    "id": "folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9",
+    "name": "folder-python-level-B",
+    "type": "folder",
+    "parentFolderId": "folder-3834758b-3d39-4a4a-ad85-710b7652267c",
+    "createdAt": "2023-10-13T19:24:03.173621Z",
+    "updatedAt": "2023-10-13T19:24:03.173621Z",
+    "tags": "None",
+    "detail": "None",
+    "parentFolders": [
+      {
+        "userId": "AIDAXWCOWJGJINZTEEEIP",
+        "name": "ROOT.FLOW360",
+        "tags": "None",
+        "id": "ROOT.FLOW360",
+        "parentFolderId": "None",
+        "createdAt": "2023-09-01T07:06:01.236303Z",
+        "updatedAt": "2023-09-01T07:06:01.236303Z"
+      },
+      {
+        "userId": "AIDAXWCOWJGJINZTEEEIP",
+        "name": "folder-python-level-A",
+        "tags": "None",
+        "id": "folder-3834758b-3d39-4a4a-ad85-710b7652267c",
+        "parentFolderId": "ROOT.FLOW360",
+        "createdAt": "2023-10-13T19:24:02.789949Z",
+        "updatedAt": "2023-10-13T19:24:02.789949Z"
+      }
+    ]
+  }
+}
