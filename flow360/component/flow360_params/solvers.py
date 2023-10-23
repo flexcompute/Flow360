@@ -4,7 +4,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -13,8 +13,8 @@ from ..types import NonNegativeInt, PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
-class GenericSolverSettings(Flow360BaseModel):
-    """:class:`GenericSolverSettings` class"""
+class GenericFlowSolverSettings(Flow360BaseModel):
+    """:class:`GenericFlowSolverSettings` class"""
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     relative_tolerance: Optional[float] = pd.Field(alias="relativeTolerance")
@@ -33,7 +33,7 @@ class GenericSolverSettings(Flow360BaseModel):
         deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
 
 
-class NavierStokesSolver(GenericSolverSettings):
+class NavierStokesSolver(GenericFlowSolverSettings):
     """:class:`NavierStokesSolver` class for setting up Navier-Stokes solver
 
     Parameters
@@ -120,7 +120,7 @@ class TurbulenceModelConstants(Flow360BaseModel):
     C_d2: Optional[float]
 
 
-class TurbulenceModelSolver(GenericSolverSettings):
+class TurbulenceModelSolver(GenericFlowSolverSettings):
     """:class:`TurbulenceModelSolver` class for setting up turbulence model solver
 
     Parameters
@@ -214,3 +214,78 @@ class TurbulenceModelSolver(GenericSolverSettings):
         if v == "None":
             return TurbulenceModelModelType.NONE
         return v
+
+
+class LinearSolver(Flow360BaseModel):
+    """:class:`LinearSolver` class for setting up linear solver for heat equation
+
+
+    Parameters
+    ----------
+
+    max_iterations : PositiveInt, optional
+        Maximum number of linear solver iterations, by default 50
+
+    absolute_tolerance : PositiveFloat, optional
+        The linear solver converges when the final residual of the pseudo steps below this value. Either absolute tolerance or relative tolerance can be used to determine convergence, by default 1e-10
+
+    relative_tolerance :
+        The linear solver converges when the ratio of the final residual and the initial residual of the pseudo step is below this value.
+
+    Returns
+    -------
+    :class:`LinearSolver`
+        An instance of the component class LinearSolver.
+
+
+    Example
+    -------
+    >>> ls = LinearSolver(
+                max_iterations=50,
+                absoluteTolerance=1e-10
+        )
+
+    """
+
+    max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance", default=1e-10)
+    relative_tolerance: Optional[float] = pd.Field(alias="relativeTolerance")
+
+
+class HeatEquationSolver(Flow360BaseModel):
+    """:class:`HeatEquationSolver` class for setting up heat equation solver.
+
+
+    Parameters
+    ----------
+
+    equation_eval_frequency : PositiveInt, optional
+        Frequency at which to solve the heat equation in conjugate heat transfer simulations
+
+
+    linear_solver_config : LinearSolver, optional
+        Linear solver settings, see LinearSolver documentation.
+
+    Returns
+    -------
+    :class:`HeatEquationSolver`
+        An instance of the component class HeatEquationSolver.
+
+
+    Example
+    -------
+    >>> he = HeatEquationSolver(
+                equation_eval_frequency=10,
+                linear_solver_config=LinearSolver(
+                    max_iterations=50,
+                    absoluteTolerance=1e-10
+            )
+        )
+
+    """
+
+    model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType", const=True)
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
+    linear_solver_config: Optional[LinearSolver] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolver()
+    )

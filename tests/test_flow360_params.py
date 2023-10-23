@@ -17,9 +17,11 @@ from flow360.component.flow360_params.flow360_params import (
     Freestream,
     FreestreamBoundary,
     Geometry,
+    HeatEquationSolver,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
     IsothermalWall,
+    LinearSolver,
     MassInflow,
     MassOutflow,
     MeshBoundary,
@@ -30,6 +32,8 @@ from flow360.component.flow360_params.flow360_params import (
     SlidingInterface,
     SlidingInterfaceBoundary,
     SlipWall,
+    SolidAdiabaticWall,
+    SolidIsothermalWall,
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
@@ -161,6 +165,12 @@ def test_case_boundary():
     compare_to_ref(param.boundaries, "ref/case_params/boundaries/json.json")
     to_file_from_file_test(param)
     to_file_from_file_test(param.boundaries)
+
+    SolidAdiabaticWall()
+    SolidIsothermalWall(Temperature=10)
+
+    with pytest.raises(pd.ValidationError):
+        SolidIsothermalWall(Temperature=-1)
 
 
 def test_boundary_incorrect():
@@ -738,6 +748,19 @@ def test_volume_zones():
     assert zones
 
     to_file_from_file_test(zones)
+
+
+def test_heat_equation():
+    he = HeatEquationSolver(
+        equation_eval_frequency=10,
+        linear_solver_config=LinearSolver(
+            absoluteTolerance=1e-10,
+            max_iterations=50,
+        ),
+    )
+    assert he
+
+    compare_to_ref(he, "ref/case_params/heat_equation/ref.json", content_only=True)
 
 
 def test_aeroacoustic_output():

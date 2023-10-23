@@ -35,7 +35,12 @@ from .params_base import (
     _self_named_property_validator,
     export_to_flow360,
 )
-from .solvers import NavierStokesSolver, TurbulenceModelSolver
+from .solvers import (
+    HeatEquationSolver,
+    LinearSolver,
+    NavierStokesSolver,
+    TurbulenceModelSolver,
+)
 
 
 # pylint: disable=invalid-name
@@ -99,7 +104,7 @@ class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
     type = pd.Field("IsothermalWall", const=True)
-    Temperature: Union[PositiveFloat, str]
+    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
@@ -156,6 +161,19 @@ class MassOutflow(Boundary):
     massFlowRate: PositiveFloat
 
 
+class SolidIsothermalWall(Boundary):
+    """SolidIsothermalWall boundary"""
+
+    type = pd.Field("SolidIsothermalWall", const=True)
+    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
+
+
+class SolidAdiabaticWall(Boundary):
+    """SolidAdiabaticWall boundary"""
+
+    type = pd.Field("SolidAdiabaticWall", const=True)
+
+
 BoundaryType = Union[
     NoSlipWall,
     SlipWall,
@@ -168,6 +186,8 @@ BoundaryType = Union[
     WallFunction,
     MassInflow,
     MassOutflow,
+    SolidIsothermalWall,
+    SolidAdiabaticWall,
 ]
 
 
@@ -551,7 +571,8 @@ class Boundaries(Flow360SortableBaseModel):
     <boundary_name> : BoundaryType
         Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
-                                        SlidingInterfaceBoundary, WallFunction, MassInflow, MassOutflow]
+                                        SlidingInterfaceBoundary, WallFunction, MassInflow, MassOutflow,
+                                        SolidIsothermalWall, SolidAdiabaticWall]
 
     Returns
     -------
@@ -914,6 +935,7 @@ class Flow360Params(Flow360BaseModel):
         alias="turbulenceModelSolver"
     )
     transition_model_solver: Optional[Dict] = pd.Field(alias="transitionModelSolver")
+    heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
     bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
