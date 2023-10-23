@@ -31,6 +31,8 @@ from .component.flow360_params.flow360_params import (
     SlidingInterface,
     SlidingInterfaceBoundary,
     SlipWall,
+    SolidAdiabaticWall,
+    SolidIsothermalWall,
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
