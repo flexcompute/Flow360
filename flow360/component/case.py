@@ -410,7 +410,6 @@ class Case(CaseBase, Flow360Resource):
         bool
             True when case has parent, False otherwise
         """
-        print(f"has_parent {self.info.parent_id} (type={type(self.info.parent_id)})")
         return self.info.parent_id is not None
 
     @property

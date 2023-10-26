@@ -3,7 +3,8 @@
         "type": "NoSlipWall"
     },
     "fluid/leftWing": {
-        "type": "NoSlipWall"
+        "Temperature": 1.0,
+        "type": "SolidIsothermalWall"
     },
     "fluid/rightWing": {
         "type": "NoSlipWall"
