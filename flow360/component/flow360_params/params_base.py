@@ -5,19 +5,20 @@ from __future__ import annotations
 
 import json
 from functools import wraps
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 import pydantic as pd
 import rich
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
+from .unit_system import unit_system_manager, UnitSystem
 
 
 def json_dumps(value, *args, **kwargs):
@@ -104,8 +105,8 @@ def _self_named_property_validator(values: dict, validator: BaseModel, msg: str 
         When validation fails
     """
     for key, v in values.items():
-        # allow for comments
-        if key == COMMENTS:
+        # skip validation for comments and internal _type
+        if key == COMMENTS or key == TYPE_TAG_STR:
             continue
         try:
             values[key] = validator(v=v).v
@@ -129,6 +130,9 @@ class Flow360BaseModel(BaseModel):
 
     # comments is allowed property at every level
     comments: Optional[Any] = pd.Field()
+    # probably no need to save unit system per object
+    _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(default_factory=unit_system_manager.copy_current)
+
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -651,6 +655,18 @@ class Flow360BaseModel(BaseModel):
 
 class Flow360SortableBaseModel(Flow360BaseModel):
     """:class:`Flow360SortableBaseModel` class for setting up parameters by names, eg. boundary names"""
+
+    def __getitem__(self, item):
+        """to support [] access"""
+        return getattr(self, item)
+    
+    def __setitem__(self, key, value):
+        """to support [] assignment"""
+        super().__setattr__(key, value)
+
+    def names(self) -> List[str]:
+        """return names of all boundaries"""
+        return [k for k, _ in self if k not in [COMMENTS, TYPE_TAG_STR]]
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
