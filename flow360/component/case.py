@@ -94,7 +94,7 @@ class CaseBase:
 
     # pylint: disable=no-member
     def fork(
-        self, name: str = None, params: Flow360Params = None, tags: List[str] = None
+        self, name: str = None, params: Flow360Params = None, tags: List[str] = None, interpolate_on_mesh_id: str=None
     ) -> CaseDraft:
         """
         Fork a case to continue simulation
@@ -106,7 +106,7 @@ class CaseBase:
 
         name = name or self.name or self.info.name
         params = params or self.params.copy(deep=True)
-        return Case.create(name, params, parent_case=self, tags=tags)
+        return Case.create(name, params, parent_case=self, tags=tags, interpolate_on_mesh_id=interpolate_on_mesh_id)
 
 
 class CaseMeta(Flow360ResourceBaseModel):
@@ -146,6 +146,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         name: str,
         params: Flow360Params,
         volume_mesh_id: str = None,
+        interpolate_on_mesh_id: str = None,
         tags: List[str] = None,
         parent_id: str = None,
         other_case: Case = None,
@@ -155,6 +156,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         self.name = name
         self.params = params
         self.volume_mesh_id = volume_mesh_id
+        self.interpolate_on_mesh_id = interpolate_on_mesh_id
         self.parent_case = parent_case
         self.parent_id = parent_id
         self.other_case = other_case
@@ -291,21 +293,35 @@ class CaseDraft(CaseBase, ResourceDraft):
             raise_on_error=(not force_submit),
         )
 
-        data = {
-            "name": self.name,
-            "meshId": volume_mesh_id,
-            "runtimeParams": self.params.to_flow360_json(),
-            "tags": self.tags,
-            "parentId": parent_id,
-        }
+        resp = {}
+        if self.interpolate_on_mesh_id:
+            data = {
+                "name": self.name,
+                "meshId": self.interpolate_on_mesh_id,
+                "runtimeParams": self.params.to_flow360_json(),
+                "tags": self.tags,
+                "parentId": parent_id,
+            }
 
-        if self.solver_version is not None:
-            data["solverVersion"] = self.solver_version
+            if self.solver_version is not None:
+                data["solverVersion"] = self.solver_version
+            resp = Case(parent_id).post(method='fork', json=data)
+        else:    
+            data = {
+                "name": self.name,
+                "meshId": volume_mesh_id,
+                "runtimeParams": self.params.to_flow360_json(),
+                "tags": self.tags,
+                "parentId": parent_id,
+            }
 
-        resp = RestApi(CaseInterface.endpoint).post(
-            json=data,
-            path=f"volumemeshes/{volume_mesh_id}/case",
-        )
+            if self.solver_version is not None:
+                data["solverVersion"] = self.solver_version
+
+            resp = RestApi(CaseInterface.endpoint).post(
+                json=data,
+                path=f"volumemeshes/{volume_mesh_id}/case",
+            )
         info = CaseMeta(**resp)
         self._id = info.id
 
@@ -539,6 +555,7 @@ class Case(CaseBase, Flow360Resource):
         name: str,
         params: Flow360Params,
         volume_mesh_id: str = None,
+        interpolate_on_mesh_id: str = None,
         tags: List[str] = None,
         parent_id: str = None,
         other_case: Case = None,
@@ -569,6 +586,7 @@ class Case(CaseBase, Flow360Resource):
         new_case = CaseDraft(
             name=name,
             volume_mesh_id=volume_mesh_id,
+            interpolate_on_mesh_id=interpolate_on_mesh_id,
             params=params.copy(),
             parent_id=parent_id,
             other_case=other_case,
