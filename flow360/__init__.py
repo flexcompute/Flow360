@@ -12,6 +12,7 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.flow360_params import (
     ActuatorDisk,
+    air,
     AdaptiveCFL,
     AeroacousticOutput,
     BETDisk,
@@ -20,6 +21,7 @@ from .component.flow360_params.flow360_params import (
     Flow360Params,
     FluidDynamicsVolumeZone,
     Freestream,
+    FreestreamFromVelocity,
     FreestreamBoundary,
     Geometry,
     HeatEquationSolver,
@@ -77,3 +79,6 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
+
+from numpy import pi
+
