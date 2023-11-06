@@ -286,6 +286,13 @@ class HeatEquationSolver(Flow360BaseModel):
 
     model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType", const=True)
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolver()
-    )
+    linear_solver_config: Optional[LinearSolver] = pd.Field(alias="linearSolverConfig", default=LinearSolver())
+
+
+class TransitionModelSolver(GenericFlowSolverSettings):
+    model_type: Optional[Literal["AmplificationFactorTransport"]] = pd.Field("AmplificationFactorTransport", alias="modelType", const=True)
+    CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
+    linear_solver_config: Optional[LinearSolver] = pd.Field(alias="linearSolverConfig", default=LinearSolver())
+    turbulence_intensity_percent: Optional[PositiveFloat] = pd.Field(alias="turbulenceIntensityPercent")
+    N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(alias="reconstructionGradientLimiter")

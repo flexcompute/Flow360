@@ -11,6 +11,7 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
+from .flow360_initial_cond import InitialCondition
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
 from ...log import log
 from ...user_config import UserConfig
@@ -40,6 +41,7 @@ from .solvers import (
     LinearSolver,
     NavierStokesSolver,
     TurbulenceModelSolver,
+    TransitionModelSolver,
 )
 
 
@@ -927,14 +929,14 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[Dict] = pd.Field(alias="initialCondition")
+    initial_condition: Optional[InitialCondition] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolver] = pd.Field(
         alias="turbulenceModelSolver"
     )
-    transition_model_solver: Optional[Dict] = pd.Field(alias="transitionModelSolver")
+    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
     bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
