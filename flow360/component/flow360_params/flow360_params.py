@@ -5,7 +5,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import math
-from abc import ABC
+from abc import ABC, abstractclassmethod
 from typing import Dict, List, Optional, Union
 
 import pydantic as pd
@@ -43,6 +43,7 @@ from .solvers import (
     TurbulenceModelSolver,
 )
 
+from .unit_system import PressureType, DensityType, ViscosityType, TemperatureType, LengthType
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -129,7 +130,7 @@ class SubsonicInflow(Boundary):
     type = pd.Field("SubsonicInflow", const=True)
     totalPressureRatio: PositiveFloat
     totalTemperatureRatio: PositiveFloat
-    rampSteps: PositiveInt
+    rampSteps: Optional[PositiveInt]
 
 
 class SlidingInterfaceBoundary(Boundary):
@@ -784,6 +785,46 @@ class Geometry(Flow360BaseModel):
         allow_but_remove = ["meshName", "endianness"]
 
 
+
+class Freestream(Flow360BaseModel):
+    """
+    Freestream component
+    """
+
+    alpha: Optional[float] = pd.Field(alias="alphaAngle")
+    beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
+
+
+class FreestreamFromMach(Freestream):
+    Mach: NonNegativeFloat = pd.Field()
+    MachRef: Optional[PositiveFloat] = pd.Field()
+
+    def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
+        return self
+
+
+class ZeroFreestream(Freestream):
+    MachRef: PositiveFloat = pd.Field()
+
+    def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
+        return self
+
+
+
+class FreestreamFromVelocity(Freestream):
+    velocity: Optional[Union[Velocity, PositiveFloat]] = pd.Field()
+
+
+    @classmethod
+    def to_solver(params: Flow360Params) -> FreestreamFromMach:
+        pass
+        # return FreestreamFromMach(Mach=)
+
+
+
 class Freestream(Flow360BaseModel):
     """
     Freestream component
@@ -888,12 +929,103 @@ class Freestream(Flow360BaseModel):
         require_one_of = ["Mach", "speed"]
 
 
+
+
+class _GasModel(ABC):
+    R = None
+
+    @classmethod
+    def pressure_from_density_temperature(cls, density, temperature):
+        pressure = cls.R * density * temperature
+        return pressure
+
+    @classmethod
+    def density_from_pressure_temperature(cls, pressure, temperature):
+        density = pressure / cls.R / temperature
+        return density
+    
+    @abstractclassmethod
+    def viscosity_from_temperature(self, temperature):
+        pass
+
+
+class _AirModel(_GasModel):
+    R = 287.0529
+
+    @classmethod
+    def viscosity_from_temperature(self, temperature):
+        viscosity = 1.458E-6 * pow(temperature, 1.5) / (temperature + 110.4)
+        return viscosity
+
+
+
+class FluidProperties(Flow360BaseModel):
+    temperature: TemperatureType = pd.Field()
+    pressure: PressureType = pd.Field()
+    density: DensityType = pd.Field()
+    viscosity: ViscosityType = pd.Field()
+
+
+    def to_fluid_properties(self) -> FluidProperties:
+        return self
+
+
+class AirPressureTemperature(Flow360BaseModel):
+    pressure: PressureType = pd.Field()
+    temperature: TemperatureType = pd.Field()
+
+    def to_fluid_properties(self) -> FluidProperties:
+        fluid_properties = FluidProperties(
+            temperature=self.temperature,
+            pressure=self.pressure,
+            density=_AirModel.density_from_pressure_temperature(self.pressure, self.temperature),
+            viscosity=_AirModel.viscosity_from_temperature(self.temperature)
+        )
+        return fluid_properties
+
+
+class AirDensityTemperature(Flow360BaseModel):
+    temperature: TemperatureType = pd.Field()
+    density: DensityType = pd.Field()
+
+
+    def to_fluid_properties(self) -> FluidProperties:
+        fluid_properties = FluidProperties(
+            temperature=self.temperature,
+            pressure=_AirModel.pressure_from_density_temperature(self.density, self.temperature),
+            density=self.density,
+            viscosity=_AirModel.viscosity_from_temperature(self.temperature)
+        )
+        return fluid_properties
+    
+
+class USstandardAtmosphere(Flow360BaseModel):
+    altitude: LengthType = pd.Field()
+    temperature_offset: TemperatureType = pd.Field(default=0)
+
+    def __init__(self):
+        raise NotImplementedError('USstandardAtmosphere not implemented yet.')
+
+
+    def to_fluid_properties(self) -> FluidProperties:
+        pass
+
+
+air = AirDensityTemperature(temperature=288.15, density=1.225)
+
+
+
+def convert_to_solver(params: Flow360Params) -> Flow360Params:
+    # dimentioned_value.to(flow360)
+    pass
+
+
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
     """
-
     geometry: Optional[Geometry] = pd.Field()
+    fluid_properies: Optional[Union[FluidProperties, AirDensityTemperature, AirPressureTemperature]] = pd.Field(alias='fluidProperies')
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[Dict] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
@@ -904,7 +1036,7 @@ class Flow360Params(Flow360BaseModel):
     )
     transition_model_solver: Optional[Dict] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[Freestream] = pd.Field()
+    freestream: Optional[Union[FreestreamFromMach, FreestreamFromVelocity]] = pd.Field()
     bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[Dict]] = pd.Field(alias="porousMedia")
@@ -916,6 +1048,14 @@ class Flow360Params(Flow360BaseModel):
     monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+
+
+
+    @classmethod
+    def to_solver(params: Flow360Params) -> Flow360Params:
+        pass
+
+
 
     # pylint: disable=invalid-name
     def _get_non_dimensionalisation(self):
