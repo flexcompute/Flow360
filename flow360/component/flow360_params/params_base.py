@@ -20,7 +20,9 @@ from typing_extensions import Literal
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
+
 from .unit_system import DimensionedType
+from .conversions import need_conversion, unit_converter
 
 
 def json_dumps(value, *args, **kwargs):
@@ -134,6 +136,15 @@ def encode_ndarray(x):
         return float(x)
     return tuple(x.tolist())
 
+# dimensioned_type_serializer = lambda x: {"value": x.value, "units": x.units}
+
+def dimensioned_type_serializer(x):
+    """
+    encoder for dimesioned type
+    """
+    return {"value": x.value, "units": str(x.units)}
+
+
 
 def dimensioned_type_serializer(x):
     """
@@ -152,7 +163,7 @@ class Flow360BaseModel(BaseModel):
     """
 
     # comments is allowed property at every level
-    comments: Optional[Any] = pd.Field()
+    # comments: Optional[Any] = pd.Field()
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -337,6 +348,52 @@ class Flow360BaseModel(BaseModel):
         json_dict["ui:options"] = {"orderable": False, "addable": False, "removable": False}
         json_str = json.dumps(json_dict, indent=2)
         return json_str
+    def _convert_dimensions_to_solver(self, params, exclude: List[str]=[], required_by: List[str]=[]) -> dict:
+        solver_values = {}
+        for property_name, value in self.__dict__.items():
+            if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
+                continue
+            if need_conversion(value):
+                log.debug(f'   -> need conversion for: {property_name} = {value}')
+                flow360_conv_system = unit_converter(value.units.dimensions, params=params, required_by=[*required_by, property_name], )
+                value.units.registry = flow360_conv_system.registry
+                solver_values[property_name] = value.in_base(unit_system='flow360')
+                log.debug(f'      converted to: {solver_values[property_name]}')
+            else:
+                solver_values[property_name] = value
+
+        return solver_values        
+    
+
+    def to_solver(self, params, exclude: List[str]=[], required_by: List[str]=[]) -> Flow360BaseModel:
+        """
+        Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimentioned value performs 
+        unit conversion to flow360_base system.
+
+        Parameters
+        ----------
+        params : Flow360Params
+            Full config definition as Flow360Params.
+
+        exclude: List[str] (optional)
+            List of fields to ignore on returned model.    
+
+        required_by: List[str] (optional)
+            Path to property which requires conversion.
+            
+        Returns
+        -------
+        caller class
+            returns caller class with units all in flow360 base unit system
+        """
+        solver_values = self._convert_dimensions_to_solver(params, exclude, required_by)
+        for property_name, value in self.__dict__.items():
+            if property_name in[COMMENTS, TYPE_TAG_STR] + exclude:
+                continue
+            if isinstance(value, Flow360BaseModel):
+                solver_values[property_name] = value.to_solver(params, required_by=[*required_by, property_name])
+        return self.__class__(**solver_values)
+
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
