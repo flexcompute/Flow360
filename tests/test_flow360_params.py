@@ -142,7 +142,7 @@ def test_case_boundary():
 
     assert boundaries
 
-    boundaries['wing'] = fl.WallFunction()
+    boundaries["wing"] = fl.WallFunction()
 
     with pytest.raises(ValidationError):
         param = Flow360Params(
@@ -157,7 +157,7 @@ def test_case_boundary():
         boundaries={
             "fluid/ fuselage": NoSlipWall(),
             "fluid/rightWing": NoSlipWall(),
-            "fluid/leftWing": SolidIsothermalWall(temperature=10)
+            "fluid/leftWing": SolidIsothermalWall(temperature=10),
         }
     )
 
@@ -195,8 +195,7 @@ def test_boundary_types():
     assert NoSlipWall().type == "NoSlipWall"
     assert NoSlipWall(velocity=(0, 0, 0))
     assert NoSlipWall(name="name", velocity=[0, 0, 0])
-    assert NoSlipWall(velocity=("0", "0.1*x+exp(y)+z^2",
-                      "cos(0.2*x*pi)+sqrt(z^2+1)"))
+    assert NoSlipWall(velocity=("0", "0.1*x+exp(y)+z^2", "cos(0.2*x*pi)+sqrt(z^2+1)"))
     assert SlipWall().type == "SlipWall"
     assert FreestreamBoundary().type == "Freestream"
     assert FreestreamBoundary(name="freestream")
@@ -204,8 +203,7 @@ def test_boundary_types():
     assert IsothermalWall(Temperature=1).type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
 
-    assert SubsonicOutflowPressure(
-        staticPressureRatio=1).type == "SubsonicOutflowPressure"
+    assert SubsonicOutflowPressure(staticPressureRatio=1).type == "SubsonicOutflowPressure"
     with pytest.raises(pd.ValidationError):
         SubsonicOutflowPressure(staticPressureRatio=-1)
 
@@ -214,8 +212,7 @@ def test_boundary_types():
         SubsonicOutflowMach(Mach=-1)
 
     assert (
-        SubsonicInflow(totalPressureRatio=1,
-                       totalTemperatureRatio=1, rampSteps=10).type
+        SubsonicInflow(totalPressureRatio=1, totalTemperatureRatio=1, rampSteps=10).type
         == "SubsonicInflow"
     )
     assert SlidingInterfaceBoundary().type == "SlidingInterface"
@@ -231,13 +228,11 @@ def test_boundary_types():
 def test_actuator_disk():
     fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1])
     assert fpa
-    ad = ActuatorDisk(center=(0, 0, 0), axis_thrust=(
-        0, 0, 1), thickness=20, force_per_area=fpa)
+    ad = ActuatorDisk(center=(0, 0, 0), axis_thrust=(0, 0, 1), thickness=20, force_per_area=fpa)
     assert ad
 
     with pytest.raises(ValidationError):
-        fpa = ForcePerArea(radius=[0, 1, 3], thrust=[
-                           1, 1], circumferential=[1, 1])
+        fpa = ForcePerArea(radius=[0, 1, 3], thrust=[1, 1], circumferential=[1, 1])
 
     to_file_from_file_test(ad)
     compare_to_ref(ad, "ref/case_params/actuator_disk/json.json")
@@ -380,12 +375,9 @@ def test_sliding_interface():
 
     assert "omega" in json.loads(si.json())
     assert "omegaRadians" not in json.loads(si.json())
-    assert "omega" not in json.loads(
-        si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))
-    assert "omegaRadians" in json.loads(
-        si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))
-    assert json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))[
-        "omegaRadians"] == 0.01
+    assert "omega" not in json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))
+    assert "omegaRadians" in json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))
+    assert json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))["omegaRadians"] == 0.01
 
     si = SlidingInterface(
         center=(0, 0, 0),
@@ -404,12 +396,9 @@ def test_sliding_interface():
 
     assert "omega" in json.loads(si.json())
     assert "omegaDegrees" not in json.loads(si.json())
-    assert "omega" not in json.loads(
-        si.to_flow360_json(mesh_unit_length=1, C_inf=1))
-    assert "omegaDegrees" in json.loads(
-        si.to_flow360_json(mesh_unit_length=1, C_inf=1))
-    assert json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))[
-        "omegaDegrees"] == 0.01
+    assert "omega" not in json.loads(si.to_flow360_json(mesh_unit_length=1, C_inf=1))
+    assert "omegaDegrees" in json.loads(si.to_flow360_json(mesh_unit_length=1, C_inf=1))
+    assert json.loads(si.to_flow360_json(mesh_unit_length=0.01, C_inf=1))["omegaDegrees"] == 0.01
 
     rpm = 100
     si_rpm = SlidingInterface(
@@ -434,8 +423,7 @@ def test_sliding_interface():
         mesh_unit_length=0.01, C_inf=1
     )
 
-    params = Flow360Params(sliding_interfaces=[
-                           si], freestream=Freestream.from_speed(10))
+    params = Flow360Params(sliding_interfaces=[si], freestream=Freestream.from_speed(10))
 
     assert params.json()
     with pytest.raises(ConfigError):
@@ -450,8 +438,7 @@ def test_sliding_interface():
     assert params.json()
     assert params.to_flow360_json()
     assertions.assertAlmostEqual(
-        json.loads(params.to_flow360_json())[
-            "slidingInterfaces"][0]["omegaDegrees"], 2.938e-06
+        json.loads(params.to_flow360_json())["slidingInterfaces"][0]["omegaDegrees"], 2.938e-06
     )
 
 
@@ -489,8 +476,7 @@ def test_time_stepping():
     )
 
     assertions.assertAlmostEqual(
-        json.loads(params.to_flow360_json())[
-            "timeStepping"]["timeStepSize"], 0.1
+        json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 0.1
     )
     to_file_from_file_test(ts)
 
@@ -509,21 +495,17 @@ def test_time_stepping():
     assert ts.physical_steps == 2
 
     with pytest.raises(ValidationError):
-        ts = TimeStepping.parse_obj(
-            {"maxPhysicalSteps": 3, "physical_steps": 2})
+        ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
 
     with pytest.raises(ValidationError):
-        ts = TimeStepping.parse_obj(
-            {"maxPhysicalSteps": 3, "physicalSteps": 2})
+        ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
 
 def test_time_stepping_cfl():
     cfl = fl.RampCFL(rampSteps=20, initial=10, final=100)
     assert cfl
 
-    cfl = fl.AdaptiveCFL(
-        min=0.1, max=2000, max_relative_change=1, convergence_limiting_factor=0.25
-    )
+    cfl = fl.AdaptiveCFL(min=0.1, max=2000, max_relative_change=1, convergence_limiting_factor=0.25)
     assert cfl
 
 
@@ -579,8 +561,7 @@ def test_turbulence_solver():
         ts = TurbulenceModelSolver(model_type="OtherSolver")
 
     with pytest.raises(pd.ValidationError):
-        ts = TurbulenceModelSolver(
-            model_type="SA", grid_size_for_LES="other_option")
+        ts = TurbulenceModelSolver(model_type="SA", grid_size_for_LES="other_option")
 
     ts = TurbulenceModelSolver(
         model_type=fl.turbulence.SA,
@@ -634,8 +615,7 @@ def test_flow360meshparam():
 
     mp2 = Flow360MeshParams(
         boundaries=MeshBoundary(
-            no_slip_walls=["fluid/fuselage",
-                           "fluid/leftWing", "fluid/rightWing"]
+            no_slip_walls=["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
         )
     )
     assert mp2
@@ -721,29 +701,24 @@ def test_volume_zones():
     with pytest.raises(pd.ValidationError):
         zone = HeatTransferVolumeZone(thermal_conductivity=-1)
 
-    zone = HeatTransferVolumeZone(
-        thermal_conductivity=1, volumetric_heat_source=0)
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=0)
 
     assert zone
 
-    zone = HeatTransferVolumeZone(
-        thermal_conductivity=1, volumetric_heat_source="0")
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source="0")
 
     assert zone
 
-    zone = HeatTransferVolumeZone(
-        thermal_conductivity=1, volumetric_heat_source=1)
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=1)
 
     assert zone
 
-    zone = HeatTransferVolumeZone(
-        thermal_conductivity=1, volumetric_heat_source="1")
+    zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source="1")
 
     assert zone
 
     with pytest.raises(pd.ValidationError):
-        zone = HeatTransferVolumeZone(
-            thermal_conductivity=1, volumetric_heat_source=-1)
+        zone = HeatTransferVolumeZone(thermal_conductivity=1, volumetric_heat_source=-1)
 
     zones = VolumeZones(
         zone1=FluidDynamicsVolumeZone(), zone2=HeatTransferVolumeZone(thermal_conductivity=1)
@@ -769,7 +744,8 @@ def test_volume_zones():
 
     to_file_from_file_test(zones)
 
-    zones = VolumeZones.parse_obj({
+    zones = VolumeZones.parse_obj(
+        {
             "fluid": {
                 "modelType": "FluidDynamics",
             },
@@ -777,7 +753,7 @@ def test_volume_zones():
                 "modelType": "HeatTransfer",
                 "thermalConductivity": 0.003,
                 "volumetricHeatSource": "0.01",
-            }
+            },
         }
     )
 
@@ -794,8 +770,7 @@ def test_heat_equation():
     )
     assert he
 
-    compare_to_ref(he, "ref/case_params/heat_equation/ref.json",
-                   content_only=True)
+    compare_to_ref(he, "ref/case_params/heat_equation/ref.json", content_only=True)
 
 
 def test_aeroacoustic_output():
@@ -815,8 +790,7 @@ def test_aeroacoustic_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = AeroacousticOutput(
-            observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=0)
+        output = AeroacousticOutput(observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=0)
 
     output = AeroacousticOutput(
         observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=-2
