@@ -4,7 +4,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -204,16 +204,17 @@ class TurbulenceModelSolver(GenericFlowSolverSettings):
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
+    # pylint: disable=no-self-argument
     @pd.validator("model_type", pre=True, always=True)
-    def validate_model_type(cls, v):
+    def validate_model_type(cls, value):
         """Turbulence model validator"""
-        if v == "SA":
+        if value == "SA":
             return TurbulenceModelModelType.SA
-        if v == "SST":
+        if value == "SST":
             return TurbulenceModelModelType.SST
-        if v == "None":
+        if value == "None":
             return TurbulenceModelModelType.NONE
-        return v
+        return value
 
 
 class LinearSolver(Flow360BaseModel):
@@ -227,10 +228,12 @@ class LinearSolver(Flow360BaseModel):
         Maximum number of linear solver iterations, by default 50
 
     absolute_tolerance : PositiveFloat, optional
-        The linear solver converges when the final residual of the pseudo steps below this value. Either absolute tolerance or relative tolerance can be used to determine convergence, by default 1e-10
+        The linear solver converges when the final residual of the pseudo steps below this value. Either absolute
+        tolerance or relative tolerance can be used to determine convergence, by default 1e-10
 
     relative_tolerance :
-        The linear solver converges when the ratio of the final residual and the initial residual of the pseudo step is below this value.
+        The linear solver converges when the ratio of the final residual and the initial
+        residual of the pseudo step is below this value.
 
     Returns
     -------
