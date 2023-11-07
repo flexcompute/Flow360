@@ -19,6 +19,7 @@ from .component.flow360_params.flow360_params import (
     Flow360Params,
     FluidDynamicsVolumeZone,
     Freestream,
+    FreestreamFromVelocity,
     FreestreamBoundary,
     Geometry,
     HeatTransferVolumeZone,

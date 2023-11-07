@@ -43,7 +43,9 @@ from .solvers import (
     TurbulenceModelSolver,
 )
 
-from .unit_system import PressureType, DensityType, ViscosityType, TemperatureType, LengthType
+from .unit_system import PressureType, DensityType, ViscosityType, TemperatureType, LengthType, VelocityType, AreaType
+from .unit_system import u
+
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -130,7 +132,7 @@ class SubsonicInflow(Boundary):
     type = pd.Field("SubsonicInflow", const=True)
     totalPressureRatio: PositiveFloat
     totalTemperatureRatio: PositiveFloat
-    rampSteps: Optional[PositiveInt]
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias='rampSteps')
 
 
 class SlidingInterfaceBoundary(Boundary):
@@ -742,12 +744,10 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: Optional[float] = pd.Field(alias="refArea")
+    ref_area: AreaType = pd.Field(alias="refArea")
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[MomentLengthType] = pd.Field(alias="momentLength")
-
-    mesh_unit_length: Optional[PositiveFloat] = pd.Field(alias="meshUnitLength")
-    mesh_unit: Optional[Literal["m", "cm", "mm", "inch", "feet"]] = pd.Field(alias="meshUnit")
+    mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
 
     def get_mesh_unit_length(self):
         """Returns mesh unit length in meters. Needs one of [mesh_unit_length, mesh_unit] to be specified
@@ -778,6 +778,12 @@ class Geometry(Flow360BaseModel):
         """
         in_meter = {"m": 1, "cm": 0.01, "mm": 0.001, "inch": 0.0254, "feet": 0.3048}
         return in_meter[unit]
+    
+
+    def to_solver(self) -> Geometry:
+        pass
+
+
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -815,7 +821,7 @@ class ZeroFreestream(Freestream):
 
 
 class FreestreamFromVelocity(Freestream):
-    velocity: Optional[Union[Velocity, PositiveFloat]] = pd.Field()
+    velocity: VelocityType = pd.Field()
 
 
     @classmethod
@@ -825,7 +831,7 @@ class FreestreamFromVelocity(Freestream):
 
 
 
-class Freestream(Flow360BaseModel):
+class OldFreestream(Flow360BaseModel):
     """
     Freestream component
     """
@@ -953,20 +959,33 @@ class _AirModel(_GasModel):
     R = 287.0529
 
     @classmethod
-    def viscosity_from_temperature(self, temperature):
+    def viscosity_from_temperature(self, temperature) -> ViscosityType:
+        """viscosity using Sutherland’s Law
+
+
+        Parameters
+        ----------
+        temperature : float
+            temperature in Kelvins
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         viscosity = 1.458E-6 * pow(temperature, 1.5) / (temperature + 110.4)
         return viscosity
 
 
 
-class FluidProperties(Flow360BaseModel):
+class _FluidProperties(Flow360BaseModel):
     temperature: TemperatureType = pd.Field()
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
 
 
-    def to_fluid_properties(self) -> FluidProperties:
+    def to_fluid_properties(self) -> _FluidProperties:
         return self
 
 
@@ -974,8 +993,8 @@ class AirPressureTemperature(Flow360BaseModel):
     pressure: PressureType = pd.Field()
     temperature: TemperatureType = pd.Field()
 
-    def to_fluid_properties(self) -> FluidProperties:
-        fluid_properties = FluidProperties(
+    def to_fluid_properties(self) -> _FluidProperties:
+        fluid_properties = _FluidProperties(
             temperature=self.temperature,
             pressure=self.pressure,
             density=_AirModel.density_from_pressure_temperature(self.pressure, self.temperature),
@@ -989,8 +1008,8 @@ class AirDensityTemperature(Flow360BaseModel):
     density: DensityType = pd.Field()
 
 
-    def to_fluid_properties(self) -> FluidProperties:
-        fluid_properties = FluidProperties(
+    def to_fluid_properties(self) -> _FluidProperties:
+        fluid_properties = _FluidProperties(
             temperature=self.temperature,
             pressure=_AirModel.pressure_from_density_temperature(self.density, self.temperature),
             density=self.density,
@@ -1007,11 +1026,11 @@ class USstandardAtmosphere(Flow360BaseModel):
         raise NotImplementedError('USstandardAtmosphere not implemented yet.')
 
 
-    def to_fluid_properties(self) -> FluidProperties:
+    def to_fluid_properties(self) -> _FluidProperties:
         pass
 
 
-air = AirDensityTemperature(temperature=288.15, density=1.225)
+air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
 
 
 
@@ -1024,8 +1043,13 @@ class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
     """
+
+    # _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(
+    #     default_factory=unit_system_manager.copy_current
+    # )
+
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properies: Optional[Union[FluidProperties, AirDensityTemperature, AirPressureTemperature]] = pd.Field(alias='fluidProperies')
+    fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(alias='fluidProperties')
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[Dict] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
@@ -1051,9 +1075,15 @@ class Flow360Params(Flow360BaseModel):
 
 
 
-    @classmethod
-    def to_solver(params: Flow360Params) -> Flow360Params:
-        pass
+    def to_solver(self) -> Flow360Params:
+        
+        solver_dict = {}
+        for property, value in self.__dict__.items():
+            print(property, value)
+            if isinstance(value, Flow360BaseModel):
+                solver_dict[property] = value.to_solver(self)
+
+        return Flow360Params(**solver_dict)
 
 
 
