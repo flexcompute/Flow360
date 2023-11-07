@@ -22,14 +22,6 @@ from flow360.component.flow360_params.unit_system import (
     ViscosityType,
 )
 
-# TODO:
-# 1. infer non-primitive units (eg pressure) inside UnitSystem context
-# 2. add easy validations for PositveFloat, NonNegative etc
-# 3. Improve unit system definition
-# 4. dump / retrive pydantic model (Flow360BaseModel) to file and from file with units
-# 5. replace all dimensional numerical types in Flow360Params
-# 6. introduce flow360 units definitions eg: ref_area = 1 flow360_length_unit**2
-# where definitions of flow360 units can be found in docs
 
 
 class DataWithUnits(pd.BaseModel):

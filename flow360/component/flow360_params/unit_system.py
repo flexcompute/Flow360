@@ -133,6 +133,7 @@ class DimensionedType(ValidatedType):
         @classmethod
         def get_class_object(cls, dim_type, **kwargs):
             """Get a dynamically created metaclass representing the constraint"""
+
             class _ConType:
                 type_ = pd.confloat(**kwargs)
 
@@ -198,6 +199,7 @@ class DimensionedType(ValidatedType):
         @classmethod
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True):
             """Get a dynamically created metaclass representing the vector"""
+
             def validate(vec_cls, value):
                 """additional validator for value"""
                 if not isinstance(value, Collection) and len(value) != 3:
