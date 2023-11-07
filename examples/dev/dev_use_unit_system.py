@@ -23,7 +23,6 @@ from flow360.component.flow360_params.unit_system import (
 )
 
 
-
 class DataWithUnits(pd.BaseModel):
     l: LengthType = pd.Field()
     m: MassType.Constrained(ge=2, allow_inf_nan=True) = pd.Field()
