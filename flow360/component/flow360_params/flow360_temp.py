@@ -5,7 +5,24 @@ from .params_base import Flow360BaseModel
 
 import pydantic as pd
 
-from ..types import Coordinate, Vector, Axis, PositiveFloat, PositiveInt, NonNegativeFloat
+from ..types import Coordinate, Axis, PositiveFloat, PositiveInt, NonNegativeFloat
+
+
+class InitialCondition(Flow360BaseModel):
+    type: str
+
+
+class FreestreamInitialCondition(InitialCondition):
+    type = pd.Field("Freestream", const=True)
+
+
+class ExpressionInitialCondition(InitialCondition):
+    type = pd.Field("Expression", const=True)
+    rho: str = pd.Field()
+    u: str = pd.Field()
+    v: str = pd.Field()
+    w: str = pd.Field()
+    p: str = pd.Field()
 
 
 class RotationDirectionRule(Enum):

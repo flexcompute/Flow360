@@ -11,7 +11,7 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
-from .flow360_initial_cond import InitialCondition
+from .flow360_temp import InitialCondition
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
 from ...log import log
 from ...user_config import UserConfig
