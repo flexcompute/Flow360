@@ -5,20 +5,21 @@ from __future__ import annotations
 
 import json
 from functools import wraps
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import numpy as np
 import pydantic as pd
 import rich
 import yaml
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
-from .unit_system import unit_system_manager, UnitSystem
+
+# from .unit_system import UnitSystem, unit_system_manager
 
 
 def json_dumps(value, *args, **kwargs):
@@ -106,7 +107,7 @@ def _self_named_property_validator(values: dict, validator: BaseModel, msg: str 
     """
     for key, v in values.items():
         # skip validation for comments and internal _type
-        if key == COMMENTS or key == TYPE_TAG_STR:
+        if key in (COMMENTS, TYPE_TAG_STR):
             continue
         try:
             values[key] = validator(v=v).v
@@ -116,6 +117,10 @@ def _self_named_property_validator(values: dict, validator: BaseModel, msg: str 
 
 
 class DeprecatedAlias(BaseModel):
+    """
+    Alias for a deprecated model
+    """
+
     name: str
     deprecated: str
 
@@ -131,8 +136,9 @@ class Flow360BaseModel(BaseModel):
     # comments is allowed property at every level
     comments: Optional[Any] = pd.Field()
     # probably no need to save unit system per object
-    _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(default_factory=unit_system_manager.copy_current)
-
+    # _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(
+    #     default_factory=unit_system_manager.copy_current
+    # )
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -239,11 +245,13 @@ class Flow360BaseModel(BaseModel):
             if actual_value is None:
                 if alias and alias != deprecated_alias.name:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" OR "{alias}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. '
+                        f'Use "{deprecated_alias.name}" OR "{alias}" instead.'
                     )
                 else:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. '
+                        f'Use "{deprecated_alias.name}" instead.'
                     )
                 values[deprecated_alias.name] = deprecated_value
             values.pop(deprecated_alias.deprecated)
@@ -659,7 +667,7 @@ class Flow360SortableBaseModel(Flow360BaseModel):
     def __getitem__(self, item):
         """to support [] access"""
         return getattr(self, item)
-    
+
     def __setitem__(self, key, value):
         """to support [] assignment"""
         super().__setattr__(key, value)

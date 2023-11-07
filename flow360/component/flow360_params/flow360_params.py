@@ -1,6 +1,7 @@
 """
 Flow360 solver parameters
 """
+# pylint: disable=unused-import
 from __future__ import annotations
 
 import math
@@ -28,7 +29,6 @@ from ..types import (
     Velocity,
 )
 from ..utils import _get_value_or_none, beta_feature
-from .unit_system import unit_system_manager
 from .params_base import (
     DeprecatedAlias,
     Flow360BaseModel,
@@ -438,13 +438,12 @@ class MeshSlidingInterface(Flow360BaseModel):
         )
 
 
-
 class RampCFL(Flow360BaseModel):
     """
     Ramp CFL for time stepping component
     """
 
-    type: str =  pd.Field("ramp", const=True)
+    type: str = pd.Field("ramp", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
@@ -456,7 +455,7 @@ class RampCFL(Flow360BaseModel):
         returns default steady CFL settings
         """
         return cls(initial=5, final=200, ramp_steps=40)
-    
+
     @classmethod
     def default_unsteady(cls):
         """
@@ -470,59 +469,13 @@ class AdaptiveCFL(Flow360BaseModel):
     Adaptive CFL for time stepping component
     """
 
-    type: str =  pd.Field("adaptive", const=True)
+    type: str = pd.Field("adaptive", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
     convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
         alias="convergenceLimitingFactor", default=0.25
     )
-
-
-# class TimeSteppingCFL(Flow360BaseModel):
-#     """
-#     CFL for time stepping component
-#     """
-
-#     type: Optional[Literal["ramp", "adaptive"]] = pd.Field()
-#     initial: Optional[PositiveFloat] = pd.Field()
-#     final: Optional[PositiveFloat] = pd.Field()
-#     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
-#     min: Optional[PositiveFloat] = pd.Field()
-#     max: Optional[PositiveFloat] = pd.Field()
-#     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange")
-#     convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
-#         alias="convergenceLimitingFactor"
-#     )
-#     randomizer: Optional[Dict] = pd.Field()
-
-#     @classmethod
-#     def adaptive(cls):
-#         """
-#         returns default adaptive CFL settings
-#         """
-#         return cls(
-#             type="adaptive",
-#             min=0.1,
-#             max=10000,
-#             max_relative_change=1,
-#             convergence_limiting_factor=0.25,
-#         )
-
-#     @classmethod
-#     def default_steady(cls):
-#         """
-#         returns default steady CFL settings
-#         """
-#         return cls(initial=5, final=200, ramp_steps=40)
-
-#     @classmethod
-#     def default_unsteady(cls):
-#         """
-#         returns default unsteady CFL settings
-#         """
-#         return cls(initial=1, final=1e6, ramp_steps=30)
-
 
 
 # pylint: disable=E0213
@@ -537,7 +490,6 @@ class TimeStepping(Flow360BaseModel):
         Union[pd.confloat(gt=0, allow_inf_nan=False), TimeStep, Literal["inf"]]
     ] = pd.Field(alias="timeStepSize", default="inf")
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field()
-
 
     # pylint: disable=invalid-name
     @export_to_flow360
@@ -621,7 +573,7 @@ class Boundaries(Flow360SortableBaseModel):
 class VolumeZoneType(ABC, Flow360BaseModel):
     """Basic Boundary class"""
 
-    model_type: str = pd.Field(alias='modelType')
+    model_type: str = pd.Field(alias="modelType")
 
 
 class InitialConditionHeatTransfer(Flow360BaseModel):
@@ -633,7 +585,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
 class HeatTransferVolumeZone(VolumeZoneType):
     """HeatTransferVolumeZone type"""
 
-    model_type = pd.Field("HeatTransfer", alias='modelType', const=True)
+    model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource"
@@ -710,7 +662,7 @@ class ReferenceFrame(Flow360BaseModel):
 class FluidDynamicsVolumeZone(VolumeZoneType):
     """FluidDynamicsVolumeZone type"""
 
-    model_type = pd.Field("FluidDynamics", alias='modelType', const=True)
+    model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
     reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
@@ -979,7 +931,6 @@ class Flow360Params(Flow360BaseModel):
         """
         returns flow360 formatted json
         """
-        print(f"using unit system: {unit_system_manager.current}")
         mesh_unit_length, C_inf = self._get_non_dimensionalisation()
         if self.sliding_interfaces:
             for s in self.sliding_interfaces:
@@ -1028,6 +979,10 @@ class Flow360MeshParams(Flow360BaseModel):
 
 
 class UnvalidatedFlow360Params(Flow360BaseModel):
+    """
+    Unvalidated parameters
+    """
+
     def __init__(self, filename: str = None, **kwargs):
         if UserConfig.do_validation:
             raise ConfigError(
