@@ -1,3 +1,4 @@
+import json
 from typing import Optional, Union
 
 import pydantic as pd
@@ -5,6 +6,7 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
+from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
@@ -55,6 +57,12 @@ class VectorDataWithUnits(pd.BaseModel):
     vec: Union[VelocityType.Direction, ForceType.Point] = pd.Field()
     ax: LengthType.Axis = pd.Field()
     omega: AngularVelocityType.Moment = pd.Field()
+
+
+class Flow360DataWithUnits(Flow360BaseModel):
+    l: LengthType = pd.Field()
+    pt: Optional[LengthType.Point] = pd.Field()
+    lc: LengthType.NonNegative = pd.Field()
 
 
 def test_unit_access():
@@ -393,3 +401,17 @@ def test_unit_system():
         assert all(coord == 1 * u.m / u.s for coord in data.vec)
         assert all(coord == 1 * u.m for coord in data.ax)
         assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+
+
+def test_units_serializer():
+    with fl.SI_unit_system:
+        data = Flow360DataWithUnits(l=2 * u.mm, pt=(2, 3, 4), lc=2)
+
+    data_as_json = data.json(indent=4)
+
+    with fl.CGS_unit_system:
+        data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
+
+    assert data_reimport.l == data.l
+    assert data_reimport.lc == data.lc
+    assert data_reimport.pt.value.tolist() == data.pt.value.tolist()

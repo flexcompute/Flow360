@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 import numpy as np
 import pydantic as pd
 import rich
+import unyt
 import yaml
 from pydantic import BaseModel
 from pydantic.fields import ModelField
@@ -125,6 +126,15 @@ class DeprecatedAlias(BaseModel):
     deprecated: str
 
 
+def encode_ndarray(x):
+    """
+    encoder for ndarray
+    """
+    if x.size == 1:
+        return float(x)
+    return tuple(x.tolist())
+
+
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -135,10 +145,6 @@ class Flow360BaseModel(BaseModel):
 
     # comments is allowed property at every level
     comments: Optional[Any] = pd.Field()
-    # probably no need to save unit system per object
-    # _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(
-    #     default_factory=unit_system_manager.copy_current
-    # )
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -180,8 +186,11 @@ class Flow360BaseModel(BaseModel):
         validate_assignment = True
         allow_population_by_field_name = True
         json_encoders = {
-            np.ndarray: lambda x: tuple(x.tolist()),
+            unyt.unyt_array: lambda x: {"value": x.value, "units": x.units},
+            unyt.Unit: str,
+            np.ndarray: encode_ndarray,
         }
+
         allow_mutation = True
         copy_on_model_validation = "none"
         underscore_attrs_are_private = True

@@ -79,11 +79,66 @@ def _has_dimensions(quant, dim):
     """
     Checks the argument has the right dimensionality.
     """
+
     try:
         arg_dim = quant.units.dimensions
     except AttributeError:
         arg_dim = u.dimensionless
     return arg_dim == dim
+
+
+def _unit_object_parser(value, unyt_type: type):
+    """
+    Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
+    """
+    if isinstance(value, dict) and "value" in value and "units" in value:
+        value = unyt_type(value["value"], value["units"])
+    return value
+
+
+def _is_unit_validator(value):
+    """
+    Parses str (eg: "m", "cm"), into unyt.Unit object
+    """
+    if isinstance(value, str):
+        value = u.Unit(value)
+    return value
+
+
+def _unit_inference_validator(value, dim_name, is_array=False):
+    """
+    Uses current unit system to infer units for value
+
+    Parameters
+    ----------
+    value :
+        value to infer units for
+    expected_base_type : type
+        Expected base type to infer units for, eg Number
+    dim_name : str
+        dimension name, eg, "length"
+
+    Returns
+    -------
+    unyt_quantity or value
+    """
+    if unit_system_manager.current:
+        unit = unit_system_manager.current[dim_name]
+        if is_array:
+            if all(isinstance(item, Number) for item in value):
+                return value * unit
+        if isinstance(value, Number):
+            return value * unit
+    return value
+
+
+def _has_dimensions_validator(value, dim):
+    """
+    Checks if value has expected dimention and raises TypeError
+    """
+    if not _has_dimensions(value, dim):
+        raise TypeError(f"arg '{value}' does not match {dim}")
+    return value
 
 
 # pylint: disable=too-few-public-methods
@@ -115,12 +170,12 @@ class DimensionedType(ValidatedType):
         """
         Validator for value
         """
-        if unit_system_manager.current:
-            if isinstance(value, Number):
-                unit = unit_system_manager.current[cls.dim_name]
-                return value * unit
-        if not _has_dimensions(value, cls.dim):
-            raise TypeError(f"arg '{value}' does not match {cls.dim}")
+
+        value = _unit_object_parser(value, u.unyt_quantity)
+        value = _is_unit_validator(value)
+        value = _unit_inference_validator(value, cls.dim_name)
+        value = _has_dimensions_validator(value, cls.dim)
+
         return value
 
     class _Constrained:
@@ -202,18 +257,19 @@ class DimensionedType(ValidatedType):
 
             def validate(vec_cls, value):
                 """additional validator for value"""
+                value = _unit_object_parser(value, u.unyt_array)
+                value = _is_unit_validator(value)
+
                 if not isinstance(value, Collection) and len(value) != 3:
                     raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
                 if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero norm")
-                if unit_system_manager.current:
-                    if all(isinstance(item, Number) for item in value):
-                        unit = unit_system_manager.current[vec_cls.type.dim_name]
-                        return value * unit
-                if not _has_dimensions(value, vec_cls.type.dim):
-                    raise TypeError(f"arg '{value}' does not match {cls_obj.type.dim}")
+
+                value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
+                value = _has_dimensions_validator(value, vec_cls.type.dim)
+
                 return value
 
             cls_obj = type("_VectorType", (), {})
