@@ -25,7 +25,7 @@ class ExpressionInitialCondition(InitialCondition):
     p: str = pd.Field()
 
 
-class RotationDirectionRule(Enum):
+class RotationDirectionRule(str, Enum):
     LeftHand = "leftHand",
     RightHand = "rightHand"
 

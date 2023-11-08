@@ -10,8 +10,8 @@ from ..types import PositiveInt, Coordinate
 
 
 class OutputFormat(Enum):
-    PARAVIEW = "paraview",
-    TECPLOT = "tecplot",
+    PARAVIEW = "paraview"
+    TECPLOT = "tecplot"
     BOTH = "both"
 
 

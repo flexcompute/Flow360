@@ -11,7 +11,8 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
-from .flow360_temp import InitialCondition
+from .flow360_output import SurfaceOutput, VolumeOutput, SliceOutput, IsoSurfaceOutput, MonitorOutput
+from .flow360_temp import InitialCondition, BETDisk, PorousMedium, UserDefinedDynamic
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
 from ...log import log
 from ...user_config import UserConfig
@@ -920,6 +921,7 @@ class Freestream(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["speed", "density"]
         require_one_of = ["Mach", "speed"]
+        deprecated_aliases = DeprecatedAlias(name="turbulent_viscosity_ratio", deprecated="turbulent_viscosity_ratio_SA")
 
 
 class Flow360Params(Flow360BaseModel):
@@ -933,21 +935,19 @@ class Flow360Params(Flow360BaseModel):
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolver] = pd.Field(
-        alias="turbulenceModelSolver"
-    )
+    turbulence_model_solver: Optional[TurbulenceModelSolver] = pd.Field(alias="turbulenceModelSolver")
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
-    bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
+    bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
-    porous_media: Optional[List[Dict]] = pd.Field(alias="porousMedia")
-    user_defined_dynamics: Optional[List[Dict]] = pd.Field(alias="userDefinedDynamics")
-    surface_output: Optional[Dict] = pd.Field(alias="surfaceOutput")
-    volume_output: Optional[Dict] = pd.Field(alias="volumeOutput")
-    slice_output: Optional[Dict] = pd.Field(alias="sliceOutput")
-    iso_surface_output: Optional[Dict] = pd.Field(alias="isoSurfaceOutput")
-    monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
+    porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(alias="userDefinedDynamics")
+    surface_output: Optional[SurfaceOutput] = pd.Field(alias="surfaceOutput")
+    volume_output: Optional[VolumeOutput] = pd.Field(alias="volumeOutput")
+    slice_output: Optional[SliceOutput] = pd.Field(alias="sliceOutput")
+    iso_surface_output: Optional[IsoSurfaceOutput] = pd.Field(alias="isoSurfaceOutput")
+    monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
