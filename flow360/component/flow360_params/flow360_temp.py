@@ -9,14 +9,17 @@ from ..types import Coordinate, Axis, PositiveFloat, PositiveInt, NonNegativeFlo
 
 
 class InitialCondition(Flow360BaseModel):
+    """:class:`InitialCondition` class"""
     type: str
 
 
 class FreestreamInitialCondition(InitialCondition):
+    """:class:`FreestreamInitialCondition` class"""
     type = pd.Field("Freestream", const=True)
 
 
 class ExpressionInitialCondition(InitialCondition):
+    """:class:`ExpressionInitialCondition` class"""
     type = pd.Field("Expression", const=True)
     rho: str = pd.Field()
     u: str = pd.Field()
@@ -26,26 +29,31 @@ class ExpressionInitialCondition(InitialCondition):
 
 
 class RotationDirectionRule(str, Enum):
+    """:class:`RotationDirectionRule` class"""
     LeftHand = "leftHand",
     RightHand = "rightHand"
 
 
 class BETDiskTwist(Flow360BaseModel):
+    """:class:`BETDiskTwist` class"""
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
 
 class BETDiskChord(Flow360BaseModel):
+    """:class:`BETDiskChord` class"""
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
+    """:class:`BETDiskSectionalPolar` class"""
     lift_coeffs: Optional[List[Coordinate]] = pd.Field(alias="liftCoeffs")
     drag_coeffs: Optional[List[Coordinate]] = pd.Field(alias="dragCoeffs")
 
 
 class BETDisk(Flow360BaseModel):
+    """:class:`BETDisk` class"""
     rotation_direction_rule: Optional[RotationDirectionRule] = pd.Field(alias="rotationDirectionRule")
     center_of_rotation: Coordinate = pd.Field(alias="centerOfRotation")
     axis_of_rotation: Axis = pd.Field(alias="axisOfRotation")
@@ -69,6 +77,7 @@ class BETDisk(Flow360BaseModel):
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):
+    """:class:`PorousMediumVolumeZone` class"""
     zone_type: str = pd.Field(alias="zoneType")
     center: Coordinate = pd.Field()
     lengths: Coordinate = pd.Field()
@@ -77,12 +86,14 @@ class PorousMediumVolumeZone(Flow360BaseModel):
 
 
 class PorousMedium(Flow360BaseModel):
+    """:class:`PorousMedium` class"""
     darcy_coefficient: Coordinate = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Coordinate = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
 
 
 class UserDefinedDynamic(Flow360BaseModel):
+    """:class:`UserDefinedDynamic` class"""
     dynamics_name: str = pd.Field(alias="dynamicsName")
     input_vars: List[str] = pd.Field(alias="inputVars")
     constants: Optional[Dict] = pd.Field()

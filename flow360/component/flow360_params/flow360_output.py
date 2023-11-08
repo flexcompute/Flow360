@@ -10,20 +10,24 @@ from ..types import PositiveInt, Coordinate
 
 
 class OutputFormat(Enum):
+    """:class:`OutputFormat` class"""
     PARAVIEW = "paraview"
     TECPLOT = "tecplot"
     BOTH = "both"
 
 
 class Surface(Flow360BaseModel):
+    """:class:`Surface` class"""
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
 class _GenericSurfaceWrapper(Flow360BaseModel):
+    """:class:`_GenericSurfaceWrapper` class"""
     v: Surface
 
 
 class Surfaces(Flow360SortableBaseModel):
+    """:class:`Surfaces` class"""
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         return _self_named_property_validator(
@@ -32,6 +36,7 @@ class Surfaces(Flow360SortableBaseModel):
 
 
 class SurfaceOutput(Flow360BaseModel):
+    """:class:`SurfaceOutput` class"""
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="animationFrequency")
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
@@ -69,15 +74,18 @@ class SurfaceOutput(Flow360BaseModel):
 
 
 class SliceBase(ABC, Flow360BaseModel):
+    """:class:`SliceBase` class"""
     slice_normal: Coordinate = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
 
 
 class NamedSlice(SliceBase):
+    """:class:`NamedSlice` class"""
     slice_name: str = pd.Field(alias="sliceName")
 
 
 class Slice(SliceBase):
+    """:class:`Slice` class"""
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
@@ -85,10 +93,12 @@ SliceType = Union[Slice, NamedSlice]
 
 
 class _GenericSliceWrapper(Flow360BaseModel):
+    """:class:`_GenericSurfaceWrapper` class"""
     v: SliceType
 
 
 class Slices(Flow360SortableBaseModel):
+    """:class:`Slices` class"""
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         return _self_named_property_validator(
@@ -97,6 +107,7 @@ class Slices(Flow360SortableBaseModel):
 
 
 class SliceOutput(Flow360BaseModel):
+    """:class:`SliceOutput` class"""
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="animationFrequency")
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
@@ -122,6 +133,7 @@ class SliceOutput(Flow360BaseModel):
 
 
 class VolumeOutput(Flow360BaseModel):
+    """:class:`VolumeOutput` class"""
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="animationFrequency")
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
@@ -162,16 +174,19 @@ class VolumeOutput(Flow360BaseModel):
 
 
 class MonitorBase(ABC, Flow360BaseModel):
+    """:class:`MonitorBase` class"""
     type: Optional[str]
 
 
 class SurfaceIntegralMonitor(MonitorBase):
+    """:class:`SurfaceIntegralMonitor` class"""
     type = pd.Field("surfaceIntegral", const=True)
     surfaces: Optional[List[str]] = pd.Field()
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
 class ProbeMonitor(MonitorBase):
+    """:class:`ProbeMonitor` class"""
     type = pd.Field("probe", const=True)
     monitor_locations: Optional[List[Coordinate]]
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
@@ -181,10 +196,12 @@ MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
 
 
 class _GenericMonitorWrapper(Flow360BaseModel):
+    """:class:`_GenericMonitorWrapper` class"""
     v: MonitorType
 
 
 class Monitors(Flow360SortableBaseModel):
+    """:class:`Monitors` class"""
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         return _self_named_property_validator(
@@ -193,20 +210,24 @@ class Monitors(Flow360SortableBaseModel):
 
 
 class MonitorOutput(Flow360BaseModel):
+    """:class:`MonitorOutput` class"""
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     monitors: Optional[Monitors] = pd.Field()
 
 
 class IsoSurface(Flow360BaseModel):
+    """:class:`IsoSurface` class"""
     surface_field: Optional[List]
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
 class _GenericIsoSurfaceWrapper(Flow360BaseModel):
+    """:class:`_GenericIsoSurfaceWrapper` class"""
     v: Surface
 
 
 class IsoSurfaces(Flow360SortableBaseModel):
+    """:class:`IsoSurfaces` class"""
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         return _self_named_property_validator(
@@ -215,6 +236,7 @@ class IsoSurfaces(Flow360SortableBaseModel):
 
 
 class IsoSurfaceOutput(Flow360BaseModel):
+    """:class:`IsoSurfaceOutput` class"""
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="animationFrequency")
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")

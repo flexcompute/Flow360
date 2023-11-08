@@ -53,7 +53,6 @@ class LinearSolver(Flow360BaseModel):
         )
 
     """
-
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
     max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance", default=1e-10)
@@ -61,15 +60,18 @@ class LinearSolver(Flow360BaseModel):
 
 
 class RandomizerParameter(Flow360BaseModel):
+    """:class:`RandomizerParameter` class"""
     standard_deviation: NonNegativeFloat = pd.Field(alias="standardDeviation")
     update_frequency: PositiveInt = pd.Field(alias="updateFrequency")
 
 
 class LinearIterationsRandomizer(Flow360BaseModel):
+    """:class:`LinearIterationsRandomizer` class"""
     linear_iterations: RandomizerParameter = pd.Field(alias="linearIterations")
 
 
 class PressureCorrectionSolver(Flow360BaseModel):
+    """:class:`PressureCorrectionSolver` class"""
     randomizer: LinearIterationsRandomizer = pd.Field()
     linear_solver_config: LinearSolver = pd.Field(alias="linearSolverConfig", default=LinearSolver())
 
@@ -131,7 +133,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     -------
     >>> ns = NavierStokesSolver(absolute_tolerance=1e-10)
     """
-
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     linear_solver_config: Optional[LinearSolver] = pd.Field(alias="linearSolverConfig", default=LinearSolver())
@@ -150,8 +151,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
 
 class TurbulenceModelConstants(Flow360BaseModel):
-    """TurbulenceModelConstants"""
-
+    """:class:`TurbulenceModelConstants` class"""
     C_DES: Optional[float]
     C_d: Optional[float]
     C_DES1: Optional[float]
@@ -242,16 +242,17 @@ class TurbulenceModelSolver(GenericFlowSolverSettings):
 
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
+    """:class:`TurbulenceModelSolverSST` class"""
     model_type = pd.Field("kOmegaSST", alias="modelType", const=True)
 
 
 class TurbulenceModelSolverSA(TurbulenceModelSolver):
+    """:class:`TurbulenceModelSolverSA` class"""
     model_type = pd.Field("SpalartAllmaras", alias="modelType", const=True)
 
 
 class HeatEquationModelType(str, Enum):
-    """Heat equation model type"""
-
+    """:class:`HeatEquationModelType` class"""
     HEATEQ = "HeatEquation"
     NONE = "None"
 
