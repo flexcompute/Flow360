@@ -52,12 +52,3 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
-
-
-# pylint: disable=too-few-public-methods,invalid-name
-class turbulence:
-    """turbulece models shortcut: eg. flow360.turbulence.SA"""
-
-    SA = solvers.TurbulenceModelModelType.SA
-    SST = solvers.TurbulenceModelModelType.SST
-    NONE = solvers.TurbulenceModelModelType.NONE

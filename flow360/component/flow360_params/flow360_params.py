@@ -42,7 +42,7 @@ from .solvers import (
     LinearSolver,
     NavierStokesSolver,
     TurbulenceModelSolver,
-    TransitionModelSolver,
+    TransitionModelSolver, TurbulenceModelSolverSST, TurbulenceModelSolverSA,
 )
 
 
@@ -836,6 +836,9 @@ class Freestream(Flow360BaseModel):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
+    turbulent_viscosity_ratio_sa: Optional[NonNegativeFloat] = pd.Field(
+        alias="turbulentViscosityRatioSA"
+    )
 
     @pd.validator("speed", pre=True, always=True)
     def validate_speed(cls, v):
@@ -921,7 +924,6 @@ class Freestream(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["speed", "density"]
         require_one_of = ["Mach", "speed"]
-        deprecated_aliases = DeprecatedAlias(name="turbulent_viscosity_ratio", deprecated="turbulent_viscosity_ratio_SA")
 
 
 class Flow360Params(Flow360BaseModel):
@@ -935,7 +937,7 @@ class Flow360Params(Flow360BaseModel):
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolver] = pd.Field(alias="turbulenceModelSolver")
+    turbulence_model_solver: Optional[Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST]] = pd.Field(alias="turbulenceModelSolver")
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
@@ -980,7 +982,7 @@ class Flow360Params(Flow360BaseModel):
             self.navier_stokes_solver = NavierStokesSolver()
 
         if not self.turbulence_model_solver:
-            self.turbulence_model_solver = TurbulenceModelSolver()
+            self.turbulence_model_solver = TurbulenceModelSolverSA()
 
         self.freestream.to_flow360_json(mesh_unit_length=mesh_unit_length, return_json=False)
         self.geometry.to_flow360_json(return_json=False)
