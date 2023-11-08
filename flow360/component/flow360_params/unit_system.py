@@ -432,9 +432,14 @@ class _Flow360BaseUnit(DimensionedType):
             return len(self.val)
         return 1
 
+    def _unit_iter(self, iterable):
+        for value in iter(iterable):
+            dimensioned = self.__class__(value)
+            yield dimensioned
+
     def __iter__(self):
         try:
-            return iter(self.val)
+            return self._unit_iter(self.val)
         except TypeError as exc:
             raise TypeError(f"{self} is not iterable") from exc
 
