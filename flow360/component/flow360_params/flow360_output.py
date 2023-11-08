@@ -1,3 +1,4 @@
+from abc import ABC
 from enum import Enum
 from typing import Literal, Union, List, Optional
 
@@ -5,13 +6,29 @@ from .params_base import Flow360BaseModel, Flow360SortableBaseModel, _self_named
 
 import pydantic as pd
 
-from ..types import PositiveInt
+from ..types import PositiveInt, Coordinate
 
 
 class OutputFormat(Enum):
     PARAVIEW = "paraview",
     TECPLOT = "tecplot",
     BOTH = "both"
+
+
+class Surface(Flow360BaseModel):
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+class _GenericSurfaceWrapper(Flow360BaseModel):
+    v: Surface
+
+
+class Surfaces(Flow360SortableBaseModel):
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        return _self_named_property_validator(
+            values, _GenericSurfaceWrapper, msg="is not any of supported surface types."
+        )
 
 
 class SurfaceOutput(Flow360BaseModel):
@@ -48,7 +65,35 @@ class SurfaceOutput(Flow360BaseModel):
     start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    # TODO: Surfaces - how to handle self-named properties with one possible type
+    surfaces: Optional[Surfaces] = pd.Field()
+
+
+class SliceBase(ABC, Flow360BaseModel):
+    slice_normal: Coordinate = pd.Field(alias="sliceNormal")
+    slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
+
+
+class NamedSlice(SliceBase):
+    slice_name: str = pd.Field(alias="sliceName")
+
+
+class Slice(SliceBase):
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+SliceType = Union[Slice, NamedSlice]
+
+
+class _GenericSliceWrapper(Flow360BaseModel):
+    v: SliceType
+
+
+class Slices(Flow360SortableBaseModel):
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        return _self_named_property_validator(
+            values, _GenericSliceWrapper, msg="is not any of supported slice types."
+        )
 
 
 class SliceOutput(Flow360BaseModel):
@@ -73,7 +118,7 @@ class SliceOutput(Flow360BaseModel):
     q_criterion: Optional[bool] = pd.Field(alias="qCriterion")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    # TODO: Slices - self-named properties
+    slices: Optional[Slices]
 
 
 class VolumeOutput(Flow360BaseModel):
@@ -116,9 +161,57 @@ class VolumeOutput(Flow360BaseModel):
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
+class MonitorBase(ABC, Flow360BaseModel):
+    type: Optional[str]
+
+
+class SurfaceIntegralMonitor(MonitorBase):
+    type = pd.Field("surfaceIntegral", const=True)
+    surfaces: Optional[List[str]] = pd.Field()
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+class ProbeMonitor(MonitorBase):
+    type = pd.Field("probe", const=True)
+    monitor_locations: Optional[List[Coordinate]]
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
+
+
+class _GenericMonitorWrapper(Flow360BaseModel):
+    v: MonitorType
+
+
+class Monitors(Flow360SortableBaseModel):
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        return _self_named_property_validator(
+            values, _GenericMonitorWrapper, msg="is not any of supported monitor types."
+        )
+
+
 class MonitorOutput(Flow360BaseModel):
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
-    # TODO: Monitors - self-named properties
+    monitors: Optional[Monitors] = pd.Field()
+
+
+class IsoSurface(Flow360BaseModel):
+    surface_field: Optional[List]
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+class _GenericIsoSurfaceWrapper(Flow360BaseModel):
+    v: Surface
+
+
+class IsoSurfaces(Flow360SortableBaseModel):
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        return _self_named_property_validator(
+            values, _GenericIsoSurfaceWrapper, msg="is not any of supported surface types."
+        )
 
 
 class IsoSurfaceOutput(Flow360BaseModel):
@@ -127,5 +220,5 @@ class IsoSurfaceOutput(Flow360BaseModel):
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    # TODO: Isosurfaces - self-named properties
+    iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
 
