@@ -38,6 +38,7 @@ from .component.flow360_params.flow360_params import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
+    SupersonicInflow,
     TimeStepping,
     TurbulenceModelSolver,
     UnvalidatedFlow360Params,
