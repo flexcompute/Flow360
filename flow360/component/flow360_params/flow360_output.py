@@ -89,23 +89,6 @@ class Slice(SliceBase):
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 
 
-SliceType = Union[Slice, NamedSlice]
-
-
-class _GenericSliceWrapper(Flow360BaseModel):
-    """:class:`_GenericSurfaceWrapper` class"""
-    v: SliceType
-
-
-class Slices(Flow360SortableBaseModel):
-    """:class:`Slices` class"""
-    @pd.root_validator(pre=True)
-    def validate_monitor(cls, values):
-        return _self_named_property_validator(
-            values, _GenericSliceWrapper, msg="is not any of supported slice types."
-        )
-
-
 class SliceOutput(Flow360BaseModel):
     """:class:`SliceOutput` class"""
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
@@ -129,7 +112,7 @@ class SliceOutput(Flow360BaseModel):
     q_criterion: Optional[bool] = pd.Field(alias="qCriterion")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    slices: Optional[Slices]
+    slices: Optional[Union[Slice, List[NamedSlice]]]
 
 
 class VolumeOutput(Flow360BaseModel):
@@ -142,7 +125,7 @@ class VolumeOutput(Flow360BaseModel):
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
     write_distributed_file: Optional[bool] = pd.Field(alias="writeDistributedFile")
-    start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
+    start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
     primitive_vars: Optional[bool] = pd.Field(alias="primitiveVars")
     vorticity: Optional[bool] = pd.Field()
     residual_navier_stokes: Optional[bool] = pd.Field(alias="residualNavierStokes")
@@ -164,7 +147,7 @@ class VolumeOutput(Flow360BaseModel):
     wall_distance_dir: Optional[bool] = pd.Field(alias="wallDistanceDir")
     wall_distance: Optional[bool] = pd.Field(alias="wallDistance")
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
-    q_criterion: Optional[bool] = pd.Field(alias="qCriterion")
+    q_criterion: Optional[bool] = pd.Field(alias="qcriterion")
     debug_transition: Optional[bool] = pd.Field(alias="debugTransition")
     debug_turbulence: Optional[bool] = pd.Field(alias="debugTurbulence")
     debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")

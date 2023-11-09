@@ -28,6 +28,9 @@ class ExpressionInitialCondition(InitialCondition):
     p: str = pd.Field()
 
 
+InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
+
+
 class RotationDirectionRule(str, Enum):
     """:class:`RotationDirectionRule` class"""
     LeftHand = "leftHand",
@@ -48,8 +51,8 @@ class BETDiskChord(Flow360BaseModel):
 
 class BETDiskSectionalPolar(Flow360BaseModel):
     """:class:`BETDiskSectionalPolar` class"""
-    lift_coeffs: Optional[List[Coordinate]] = pd.Field(alias="liftCoeffs")
-    drag_coeffs: Optional[List[Coordinate]] = pd.Field(alias="dragCoeffs")
+    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="liftCoeffs")
+    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="dragCoeffs")
 
 
 class BETDisk(Flow360BaseModel):
@@ -97,7 +100,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     dynamics_name: str = pd.Field(alias="dynamicsName")
     input_vars: List[str] = pd.Field(alias="inputVars")
     constants: Optional[Dict] = pd.Field()
-    output_vars: Union[List[str], Dict] = pd.Field()
+    output_vars: Union[List[str], Dict] = pd.Field(alias="outputVars")
     state_vars_initial_value: List[str] = pd.Field(alias="stateVarsInitialValue")
     update_law: List[str] = pd.Field(alias="updateLaw")
     output_law: List[str] = pd.Field(alias="outputLaw")

@@ -12,7 +12,7 @@ from pydantic import StrictStr
 from typing_extensions import Literal
 
 from .flow360_output import SurfaceOutput, VolumeOutput, SliceOutput, IsoSurfaceOutput, MonitorOutput
-from .flow360_temp import InitialCondition, BETDisk, PorousMedium, UserDefinedDynamic
+from .flow360_temp import InitialCondition, BETDisk, PorousMedium, UserDefinedDynamic, InitialConditions
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
 from ...log import log
 from ...user_config import UserConfig
@@ -42,7 +42,7 @@ from .solvers import (
     LinearSolver,
     NavierStokesSolver,
     TurbulenceModelSolver,
-    TransitionModelSolver, TurbulenceModelSolverSST, TurbulenceModelSolverSA,
+    TransitionModelSolver, TurbulenceModelSolverSST, TurbulenceModelSolverSA, TurbulenceModelSolvers,
 )
 
 
@@ -828,7 +828,7 @@ class Freestream(Flow360BaseModel):
     Mach: Optional[NonNegativeFloat] = pd.Field()
     MachRef: Optional[PositiveFloat] = pd.Field()
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(alias="Temperature")
     density: Optional[PositiveFloat]
     speed: Optional[Union[Velocity, PositiveFloat]]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
@@ -933,11 +933,11 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[InitialCondition] = pd.Field(alias="initialCondition")
+    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST]] = pd.Field(alias="turbulenceModelSolver")
+    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(alias="turbulenceModelSolver")
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()

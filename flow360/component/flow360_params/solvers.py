@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from abc import ABC
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
@@ -223,7 +223,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings):
     -------
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
-    model_type: str
+    model_type: Optional[str]
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     linear_solver_config: Optional[LinearSolver] = pd.Field(alias="linearSolverConfig", default=LinearSolver())
@@ -251,10 +251,12 @@ class TurbulenceModelSolverSA(TurbulenceModelSolver):
     model_type = pd.Field("SpalartAllmaras", alias="modelType", const=True)
 
 
-class HeatEquationModelType(str, Enum):
-    """:class:`HeatEquationModelType` class"""
-    HEATEQ = "HeatEquation"
-    NONE = "None"
+class TurbulenceModelSolverNone(TurbulenceModelSolver):
+    """:class:`TurbulenceModelSolverSA` class"""
+    model_type = pd.Field("None", alias="modelType", const=True)
+
+
+TurbulenceModelSolvers = Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST, TurbulenceModelSolverNone]
 
 
 class HeatEquationSolver(Flow360BaseModel):
