@@ -2,11 +2,12 @@
 Flow360 solver parameters
 """
 # pylint: disable=unused-import
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import math
 from abc import ABC
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -132,6 +133,35 @@ class SubsonicInflow(Boundary):
     rampSteps: PositiveInt
 
 
+class SupersonicInflow(Boundary):
+    """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
+
+    Parameters
+    ----------
+    Density : PositiveFloat
+        Fluid density (non-dimensional). Default freestream fluid density in Flow360 is 1.0.
+
+    Velocity: Tuple[float, float, float]
+        Fluid velocity (non-dimensional), normalized to Mach number.
+    Pressure: PositiveFloat
+        Fluid pressure (non-dimensional). Default freestream fluid pressure in Flow360 = 1.0/gamma = 1.0/1.4.
+
+    Returns
+    -------
+    :class:`SupersonicInflow`
+        An instance of the component class SupersonicInflow.
+
+    Example
+    -------
+    >>> supersonicInflow = SupersonifInflow(density=1.0, velocity=[2.5, 0.1, 0], pressure=0.7) # doctest: +SKIP
+    """
+
+    type = pd.Field("SupersonicInflow", const=True)
+    density: PositiveFloat = pd.Field(alias="Density")
+    velocity: Tuple[float, float, float] = pd.Field(alias="Velocity")
+    pressure: PositiveFloat = pd.Field(alias="Pressure")
+
+
 class SlidingInterfaceBoundary(Boundary):
     """SlidingInterface boundary"""
 
@@ -179,6 +209,7 @@ BoundaryType = Union[
     SubsonicOutflowPressure,
     SubsonicOutflowMach,
     SubsonicInflow,
+    SupersonicInflow,
     SlidingInterfaceBoundary,
     WallFunction,
     MassInflow,
@@ -539,8 +570,8 @@ class Boundaries(Flow360SortableBaseModel):
     <boundary_name> : BoundaryType
         Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
-                                        SlidingInterfaceBoundary, WallFunction, MassInflow, MassOutflow,
-                                        SolidIsothermalWall, SolidAdiabaticWall]
+                                        SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
+                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall]
 
     Returns
     -------
