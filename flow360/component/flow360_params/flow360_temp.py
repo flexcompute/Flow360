@@ -15,12 +15,12 @@ class InitialCondition(Flow360BaseModel):
 
 class FreestreamInitialCondition(InitialCondition):
     """:class:`FreestreamInitialCondition` class"""
-    type = pd.Field("Freestream", const=True)
+    type: Literal["freestream"] = pd.Field()
 
 
 class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
-    type = pd.Field("Expression", const=True)
+    type: Literal["expression"] = pd.Field()
     rho: str = pd.Field()
     u: str = pd.Field()
     v: str = pd.Field()
@@ -85,7 +85,7 @@ class PorousMediumVolumeZone(Flow360BaseModel):
     center: Coordinate = pd.Field()
     lengths: Coordinate = pd.Field()
     axes: List[Coordinate] = pd.Field(min_items=2, max_items=3)
-    windowing_lengths: Optional[List[Coordinate]] = pd.Field()
+    windowing_lengths: Optional[Coordinate] = pd.Field(alias="windowingLengths")
 
 
 class PorousMedium(Flow360BaseModel):

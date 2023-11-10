@@ -1,13 +1,22 @@
+import json
 import os
-from pprint import pprint
+import re
 
 from flow360.component.flow360_params.flow360_params import Flow360Params
 
-here = os.path.dirname(os.path.abspath(__file__))
+json_object = json.dumps(Flow360Params.schema(), indent=4)
 
-validated = Flow360Params(os.path.join(here, "../../tests/data/flow360_case_om6wing.json"))
+with open("schema.json", "w") as outfile:
+    outfile.write(json_object)
 
-pprint(validated.dict())
+rootdir = "../../tests/data/"
+regex = re.compile('(case_.*\.json$)')
 
-pprint(Flow360Params.schema())
-
+for root, dirs, files in os.walk(rootdir):
+    for file in files:
+        if regex.match(file):
+            try:
+                print(f"Now validating {file}")
+                validated = Flow360Params(os.path.join(rootdir, file))
+            except Exception as error:
+                print(error)

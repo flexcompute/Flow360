@@ -836,9 +836,6 @@ class Freestream(Flow360BaseModel):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
-    turbulent_viscosity_ratio_sa: Optional[NonNegativeFloat] = pd.Field(
-        alias="turbulentViscosityRatioSA"
-    )
 
     @pd.validator("speed", pre=True, always=True)
     def validate_speed(cls, v):
@@ -933,11 +930,11 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition")
+    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition", discriminator="type")
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(alias="turbulenceModelSolver")
+    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(alias="turbulenceModelSolver", discriminator="model_type")
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
