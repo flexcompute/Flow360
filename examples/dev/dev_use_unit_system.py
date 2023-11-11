@@ -1,3 +1,4 @@
+from pprint import pprint
 from threading import Thread
 from time import sleep
 from typing import Tuple
@@ -67,6 +68,10 @@ data = DataWithUnits(
     mu=2 * u.Pa * u.s,
     omega=5 * u.rad / u.s,
 )
+
+schema = data.schema()
+
+pprint(schema)
 
 for n, v in data:
     print(f"{n}={v}")

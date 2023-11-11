@@ -178,6 +178,11 @@ class DimensionedType(ValidatedType):
 
         return value
 
+    @classmethod
+    def __modify_schema__(cls, field_schema, field):
+        field_schema['value']['type'] = 'number'
+        field_schema['unit']['type'] = 'string'
+
     class _Constrained:
         """
         :class: _Constrained
@@ -201,10 +206,20 @@ class DimensionedType(ValidatedType):
                 )
                 return dimensioned_value
 
+            def __modify_schema__(con_cls, field_schema, field):
+                constraints = con_cls.con_type.type_
+                field_schema['ge'] = float
+                field_schema['le'] = float
+                field_schema['gt'] = float
+                field_schema['lt'] = float
+                field_schema['allow_inf_nan'] = bool
+
             cls_obj = type("_Constrained", (), {})
             setattr(cls_obj, "con_type", _ConType)
             setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
+            setattr(cls_obj, "__modify_schema__", lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field))
             setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
+
             return cls_obj
 
     # pylint: disable=invalid-name
