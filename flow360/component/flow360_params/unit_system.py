@@ -8,8 +8,9 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Collection
+from typing import Collection, List
 
+import numpy as np
 import pydantic as pd
 import unyt as u
 
@@ -87,12 +88,16 @@ def _has_dimensions(quant, dim):
     return arg_dim == dim
 
 
-def _unit_object_parser(value, unyt_type: type):
+def _unit_object_parser(value, unyt_types: List[type]):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
     if isinstance(value, dict) and "value" in value and "units" in value:
-        value = unyt_type(value["value"], value["units"])
+        for unyt_type in unyt_types:
+            try:
+                return unyt_type(value["value"], value["units"])
+            except u.exceptions.UnitParseError:
+                pass
     return value
 
 
@@ -171,12 +176,12 @@ class DimensionedType(ValidatedType):
         Validator for value
         """
 
-        value = _unit_object_parser(value, u.unyt_quantity)
+        value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
         value = _is_unit_validator(value)
         value = _unit_inference_validator(value, cls.dim_name)
         value = _has_dimensions_validator(value, cls.dim)
 
-        return value
+        return 1.0 * value
 
     class _Constrained:
         """
@@ -257,7 +262,7 @@ class DimensionedType(ValidatedType):
 
             def validate(vec_cls, value):
                 """additional validator for value"""
-                value = _unit_object_parser(value, u.unyt_array)
+                value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
                 if not isinstance(value, Collection) and len(value) != 3:
@@ -401,11 +406,21 @@ class _Flow360BaseUnit(DimensionedType):
         """
         Retrieve units of a flow360 unit system value
         """
+        parent_self = self
 
+        # pylint: disable=invalid-name
         class _units:
             dimensions = self.dimension_type.dim
 
-        return _units
+            class registry:
+                """registry for unyt api"""
+
+                unit_system = "flow360"
+
+            def __str__(self):
+                return f"{parent_self.unit_name}"
+
+        return _units()
 
     @property
     def value(self):
@@ -416,6 +431,32 @@ class _Flow360BaseUnit(DimensionedType):
 
     def __init__(self, val=None) -> None:
         self.val = val
+
+    @classmethod
+    def factory(cls, value, unit_name):
+        """Returns specialised class object based on unit name
+
+        Parameters
+        ----------
+        value : Numeric or Collection
+            Base value
+        unit_name : str
+            Unit name, e.g. flow360_length_unit
+
+        Returns
+        -------
+        Specialised _Flow360BaseUnit
+            Returns specialised _Flow360BaseUnit such as unit_name equals provided unit_name
+
+        Raises
+        ------
+        ValueError
+            If specialised class was not found based on provided unit_name
+        """
+        for sub_classes in _Flow360BaseUnit.__subclasses__():
+            if sub_classes.unit_name == unit_name:
+                return sub_classes(value)
+        raise ValueError(f"No class found for unit_name: {unit_name}")
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -445,13 +486,13 @@ class _Flow360BaseUnit(DimensionedType):
 
     def __repr__(self):
         if self.val:
-            return f"({self.val}, {self.unit_name})"
-        return f"({self.unit_name})"
+            return f"({self.val}, {self.units})"
+        return f"({self.units})"
 
     def __str__(self):
         if self.val:
-            return f"{self.val} {self.unit_name}"
-        return f"{self.unit_name}"
+            return f"{self.val} {self.units}"
+        return f"{self.units}"
 
     def _can_do_math_operations(self, other):
         if self.val is None:
@@ -700,15 +741,15 @@ _flow360_system = {
 
 # pylint: disable=too-many-arguments
 def flow360_conversion_unit_system(
-    base_length=1.0,
-    base_mass=1.0,
-    base_time=1.0,
-    base_temperature=1.0,
-    base_velocity=1.0,
-    base_density=1.0,
-    base_pressure=1.0,
-    base_viscosity=1.0,
-    base_angular_velocity=1.0,
+    base_length=np.inf,
+    base_mass=np.inf,
+    base_time=np.inf,
+    base_temperature=np.inf,
+    base_velocity=np.inf,
+    base_density=np.inf,
+    base_pressure=np.inf,
+    base_viscosity=np.inf,
+    base_angular_velocity=np.inf,
 ):
     """
     Register an unyt unit system for flow360 units with defined conversion factors
