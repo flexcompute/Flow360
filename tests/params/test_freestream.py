@@ -4,18 +4,17 @@ import unittest
 import pydantic as pd
 import pytest
 
-from flow360.component.flow360_params.flow360_params import (
-    Freestream,
-)
+from flow360.component.flow360_params.flow360_params import Freestream
 from flow360.exceptions import ConfigError
-
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
 
 def test_freesteam():
     fs = Freestream(Mach=1, temperature=300, density=1.22)

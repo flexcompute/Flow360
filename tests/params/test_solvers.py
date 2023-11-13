@@ -3,24 +3,25 @@ import unittest
 import pydantic as pd
 import pytest
 
-import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
     LinearSolver,
     NavierStokesSolver,
-    TurbulenceModelSolver
+    TransitionModelSolver,
+    TurbulenceModelSolverNone,
+    TurbulenceModelSolverSA,
+    TurbulenceModelSolverSST,
 )
-from flow360.component.flow360_params.solvers import TurbulenceModelSolverSST, TurbulenceModelSolverSA, \
-    TurbulenceModelSolverNone
-
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
 
 def test_navier_stokes():
     with pytest.raises(pd.ValidationError):
@@ -62,8 +63,11 @@ def test_navier_stokes():
 
 def test_turbulence_solver():
     ts = TurbulenceModelSolverSA()
+    assert ts
     ts = TurbulenceModelSolverSST()
+    assert ts
     ts = TurbulenceModelSolverNone()
+    assert ts
 
     ts = TurbulenceModelSolverSA(
         absolute_tolerance=1e-10,
@@ -78,6 +82,24 @@ def test_turbulence_solver():
         model_constants={"C_DES1": 0.85, "C_d1": 8.0},
     )
     to_file_from_file_test(ts)
+
+
+def test_transition():
+    tr = TransitionModelSolver()
+    assert tr
+
+    tr = TransitionModelSolver(
+        CFL_multiplier=0.5,
+        linear_iterations=10,
+        update_jacobian_frequency=5,
+        equation_eval_frequency=10,
+        max_force_jac_update_physical_steps=10,
+        order_of_accuracy=1,
+        turbulence_intensity_percent=100,
+        N_crit=0.4,
+        reconstruction_gradient_limiter=0.2,
+    )
+    to_file_from_file_test(tr)
 
 
 def test_heat_equation():

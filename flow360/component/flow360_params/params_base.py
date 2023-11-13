@@ -115,6 +115,10 @@ def _self_named_property_validator(values: dict, validator: BaseModel, msg: str 
 
 
 class DeprecatedAlias(BaseModel):
+    """
+    Wrapper for handling deprecated field aliases
+    """
+
     name: str
     deprecated: str
 
@@ -235,11 +239,13 @@ class Flow360BaseModel(BaseModel):
             if actual_value is None:
                 if alias and alias != deprecated_alias.name:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" OR "{alias}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. Use '
+                        f'"{deprecated_alias.name}" OR "{alias}" instead.'
                     )
                 else:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use "{deprecated_alias.name}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. Use '
+                        f'"{deprecated_alias.name}" instead.'
                     )
                 values[deprecated_alias.name] = deprecated_value
             values.pop(deprecated_alias.deprecated)

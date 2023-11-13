@@ -2,6 +2,7 @@ import json
 import math
 import re
 import unittest
+
 import pydantic as pd
 import pytest
 
@@ -37,7 +38,6 @@ from flow360.component.flow360_params.flow360_params import (
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
     TimeStepping,
-    TurbulenceModelSolver,
     VolumeZones,
     WallFunction,
 )

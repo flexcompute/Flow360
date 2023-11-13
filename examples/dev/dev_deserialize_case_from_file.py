@@ -10,7 +10,7 @@ with open("schema.json", "w") as outfile:
     outfile.write(json_object)
 
 rootdir = "../../tests/data/cases/"
-regex = re.compile('(case_.*\.json$)')
+regex = re.compile("(case_.*\.json$)")
 
 for root, dirs, files in os.walk(rootdir):
     for file in files:

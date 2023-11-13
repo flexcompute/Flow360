@@ -1,26 +1,31 @@
+"""
+Temporary file for new flow360 pydantic models
+"""
 from enum import Enum
-from typing import Optional, Union, Literal, List, Any, Dict
-
-from .params_base import Flow360BaseModel
+from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
-from ..types import Coordinate, Axis, PositiveFloat, PositiveInt, NonNegativeFloat
+from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveInt
+from .params_base import Flow360BaseModel
 
 
 class InitialCondition(Flow360BaseModel):
     """:class:`InitialCondition` class"""
+
     type: str
 
 
 class FreestreamInitialCondition(InitialCondition):
     """:class:`FreestreamInitialCondition` class"""
-    type: Literal["freestream"] = pd.Field()
+
+    type: Literal["freestream"] = pd.Field("freestream")
 
 
 class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
-    type: Literal["expression"] = pd.Field()
+
+    type: Literal["expression"] = pd.Field("expression")
     rho: str = pd.Field()
     u: str = pd.Field()
     v: str = pd.Field()
@@ -33,31 +38,38 @@ InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition
 
 class RotationDirectionRule(str, Enum):
     """:class:`RotationDirectionRule` class"""
-    LeftHand = "leftHand",
-    RightHand = "rightHand"
+
+    LEFT_HAND = "leftHand"
+    RIGHT_HAND = "rightHand"
 
 
 class BETDiskTwist(Flow360BaseModel):
     """:class:`BETDiskTwist` class"""
+
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
 
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class"""
+
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
     """:class:`BETDiskSectionalPolar` class"""
+
     lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="liftCoeffs")
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="dragCoeffs")
 
 
 class BETDisk(Flow360BaseModel):
     """:class:`BETDisk` class"""
-    rotation_direction_rule: Optional[RotationDirectionRule] = pd.Field(alias="rotationDirectionRule")
+
+    rotation_direction_rule: Optional[RotationDirectionRule] = pd.Field(
+        alias="rotationDirectionRule"
+    )
     center_of_rotation: Coordinate = pd.Field(alias="centerOfRotation")
     axis_of_rotation: Axis = pd.Field(alias="axisOfRotation")
     number_of_blades: PositiveInt = pd.Field(alias="numberOfBlades")
@@ -81,6 +93,7 @@ class BETDisk(Flow360BaseModel):
 
 class PorousMediumVolumeZone(Flow360BaseModel):
     """:class:`PorousMediumVolumeZone` class"""
+
     zone_type: str = pd.Field(alias="zoneType")
     center: Coordinate = pd.Field()
     lengths: Coordinate = pd.Field()
@@ -90,6 +103,7 @@ class PorousMediumVolumeZone(Flow360BaseModel):
 
 class PorousMedium(Flow360BaseModel):
     """:class:`PorousMedium` class"""
+
     darcy_coefficient: Coordinate = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Coordinate = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
@@ -97,6 +111,7 @@ class PorousMedium(Flow360BaseModel):
 
 class UserDefinedDynamic(Flow360BaseModel):
     """:class:`UserDefinedDynamic` class"""
+
     dynamics_name: str = pd.Field(alias="dynamicsName")
     input_vars: List[str] = pd.Field(alias="inputVars")
     constants: Optional[Dict] = pd.Field()

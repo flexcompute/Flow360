@@ -23,14 +23,15 @@ from flow360.component.flow360_params.flow360_params import (
     WallFunction,
 )
 from flow360.exceptions import ValidationError
-
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
 
 def test_mesh_boundary():
     mesh_boundary = MeshBoundary.parse_raw(
@@ -197,4 +198,3 @@ def test_boundary_types():
     assert MassOutflow(massFlowRate=1).type == "MassOutflow"
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
-

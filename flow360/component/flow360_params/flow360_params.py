@@ -1,6 +1,9 @@
 """
 Flow360 solver parameters
 """
+# This is a temporary measure until flow360_temp models are merged
+# pylint: disable=too-many-lines
+# pylint: disable=unused-import
 from __future__ import annotations
 
 import math
@@ -11,8 +14,6 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
-from .flow360_output import SurfaceOutput, VolumeOutput, SliceOutput, IsoSurfaceOutput, MonitorOutput
-from .flow360_temp import InitialCondition, BETDisk, PorousMedium, UserDefinedDynamic, InitialConditions
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
 from ...log import log
 from ...user_config import UserConfig
@@ -30,6 +31,14 @@ from ..types import (
     Velocity,
 )
 from ..utils import _get_value_or_none, beta_feature
+from .flow360_output import (
+    IsoSurfaceOutput,
+    MonitorOutput,
+    SliceOutput,
+    SurfaceOutput,
+    VolumeOutput,
+)
+from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
     DeprecatedAlias,
     Flow360BaseModel,
@@ -41,8 +50,11 @@ from .solvers import (
     HeatEquationSolver,
     LinearSolver,
     NavierStokesSolver,
-    TurbulenceModelSolver,
-    TransitionModelSolver, TurbulenceModelSolverSST, TurbulenceModelSolverSA, TurbulenceModelSolvers,
+    TransitionModelSolver,
+    TurbulenceModelSolverNone,
+    TurbulenceModelSolvers,
+    TurbulenceModelSolverSA,
+    TurbulenceModelSolverSST,
 )
 
 
@@ -930,18 +942,26 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition", discriminator="type")
+    initial_condition: Optional[InitialConditions] = pd.Field(
+        alias="initialCondition", discriminator="type"
+    )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(alias="turbulenceModelSolver", discriminator="model_type")
-    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(alias="transitionModelSolver")
+    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(
+        alias="turbulenceModelSolver", discriminator="model_type"
+    )
+    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
+        alias="transitionModelSolver"
+    )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
-    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(alias="userDefinedDynamics")
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
+        alias="userDefinedDynamics"
+    )
     surface_output: Optional[SurfaceOutput] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[VolumeOutput] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutput] = pd.Field(alias="sliceOutput")
@@ -979,7 +999,7 @@ class Flow360Params(Flow360BaseModel):
             self.navier_stokes_solver = NavierStokesSolver()
 
         if not self.turbulence_model_solver:
-            self.turbulence_model_solver = TurbulenceModelSolverSA()
+            self.turbulence_model_solver = TurbulenceModelSolverNone()
 
         self.freestream.to_flow360_json(mesh_unit_length=mesh_unit_length, return_json=False)
         self.geometry.to_flow360_json(return_json=False)
@@ -1012,6 +1032,10 @@ class Flow360MeshParams(Flow360BaseModel):
 
 
 class UnvalidatedFlow360Params(Flow360BaseModel):
+    """
+    Unvalidated Flow360 mesh parameters
+    """
+
     def __init__(self, filename: str = None, **kwargs):
         if UserConfig.do_validation:
             raise ConfigError(

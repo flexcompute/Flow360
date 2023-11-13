@@ -8,13 +8,13 @@ from flow360.component.flow360_params.flow360_params import (
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
     ReferenceFrame,
-    VolumeZones
+    VolumeZones,
 )
 from flow360.exceptions import ConfigError
-
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
+
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):

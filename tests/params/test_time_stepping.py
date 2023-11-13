@@ -13,10 +13,10 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from flow360.component.types import TimeStep
 from flow360.exceptions import ConfigError, ValidationError
-
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
+
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
