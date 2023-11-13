@@ -1,7 +1,6 @@
 from pprint import pprint
 from threading import Thread
 from time import sleep
-from typing import Tuple
 
 import numpy as np
 import pydantic as pd
@@ -21,6 +20,7 @@ from flow360.component.flow360_params.unit_system import (
     TimeType,
     VelocityType,
     ViscosityType,
+    BaseSystemType
 )
 
 
@@ -121,6 +121,10 @@ with fl.flow360_unit_system:
 
     data = VectorDataWithUnits(pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), m=(1, 1, 1))
 
+    schema = data.schema()
+
+    pprint(schema)
+
     value = data.vec - (1, 1, 1) * u.flow360_velocity_unit
 
     data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
@@ -128,7 +132,7 @@ with fl.flow360_unit_system:
     value = data.m - 4 * u.flow360_mass_unit
 
 
-with u.UnitSystem(base_system="SI", length=u.flow360_length_unit):
+with u.UnitSystem(base_system=BaseSystemType.SI, length=u.flow360_length_unit):
     data_with_context = DataWithUnits(
         l=1, m=2, t=u.flow360_time_unit * 3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=2, omega=5
     )

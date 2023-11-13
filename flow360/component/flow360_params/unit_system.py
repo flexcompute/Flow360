@@ -3,6 +3,7 @@ Unit system definitions and utilities
 """
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from enum import Enum
 from numbers import Number
@@ -180,6 +181,8 @@ class DimensionedType(ValidatedType):
 
     @classmethod
     def __modify_schema__(cls, field_schema, field):
+        field_schema['value'] = {}
+        field_schema['unit'] = {}
         field_schema['value']['type'] = 'number'
         field_schema['unit']['type'] = 'string'
 
@@ -207,12 +210,16 @@ class DimensionedType(ValidatedType):
                 return dimensioned_value
 
             def __modify_schema__(con_cls, field_schema, field):
+                DimensionedType.__modify_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
-                field_schema['ge'] = float
-                field_schema['le'] = float
-                field_schema['gt'] = float
-                field_schema['lt'] = float
-                field_schema['allow_inf_nan'] = bool
+                if constraints.ge is not None:
+                    field_schema['value']['minimum'] = constraints.ge
+                if constraints.le is not None:
+                    field_schema['value']['maximum'] = constraints.le
+                if constraints.gt is not None:
+                    field_schema['value']['exclusiveMinimum'] = constraints.gt
+                if constraints.lt is not None:
+                    field_schema['value']['exclusiveMaximum'] = constraints.lt
 
             cls_obj = type("_Constrained", (), {})
             setattr(cls_obj, "con_type", _ConType)
@@ -270,6 +277,14 @@ class DimensionedType(ValidatedType):
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True):
             """Get a dynamically created metaclass representing the vector"""
 
+            def __modify_schema__(field_schema, field):
+                DimensionedType.__modify_schema__(field_schema, field)
+                field_schema['value']['type'] = 'array'
+                field_schema['value']['items'] = {}
+                field_schema['value']['items']['type'] = 'number'
+                field_schema['value']['items']['minItems'] = 3
+                field_schema['value']['items']['maxItems'] = 3
+
             def validate(vec_cls, value):
                 """additional validator for value"""
                 value = _unit_object_parser(value, u.unyt_array)
@@ -292,6 +307,7 @@ class DimensionedType(ValidatedType):
             setattr(cls_obj, "allow_zero_norm", allow_zero_norm)
             setattr(cls_obj, "allow_zero_coord", allow_zero_coord)
             setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
+            setattr(cls_obj, "__modify_schema__", __modify_schema__)
             setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
             return cls_obj
 
