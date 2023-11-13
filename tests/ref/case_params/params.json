@@ -26,7 +26,12 @@
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
-        "linearIterations": 10
+        "linearIterations": 10,
+        "linearSolverConfig":
+        {
+            "absoluteTolerance": 1e-10,
+            "maxIterations": 50
+        }
     },
     "freestream": {
         "Mach": 0.8404497144189707,

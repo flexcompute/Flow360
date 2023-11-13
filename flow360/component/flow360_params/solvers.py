@@ -243,17 +243,17 @@ class TurbulenceModelSolver(GenericFlowSolverSettings):
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSST` class"""
-    model_type: Literal["kOmegaSST"] = pd.Field(alias="modelType")
+    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType")
 
 
 class TurbulenceModelSolverSA(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSA` class"""
-    model_type: Literal["SpalartAllmaras"] = pd.Field(alias="modelType")
+    model_type: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", alias="modelType")
 
 
 class TurbulenceModelSolverNone(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSA` class"""
-    model_type: Literal["None"] = pd.Field(alias="modelType")
+    model_type: Literal["None"] = pd.Field("None", alias="modelType")
 
 
 TurbulenceModelSolvers = Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST, TurbulenceModelSolverNone]
@@ -290,7 +290,7 @@ class HeatEquationSolver(Flow360BaseModel):
         )
     """
 
-    model_type: Literal["HeatEquation"] = pd.Field(alias="modelType")
+    model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType")
     linear_solver_config: Optional[LinearSolver] = pd.Field(alias="linearSolverConfig", default=LinearSolver())
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")

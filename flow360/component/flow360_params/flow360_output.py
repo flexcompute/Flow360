@@ -80,13 +80,27 @@ class SliceBase(ABC, Flow360BaseModel):
 
 
 class NamedSlice(SliceBase):
-    """:class:`NamedSlice` class"""
+    """:class:`SelfNamedSlice` class"""
     slice_name: str = pd.Field(alias="sliceName")
 
 
-class Slice(SliceBase):
-    """:class:`Slice` class"""
+class SelfNamedSlice(SliceBase):
+    """:class:`NamedSlice` class"""
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
+class SelfNamedSlices(Flow360SortableBaseModel):
+    """:class:`SelfNamedSlices` class"""
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        return _self_named_property_validator(
+            values, _GenericSelfNamedSliceWrapper, msg="is not any of supported slice types."
+        )
+
+
+class _GenericSelfNamedSliceWrapper(Flow360BaseModel):
+    """:class:`_GenericMonitorWrapper` class"""
+    v: SelfNamedSlice
 
 
 class SliceOutput(Flow360BaseModel):
@@ -112,7 +126,7 @@ class SliceOutput(Flow360BaseModel):
     q_criterion: Optional[bool] = pd.Field(alias="qCriterion")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    slices: Optional[Union[Slice, List[NamedSlice]]]
+    slices: Optional[Union[SelfNamedSlices, List[NamedSlice]]]
 
 
 class VolumeOutput(Flow360BaseModel):
