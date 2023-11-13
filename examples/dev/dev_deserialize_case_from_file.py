@@ -9,7 +9,7 @@ json_object = json.dumps(Flow360Params.schema(), indent=4)
 with open("schema.json", "w") as outfile:
     outfile.write(json_object)
 
-rootdir = "../../tests/data/"
+rootdir = "../../tests/data/cases/"
 regex = re.compile('(case_.*\.json$)')
 
 for root, dirs, files in os.walk(rootdir):
