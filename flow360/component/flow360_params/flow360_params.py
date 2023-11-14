@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -146,6 +146,35 @@ class SubsonicInflow(Boundary):
     rampSteps: PositiveInt
 
 
+class SupersonicInflow(Boundary):
+    """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
+
+    Parameters
+    ----------
+    Density : PositiveFloat
+        Fluid density (non-dimensional). Default freestream fluid density in Flow360 is 1.0.
+
+    Velocity: Tuple[float, float, float]
+        Fluid velocity (non-dimensional), normalized to Mach number.
+    Pressure: PositiveFloat
+        Fluid pressure (non-dimensional). Default freestream fluid pressure in Flow360 = 1.0/gamma = 1.0/1.4.
+
+    Returns
+    -------
+    :class:`SupersonicInflow`
+        An instance of the component class SupersonicInflow.
+
+    Example
+    -------
+    >>> supersonicInflow = SupersonifInflow(density=1.0, velocity=[2.5, 0.1, 0], pressure=0.7) # doctest: +SKIP
+    """
+
+    type = pd.Field("SupersonicInflow", const=True)
+    density: PositiveFloat = pd.Field(alias="Density")
+    velocity: Tuple[float, float, float] = pd.Field(alias="Velocity")
+    pressure: PositiveFloat = pd.Field(alias="Pressure")
+
+
 class SlidingInterfaceBoundary(Boundary):
     """SlidingInterface boundary"""
 
@@ -156,10 +185,6 @@ class WallFunction(Boundary):
     """WallFunction boundary"""
 
     type = pd.Field("WallFunction", const=True)
-
-    @beta_feature(type.default)
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 class MassInflow(Boundary):
@@ -197,6 +222,7 @@ BoundaryType = Union[
     SubsonicOutflowPressure,
     SubsonicOutflowMach,
     SubsonicInflow,
+    SupersonicInflow,
     SlidingInterfaceBoundary,
     WallFunction,
     MassInflow,
@@ -456,35 +482,16 @@ class MeshSlidingInterface(Flow360BaseModel):
         )
 
 
-class TimeSteppingCFL(Flow360BaseModel):
+class RampCFL(Flow360BaseModel):
     """
-    CFL for time stepping component
+    Ramp CFL for time stepping component
     """
 
-    type: Optional[Literal["ramp", "adaptive"]] = pd.Field()
+    type: str = pd.Field("ramp", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
-    min: Optional[PositiveFloat] = pd.Field()
-    max: Optional[PositiveFloat] = pd.Field()
-    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange")
-    convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
-        alias="convergenceLimitingFactor"
-    )
     randomizer: Optional[Dict] = pd.Field()
-
-    @classmethod
-    def adaptive(cls):
-        """
-        returns default adaptive CFL settings
-        """
-        return cls(
-            type="adaptive",
-            min=0.1,
-            max=10000,
-            max_relative_change=1,
-            convergence_limiting_factor=0.25,
-        )
 
     @classmethod
     def default_steady(cls):
@@ -501,6 +508,20 @@ class TimeSteppingCFL(Flow360BaseModel):
         return cls(initial=1, final=1e6, ramp_steps=30)
 
 
+class AdaptiveCFL(Flow360BaseModel):
+    """
+    Adaptive CFL for time stepping component
+    """
+
+    type: str = pd.Field("adaptive", const=True)
+    min: Optional[PositiveFloat] = pd.Field(default=0.1)
+    max: Optional[PositiveFloat] = pd.Field(default=10000)
+    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
+    convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+        alias="convergenceLimitingFactor", default=0.25
+    )
+
+
 # pylint: disable=E0213
 class TimeStepping(Flow360BaseModel):
     """
@@ -512,31 +533,7 @@ class TimeStepping(Flow360BaseModel):
     time_step_size: Optional[
         Union[pd.confloat(gt=0, allow_inf_nan=False), TimeStep, Literal["inf"]]
     ] = pd.Field(alias="timeStepSize", default="inf")
-    CFL: Optional[TimeSteppingCFL] = pd.Field()
-
-    @classmethod
-    def default_steady(cls):
-        """
-        returns default steady settings
-        """
-        return cls(
-            physical_steps=1,
-            time_step_size="inf",
-            max_pseudo_steps=2000,
-            CFL=TimeSteppingCFL.default_steady(),
-        )
-
-    @classmethod
-    def default_unsteady(cls, physical_steps, time_step_size):
-        """
-        returns default unsteady settings
-        """
-        return cls(
-            physical_steps=physical_steps,
-            time_step_size=time_step_size,
-            max_pseudo_steps=40,
-            CFL=TimeSteppingCFL.default_unsteady(),
-        )
+    CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field()
 
     # pylint: disable=invalid-name
     @export_to_flow360
@@ -586,8 +583,8 @@ class Boundaries(Flow360SortableBaseModel):
     <boundary_name> : BoundaryType
         Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
-                                        SlidingInterfaceBoundary, WallFunction, MassInflow, MassOutflow,
-                                        SolidIsothermalWall, SolidAdiabaticWall]
+                                        SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
+                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall]
 
     Returns
     -------
@@ -620,7 +617,7 @@ class Boundaries(Flow360SortableBaseModel):
 class VolumeZoneType(ABC, Flow360BaseModel):
     """Basic Boundary class"""
 
-    model_type: str
+    model_type: str = pd.Field(alias="modelType")
 
 
 class InitialConditionHeatTransfer(Flow360BaseModel):
@@ -632,7 +629,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
 class HeatTransferVolumeZone(VolumeZoneType):
     """HeatTransferVolumeZone type"""
 
-    model_type = pd.Field("HeatTransfer", const=True)
+    model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource"
@@ -709,8 +706,8 @@ class ReferenceFrame(Flow360BaseModel):
 class FluidDynamicsVolumeZone(VolumeZoneType):
     """FluidDynamicsVolumeZone type"""
 
-    model_type = pd.Field("FluidDynamics", const=True)
-    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="ReferenceFrame")
+    model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
+    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
@@ -1033,7 +1030,7 @@ class Flow360MeshParams(Flow360BaseModel):
 
 class UnvalidatedFlow360Params(Flow360BaseModel):
     """
-    Unvalidated Flow360 mesh parameters
+    Unvalidated parameters
     """
 
     def __init__(self, filename: str = None, **kwargs):

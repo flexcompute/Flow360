@@ -17,6 +17,7 @@ case.submit()
 # retry from submited case
 case_retry_1 = case.retry()
 case_retry_1.params.time_stepping.max_pseudo_steps = 400
+case_retry_1.params.boundaries["1"] = fl.WallFunction()
 case_retry_1.name = "OM6wing-retry-1"
 
 # retry from not yet submitted case

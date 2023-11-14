@@ -131,13 +131,21 @@ def test_case_boundary():
 
     param = Flow360Params(
         boundaries={
-            "fluid/ fuselage": NoSlipWall(),
+            "fluid/fuselage": NoSlipWall(),
             "fluid/rightWing": NoSlipWall(),
             "fluid/leftWing": NoSlipWall(),
         }
     )
 
     assert param
+
+    param = Flow360Params(
+        boundaries={
+            "fluid/ fuselage": NoSlipWall(),
+            "fluid/rightWing": NoSlipWall(),
+            "fluid/leftWing": SolidIsothermalWall(temperature=1.0),
+        }
+    )
 
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/yaml.yaml")
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/json.json")

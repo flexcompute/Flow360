@@ -24,24 +24,24 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_time_stepping():
-    ts = TimeStepping.default_steady()
+    ts = TimeStepping()
     assert ts.json()
     assert ts.to_flow360_json()
     to_file_from_file_test(ts)
 
     with pytest.raises(pd.ValidationError):
-        ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size=-0.01)
+        ts = TimeStepping(physical_steps=10, time_step_size=-0.01)
 
     with pytest.raises(pd.ValidationError):
-        ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size=(-0.01, "s"))
+        ts = TimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
 
     with pytest.raises(pd.ValidationError):
-        ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size="infinity")
+        ts = TimeStepping(physical_steps=10, time_step_size="infinity")
 
     ts = TimeStepping(time_step_size="inf")
     to_file_from_file_test(ts)
 
-    ts = TimeStepping.default_unsteady(physical_steps=10, time_step_size=(0.01, "s"))
+    ts = TimeStepping(physical_steps=10, time_step_size=(0.01, "s"))
     assert isinstance(ts.time_step_size, TimeStep)
 
     to_file_from_file_test(ts)
@@ -83,16 +83,8 @@ def test_time_stepping():
 
 
 def test_time_stepping_cfl():
-    cfl = fl.TimeSteppingCFL(rampSteps=20, initial=10, final=100)
+    cfl = fl.RampCFL(rampSteps=20, initial=10, final=100)
     assert cfl
 
-    cfl = fl.TimeSteppingCFL(type="ramp", rampSteps=20, initial=10, final=100)
-    assert cfl
-
-    cfl = fl.TimeSteppingCFL(
-        type="adaptive", min=0.1, max=2000, max_relative_change=1, convergence_limiting_factor=0.25
-    )
-    assert cfl
-
-    cfl = fl.TimeSteppingCFL.adaptive()
+    cfl = fl.AdaptiveCFL(min=0.1, max=2000, max_relative_change=1, convergence_limiting_factor=0.25)
     assert cfl

@@ -21,7 +21,7 @@ def test_versions():
     params = fl.Flow360Params(OM6wing.case_json)
 
     params2 = params.copy()
-    params2.time_stepping.CFL = fl.TimeSteppingCFL.adaptive()
+    params2.time_stepping.CFL = fl.AdaptiveCFL()
     try:
         # should error out because of adaptive not supported in 22.3.3.0
         case = vm.create_case(name="test-release-22.3.3.0", params=params2).submit()

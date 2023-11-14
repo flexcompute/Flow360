@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 import numpy as np
 import pydantic as pd
 import rich
+import unyt
 import yaml
 from pydantic import BaseModel
 from pydantic.fields import ModelField
@@ -18,6 +19,8 @@ from typing_extensions import Literal
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
+
+# from .unit_system import UnitSystem, unit_system_manager
 
 
 def json_dumps(value, *args, **kwargs):
@@ -104,8 +107,8 @@ def _self_named_property_validator(values: dict, validator: BaseModel, msg: str 
         When validation fails
     """
     for key, v in values.items():
-        # allow for comments
-        if key == COMMENTS:
+        # skip validation for comments and internal _type
+        if key in (COMMENTS, TYPE_TAG_STR):
             continue
         try:
             values[key] = validator(v=v).v
@@ -121,6 +124,15 @@ class DeprecatedAlias(BaseModel):
 
     name: str
     deprecated: str
+
+
+def encode_ndarray(x):
+    """
+    encoder for ndarray
+    """
+    if x.size == 1:
+        return float(x)
+    return tuple(x.tolist())
 
 
 class Flow360BaseModel(BaseModel):
@@ -174,8 +186,11 @@ class Flow360BaseModel(BaseModel):
         validate_assignment = True
         allow_population_by_field_name = True
         json_encoders = {
-            np.ndarray: lambda x: tuple(x.tolist()),
+            unyt.unyt_array: lambda x: {"value": x.value, "units": x.units},
+            unyt.Unit: str,
+            np.ndarray: encode_ndarray,
         }
+
         allow_mutation = True
         copy_on_model_validation = "none"
         underscore_attrs_are_private = True
@@ -239,13 +254,13 @@ class Flow360BaseModel(BaseModel):
             if actual_value is None:
                 if alias and alias != deprecated_alias.name:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use '
-                        f'"{deprecated_alias.name}" OR "{alias}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. '
+                        f'Use "{deprecated_alias.name}" OR "{alias}" instead.'
                     )
                 else:
                     log.warning(
-                        f'"{deprecated_alias.deprecated}" is deprecated. Use '
-                        f'"{deprecated_alias.name}" instead.'
+                        f'"{deprecated_alias.deprecated}" is deprecated. '
+                        f'Use "{deprecated_alias.name}" instead.'
                     )
                 values[deprecated_alias.name] = deprecated_value
             values.pop(deprecated_alias.deprecated)
@@ -657,6 +672,18 @@ class Flow360BaseModel(BaseModel):
 
 class Flow360SortableBaseModel(Flow360BaseModel):
     """:class:`Flow360SortableBaseModel` class for setting up parameters by names, eg. boundary names"""
+
+    def __getitem__(self, item):
+        """to support [] access"""
+        return getattr(self, item)
+
+    def __setitem__(self, key, value):
+        """to support [] assignment"""
+        super().__setattr__(key, value)
+
+    def names(self) -> List[str]:
+        """return names of all boundaries"""
+        return [k for k, _ in self if k not in [COMMENTS, TYPE_TAG_STR]]
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
