@@ -289,6 +289,8 @@ class HeatEquationSolver(Flow360BaseModel):
 
     model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType", const=True)
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolver()
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        validation_alias=AliasChoices("linearSolver", "linearSolverConfig"),
+        serialization_alias="linearSolver",
+        default=LinearSolver()
     )
