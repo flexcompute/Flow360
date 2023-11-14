@@ -3,7 +3,6 @@ Unit system definitions and utilities
 """
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
 from enum import Enum
 from numbers import Number
@@ -184,12 +183,13 @@ class DimensionedType(ValidatedType):
 
         return 1.0 * value
 
+    # pylint: disable=unused-argument
     @classmethod
     def __modify_schema__(cls, field_schema, field):
-        field_schema['value'] = {}
-        field_schema['unit'] = {}
-        field_schema['value']['type'] = 'number'
-        field_schema['unit']['type'] = 'string'
+        field_schema["value"] = {}
+        field_schema["units"] = {}
+        field_schema["value"]["type"] = "number"
+        field_schema["units"]["type"] = "string"
 
     class _Constrained:
         """
@@ -218,18 +218,22 @@ class DimensionedType(ValidatedType):
                 DimensionedType.__modify_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
                 if constraints.ge is not None:
-                    field_schema['value']['minimum'] = constraints.ge
+                    field_schema["value"]["minimum"] = constraints.ge
                 if constraints.le is not None:
-                    field_schema['value']['maximum'] = constraints.le
+                    field_schema["value"]["maximum"] = constraints.le
                 if constraints.gt is not None:
-                    field_schema['value']['exclusiveMinimum'] = constraints.gt
+                    field_schema["value"]["exclusiveMinimum"] = constraints.gt
                 if constraints.lt is not None:
-                    field_schema['value']['exclusiveMaximum'] = constraints.lt
+                    field_schema["value"]["exclusiveMaximum"] = constraints.lt
 
             cls_obj = type("_Constrained", (), {})
             setattr(cls_obj, "con_type", _ConType)
             setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
-            setattr(cls_obj, "__modify_schema__", lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field))
+            setattr(
+                cls_obj,
+                "__modify_schema__",
+                lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field),
+            )
             setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
 
             return cls_obj
@@ -284,11 +288,11 @@ class DimensionedType(ValidatedType):
 
             def __modify_schema__(field_schema, field):
                 DimensionedType.__modify_schema__(field_schema, field)
-                field_schema['value']['type'] = 'array'
-                field_schema['value']['items'] = {}
-                field_schema['value']['items']['type'] = 'number'
-                field_schema['value']['items']['minItems'] = 3
-                field_schema['value']['items']['maxItems'] = 3
+                field_schema["value"]["type"] = "array"
+                field_schema["value"]["items"] = {}
+                field_schema["value"]["items"]["type"] = "number"
+                field_schema["value"]["items"]["minItems"] = 3
+                field_schema["value"]["items"]["maxItems"] = 3
 
             def validate(vec_cls, value):
                 """additional validator for value"""

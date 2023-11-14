@@ -11,6 +11,7 @@ from flow360 import units as u
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
+    BaseSystemType,
     DensityType,
     ForceType,
     LengthType,
@@ -20,7 +21,6 @@ from flow360.component.flow360_params.unit_system import (
     TimeType,
     VelocityType,
     ViscosityType,
-    BaseSystemType
 )
 
 
