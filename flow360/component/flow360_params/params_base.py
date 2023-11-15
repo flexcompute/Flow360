@@ -20,9 +20,10 @@ from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from abc import ABC, abstractclassmethod
-import unyt
 
-# from .unit_system import UnitSystem, unit_system_manager
+
+from .unit_system import DimensionedType
+from .conversions import need_conversion, unit_converter
 
 
 def json_dumps(value, *args, **kwargs):
@@ -136,6 +137,16 @@ def encode_ndarray(x):
         return float(x)
     return tuple(x.tolist())
 
+# dimensioned_type_serializer = lambda x: {"value": x.value, "units": x.units}
+
+def dimensioned_type_serializer(x):
+
+    print('serializing:', x, type(x))
+    print({"value": x.value, "units": str(x.units)})
+
+    return {"value": x.value, "units": str(x.units)}
+
+
 
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
@@ -188,11 +199,11 @@ class Flow360BaseModel(BaseModel):
         validate_assignment = True
         allow_population_by_field_name = True
         json_encoders = {
-            unyt.unyt_array: lambda x: {"value": x.value, "units": x.units},
+            unyt.unyt_array: dimensioned_type_serializer,
+            DimensionedType: dimensioned_type_serializer,
             unyt.Unit: str,
             np.ndarray: encode_ndarray,
         }
-
         allow_mutation = True
         copy_on_model_validation = "none"
         underscore_attrs_are_private = True
@@ -268,6 +279,24 @@ class Flow360BaseModel(BaseModel):
             values.pop(deprecated_alias.deprecated)
 
         return values
+
+    def _convert_dimensions_to_solver(self, params) -> dict:
+        solver_values = {}
+        for property_name, value in self.__dict__.items():
+            print(property_name, value)
+            if need_conversion(value):
+                print('   -> need conversion')
+                flow360_conv_system = unit_converter(value.units.dimensions, [self.__class__.__name__, property_name], params)
+                value.units.registry = flow360_conv_system.registry
+                solver_values[property_name] = value.in_base(unit_system='flow360')
+                print('   converted to:', solver_values[property_name])
+            else:
+                solver_values[property_name] = value
+
+        print(solver_values)
+
+        return solver_values        
+    
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
