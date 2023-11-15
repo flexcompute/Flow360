@@ -19,8 +19,7 @@ from typing_extensions import Literal
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
-
-# from .unit_system import UnitSystem, unit_system_manager
+from .unit_system import DimensionedType
 
 
 def json_dumps(value, *args, **kwargs):
@@ -135,6 +134,13 @@ def encode_ndarray(x):
     return tuple(x.tolist())
 
 
+def dimensioned_type_serializer(x):
+    """
+    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    """
+    return {"value": x.value, "units": str(x.units)}
+
+
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -186,11 +192,11 @@ class Flow360BaseModel(BaseModel):
         validate_assignment = True
         allow_population_by_field_name = True
         json_encoders = {
-            unyt.unyt_array: lambda x: {"value": x.value, "units": x.units},
+            unyt.unyt_array: dimensioned_type_serializer,
+            DimensionedType: dimensioned_type_serializer,
             unyt.Unit: str,
             np.ndarray: encode_ndarray,
         }
-
         allow_mutation = True
         copy_on_model_validation = "none"
         underscore_attrs_are_private = True
