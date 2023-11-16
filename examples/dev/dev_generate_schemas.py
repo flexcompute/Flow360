@@ -1,34 +1,45 @@
+from typing import Type
+
 import flow360 as fl
+from flow360.component.flow360_params.params_base import Flow360BaseModel
 
 
 def write_to_file(name, content):
-    with open(f"{name}.json", "w") as outfile:
+    with open(name, "w") as outfile:
         outfile.write(content)
 
 
-write_to_file(fl.Geometry.__name__, fl.Geometry.generate_schema())
-write_to_file(fl.Freestream.__name__, fl.Freestream.generate_schema())
-write_to_file(fl.SlidingInterface.__name__, fl.SlidingInterface.generate_schema())
-write_to_file(fl.NavierStokesSolver.__name__, fl.NavierStokesSolver.generate_schema())
-write_to_file(fl.TurbulenceModelSolverSA.__name__, fl.TurbulenceModelSolverSA.generate_schema())
-write_to_file(fl.TurbulenceModelSolverSST.__name__, fl.TurbulenceModelSolverSST.generate_schema())
-write_to_file(fl.TransitionModelSolver.__name__, fl.TransitionModelSolver.generate_schema())
-write_to_file(fl.HeatEquationSolver.__name__, fl.HeatEquationSolver.generate_schema())
-write_to_file(fl.NoneSolver.__name__, fl.NoneSolver.generate_schema())
-write_to_file(fl.PorousMedium.__name__, fl.PorousMedium.generate_schema())
-write_to_file(fl.TimeStepping.__name__, fl.TimeStepping.generate_schema())
-write_to_file(fl.ActuatorDisk.__name__, fl.ActuatorDisk.generate_schema())
-write_to_file(fl.BETDisk.__name__, fl.BETDisk.generate_schema())
-write_to_file(fl.SurfaceOutput.__name__, fl.SurfaceOutput.generate_schema())
-write_to_file(fl.SliceOutput.__name__, fl.SliceOutput.generate_schema())
-write_to_file(fl.VolumeOutput.__name__, fl.VolumeOutput.generate_schema())
-write_to_file(fl.AeroacousticOutput.__name__, fl.AeroacousticOutput.generate_schema())
-write_to_file(fl.MonitorOutput.__name__, fl.MonitorOutput.generate_schema())
-write_to_file(fl.IsoSurfaceOutput.__name__, fl.IsoSurfaceOutput.generate_schema())
+def write_schemas(type_obj: Type[Flow360BaseModel]):
+    schema = type_obj.generate_schema()
+    write_to_file(f"../schemas/{type_obj.__name__}.json", schema)
+    ui_schema = type_obj.generate_ui_schema()
+    if ui_schema is not None:
+        write_to_file(f"../schemas/{type_obj.__name__}.ui.json", ui_schema)
 
-write_to_file(fl.Surfaces.__name__, fl.Surfaces.generate_schema())
-write_to_file(fl.VolumeZones.__name__, fl.VolumeZones.generate_schema())
-write_to_file(fl.Boundaries.__name__, fl.Boundaries.generate_schema())
-write_to_file(fl.Slices.__name__, fl.Slices.generate_schema())
-write_to_file(fl.IsoSurfaces.__name__, fl.IsoSurfaces.generate_schema())
+
+write_schemas(fl.Geometry)
+write_schemas(fl.Freestream)
+write_schemas(fl.SlidingInterface)
+write_schemas(fl.NavierStokesSolver)
+write_schemas(fl.TurbulenceModelSolverSA)
+write_schemas(fl.TurbulenceModelSolverSST)
+write_schemas(fl.TransitionModelSolver)
+write_schemas(fl.HeatEquationSolver)
+write_schemas(fl.NoneSolver)
+write_schemas(fl.PorousMedium)
+write_schemas(fl.TimeStepping)
+write_schemas(fl.ActuatorDisk)
+write_schemas(fl.BETDisk)
+write_schemas(fl.SurfaceOutput)
+write_schemas(fl.SliceOutput)
+write_schemas(fl.VolumeOutput)
+write_schemas(fl.AeroacousticOutput)
+write_schemas(fl.MonitorOutput)
+write_schemas(fl.IsoSurfaceOutput)
+
+write_schemas(fl.Surfaces)
+write_schemas(fl.VolumeZones)
+write_schemas(fl.Boundaries)
+write_schemas(fl.Slices)
+write_schemas(fl.IsoSurfaces)
 

@@ -4,7 +4,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from abc import ABC
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -144,30 +144,50 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     >>> ns = NavierStokesSolver(absolute_tolerance=1e-10)
     """
 
-    CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
-    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
-    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
+    CFL_multiplier: Optional[PositiveFloat] = pd.Field(
+        alias="CFLMultiplier",
+        displayed="CFL Multiplier")
+    linear_iterations: Optional[PositiveInt] = pd.Field(
+        alias="linearIterations",
+        displayed="Linear iterations")
+    kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
+        displayed="Kappa MUSCL")
+    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
+        alias="updateJacobianFrequency",
+        displayed="Update Jacobian frequency")
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(
+        alias="equationEvalFrequency",
+        displayed="Equation evaluation frequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
-        alias="maxForceJacUpdatePhysicalSteps"
-    )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity")
-    limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
+        alias="maxForceJacUpdatePhysicalSteps",
+        displayed="Max force JAC update physical steps")
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(
+        alias="orderOfAccuracy",
+        displayed="Order of accuracy")
     linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolver()
-    )
+        alias="linearSolverConfig",
+        displayed="Linear solver config",
+        default=LinearSolver())
+    limit_velocity: Optional[bool] = pd.Field(
+        alias="limitVelocity",
+        displayed="Limit velocity")
+    limit_pressure_density: Optional[bool] = pd.Field(
+        alias="limitPressureDensity",
+        displayed="Limit pressure density")
 
-    _viscous_wave_speed_scale: Optional[float] = pd.Field(alias="viscousWaveSpeedScale")
+    _viscous_wave_speed_scale: Optional[float] = pd.Field(
+        alias="viscousWaveSpeedScale")
     _randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    _extra_dissipation: Optional[float] = pd.Field(alias="extraDissipation")
+    _extra_dissipation: Optional[float] = pd.Field(
+        alias="extraDissipation")
     _pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
-        alias="pressureCorrectionSolver"
-    )
+        alias="pressureCorrectionSolver")
     _numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
-        alias="numericalDissipationFactor"
-    )
+        alias="numericalDissipationFactor")
+
+    @classmethod
+    def _get_field_order(cls) -> List[str]:
+        return ["*", "linearSolverConfig"]
 
 
 class TurbulenceModelConstants(Flow360BaseModel):

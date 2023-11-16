@@ -150,9 +150,6 @@ class Flow360BaseModel(BaseModel):
     # comments is allowed property at every level
     comments: Optional[Any] = pd.Field()
 
-    # optional field order in the UI, a schema will be generated on export
-    _field_order: List[str] = []
-
     def __init__(self, filename: str = None, **kwargs):
         if filename:
             obj = self.from_file(filename=filename)
@@ -210,7 +207,9 @@ class Flow360BaseModel(BaseModel):
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def one_of(cls, values):
-        """root validator for require one of"""
+        """
+        root validator for require one of
+        """
         if cls.Config.require_one_of:
             set_values = [key for key, v in values.items() if v is not None]
             aliases = [cls._get_field_alias(field_name=name) for name in cls.Config.require_one_of]
@@ -223,7 +222,9 @@ class Flow360BaseModel(BaseModel):
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def allow_but_remove(cls, values):
-        """root validator for allow_but_remove, e.g., legacy properties that are no longer in use"""
+        """
+        root validator for allow_but_remove, e.g., legacy properties that are no longer in use
+        """
         if cls.Config.allow_but_remove:
             for field in cls.Config.allow_but_remove:
                 values.pop(field, None)
@@ -275,6 +276,10 @@ class Flow360BaseModel(BaseModel):
         return values
 
     @classmethod
+    def _get_field_order(cls) -> List[str]:
+        return []
+
+    @classmethod
     def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
@@ -288,6 +293,21 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
+    def _swap_key_in_nested_dict(cls, dictionary, key_to_replace, replacement_key):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == replacement_key:
+                if dictionary.get(key_to_replace) is not None:
+                    dictionary[key_to_replace] = dictionary[replacement_key]
+                    del dictionary[replacement_key]
+            elif isinstance(value, dict):
+                cls._swap_key_in_nested_dict(value, key_to_replace, replacement_key)
+
+        return dictionary
+
+    @classmethod
     def _clean_schema(cls, schema):
         cls._remove_key_from_nested_dict(schema, "description")
         cls._remove_key_from_nested_dict(schema, "_type")
@@ -297,7 +317,16 @@ class Flow360BaseModel(BaseModel):
     def generate_schema(cls):
         schema = cls.schema()
         cls._clean_schema(schema)
+        cls._swap_key_in_nested_dict(schema, "title", "displayed")
         json_str = json.dumps(schema, indent=2)
+        return json_str
+
+    @classmethod
+    def generate_ui_schema(cls):
+        order = cls._get_field_order()
+        if len(order) == 0:
+            return None
+        json_str = json.dumps({"ui:order": order}, indent=2)
         return json_str
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
@@ -763,6 +792,10 @@ class Flow360SortableBaseModel(ABC, Flow360BaseModel):
 
         json_str = json.dumps(root_schema, indent=2)
         return json_str
+
+    @classmethod
+    def generate_ui_schema(cls):
+        return None
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
