@@ -11,7 +11,6 @@ from flow360.component.flow360_params.flow360_temp import (
     BETDiskChord,
     BETDiskSectionalPolar,
     BETDiskTwist,
-    RotationDirectionRule,
 )
 from flow360.exceptions import ValidationError
 from tests.utils import compare_to_ref, to_file_from_file_test
@@ -58,7 +57,7 @@ def test_bet_disk():
     assert polar1 and polar2 and polar3
 
     bet = BETDisk(
-        rotation_direction_rule=RotationDirectionRule.LEFT_HAND,
+        rotation_direction_rule="leftHand",
         center_of_rotation=(0, 0, 0),
         axis_of_rotation=(0, 1, 0),
         number_of_blades=4,

@@ -50,8 +50,8 @@ from .solvers import (
     HeatEquationSolver,
     LinearSolver,
     NavierStokesSolver,
+    NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverNone,
     TurbulenceModelSolvers,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
@@ -996,7 +996,7 @@ class Flow360Params(Flow360BaseModel):
             self.navier_stokes_solver = NavierStokesSolver()
 
         if not self.turbulence_model_solver:
-            self.turbulence_model_solver = TurbulenceModelSolverNone()
+            self.turbulence_model_solver = NoneSolver()
 
         self.freestream.to_flow360_json(mesh_unit_length=mesh_unit_length, return_json=False)
         self.geometry.to_flow360_json(return_json=False)

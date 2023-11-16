@@ -8,8 +8,8 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     LinearSolver,
     NavierStokesSolver,
+    NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverNone,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
 )
@@ -52,7 +52,6 @@ def test_navier_stokes():
         order_of_accuracy=2,
         limit_velocity=True,
         limit_pressure_density=False,
-        numerical_dissipation_factor=0.2,
     )
     p = Flow360Params(
         navier_stokes_solver=ns,
@@ -66,13 +65,12 @@ def test_turbulence_solver():
     assert ts
     ts = TurbulenceModelSolverSST()
     assert ts
-    ts = TurbulenceModelSolverNone()
+    ts = NoneSolver()
     assert ts
 
     ts = TurbulenceModelSolverSA(
         absolute_tolerance=1e-10,
         relative_tolerance=0,
-        linear_iterations=30,
         update_jacobian_frequency=4,
         equation_eval_frequency=1,
         max_force_jac_update_physical_steps=1,
@@ -89,15 +87,12 @@ def test_transition():
     assert tr
 
     tr = TransitionModelSolver(
-        CFL_multiplier=0.5,
-        linear_iterations=10,
         update_jacobian_frequency=5,
         equation_eval_frequency=10,
         max_force_jac_update_physical_steps=10,
         order_of_accuracy=1,
         turbulence_intensity_percent=100,
         N_crit=0.4,
-        reconstruction_gradient_limiter=0.2,
     )
     to_file_from_file_test(tr)
 

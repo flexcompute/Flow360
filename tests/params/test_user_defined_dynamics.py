@@ -15,7 +15,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_user_defined_dynamics():
     udd = UserDefinedDynamic(
-        dynamics_name="alphaController",
+        name="alphaController",
         input_vars=["CL"],
         constants={"CLTarget": 0.4, "Kp": 0.2, "Ki": 0.002},
         output_vars={"alphaAngle": "if (pseudoStep > 500) state[0]; else alphaAngle;"},

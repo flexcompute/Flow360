@@ -2,7 +2,6 @@
 This module is flow360.
 """
 
-
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -12,8 +11,10 @@ from .component.case import Case
 from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.flow360_params import (
+    ActuatorDisk,
     AdaptiveCFL,
     AeroacousticOutput,
+    BETDisk,
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
@@ -21,15 +22,21 @@ from .component.flow360_params.flow360_params import (
     Freestream,
     FreestreamBoundary,
     Geometry,
+    HeatEquationSolver,
     HeatTransferVolumeZone,
+    IsoSurfaceOutput,
     IsothermalWall,
     MassInflow,
     MassOutflow,
     MeshBoundary,
+    MonitorOutput,
     NavierStokesSolver,
+    NoneSolver,
     NoSlipWall,
+    PorousMedium,
     RampCFL,
     ReferenceFrame,
+    SliceOutput,
     SlidingInterface,
     SlidingInterfaceBoundary,
     SlipWall,
@@ -39,11 +46,13 @@ from .component.flow360_params.flow360_params import (
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
     SupersonicInflow,
+    SurfaceOutput,
     TimeStepping,
-    TurbulenceModelSolverNone,
+    TransitionModelSolver,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
     UnvalidatedFlow360Params,
+    VolumeOutput,
     VolumeZones,
     WallFunction,
 )

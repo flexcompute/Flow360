@@ -18,7 +18,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_porous_media():
     pmvz = PorousMediumVolumeZone(
-        zone_type="zone",
+        zone_type="box",
         center=[1, 2, 3],
         lengths=[3, 4, 5],
         axes=[[0, 1, 0], [1, 0, 0]],
