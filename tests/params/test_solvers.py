@@ -25,11 +25,11 @@ def change_test_dir(request, monkeypatch):
 
 def test_navier_stokes():
     with pytest.raises(pd.ValidationError):
-        ns = NavierStokesSolver(kappaMUSCL=-2)
-    assert NavierStokesSolver(kappaMUSCL=-1)
-    assert NavierStokesSolver(kappaMUSCL=1)
+        ns = NavierStokesSolver(kappa_MUSCL=-2)
+    assert NavierStokesSolver(kappa_MUSCL=-1)
+    assert NavierStokesSolver(kappa_MUSCL=1)
     with pytest.raises(pd.ValidationError):
-        ns = NavierStokesSolver(kappaMUSCL=2)
+        ns = NavierStokesSolver(kappa_MUSCL=2)
 
     with pytest.raises(pd.ValidationError):
         ns = NavierStokesSolver(order_of_accuracy=0)
@@ -42,7 +42,7 @@ def test_navier_stokes():
 
     ns = NavierStokesSolver(
         absolute_tolerance=1e-10,
-        kappaMUSCL=-1,
+        kappa_MUSCL=-1,
         relative_tolerance=0,
         CFL_multiplier=1,
         linear_iterations=30,

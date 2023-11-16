@@ -4,7 +4,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from abc import ABC
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -61,7 +61,11 @@ class LinearSolver(Flow360BaseModel):
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance", default=1e-10)
     relative_tolerance: Optional[float] = pd.Field(alias="relativeTolerance")
 
-    _max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
+
+class LinearSolverPrivate(LinearSolver):
+    """:class:`LinearSolverPrivate` class"""
+
+    max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
 
 
 class RandomizerParameter(Flow360BaseModel):
@@ -104,7 +108,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     CFLMultiplier :
         Factor to the CFL definitions defined in “timeStepping” section
 
-    kappaMUSCL :
+    kappa_MUSCL :
         Kappa for the MUSCL scheme, range from [-1, 1], with 1 being unstable. The default value of -1 leads to a 2nd
         order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is
         recommended for low subsonic flows leading to reduced dissipation
@@ -145,49 +149,49 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     """
 
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(
-        alias="CFLMultiplier",
-        displayed="CFL Multiplier")
+        alias="CFLMultiplier", displayed="CFL Multiplier"
+    )
     linear_iterations: Optional[PositiveInt] = pd.Field(
-        alias="linearIterations",
-        displayed="Linear iterations")
-    kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
-        displayed="Kappa MUSCL")
+        alias="linearIterations", displayed="Linear iterations"
+    )
+    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(displayed="Kappa MUSCL")
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
-        alias="updateJacobianFrequency",
-        displayed="Update Jacobian frequency")
+        alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
+    )
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(
-        alias="equationEvalFrequency",
-        displayed="Equation evaluation frequency")
+        alias="equationEvalFrequency", displayed="Equation evaluation frequency"
+    )
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
-        alias="maxForceJacUpdatePhysicalSteps",
-        displayed="Max force JAC update physical steps")
+        alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
+    )
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(
-        alias="orderOfAccuracy",
-        displayed="Order of accuracy")
+        alias="orderOfAccuracy", displayed="Order of accuracy"
+    )
     linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig",
-        displayed="Linear solver config",
-        default=LinearSolver())
-    limit_velocity: Optional[bool] = pd.Field(
-        alias="limitVelocity",
-        displayed="Limit velocity")
+        alias="linearSolverConfig", displayed="Linear solver config", default=LinearSolver()
+    )
+    limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity", displayed="Limit velocity")
     limit_pressure_density: Optional[bool] = pd.Field(
-        alias="limitPressureDensity",
-        displayed="Limit pressure density")
-
-    _viscous_wave_speed_scale: Optional[float] = pd.Field(
-        alias="viscousWaveSpeedScale")
-    _randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    _extra_dissipation: Optional[float] = pd.Field(
-        alias="extraDissipation")
-    _pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
-        alias="pressureCorrectionSolver")
-    _numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
-        alias="numericalDissipationFactor")
+        alias="limitPressureDensity", displayed="Limit pressure density"
+    )
 
     @classmethod
     def _get_field_order(cls) -> List[str]:
         return ["*", "linearSolverConfig"]
+
+
+class NavierStokesSolverPrivate(NavierStokesSolver):
+    """:class:`NavierStokesSolverPrivate` class"""
+
+    viscous_wave_speed_scale: Optional[float] = pd.Field(alias="viscousWaveSpeedScale")
+    extra_dissipation: Optional[float] = pd.Field(alias="extraDissipation")
+    pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
+        alias="pressureCorrectionSolver"
+    )
+    numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
+        alias="numericalDissipationFactor"
+    )
+    randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
 
 
 class TurbulenceModelConstants(Flow360BaseModel):
@@ -288,9 +292,13 @@ class TurbulenceModelSolver(GenericFlowSolverSettings):
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
-    _randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    _linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    _kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
+
+class TurbulenceModelSolverPrivate(TurbulenceModelSolver):
+    """:class:`TurbulenceModelSolverPrivate` class"""
+
+    randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
+    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
+    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
 
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
@@ -299,8 +307,23 @@ class TurbulenceModelSolverSST(TurbulenceModelSolver):
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
 
 
+class TurbulenceModelSolverSSTPrivate(TurbulenceModelSolverPrivate):
+    """:class:`TurbulenceModelSolverSSTPrivate` class"""
+
+    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
+
+
 class TurbulenceModelSolverSA(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSA` class"""
+
+    model_type: Literal["SpalartAllmaras"] = pd.Field(
+        "SpalartAllmaras", alias="modelType", const=True
+    )
+    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
+
+
+class TurbulenceModelSolverSAPrivate(TurbulenceModelSolverPrivate):
+    """:class:`TurbulenceModelSolverSAPrivate` class"""
 
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
@@ -354,11 +377,15 @@ class HeatEquationSolver(Flow360BaseModel):
     )
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
 
-    _order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    _model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType")
-    _CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
-    _update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
-    _max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
+
+class HeatEquationSolverPrivate(HeatEquationSolver):
+    """:class:`HeatEquationSolverPrivate` class"""
+
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
+    model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", alias="modelType")
+    CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
+    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
+    max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         alias="maxForceJacUpdatePhysicalSteps"
     )
 
@@ -398,9 +425,13 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     )
     N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
 
-    _randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    _reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+
+class TransitionModelSolverPrivate(TransitionModelSolver):
+    """:class:`TransitionModelSolverPrivate` class"""
+
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         alias="reconstructionGradientLimiter"
     )
-    _CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
-    _linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
+    CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
+    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
+    randomizer: Optional[LinearIterationsRandomizer] = pd.Field()

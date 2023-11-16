@@ -2,7 +2,7 @@
 Flow360 output parameters models
 """
 from abc import ABC
-from typing import List, Literal, Optional, Union, get_args, get_type_hints
+from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -21,9 +21,7 @@ from .params_base import (
 
 
 class OutputBase(ABC, Flow360BaseModel):
-    """
-    Base class for common output parameters
-    """
+    """:class: Base class for common output parameters"""
 
     Cp: Optional[bool] = pd.Field()
     grad_w: Optional[bool] = pd.Field(alias="gradW")
@@ -99,13 +97,13 @@ class SurfaceOutput(OutputBase):
     )
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
-    surfaces: Optional[Surfaces] = pd.Field()
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
     primitive_vars: Optional[bool] = pd.Field(alias="primitiveVars")
     start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[List[Union[CommonFieldVars, SurfaceFieldVars]]] = pd.Field(
         alias="outputFields"
     )
+    surfaces: Optional[Surfaces] = pd.Field()
 
     Cf: Optional[bool] = pd.Field(alias="Cf")
     Cf_vec: Optional[bool] = pd.Field(alias="CfVec")
@@ -117,10 +115,14 @@ class SurfaceOutput(OutputBase):
     node_forces_per_unit_area: Optional[bool] = pd.Field(alias="nodeForcesPerUnitArea")
     node_normals: Optional[bool] = pd.Field(alias="nodeNormals")
 
-    _wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
-    _node_moments_per_unit_area: Optional[bool] = pd.Field(alias="nodeMomentsPerUnitArea")
-    _residual_sa: Optional[bool] = pd.Field(alias="residualSA")
-    _coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
+
+class SurfaceOutputPrivate(SurfaceOutput):
+    """:class:`SurfaceOutputPrivate` class"""
+
+    wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
+    node_moments_per_unit_area: Optional[bool] = pd.Field(alias="nodeMomentsPerUnitArea")
+    residual_sa: Optional[bool] = pd.Field(alias="residualSA")
+    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
 class Slice(Flow360BaseModel):
@@ -163,15 +165,19 @@ class SliceOutput(OutputBase):
         alias="animationFrequency"
     )
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    slices: Optional[Slices]
     output_fields: Optional[List[Union[CommonFieldVars, VolumeSliceFieldVars]]] = pd.Field(
         alias="outputFields"
     )
+    slices: Optional[Slices]
 
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
-    _coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
+
+class SliceOutputPrivate(SliceOutput):
+    """:class:`SliceOutputPrivate` class"""
+
+    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
 class VolumeOutput(OutputBase):
@@ -197,14 +203,18 @@ class VolumeOutput(OutputBase):
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
-    _write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    _write_distributed_file: Optional[bool] = pd.Field(alias="writeDistributedFile")
-    _residual_components_sa: Optional[bool] = pd.Field(alias="residualComponentsSA")
-    _wall_distance_dir: Optional[bool] = pd.Field(alias="wallDistanceDir")
-    _velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
-    _debug_transition: Optional[bool] = pd.Field(alias="debugTransition")
-    _debug_turbulence: Optional[bool] = pd.Field(alias="debugTurbulence")
-    _debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
+
+class VolumeOutputPrivate(VolumeOutput):
+    """:class:`VolumeOutputPrivate` class"""
+
+    write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
+    write_distributed_file: Optional[bool] = pd.Field(alias="writeDistributedFile")
+    residual_components_sa: Optional[bool] = pd.Field(alias="residualComponentsSA")
+    wall_distance_dir: Optional[bool] = pd.Field(alias="wallDistanceDir")
+    velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
+    debug_transition: Optional[bool] = pd.Field(alias="debugTransition")
+    debug_turbulence: Optional[bool] = pd.Field(alias="debugTurbulence")
+    debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
 
 
 class MonitorBase(ABC, Flow360BaseModel):
@@ -305,5 +315,9 @@ class IsoSurfaceOutput(Flow360BaseModel):
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
 
-    _coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    _output_fields: Optional[List[CommonFieldVars]] = pd.Field(alias="outputFields")
+
+class IsoSurfaceOutputPrivate(IsoSurfaceOutput):
+    """:class:`IsoSurfaceOutputPrivate` class"""
+
+    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
+    output_fields: Optional[List[CommonFieldVars]] = pd.Field(alias="outputFields")

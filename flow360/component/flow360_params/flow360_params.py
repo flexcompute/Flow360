@@ -33,16 +33,16 @@ from ..types import (
 from ..utils import _get_value_or_none, beta_feature
 from .flow360_output import (
     IsoSurfaceOutput,
+    IsoSurfaces,
     MonitorOutput,
-    SliceOutput,
-    SurfaceOutput,
-    VolumeOutput,
-    ProbeMonitor,
-    SurfaceIntegralMonitor,
-    Surfaces,
-    Slices,
     Monitors,
-    IsoSurfaces
+    ProbeMonitor,
+    SliceOutput,
+    Slices,
+    SurfaceIntegralMonitor,
+    SurfaceOutput,
+    Surfaces,
+    VolumeOutput,
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (

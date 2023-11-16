@@ -4,7 +4,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import json
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Any, List, Optional, Type
 
@@ -20,8 +20,6 @@ from typing_extensions import Literal
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
-from ...utils import classproperty
-
 
 # from .unit_system import UnitSystem, unit_system_manager
 
@@ -138,7 +136,7 @@ def encode_ndarray(x):
     return tuple(x.tolist())
 
 
-
+# pylint: disable=too-many-public-methods
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -315,6 +313,7 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def generate_schema(cls):
+        """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
         cls._clean_schema(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
@@ -323,6 +322,7 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def generate_ui_schema(cls):
+        """Generate a UI schema json string for the flow360 model"""
         order = cls._get_field_order()
         if len(order) == 0:
             return None
@@ -750,7 +750,7 @@ class Flow360SortableBaseModel(ABC, Flow360BaseModel):
     @classmethod
     @abstractmethod
     def get_subtypes(cls) -> list:
-        ...
+        """retrieve allowed types of this self-named property"""
 
     @classmethod
     def generate_schema(cls):
@@ -763,23 +763,11 @@ class Flow360SortableBaseModel(ABC, Flow360BaseModel):
                 "title": "Model Type",
                 "type": "object",
                 "properties": {
-                    "name": {
-                        "title": "Name",
-                        "type": "string",
-                        "readOnly": True
-                    },
-                    "modelType": {
-                        "title": "Type",
-                        "enum": [],
-                        "default": ""
-                    }
-                }
+                    "name": {"title": "Name", "type": "string", "readOnly": True},
+                    "modelType": {"title": "Type", "enum": [], "default": ""},
+                },
             },
-            "dependencies": {
-                "modelType": {
-                    "oneOf": []
-                }
-            }
+            "dependencies": {"modelType": {"oneOf": []}},
         }
 
         models = cls.get_subtypes()

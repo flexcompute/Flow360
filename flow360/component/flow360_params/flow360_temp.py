@@ -88,7 +88,11 @@ class BETDisk(Flow360BaseModel):
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(alias="sectionalPolars")
     sectional_radiuses: List[float] = pd.Field(alias="sectionalRadiuses")
 
-    _volume_name: Optional[str] = pd.Field(alias="volumeName")
+
+class BETDiskPrivate(BETDisk):
+    """:class:`BETDiskPrivate` class"""
+
+    volume_name: Optional[str] = pd.Field(alias="volumeName")
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):

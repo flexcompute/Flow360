@@ -1,7 +1,7 @@
 """
 Flow360 meshing parameters
 """
-from typing import List, Optional, Union, get_args, get_type_hints
+from typing import List, Optional, Union, get_args
 
 import pydantic as pd
 from typing_extensions import Literal
