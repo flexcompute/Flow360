@@ -146,9 +146,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolver()
-    )
     kappaMUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
@@ -158,6 +155,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
+    linear_solver_config: Optional[LinearSolver] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolver()
+    )
 
     _viscous_wave_speed_scale: Optional[float] = pd.Field(alias="viscousWaveSpeedScale")
     _randomizer: Optional[LinearIterationsRandomizer] = pd.Field()

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, get_args, get_type_hints
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -37,6 +37,12 @@ from .flow360_output import (
     SliceOutput,
     SurfaceOutput,
     VolumeOutput,
+    ProbeMonitor,
+    SurfaceIntegralMonitor,
+    Surfaces,
+    Slices,
+    Monitors,
+    IsoSurfaces
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
@@ -600,6 +606,10 @@ class Boundaries(Flow360SortableBaseModel):
         )
     """
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericBoundaryWrapper.__fields__["v"].type_))
+
     @pd.root_validator(pre=True)
     def validate_boundary(cls, values):
         """Validator for boundary list section
@@ -614,7 +624,7 @@ class Boundaries(Flow360SortableBaseModel):
         )
 
 
-class VolumeZoneType(ABC, Flow360BaseModel):
+class VolumeZoneBase(ABC, Flow360BaseModel):
     """Basic Boundary class"""
 
     model_type: str = pd.Field(alias="modelType")
@@ -626,7 +636,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
     T_solid: Union[PositiveFloat, StrictStr]
 
 
-class HeatTransferVolumeZone(VolumeZoneType):
+class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
     model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
@@ -703,15 +713,18 @@ class ReferenceFrame(Flow360BaseModel):
         ]
 
 
-class FluidDynamicsVolumeZone(VolumeZoneType):
+class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
     reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
+VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+
+
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
-    v: Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+    v: VolumeZoneType
 
 
 class VolumeZones(Flow360SortableBaseModel):
@@ -733,6 +746,10 @@ class VolumeZones(Flow360SortableBaseModel):
             zone2=HeatTransferVolumeZone(thermal_conductivity=1)
         )
     """
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericVolumeZonesWrapper.__fields__["v"].type_))
 
     @pd.root_validator(pre=True)
     def validate_zone(cls, values):

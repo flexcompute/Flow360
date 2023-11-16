@@ -47,6 +47,8 @@ from .component.flow360_params.flow360_params import (
     SubsonicOutflowPressure,
     SupersonicInflow,
     SurfaceOutput,
+    ProbeMonitor,
+    SurfaceIntegralMonitor,
     TimeStepping,
     TransitionModelSolver,
     TurbulenceModelSolverSA,
@@ -55,6 +57,9 @@ from .component.flow360_params.flow360_params import (
     VolumeOutput,
     VolumeZones,
     WallFunction,
+    Surfaces,
+    Slices,
+    IsoSurfaces
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,

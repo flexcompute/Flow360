@@ -2,7 +2,7 @@
 Flow360 output parameters models
 """
 from abc import ABC
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union, get_args, get_type_hints
 
 import pydantic as pd
 
@@ -68,6 +68,10 @@ class _GenericSurfaceWrapper(Flow360BaseModel):
 class Surfaces(Flow360SortableBaseModel):
     """:class:`Surfaces` class"""
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericSurfaceWrapper.__fields__["v"].type_]
+
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_surface(cls, values):
@@ -129,6 +133,10 @@ class Slice(Flow360BaseModel):
 
 class Slices(Flow360SortableBaseModel):
     """:class:`SelfNamedSlices` class"""
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericSliceWrapper.__fields__["v"].type_]
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -233,6 +241,10 @@ class _GenericMonitorWrapper(Flow360BaseModel):
 class Monitors(Flow360SortableBaseModel):
     """:class:`Monitors` class"""
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericMonitorWrapper.__fields__["v"].type_))
+
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
@@ -267,6 +279,10 @@ class _GenericIsoSurfaceWrapper(Flow360BaseModel):
 
 class IsoSurfaces(Flow360SortableBaseModel):
     """:class:`IsoSurfaces` class"""
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericIsoSurfaceWrapper.__fields__["v"].type_]
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)

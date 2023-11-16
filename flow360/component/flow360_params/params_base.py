@@ -4,8 +4,9 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import json
+from abc import abstractmethod, ABC
 from functools import wraps
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Type
 
 import numpy as np
 import pydantic as pd
@@ -19,6 +20,8 @@ from typing_extensions import Literal
 from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
+from ...utils import classproperty
+
 
 # from .unit_system import UnitSystem, unit_system_manager
 
@@ -84,7 +87,7 @@ def export_to_flow360(func):
     return wrapper_func
 
 
-def _self_named_property_validator(values: dict, validator: BaseModel, msg: str = "") -> dict:
+def _self_named_property_validator(values: dict, validator: Type[BaseModel], msg: str = "") -> dict:
     """When model uses custom, user defined property names, for example boundary names.
 
     Parameters
@@ -135,6 +138,7 @@ def encode_ndarray(x):
     return tuple(x.tolist())
 
 
+
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -145,6 +149,9 @@ class Flow360BaseModel(BaseModel):
 
     # comments is allowed property at every level
     comments: Optional[Any] = pd.Field()
+
+    # optional field order in the UI, a schema will be generated on export
+    _field_order: List[str] = []
 
     def __init__(self, filename: str = None, **kwargs):
         if filename:
@@ -266,6 +273,32 @@ class Flow360BaseModel(BaseModel):
             values.pop(deprecated_alias.deprecated)
 
         return values
+
+    @classmethod
+    def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == key_to_remove:
+                del dictionary[key]
+            elif isinstance(value, dict):
+                cls._remove_key_from_nested_dict(value, key_to_remove)
+
+        return dictionary
+
+    @classmethod
+    def _clean_schema(cls, schema):
+        cls._remove_key_from_nested_dict(schema, "description")
+        cls._remove_key_from_nested_dict(schema, "_type")
+        cls._remove_key_from_nested_dict(schema, "comments")
+
+    @classmethod
+    def generate_schema(cls):
+        schema = cls.schema()
+        cls._clean_schema(schema)
+        json_str = json.dumps(schema, indent=2)
+        return json_str
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
@@ -670,7 +703,7 @@ class Flow360BaseModel(BaseModel):
         cls.__doc__ = doc
 
 
-class Flow360SortableBaseModel(Flow360BaseModel):
+class Flow360SortableBaseModel(ABC, Flow360BaseModel):
     """:class:`Flow360SortableBaseModel` class for setting up parameters by names, eg. boundary names"""
 
     def __getitem__(self, item):
@@ -684,6 +717,52 @@ class Flow360SortableBaseModel(Flow360BaseModel):
     def names(self) -> List[str]:
         """return names of all boundaries"""
         return [k for k, _ in self if k not in [COMMENTS, TYPE_TAG_STR]]
+
+    @classmethod
+    @abstractmethod
+    def get_subtypes(cls) -> list:
+        ...
+
+    @classmethod
+    def generate_schema(cls):
+        title = cls.__name__
+        root_schema = {
+            "title": title,
+            "type": "array",
+            "uniqueItemProperties": ["name"],
+            "items": {
+                "title": "Model Type",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "readOnly": True
+                    },
+                    "modelType": {
+                        "title": "Type",
+                        "enum": [],
+                        "default": ""
+                    }
+                }
+            },
+            "dependencies": {
+                "modelType": {
+                    "oneOf": []
+                }
+            }
+        }
+
+        models = cls.get_subtypes()
+
+        for model in models:
+            schema = model.schema()
+            cls._clean_schema(schema)
+            root_schema["items"]["properties"]["modelType"]["enum"].append(model.__name__)
+            root_schema["dependencies"]["modelType"]["oneOf"].append(schema)
+
+        json_str = json.dumps(root_schema, indent=2)
+        return json_str
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):

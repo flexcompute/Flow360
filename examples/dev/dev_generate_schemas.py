@@ -1,53 +1,34 @@
-import json
-
 import flow360 as fl
 
 
-def remove_key_from_nested_dict(dictionary, key_to_remove):
-    if not isinstance(dictionary, dict):
-        raise ValueError("Input must be a dictionary")
-
-    for key, value in list(dictionary.items()):
-        if key == key_to_remove:
-            del dictionary[key]
-        elif isinstance(value, dict):
-            remove_key_from_nested_dict(value, key_to_remove)
-
-    return dictionary
+def write_to_file(name, content):
+    with open(f"{name}.json", "w") as outfile:
+        outfile.write(content)
 
 
-def clean_schema(schema):
-    remove_key_from_nested_dict(schema, "description")
-    remove_key_from_nested_dict(schema, "_type")
-    remove_key_from_nested_dict(schema, "comments")
+write_to_file(fl.Geometry.__name__, fl.Geometry.generate_schema())
+write_to_file(fl.Freestream.__name__, fl.Freestream.generate_schema())
+write_to_file(fl.SlidingInterface.__name__, fl.SlidingInterface.generate_schema())
+write_to_file(fl.NavierStokesSolver.__name__, fl.NavierStokesSolver.generate_schema())
+write_to_file(fl.TurbulenceModelSolverSA.__name__, fl.TurbulenceModelSolverSA.generate_schema())
+write_to_file(fl.TurbulenceModelSolverSST.__name__, fl.TurbulenceModelSolverSST.generate_schema())
+write_to_file(fl.TransitionModelSolver.__name__, fl.TransitionModelSolver.generate_schema())
+write_to_file(fl.HeatEquationSolver.__name__, fl.HeatEquationSolver.generate_schema())
+write_to_file(fl.NoneSolver.__name__, fl.NoneSolver.generate_schema())
+write_to_file(fl.PorousMedium.__name__, fl.PorousMedium.generate_schema())
+write_to_file(fl.TimeStepping.__name__, fl.TimeStepping.generate_schema())
+write_to_file(fl.ActuatorDisk.__name__, fl.ActuatorDisk.generate_schema())
+write_to_file(fl.BETDisk.__name__, fl.BETDisk.generate_schema())
+write_to_file(fl.SurfaceOutput.__name__, fl.SurfaceOutput.generate_schema())
+write_to_file(fl.SliceOutput.__name__, fl.SliceOutput.generate_schema())
+write_to_file(fl.VolumeOutput.__name__, fl.VolumeOutput.generate_schema())
+write_to_file(fl.AeroacousticOutput.__name__, fl.AeroacousticOutput.generate_schema())
+write_to_file(fl.MonitorOutput.__name__, fl.MonitorOutput.generate_schema())
+write_to_file(fl.IsoSurfaceOutput.__name__, fl.IsoSurfaceOutput.generate_schema())
 
+write_to_file(fl.Surfaces.__name__, fl.Surfaces.generate_schema())
+write_to_file(fl.VolumeZones.__name__, fl.VolumeZones.generate_schema())
+write_to_file(fl.Boundaries.__name__, fl.Boundaries.generate_schema())
+write_to_file(fl.Slices.__name__, fl.Slices.generate_schema())
+write_to_file(fl.IsoSurfaces.__name__, fl.IsoSurfaces.generate_schema())
 
-def generate_schema(model):
-    schema = model.schema()
-    clean_schema(schema)
-    json_str = json.dumps(schema, indent=2)
-
-    with open(f"{model.__name__}.json", "w") as outfile:
-        outfile.write(json_str)
-
-
-generate_schema(fl.Geometry)
-generate_schema(fl.Freestream)
-generate_schema(fl.Boundaries)
-generate_schema(fl.SlidingInterface)
-generate_schema(fl.NavierStokesSolver)
-generate_schema(fl.TurbulenceModelSolverSA)
-generate_schema(fl.TurbulenceModelSolverSST)
-generate_schema(fl.NoneSolver)
-generate_schema(fl.TransitionModelSolver)
-generate_schema(fl.HeatEquationSolver)
-generate_schema(fl.PorousMedium)
-generate_schema(fl.TimeStepping)
-generate_schema(fl.ActuatorDisk)
-generate_schema(fl.BETDisk)
-generate_schema(fl.SurfaceOutput)
-generate_schema(fl.SliceOutput)
-generate_schema(fl.VolumeOutput)
-generate_schema(fl.AeroacousticOutput)
-generate_schema(fl.MonitorOutput)
-generate_schema(fl.IsoSurfaceOutput)
