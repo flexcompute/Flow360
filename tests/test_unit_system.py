@@ -412,6 +412,27 @@ def test_units_serializer():
     with fl.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
 
+    with fl.SI_unit_system:
+        data = Flow360DataWithUnits(l=2 * u.mm, pt=(2, 3, 4), lc=2)
+
+    data_as_json = data.json(indent=4)
+
+    data_schema = data.schema()
+
+    assert data_schema["properties"]["l"]["units"]["type"] == "string"
+    assert data_schema["properties"]["l"]["value"]["type"] == "number"
+    assert data_schema["properties"]["lc"]["value"]["minimum"] == 0
+    assert data_schema["properties"]["pt"]["value"]["type"] == "array"
+    assert data_schema["properties"]["pt"]["value"]["items"]["minItems"] == 3
+    assert data_schema["properties"]["pt"]["value"]["items"]["maxItems"] == 3
+
+    with fl.CGS_unit_system:
+        data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
+
+    assert data_reimport.l == data.l
+    assert data_reimport.lc == data.lc
+    assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
+
     assert data_reimport.l == data.l
     assert data_reimport.lc == data.lc
     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
