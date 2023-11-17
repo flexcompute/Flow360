@@ -3,7 +3,7 @@ Flow360 solvers parameters
 """
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABCMeta
 from typing import List, Optional, Union
 
 import pydantic as pd
@@ -13,7 +13,7 @@ from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
-class GenericFlowSolverSettings(ABC, Flow360BaseModel):
+class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericFlowSolverSettings` class"""
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
@@ -154,7 +154,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     linear_iterations: Optional[PositiveInt] = pd.Field(
         alias="linearIterations", displayed="Linear iterations"
     )
-    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(displayed="Kappa MUSCL")
+    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
+        alias="kappaMUSCL", displayed="Kappa MUSCL"
+    )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
         alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
     )
@@ -205,7 +207,7 @@ class TurbulenceModelConstants(Flow360BaseModel):
     C_d2: Optional[float]
 
 
-class TurbulenceModelSolver(GenericFlowSolverSettings):
+class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     """:class:`TurbulenceModelSolver` class for setting up turbulence model solver
 
     Parameters
@@ -297,7 +299,7 @@ class TurbulenceModelSolverPrivate(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverPrivate` class"""
 
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field()
+    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(alias="kappaMUSCL")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
 
 

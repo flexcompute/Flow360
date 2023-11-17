@@ -4,7 +4,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import json
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import wraps
 from typing import Any, List, Optional, Type
 
@@ -330,16 +330,12 @@ class Flow360BaseModel(BaseModel):
     def generate_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
         order = cls._get_field_order()
-        if len(order) == 0:
-            return None
-        json_str = json.dumps(
-            {
-                "ui:order": order,
-                "ui:submitButtonOptions": {"norender": True},
-                "ui:options": {"orderable": False, "addable": False, "removable": False},
-            },
-            indent=2,
-        )
+        json_dict = {}
+        if len(order) > 0:
+            json_dict["ui:order"] = order
+        json_dict["ui:submitButtonOptions"] = {"norender": True}
+        json_dict["ui:options"] = {"orderable": False, "addable": False, "removable": False}
+        json_str = json.dumps(json_dict, indent=2)
         return json_str
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
@@ -745,7 +741,7 @@ class Flow360BaseModel(BaseModel):
         cls.__doc__ = doc
 
 
-class Flow360SortableBaseModel(ABC, Flow360BaseModel):
+class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`Flow360SortableBaseModel` class for setting up parameters by names, eg. boundary names"""
 
     def __getitem__(self, item):

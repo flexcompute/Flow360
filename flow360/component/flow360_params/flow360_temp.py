@@ -59,34 +59,52 @@ class BETDiskChord(Flow360BaseModel):
 class BETDiskSectionalPolar(Flow360BaseModel):
     """:class:`BETDiskSectionalPolar` class"""
 
-    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="liftCoeffs")
-    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(alias="dragCoeffs")
+    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+        alias="liftCoeffs", displayed="Lift coefficients"
+    )
+    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+        alias="dragCoeffs", displayed="Drag coefficients"
+    )
 
 
 class BETDisk(Flow360BaseModel):
     """:class:`BETDisk` class"""
 
     rotation_direction_rule: Optional[Union[Literal["leftHand", "rightHand"]]] = pd.Field(
-        alias="rotationDirectionRule"
+        alias="rotationDirectionRule", displayed="Rotation direction"
     )
-    center_of_rotation: Coordinate = pd.Field(alias="centerOfRotation")
-    axis_of_rotation: Axis = pd.Field(alias="axisOfRotation")
-    number_of_blades: PositiveInt = pd.Field(alias="numberOfBlades")
+    center_of_rotation: Coordinate = pd.Field(
+        alias="centerOfRotation", displayed="Center of rotation"
+    )
+    axis_of_rotation: Axis = pd.Field(alias="axisOfRotation", displayed="Axis of rotation")
+    number_of_blades: PositiveInt = pd.Field(alias="numberOfBlades", displayed="Number of blades")
     radius: PositiveFloat = pd.Field()
     omega: float = pd.Field()
-    chord_ref: PositiveFloat = pd.Field(alias="chordRef")
+    chord_ref: PositiveFloat = pd.Field(alias="chordRef", displayed="Reference chord")
     thickness: PositiveFloat = pd.Field(alias="thickness")
-    n_loading_nodes: PositiveInt = pd.Field(alias="nLoadingNodes")
-    blade_line_chord: Optional[PositiveFloat] = pd.Field(alias="bladeLineChord")
-    initial_blade_direction: Optional[Coordinate] = pd.Field(alias="initialBladeDirection")
-    tip_gap: Optional[Union[NonNegativeFloat, Literal["inf"]]] = pd.Field(alias="tipGap")
-    mach_numbers: List[float] = pd.Field(alias="MachNumbers")
-    reynolds_numbers: List[PositiveFloat] = pd.Field(alias="ReynoldsNumbers")
+    n_loading_nodes: PositiveInt = pd.Field(alias="nLoadingNodes", displayed="Loading nodes")
+    blade_line_chord: Optional[PositiveFloat] = pd.Field(
+        alias="bladeLineChord", displayed="Blade line chord"
+    )
+    initial_blade_direction: Optional[Coordinate] = pd.Field(
+        alias="initialBladeDirection", displayed="Initial blade direction"
+    )
+    tip_gap: Optional[Union[NonNegativeFloat, Literal["inf"]]] = pd.Field(
+        alias="tipGap", displayed="Tip gap"
+    )
+    mach_numbers: List[float] = pd.Field(alias="MachNumbers", displayed="Mach numbers")
+    reynolds_numbers: List[PositiveFloat] = pd.Field(
+        alias="ReynoldsNumbers", displayed="Reynolds numbers"
+    )
     alphas: List[float] = pd.Field()
     twists: List[BETDiskTwist] = pd.Field()
     chords: List[BETDiskChord] = pd.Field()
-    sectional_polars: List[BETDiskSectionalPolar] = pd.Field(alias="sectionalPolars")
-    sectional_radiuses: List[float] = pd.Field(alias="sectionalRadiuses")
+    sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
+        alias="sectionalPolars", displayed="Sectional polars"
+    )
+    sectional_radiuses: List[float] = pd.Field(
+        alias="sectionalRadiuses", displayed="Sectional radiuses"
+    )
 
 
 class BETDiskPrivate(BETDisk):

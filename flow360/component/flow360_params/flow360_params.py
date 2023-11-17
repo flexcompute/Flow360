@@ -7,7 +7,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import math
-from abc import ABC
+from abc import ABCMeta
 from typing import Dict, List, Optional, Tuple, Union, get_args, get_type_hints
 
 import pydantic as pd
@@ -92,7 +92,7 @@ class MeshBoundary(Flow360BaseModel):
     no_slip_walls: Union[List[str], List[int]] = pd.Field(alias="noSlipWalls")
 
 
-class Boundary(ABC, Flow360BaseModel):
+class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
     type: str
@@ -320,9 +320,9 @@ class ActuatorDisk(Flow360BaseModel):
     """
 
     center: Coordinate
-    axis_thrust: Axis = pd.Field(alias="axisThrust")
+    axis_thrust: Axis = pd.Field(alias="axisThrust", displayed="Axis thrust")
     thickness: PositiveFloat
-    force_per_area: ForcePerArea = pd.Field(alias="forcePerArea")
+    force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -624,7 +624,7 @@ class Boundaries(Flow360SortableBaseModel):
         )
 
 
-class VolumeZoneBase(ABC, Flow360BaseModel):
+class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
     model_type: str = pd.Field(alias="modelType")

@@ -1,7 +1,7 @@
 """
 Flow360 output parameters models
 """
-from abc import ABC
+from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
@@ -20,7 +20,7 @@ from .params_base import (
 )
 
 
-class OutputBase(ABC, Flow360BaseModel):
+class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
     """:class: Base class for common output parameters"""
 
     Cp: Optional[bool] = pd.Field()
@@ -81,7 +81,7 @@ class Surfaces(Flow360SortableBaseModel):
         )
 
 
-class SurfaceOutput(OutputBase):
+class SurfaceOutput(Flow360BaseModel):
     """:class:`SurfaceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
@@ -96,14 +96,25 @@ class SurfaceOutput(OutputBase):
         alias="animationFrequencyTimeAverageOffset"
     )
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
-    velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    primitive_vars: Optional[bool] = pd.Field(alias="primitiveVars")
     start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[List[Union[CommonFieldVars, SurfaceFieldVars]]] = pd.Field(
         alias="outputFields"
     )
     surfaces: Optional[Surfaces] = pd.Field()
+
+
+class SurfaceOutputPrivate(SurfaceOutput):
+    """:class:`SurfaceOutputPrivate` class"""
+
+    wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
+    node_moments_per_unit_area: Optional[bool] = pd.Field(alias="nodeMomentsPerUnitArea")
+    residual_sa: Optional[bool] = pd.Field(alias="residualSA")
+    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
+
+
+class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy):
+    """:class:`SurfaceOutputLegacy` class"""
 
     Cf: Optional[bool] = pd.Field(alias="Cf")
     Cf_vec: Optional[bool] = pd.Field(alias="CfVec")
@@ -114,15 +125,7 @@ class SurfaceOutput(OutputBase):
     heat_flux: Optional[bool] = pd.Field(alias="heatFlux")
     node_forces_per_unit_area: Optional[bool] = pd.Field(alias="nodeForcesPerUnitArea")
     node_normals: Optional[bool] = pd.Field(alias="nodeNormals")
-
-
-class SurfaceOutputPrivate(SurfaceOutput):
-    """:class:`SurfaceOutputPrivate` class"""
-
-    wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
-    node_moments_per_unit_area: Optional[bool] = pd.Field(alias="nodeMomentsPerUnitArea")
-    residual_sa: Optional[bool] = pd.Field(alias="residualSA")
-    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
+    velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
 
 class Slice(Flow360BaseModel):
@@ -157,7 +160,7 @@ class _GenericSliceWrapper(Flow360BaseModel):
     v: Slice
 
 
-class SliceOutput(OutputBase):
+class SliceOutput(Flow360BaseModel):
     """:class:`SliceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
@@ -170,9 +173,6 @@ class SliceOutput(OutputBase):
     )
     slices: Optional[Slices]
 
-    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
-    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
-
 
 class SliceOutputPrivate(SliceOutput):
     """:class:`SliceOutputPrivate` class"""
@@ -180,7 +180,14 @@ class SliceOutputPrivate(SliceOutput):
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
-class VolumeOutput(OutputBase):
+class SliceOutputLegacy(SliceOutputPrivate, OutputLegacy):
+    """:class:`SliceOutputLegacy` class"""
+
+    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
+    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+
+
+class VolumeOutput(Flow360BaseModel):
     """:class:`VolumeOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
@@ -200,9 +207,6 @@ class VolumeOutput(OutputBase):
         alias="outputFields"
     )
 
-    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
-    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
-
 
 class VolumeOutputPrivate(VolumeOutput):
     """:class:`VolumeOutputPrivate` class"""
@@ -217,7 +221,14 @@ class VolumeOutputPrivate(VolumeOutput):
     debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
 
 
-class MonitorBase(ABC, Flow360BaseModel):
+class VolumeOutputLegacy(VolumeOutputPrivate, OutputLegacy):
+    """:class:`VolumeOutputLegacy` class"""
+
+    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
+    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+
+
+class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`MonitorBase` class"""
 
     type: Optional[str]
@@ -235,7 +246,7 @@ class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
 
     type = pd.Field("probe", const=True)
-    monitor_locations: Optional[List[Coordinate]]
+    monitor_locations: Optional[List[Coordinate]] = pd.Field(alias="monitorLocations")
     output_fields: Optional[List[CommonFieldVars]] = pd.Field(alias="outputFields")
 
 

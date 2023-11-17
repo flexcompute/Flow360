@@ -5,7 +5,7 @@ base component for examples
 
 import glob
 import os
-from abc import ABC, abstractmethod, abstractstaticmethod
+from abc import ABCMeta, abstractmethod, abstractstaticmethod
 from pathlib import Path
 
 import requests
@@ -27,7 +27,7 @@ def version_parse(str):
     return Flow360Version(str.strip("lgte"))
 
 
-class url_base(ABC):
+class url_base(metaclass=ABCMeta):
     @property
     @abstractmethod
     def geometry(self):
@@ -64,7 +64,7 @@ class url_base(ABC):
         """surface_yaml"""
 
 
-class BaseTestCase(ABC):
+class BaseTestCase(metaclass=ABCMeta):
     _solver_version = None
 
     @property
