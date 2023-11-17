@@ -63,6 +63,7 @@ from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
 
+from numpy import pi
 
 # pylint: disable=too-few-public-methods,invalid-name
 class turbulence:

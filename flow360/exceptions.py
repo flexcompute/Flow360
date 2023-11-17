@@ -37,6 +37,11 @@ class ValidationError(Flow360Error):
     """Error when constructing FLow360 components."""
 
 
+# pylint: disable=redefined-builtin
+class Flow360ConfigurationError(Flow360Error):
+    """Error with value."""
+
+
 class FileError(Flow360Error):
     """Error reading or writing to file."""
 

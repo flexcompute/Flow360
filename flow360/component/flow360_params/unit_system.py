@@ -749,7 +749,7 @@ def flow360_conversion_unit_system(
     _flow360_reg.add("rho_inf", base_density, u.dimensions.density)
     _flow360_reg.add("p_inf", base_pressure, u.dimensions.pressure)
     _flow360_reg.add("mu", base_viscosity, u.dimensions.viscosity)
-    _flow360_reg.add("omega", base_angular_velocity, u.dimensions.angular_velocity)
+    _flow360_reg.add("flow360_angular_velocity_unit", base_angular_velocity, u.dimensions.angular_velocity)
 
     _flow360_conv_system = u.UnitSystem(
         "flow360", "flow360_length_unit", "mass", "flow360_time_unit", "T_inf", registry=_flow360_reg
@@ -759,7 +759,7 @@ def flow360_conversion_unit_system(
     _flow360_conv_system["density"] = "rho_inf"
     _flow360_conv_system["pressure"] = "p_inf"
     _flow360_conv_system["viscosity"] = "mu"
-    _flow360_conv_system["angular_velocity"] = "omega"
+    _flow360_conv_system["angular_velocity"] = "flow360_angular_velocity_unit"
 
     return _flow360_conv_system
 

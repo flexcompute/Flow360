@@ -2,6 +2,9 @@ from functools import reduce
 import operator
 from .unit_system import flow360_conversion_unit_system, u
 
+from typing import List
+from ...exceptions import Flow360ConfigurationError
+
 def get_from_dict_by_key_list(key_list, data_dict):
     return reduce(operator.getitem, key_list, data_dict)
 
@@ -17,14 +20,12 @@ def require(required_parameters, required_by, params):
         value = get_from_dict_by_key_list(required_parameters, params.dict())
         if value is None:
             raise ValueError
-    except Exception:
-        print(f'{" -> ".join(required_parameters)} is required by {" -> ".join(required_by)}')
-        print(f'but {params.dict()} found.')
-        raise
+    except Exception as err:
+        raise Flow360ConfigurationError(f'{" -> ".join(required_parameters)} is required by {" -> ".join(required_by)} for unit conversion.') from err
 
 
 
-def unit_converter(dimension, required_by, params):
+def unit_converter(dimension, params, required_by: List[str]=[]):
 
     def get_base_length():
         require(['geometry', 'mesh_unit'], required_by, params)
@@ -36,12 +37,17 @@ def unit_converter(dimension, required_by, params):
         base_length = params.fluid_properties.speed_of_sound().to('m/s').v.item()
         return base_length
 
-
     def get_base_time():
         base_length = get_base_length()
         base_velocity = get_base_velocity()
         base_time = base_length / base_velocity
         return base_time
+
+    def get_base_angular_velocity():
+        base_time = get_base_time()
+        base_angular_velocity = 1 / base_time
+
+        return base_angular_velocity
 
 
     if dimension == u.dimensions.length:
@@ -61,6 +67,12 @@ def unit_converter(dimension, required_by, params):
     if dimension == u.dimensions.time:
         base_time = get_base_time()
         flow360_conv_system = flow360_conversion_unit_system(base_time=base_time)
+
+        return flow360_conv_system
+
+    if dimension == u.dimensions.angular_velocity:
+        base_angular_velocity = get_base_angular_velocity()
+        flow360_conv_system = flow360_conversion_unit_system(base_angular_velocity=base_angular_velocity)
 
         return flow360_conv_system
 
