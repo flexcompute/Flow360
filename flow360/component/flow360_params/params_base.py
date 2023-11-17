@@ -332,7 +332,14 @@ class Flow360BaseModel(BaseModel):
         order = cls._get_field_order()
         if len(order) == 0:
             return None
-        json_str = json.dumps({"ui:order": order}, indent=2)
+        json_str = json.dumps(
+            {
+                "ui:order": order,
+                "ui:submitButtonOptions": {"norender": True},
+                "ui:options": {"orderable": False, "addable": False, "removable": False},
+            },
+            indent=2,
+        )
         return json_str
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
