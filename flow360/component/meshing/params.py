@@ -1,7 +1,7 @@
 """
 Flow360 meshing parameters
 """
-from typing import List, Optional, Union
+from typing import List, Optional, Union, get_args
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -62,6 +62,10 @@ class Edges(Flow360SortableBaseModel):
     >>>
     """
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericEdgeWrapper.__fields__["v"].type_))
+
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_edge(cls, values):
@@ -108,6 +112,10 @@ class Faces(Flow360SortableBaseModel):
     -------
     >>>
     """
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericFaceWrapper.__fields__["v"].type_]
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)

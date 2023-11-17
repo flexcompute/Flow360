@@ -1,0 +1,109 @@
+{
+   "geometry": {
+      "meshName": "wing.ugrid",
+      "endianness": "little",
+      "refArea": 1.15315084119231,
+      "momentCenter": [
+         0,
+         0,
+         0
+      ],
+      "momentLength": [
+         0.801672958512342,
+         0.801672958512342,
+         0.801672958512342
+      ]
+   },
+   "runControl": {
+      "restart": false
+   },
+   "volumeOutput": {
+      "primitiveVars": true,
+      "vorticity": true,
+      "residualNavierStokes": false,
+      "residualTurbulence": false,
+      "T": false,
+      "s": true,
+      "Cp": false,
+      "mut": false,
+      "mutRatio": false
+   },
+   "surfaceOutput": {
+      "outputFormat": "paraview",
+      "animationFrequency": -1,
+      "primitiveVars": true,
+      "Cp": true,
+      "Cf": true,
+      "CfVec": true
+   },
+   "sliceOutput": {
+      "outputFormat": "paraview",
+      "animationFrequency": 500,
+      "primitiveVars": true,
+      "vorticity": true,
+      "T": true,
+      "s": true,
+      "Cp": true,
+      "mut": true,
+      "mutRatio": true,
+      "Mach": true,
+      "slices": [
+         {
+            "sliceName": "slice_xy",
+            "sliceNormal": [
+               0,
+               0,
+               1
+            ],
+            "sliceOrigin": [
+               0,
+               0,
+               0
+            ]
+         }
+      ]
+   },
+   "navierStokesSolver": {
+      "tolerance": 1e-10,
+      "linearIterations": 25,
+      "kappaMUSCL": -1,
+      "limitVelocity": true,
+      "limitPressureDensity": true
+   },
+   "turbulenceModelSolver": {
+      "modelType": "SpalartAllmaras",
+      "tolerance": 1e-10,
+      "linearIterations": 15,
+      "kappaMUSCL": -1,
+      "rotationCorrection": false
+   },
+   "freestream": {
+      "Reynolds": 14600000,
+      "Mach": 2,
+      "Temperature": 288.15,
+      "alphaAngle": 3.06,
+      "betaAngle": 0
+   },
+   "slidingInterfaces": [],
+   "timeStepping": {
+      "timeStepSize": "inf",
+      "maxPhysicalSteps": 1,
+      "maxPseudoSteps": 4000,
+      "CFL": {
+         "initial": 10,
+         "final": 50,
+         "rampSteps": 200
+      }
+   },
+   "boundaries": {
+      "1": {
+         "type": "SlipWall"
+      },
+      "2": {
+         "type": "SlipWall"
+      },
+      "3": {
+         "type": "Freestream"
+      }
+   }
+}

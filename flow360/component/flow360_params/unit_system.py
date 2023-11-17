@@ -3,7 +3,7 @@ Unit system definitions and utilities
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from enum import Enum
 from numbers import Number
 from operator import add, sub
@@ -147,7 +147,7 @@ def _has_dimensions_validator(value, dim):
 
 
 # pylint: disable=too-few-public-methods
-class ValidatedType(ABC):
+class ValidatedType(metaclass=ABCMeta):
     """
     :class: Abstract class for dimensioned types with custom validation
     """

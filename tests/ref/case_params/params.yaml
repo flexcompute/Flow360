@@ -26,6 +26,9 @@ geometry:
     refArea: 1.15315084119231
 navierStokesSolver:
     linearIterations: 10
+    linearSolverConfig:
+        absoluteTolerance: 1.0e-10
+        maxIterations: 50
 sliceOutput:
     outputFields:
     - Cp
@@ -35,24 +38,24 @@ sliceOutput:
             outputFields:
             - Mach
             sliceNormal:
-            - 1
-            - 0
-            - 0
+            - 1.0
+            - 0.0
+            - 0.0
             sliceOrigin:
-            - 0
-            - 0
-            - 0
+            - 0.0
+            - 0.0
+            - 0.0
         y1:
             outputFields:
             - T
             sliceNormal:
-            - 0
-            - 1
-            - 0
+            - 0.0
+            - 1.0
+            - 0.0
             sliceOrigin:
-            - 2
-            - 1
-            - 0
+            - 2.0
+            - 1.0
+            - 0.0
 surfaceOutput:
     outputFields:
     - yPlus

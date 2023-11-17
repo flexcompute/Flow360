@@ -5,7 +5,7 @@ import os
 import re
 import shutil
 import traceback
-from abc import ABC
+from abc import ABCMeta
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -109,7 +109,7 @@ def before_submit_only(func):
     return wrapper
 
 
-class ResourceDraft(ABC):
+class ResourceDraft(metaclass=ABCMeta):
     """
     Abstract base class for resources in draft state (before submission).
     """

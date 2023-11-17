@@ -3,7 +3,7 @@ s3 util file for material uploading and downloading.
 """
 import os
 import urllib
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
 
@@ -21,7 +21,7 @@ from .http_util import http
 from .utils import _get_progress, _S3Action
 
 
-class ProgressCallbackInterface(ABC):
+class ProgressCallbackInterface(metaclass=ABCMeta):
     """
     Progress callback abstract class
     """
