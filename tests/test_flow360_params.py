@@ -763,11 +763,15 @@ def test_volume_zones():
 def test_heat_equation():
     he = HeatEquationSolver(
         equation_eval_frequency=10,
-        linear_solver_config=LinearSolver(
-            absoluteTolerance=1e-10,
+        linear_solver=LinearSolver(
+            absolute_tolerance=1e-10,
             max_iterations=50,
         ),
     )
+    assert he
+
+    he = HeatEquationSolver.from_json("ref/case_params/heat_equation/ref_old.json")
+
     assert he
 
     compare_to_ref(he, "ref/case_params/heat_equation/ref.json", content_only=True)
