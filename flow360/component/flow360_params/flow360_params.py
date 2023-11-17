@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -18,17 +18,13 @@ from ...user_config import UserConfig
 from ..constants import constants
 from ..types import (
     Axis,
-    BoundaryVelocityType,
     Coordinate,
-    MomentLengthType,
     NonNegativeFloat,
     Omega,
     PositiveFloat,
     PositiveInt,
-    TimeStep,
-    Velocity,
 )
-from ..utils import _get_value_or_none, beta_feature
+# from ..utils import _get_value_or_none, beta_feature
 from .params_base import (
     DeprecatedAlias,
     Flow360BaseModel,
@@ -38,7 +34,6 @@ from .params_base import (
 )
 from .solvers import (
     HeatEquationSolver,
-    LinearSolver,
     NavierStokesSolver,
     TurbulenceModelSolver,
 )
@@ -46,6 +41,8 @@ from .solvers import (
 from .unit_system import u, PressureType, DensityType, ViscosityType, TemperatureType, LengthType, VelocityType, AreaType, TimeType, AngularVelocityType
 
 from .physical_properties import _AirModel
+
+BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -556,12 +553,13 @@ class Boundaries(Flow360SortableBaseModel):
         return _self_named_property_validator(
             values, _GenericBoundaryWrapper, msg="is not any of supported boundary types."
         )
-    
-    def to_solver(self, *args, **kwargs) -> Boundaries:
+
+    def to_solver(self, params: Flow360Params, **kwargs) -> Boundaries:
         """
         returns configuration object in flow360 units system  
         """
-        return self
+        return super().to_solver(params, **kwargs)
+
 
 
 class VolumeZoneType(ABC, Flow360BaseModel):

@@ -295,6 +295,14 @@ class DimensionedType(ValidatedType):
 
     # pylint: disable=invalid-name
     @classproperty
+    def Vector(self):
+        """
+        Vector value which accepts zero-vectors
+        """
+        return self._VectorType.get_class_object(self)
+
+    # pylint: disable=invalid-name
+    @classproperty
     def Direction(self):
         """
         Vector value which does not accept zero-vectors
