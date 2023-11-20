@@ -1,13 +1,14 @@
 """
 Flow360 solver parameters
 """
-# pylint: disable=unused-import
+# This is a temporary measure until flow360_temp models are merged
 # pylint: disable=too-many-lines
+# pylint: disable=unused-import
 from __future__ import annotations
 
 import math
-from abc import ABC
-from typing import Dict, List, Optional, Tuple, Union
+from abc import ABCMeta
+from typing import Dict, List, Optional, Tuple, Union, get_args, get_type_hints
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -30,6 +31,20 @@ from ..types import (
     Velocity,
 )
 from ..utils import _get_value_or_none, beta_feature
+from .flow360_output import (
+    IsoSurfaceOutput,
+    IsoSurfaces,
+    MonitorOutput,
+    Monitors,
+    ProbeMonitor,
+    SliceOutput,
+    Slices,
+    SurfaceIntegralMonitor,
+    SurfaceOutput,
+    Surfaces,
+    VolumeOutput,
+)
+from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
     DeprecatedAlias,
     Flow360BaseModel,
@@ -41,7 +56,11 @@ from .solvers import (
     HeatEquationSolver,
     LinearSolver,
     NavierStokesSolver,
-    TurbulenceModelSolver,
+    NoneSolver,
+    TransitionModelSolver,
+    TurbulenceModelSolvers,
+    TurbulenceModelSolverSA,
+    TurbulenceModelSolverSST,
 )
 
 
@@ -73,7 +92,7 @@ class MeshBoundary(Flow360BaseModel):
     no_slip_walls: Union[List[str], List[int]] = pd.Field(alias="noSlipWalls")
 
 
-class Boundary(ABC, Flow360BaseModel):
+class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
     type: str
@@ -301,9 +320,9 @@ class ActuatorDisk(Flow360BaseModel):
     """
 
     center: Coordinate
-    axis_thrust: Axis = pd.Field(alias="axisThrust")
+    axis_thrust: Axis = pd.Field(alias="axisThrust", displayed="Axis thrust")
     thickness: PositiveFloat
-    force_per_area: ForcePerArea = pd.Field(alias="forcePerArea")
+    force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -587,6 +606,10 @@ class Boundaries(Flow360SortableBaseModel):
         )
     """
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericBoundaryWrapper.__fields__["v"].type_))
+
     @pd.root_validator(pre=True)
     def validate_boundary(cls, values):
         """Validator for boundary list section
@@ -601,7 +624,7 @@ class Boundaries(Flow360SortableBaseModel):
         )
 
 
-class VolumeZoneType(ABC, Flow360BaseModel):
+class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
     model_type: str = pd.Field(alias="modelType")
@@ -613,7 +636,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
     T_solid: Union[PositiveFloat, StrictStr]
 
 
-class HeatTransferVolumeZone(VolumeZoneType):
+class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
     model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
@@ -690,15 +713,18 @@ class ReferenceFrame(Flow360BaseModel):
         ]
 
 
-class FluidDynamicsVolumeZone(VolumeZoneType):
+class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
     reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
+VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+
+
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
-    v: Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+    v: VolumeZoneType
 
 
 class VolumeZones(Flow360SortableBaseModel):
@@ -720,6 +746,10 @@ class VolumeZones(Flow360SortableBaseModel):
             zone2=HeatTransferVolumeZone(thermal_conductivity=1)
         )
     """
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericVolumeZonesWrapper.__fields__["v"].type_))
 
     @pd.root_validator(pre=True)
     def validate_zone(cls, values):
@@ -824,7 +854,7 @@ class Freestream(Flow360BaseModel):
     Mach: Optional[NonNegativeFloat] = pd.Field()
     MachRef: Optional[PositiveFloat] = pd.Field()
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(alias="Temperature")
     density: Optional[PositiveFloat]
     speed: Optional[Union[Velocity, PositiveFloat]]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
@@ -926,25 +956,31 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     boundaries: Optional[Boundaries] = pd.Field()
-    initial_condition: Optional[Dict] = pd.Field(alias="initialCondition")
+    initial_condition: Optional[InitialConditions] = pd.Field(
+        alias="initialCondition", discriminator="type"
+    )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolver] = pd.Field(
-        alias="turbulenceModelSolver"
+    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(
+        alias="turbulenceModelSolver", discriminator="model_type"
     )
-    transition_model_solver: Optional[Dict] = pd.Field(alias="transitionModelSolver")
+    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
+        alias="transitionModelSolver"
+    )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
     freestream: Optional[Freestream] = pd.Field()
-    bet_disks: Optional[List[Dict]] = pd.Field(alias="BETDisks")
+    bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
-    porous_media: Optional[List[Dict]] = pd.Field(alias="porousMedia")
-    user_defined_dynamics: Optional[List[Dict]] = pd.Field(alias="userDefinedDynamics")
-    surface_output: Optional[Dict] = pd.Field(alias="surfaceOutput")
-    volume_output: Optional[Dict] = pd.Field(alias="volumeOutput")
-    slice_output: Optional[Dict] = pd.Field(alias="sliceOutput")
-    iso_surface_output: Optional[Dict] = pd.Field(alias="isoSurfaceOutput")
-    monitor_output: Optional[Dict] = pd.Field(alias="monitorOutput")
+    porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
+        alias="userDefinedDynamics"
+    )
+    surface_output: Optional[SurfaceOutput] = pd.Field(alias="surfaceOutput")
+    volume_output: Optional[VolumeOutput] = pd.Field(alias="volumeOutput")
+    slice_output: Optional[SliceOutput] = pd.Field(alias="sliceOutput")
+    iso_surface_output: Optional[IsoSurfaceOutput] = pd.Field(alias="isoSurfaceOutput")
+    monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
@@ -977,7 +1013,7 @@ class Flow360Params(Flow360BaseModel):
             self.navier_stokes_solver = NavierStokesSolver()
 
         if not self.turbulence_model_solver:
-            self.turbulence_model_solver = TurbulenceModelSolver()
+            self.turbulence_model_solver = NoneSolver()
 
         self.freestream.to_flow360_json(mesh_unit_length=mesh_unit_length, return_json=False)
         self.geometry.to_flow360_json(return_json=False)

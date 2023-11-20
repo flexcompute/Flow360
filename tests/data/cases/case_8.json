@@ -1,0 +1,111 @@
+{
+   "geometry": {
+      "refArea": 3.9092552169,
+      "momentCenter": [
+         4.8074691805,
+         0,
+         0.6452139
+      ],
+      "momentLength": [
+         1,
+         1,
+         1
+      ]
+   },
+   "volumeOutput": {
+      "outputFormat": "tecplot",
+      "primitiveVars": true,
+      "vorticity": true,
+      "residualNavierStokes": false,
+      "residualTurbulence": false,
+      "T": false,
+      "s": false,
+      "Cp": false,
+      "mut": false,
+      "mutRatio": false
+   },
+   "surfaceOutput": {
+      "outputFormat": "tecplot",
+      "primitiveVars": true,
+      "Cp": true,
+      "Cf": true,
+      "CfVec": true,
+      "yPlus": true,
+      "wallDistance": false
+   },
+   "sliceOutput": {
+      "outputFormat": "paraview",
+      "animationFrequency": -1,
+      "primitiveVars": true
+   },
+   "navierStokesSolver": {
+      "absoluteTolerance": 1e-10,
+      "linearIterations": 30,
+      "kappaMUSCL": -1,
+      "updateJacobianFrequency": 4
+   },
+   "turbulenceModelSolver": {
+      "modelType": "SpalartAllmaras",
+      "absoluteTolerance": 1e-8,
+      "linearIterations": 25,
+      "kappaMUSCL": -1
+   },
+   "freestream": {
+      "Reynolds": 1000000,
+      "Mach": 0.2,
+      "Temperature": 288.15,
+      "alphaAngle": 4,
+      "betaAngle": 0
+   },
+   "boundaries": {
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_2": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_3": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_4": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_5": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_6": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_7": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_8": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_9": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_10": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_11": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_12": {
+         "type": "NoSlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1": {
+         "type": "SlipWall"
+      },
+      "MeshSetup1_Cref_1m_/Unstructured_Mesh_Patch_1_1": {
+         "type": "Freestream"
+      }
+   },
+   "timeStepping": {
+      "timeStepSize": "inf",
+      "maxPhysicalSteps": 1,
+      "maxPseudoSteps": 10000,
+      "CFL": {
+         "initial": 1,
+         "final": 100,
+         "rampSteps": 200
+      }
+   }
+}

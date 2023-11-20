@@ -2,7 +2,6 @@
 This module is flow360.
 """
 
-
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -12,8 +11,10 @@ from .component.case import Case
 from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.flow360_params import (
+    ActuatorDisk,
     AdaptiveCFL,
     AeroacousticOutput,
+    BETDisk,
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
@@ -21,15 +22,24 @@ from .component.flow360_params.flow360_params import (
     Freestream,
     FreestreamBoundary,
     Geometry,
+    HeatEquationSolver,
     HeatTransferVolumeZone,
+    IsoSurfaceOutput,
+    IsoSurfaces,
     IsothermalWall,
     MassInflow,
     MassOutflow,
     MeshBoundary,
+    MonitorOutput,
     NavierStokesSolver,
+    NoneSolver,
     NoSlipWall,
+    PorousMedium,
+    ProbeMonitor,
     RampCFL,
     ReferenceFrame,
+    SliceOutput,
+    Slices,
     SlidingInterface,
     SlidingInterfaceBoundary,
     SlipWall,
@@ -39,9 +49,15 @@ from .component.flow360_params.flow360_params import (
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
     SupersonicInflow,
+    SurfaceIntegralMonitor,
+    SurfaceOutput,
+    Surfaces,
     TimeStepping,
-    TurbulenceModelSolver,
+    TransitionModelSolver,
+    TurbulenceModelSolverSA,
+    TurbulenceModelSolverSST,
     UnvalidatedFlow360Params,
+    VolumeOutput,
     VolumeZones,
     WallFunction,
 )
@@ -61,12 +77,3 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
-
-
-# pylint: disable=too-few-public-methods,invalid-name
-class turbulence:
-    """turbulece models shortcut: eg. flow360.turbulence.SA"""
-
-    SA = solvers.TurbulenceModelModelType.SA
-    SST = solvers.TurbulenceModelModelType.SST
-    NONE = solvers.TurbulenceModelModelType.NONE
