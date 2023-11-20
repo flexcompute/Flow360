@@ -190,6 +190,13 @@ class DimensionedType(ValidatedType):
         field_schema["units"] = {}
         field_schema["value"]["type"] = "number"
         field_schema["units"]["type"] = "string"
+        if cls.dim_name is not None:
+            field_schema["units"]["dimension"] = cls.dim_name
+            field_schema["units"]["enum"] = [
+                str(_SI_system[cls.dim_name]),
+                str(_CGS_system[cls.dim_name]),
+                str(_imperial_system[cls.dim_name])
+            ]
 
     class _Constrained:
         """
@@ -572,7 +579,7 @@ class _Flow360BaseUnit(DimensionedType):
             if self.val:
                 return self.__class__(self.val * other)
             return self.__class__(other)
-        if isinstance(other, Collection) and not self.val:
+        if isinstance(other, Collection) and (not self.val or self.val == 1):
             return self.__class__(other)
         raise TypeError(f"Operation not defined on {self} and {other}")
 
@@ -685,6 +692,20 @@ class UnitSystem(pd.BaseModel):
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
 
+    _dim_names = [
+        "mass",
+        "length",
+        "time",
+        "temperature",
+        "velocity",
+        "area",
+        "force",
+        "pressure",
+        "density",
+        "viscosity",
+        "angular_velocity",
+    ]
+
     @staticmethod
     def __get_unit(system, dim_name, unit):
         if unit is not None:
@@ -702,27 +723,13 @@ class UnitSystem(pd.BaseModel):
 
     def __init__(self, **kwargs):
         base_system = kwargs.get("base_system")
-
-        dim_names = [
-            "mass",
-            "length",
-            "time",
-            "temperature",
-            "velocity",
-            "area",
-            "force",
-            "pressure",
-            "density",
-            "viscosity",
-            "angular_velocity",
-        ]
         units = {}
 
-        for dim in dim_names:
+        for dim in self._dim_names:
             unit = kwargs.get(dim)
             units[dim] = UnitSystem.__get_unit(base_system, dim, unit)
 
-        missing = set(dim_names) - set(units.keys())
+        missing = set(self._dim_names) - set(units.keys())
 
         super().__init__(**units)
 
@@ -730,6 +737,12 @@ class UnitSystem(pd.BaseModel):
             raise ValueError(
                 f"Tried defining incomplete unit system, missing definitions for {','.join(missing)}"
             )
+
+    def defaults(self):
+        defaults = {}
+        for item in self._dim_names:
+            defaults[item] = str(self[item].units.expr)
+        return defaults
 
     def __getitem__(self, item):
         """to support [] access"""

@@ -72,6 +72,10 @@ from .unit_system import (
     TimeType,
     VelocityType,
     ViscosityType,
+    SI_unit_system,
+    CGS_unit_system,
+    imperial_unit_system,
+    UnitSystem,
     u,
 )
 
@@ -1264,6 +1268,7 @@ class Flow360Params(Flow360BaseModel):
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+    unit_defaults: Optional[UnitDefaults] = pd.Field(alias="unitDefaults")
 
     def to_solver(self) -> Flow360Params:
         """
@@ -1323,3 +1328,8 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         extra = "allow"
+
+class UnitDefaults(Flow360BaseModel):
+    defaults_SI: Dict = pd.Field(alias="defaultsSI", default=SI_unit_system.defaults())
+    defaults_CGS: Dict = pd.Field(alias="defaultsCGS", default=CGS_unit_system.defaults())
+    defaults_imperial: Dict = pd.Field(alias="defaultsImperial", default=imperial_unit_system.defaults())
