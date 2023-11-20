@@ -30,42 +30,6 @@ List2D = List[List[float]]
 Coordinate = Tuple[float, float, float]
 
 
-class DimensionedValue(pd.BaseModel):
-    """DimensionedValue class"""
-
-    v: float
-    unit: Literal[None]
-
-
-class Omega(DimensionedValue):
-    """Omega type class"""
-
-    unit: Literal["non-dim", "rad/s", "deg/s"]
-
-
-class Velocity(DimensionedValue):
-    """Velocity type class"""
-
-    unit: Literal["m/s"]
-
-
-class TimeStep(DimensionedValue):
-    """TimeStep type class"""
-
-    v: PositiveFloat
-    unit: Literal["s", "sec", "seconds", "deg"]
-
-    def is_second(self) -> bool:
-        """is value in seconds
-
-        Returns
-        -------
-        bool
-            returns True if value is in seconds
-        """
-        return self.unit in ["s", "sec", "seconds"]
-
-
 class _PydanticValidate(pd.BaseModel):
     c: Optional[Coordinate]
 

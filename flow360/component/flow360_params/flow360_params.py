@@ -27,14 +27,7 @@ from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationErr
 from ...log import log
 from ...user_config import UserConfig
 from ..constants import constants
-from ..types import (
-    Axis,
-    Coordinate,
-    NonNegativeFloat,
-    Omega,
-    PositiveFloat,
-    PositiveInt,
-)
+from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveInt
 from ..utils import _get_value_or_none, beta_feature
 from .conversions import ExtraDimensionedProperty
 from .flow360_output import (
@@ -51,18 +44,17 @@ from .flow360_output import (
     VolumeOutput,
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
-
-# from ..utils import _get_value_or_none, beta_feature
 from .params_base import (
     DeprecatedAlias,
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
-    export_to_flow360,
+    flow360_json_encoder,
 )
 from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
+    LinearSolver,
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
@@ -381,11 +373,7 @@ class SlidingInterface(Flow360BaseModel):
         Expression for rotation angle (in degrees) as a function of time
 
     omega : Union[float, Omega], optional
-        Rotating speed without or with unit, eg. 1.0, (1.0, 'rad/s'), (1.0, 'deg/s'), (1.0, 'non-dim'). If no unit
-        provided, non-dimensional is assumed.
-
-    rpm : float, optional
-        Rotating speed in revolutions per minute (RPM)
+        Nondimensional rotating speed, radians/nondim-unit-time
 
     omega_radians
         Nondimensional rotating speed, radians/nondim-unit-time
@@ -410,7 +398,7 @@ class SlidingInterface(Flow360BaseModel):
             stationary_patches=['patch1'],
             rotating_patches=['patch2'],
             volume_name='volume1',
-            omega=(1, 'rad/s')
+            omega=1
         )
     """
 
@@ -423,62 +411,13 @@ class SlidingInterface(Flow360BaseModel):
     name: Optional[str] = pd.Field(alias="interfaceName")
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
-    omega: Optional[Union[float, Omega]] = pd.Field()
     omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
     omega_degrees: Optional[float] = pd.Field(alias="omegaDegrees")
-    rpm: Optional[float]
     is_dynamic: Optional[bool] = pd.Field(alias="isDynamic")
-
-    # pylint: disable=no-self-argument
-    @pd.validator("omega", pre=True, always=True)
-    def validate_omega(cls, v):
-        """Validator for omega"""
-        if isinstance(v, tuple):
-            return Omega(v=v[0], unit=v[1])
-        return v
-
-    # pylint: disable=invalid-name
-    @export_to_flow360
-    def to_flow360_json(self, return_json: bool = True, mesh_unit_length=None, C_inf=None):
-        """
-        returns flow360 formatted json
-        """
-        self.perform_non_dimensionalisation(mesh_unit_length, C_inf)
-        if return_json:
-            return self.json()
-        return None
-
-    # pylint: disable=invalid-name
-    def perform_non_dimensionalisation(self, mesh_unit_length, C_inf):
-        """
-        performs non-dimensionalisation
-        """
-        if self.omega:
-            if isinstance(self.omega, float):
-                self.omega_radians = self.omega
-            elif self.omega.unit == "rad/s":
-                self.omega_radians = self.omega.v * get_time_non_dim_unit(
-                    mesh_unit_length, C_inf, extra_msg="when using rad/s unit for omega."
-                )
-            elif self.omega.unit == "deg/s":
-                self.omega_degrees = self.omega.v * get_time_non_dim_unit(
-                    mesh_unit_length, C_inf, extra_msg="when using deg/s unit for omega."
-                )
-            elif self.omega.unit == "non-dim":
-                self.omega_degrees = self.omega.v
-
-        if self.rpm:
-            omega = self.rpm * (2 * math.pi) / 60
-            self.omega_radians = omega * get_time_non_dim_unit(
-                mesh_unit_length, C_inf, "when using rpm."
-            )
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["omega", "rpm"]
         require_one_of = [
-            "omega",
-            "rpm",
             "omega_radians",
             "omega_degrees",
             "theta_radians",
@@ -562,17 +501,6 @@ class TimeStepping(Flow360BaseModel):
         alias="timeStepSize", default="inf"
     )
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field()
-
-    # pylint: disable=invalid-name
-    @export_to_flow360
-    def to_flow360_json(self, return_json: bool = True, mesh_unit_length=None, C_inf=None):
-        """
-        returns flow360 formatted json
-        """
-        self.perform_non_dimensionalisation(mesh_unit_length, C_inf)
-        if return_json:
-            return self.json()
-        return None
 
     def to_solver(self, params: Flow360Params, **kwargs) -> TimeStepping:
         """
@@ -740,6 +668,33 @@ class ReferenceFrameExpression(Flow360BaseModel):
         ]
 
 
+class ReferenceFrameOmegaRadians(Flow360BaseModel):
+    """:class:`ReferenceFrameOmegaRadians` class for setting up reference frame
+
+    Parameters
+    ----------
+    center : Coordinate
+        Coordinate representing the origin of rotation, eg. (0, 0, 0)
+
+    axis : Axis
+        Axis of rotation, eg. (0, 0, 1)
+
+    omega_radians: AngularVelocityType
+        Nondimensional rotating speed, radians/nondim-unit-time
+
+
+    Returns
+    -------
+    :class:`ReferenceFrameOmegaRadians`
+        An instance of the component class ReferenceFrameOmegaRadians.
+
+    """
+
+    omega_radians: AngularVelocityType = pd.Field(alias="omegaRadians")
+    center: LengthType.Point = pd.Field(alias="centerOfRotation")
+    axis: Axis = pd.Field(alias="axisOfRotation")
+
+
 class ReferenceFrame(Flow360BaseModel):
     """:class:`ReferenceFrame` class for setting up reference frame
 
@@ -773,11 +728,14 @@ class ReferenceFrame(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
 
-    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrame:
+    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaRadians:
         """
         returns configuration object in flow360 units system
         """
-        return super().to_solver(params, **kwargs)
+
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        omega_radians = solver_values.pop("omega")
+        return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
 # class OldReferenceFrame(Flow360BaseModel):
@@ -850,7 +808,12 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
     reference_frame: Optional[
-        Union[ReferenceFrame, ReferenceFrameExpression, ReferenceFrameDynamic]
+        Union[
+            ReferenceFrame,
+            ReferenceFrameOmegaRadians,
+            ReferenceFrameExpression,
+            ReferenceFrameDynamic,
+        ]
     ] = pd.Field(alias="referenceFrame")
 
     def to_solver(self, params: Flow360Params, **kwargs) -> FluidDynamicsVolumeZone:
@@ -948,7 +911,7 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: AreaType = pd.Field(alias="refArea")
+    ref_area: Optional[AreaType] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
@@ -982,7 +945,7 @@ class FreestreamFromMach(FreestreamBase):
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
-    def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
+    def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
         returns configuration object in flow360 units system
         """
@@ -993,8 +956,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     Reynolds: PositiveFloat = pd.Field()
+    temperature: PositiveFloat = pd.Field(alias="Temperature")
 
-    def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
+    def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
         returns configuration object in flow360 units system
         """
@@ -1004,8 +968,10 @@ class FreestreamFromMachReynolds(FreestreamBase):
 class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True)
     Mach_ref: PositiveFloat = pd.Field()
+    mu_ref: PositiveFloat = pd.Field(alias="muRef")
+    temperature: PositiveFloat = pd.Field(alias="Temperature")
 
-    def to_solver(self, params: Flow360Params) -> ZeroFreestream:
+    def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
         """
         returns configuration object in flow360 units system
         """
@@ -1046,7 +1012,6 @@ class FreestreamFromVelocity(FreestreamBase):
         if mach_ref is not None:
             mach_ref = mach_ref.v.item()
 
-
         return FreestreamFromMach(
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
         )
@@ -1060,11 +1025,32 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         """
         returns configuration object in flow360 units system
         """
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        mach = solver_values.pop("velocity")
-        mach_ref = solver_values.pop("velocity_ref").v.item()
+        value_factory_viscosity = lambda: params.fluid_properties.to_fluid_properties().viscosity
+        value_factory_temperature = (
+            lambda: params.fluid_properties.to_fluid_properties().temperature
+        )
+        extra = [
+            ExtraDimensionedProperty(
+                name="viscosity",
+                dependency_list=["fluid_properties"],
+                value_factory=value_factory_viscosity,
+            ),
+            ExtraDimensionedProperty(
+                name="temperature",
+                dependency_list=["fluid_properties"],
+                value_factory=value_factory_temperature,
+            ),
+        ]
 
-        return ZeroFreestream(Mach=mach, Mach_ref=mach_ref, **solver_values)
+        solver_values = self._convert_dimensions_to_solver(params, extra=extra, **kwargs)
+        mach = solver_values.pop("velocity")
+        mach_ref = solver_values.pop("velocity_ref", None)
+        mu_ref = solver_values.pop("viscosity")
+        temperature = solver_values.pop("temperature").to("K")
+
+        return ZeroFreestream(
+            Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
+        )
 
 
 # class OldFreestream(Flow360BaseModel):
@@ -1284,6 +1270,23 @@ class Flow360Params(Flow360BaseModel):
         returns configuration object in flow360 units system
         """
         return super().to_solver(self, exclude=["fluid_properties"])
+
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Returns
+        -------
+        json
+            Returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+
+        solver_params = self.to_solver()
+        solver_params_json = solver_params.json(indent=4, encoder=flow360_json_encoder)
+        return solver_params_json
 
     def append(self, params: Flow360Params, overwrite: bool = False):
         if not isinstance(params, Flow360Params):

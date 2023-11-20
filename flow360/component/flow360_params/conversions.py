@@ -20,19 +20,26 @@ def get_from_dict_by_key_list(key_list, data_dict):
 
 def need_conversion(value):
     if hasattr(value, "units"):
-        return value.units.registry.unit_system != "flow360"
+        return not str(value.units).startswith("flow360")
     return False
 
 
 def require(required_parameters, required_by, params):
+    required_msg = f'required by {" -> ".join(required_by)} for unit conversion'
     try:
         value = get_from_dict_by_key_list(required_parameters, params.dict())
         if value is None:
             raise ValueError
+
     except Exception as err:
         raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameters)} is required by {" -> ".join(required_by)} for unit conversion.'
+            f'{" -> ".join(required_parameters)} is {required_msg}.'
         ) from err
+
+    if hasattr(value, "units") and str(value.units).startswith("flow360"):
+        raise Flow360ConfigurationError(
+            f'{" -> ".join(required_parameters)} must be in physical units ({required_msg}).'
+        )
 
 
 def unit_converter(dimension, params, required_by: List[str] = []):
@@ -41,17 +48,17 @@ def unit_converter(dimension, params, required_by: List[str] = []):
         base_length = params.geometry.mesh_unit.to("m").v.item()
         return base_length
 
-    def get_base_velocity():
-        require(["fluid_properties"], required_by, params)
-        base_velocity = params.fluid_properties.speed_of_sound().to("m/s").v.item()
-        return base_velocity
-
     def get_base_temperature():
         require(["fluid_properties"], required_by, params)
         base_temperature = (
             params.fluid_properties.to_fluid_properties().temperature.to("K").v.item()
         )
         return base_temperature
+
+    def get_base_velocity():
+        require(["fluid_properties"], required_by, params)
+        base_velocity = params.fluid_properties.speed_of_sound().to("m/s").v.item()
+        return base_velocity
 
     def get_base_time():
         base_length = get_base_length()
@@ -85,15 +92,21 @@ def unit_converter(dimension, params, required_by: List[str] = []):
 
         return flow360_conv_system
 
-    if dimension == u.dimensions.velocity:
-        base_velocity = get_base_velocity()
-        flow360_conv_system = flow360_conversion_unit_system(base_velocity=base_velocity)
-
-        return flow360_conv_system
-
     if dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
         flow360_conv_system = flow360_conversion_unit_system(base_temperature=base_temperature)
+
+        return flow360_conv_system
+
+    if dimension == u.dimensions.area:
+        base_length = get_base_length()
+        flow360_conv_system = flow360_conversion_unit_system(base_area=base_length**2)
+
+        return flow360_conv_system
+
+    if dimension == u.dimensions.velocity:
+        base_velocity = get_base_velocity()
+        flow360_conv_system = flow360_conversion_unit_system(base_velocity=base_velocity)
 
         return flow360_conv_system
 

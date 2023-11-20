@@ -7,6 +7,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
     ActuatorDisk,
     AeroacousticOutput,
@@ -14,14 +15,13 @@ from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FluidDynamicsVolumeZone,
     ForcePerArea,
-    Freestream,
     FreestreamBoundary,
+    FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
     IsothermalWall,
-    LinearSolver,
     MassInflow,
     MassOutflow,
     MeshBoundary,
@@ -41,7 +41,6 @@ from flow360.component.flow360_params.flow360_params import (
     VolumeZones,
     WallFunction,
 )
-from flow360.component.types import TimeStep
 from flow360.exceptions import ConfigError, ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
@@ -154,7 +153,7 @@ def test_flow360param():
             }
         }
     ],
-    "freestream": {"temperature": 1, "Mach": 0.5}
+    "freestream": {"temperature": 1, "Mach": 0.5, "mu_ref": 1}
 }
         """
     )
@@ -163,24 +162,25 @@ def test_flow360param():
 
 
 def test_flow360param1():
-    params = Flow360Params(freestream=Freestream.from_speed(10))
+    params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
     assert params.time_stepping.max_pseudo_steps is None
     params.time_stepping = TimeStepping(physical_steps=100)
     assert params
 
 
 def test_tuple_from_yaml():
-    fs = Freestream("data/case_params/freestream/yaml.yaml")
+    fs = FreestreamFromVelocity("data/case_params/freestream/yaml.yaml")
     assert fs
 
 
 def test_update_from_multiple_files():
-    params = fl.Flow360Params(
-        geometry=fl.Geometry("data/case_params/geometry.yaml"),
-        boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
-        freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
-        navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
-    )
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry("data/case_params/geometry.yaml"),
+            boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+        )
 
     outputs = fl.Flow360Params("data/case_params/outputs.yaml")
     params.append(outputs)
@@ -192,33 +192,35 @@ def test_update_from_multiple_files():
 
 
 def test_update_from_multiple_files_dont_overwrite():
-    params = fl.Flow360Params(
-        geometry=fl.Geometry("data/case_params/geometry.yaml"),
-        boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
-        freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
-        navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
-    )
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry("data/case_params/geometry.yaml"),
+            boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+        )
 
     outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2)
+    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
     params.append(outputs)
 
     assert params.geometry.ref_area == 1.15315084119231
 
 
 def test_update_from_multiple_files_overwrite():
-    params = fl.Flow360Params(
-        geometry=fl.Geometry("data/case_params/geometry.yaml"),
-        boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
-        freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
-        navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
-    )
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry("data/case_params/geometry.yaml"),
+            boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+        )
 
     outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2)
+    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
     params.append(outputs, overwrite=True)
 
-    assert params.geometry.ref_area == 2
+    assert params.geometry.ref_area == 2 * u.flow360_area_unit
 
 
 def clear_formatting(message):

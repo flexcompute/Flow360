@@ -58,33 +58,6 @@ def params_generic_validator(value, ExpectedParamsType):
     return params
 
 
-def export_to_flow360(func):
-    """wraps to_flow360_json() function to set correct
-
-    Parameters
-    ----------
-    func : function
-        to_flow360_json() function which exports JSON format for flow360
-
-    Returns
-    -------
-    func
-        wrapper
-    """
-
-    @wraps(func)
-    def wrapper_func(*args, **kwargs):
-        args[0].Config.will_export = True
-        try:
-            value = func(*args, **kwargs)
-        except:
-            args[0].Config.will_export = False
-            raise
-        return value
-
-    return wrapper_func
-
-
 def _self_named_property_validator(values: dict, validator: Type[BaseModel], msg: str = "") -> dict:
     """When model uses custom, user defined property names, for example boundary names.
 
@@ -138,16 +111,37 @@ def encode_ndarray(x):
 
 def dimensioned_type_serializer(x):
     """
-    encoder for dimesioned type
-    """
-    return {"value": x.value, "units": str(x.units)}
-
-
-def dimensioned_type_serializer(x):
-    """
     encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
     """
     return {"value": x.value, "units": str(x.units)}
+
+
+_json_encoders_map = {
+    unyt.unyt_array: dimensioned_type_serializer,
+    DimensionedType: dimensioned_type_serializer,
+    unyt.Unit: str,
+    np.ndarray: encode_ndarray,
+}
+
+_json_flow360_encoders_map = {
+    unyt.unyt_array: lambda x: x.value,
+    DimensionedType: lambda x: x.value,
+    np.ndarray: encode_ndarray,
+}
+
+
+def _flow360_custom_json_encoder(obj):
+    for custom_type, encoder in _json_flow360_encoders_map.items():
+        if isinstance(obj, custom_type):
+            return encoder(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+def flow360_json_encoder(obj):
+    try:
+        return json.JSONEncoder().default(obj)
+    except TypeError:
+        return _flow360_custom_json_encoder(obj)
 
 
 # pylint: disable=too-many-public-methods
@@ -168,8 +162,6 @@ class Flow360BaseModel(BaseModel):
             super().__init__(**obj.dict())
         else:
             super().__init__(**kwargs)
-
-        self.Config.will_export = False
 
     def __init_subclass__(cls) -> None:
         """Things that are done to each of the models."""
@@ -201,17 +193,10 @@ class Flow360BaseModel(BaseModel):
         extra = "forbid"
         validate_assignment = True
         allow_population_by_field_name = True
-        json_encoders = {
-            unyt.unyt_array: dimensioned_type_serializer,
-            DimensionedType: dimensioned_type_serializer,
-            unyt.Unit: str,
-            np.ndarray: encode_ndarray,
-        }
+        json_encoders = _json_encoders_map
         allow_mutation = True
         copy_on_model_validation = "none"
         underscore_attrs_are_private = True
-        exclude_on_flow360_export: Optional[Any] = None
-        will_export: Optional[bool] = False
         require_one_of: Optional[List[str]] = []
         allow_but_remove: Optional[List[str]] = []
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
@@ -621,17 +606,6 @@ class Flow360BaseModel(BaseModel):
         with open(filename, "w+", encoding="utf-8") as file_handle:
             yaml.dump(model_dict, file_handle, indent=4)
 
-    def _handle_export_exclude(self, exclude):
-        if exclude:
-            exclude = {TYPE_TAG_STR, *exclude}
-        else:
-            exclude = {TYPE_TAG_STR}
-
-        if self.Config.will_export:
-            if self.Config.exclude_on_flow360_export:
-                exclude = {*exclude, *self.Config.exclude_on_flow360_export}
-            self.Config.will_export = False
-        return exclude
 
     def dict(self, *args, exclude=None, **kwargs) -> dict:
         """Returns dict representation of the model.
@@ -655,7 +629,6 @@ class Flow360BaseModel(BaseModel):
         >>> params.dict() # doctest: +SKIP
         """
 
-        exclude = self._handle_export_exclude(exclude)
         return super().dict(*args, exclude=exclude, **kwargs)
 
     def json(self, *args, exclude=None, **kwargs):
@@ -681,30 +654,8 @@ class Flow360BaseModel(BaseModel):
         >>> params.json() # doctest: +SKIP
         """
 
-        exclude = self._handle_export_exclude(exclude)
         return super().json(*args, by_alias=True, exclude_none=True, exclude=exclude, **kwargs)
 
-    @export_to_flow360
-    def to_flow360_json(self, return_json: bool = True):
-        """Generate a JSON representation of the model, as required by Flow360
-
-        Parameters
-        ----------
-        return_json : bool, optional
-            whether to return value or return None, by default True
-
-        Returns
-        -------
-        json
-            If return_json==True, returns JSON representation of the model.
-
-        Example
-        -------
-        >>> params.to_flow360_json() # doctest: +SKIP
-        """
-        if return_json:
-            return self.json()
-        return None
 
     # pylint: disable=unnecessary-dunder-call
     def append(self, params: Flow360BaseModel, overwrite: bool = False):
