@@ -455,11 +455,6 @@ class _Flow360BaseUnit(DimensionedType):
         class _units:
             dimensions = self.dimension_type.dim
 
-            class registry:
-                """registry for unyt api"""
-
-                unit_system = "flow360"
-
             def __str__(self):
                 return f"{parent_self.unit_name}"
 
@@ -802,6 +797,8 @@ def flow360_conversion_unit_system(
     base_time=np.inf,
     base_temperature=np.inf,
     base_velocity=np.inf,
+    base_area=np.inf,
+    base_force=np.inf,
     base_density=np.inf,
     base_pressure=np.inf,
     base_viscosity=np.inf,
@@ -816,6 +813,8 @@ def flow360_conversion_unit_system(
     _flow360_reg.add("flow360_time_unit", base_time, u.dimensions.time)
     _flow360_reg.add("flow360_temperature_unit", base_temperature, u.dimensions.temperature)
     _flow360_reg.add("flow360_velocity_unit", base_velocity, u.dimensions.velocity)
+    _flow360_reg.add("flow360_area_unit", base_area, u.dimensions.area)
+    _flow360_reg.add("flow360_force_unit", base_force, u.dimensions.force)
     _flow360_reg.add("flow360_density_unit", base_density, u.dimensions.density)
     _flow360_reg.add("flow360_pressure_unit", base_pressure, u.dimensions.pressure)
     _flow360_reg.add("flow360_viscosity_unit", base_viscosity, u.dimensions.viscosity)
@@ -833,6 +832,8 @@ def flow360_conversion_unit_system(
     )
 
     _flow360_conv_system["velocity"] = "flow360_velocity_unit"
+    _flow360_conv_system["area"] = "flow360_area_unit"
+    _flow360_conv_system["force"] = "flow360_force_unit"
     _flow360_conv_system["density"] = "flow360_density_unit"
     _flow360_conv_system["pressure"] = "flow360_pressure_unit"
     _flow360_conv_system["viscosity"] = "flow360_viscosity_unit"

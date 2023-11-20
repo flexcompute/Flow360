@@ -16,8 +16,5 @@
         "patch2"
     ],
     "volumeName": "volume1",
-    "omega": {
-        "v": 1.0,
-        "unit": "rad/s"
-    }
+    "omegaRadians": 1.0
 }
