@@ -2,6 +2,8 @@
 This module is flow360.
 """
 
+from numpy import pi
+
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -12,7 +14,6 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.flow360_params import (
     ActuatorDisk,
-    air,
     AdaptiveCFL,
     AeroacousticOutput,
     BETDisk,
@@ -20,9 +21,9 @@ from .component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     FluidDynamicsVolumeZone,
-    Freestream,
-    FreestreamFromVelocity,
     FreestreamBoundary,
+    FreestreamFromMach,
+    FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
     HeatTransferVolumeZone,
@@ -62,6 +63,9 @@ from .component.flow360_params.flow360_params import (
     VolumeOutput,
     VolumeZones,
     WallFunction,
+    ZeroFreestream,
+    ZeroFreestreamFromVelocity,
+    air,
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
@@ -79,6 +83,3 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
-
-from numpy import pi
-
