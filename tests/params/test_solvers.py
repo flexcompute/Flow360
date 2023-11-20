@@ -100,7 +100,7 @@ def test_transition():
 def test_heat_equation():
     he = HeatEquationSolver(
         equation_eval_frequency=10,
-        linear_solver_config=LinearSolver(
+        linear_solver=LinearSolver(
             absoluteTolerance=1e-10,
             max_iterations=50,
         ),

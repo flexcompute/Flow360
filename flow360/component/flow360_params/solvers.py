@@ -374,10 +374,12 @@ class HeatEquationSolver(Flow360BaseModel):
     """
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
-    linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolver()
-    )
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
+    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
 
 
 class HeatEquationSolverPrivate(HeatEquationSolver):
