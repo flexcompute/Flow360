@@ -8,6 +8,7 @@ import unyt
 from unyt import unit_symbols
 
 from .component.flow360_params.unit_system import (
+    BaseSystemType,
     CGS_unit_system,
     SI_unit_system,
     UnitSystem,

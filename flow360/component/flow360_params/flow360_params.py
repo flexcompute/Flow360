@@ -8,7 +8,16 @@ from __future__ import annotations
 
 import math
 from abc import ABCMeta
-from typing import Dict, List, Optional, Tuple, Union, get_args, get_type_hints
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    get_args,
+    get_type_hints,
+)
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -27,6 +36,7 @@ from ..types import (
     PositiveInt,
 )
 from ..utils import _get_value_or_none, beta_feature
+from .conversions import ExtraDimensionedProperty
 from .flow360_output import (
     IsoSurfaceOutput,
     IsoSurfaces,
@@ -41,6 +51,7 @@ from .flow360_output import (
     VolumeOutput,
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
+
 # from ..utils import _get_value_or_none, beta_feature
 from .params_base import (
     DeprecatedAlias,
@@ -49,6 +60,7 @@ from .params_base import (
     _self_named_property_validator,
     export_to_flow360,
 )
+from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     NavierStokesSolver,
@@ -58,12 +70,21 @@ from .solvers import (
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
 )
-
-from .unit_system import u, PressureType, DensityType, ViscosityType, TemperatureType, LengthType, VelocityType, AreaType, TimeType, AngularVelocityType
-
-from .physical_properties import _AirModel
+from .unit_system import (
+    AngularVelocityType,
+    AreaType,
+    DensityType,
+    LengthType,
+    PressureType,
+    TemperatureType,
+    TimeType,
+    VelocityType,
+    ViscosityType,
+    u,
+)
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
+
 
 # pylint: disable=invalid-name
 def get_time_non_dim_unit(mesh_unit_length, C_inf, extra_msg=""):
@@ -150,7 +171,7 @@ class SubsonicInflow(Boundary):
     type = pd.Field("SubsonicInflow", const=True)
     totalPressureRatio: PositiveFloat
     totalTemperatureRatio: PositiveFloat
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias='rampSteps')
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class SupersonicInflow(Boundary):
@@ -537,7 +558,9 @@ class TimeStepping(Flow360BaseModel):
 
     physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
-    time_step_size: Optional[Union[Literal["inf"], TimeType.Positive]] = pd.Field(alias="timeStepSize", default="inf")
+    time_step_size: Optional[Union[Literal["inf"], TimeType.Positive]] = pd.Field(
+        alias="timeStepSize", default="inf"
+    )
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field()
 
     # pylint: disable=invalid-name
@@ -551,10 +574,9 @@ class TimeStepping(Flow360BaseModel):
             return self.json()
         return None
 
-
     def to_solver(self, params: Flow360Params, **kwargs) -> TimeStepping:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
 
@@ -611,10 +633,9 @@ class Boundaries(Flow360SortableBaseModel):
 
     def to_solver(self, params: Flow360Params, **kwargs) -> Boundaries:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
 
 
 class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -639,7 +660,6 @@ class HeatTransferVolumeZone(VolumeZoneBase):
     )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
     initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
-
 
 
 class ReferenceFrameDynamic(Flow360BaseModel):
@@ -669,7 +689,6 @@ class ReferenceFrameDynamic(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
     is_dynamic: bool = pd.Field(True, alias="isDynamic", const=True)
-
 
 
 class ReferenceFrameExpression(Flow360BaseModel):
@@ -721,7 +740,6 @@ class ReferenceFrameExpression(Flow360BaseModel):
         ]
 
 
-
 class ReferenceFrame(Flow360BaseModel):
     """:class:`ReferenceFrame` class for setting up reference frame
 
@@ -755,94 +773,91 @@ class ReferenceFrame(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
 
-
     def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrame:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
 
 
+# class OldReferenceFrame(Flow360BaseModel):
+#     """:class:`ReferenceFrame` class for setting up reference frame
 
-class OldReferenceFrame(Flow360BaseModel):
-    """:class:`ReferenceFrame` class for setting up reference frame
+#     Parameters
+#     ----------
+#     center : Coordinate
+#         Coordinate representing the origin of rotation, eg. (0, 0, 0)
 
-    Parameters
-    ----------
-    center : Coordinate
-        Coordinate representing the origin of rotation, eg. (0, 0, 0)
+#     axis : Axis
+#         Axis of rotation, eg. (0, 0, 1)
 
-    axis : Axis
-        Axis of rotation, eg. (0, 0, 1)
+#     parent_volume_name : str, optional
+#         Name of the volume zone that the rotating reference frame is contained in, used to compute the acceleration in
+#         the nested rotating reference frame
 
-    parent_volume_name : str, optional
-        Name of the volume zone that the rotating reference frame is contained in, used to compute the acceleration in
-        the nested rotating reference frame
+#     theta_radians : str, optional
+#         Expression for rotation angle (in radians) as a function of time
 
-    theta_radians : str, optional
-        Expression for rotation angle (in radians) as a function of time
+#     theta_degrees : str, optional
+#         Expression for rotation angle (in degrees) as a function of time
 
-    theta_degrees : str, optional
-        Expression for rotation angle (in degrees) as a function of time
+#     omega_radians
+#         Nondimensional rotating speed, radians/nondim-unit-time
 
-    omega_radians
-        Nondimensional rotating speed, radians/nondim-unit-time
+#     omega_degrees
+#         Nondimensional rotating speed, degrees/nondim-unit-time
 
-    omega_degrees
-        Nondimensional rotating speed, degrees/nondim-unit-time
-
-    is_dynamic
-        Whether rotation of this interface is dictated by userDefinedDynamics
+#     is_dynamic
+#         Whether rotation of this interface is dictated by userDefinedDynamics
 
 
-    Returns
-    -------
-    :class:`ReferenceFrame`
-        An instance of the component class ReferenceFrame.
+#     Returns
+#     -------
+#     :class:`ReferenceFrame`
+#         An instance of the component class ReferenceFrame.
 
-    Example
-    -------
-    >>> rf = ReferenceFrame(
-            center=(0, 0, 0),
-            axis=(0, 0, 1),
-            omega_radians=1
-        )
-    """
+#     Example
+#     -------
+#     >>> rf = ReferenceFrame(
+#             center=(0, 0, 0),
+#             axis=(0, 0, 1),
+#             omega_radians=1
+#         )
+#     """
 
-    theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
-    theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
-    omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
-    omega_degrees: Optional[float] = pd.Field(alias="omegaDegrees")
-    center: Coordinate = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
-    parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
-    is_dynamic: Optional[bool] = pd.Field(alias="isDynamic")
+#     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
+#     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
+#     omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
+#     omega_degrees: Optional[float] = pd.Field(alias="omegaDegrees")
+#     center: Coordinate = pd.Field(alias="centerOfRotation")
+#     axis: Axis = pd.Field(alias="axisOfRotation")
+#     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
+#     is_dynamic: Optional[bool] = pd.Field(alias="isDynamic")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_one_of = [
-            "omega_radians",
-            "omega_degrees",
-            "theta_radians",
-            "theta_degrees",
-            "is_dynamic",
-        ]
+#     # pylint: disable=missing-class-docstring,too-few-public-methods
+#     class Config(Flow360BaseModel.Config):
+#         require_one_of = [
+#             "omega_radians",
+#             "omega_degrees",
+#             "theta_radians",
+#             "theta_degrees",
+#             "is_dynamic",
+#         ]
 
 
 class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
-    reference_frame: Optional[Union[ReferenceFrame, ReferenceFrameExpression, ReferenceFrameDynamic]] = pd.Field(alias="referenceFrame")
-
+    reference_frame: Optional[
+        Union[ReferenceFrame, ReferenceFrameExpression, ReferenceFrameDynamic]
+    ] = pd.Field(alias="referenceFrame")
 
     def to_solver(self, params: Flow360Params, **kwargs) -> FluidDynamicsVolumeZone:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
-
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
@@ -888,13 +903,12 @@ class VolumeZones(Flow360SortableBaseModel):
         return _self_named_property_validator(
             values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types."
         )
-    
+
     def to_solver(self, params: Flow360Params, **kwargs) -> VolumeZones:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
 
 
 class AeroacousticOutput(Flow360BaseModel):
@@ -929,7 +943,6 @@ class AeroacousticOutput(Flow360BaseModel):
     observers: List[Coordinate] = pd.Field()
 
 
-
 class Geometry(Flow360BaseModel):
     """
     Geometry component
@@ -939,22 +952,19 @@ class Geometry(Flow360BaseModel):
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
-    
 
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
         """
-        returns configuration object in flow360 units system  
-        """        
-        return super().to_solver(params, exclude=['mesh_unit'], **kwargs)
-
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, exclude=["mesh_unit"], **kwargs)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["meshName", "endianness"]
 
 
-
-class Freestream(Flow360BaseModel, metaclass=ABCMeta):
+class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     """
     Freestream component
     """
@@ -966,58 +976,96 @@ class Freestream(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class FreestreamFromMach(Freestream):
+class FreestreamFromMach(FreestreamBase):
     Mach: PositiveFloat = pd.Field()
-    Mach_ref: Optional[PositiveFloat] = pd.Field(alias='MachRef')
+    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
+    mu_ref: PositiveFloat = pd.Field(alias="muRef")
+    temperature: PositiveFloat = pd.Field(alias="Temperature")
 
     def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         return self
 
 
-class ZeroFreestream(Freestream):
+class FreestreamFromMachReynolds(FreestreamBase):
+    Mach: PositiveFloat = pd.Field()
+    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
+    Reynolds: PositiveFloat = pd.Field()
+
+    def to_solver(self, params: Flow360Params) -> FreestreamFromMach:
+        """
+        returns configuration object in flow360 units system
+        """
+        return self
+
+
+class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True)
     Mach_ref: PositiveFloat = pd.Field()
 
     def to_solver(self, params: Flow360Params) -> ZeroFreestream:
         """
-        returns configuration object in flow360 units system  
-        """        
+        returns configuration object in flow360 units system
+        """
         return self
 
 
-class FreestreamFromVelocity(Freestream):
+class FreestreamFromVelocity(FreestreamBase):
     velocity: VelocityType.Positive = pd.Field()
     velocity_ref: Optional[VelocityType.Positive] = pd.Field()
 
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        mach = solver_values.pop('velocity').v.item()
-        mach_ref = solver_values.pop('velocity_ref', None)
+        value_factory_viscosity = lambda: params.fluid_properties.to_fluid_properties().viscosity
+        value_factory_temperature = (
+            lambda: params.fluid_properties.to_fluid_properties().temperature
+        )
+        extra = [
+            ExtraDimensionedProperty(
+                name="viscosity",
+                dependency_list=["fluid_properties"],
+                value_factory=value_factory_viscosity,
+            ),
+            ExtraDimensionedProperty(
+                name="temperature",
+                dependency_list=["fluid_properties"],
+                value_factory=value_factory_temperature,
+            ),
+        ]
+
+        solver_values = self._convert_dimensions_to_solver(params, extra=extra, **kwargs)
+        mach = solver_values.pop("velocity")
+        mach_ref = solver_values.pop("velocity_ref", None)
+        mu_ref = solver_values.pop("viscosity")
+        temperature = solver_values.pop("temperature").to("K")
+
         if mach_ref is not None:
             mach_ref = mach_ref.v.item()
 
-        return FreestreamFromMach(Mach=mach, Mach_ref=mach_ref, **solver_values)
+
+        return FreestreamFromMach(
+            Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
+        )
 
 
-class ZeroFreestreamFromVelocity(Freestream):
+class ZeroFreestreamFromVelocity(FreestreamBase):
     velocity: Literal[0] = pd.Field(0, const=True)
     velocity_ref: VelocityType.Positive = pd.Field()
 
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
         """
-        returns configuration object in flow360 units system  
+        returns configuration object in flow360 units system
         """
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        mach = solver_values.pop('velocity')
-        mach_ref = solver_values.pop('velocity_ref').v.item()
+        mach = solver_values.pop("velocity")
+        mach_ref = solver_values.pop("velocity_ref").v.item()
 
         return ZeroFreestream(Mach=mach, Mach_ref=mach_ref, **solver_values)
+
 
 # class OldFreestream(Flow360BaseModel):
 #     """
@@ -1123,13 +1171,11 @@ class ZeroFreestreamFromVelocity(Freestream):
 #         require_one_of = ["Mach", "speed"]
 
 
-
 class _FluidProperties(Flow360BaseModel):
     temperature: TemperatureType = pd.Field()
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
-
 
     def to_fluid_properties(self) -> _FluidProperties:
         return self
@@ -1144,30 +1190,29 @@ class AirPressureTemperature(Flow360BaseModel):
             temperature=self.temperature,
             pressure=self.pressure,
             density=_AirModel.density_from_pressure_temperature(self.pressure, self.temperature),
-            viscosity=_AirModel.viscosity_from_temperature(self.temperature)
+            viscosity=_AirModel.viscosity_from_temperature(self.temperature),
         )
         return fluid_properties
 
     def speed_of_sound(self) -> VelocityType:
-        return _AirModel.speed_of_sound(self.temperature.to('K').v.item()) * u.m / u.s
+        return _AirModel.speed_of_sound(self.temperature)
 
 
 class AirDensityTemperature(Flow360BaseModel):
     temperature: TemperatureType = pd.Field()
     density: DensityType = pd.Field()
 
-
     def to_fluid_properties(self) -> _FluidProperties:
         fluid_properties = _FluidProperties(
             temperature=self.temperature,
             pressure=_AirModel.pressure_from_density_temperature(self.density, self.temperature),
             density=self.density,
-            viscosity=_AirModel.viscosity_from_temperature(self.temperature)
+            viscosity=_AirModel.viscosity_from_temperature(self.temperature),
         )
         return fluid_properties
-    
+
     def speed_of_sound(self) -> VelocityType:
-        return _AirModel.speed_of_sound(self.temperature.to('K').v.item()) * u.m / u.s
+        return _AirModel.speed_of_sound(self.temperature)
 
 
 class USstandardAtmosphere(Flow360BaseModel):
@@ -1175,17 +1220,13 @@ class USstandardAtmosphere(Flow360BaseModel):
     temperature_offset: TemperatureType = pd.Field(default=0)
 
     def __init__(self):
-        raise NotImplementedError('USstandardAtmosphere not implemented yet.')
-
+        raise NotImplementedError("USstandardAtmosphere not implemented yet.")
 
     def to_fluid_properties(self) -> _FluidProperties:
         pass
 
 
 air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
-
-
-
 
 
 class Flow360Params(Flow360BaseModel):
@@ -1198,7 +1239,9 @@ class Flow360Params(Flow360BaseModel):
     # )
 
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(alias='fluidProperties')
+    fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(
+        alias="fluidProperties"
+    )
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
@@ -1213,7 +1256,15 @@ class Flow360Params(Flow360BaseModel):
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[Union[FreestreamFromMach, FreestreamFromVelocity, ZeroFreestream, ZeroFreestreamFromVelocity]] = pd.Field()
+    freestream: Optional[
+        Union[
+            FreestreamFromMach,
+            FreestreamFromMachReynolds,
+            FreestreamFromVelocity,
+            ZeroFreestream,
+            ZeroFreestreamFromVelocity,
+        ]
+    ] = pd.Field()
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
@@ -1228,19 +1279,16 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
-
     def to_solver(self) -> Flow360Params:
         """
-        returns configuration object in flow360 units system  
-        """        
-        return super().to_solver(self, exclude=['fluid_properties'])
-
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(self, exclude=["fluid_properties"])
 
     def append(self, params: Flow360Params, overwrite: bool = False):
         if not isinstance(params, Flow360Params):
             raise ValueError("params must be type of Flow360Params")
         super().append(params=params, overwrite=overwrite)
-
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
