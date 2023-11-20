@@ -8,7 +8,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Collection, Literal, List
+from typing import Collection, List, Literal
 
 import numpy as np
 import pydantic as pd
@@ -471,7 +471,7 @@ class _Flow360BaseUnit(DimensionedType):
         Retrieve value of a flow360 unit system value, use np.ndarray to keep interface consistant with unyt
         """
         return np.asarray(self.val)
-    
+
     @property
     def v(self):
         return self.value
@@ -740,9 +740,18 @@ class UnitSystem(pd.BaseModel):
         """to support [] access"""
         return getattr(self, item)
 
+    def _system_repr(self):
+        units = [
+            str(unit.units if unit.v == 1.0 else unit)
+            for unit in [self.mass, self.length, self.time, self.temperature]
+        ]
+        str_repr = f"({', '.join(units)})"
+
+        return str_repr
+
     def __enter__(self):
         _lock.acquire()
-        print(f"using: ({self.mass}, {self.length}, {self.time}, {self.temperature}) unit system")
+        print(f"using: {self._system_repr()} unit system")
         unit_system_manager.set_current(self)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -803,23 +812,30 @@ def flow360_conversion_unit_system(
     """
     _flow360_reg = u.UnitRegistry()
     _flow360_reg.add("flow360_length_unit", base_length, u.dimensions.length)
-    _flow360_reg.add("mass", base_mass, u.dimensions.mass)
+    _flow360_reg.add("flow360_mass_unit", base_mass, u.dimensions.mass)
     _flow360_reg.add("flow360_time_unit", base_time, u.dimensions.time)
-    _flow360_reg.add("T_inf", base_temperature, u.dimensions.temperature)
+    _flow360_reg.add("flow360_temperature_unit", base_temperature, u.dimensions.temperature)
     _flow360_reg.add("flow360_velocity_unit", base_velocity, u.dimensions.velocity)
-    _flow360_reg.add("rho_inf", base_density, u.dimensions.density)
-    _flow360_reg.add("p_inf", base_pressure, u.dimensions.pressure)
-    _flow360_reg.add("mu", base_viscosity, u.dimensions.viscosity)
-    _flow360_reg.add("flow360_angular_velocity_unit", base_angular_velocity, u.dimensions.angular_velocity)
+    _flow360_reg.add("flow360_density_unit", base_density, u.dimensions.density)
+    _flow360_reg.add("flow360_pressure_unit", base_pressure, u.dimensions.pressure)
+    _flow360_reg.add("flow360_viscosity_unit", base_viscosity, u.dimensions.viscosity)
+    _flow360_reg.add(
+        "flow360_angular_velocity_unit", base_angular_velocity, u.dimensions.angular_velocity
+    )
 
     _flow360_conv_system = u.UnitSystem(
-        "flow360", "flow360_length_unit", "mass", "flow360_time_unit", "T_inf", registry=_flow360_reg
+        "flow360",
+        "flow360_length_unit",
+        "flow360_mass_unit",
+        "flow360_time_unit",
+        "flow360_temperature_unit",
+        registry=_flow360_reg,
     )
 
     _flow360_conv_system["velocity"] = "flow360_velocity_unit"
-    _flow360_conv_system["density"] = "rho_inf"
-    _flow360_conv_system["pressure"] = "p_inf"
-    _flow360_conv_system["viscosity"] = "mu"
+    _flow360_conv_system["density"] = "flow360_density_unit"
+    _flow360_conv_system["pressure"] = "flow360_pressure_unit"
+    _flow360_conv_system["viscosity"] = "flow360_viscosity_unit"
     _flow360_conv_system["angular_velocity"] = "flow360_angular_velocity_unit"
 
     return _flow360_conv_system
