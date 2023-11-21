@@ -2,6 +2,9 @@ import difflib
 import json
 import os
 import tempfile
+import pytest
+import unyt
+import numpy as np
 
 from flow360.cloud.rest_api import RestApi
 
@@ -52,6 +55,29 @@ def compare_to_ref(obj, ref_path, content_only=False):
             with open(ref_path) as fh:
                 b = json.load(fh)
             assert sorted(a.items()) == sorted(b.items())
+
+
+@pytest.fixture()
+def array_equality_override():
+    # Overload equality for unyt arrays
+    def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
+        if self.size == other.size == 1:
+            return np.ndarray.__eq__(self, other)
+        elif self.size == other.size:
+            return all(self[i] == other[i] for i in range(len(self)))
+        return False
+
+    def unyt_array_ne(self: unyt.unyt_array, other: unyt.unyt_array):
+        if self.size == other.size == 1:
+            return np.ndarray.__ne__(self, other)
+        elif self.size == other.size:
+            return any(self[i] != other[i] for i in range(len(self)))
+        return True
+
+    unyt.unyt_array.__eq__ = unyt_array_eq
+    unyt.unyt_array.__ne__ = unyt_array_ne
+
+
 
 
 # for generating MOCK WEBAPI data:

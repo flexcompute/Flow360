@@ -22,28 +22,9 @@ from flow360.component.flow360_params.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import to_file_from_file_test
+from tests.utils import to_file_from_file_test, array_equality_override
 
 
-@pytest.fixture()
-def array_equality_override():
-    # Overload equality for unyt arrays
-    def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
-        if self.size == other.size == 1:
-            return np.ndarray.__eq__(self, other)
-        elif self.size == other.size:
-            return all(self[i] == other[i] for i in range(len(self)))
-        return False
-
-    def unyt_array_ne(self: unyt.unyt_array, other: unyt.unyt_array):
-        if self.size == other.size == 1:
-            return np.ndarray.__ne__(self, other)
-        elif self.size == other.size:
-            return any(self[i] != other[i] for i in range(len(self)))
-        return True
-
-    unyt.unyt_array.__eq__ = unyt_array_eq
-    unyt.unyt_array.__ne__ = unyt_array_ne
 
 
 class DataWithUnits(pd.BaseModel):

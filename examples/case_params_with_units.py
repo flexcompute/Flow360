@@ -7,10 +7,11 @@ from flow360 import units as u
 log.set_logging_level("DEBUG")
 
 
+
 with fl.SI_unit_system:
     params = fl.Flow360Params(
         geometry=fl.Geometry(
-            ref_area=u.flow360_area_unit,
+            ref_area=1.0 * u.flow360_area_unit,
             moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
             moment_center=(1, 2, 3) * u.flow360_length_unit,
             mesh_unit=u.mm,
@@ -53,7 +54,10 @@ with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
     assert params_reimport.geometry.ref_area == params.geometry.ref_area
 
 
-params = params.to_solver()
+params_solver = params.to_solver()
+params_as_json = params_solver.json(indent=4)
+print(params_as_json)
 
-params_as_json = params.json(indent=4)
+
+params_as_json = params_solver.to_flow360_json()
 print(params_as_json)
