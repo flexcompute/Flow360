@@ -2,11 +2,6 @@ import difflib
 import json
 import os
 import tempfile
-<<<<<<< HEAD
-from numbers import Number
-
-=======
->>>>>>> dad2eec (moved test unyt_array compare fixutre to utils)
 import pytest
 import unyt
 import numpy as np
