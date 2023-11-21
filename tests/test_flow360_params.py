@@ -43,7 +43,8 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from flow360.exceptions import ConfigError, ValidationError
 
-from .utils import compare_to_ref, to_file_from_file_test
+from .utils import compare_to_ref, to_file_from_file_test, array_equality_override
+
 
 assertions = unittest.TestCase("__init__")
 
@@ -173,6 +174,7 @@ def test_tuple_from_yaml():
     assert fs
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_update_from_multiple_files():
     with fl.SI_unit_system:
         params = fl.Flow360Params(
