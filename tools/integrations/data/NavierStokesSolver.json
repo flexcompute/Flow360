@@ -1,0 +1,101 @@
+{
+  "title": "NavierStokesSolver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolutetolerance",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relativetolerance",
+      "type": "number"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "linearIterations": {
+      "title": "Linear iterations",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "kappaMUSCL": {
+      "title": "Kappa MUSCL",
+      "minimum": -1,
+      "maximum": 1,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update Jacobian frequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation evaluation frequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "linearSolverConfig": {
+      "title": "Linear solver config",
+      "default": {
+        "max_iterations": 50,
+        "absolute_tolerance": 1e-10,
+        "relative_tolerance": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/LinearSolver"
+        }
+      ]
+    },
+    "limitVelocity": {
+      "title": "Limit velocity",
+      "type": "boolean"
+    },
+    "limitPressureDensity": {
+      "title": "Limit pressure density",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "LinearSolver": {
+      "title": "LinearSolver",
+      "type": "object",
+      "properties": {
+        "maxIterations": {
+          "title": "Maxiterations",
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "absoluteTolerance": {
+          "title": "Absolutetolerance",
+          "default": 1e-10,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relativetolerance",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
