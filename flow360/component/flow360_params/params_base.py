@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 from abc import ABCMeta, abstractmethod
-from functools import wraps
 from typing import Any, List, Optional, Type
 
 import numpy as np
@@ -138,6 +137,9 @@ def _flow360_custom_json_encoder(obj):
 
 
 def flow360_json_encoder(obj):
+    """
+    flow360 json encoder. Removes {value:, units:} formatting and returns value directly.
+    """
     try:
         return json.JSONEncoder().default(obj)
     except TypeError:
@@ -332,14 +334,25 @@ class Flow360BaseModel(BaseModel):
         return json_str
 
     def _convert_dimensions_to_solver(
-        self, params, exclude: List[str] = [], required_by: List[str] = [], extra: List[Any] = []
+        self,
+        params,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
 
-        for extra_item in extra:
-            require(extra_item.dependency_list, required_by, params)
-            self_dict[extra_item.name] = extra_item.value_factory()
+        if exclude is None:
+            exclude = []
+
+        if required_by is None:
+            required_by = []
+
+        if extra is not None:
+            for extra_item in extra:
+                require(extra_item.dependency_list, required_by, params)
+                self_dict[extra_item.name] = extra_item.value_factory()
 
         for property_name, value in self_dict.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
@@ -360,7 +373,7 @@ class Flow360BaseModel(BaseModel):
         return solver_values
 
     def to_solver(
-        self, params, exclude: List[str] = [], required_by: List[str] = []
+        self, params, exclude: List[str] = None, required_by: List[str] = None
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimentioned value performs
@@ -382,6 +395,13 @@ class Flow360BaseModel(BaseModel):
         caller class
             returns caller class with units all in flow360 base unit system
         """
+
+        if exclude is None:
+            exclude = []
+
+        if required_by is None:
+            required_by = []
+
         solver_values = self._convert_dimensions_to_solver(params, exclude, required_by)
         for property_name, value in self.__dict__.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:

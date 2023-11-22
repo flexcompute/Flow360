@@ -65,18 +65,17 @@ from .solvers import (
 from .unit_system import (
     AngularVelocityType,
     AreaType,
+    CGS_unit_system,
     DensityType,
     LengthType,
     PressureType,
+    SI_unit_system,
     TemperatureType,
     TimeType,
     UnitSystem,
     VelocityType,
     ViscosityType,
-    SI_unit_system,
-    CGS_unit_system,
     imperial_unit_system,
-    UnitSystem,
     u,
     unit_system_manager,
 )
@@ -508,6 +507,7 @@ class TimeStepping(Flow360BaseModel):
     )
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field()
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> TimeStepping:
         """
         returns configuration object in flow360 units system
@@ -565,6 +565,7 @@ class Boundaries(Flow360SortableBaseModel):
             values, _GenericBoundaryWrapper, msg="is not any of supported boundary types."
         )
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Boundaries:
         """
         returns configuration object in flow360 units system
@@ -734,6 +735,7 @@ class ReferenceFrame(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaRadians:
         """
         returns configuration object in flow360 units system
@@ -822,6 +824,7 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         ]
     ] = pd.Field(alias="referenceFrame")
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FluidDynamicsVolumeZone:
         """
         returns configuration object in flow360 units system
@@ -873,6 +876,7 @@ class VolumeZones(Flow360SortableBaseModel):
             values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types."
         )
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> VolumeZones:
         """
         returns configuration object in flow360 units system
@@ -922,6 +926,7 @@ class Geometry(Flow360BaseModel):
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
         """
         returns configuration object in flow360 units system
@@ -951,6 +956,7 @@ class FreestreamFromMach(FreestreamBase):
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
+    # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
         returns configuration object in flow360 units system
@@ -964,6 +970,7 @@ class FreestreamFromMachReynolds(FreestreamBase):
     Reynolds: PositiveFloat = pd.Field()
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
+    # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
         returns configuration object in flow360 units system
@@ -977,6 +984,7 @@ class ZeroFreestream(FreestreamBase):
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
+    # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
         """
         returns configuration object in flow360 units system
@@ -988,24 +996,22 @@ class FreestreamFromVelocity(FreestreamBase):
     velocity: VelocityType.Positive = pd.Field()
     velocity_ref: Optional[VelocityType.Positive] = pd.Field()
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
         """
         returns configuration object in flow360 units system
         """
-        value_factory_viscosity = lambda: params.fluid_properties.to_fluid_properties().viscosity
-        value_factory_temperature = (
-            lambda: params.fluid_properties.to_fluid_properties().temperature
-        )
+
         extra = [
             ExtraDimensionedProperty(
                 name="viscosity",
                 dependency_list=["fluid_properties"],
-                value_factory=value_factory_viscosity,
+                value_factory=lambda: params.fluid_properties.to_fluid_properties().viscosity,
             ),
             ExtraDimensionedProperty(
                 name="temperature",
                 dependency_list=["fluid_properties"],
-                value_factory=value_factory_temperature,
+                value_factory=lambda: params.fluid_properties.to_fluid_properties().temperature,
             ),
         ]
 
@@ -1027,27 +1033,24 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
     velocity: Literal[0] = pd.Field(0, const=True)
     velocity_ref: VelocityType.Positive = pd.Field()
 
+    # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
         """
         returns configuration object in flow360 units system
         """
-        value_factory_viscosity = lambda: params.fluid_properties.to_fluid_properties().viscosity
-        value_factory_temperature = (
-            lambda: params.fluid_properties.to_fluid_properties().temperature
-        )
+
         extra = [
             ExtraDimensionedProperty(
                 name="viscosity",
                 dependency_list=["fluid_properties"],
-                value_factory=value_factory_viscosity,
+                value_factory=lambda: params.fluid_properties.to_fluid_properties().viscosity,
             ),
             ExtraDimensionedProperty(
                 name="temperature",
                 dependency_list=["fluid_properties"],
-                value_factory=value_factory_temperature,
+                value_factory=lambda: params.fluid_properties.to_fluid_properties().temperature,
             ),
         ]
-
         solver_values = self._convert_dimensions_to_solver(params, extra=extra, **kwargs)
         mach = solver_values.pop("velocity")
         mach_ref = solver_values.pop("velocity_ref", None)
@@ -1164,20 +1167,52 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
 
 
 class _FluidProperties(Flow360BaseModel):
+    """
+    Model representing fluid properties.
+
+    Parameters
+    ----------
+    temperature : TemperatureType
+        Temperature of the fluid.
+    pressure : PressureType
+        Pressure of the fluid.
+    density : DensityType
+        Density of the fluid.
+    viscosity : ViscosityType
+        Viscosity of the fluid.
+
+    """
+
     temperature: TemperatureType = pd.Field()
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
+        """returns an instance of _FluidProperties"""
+
         return self
 
 
 class AirPressureTemperature(Flow360BaseModel):
+    """
+    Model representing air properties based on pressure and temperature.
+
+    Parameters
+    ----------
+    pressure : PressureType
+        Pressure of the air.
+    temperature : TemperatureType
+        Temperature of the air.
+
+    """
+
     pressure: PressureType = pd.Field()
     temperature: TemperatureType = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
+        """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
+
         fluid_properties = _FluidProperties(
             temperature=self.temperature,
             pressure=self.pressure,
@@ -1187,14 +1222,29 @@ class AirPressureTemperature(Flow360BaseModel):
         return fluid_properties
 
     def speed_of_sound(self) -> VelocityType:
+        """Calculates the speed of sound in the air based on the temperature."""
         return _AirModel.speed_of_sound(self.temperature)
 
 
 class AirDensityTemperature(Flow360BaseModel):
+    """
+    Model representing air properties based on density and temperature.
+
+    Parameters
+    ----------
+    temperature : TemperatureType
+        Temperature of the air.
+    density : DensityType
+        Density of the air.
+
+    """
+
     temperature: TemperatureType = pd.Field()
     density: DensityType = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
+        """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
+
         fluid_properties = _FluidProperties(
             temperature=self.temperature,
             pressure=_AirModel.pressure_from_density_temperature(self.density, self.temperature),
@@ -1204,20 +1254,35 @@ class AirDensityTemperature(Flow360BaseModel):
         return fluid_properties
 
     def speed_of_sound(self) -> VelocityType:
+        """Calculates the speed of sound in the air based on the temperature."""
         return _AirModel.speed_of_sound(self.temperature)
 
 
 class USstandardAtmosphere(Flow360BaseModel):
+    """
+    Model representing the U.S. Standard Atmosphere.
+
+    Parameters
+    ----------
+    altitude : LengthType
+        Altitude above sea level.
+    temperature_offset : TemperatureType, default: 0
+        Offset to the standard temperature.
+
+    """
+
     altitude: LengthType = pd.Field()
     temperature_offset: TemperatureType = pd.Field(default=0)
 
     def __init__(self):
+        super().__init__()
         raise NotImplementedError("USstandardAtmosphere not implemented yet.")
 
     def to_fluid_properties(self) -> _FluidProperties:
-        pass
+        """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
 
 
+# pylint: disable=no-member
 air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
 
 
@@ -1226,7 +1291,8 @@ class Flow360Params(Flow360BaseModel):
     Flow360 solver parameters
     """
 
-    # unit_system: UnitSystem = pd.Field(alias='unitSystem', const=True, default_factory=unit_system_manager.copy_current)
+    # save unit system for future use, for example processing results: TODO:
+    # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current)
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(
         alias="fluidProperties"
@@ -1268,19 +1334,70 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
+    # save unit system for future use, for example processing results: TODO:
+    # validator: what if context is different than what is provided to the constructor (should it be ignored?)
+    # how copy should work? copy unit_system as well or use context?
     # @pd.validator('unit_system')
     # def should_be_consistent_with_context(cls, v):
     #     if v == unit_system_manager.current:
     #         return v
-    #     raise ValueError(f'unit_system is inconsistent from context unit system: {v}, {unit_system_manager.current}')
+    #   raise ValueError(f'unit_system is inconsistent from context unit system: \n{v}\n{unit_system_manager.current}')
+
+    # save unit system for future use, for example processing results: TODO:
+    def _handle_unit_system_init(self, init_dict):
+        """
+        handling unit systems:
+        if no unit_system provided and no context:
+        - save with the model flow360 unit system, use flow360 context to infer units - NEED TO THINK ABOUT IT!!!
+        if unit_system provided and no context:
+        - safe with the model provided unit system, use flow360 context to infer units
+        if unit_system not provided and context:
+        - safe with the model context unit system, dont use additional context (already in the context)
+        if unit_system provided and context provided:
+        - show warning, save context as model unit_system, show warning that model unit system changed.
+        """
+
+    # unit_system = init_dict.get('unit_system', init_dict.get('unitSystem', None))
+    # use_unit_system_as_context = None
+    # save_unit_system_with_model = None
+
+    # if not isinstance(unit_system, (UnitSystem, None)):
+    #     unit_system = UnitSystem(unit_system)
+
+    # if unit_system is not None:
+    #     if not isinstance(unit_system, UnitSystem):
+    #         unit_system = UnitSystem(unit_system)
+
+    #     if unit_system_manager.current is None:
+    #         save_unit_system_with_model = unit_system
+    #         use_unit_system_as_context = UnitSystem(base_system="Flow360", verbose=False)
+
+    #     if unit_system != unit_system_manager.current:
+    #         log.warning(
+    #                 f'Trying to initialize {self.__class__.__name__} with unit system: '
+    #                 f'{unit_system.system_repr()} '
+    #                 f'inside context: {unit_system_manager.current.system_repr()} '
+    #                 f'context unit system will be saved with the model.'
+    #             )
+    #         return unit_system_manager.current
+
+    # return save_unit_system_with_model, use_unit_system_as_context
 
     def __init__(self, filename: str = None, **kwargs):
+        # if filename:
+        #     obj = self.from_file(filename=filename)
+        #     init_dict = obj.dict()
+        # else:
+        #     init_dict = kwargs
+        # save_unit_system_with_model, use_unit_system_as_context = self._handle_unit_system_init(init_dict)
+
         if unit_system_manager.current is None:
             with UnitSystem(base_system="Flow360", verbose=False):
                 super().__init__(filename, **kwargs)
         else:
             super().__init__(filename, **kwargs)
 
+    # pylint: disable=arguments-differ
     def to_solver(self) -> Flow360Params:
         """
         returns configuration object in flow360 units system
