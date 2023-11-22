@@ -606,6 +606,13 @@ class Flow360BaseModel(BaseModel):
         with open(filename, "w+", encoding="utf-8") as file_handle:
             yaml.dump(model_dict, file_handle, indent=4)
 
+    def _handle_export_exclude(self, exclude):
+        if exclude:
+            exclude = {TYPE_TAG_STR, *exclude}
+        else:
+            exclude = {TYPE_TAG_STR}
+
+        return exclude
 
     def dict(self, *args, exclude=None, **kwargs) -> dict:
         """Returns dict representation of the model.
@@ -629,6 +636,7 @@ class Flow360BaseModel(BaseModel):
         >>> params.dict() # doctest: +SKIP
         """
 
+        exclude = self._handle_export_exclude(exclude)
         return super().dict(*args, exclude=exclude, **kwargs)
 
     def json(self, *args, exclude=None, **kwargs):
@@ -654,8 +662,8 @@ class Flow360BaseModel(BaseModel):
         >>> params.json() # doctest: +SKIP
         """
 
+        exclude = self._handle_export_exclude(exclude)
         return super().json(*args, by_alias=True, exclude_none=True, exclude=exclude, **kwargs)
-
 
     # pylint: disable=unnecessary-dunder-call
     def append(self, params: Flow360BaseModel, overwrite: bool = False):

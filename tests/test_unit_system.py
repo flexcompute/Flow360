@@ -79,6 +79,7 @@ def test_unit_access():
     assert u.inch
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_flow360_unit_arithmetic():
     assert 1 * u.flow360_area_unit
     assert u.flow360_area_unit * 1
@@ -153,6 +154,15 @@ def test_flow360_unit_arithmetic():
         ax=(1, 1, 1) * u.flow360_length_unit,
         omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
     )
+
+    with fl.flow360_unit_system:
+        data_flow360 = VectorDataWithUnits(
+            pt=(1, 1, 1),
+            vec=(1, 1, 1),
+            ax=(1, 1, 1),
+            omega=(1, 1, 1),
+        )
+    assert data == data_flow360
 
     with pytest.raises(TypeError):
         data.pt + (1, 1, 1) * u.m

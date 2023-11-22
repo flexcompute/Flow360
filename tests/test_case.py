@@ -44,7 +44,7 @@ def test_retry_with_parent(mock_response):
             params=Flow360Params(
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-                fluid_properties=air
+                fluid_properties=air,
             ),
             volume_mesh_id=mock_id,
         )
@@ -63,7 +63,7 @@ def test_fork_from_draft(mock_response):
             params=Flow360Params(
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-                fluid_properties=air
+                fluid_properties=air,
             ),
             volume_mesh_id=mock_id,
         )
@@ -80,12 +80,11 @@ def test_parent_id(mock_response):
             params=Flow360Params(
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-                fluid_properties=air
+                fluid_properties=air,
             ),
         )
     print(case)
     case.submit()
-
 
     with SI_unit_system:
         case = Case.create(
@@ -93,7 +92,7 @@ def test_parent_id(mock_response):
             params=Flow360Params(
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-                fluid_properties=air
+                fluid_properties=air,
             ),
             parent_id=mock_id,
         )
@@ -107,7 +106,7 @@ def test_parent_id(mock_response):
                 params=Flow360Params(
                     geometry=Geometry(mesh_unit="m"),
                     freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-                    fluid_properties=air
+                    fluid_properties=air,
                 ),
                 parent_id="incorrect parentId",
             )

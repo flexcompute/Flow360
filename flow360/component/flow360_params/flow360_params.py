@@ -70,6 +70,7 @@ from .unit_system import (
     PressureType,
     TemperatureType,
     TimeType,
+    UnitSystem,
     VelocityType,
     ViscosityType,
     SI_unit_system,
@@ -77,6 +78,7 @@ from .unit_system import (
     imperial_unit_system,
     UnitSystem,
     u,
+    unit_system_manager,
 )
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -1224,10 +1226,7 @@ class Flow360Params(Flow360BaseModel):
     Flow360 solver parameters
     """
 
-    # _unit_system: Union[UnitSystem, None] = pd.PrivateAttr(
-    #     default_factory=unit_system_manager.copy_current
-    # )
-
+    # unit_system: UnitSystem = pd.Field(alias='unitSystem', const=True, default_factory=unit_system_manager.copy_current)
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(
         alias="fluidProperties"
@@ -1269,6 +1268,19 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
+    # @pd.validator('unit_system')
+    # def should_be_consistent_with_context(cls, v):
+    #     if v == unit_system_manager.current:
+    #         return v
+    #     raise ValueError(f'unit_system is inconsistent from context unit system: {v}, {unit_system_manager.current}')
+
+    def __init__(self, filename: str = None, **kwargs):
+        if unit_system_manager.current is None:
+            with UnitSystem(base_system="Flow360", verbose=False):
+                super().__init__(filename, **kwargs)
+        else:
+            super().__init__(filename, **kwargs)
+
     def to_solver(self) -> Flow360Params:
         """
         returns configuration object in flow360 units system
@@ -1289,7 +1301,7 @@ class Flow360Params(Flow360BaseModel):
         """
 
         solver_params = self.to_solver()
-        solver_params_json = solver_params.json(indent=4, encoder=flow360_json_encoder)
+        solver_params_json = solver_params.json(encoder=flow360_json_encoder)
         return solver_params_json
 
     def append(self, params: Flow360Params, overwrite: bool = False):
@@ -1323,6 +1335,11 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
             )
         log.warning("This is DEV feature, use it only when you know what you are doing.")
         super().__init__(filename, **kwargs)
+
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model"""
+
+        return self.json(encoder=flow360_json_encoder)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
