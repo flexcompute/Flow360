@@ -312,6 +312,21 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
+    def _fix_single_allof(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == "allOf" and len(value) == 1 and isinstance(value[0], dict):
+                for allOfKey, allOfValue in list(value[0].items()):
+                    dictionary[allOfKey] = allOfValue
+                del dictionary["allOf"]
+            elif isinstance(value, dict):
+                cls._fix_single_allof(value)
+
+        return dictionary
+
+    @classmethod
     def _clean_schema(cls, schema):
         cls._remove_key_from_nested_dict(schema, "description")
         cls._remove_key_from_nested_dict(schema, "_type")
@@ -322,6 +337,7 @@ class Flow360BaseModel(BaseModel):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
         cls._clean_schema(schema)
+        cls._fix_single_allof(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
         json_str = json.dumps(schema, indent=2)
         return json_str
