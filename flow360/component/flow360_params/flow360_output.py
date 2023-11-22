@@ -7,13 +7,7 @@ from typing import List, Literal, Optional, Union, get_args, Dict
 import pydantic as pd
 
 from ..types import Coordinate, PositiveInt
-from .flow360_fields import (
-    CommonFieldVars,
-    IsoSurfaceFieldVars,
-    SurfaceFieldVars,
-    VolumeSliceFieldVars,
-    OutputFields,
-)
+from .flow360_fields import output_names
 from .params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
@@ -22,6 +16,22 @@ from .params_base import (
 
 
 OutputFormat = Literal["paraview", "tecplot", "both"]
+
+CommonOutputFields = List[Literal[*tuple(output_names(["common"]))]]
+SurfaceOutputFields = List[Literal[*tuple(output_names(["common", "surface"]))]]
+SliceOutputFields = List[Literal[*tuple(output_names(["common", "slice"]))]]
+VolumeOutputFields = List[Literal[*tuple(output_names(["common", "volume"]))]]
+IsoSurfaceOutputField = Literal[*tuple(output_names(["common", "iso_surface"]))]
+
+_common_long = output_names(["common"], False)
+_surface_long = output_names(["common", "surface"], False)
+_slice_long = output_names(["common", "slice"], False)
+_volume_long = output_names(["common", "volume"], False)
+_iso_surface_long = output_names(["common", "iso_surface"], False)
+
+
+def _filter_fields(fields, field_filters):
+    return [field for field in fields if field in field_filters]
 
 
 class AnimationSettings(Flow360BaseModel):
@@ -68,9 +78,15 @@ class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
 class Surface(Flow360BaseModel):
     """:class:`Surface` class"""
 
-    output_fields: Optional[OutputFields(CommonFieldVars, SurfaceFieldVars)] = pd.Field(
+    output_fields: Optional[SurfaceOutputFields] = pd.Field(
         alias="outputFields"
     )
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _surface_long)
 
 
 class _GenericSurfaceWrapper(Flow360BaseModel):
@@ -105,10 +121,16 @@ class SurfaceOutput(Flow360BaseModel):
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
     start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
-    output_fields: Optional[OutputFields(CommonFieldVars, SurfaceFieldVars)] = pd.Field(
+    output_fields: Optional[SurfaceOutputFields] = pd.Field(
         alias="outputFields"
     )
     surfaces: Optional[Surfaces] = pd.Field()
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _surface_long)
 
 
 class SurfaceOutputPrivate(SurfaceOutput):
@@ -140,7 +162,13 @@ class Slice(Flow360BaseModel):
 
     slice_normal: Coordinate = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _slice_long)
 
 
 class Slices(Flow360SortableBaseModel):
@@ -172,10 +200,16 @@ class SliceOutput(Flow360BaseModel):
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     animation: Optional[AnimationSettings] = pd.Field(alias="animation")
-    output_fields: Optional[OutputFields(CommonFieldVars, VolumeSliceFieldVars)] = pd.Field(
+    output_fields: Optional[SliceOutputFields] = pd.Field(
         alias="outputFields"
     )
     slices: Optional[Slices]
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _slice_long)
 
 
 class SliceOutputPrivate(SliceOutput):
@@ -198,9 +232,15 @@ class VolumeOutput(Flow360BaseModel):
     animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
-    output_fields: Optional[OutputFields(CommonFieldVars, VolumeSliceFieldVars)] = pd.Field(
+    output_fields: Optional[VolumeOutputFields] = pd.Field(
         alias="outputFields"
     )
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _volume_long)
 
 
 class VolumeOutputPrivate(VolumeOutput):
@@ -234,7 +274,13 @@ class SurfaceIntegralMonitor(MonitorBase):
 
     type = pd.Field("surfaceIntegral", const=True)
     surfaces: Optional[List[str]] = pd.Field()
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _common_long)
 
 
 class ProbeMonitor(MonitorBase):
@@ -242,7 +288,13 @@ class ProbeMonitor(MonitorBase):
 
     type = pd.Field("probe", const=True)
     monitor_locations: Optional[List[Coordinate]] = pd.Field(alias="monitorLocations")
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _common_long)
 
 
 MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
@@ -276,15 +328,29 @@ class MonitorOutput(Flow360BaseModel):
     """:class:`MonitorOutput` class"""
 
     monitors: Optional[Monitors] = pd.Field()
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _common_long)
 
 
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
 
-    surface_field: Optional[OutputFields(IsoSurfaceFieldVars)] = pd.Field(alias="surfaceField")
+    surface_field: Optional[IsoSurfaceOutputField] = pd.Field(alias="surfaceField")
     surface_field_magnitude: Optional[float] = pd.Field(alias="surfaceFieldMagnitude")
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _common_long)
+            fields = schema["properties"]["surfaceField"]["enum"]
+            schema["properties"]["surfaceField"]["enum"] = _filter_fields(fields, _iso_surface_long)
 
 
 class _GenericIsoSurfaceWrapper(Flow360BaseModel):
@@ -323,4 +389,10 @@ class IsoSurfaceOutputPrivate(IsoSurfaceOutput):
     """:class:`IsoSurfaceOutputPrivate` class"""
 
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    output_fields: Optional[OutputFields(CommonFieldVars)] = pd.Field(alias="outputFields")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema, model):
+            fields = schema["properties"]["outputFields"]["items"]["enum"]
+            schema["properties"]["outputFields"]["items"]["enum"] = _filter_fields(fields, _common_long)

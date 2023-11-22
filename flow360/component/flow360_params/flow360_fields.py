@@ -1,7 +1,7 @@
 """
 Output field definitions
 """
-from typing import List, Literal, Tuple, Union
+from typing import List, Tuple, Union
 
 _common_field_definitions = [
     ("Cp", "Coefficient of pressure"),
@@ -55,22 +55,21 @@ _isosurface_field_definitions = [
 ]
 
 
-def _field_names(definitions: List[Tuple[str, Union[str, None]]]):
-    shorthands = [field for field in (entry[0] for entry in definitions) if field is not None]
-    descriptions = [field for field in (entry[1] for entry in definitions) if field is not None]
-    total = shorthands + descriptions
+def _field_names(definitions: List[Tuple[str, Union[str, None]]], short=True):
+    total = [field for field in (entry[1] for entry in definitions) if field is not None]
+    if short:
+        total += [field for field in (entry[0] for entry in definitions) if field is not None]
     return total
 
 
-CommonFieldVars = _field_names(_common_field_definitions)
-SurfaceFieldVars = _field_names(_surface_field_definitions)
-VolumeSliceFieldVars = _field_names(_volume_slice_field_definitions)
-IsoSurfaceFieldVars = _field_names(_isosurface_field_definitions)
-
-
-def OutputFields(*args):
+def output_names(types, short=True):
     field_list = []
-    for arg in args:
-        field_list += arg
-    field_tuple = tuple(field_list)
-    return List[Literal[*field_tuple]]
+    if "common" in types:
+        field_list += _field_names(_common_field_definitions, short)
+    if "surface" in types:
+        field_list += _field_names(_surface_field_definitions, short)
+    if "slice" in types or "volume" in types:
+        field_list += _field_names(_volume_slice_field_definitions, short)
+    if "iso_surface" in types:
+        field_list += _field_names(_isosurface_field_definitions, short)
+    return field_list
