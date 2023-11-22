@@ -2,8 +2,6 @@ import difflib
 import json
 import os
 import tempfile
-from numbers import Number
-
 import pytest
 import unyt
 import numpy as np

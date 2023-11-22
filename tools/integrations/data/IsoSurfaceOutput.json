@@ -1,0 +1,59 @@
+{
+  "title": "IsoSurfaceOutput",
+  "type": "object",
+  "properties": {
+    "outputFormat": {
+      "title": "Outputformat",
+      "anyOf": [
+        {
+          "enum": [
+            "paraview"
+          ],
+          "type": "string"
+        },
+        {
+          "enum": [
+            "tecplot"
+          ],
+          "type": "string"
+        },
+        {
+          "enum": [
+            "both"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "animationFrequency": {
+      "title": "Animationfrequency",
+      "anyOf": [
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        {
+          "enum": [
+            -1
+          ],
+          "type": "integer"
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animationfrequencyoffset",
+      "type": "integer"
+    },
+    "isoSurfaces": {
+      "$ref": "#/definitions/IsoSurfaces"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "IsoSurfaces": {
+      "title": "IsoSurfaces",
+      "type": "object",
+      "properties": {}
+    }
+  }
+}

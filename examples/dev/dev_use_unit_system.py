@@ -195,3 +195,7 @@ t2.join()
 
 # Without locks thread2 executes before thread 1
 print(f"After running both threads: {threaded_data.m}")
+
+schema = fl.SI_unit_system.schema()
+
+print(schema)

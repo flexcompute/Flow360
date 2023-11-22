@@ -1,0 +1,119 @@
+{
+  "title": "TimeStepping",
+  "type": "object",
+  "properties": {
+    "physicalSteps": {
+      "title": "Physicalsteps",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxPseudoSteps": {
+      "title": "Maxpseudosteps",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "timeStepSize": {
+      "title": "Timestepsize",
+      "default": "inf",
+      "anyOf": [
+        {
+          "enum": [
+            "inf"
+          ],
+          "type": "string"
+        },
+        {
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "units": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "CFL": {
+      "title": "Cfl",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RampCFL"
+        },
+        {
+          "$ref": "#/definitions/AdaptiveCFL"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "RampCFL": {
+      "title": "RampCFL",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "ramp",
+          "const": "ramp",
+          "type": "string"
+        },
+        "initial": {
+          "title": "Initial",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "final": {
+          "title": "Final",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "rampSteps": {
+          "title": "Rampsteps",
+          "type": "integer"
+        },
+        "randomizer": {
+          "title": "Randomizer",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AdaptiveCFL": {
+      "title": "AdaptiveCFL",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "adaptive",
+          "const": "adaptive",
+          "type": "string"
+        },
+        "min": {
+          "title": "Min",
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "default": 10000,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "maxRelativeChange": {
+          "title": "Maxrelativechange",
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "convergenceLimitingFactor": {
+          "title": "Convergencelimitingfactor",
+          "default": 0.25,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
