@@ -7,7 +7,6 @@ from flow360 import units as u
 log.set_logging_level("DEBUG")
 
 
-
 with fl.SI_unit_system:
     params = fl.Flow360Params(
         geometry=fl.Geometry(
