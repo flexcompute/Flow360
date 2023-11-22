@@ -41,18 +41,19 @@ def test_freesteam():
     with pytest.raises(pd.ValidationError):
         fs = FreestreamFromMach(Mach=-1, Temperature=100)
 
-    fs = FreestreamFromVelocity(velocity=10 * u.m / u.s)
+    velocity_meter_per_sec = 10
+    fs = FreestreamFromVelocity(velocity=velocity_meter_per_sec * u.m / u.s)
     to_file_from_file_test(fs)
     assert fs
 
     fs_solver = fs.to_solver(params)
-    ref_mach = 10.0 / np.sqrt(1.4 * 287.0529 * 288.15)
+    ref_mach = velocity_meter_per_sec / np.sqrt(1.4 * 287.0529 * 288.15)
     assertions.assertAlmostEqual(fs_solver.Mach, ref_mach)
 
     with pytest.raises(pd.ValidationError):
         fs = FreestreamFromVelocity(velocity=0)
 
-    fs = ZeroFreestreamFromVelocity(velocity=0, velocity_ref=10 * u.m / u.s)
+    fs = ZeroFreestreamFromVelocity(velocity=0, velocity_ref=velocity_meter_per_sec * u.m / u.s)
     to_file_from_file_test(fs)
     fs_solver = fs.to_solver(params)
     assertions.assertAlmostEqual(fs_solver.Mach_ref, ref_mach)

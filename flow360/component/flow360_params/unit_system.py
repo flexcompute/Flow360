@@ -14,6 +14,7 @@ import numpy as np
 import pydantic as pd
 import unyt as u
 
+from ...log import log
 from ...utils import classproperty
 
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
@@ -526,6 +527,10 @@ class _Flow360BaseUnit(DimensionedType):
             return len(self.val)
         return 1
 
+    @property
+    def size(self):
+        return self.__len__()
+
     def _unit_iter(self, iterable):
         for value in iter(iterable):
             dimensioned = self.__class__(value)
@@ -677,6 +682,7 @@ class BaseSystemType(Enum):
     CGS = "CGS"
     IMPERIAL = "Imperial"
     FLOW360 = "Flow360"
+    NONE = None
 
 
 class UnitSystem(pd.BaseModel):
@@ -695,6 +701,7 @@ class UnitSystem(pd.BaseModel):
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
+    _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
         "mass",
@@ -725,8 +732,9 @@ class UnitSystem(pd.BaseModel):
                 return _flow360_system[dim_name]
         return None
 
-    def __init__(self, **kwargs):
+    def __init__(self, verbose: bool = True, **kwargs):
         base_system = kwargs.get("base_system")
+        base_system = BaseSystemType(base_system)
         units = {}
 
         for dim in self._dim_names:
@@ -741,6 +749,8 @@ class UnitSystem(pd.BaseModel):
             raise ValueError(
                 f"Tried defining incomplete unit system, missing definitions for {','.join(missing)}"
             )
+
+        self._verbose = verbose
 
     def defaults(self):
         defaults = {}
@@ -763,7 +773,8 @@ class UnitSystem(pd.BaseModel):
 
     def __enter__(self):
         _lock.acquire()
-        print(f"using: {self._system_repr()} unit system")
+        if self._verbose:
+            log.info(f"using: {self._system_repr()} unit system")
         unit_system_manager.set_current(self)
 
     def __exit__(self, exc_type, exc_val, exc_tb):

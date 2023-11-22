@@ -10,6 +10,7 @@ from ..flow360_params.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
+    flow360_json_encoder,
 )
 from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
 
@@ -146,6 +147,21 @@ class SurfaceMeshingParams(Flow360BaseModel):
     )
     growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
 
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Returns
+        -------
+        json
+            Returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+
+        return self.json(encoder=flow360_json_encoder)
+
 
 class Refinement(Flow360BaseModel):
     """Base class for refinement zones"""
@@ -233,3 +249,18 @@ class VolumeMeshingParams(Flow360BaseModel):
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
+
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Returns
+        -------
+        json
+            Returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+
+        return self.json(encoder=flow360_json_encoder)
