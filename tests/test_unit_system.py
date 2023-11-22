@@ -79,6 +79,17 @@ def test_unit_access():
     assert u.inch
 
 
+def test_unit_systems_compare():
+    assert fl.SI_unit_system != fl.flow360_unit_system
+    assert fl.SI_unit_system != fl.CGS_unit_system
+
+    assert fl.SI_unit_system == fl.SI_unit_system
+    assert fl.flow360_unit_system == fl.flow360_unit_system
+
+    assert fl.flow360_unit_system == fl.UnitSystem(base_system="Flow360")
+    assert fl.SI_unit_system == fl.UnitSystem(base_system="SI")
+
+
 @pytest.mark.usefixtures("array_equality_override")
 def test_flow360_unit_arithmetic():
     assert 1 * u.flow360_area_unit
@@ -454,3 +465,21 @@ def test_units_serializer():
     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
 
     to_file_from_file_test(data)
+
+
+def test_unit_system_init():
+    unit_system_dict = {
+        "mass": {"value": 1.0, "units": "kg"},
+        "length": {"value": 1.0, "units": "m"},
+        "time": {"value": 1.0, "units": "s"},
+        "temperature": {"value": 1.0, "units": "K"},
+        "velocity": {"value": 1.0, "units": "m/s"},
+        "area": {"value": 1.0, "units": "m**2"},
+        "force": {"value": 1.0, "units": "N"},
+        "pressure": {"value": 1.0, "units": "Pa"},
+        "density": {"value": 1.0, "units": "kg/m**3"},
+        "viscosity": {"value": 1.0, "units": "Pa*s"},
+        "angular_velocity": {"value": 1.0, "units": "rad/s"},
+    }
+    us = fl.UnitSystem(**unit_system_dict)
+    assert us == fl.SI_unit_system

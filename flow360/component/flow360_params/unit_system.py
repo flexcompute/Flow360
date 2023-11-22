@@ -194,7 +194,9 @@ class DimensionedType(ValidatedType):
         if cls.dim_name is not None:
             field_schema["units"]["dimension"] = cls.dim_name
             # Local import to prevent exposing mappings to the user
+            # pylint: disable=import-outside-toplevel
             from flow360.component.flow360_params.exposed_units import extra_units
+
             units = [
                 str(_SI_system[cls.dim_name]),
                 str(_CGS_system[cls.dim_name]),
@@ -452,6 +454,14 @@ class AngularVelocityType(DimensionedType):
     dim_name = "angular_velocity"
 
 
+def _iterable(obj):
+    try:
+        len(obj)
+    except TypeError:
+        return False
+    return True
+
+
 class _Flow360BaseUnit(DimensionedType):
     dimension_type = None
     unit_name = None
@@ -479,8 +489,10 @@ class _Flow360BaseUnit(DimensionedType):
         """
         return np.asarray(self.val)
 
+    # pylint: disable=invalid-name
     @property
     def v(self):
+        "alias for value"
         return self.value
 
     def __init__(self, val=None) -> None:
@@ -529,12 +541,15 @@ class _Flow360BaseUnit(DimensionedType):
 
     @property
     def size(self):
-        return self.__len__()
+        """implements numpy size interface"""
+        return len(self)
 
-    def _unit_iter(self, iterable):
-        for value in iter(iterable):
-            dimensioned = self.__class__(value)
-            yield dimensioned
+    def _unit_iter(self, iter_obj):
+        if not _iterable(iter_obj):
+            yield self.__class__(iter_obj)
+        else:
+            for value in iter(iter_obj):
+                yield self.__class__(value)
 
     def __iter__(self):
         try:
@@ -753,6 +768,24 @@ class UnitSystem(pd.BaseModel):
         self._verbose = verbose
 
     def defaults(self):
+        """
+        Get the default units for each dimension in the unit system.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the default units for each dimension. The keys are dimension names, and the values
+            are strings representing the default unit expressions.
+
+        Example
+        -------
+        >>> unit_system = UnitSystem(base_system=BaseSystemType.SI, length=u.m, mass=u.kg, time=u.s)
+        >>> unit_system.defaults()
+        {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
+        'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
+        'viscosity': 'Pa*s', 'angular_velocity': 'rad/s'}
+        """
+
         defaults = {}
         for item in self._dim_names:
             defaults[item] = str(self[item].units.expr)
@@ -762,7 +795,8 @@ class UnitSystem(pd.BaseModel):
         """to support [] access"""
         return getattr(self, item)
 
-    def _system_repr(self):
+    def system_repr(self):
+        """(mass, length, time, temperature) string representation of the system"""
         units = [
             str(unit.units if unit.v == 1.0 else unit)
             for unit in [self.mass, self.length, self.time, self.temperature]
@@ -774,7 +808,7 @@ class UnitSystem(pd.BaseModel):
     def __enter__(self):
         _lock.acquire()
         if self._verbose:
-            log.info(f"using: {self._system_repr()} unit system")
+            log.info(f"using: {self.system_repr()} unit system")
         unit_system_manager.set_current(self)
 
     def __exit__(self, exc_type, exc_val, exc_tb):

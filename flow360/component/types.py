@@ -3,7 +3,7 @@
 from typing import List, Optional, Tuple, Union
 
 import pydantic as pd
-from typing_extensions import Annotated, Literal
+from typing_extensions import Annotated
 
 from ..exceptions import ValidationError
 
