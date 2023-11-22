@@ -8,7 +8,6 @@ import unyt
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.flow360_params import UnitDefaults
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
@@ -198,11 +197,5 @@ t2.join()
 print(f"After running both threads: {threaded_data.m}")
 
 schema = fl.SI_unit_system.schema()
-
-print(schema)
-
-defaults = UnitDefaults()
-
-schema = defaults.schema()
 
 print(schema)

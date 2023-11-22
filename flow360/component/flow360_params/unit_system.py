@@ -8,7 +8,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Collection, List, Literal
+from typing import Collection, List
 
 import numpy as np
 import pydantic as pd
@@ -192,11 +192,15 @@ class DimensionedType(ValidatedType):
         field_schema["units"]["type"] = "string"
         if cls.dim_name is not None:
             field_schema["units"]["dimension"] = cls.dim_name
-            field_schema["units"]["enum"] = [
+            # Local import to prevent exposing mappings to the user
+            from flow360.component.flow360_params.exposed_units import extra_units
+            units = [
                 str(_SI_system[cls.dim_name]),
                 str(_CGS_system[cls.dim_name]),
-                str(_imperial_system[cls.dim_name])
+                str(_imperial_system[cls.dim_name]),
             ]
+            units += extra_units[cls.dim_name]
+            field_schema["units"]["enum"] = list(dict.fromkeys(units))
 
     class _Constrained:
         """
