@@ -1,0 +1,96 @@
+{
+  "title": "TransitionModelSolver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolutetolerance",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relativetolerance",
+      "type": "number"
+    },
+    "modelType": {
+      "title": "Modeltype",
+      "default": "AmplificationFactorTransport",
+      "const": "AmplificationFactorTransport",
+      "enum": [
+        "AmplificationFactorTransport"
+      ],
+      "type": "string"
+    },
+    "linearSolverConfig": {
+      "title": "Linearsolverconfig",
+      "default": {
+        "max_iterations": 50,
+        "absolute_tolerance": 1e-10,
+        "relative_tolerance": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/LinearSolver"
+        }
+      ]
+    },
+    "updateJacobianFrequency": {
+      "title": "Updatejacobianfrequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "equationEvalFrequency": {
+      "title": "Equationevalfrequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Maxforcejacupdatephysicalsteps",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "orderOfAccuracy": {
+      "title": "Orderofaccuracy",
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "turbulenceIntensityPercent": {
+      "title": "Turbulenceintensitypercent",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "Ncrit": {
+      "title": "Ncrit",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "LinearSolver": {
+      "title": "LinearSolver",
+      "type": "object",
+      "properties": {
+        "maxIterations": {
+          "title": "Maxiterations",
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "absoluteTolerance": {
+          "title": "Absolutetolerance",
+          "default": 1e-10,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relativetolerance",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -11,15 +11,15 @@ def write_to_file(name, content):
 
 def write_schemas(type_obj: Type[Flow360BaseModel]):
     schema = type_obj.generate_schema()
-    write_to_file(f"../schemas/{type_obj.__name__}.json", schema)
+    write_to_file(f"./data/{type_obj.__name__}.json", schema)
     ui_schema = type_obj.generate_ui_schema()
     if ui_schema is not None:
-        write_to_file(f"../schemas/{type_obj.__name__}.ui.json", ui_schema)
+        write_to_file(f"./data/{type_obj.__name__}.ui.json", ui_schema)
 
 
 write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
-write_schemas(fl.Freestream)
+# write_schemas(fl.Freestream)
 write_schemas(fl.SlidingInterface)
 write_schemas(fl.TurbulenceModelSolverSA)
 write_schemas(fl.TurbulenceModelSolverSST)

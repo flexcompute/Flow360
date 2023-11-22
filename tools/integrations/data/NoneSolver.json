@@ -1,0 +1,16 @@
+{
+  "title": "NoneSolver",
+  "type": "object",
+  "properties": {
+    "modelType": {
+      "title": "Modeltype",
+      "default": "None",
+      "const": "None",
+      "enum": [
+        "None"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

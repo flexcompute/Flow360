@@ -22,8 +22,8 @@ from flow360.component.flow360_params.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import to_file_from_file_test, array_equality_override
 
+from tests.utils import to_file_from_file_test, array_equality_override
 
 
 

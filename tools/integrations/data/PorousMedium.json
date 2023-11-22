@@ -1,0 +1,120 @@
+{
+  "title": "PorousMedium",
+  "type": "object",
+  "properties": {
+    "DarcyCoefficient": {
+      "title": "Darcycoefficient",
+      "type": "array",
+      "items": {}
+    },
+    "ForchheimerCoefficient": {
+      "title": "Forchheimercoefficient",
+      "type": "array",
+      "items": {}
+    },
+    "volumeZone": {
+      "$ref": "#/definitions/PorousMediumVolumeZone"
+    }
+  },
+  "required": [
+    "DarcyCoefficient",
+    "ForchheimerCoefficient",
+    "volumeZone"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "PorousMediumVolumeZone": {
+      "title": "PorousMediumVolumeZone",
+      "type": "object",
+      "properties": {
+        "zoneType": {
+          "title": "Zonetype",
+          "enum": [
+            "box"
+          ],
+          "type": "string"
+        },
+        "center": {
+          "title": "Center",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "lengths": {
+          "title": "Lengths",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "axes": {
+          "title": "Axes",
+          "minItems": 2,
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "windowingLengths": {
+          "title": "Windowinglengths",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "required": [
+        "zoneType",
+        "center",
+        "lengths",
+        "axes"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
