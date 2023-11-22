@@ -55,18 +55,22 @@ _isosurface_field_definitions = [
 ]
 
 
-def _literal_union(definitions: List[Tuple[str, Union[str, None]]]):
-    shorthands = [
-        Literal[field] for field in (entry[0] for entry in definitions) if field is not None
-    ]
-    descriptions = [
-        Literal[field] for field in (entry[1] for entry in definitions) if field is not None
-    ]
-    total = tuple(shorthands + descriptions)
-    return Union[total]
+def _field_names(definitions: List[Tuple[str, Union[str, None]]]):
+    shorthands = [field for field in (entry[0] for entry in definitions) if field is not None]
+    descriptions = [field for field in (entry[1] for entry in definitions) if field is not None]
+    total = shorthands + descriptions
+    return total
 
 
-CommonFieldVars = _literal_union(_common_field_definitions)
-SurfaceFieldVars = _literal_union(_surface_field_definitions)
-VolumeSliceFieldVars = _literal_union(_volume_slice_field_definitions)
-IsoSurfaceFieldVars = _literal_union(_isosurface_field_definitions)
+CommonFieldVars = _field_names(_common_field_definitions)
+SurfaceFieldVars = _field_names(_surface_field_definitions)
+VolumeSliceFieldVars = _field_names(_volume_slice_field_definitions)
+IsoSurfaceFieldVars = _field_names(_isosurface_field_definitions)
+
+
+def OutputFields(*args):
+    field_list = []
+    for arg in args:
+        field_list += arg
+    field_tuple = tuple(field_list)
+    return List[Literal[*field_tuple]]

@@ -60,6 +60,7 @@ from .component.flow360_params.flow360_params import (
     VolumeOutput,
     VolumeZones,
     WallFunction,
+    AnimationSettings,
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,

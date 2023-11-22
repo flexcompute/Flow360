@@ -43,6 +43,7 @@ from .flow360_output import (
     SurfaceOutput,
     Surfaces,
     VolumeOutput,
+    AnimationSettings,
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
