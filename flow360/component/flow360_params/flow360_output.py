@@ -2,9 +2,10 @@
 Flow360 output parameters models
 """
 from abc import ABCMeta
-from typing import List, Literal, Optional, Union, get_args, Dict
+from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
+from pydantic import conlist
 
 from ..types import Coordinate, PositiveInt
 from .flow360_fields import output_names
@@ -17,10 +18,10 @@ from .params_base import (
 
 OutputFormat = Literal["paraview", "tecplot", "both"]
 
-CommonOutputFields = List[Literal[*tuple(output_names(["common"]))]]
-SurfaceOutputFields = List[Literal[*tuple(output_names(["common", "surface"]))]]
-SliceOutputFields = List[Literal[*tuple(output_names(["common", "slice"]))]]
-VolumeOutputFields = List[Literal[*tuple(output_names(["common", "volume"]))]]
+CommonOutputFields = conlist(Literal[*tuple(output_names(["common"]))], unique_items=True)
+SurfaceOutputFields = conlist(Literal[*tuple(output_names(["common", "surface"]))], unique_items=True)
+SliceOutputFields = conlist(Literal[*tuple(output_names(["common", "slice"]))], unique_items=True)
+VolumeOutputFields = conlist(Literal[*tuple(output_names(["common", "volume"]))], unique_items=True)
 IsoSurfaceOutputField = Literal[*tuple(output_names(["common", "iso_surface"]))]
 
 _common_long = output_names(["common"], False)
