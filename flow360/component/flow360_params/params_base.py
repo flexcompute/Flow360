@@ -757,6 +757,22 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         return [k for k, _ in self if k not in [COMMENTS, TYPE_TAG_STR]]
 
     @classmethod
+    def _collect_all_definitions(cls, dictionary, collected):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == "definitions":
+                collected.update(value)
+                del dictionary[key]
+            elif isinstance(value, dict):
+                cls._collect_all_definitions(value, collected)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._collect_all_definitions(item, collected)
+
+    @classmethod
     @abstractmethod
     def get_subtypes(cls) -> list:
         """retrieve allowed types of this self-named property"""
@@ -775,8 +791,8 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
                     "name": {"title": "Name", "type": "string", "readOnly": True},
                     "modelType": {"title": "Type", "enum": [], "default": ""},
                 },
+                "dependencies": {"modelType": {"oneOf": []}},
             },
-            "dependencies": {"modelType": {"oneOf": []}},
         }
 
         models = cls.get_subtypes()
@@ -785,7 +801,13 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             schema = model.schema()
             cls._clean_schema(schema)
             root_schema["items"]["properties"]["modelType"]["enum"].append(model.__name__)
-            root_schema["dependencies"]["modelType"]["oneOf"].append(schema)
+            root_schema["items"]["dependencies"]["modelType"]["oneOf"].append(schema)
+
+        definitions = dict()
+
+        cls._collect_all_definitions(root_schema, definitions)
+
+        root_schema["definitions"] = definitions
 
         json_str = json.dumps(root_schema, indent=2)
         return json_str

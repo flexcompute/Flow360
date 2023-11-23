@@ -640,7 +640,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
 class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
-    model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
+    model_type = pd.Field("HeatTransferVolumeZone", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource"
@@ -717,8 +717,8 @@ class ReferenceFrame(Flow360BaseModel):
 class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
-    model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
-    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
+    model_type = pd.Field("FluidDynamicsVolumeZone", alias="modelType", const=True)
+    reference_frame: ReferenceFrame = pd.Field(alias="referenceFrame")
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
