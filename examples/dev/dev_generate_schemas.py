@@ -17,10 +17,10 @@ def write_schemas(type_obj: Type[Flow360BaseModel]):
         write_to_file(f"../schemas/{type_obj.__name__}.ui.json", ui_schema)
 
 
+write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
 write_schemas(fl.Freestream)
 write_schemas(fl.SlidingInterface)
-write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.TurbulenceModelSolverSA)
 write_schemas(fl.TurbulenceModelSolverSST)
 write_schemas(fl.TransitionModelSolver)
