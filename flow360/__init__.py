@@ -15,6 +15,7 @@ from .component.flow360_params.flow360_params import (
     AdaptiveCFL,
     AeroacousticOutput,
     AnimationSettings,
+    AnimationSettingsExtended,
     BETDisk,
     Boundaries,
     Flow360MeshParams,

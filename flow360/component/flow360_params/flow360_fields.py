@@ -1,76 +1,124 @@
 """
 Output field definitions
 """
-from typing import List, Tuple, Union
+from typing import Literal, get_args, get_origin
 
-_common_field_definitions = [
-    ("Cp", "Coefficient of pressure"),
-    ("gradW", "Gradient of primitive solution"),
-    ("kOmega", "k and omega"),
-    ("Mach", "Mach number"),
-    ("mut", "Turbulent viscosity"),
-    ("mutRatio", "Turbulent viscosity and freestream dynamic viscosity ratio"),
-    ("nuHat", "Spalart-Almaras variable"),
-    ("primitiveVars", "rho, u, v, w, p (density, 3 velocities and pressure)"),
-    ("qcriterion", "Q criterion"),
-    ("residualNavierStokes", "N-S residual"),
-    ("residualTransition", "Transition residual"),
-    ("residualTurbulence", "Turbulence residual"),
-    ("s", "Entropy"),
-    ("solutionNavierStokes", "N-S solution"),
-    ("solutionTransition", "Transition solution"),
-    ("solutionTurbulence", "Turbulence solution"),
-    ("T", "Temperature"),
-    ("vorticity", "Vorticity"),
-    ("wallDistance", "Wall distance"),
-    ("lowNumericalDissipationSensor", "NumericalDissipationFactor sensor"),
-    ("residualHeatSolver", "Heat equation residual"),
+CommonFieldNamesFull = Literal[
+    "Coefficient of pressure",
+    "Gradient of primitive solution",
+    "k and omega",
+    "Mach number",
+    "Turbulent viscosity",
+    "Turbulent viscosity and freestream dynamic viscosity ratio",
+    "Spalart-Almaras variable",
+    "rho, u, v, w, p (density, 3 velocities and pressure)",
+    "Q criterion",
+    "N-S residual",
+    "Transition residual",
+    "Turbulence residual",
+    "Entropy",
+    "N-S solution",
+    "Transition solution",
+    "Turbulence solution",
+    "Temperature",
+    "Vorticity",
+    "Wall distance",
+    "NumericalDissipationFactor sensor",
+    "Heat equation residual",
 ]
 
-_surface_field_definitions = [
-    ("CfVec", "Viscous stress coefficient vector"),
-    ("Cf", "Magnitude of CfVec"),
-    ("CfNormal", "Magnitude of CfVec normal to the wall"),
-    ("CfTangent", "Magnitude of CfVec tangent to the wall"),
-    ("heatFlux", "Non-dimensional heat flux"),
-    ("nodeNormals", "Wall normals"),
-    ("nodeForcesPerUnitArea", "Spalart-Almaras variable"),
-    ("VelocityRelative", "Velocity in rotating frame"),
-    ("yPlus", "Non-dimensional wall distance"),
-    ("wallFunctionMetric", None),
+CommonFieldNames = Literal[
+    "Cp",
+    "gradW",
+    "kOmega",
+    "Mach",
+    "mut",
+    "mutRatio",
+    "nuHat",
+    "primitiveVars",
+    "qcriterion",
+    "residualNavierStokes",
+    "residualTransition",
+    "residualTurbulence",
+    "s",
+    "solutionNavierStokes",
+    "solutionTransition",
+    "solutionTurbulence",
+    "T",
+    "vorticity",
+    "wallDistance",
+    "lowNumericalDissipationSensor",
+    "residualHeatSolver",
 ]
 
-_volume_slice_field_definitions = [("betMetrics", None), ("betMetricsPerDisk", None)]
+SurfaceFieldNamesFull = Literal[
+    CommonFieldNamesFull,
+    "Viscous stress coefficient vector",
+    "Magnitude of CfVec",
+    "Magnitude of CfVec normal to the wall",
+    "Magnitude of CfVec tangent to the wall",
+    "Non-dimensional heat flux",
+    "Wall normals",
+    "Spalart-Almaras variable",
+    "Velocity in rotating frame",
+    "Non-dimensional wall distance",
+]
 
-_isosurface_field_definitions = [
-    ("p", "Pressure"),
-    ("rho", "Density"),
-    ("Mach", "Mach number"),
-    ("qcriterion", "Q criterion"),
-    ("s", "Entropy"),
-    ("T", "Temperature"),
-    ("Cp", "Coefficient of pressure"),
-    ("mut", "Turbulent viscosity"),
-    ("nuHat", "Spalart-Almaras variable"),
+SurfaceFieldNames = Literal[
+    CommonFieldNames,
+    "CfVec",
+    "Cf",
+    "CfNormal",
+    "CfTangent",
+    "heatFlux",
+    "nodeNormals",
+    "nodeForcesPerUnitArea",
+    "VelocityRelative",
+    "yPlus",
+    "wallFunctionMetric",
+]
+
+VolumeSliceFieldNamesFull = CommonFieldNamesFull
+
+VolumeSliceFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
+
+IsoSurfaceFieldNamesFull = Literal[
+    CommonFieldNamesFull,
+    "Pressure",
+    "Density",
+    "Mach number",
+    "Q criterion",
+    "Entropy",
+    "Temperature",
+    "Coefficient of pressure",
+    "Turbulent viscosity",
+    "Spalart-Almaras variable",
+]
+
+IsoSurfaceFieldNames = Literal[
+    CommonFieldNames,
+    "p",
+    "rho",
+    "Mach",
+    "qcriterion",
+    "s",
+    "T",
+    "Cp",
+    "mut",
+    "nuHat",
 ]
 
 
-def _field_names(definitions: List[Tuple[str, Union[str, None]]], short=True):
-    total = [field for field in (entry[1] for entry in definitions) if field is not None]
-    if short:
-        total += [field for field in (entry[0] for entry in definitions) if field is not None]
-    return total
+def _get_field_values(field_type, names):
+    for arg in get_args(field_type):
+        if get_origin(arg) is Literal:
+            _get_field_values(arg, names)
+        elif isinstance(arg, str):
+            names += [arg]
 
 
-def output_names(types, include_short=True):
-    """Returns permissible output field names for different output classes"""
-    field_list = []
-    if "common" in types:
-        field_list += _field_names(_common_field_definitions, include_short)
-    if "surface" in types:
-        field_list += _field_names(_surface_field_definitions, include_short)
-    if "slice" in types or "volume" in types:
-        field_list += _field_names(_volume_slice_field_definitions, include_short)
-    if "iso_surface" in types:
-        field_list += _field_names(_isosurface_field_definitions, include_short)
-    return field_list
+def get_field_values(field_type):
+    """Retrieve field names from a nested literal type as list of strings"""
+    values = []
+    _get_field_values(field_type, values)
+    return values

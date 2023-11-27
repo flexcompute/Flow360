@@ -5,6 +5,7 @@ import pytest
 
 from flow360.component.flow360_params.flow360_output import (
     AnimationSettings,
+    AnimationSettingsExtended,
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -42,45 +43,7 @@ def test_aeroacoustic_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = AeroacousticOutput(
-            observers=[(0, 0, 0), (0, 1, 1)], animation=AnimationSettings(frequency=0)
-        )
-
-    output = AeroacousticOutput(
-        observers=[(0, 0, 0), (0, 1, 1)],
-        animation=AnimationSettings(frequency=1, frequency_offset=-2),
-    )
-
-    assert output
-
-    output = AeroacousticOutput(
-        observers=[(0, 0, 0), (0, 1, 1)],
-        animation=AnimationSettings(frequency=1, frequency_offset=2),
-    )
-
-    assert output
-
-    output = AeroacousticOutput(
-        observers=[(0, 0, 0), (0, 1, 1)],
-        animation=AnimationSettings(frequency=1, frequency_offset=0),
-    )
-
-    assert output
-
-    output = AeroacousticOutput(
-        observers=[(0, 0, 0), (0, 1, 1)],
-        animation=AnimationSettings(frequency_offset=0),
-    )
-
-    assert output
-
-    to_file_from_file_test(output)
-
-    output = AeroacousticOutput(observers=[(0, 0, 0), (0, 1, 1)], animation=AnimationSettings())
-
-    assert output
-
-    to_file_from_file_test(output)
+        output = AeroacousticOutput()
 
 
 def test_surface_output():
@@ -90,13 +53,13 @@ def test_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation=AnimationSettings(frequency=-1),
+            animation_settings=AnimationSettings(frequency=-1),
             output_fields=["Cp", "qcriterion"],
         )
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation=AnimationSettings(frequency_time_average=-1),
+            animation_settings=AnimationSettings(frequency_time_average=-1),
             output_fields=["Cp", "qcriterion"],
         )
 
@@ -121,18 +84,12 @@ def test_slice_output():
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            animation=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
+            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
         )
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            animation=AnimationSettings(frequency_time_average=-1),
-            output_fields=["Cp", "qcriterion"],
-        )
-
-    with pytest.raises(pd.ValidationError):
-        output = SliceOutput(
-            animation=AnimationSettings(frequency_time_average=0),
+            animation_settings=AnimationSettings(frequency_offset=0),
             output_fields=["invalid_field", "qcriterion"],
         )
 
@@ -141,7 +98,7 @@ def test_slice_output():
     assert output
 
     output = SliceOutput(
-        animation=AnimationSettings(frequency_time_average=1), output_fields=["Cp", "qcriterion"]
+        animation_settings=AnimationSettings(frequency_offset=1), output_fields=["Cp", "qcriterion"]
     )
 
     assert output
@@ -156,18 +113,17 @@ def test_volume_output():
 
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(
-            animation=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
+            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
         )
 
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(
-            animation=AnimationSettings(frequency_time_average=-1),
-            output_fields=["Cp", "qcriterion"],
+            animation_settings=AnimationSettings(frequency=0), output_fields=["Cp", "qcriterion"]
         )
 
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(
-            animation=AnimationSettings(frequency_time_average=0),
+            animation_settings=AnimationSettings(frequency=1),
             output_fields=["invalid_field", "qcriterion"],
         )
 
@@ -176,7 +132,8 @@ def test_volume_output():
     assert output
 
     output = VolumeOutput(
-        animation=AnimationSettings(frequency_time_average=1), output_fields=["Cp", "qcriterion"]
+        animation_settings=AnimationSettingsExtended(frequency_time_average=1),
+        output_fields=["Cp", "qcriterion"],
     )
 
     assert output
@@ -199,7 +156,7 @@ def test_iso_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = IsoSurfaceOutput(
-            animation=AnimationSettings(frequency=0),
+            animation_settings=AnimationSettings(frequency=0),
             iso_surfaces={"s1": iso_surface},
         )
 

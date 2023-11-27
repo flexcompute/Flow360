@@ -2,13 +2,23 @@
 Flow360 output parameters models
 """
 from abc import ABCMeta
-from typing import List, Literal, Optional, Union, get_args, Any
+from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 from pydantic import conlist
 
 from ..types import Coordinate, PositiveInt
-from .flow360_fields import output_names
+from .flow360_fields import (
+    CommonFieldNames,
+    CommonFieldNamesFull,
+    IsoSurfaceFieldNames,
+    IsoSurfaceFieldNamesFull,
+    SurfaceFieldNames,
+    SurfaceFieldNamesFull,
+    VolumeSliceFieldNames,
+    VolumeSliceFieldNamesFull,
+    get_field_values,
+)
 from .params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
@@ -17,42 +27,98 @@ from .params_base import (
 
 OutputFormat = Literal["paraview", "tecplot", "both"]
 
-_common_names: list[str] = output_names(["common"])
-_surface_names: list[str] = output_names(["common", "surface"])
-_slice_names: list[str] = output_names(["common", "slice"])
-_volume_names: list[str] = output_names(["common", "volume"])
-_iso_surface_names: list[str] = output_names(["iso_surface"])
+CommonFields = Literal[CommonFieldNames, CommonFieldNamesFull]
+SurfaceFields = Literal[SurfaceFieldNames, SurfaceFieldNamesFull]
+SliceFields = Literal[VolumeSliceFieldNames, VolumeSliceFieldNamesFull]
+VolumeFields = Literal[VolumeSliceFieldNames, VolumeSliceFieldNamesFull]
+IsoSurfaceFields = Literal[IsoSurfaceFieldNames, IsoSurfaceFieldNamesFull]
 
-_common_long: list[str] = output_names(["common"], False)
-_surface_long: list[str] = output_names(["common", "surface"], False)
-_slice_long: list[str] = output_names(["common", "slice"], False)
-_volume_long: list[str] = output_names(["common", "volume"], False)
-_iso_surface_long: list[str] = output_names(["iso_surface"], False)
-
-CommonOutputFields = conlist(Literal[tuple(_common_names)], unique_items=True)
-SurfaceOutputFields = conlist(Literal[tuple(_surface_names)], unique_items=True)
-SliceOutputFields = conlist(Literal[tuple(_slice_names)], unique_items=True)
-VolumeOutputFields = conlist(Literal[tuple(_volume_names)], unique_items=True)
-IsoSurfaceOutputField = Literal[tuple(_iso_surface_names)]
+CommonOutputFields = conlist(CommonFields, unique_items=True)
+SurfaceOutputFields = conlist(SurfaceFields, unique_items=True)
+SliceOutputFields = conlist(SliceFields, unique_items=True)
+VolumeOutputFields = conlist(VolumeFields, unique_items=True)
+IsoSurfaceOutputField = IsoSurfaceFields
 
 
-def _filter_fields(fields, field_filters):
-    fields[:] = [field for field in fields if field in field_filters]
+def _filter_fields(fields, literal_filter):
+    """Take two literals, filter"""
+    values = get_field_values(literal_filter)
+    fields[:] = [field for field in fields if field in values]
 
 
 class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
     frequency: Optional[PositiveInt] = pd.Field(alias="frequency")
-    frequency_offset: Optional[int] = pd.Field(
-        alias="frequencyOffset", displayed="Frequency offset"
+    frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
+
+
+class AnimationSettingsExtended(AnimationSettings):
+    """:class:`AnimationSettingsExtended` class"""
+
+    frequency_time_average: Optional[PositiveInt] = pd.Field(alias="frequencyTimeAverage")
+    frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
+
+
+class AnimatedOutput(pd.BaseModel):
+    """:class:`AnimatedOutput` class"""
+
+    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+        alias="animationFrequency"
     )
-    frequency_time_average: Optional[PositiveInt] = pd.Field(
-        alias="frequencyTimeAverage", displayed="Frequency time average"
+    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
+    animation_settings: Optional[AnimationSettings] = pd.Field(alias="animationSettings")
+
+    def to_solver(self):
+        """Convert animation settings (UI representation) to solver representation"""
+        if self.animation_settings is not None:
+            if self.animation_settings.frequency is not None:
+                self.animation_frequency = self.animation_settings.frequency
+            else:
+                self.animation_frequency = -1
+
+            if self.animation_settings.frequency_offset is not None:
+                self.animation_frequency_offset = self.animation_settings.frequency_offset
+            else:
+                self.animation_frequency_offset = 0
+
+
+class AnimatedOutputExtended(AnimatedOutput):
+    """:class:`AnimatedOutputExtended` class"""
+
+    animation_frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+        alias="animationFrequencyTimeAverage"
     )
-    frequency_time_average_offset: Optional[int] = pd.Field(
-        alias="frequencyTimeAverageOffset", displayed="Frequency time average offset"
+    animation_frequency_time_average_offset: Optional[int] = pd.Field(
+        alias="animationFrequencyTimeAverageOffset"
     )
+    animation_settings: Optional[AnimationSettingsExtended] = pd.Field(alias="animationSettings")
+
+    def to_solver(self):
+        if self.animation_settings is not None:
+            if self.animation_settings.frequency is not None:
+                self.animation_frequency = self.animation_settings.frequency
+            else:
+                self.animation_frequency = -1
+
+            if self.animation_settings.frequency_offset is not None:
+                self.animation_frequency_offset = self.animation_settings.frequency_offset
+            else:
+                self.animation_frequency_offset = 0
+
+            if self.animation_settings.frequency_time_average is not None:
+                self.animation_frequency_time_average = (
+                    self.animation_settings.frequency_time_average
+                )
+            else:
+                self.animation_frequency_time_average = -1
+
+            if self.animation_settings.frequency_time_average_offset is not None:
+                self.animation_frequency_time_average_offset = (
+                    self.animation_settings.frequency_time_average_offset
+                )
+            else:
+                self.animation_frequency_time_average_offset = 0
 
 
 class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
@@ -98,7 +164,9 @@ class Surface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _surface_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
+            )
 
 
 class _GenericSurfaceWrapper(Flow360BaseModel):
@@ -125,11 +193,10 @@ class Surfaces(Flow360SortableBaseModel):
         )
 
 
-class SurfaceOutput(Flow360BaseModel):
+class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
     """:class:`SurfaceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
     start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
@@ -144,7 +211,9 @@ class SurfaceOutput(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _surface_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
+            )
 
 
 class SurfaceOutputPrivate(SurfaceOutput):
@@ -156,6 +225,7 @@ class SurfaceOutputPrivate(SurfaceOutput):
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
+# pylint: disable=too-many-ancestors
 class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy):
     """:class:`SurfaceOutputLegacy` class"""
 
@@ -186,7 +256,9 @@ class Slice(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _slice_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+            )
 
 
 class Slices(Flow360SortableBaseModel):
@@ -213,11 +285,10 @@ class _GenericSliceWrapper(Flow360BaseModel):
     v: Slice
 
 
-class SliceOutput(Flow360BaseModel):
+class SliceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`SliceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields")
     slices: Optional[Slices]
 
@@ -229,7 +300,9 @@ class SliceOutput(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _slice_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+            )
 
 
 class SliceOutputPrivate(SliceOutput):
@@ -245,11 +318,10 @@ class SliceOutputLegacy(SliceOutputPrivate, OutputLegacy):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
 
-class VolumeOutput(Flow360BaseModel):
+class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
     """:class:`VolumeOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[VolumeOutputFields] = pd.Field(alias="outputFields")
@@ -262,7 +334,9 @@ class VolumeOutput(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _volume_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+            )
 
 
 class VolumeOutputPrivate(VolumeOutput):
@@ -278,6 +352,7 @@ class VolumeOutputPrivate(VolumeOutput):
     debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
 
 
+# pylint: disable=too-many-ancestors
 class VolumeOutputLegacy(VolumeOutputPrivate, OutputLegacy):
     """:class:`VolumeOutputLegacy` class"""
 
@@ -306,7 +381,9 @@ class SurfaceIntegralMonitor(MonitorBase):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _common_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
 
 
 class ProbeMonitor(MonitorBase):
@@ -324,7 +401,9 @@ class ProbeMonitor(MonitorBase):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _common_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
 
 
 MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
@@ -368,7 +447,9 @@ class MonitorOutput(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _common_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
 
 
 class IsoSurface(Flow360BaseModel):
@@ -386,8 +467,10 @@ class IsoSurface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _common_long)
-            _filter_fields(schema["properties"]["surfaceField"]["enum"], _iso_surface_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
+            _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
 
 
 class _GenericIsoSurfaceWrapper(Flow360BaseModel):
@@ -414,11 +497,10 @@ class IsoSurfaces(Flow360SortableBaseModel):
         )
 
 
-class IsoSurfaceOutput(Flow360BaseModel):
+class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`IsoSurfaceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
 
 
@@ -436,7 +518,9 @@ class IsoSurfaceOutputPrivate(IsoSurfaceOutput):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], _common_long)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
 
 
 class AeroacousticOutput(Flow360BaseModel):
@@ -461,11 +545,10 @@ class AeroacousticOutput(Flow360BaseModel):
     >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
     """
 
-    animation: Optional[AnimationSettings] = pd.Field(alias="animation")
     observers: List[Coordinate] = pd.Field()
 
 
-class AeroacousticOutputPrivate(AeroacousticOutput):
+class AeroacousticOutputPrivate(AeroacousticOutput, AnimatedOutput):
     """:class:`AeroacousticOutputPrivate` class"""
 
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
