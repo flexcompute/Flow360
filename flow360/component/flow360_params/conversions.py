@@ -9,7 +9,7 @@ from typing import Callable, List
 import pydantic as pd
 
 from ...exceptions import Flow360ConfigurationError
-from .unit_system import flow360_conversion_unit_system, u
+from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
 
 
 class ExtraDimensionedProperty(pd.BaseModel):
@@ -67,7 +67,7 @@ def need_conversion(value):
     """
 
     if hasattr(value, "units"):
-        return not str(value.units).startswith("flow360")
+        return not is_flow360_unit(value)
     return False
 
 
@@ -110,7 +110,7 @@ def require(required_parameter, required_by, params):
 # pylint: disable=too-many-locals, too-many-return-statements
 def unit_converter(dimension, params, required_by: List[str] = None):
     """
-    Create a flow360 conversion unit system for a given dimension.
+    Returns a flow360 conversion unit system for a given dimension.
 
     Parameters
     ----------
@@ -179,43 +179,38 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_viscosity
 
-    flow360_conv_system = None
-
     if dimension == u.dimensions.length:
         base_length = get_base_length()
-        flow360_conv_system = flow360_conversion_unit_system(base_length=base_length)
+        flow360_conversion_unit_system.base_length = base_length
 
-    if dimension == u.dimensions.temperature:
+    elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
-        flow360_conv_system = flow360_conversion_unit_system(base_temperature=base_temperature)
+        flow360_conversion_unit_system.base_temperature = base_temperature
 
-    if dimension == u.dimensions.area:
+    elif dimension == u.dimensions.area:
         base_length = get_base_length()
-        flow360_conv_system = flow360_conversion_unit_system(base_area=base_length**2)
+        flow360_conversion_unit_system.base_area = base_length**2
 
-    if dimension == u.dimensions.velocity:
+    elif dimension == u.dimensions.velocity:
         base_velocity = get_base_velocity()
-        flow360_conv_system = flow360_conversion_unit_system(base_velocity=base_velocity)
+        flow360_conversion_unit_system.base_velocity = base_velocity
 
-    if dimension == u.dimensions.time:
+    elif dimension == u.dimensions.time:
         base_time = get_base_time()
-        flow360_conv_system = flow360_conversion_unit_system(base_time=base_time)
+        flow360_conversion_unit_system.base_time = base_time
 
-    if dimension == u.dimensions.angular_velocity:
+    elif dimension == u.dimensions.angular_velocity:
         base_angular_velocity = get_base_angular_velocity()
-        flow360_conv_system = flow360_conversion_unit_system(
-            base_angular_velocity=base_angular_velocity
-        )
+        flow360_conversion_unit_system.base_angular_velocity = base_angular_velocity
 
-    if dimension == u.dimensions.density:
+    elif dimension == u.dimensions.density:
         base_density = get_base_density()
-        flow360_conv_system = flow360_conversion_unit_system(base_density=base_density)
+        flow360_conversion_unit_system.base_density = base_density
 
-    if dimension == u.dimensions.viscosity:
+    elif dimension == u.dimensions.viscosity:
         base_viscosity = get_base_viscosity()
-        flow360_conv_system = flow360_conversion_unit_system(base_viscosity=base_viscosity)
+        flow360_conversion_unit_system.base_viscosity = base_viscosity
+    else:
+        raise ValueError(f"Not recognised dimension: {dimension}")
 
-    if flow360_conv_system is not None:
-        return flow360_conv_system
-
-    raise ValueError(f"Not recognised dimension: {dimension}")
+    return flow360_conversion_unit_system.conversion_system

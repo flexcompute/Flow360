@@ -20,7 +20,7 @@ from ...exceptions import ConfigError, FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
-from .unit_system import DimensionedType
+from .unit_system import DimensionedType, is_flow360_unit
 
 
 def json_dumps(value, *args, **kwargs):
@@ -122,15 +122,27 @@ _json_encoders_map = {
     np.ndarray: encode_ndarray,
 }
 
-_json_flow360_encoders_map = {
-    unyt.unyt_array: lambda x: x.value,
-    DimensionedType: lambda x: x.value,
+
+def _flow360_solver_dimensioned_type_serializer(x):
+    """
+    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    """
+    if not is_flow360_unit(x):
+        raise ValueError(
+            f"Value {x} is not in flow360 unit system and should not be directly exported to flow360 solver json."
+        )
+    return x.value
+
+
+_flow360_solver_json_encoder_map = {
+    unyt.unyt_array: _flow360_solver_dimensioned_type_serializer,
+    DimensionedType: _flow360_solver_dimensioned_type_serializer,
     np.ndarray: encode_ndarray,
 }
 
 
-def _flow360_custom_json_encoder(obj):
-    for custom_type, encoder in _json_flow360_encoders_map.items():
+def _flow360_solver_json_encoder(obj):
+    for custom_type, encoder in _flow360_solver_json_encoder_map.items():
         if isinstance(obj, custom_type):
             return encoder(obj)
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
@@ -143,7 +155,7 @@ def flow360_json_encoder(obj):
     try:
         return json.JSONEncoder().default(obj)
     except TypeError:
-        return _flow360_custom_json_encoder(obj)
+        return _flow360_solver_json_encoder(obj)
 
 
 # pylint: disable=too-many-public-methods
@@ -392,7 +404,7 @@ class Flow360BaseModel(BaseModel):
         self, params, exclude: List[str] = None, required_by: List[str] = None
     ) -> Flow360BaseModel:
         """
-        Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimentioned value performs
+        Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimensioned value performs
         unit conversion to flow360_base system.
 
         Parameters

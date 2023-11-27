@@ -8,7 +8,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Collection, List
+from typing import Any, Collection, List
 
 import numpy as np
 import pydantic as pd
@@ -140,7 +140,7 @@ def _unit_inference_validator(value, dim_name, is_array=False):
 
 def _has_dimensions_validator(value, dim):
     """
-    Checks if value has expected dimention and raises TypeError
+    Checks if value has expected dimension and raises TypeError
     """
     if not _has_dimensions(value, dim):
         raise TypeError(f"arg '{value}' does not match {dim}")
@@ -685,6 +685,26 @@ class Flow360AngularVelocityUnit(_Flow360BaseUnit):
     unit_name = "flow360_angular_velocity_unit"
 
 
+def is_flow360_unit(value):
+    """
+    Check if the provided value represents a dimensioned quantity with units
+    that start with 'flow360'.
+
+    Parameters:
+    - value: The value to be checked for units.
+
+    Returns:
+    - bool: True if the value has units starting with 'flow360', False otherwise.
+
+    Raises:
+    - ValueError: If the provided value does not have the 'units' attribute.
+    """
+
+    if hasattr(value, "units"):
+        return str(value.units).startswith("flow360")
+    raise ValueError(f"Expected a dimensioned value, but {value} provided.")
+
+
 _lock = Lock()
 
 
@@ -852,57 +872,77 @@ _flow360_system = {
 }
 
 
-# pylint: disable=too-many-arguments
-def flow360_conversion_unit_system(
-    base_length=np.inf,
-    base_mass=np.inf,
-    base_time=np.inf,
-    base_temperature=np.inf,
-    base_velocity=np.inf,
-    base_area=np.inf,
-    base_force=np.inf,
-    base_density=np.inf,
-    base_pressure=np.inf,
-    base_viscosity=np.inf,
-    base_angular_velocity=np.inf,
-):
+# pylint: disable=too-many-instance-attributes
+class Flow360ConversionUnitSystem(pd.BaseModel):
     """
-    Register an unyt unit system for flow360 units with defined conversion factors
+    Flow360ConversionUnitSystem class for setting convertion rates for converting from dimensioned values into flow360
+    values
     """
-    _flow360_reg = u.UnitRegistry()
-    _flow360_reg.add("flow360_length_unit", base_length, u.dimensions.length)
-    _flow360_reg.add("flow360_mass_unit", base_mass, u.dimensions.mass)
-    _flow360_reg.add("flow360_time_unit", base_time, u.dimensions.time)
-    _flow360_reg.add("flow360_temperature_unit", base_temperature, u.dimensions.temperature)
-    _flow360_reg.add("flow360_velocity_unit", base_velocity, u.dimensions.velocity)
-    _flow360_reg.add("flow360_area_unit", base_area, u.dimensions.area)
-    _flow360_reg.add("flow360_force_unit", base_force, u.dimensions.force)
-    _flow360_reg.add("flow360_density_unit", base_density, u.dimensions.density)
-    _flow360_reg.add("flow360_pressure_unit", base_pressure, u.dimensions.pressure)
-    _flow360_reg.add("flow360_viscosity_unit", base_viscosity, u.dimensions.viscosity)
-    _flow360_reg.add(
-        "flow360_angular_velocity_unit", base_angular_velocity, u.dimensions.angular_velocity
-    )
 
-    _flow360_conv_system = u.UnitSystem(
-        "flow360",
-        "flow360_length_unit",
-        "flow360_mass_unit",
-        "flow360_time_unit",
-        "flow360_temperature_unit",
-        registry=_flow360_reg,
-    )
+    base_length: float = pd.Field(np.inf, target_dimension=Flow360LengthUnit)
+    base_mass: float = pd.Field(np.inf, target_dimension=Flow360MassUnit)
+    base_time: float = pd.Field(np.inf, target_dimension=Flow360TimeUnit)
+    base_temperature: float = pd.Field(np.inf, target_dimension=Flow360TemperatureUnit)
+    base_velocity: float = pd.Field(np.inf, target_dimension=Flow360VelocityUnit)
+    base_area: float = pd.Field(np.inf, target_dimension=Flow360AreaUnit)
+    base_force: float = pd.Field(np.inf, target_dimension=Flow360ForceUnit)
+    base_density: float = pd.Field(np.inf, target_dimension=Flow360DensityUnit)
+    base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
+    base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
+    base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
+    registry: Any = pd.Field(allow_mutation=False)
+    conversion_system: Any = pd.Field(allow_mutation=False)
 
-    _flow360_conv_system["velocity"] = "flow360_velocity_unit"
-    _flow360_conv_system["area"] = "flow360_area_unit"
-    _flow360_conv_system["force"] = "flow360_force_unit"
-    _flow360_conv_system["density"] = "flow360_density_unit"
-    _flow360_conv_system["pressure"] = "flow360_pressure_unit"
-    _flow360_conv_system["viscosity"] = "flow360_viscosity_unit"
-    _flow360_conv_system["angular_velocity"] = "flow360_angular_velocity_unit"
+    class Config:  # pylint: disable=too-few-public-methods
+        """config"""
 
-    return _flow360_conv_system
+        extra = "forbid"
+        validate_assignment = True
+        allow_mutation = True
 
+    def __init__(self):
+        registry = u.UnitRegistry()
+
+        for field in self.__fields__.values():
+            target_dimension = field.field_info.extra.get("target_dimension", None)
+            if target_dimension is not None:
+                registry.add(
+                    target_dimension.unit_name, field.default, target_dimension.dimension_type.dim
+                )
+
+        conversion_system = u.UnitSystem(
+            "flow360",
+            "flow360_length_unit",
+            "flow360_mass_unit",
+            "flow360_time_unit",
+            "flow360_temperature_unit",
+            registry=registry,
+        )
+
+        conversion_system["velocity"] = "flow360_velocity_unit"
+        conversion_system["area"] = "flow360_area_unit"
+        conversion_system["force"] = "flow360_force_unit"
+        conversion_system["density"] = "flow360_density_unit"
+        conversion_system["pressure"] = "flow360_pressure_unit"
+        conversion_system["viscosity"] = "flow360_viscosity_unit"
+        conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
+        super().__init__(registry=registry, conversion_system=conversion_system)
+
+    # pylint: disable=no-self-argument
+    @pd.validator("*")
+    def assign_conversion_rate(cls, value, values, field):
+        """
+        Pydantic validator for assigning conversion rates to a specific unit in the registry.
+        """
+        target_dimension = field.field_info.extra.get("target_dimension", None)
+        if target_dimension is not None:
+            registry = values["registry"]
+            registry.modify(target_dimension.unit_name, value)
+
+        return value
+
+
+flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
 SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
 CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
