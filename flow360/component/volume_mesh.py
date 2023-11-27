@@ -397,7 +397,7 @@ class VolumeMeshDraft(ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
-        self.compress_method = CompressionFormat.BZ2
+        self.compress_method = CompressionFormat.ZST
         ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):

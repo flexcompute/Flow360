@@ -143,66 +143,6 @@ def dimensioned_type_serializer(x):
     return {"value": x.value, "units": str(x.units)}
 
 
-def _camel_to_space(name):
-    name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
-    name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
-    name = name.capitalize()
-    return name
-
-
-def _format_titles(dictionary):
-    if not isinstance(dictionary, dict):
-        raise ValueError("Input must be a dictionary")
-
-    for key, value in list(dictionary.items()):
-        if isinstance(value, dict):
-            title = value.get("title")
-            if title is not None and value.get("displayed") is None:
-                value["title"] = _camel_to_space(key)
-            _format_titles(value)
-        if isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict):
-                    _format_titles(item)
-
-    return dictionary
-
-
-def _remove_key_from_nested_dict(dictionary, key_to_remove):
-    if not isinstance(dictionary, dict):
-        raise ValueError("Input must be a dictionary")
-
-    for key, value in list(dictionary.items()):
-        if key == key_to_remove:
-            del dictionary[key]
-        elif isinstance(value, dict):
-            _remove_key_from_nested_dict(value, key_to_remove)
-        elif isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict):
-                    _remove_key_from_nested_dict(item, key_to_remove)
-
-    return dictionary
-
-
-def _swap_key_in_nested_dict(dictionary, key_to_replace, replacement_key):
-    if not isinstance(dictionary, dict):
-        raise ValueError("Input must be a dictionary")
-
-    for key, value in list(dictionary.items()):
-        if key == replacement_key and dictionary.get(key_to_replace) is not None:
-            dictionary[key_to_replace] = dictionary[replacement_key]
-            del dictionary[replacement_key]
-        elif isinstance(value, dict):
-            _swap_key_in_nested_dict(value, key_to_replace, replacement_key)
-        elif isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict):
-                    _swap_key_in_nested_dict(item, key_to_replace, replacement_key)
-
-    return dictionary
-
-
 # pylint: disable=too-many-public-methods
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
@@ -345,18 +285,94 @@ class Flow360BaseModel(BaseModel):
         return []
 
     @classmethod
+    def _fix_single_allof(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == "allOf" and len(value) == 1 and isinstance(value[0], dict):
+                for allOfKey, allOfValue in list(value[0].items()):
+                    dictionary[allOfKey] = allOfValue
+                del dictionary["allOf"]
+            elif isinstance(value, dict):
+                cls._fix_single_allof(value)
+
+        return dictionary
+
+    @classmethod
+    def _camel_to_space(cls, name):
+        name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
+        name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
+        name = name.capitalize()
+        return name
+
+    @classmethod
+    def _format_titles(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if isinstance(value, dict):
+                title = value.get("title")
+                if title is not None and value.get("displayed") is None:
+                    value["title"] = cls._camel_to_space(key)
+                cls._format_titles(value)
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._format_titles(item)
+
+        return dictionary
+
+    @classmethod
+    def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == key_to_remove:
+                del dictionary[key]
+            elif isinstance(value, dict):
+                cls._remove_key_from_nested_dict(value, key_to_remove)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._remove_key_from_nested_dict(item, key_to_remove)
+
+        return dictionary
+
+    @classmethod
+    def _swap_key_in_nested_dict(cls, dictionary, key_to_replace, replacement_key):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == replacement_key and dictionary.get(key_to_replace) is not None:
+                dictionary[key_to_replace] = dictionary[replacement_key]
+                del dictionary[replacement_key]
+            elif isinstance(value, dict):
+                cls._swap_key_in_nested_dict(value, key_to_replace, replacement_key)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._swap_key_in_nested_dict(item, key_to_replace, replacement_key)
+
+        return dictionary
+
+    @classmethod
     def _clean_schema(cls, schema):
-        _remove_key_from_nested_dict(schema, "description")
-        _remove_key_from_nested_dict(schema, "_type")
-        _remove_key_from_nested_dict(schema, "comments")
+        cls._remove_key_from_nested_dict(schema, "description")
+        cls._remove_key_from_nested_dict(schema, "_type")
+        cls._remove_key_from_nested_dict(schema, "comments")
 
     @classmethod
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
         cls._clean_schema(schema)
-        _format_titles(schema)
-        _swap_key_in_nested_dict(schema, "title", "displayed")
+        cls._fix_single_allof(schema)
+        cls._format_titles(schema)
+        cls._swap_key_in_nested_dict(schema, "title", "displayed")
         return schema
 
     @classmethod
@@ -840,8 +856,6 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         cls._collect_all_definitions(root_schema, definitions)
 
         root_schema["definitions"] = definitions
-
-        _format_titles(root_schema)
 
         return root_schema
 

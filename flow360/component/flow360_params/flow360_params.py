@@ -860,11 +860,11 @@ class Freestream(Flow360BaseModel):
 
     @classmethod
     def from_speed(
-        cls,
-        speed: Union[Velocity, PositiveFloat] = None,
-        temperature: PositiveFloat = 288.15,
-        density: PositiveFloat = 1.225,
-        **kwargs,
+            cls,
+            speed: Union[Velocity, PositiveFloat] = None,
+            temperature: PositiveFloat = 288.15,
+            density: PositiveFloat = 1.225,
+            **kwargs,
     ) -> Freestream:
         """class: `Freestream`
 
@@ -901,9 +901,9 @@ class Freestream(Flow360BaseModel):
                 raise ConfigError("density is required.")
             viscosity = 1.458e-6 * pow(self.temperature, 1.5) / (self.temperature + 110.4)
             self.mu_ref = (
-                viscosity
-                / (self.density * self.get_C_inf())
-                / get_length_non_dim_unit(mesh_unit_length)
+                    viscosity
+                    / (self.density * self.get_C_inf())
+                    / get_length_non_dim_unit(mesh_unit_length)
             )
 
         if self.speed:

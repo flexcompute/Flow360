@@ -2,7 +2,7 @@
 Flow360 output parameters models
 """
 from abc import ABCMeta
-from typing import List, Literal, Optional, Union, get_args
+from typing import List, Literal, Optional, Union, get_args, Any
 
 import pydantic as pd
 from pydantic import conlist
@@ -17,23 +17,23 @@ from .params_base import (
 
 OutputFormat = Literal["paraview", "tecplot", "both"]
 
-_common_names = output_names(["common"])
-_surface_names = output_names(["common", "surface"])
-_slice_names = output_names(["common", "slice"])
-_volume_names = output_names(["common", "volume"])
-_iso_surface_names = output_names(["iso_surface"])
+_common_names: list[str] = output_names(["common"])
+_surface_names: list[str] = output_names(["common", "surface"])
+_slice_names: list[str] = output_names(["common", "slice"])
+_volume_names: list[str] = output_names(["common", "volume"])
+_iso_surface_names: list[str] = output_names(["iso_surface"])
 
-_common_long = output_names(["common"], False)
-_surface_long = output_names(["common", "surface"], False)
-_slice_long = output_names(["common", "slice"], False)
-_volume_long = output_names(["common", "volume"], False)
-_iso_surface_long = output_names(["iso_surface"], False)
+_common_long: list[str] = output_names(["common"], False)
+_surface_long: list[str] = output_names(["common", "surface"], False)
+_slice_long: list[str] = output_names(["common", "slice"], False)
+_volume_long: list[str] = output_names(["common", "volume"], False)
+_iso_surface_long: list[str] = output_names(["iso_surface"], False)
 
-CommonOutputFields = conlist(Literal[*tuple(_common_names)], unique_items=True)
-SurfaceOutputFields = conlist(Literal[*tuple(_surface_names)], unique_items=True)
-SliceOutputFields = conlist(Literal[*tuple(_slice_names)], unique_items=True)
-VolumeOutputFields = conlist(Literal[*tuple(_volume_names)], unique_items=True)
-IsoSurfaceOutputField = Literal[*tuple(_iso_surface_names)]
+CommonOutputFields = conlist(Literal[tuple(_common_names)], unique_items=True)
+SurfaceOutputFields = conlist(Literal[tuple(_surface_names)], unique_items=True)
+SliceOutputFields = conlist(Literal[tuple(_slice_names)], unique_items=True)
+VolumeOutputFields = conlist(Literal[tuple(_volume_names)], unique_items=True)
+IsoSurfaceOutputField = Literal[tuple(_iso_surface_names)]
 
 
 def _filter_fields(fields, field_filters):
