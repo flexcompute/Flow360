@@ -980,7 +980,7 @@ class FreestreamFromMachReynolds(FreestreamBase):
 
 class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True)
-    Mach_ref: PositiveFloat = pd.Field()
+    Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
