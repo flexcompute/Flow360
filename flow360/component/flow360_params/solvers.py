@@ -21,7 +21,10 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
+        deprecated_aliases = [
+            DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")
+        ]
 
 
 class LinearSolver(Flow360BaseModel):
@@ -60,6 +63,10 @@ class LinearSolver(Flow360BaseModel):
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance", default=1e-10)
     relative_tolerance: Optional[float] = pd.Field(alias="relativeTolerance")
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")]
 
 
 class RandomizerParameter(Flow360BaseModel):
@@ -179,10 +186,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     def _get_field_order(cls) -> List[str]:
         return ["*", "linearSolver"]
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
-
 
 class TurbulenceModelConstants(Flow360BaseModel):
     """:class:`TurbulenceModelConstants` class"""
@@ -282,10 +285,6 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
-
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSST` class"""
@@ -348,7 +347,10 @@ class HeatEquationSolver(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
+        deprecated_aliases = [
+            DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")
+        ]
 
 
 class TransitionModelSolver(GenericFlowSolverSettings):
@@ -385,7 +387,3 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="turbulenceIntensityPercent"
     )
     N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
