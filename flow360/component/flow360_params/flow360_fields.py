@@ -62,14 +62,15 @@ def _field_names(definitions: List[Tuple[str, Union[str, None]]], short=True):
     return total
 
 
-def output_names(types, short=True):
+def output_names(types, include_short=True):
+    """Returns permissible output field names for different output classes"""
     field_list = []
     if "common" in types:
-        field_list += _field_names(_common_field_definitions, short)
+        field_list += _field_names(_common_field_definitions, include_short)
     if "surface" in types:
-        field_list += _field_names(_surface_field_definitions, short)
+        field_list += _field_names(_surface_field_definitions, include_short)
     if "slice" in types or "volume" in types:
-        field_list += _field_names(_volume_slice_field_definitions, short)
+        field_list += _field_names(_volume_slice_field_definitions, include_short)
     if "iso_surface" in types:
-        field_list += _field_names(_isosurface_field_definitions, short)
+        field_list += _field_names(_isosurface_field_definitions, include_short)
     return field_list

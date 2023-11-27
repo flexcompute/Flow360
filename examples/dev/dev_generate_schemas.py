@@ -1,3 +1,4 @@
+import json
 from typing import Type
 
 import flow360 as fl
@@ -10,9 +11,9 @@ def write_to_file(name, content):
 
 
 def write_schemas(type_obj: Type[Flow360BaseModel]):
-    schema = type_obj.generate_schema()
+    schema = json.dumps(type_obj.flow360_schema(), indent=2)
     write_to_file(f"../schemas/{type_obj.__name__}.json", schema)
-    ui_schema = type_obj.generate_ui_schema()
+    ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
         write_to_file(f"../schemas/{type_obj.__name__}.ui.json", ui_schema)
 

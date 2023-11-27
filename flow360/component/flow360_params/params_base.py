@@ -4,6 +4,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import json
+import re
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from typing import Any, List, Optional, Type
@@ -140,6 +141,66 @@ def dimensioned_type_serializer(x):
     encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
     """
     return {"value": x.value, "units": str(x.units)}
+
+
+def _camel_to_space(name):
+    name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
+    name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
+    name = name.capitalize()
+    return name
+
+
+def _format_titles(dictionary):
+    if not isinstance(dictionary, dict):
+        raise ValueError("Input must be a dictionary")
+
+    for key, value in list(dictionary.items()):
+        if isinstance(value, dict):
+            title = value.get("title")
+            if title is not None and value.get("displayed") is None:
+                value["title"] = _camel_to_space(key)
+            _format_titles(value)
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _format_titles(item)
+
+    return dictionary
+
+
+def _remove_key_from_nested_dict(dictionary, key_to_remove):
+    if not isinstance(dictionary, dict):
+        raise ValueError("Input must be a dictionary")
+
+    for key, value in list(dictionary.items()):
+        if key == key_to_remove:
+            del dictionary[key]
+        elif isinstance(value, dict):
+            _remove_key_from_nested_dict(value, key_to_remove)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _remove_key_from_nested_dict(item, key_to_remove)
+
+    return dictionary
+
+
+def _swap_key_in_nested_dict(dictionary, key_to_replace, replacement_key):
+    if not isinstance(dictionary, dict):
+        raise ValueError("Input must be a dictionary")
+
+    for key, value in list(dictionary.items()):
+        if key == replacement_key and dictionary.get(key_to_replace) is not None:
+            dictionary[key_to_replace] = dictionary[replacement_key]
+            del dictionary[replacement_key]
+        elif isinstance(value, dict):
+            _swap_key_in_nested_dict(value, key_to_replace, replacement_key)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _swap_key_in_nested_dict(item, key_to_replace, replacement_key)
+
+    return dictionary
 
 
 # pylint: disable=too-many-public-methods
@@ -284,59 +345,30 @@ class Flow360BaseModel(BaseModel):
         return []
 
     @classmethod
-    def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
-        if not isinstance(dictionary, dict):
-            raise ValueError("Input must be a dictionary")
-
-        for key, value in list(dictionary.items()):
-            if key == key_to_remove:
-                del dictionary[key]
-            elif isinstance(value, dict):
-                cls._remove_key_from_nested_dict(value, key_to_remove)
-
-        return dictionary
-
-    @classmethod
-    def _swap_key_in_nested_dict(cls, dictionary, key_to_replace, replacement_key):
-        if not isinstance(dictionary, dict):
-            raise ValueError("Input must be a dictionary")
-
-        for key, value in list(dictionary.items()):
-            if key == replacement_key:
-                if dictionary.get(key_to_replace) is not None:
-                    dictionary[key_to_replace] = dictionary[replacement_key]
-                    del dictionary[replacement_key]
-            elif isinstance(value, dict):
-                cls._swap_key_in_nested_dict(value, key_to_replace, replacement_key)
-
-        return dictionary
-
-    @classmethod
     def _clean_schema(cls, schema):
-        cls._remove_key_from_nested_dict(schema, "description")
-        cls._remove_key_from_nested_dict(schema, "_type")
-        cls._remove_key_from_nested_dict(schema, "comments")
+        _remove_key_from_nested_dict(schema, "description")
+        _remove_key_from_nested_dict(schema, "_type")
+        _remove_key_from_nested_dict(schema, "comments")
 
     @classmethod
-    def generate_schema(cls):
+    def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
         cls._clean_schema(schema)
-        cls._swap_key_in_nested_dict(schema, "title", "displayed")
-        json_str = json.dumps(schema, indent=2)
-        return json_str
+        _format_titles(schema)
+        _swap_key_in_nested_dict(schema, "title", "displayed")
+        return schema
 
     @classmethod
-    def generate_ui_schema(cls):
+    def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
         order = cls._get_field_order()
-        json_dict = {}
+        schema = {}
         if len(order) > 0:
-            json_dict["ui:order"] = order
-        json_dict["ui:submitButtonOptions"] = {"norender": True}
-        json_dict["ui:options"] = {"orderable": False, "addable": False, "removable": False}
-        json_str = json.dumps(json_dict, indent=2)
-        return json_str
+            schema["ui:order"] = order
+        schema["ui:submitButtonOptions"] = {"norender": True}
+        schema["ui:options"] = {"orderable": False, "addable": False, "removable": False}
+        return schema
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
@@ -778,7 +810,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         """retrieve allowed types of this self-named property"""
 
     @classmethod
-    def generate_schema(cls):
+    def flow360_schema(cls):
         title = cls.__name__
         root_schema = {
             "title": title,
@@ -798,22 +830,23 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         models = cls.get_subtypes()
 
         for model in models:
-            schema = model.schema()
+            schema = model.flow360_schema()
             cls._clean_schema(schema)
             root_schema["items"]["properties"]["modelType"]["enum"].append(model.__name__)
             root_schema["items"]["dependencies"]["modelType"]["oneOf"].append(schema)
 
-        definitions = dict()
+        definitions = {}
 
         cls._collect_all_definitions(root_schema, definitions)
 
         root_schema["definitions"] = definitions
 
-        json_str = json.dumps(root_schema, indent=2)
-        return json_str
+        _format_titles(root_schema)
+
+        return root_schema
 
     @classmethod
-    def generate_ui_schema(cls):
+    def flow360_ui_schema(cls):
         return None
 
     # pylint: disable=missing-class-docstring,too-few-public-methods

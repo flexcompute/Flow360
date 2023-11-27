@@ -32,6 +32,8 @@ from ..types import (
 )
 from ..utils import _get_value_or_none, beta_feature
 from .flow360_output import (
+    AeroacousticOutput,
+    AnimationSettings,
     IsoSurfaceOutput,
     IsoSurfaces,
     MonitorOutput,
@@ -43,7 +45,6 @@ from .flow360_output import (
     SurfaceOutput,
     Surfaces,
     VolumeOutput,
-    AnimationSettings,
 )
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
@@ -634,7 +635,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr]
+    T_solid: Union[PositiveFloat, StrictStr] = pd.Field()
 
 
 class HeatTransferVolumeZone(VolumeZoneBase):
@@ -718,7 +719,7 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamicsVolumeZone", alias="modelType", const=True)
-    reference_frame: ReferenceFrame = pd.Field(alias="referenceFrame")
+    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
@@ -764,38 +765,6 @@ class VolumeZones(Flow360SortableBaseModel):
         return _self_named_property_validator(
             values, _GenericVolumeZonesWrapper, msg="is not any of supported volume zone types."
         )
-
-
-class AeroacousticOutput(Flow360BaseModel):
-    """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
-
-    Parameters
-    ----------
-    observers : List[Coordinate]
-        List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
-        file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
-        the simulation domain.
-    animation_frequency: Union[PositiveInt, Literal[-1]], optional
-        Frame frequency in the animation
-    animation_frequency_offset: int, optional
-        Animation frequency offset
-
-    Returns
-    -------
-    :class:`AeroacousticOutput`
-        An instance of the component class AeroacousticOutput.
-
-    Example
-    -------
-    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
-    """
-
-    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency"
-    )
-    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
-    observers: List[Coordinate] = pd.Field()
 
 
 class Geometry(Flow360BaseModel):

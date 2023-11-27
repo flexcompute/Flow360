@@ -151,31 +151,23 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(
         alias="CFLMultiplier", displayed="CFL Multiplier"
     )
-    linear_iterations: Optional[PositiveInt] = pd.Field(
-        alias="linearIterations", displayed="Linear iterations"
-    )
+    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
         alias="kappaMUSCL", displayed="Kappa MUSCL"
     )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
         alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
     )
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(
-        alias="equationEvalFrequency", displayed="Equation evaluation frequency"
-    )
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(
-        alias="orderOfAccuracy", displayed="Order of accuracy"
-    )
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
     linear_solver_config: Optional[LinearSolver] = pd.Field(
-        alias="linearSolverConfig", displayed="Linear solver config", default=LinearSolver()
+        alias="linearSolverConfig", default=LinearSolver()
     )
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity", displayed="Limit velocity")
-    limit_pressure_density: Optional[bool] = pd.Field(
-        alias="limitPressureDensity", displayed="Limit pressure density"
-    )
+    limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
 
     @classmethod
     def _get_field_order(cls) -> List[str]:

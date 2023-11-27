@@ -14,6 +14,7 @@ from .component.flow360_params.flow360_params import (
     ActuatorDisk,
     AdaptiveCFL,
     AeroacousticOutput,
+    AnimationSettings,
     BETDisk,
     Boundaries,
     Flow360MeshParams,
@@ -31,6 +32,7 @@ from .component.flow360_params.flow360_params import (
     MassOutflow,
     MeshBoundary,
     MonitorOutput,
+    Monitors,
     NavierStokesSolver,
     NoneSolver,
     NoSlipWall,
@@ -60,8 +62,6 @@ from .component.flow360_params.flow360_params import (
     VolumeOutput,
     VolumeZones,
     WallFunction,
-    AnimationSettings,
-    Monitors
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
