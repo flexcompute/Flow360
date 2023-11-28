@@ -3,6 +3,7 @@ import unittest
 import pydantic as pd
 import pytest
 
+import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
@@ -10,7 +11,6 @@ from flow360.component.flow360_params.flow360_params import (
     ReferenceFrame,
     VolumeZones,
 )
-from flow360.exceptions import ConfigError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -22,13 +22,15 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_volume_zones():
-    with pytest.raises(ConfigError):
-        rf = ReferenceFrame(
-            center=(0, 0, 0),
-            axis=(0, 0, 1),
-        )
+    with pytest.raises(pd.ValidationError):
+        with fl.SI_unit_system:
+            rf = ReferenceFrame(
+                center=(0, 0, 0),
+                axis=(0, 0, 1),
+            )
 
-    rf = ReferenceFrame(center=(0, 0, 0), axis=(0, 0, 1), omega_radians=1)
+    with fl.SI_unit_system:
+        rf = ReferenceFrame(center=(0, 0, 0), axis=(0, 0, 1), omega=1)
 
     assert rf
 

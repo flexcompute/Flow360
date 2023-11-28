@@ -37,6 +37,10 @@ class ValidationError(Flow360Error):
     """Error when constructing FLow360 components."""
 
 
+class Flow360ConfigurationError(Flow360Error):
+    """Error with flow360 configuration."""
+
+
 class FileError(Flow360Error):
     """Error reading or writing to file."""
 

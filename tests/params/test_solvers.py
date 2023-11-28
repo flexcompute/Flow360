@@ -55,7 +55,7 @@ def test_navier_stokes():
     )
     p = Flow360Params(
         navier_stokes_solver=ns,
-        freestream={"Mach": 1, "Temperature": 1},
+        freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
     )
     to_file_from_file_test(p)
 

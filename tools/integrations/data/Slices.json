@@ -1,0 +1,83 @@
+{
+  "title": "Slices",
+  "type": "array",
+  "uniqueItemProperties": [
+    "name"
+  ],
+  "items": {
+    "title": "Model Type",
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "readOnly": true
+      },
+      "modelType": {
+        "title": "Type",
+        "enum": [
+          "Slice"
+        ],
+        "default": ""
+      }
+    }
+  },
+  "dependencies": {
+    "modelType": {
+      "oneOf": [
+        {
+          "title": "Slice",
+          "type": "object",
+          "properties": {
+            "sliceNormal": {
+              "title": "Slicenormal",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "sliceOrigin": {
+              "title": "Sliceorigin",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "outputFields": {
+              "title": "Outputfields",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "sliceNormal",
+            "sliceOrigin"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

@@ -9,21 +9,24 @@ boundaries:
         name: freestream
         type: Freestream
 freestream:
-    Mach: 0.8404497144189707
-    Temperature: 288.15
     alphaAngle: 3.06
     betaAngle: 0.0
-    density: 1.225
-    speed:
-        unit: m/s
-        v: 286.0
+    velocity:
+        units: m/s
+        value: 286.0
 geometry:
-    meshUnit: m
+    meshUnit:
+        units: m
+        value: 1.0
     momentLength:
-    - 1.47602
-    - 0.801672958512342
-    - 1.47602
-    refArea: 1.15315084119231
+        units: m
+        value:
+        - 1.47602
+        - 0.801672958512342
+        - 1.47602
+    refArea:
+        units: m**2
+        value: 1.15315084119231
 navierStokesSolver:
     linearIterations: 10
     linearSolverConfig:

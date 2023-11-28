@@ -1,0 +1,55 @@
+{
+  "title": "HeatEquationSolver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolutetolerance",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "equationEvalFrequency": {
+      "title": "Equationevalfrequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "linearSolver": {
+      "title": "Linearsolver",
+      "default": {
+        "max_iterations": 50,
+        "absolute_tolerance": 1e-10,
+        "relative_tolerance": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/LinearSolver"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "LinearSolver": {
+      "title": "LinearSolver",
+      "type": "object",
+      "properties": {
+        "maxIterations": {
+          "title": "Maxiterations",
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "absoluteTolerance": {
+          "title": "Absolutetolerance",
+          "default": 1e-10,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relativetolerance",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

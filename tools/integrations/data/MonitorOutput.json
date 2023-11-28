@@ -1,0 +1,277 @@
+{
+  "title": "MonitorOutput",
+  "type": "object",
+  "properties": {
+    "monitors": {
+      "$ref": "#/definitions/Monitors"
+    },
+    "outputFields": {
+      "title": "Outputfields",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "Cp"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "gradW"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "kOmega"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Mach"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "mut"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "mutRatio"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "nuHat"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "primitiveVars"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "qcriterion"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "residualNavierStokes"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "residualTransition"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "residualTurbulence"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "s"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "solutionNavierStokes"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "solutionTransition"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "solutionTurbulence"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "T"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "vorticity"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "wallDistance"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "lowNumericalDissipationSensor"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "residualHeatSolver"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Coefficient of pressure"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Gradient of primitive solution"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "k and omega"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Mach number"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Turbulent viscosity"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Turbulent viscosity and freestream dynamic viscosity ratio"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Spalart-Almaras variable"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "rho, u, v, w, p (density, 3 velocities and pressure)"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Q criterion"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "N-S residual"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Transition residual"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Turbulence residual"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Entropy"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "N-S solution"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Transition solution"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Turbulence solution"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Temperature"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Vorticity"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Wall distance"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "NumericalDissipationFactor sensor"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Heat equation residual"
+            ],
+            "type": "string"
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Monitors": {
+      "title": "Monitors",
+      "type": "object",
+      "properties": {}
+    }
+  }
+}

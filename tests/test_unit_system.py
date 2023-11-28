@@ -22,28 +22,7 @@ from flow360.component.flow360_params.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import to_file_from_file_test
-
-
-@pytest.fixture()
-def array_equality_override():
-    # Overload equality for unyt arrays
-    def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
-        if self.size == other.size == 1:
-            return np.ndarray.__eq__(self, other)
-        elif self.size == other.size:
-            return all(self[i] == other[i] for i in range(len(self)))
-        return False
-
-    def unyt_array_ne(self: unyt.unyt_array, other: unyt.unyt_array):
-        if self.size == other.size == 1:
-            return np.ndarray.__ne__(self, other)
-        elif self.size == other.size:
-            return any(self[i] != other[i] for i in range(len(self)))
-        return True
-
-    unyt.unyt_array.__eq__ = unyt_array_eq
-    unyt.unyt_array.__ne__ = unyt_array_ne
+from tests.utils import array_equality_override, to_file_from_file_test
 
 
 class DataWithUnits(pd.BaseModel):
@@ -98,6 +77,18 @@ def test_unit_access():
     assert u.inch
 
 
+def test_unit_systems_compare():
+    assert fl.SI_unit_system != fl.flow360_unit_system
+    assert fl.SI_unit_system != fl.CGS_unit_system
+
+    assert fl.SI_unit_system == fl.SI_unit_system
+    assert fl.flow360_unit_system == fl.flow360_unit_system
+
+    assert fl.flow360_unit_system == fl.UnitSystem(base_system="Flow360")
+    assert fl.SI_unit_system == fl.UnitSystem(base_system="SI")
+
+
+@pytest.mark.usefixtures("array_equality_override")
 def test_flow360_unit_arithmetic():
     assert 1 * u.flow360_area_unit
     assert u.flow360_area_unit * 1
@@ -172,6 +163,15 @@ def test_flow360_unit_arithmetic():
         ax=(1, 1, 1) * u.flow360_length_unit,
         omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
     )
+
+    with fl.flow360_unit_system:
+        data_flow360 = VectorDataWithUnits(
+            pt=(1, 1, 1),
+            vec=(1, 1, 1),
+            ax=(1, 1, 1),
+            omega=(1, 1, 1),
+        )
+    assert data == data_flow360
 
     with pytest.raises(TypeError):
         data.pt + (1, 1, 1) * u.m
@@ -463,3 +463,21 @@ def test_units_serializer():
     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
 
     to_file_from_file_test(data)
+
+
+def test_unit_system_init():
+    unit_system_dict = {
+        "mass": {"value": 1.0, "units": "kg"},
+        "length": {"value": 1.0, "units": "m"},
+        "time": {"value": 1.0, "units": "s"},
+        "temperature": {"value": 1.0, "units": "K"},
+        "velocity": {"value": 1.0, "units": "m/s"},
+        "area": {"value": 1.0, "units": "m**2"},
+        "force": {"value": 1.0, "units": "N"},
+        "pressure": {"value": 1.0, "units": "Pa"},
+        "density": {"value": 1.0, "units": "kg/m**3"},
+        "viscosity": {"value": 1.0, "units": "Pa*s"},
+        "angular_velocity": {"value": 1.0, "units": "rad/s"},
+    }
+    us = fl.UnitSystem(**unit_system_dict)
+    assert us == fl.SI_unit_system

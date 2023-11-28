@@ -1,0 +1,65 @@
+{
+  "title": "Geometry",
+  "type": "object",
+  "properties": {
+    "refArea": {
+      "title": "Refarea",
+      "value": {
+        "type": "number"
+      },
+      "units": {
+        "type": "string",
+        "dimension": "area",
+        "enum": [
+          "m**2",
+          "cm**2",
+          "ft**2"
+        ]
+      }
+    },
+    "momentCenter": {
+      "title": "Momentcenter",
+      "value": {
+        "type": "array",
+        "items": {
+          "type": "number",
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "units": {
+        "type": "string"
+      }
+    },
+    "momentLength": {
+      "title": "Momentlength",
+      "value": {
+        "type": "array",
+        "items": {
+          "type": "number",
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "units": {
+        "type": "string"
+      }
+    },
+    "meshUnit": {
+      "title": "Meshunit",
+      "value": {
+        "type": "number"
+      },
+      "units": {
+        "type": "string",
+        "dimension": "length",
+        "enum": [
+          "m",
+          "cm",
+          "ft"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

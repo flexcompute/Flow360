@@ -1,0 +1,45 @@
+{
+  "title": "Surfaces",
+  "type": "array",
+  "uniqueItemProperties": [
+    "name"
+  ],
+  "items": {
+    "title": "Model Type",
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "readOnly": true
+      },
+      "modelType": {
+        "title": "Type",
+        "enum": [
+          "Surface"
+        ],
+        "default": ""
+      }
+    }
+  },
+  "dependencies": {
+    "modelType": {
+      "oneOf": [
+        {
+          "title": "Surface",
+          "type": "object",
+          "properties": {
+            "outputFields": {
+              "title": "Outputfields",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

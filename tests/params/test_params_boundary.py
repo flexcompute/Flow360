@@ -176,8 +176,10 @@ def test_boundary_incorrect():
 
 def test_boundary_types():
     assert NoSlipWall().type == "NoSlipWall"
-    assert NoSlipWall(velocity=(0, 0, 0))
-    assert NoSlipWall(name="name", velocity=[0, 0, 0])
+    with fl.flow360_unit_system:
+        assert NoSlipWall(velocity=(0, 0, 0))
+    with fl.flow360_unit_system:
+        assert NoSlipWall(name="name", velocity=[0, 0, 0])
     assert NoSlipWall(velocity=("0", "0.1*x+exp(y)+z^2", "cos(0.2*x*pi)+sqrt(z^2+1)"))
     assert SlipWall().type == "SlipWall"
     assert FreestreamBoundary().type == "Freestream"

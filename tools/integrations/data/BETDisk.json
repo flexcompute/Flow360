@@ -1,0 +1,235 @@
+{
+  "title": "BETDisk",
+  "type": "object",
+  "properties": {
+    "rotationDirectionRule": {
+      "title": "Rotation direction",
+      "enum": [
+        "leftHand",
+        "rightHand"
+      ],
+      "type": "string"
+    },
+    "centerOfRotation": {
+      "title": "Center of rotation",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "axisOfRotation": {
+      "title": "Axis of rotation",
+      "type": "array",
+      "items": {}
+    },
+    "numberOfBlades": {
+      "title": "Number of blades",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "radius": {
+      "title": "Radius",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "omega": {
+      "title": "Omega",
+      "type": "number"
+    },
+    "chordRef": {
+      "title": "Reference chord",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "thickness": {
+      "title": "Thickness",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "nLoadingNodes": {
+      "title": "Loading nodes",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "bladeLineChord": {
+      "title": "Blade line chord",
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "initialBladeDirection": {
+      "title": "Initial blade direction",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "tipGap": {
+      "title": "Tip gap",
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "enum": [
+            "inf"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "MachNumbers": {
+      "title": "Mach numbers",
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "ReynoldsNumbers": {
+      "title": "Reynolds numbers",
+      "type": "array",
+      "items": {
+        "type": "number",
+        "exclusiveMinimum": 0
+      }
+    },
+    "alphas": {
+      "title": "Alphas",
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "twists": {
+      "title": "Twists",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BETDiskTwist"
+      }
+    },
+    "chords": {
+      "title": "Chords",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BETDiskChord"
+      }
+    },
+    "sectionalPolars": {
+      "title": "Sectional polars",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BETDiskSectionalPolar"
+      }
+    },
+    "sectionalRadiuses": {
+      "title": "Sectional radiuses",
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    }
+  },
+  "required": [
+    "centerOfRotation",
+    "axisOfRotation",
+    "numberOfBlades",
+    "radius",
+    "omega",
+    "chordRef",
+    "thickness",
+    "nLoadingNodes",
+    "MachNumbers",
+    "ReynoldsNumbers",
+    "alphas",
+    "twists",
+    "chords",
+    "sectionalPolars",
+    "sectionalRadiuses"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "BETDiskTwist": {
+      "title": "BETDiskTwist",
+      "type": "object",
+      "properties": {
+        "radius": {
+          "title": "Radius",
+          "type": "number"
+        },
+        "twist": {
+          "title": "Twist",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BETDiskChord": {
+      "title": "BETDiskChord",
+      "type": "object",
+      "properties": {
+        "radius": {
+          "title": "Radius",
+          "type": "number"
+        },
+        "chord": {
+          "title": "Chord",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BETDiskSectionalPolar": {
+      "title": "BETDiskSectionalPolar",
+      "type": "object",
+      "properties": {
+        "liftCoeffs": {
+          "title": "Lift coefficients",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "dragCoeffs": {
+          "title": "Drag coefficients",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
