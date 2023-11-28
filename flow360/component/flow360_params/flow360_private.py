@@ -1,18 +1,22 @@
 """
-Private field definitions (fields that are not specified in the
-documentation but can be used internally during validation)
+Private and legacy field definitions (fields that are not
+specified in the documentation but can be used internally
+during validation)
 """
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 import pydantic as pd
-from typing import Optional, Literal, Union, List
+from typing import Optional, Literal, Union, List, Any, Dict
+
+import unyt
+from pydantic import Extra, NonNegativeFloat
 
 from flow360 import (
     SurfaceOutput,
     SliceOutput,
     VolumeOutput,
     BETDisk,
-    Flow360Params, SlidingInterface
+    Flow360Params, SlidingInterface, Geometry, TimeStepping
 )
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 
@@ -32,6 +36,14 @@ from flow360.component.types import (
     PositiveInt,
     PositiveFloat
 )
+
+class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
+
+    comments: Optional[Dict] = pd.Field()
+
+    @abstractmethod
+    def update_model(self) -> Flow360BaseModel:
+        pass
 
 
 class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
@@ -71,7 +83,7 @@ class SurfaceOutputPrivate(SurfaceOutput):
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
-class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy):
+class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy, LegacyModel):
     """:class:`SurfaceOutputLegacy` class"""
 
     Cf: Optional[bool] = pd.Field(alias="Cf")
@@ -85,6 +97,9 @@ class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy):
     node_normals: Optional[bool] = pd.Field(alias="nodeNormals")
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
+    def update_model(self) -> Flow360BaseModel:
+        pass
+
 
 class SliceOutputPrivate(SliceOutput):
     """:class:`SliceOutputPrivate` class"""
@@ -92,11 +107,14 @@ class SliceOutputPrivate(SliceOutput):
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
 
 
-class SliceOutputLegacy(SliceOutputPrivate, OutputLegacy):
+class SliceOutputLegacy(SliceOutputPrivate, OutputLegacy, LegacyModel):
     """:class:`SliceOutputLegacy` class"""
 
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+
+    def update_model(self) -> Flow360BaseModel:
+        pass
 
 
 class VolumeOutputPrivate(VolumeOutput):
@@ -112,11 +130,14 @@ class VolumeOutputPrivate(VolumeOutput):
     debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
 
 
-class VolumeOutputLegacy(VolumeOutputPrivate, OutputLegacy):
+class VolumeOutputLegacy(VolumeOutputPrivate, OutputLegacy, LegacyModel):
     """:class:`VolumeOutputLegacy` class"""
 
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+
+    def update_model(self) -> Flow360BaseModel:
+        pass
 
 
 class LinearSolverPrivate(LinearSolver):
@@ -236,6 +257,50 @@ class SlidingInterfacePrivate(SlidingInterface):
         ]
 
 
+class GeometryLegacy(Geometry, LegacyModel):
+    def update_model(self) -> Flow360BaseModel:
+        # Apply mesh units from comments
+        model = {
+            "momentCenter": self.moment_center.value,
+            "momentLength": self.moment_length.value,
+            "refArea": self.ref_area.value
+        }
+        if self.comments.get("meshUnit") is not None:
+            unit = unyt.unyt_quantity(1, self.comments["meshUnit"])
+            model["meshUnit"] = unit
+            model["momentCenter"] *= model["meshUnit"]
+            model["momentLength"] *= model["meshUnit"]
+            model["refArea"] *= model["meshUnit"]**2
+
+        return Geometry.parse_obj(model)
+
+
+class FreestreamLegacy(LegacyModel):
+    Reynolds: Optional[PositiveFloat] = pd.Field()
+    Mach: Optional[NonNegativeFloat] = pd.Field()
+    MachRef: Optional[PositiveFloat] = pd.Field()
+    mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
+    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    density: Optional[PositiveFloat]
+    speed: Optional[PositiveFloat]
+    alpha: Optional[float] = pd.Field(alias="alphaAngle")
+    beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias="turbulentViscosityRatio")
+
+    def update_model(self) -> Flow360BaseModel:
+        pass
+
+
+class TimeSteppingLegacy(TimeStepping, LegacyModel):
+    def update_model(self) -> Flow360BaseModel:
+        pass
+
+
+class SlidingInterfaceLegacy(SlidingInterfacePrivate, LegacyModel):
+    def update_model(self) -> Flow360BaseModel:
+        pass
+
+
 class Flow360ParamsPrivate(Flow360Params):
     """
     Flow360 solver parameters (legacy version for back-compatibility only)
@@ -256,7 +321,16 @@ class Flow360ParamsPrivate(Flow360Params):
     slice_output: Optional[SliceOutputPrivate] = pd.Field(alias="sliceOutput")
 
 
-class Flow360ParamsLegacy(Flow360ParamsPrivate):
+class Flow360ParamsLegacy(Flow360ParamsPrivate, LegacyModel):
+    geometry: Optional[GeometryLegacy] = pd.Field()
+    freestream: Optional[FreestreamLegacy] = pd.Field()
+    time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
+    sliding_interfaces: Optional[List[SlidingInterfaceLegacy]] = pd.Field(alias="slidingInterfaces")
     surface_output: Optional[SurfaceOutputLegacy] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
+
+    def update_model(self) -> Flow360BaseModel:
+        model = Flow360Params()
+        model.geometry = self.geometry.update_model()
+        return model

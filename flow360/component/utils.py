@@ -147,24 +147,3 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
         log.error(f"Error occurred while compressing the file: {error}")
         return None
 
-
-# pylint: disable=unused-argument
-def update_flow_360_params(data: Dict):
-    """
-    Utility function to migrate data from old case files
-
-    1. Migrate usages of slice array with name attribute to self-named attributes
-
-    Currently the slices could be defined as such:
-
-    class NamedSlice(SliceBase):
-        slice_normal: Coordinate = pd.Field(alias="sliceNormal")
-        slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-        slice_name: str = pd.Field(alias="sliceName")
-
-    slices: List[NamedSlice]
-
-    2. Migrate usages of arrays to dicts for outputVars in user defined dynamics
-
-    Currently they can be List[str]
-    """
