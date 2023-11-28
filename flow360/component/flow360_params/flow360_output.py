@@ -1,6 +1,8 @@
 """
 Flow360 output parameters models
 """
+from __future__ import annotations
+
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
@@ -60,7 +62,7 @@ class AnimationSettingsExtended(AnimationSettings):
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
 
 
-class AnimatedOutput(pd.BaseModel):
+class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """:class:`AnimatedOutput` class"""
 
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
@@ -69,7 +71,8 @@ class AnimatedOutput(pd.BaseModel):
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     animation_settings: Optional[AnimationSettings] = pd.Field(alias="animationSettings")
 
-    def to_solver(self):
+    # pylint: disable=unused-argument
+    def to_solver(self, params, **kwargs) -> AnimatedOutput:
         """Convert animation settings (UI representation) to solver representation"""
         if self.animation_settings is not None:
             if self.animation_settings.frequency is not None:
@@ -81,9 +84,14 @@ class AnimatedOutput(pd.BaseModel):
                 self.animation_frequency_offset = self.animation_settings.frequency_offset
             else:
                 self.animation_frequency_offset = 0
+        solver_animations = self.__class__(
+            animation_frequency=self.animation_frequency,
+            animation_frequency_offset=self.animation_frequency_offset,
+        )
+        return solver_animations
 
 
-class AnimatedOutputExtended(AnimatedOutput):
+class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
     """:class:`AnimatedOutputExtended` class"""
 
     animation_frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
@@ -94,7 +102,8 @@ class AnimatedOutputExtended(AnimatedOutput):
     )
     animation_settings: Optional[AnimationSettingsExtended] = pd.Field(alias="animationSettings")
 
-    def to_solver(self):
+    # pylint: disable=unused-argument
+    def to_solver(self, params, **kwargs) -> AnimatedOutputExtended:
         if self.animation_settings is not None:
             if self.animation_settings.frequency is not None:
                 self.animation_frequency = self.animation_settings.frequency
@@ -119,9 +128,14 @@ class AnimatedOutputExtended(AnimatedOutput):
                 )
             else:
                 self.animation_frequency_time_average_offset = 0
+        solver_animations = self.__class__(
+            animation_frequency=self.animation_frequency,
+            animation_frequency_offset=self.animation_frequency_offset,
+        )
+        return solver_animations
 
 
-class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
+class OutputLegacy(Flow360BaseModel, metaclass=ABCMeta):
     """:class: Base class for common output parameters"""
 
     Cp: Optional[bool] = pd.Field()

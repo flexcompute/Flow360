@@ -5,13 +5,13 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
-    Freestream,
+    FreestreamFromVelocity,
     Geometry,
     TimeStepping,
 )
-from flow360.component.types import TimeStep
 from flow360.exceptions import ConfigError, ValidationError
 from tests.utils import to_file_from_file_test
 
@@ -26,7 +26,6 @@ def change_test_dir(request, monkeypatch):
 def test_time_stepping():
     ts = TimeStepping()
     assert ts.json()
-    assert ts.to_flow360_json()
     to_file_from_file_test(ts)
 
     with pytest.raises(pd.ValidationError):
@@ -35,35 +34,31 @@ def test_time_stepping():
     with pytest.raises(pd.ValidationError):
         ts = TimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
 
-    with pytest.raises(pd.ValidationError):
-        ts = TimeStepping(physical_steps=10, time_step_size="infinity")
-
     ts = TimeStepping(time_step_size="inf")
     to_file_from_file_test(ts)
 
-    ts = TimeStepping(physical_steps=10, time_step_size=(0.01, "s"))
-    assert isinstance(ts.time_step_size, TimeStep)
+    ts = TimeStepping(physical_steps=10, time_step_size=0.001 * u.s)
 
     to_file_from_file_test(ts)
 
     assert ts.json()
-    with pytest.raises(ConfigError):
-        ts.to_flow360_json()
-
-    assert ts.to_flow360_json(mesh_unit_length=0.2, C_inf=2)
 
     params = Flow360Params(
-        geometry=Geometry(mesh_unit="mm"), freestream=Freestream.from_speed(10), time_stepping=ts
+        geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
+        fluid_properties=fl.air,
+        freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
+        time_stepping=ts,
     )
 
     assertions.assertAlmostEqual(
-        json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 0.1
+        json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
     )
     to_file_from_file_test(ts)
 
     params = Flow360Params(
-        geometry={"meshUnit": "mm"},
-        freestream={"temperature": 1, "Mach": 1, "density": 1},
+        geometry={"meshUnit": "mm", "refArea": "m**2"},
+        fluid_properties=fl.air,
+        freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
         time_stepping=ts,
     )
     exported_json = json.loads(params.to_flow360_json())

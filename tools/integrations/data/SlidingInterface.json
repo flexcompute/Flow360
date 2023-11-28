@@ -1,0 +1,101 @@
+{
+  "title": "SlidingInterface",
+  "type": "object",
+  "properties": {
+    "centerOfRotation": {
+      "title": "Centerofrotation",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "axisOfRotation": {
+      "title": "Axisofrotation",
+      "type": "array",
+      "items": {}
+    },
+    "stationaryPatches": {
+      "title": "Stationarypatches",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rotatingPatches": {
+      "title": "Rotatingpatches",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "volumeName": {
+      "title": "Volumename",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "parentVolumeName": {
+      "title": "Parentvolumename",
+      "type": "string"
+    },
+    "interfaceName": {
+      "title": "Interfacename",
+      "type": "string"
+    },
+    "thetaRadians": {
+      "title": "Thetaradians",
+      "type": "string"
+    },
+    "thetaDegrees": {
+      "title": "Thetadegrees",
+      "type": "string"
+    },
+    "omegaRadians": {
+      "title": "Omegaradians",
+      "type": "number"
+    },
+    "omegaDegrees": {
+      "title": "Omegadegrees",
+      "type": "number"
+    },
+    "isDynamic": {
+      "title": "Isdynamic",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "centerOfRotation",
+    "axisOfRotation",
+    "stationaryPatches",
+    "rotatingPatches",
+    "volumeName"
+  ],
+  "additionalProperties": false
+}

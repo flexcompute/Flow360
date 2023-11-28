@@ -1,0 +1,42 @@
+{
+  "defaults_SI": {
+    "mass": "kg",
+    "length": "m",
+    "time": "s",
+    "temperature": "K",
+    "velocity": "m/s",
+    "area": "m**2",
+    "force": "N",
+    "pressure": "Pa",
+    "density": "kg/m**3",
+    "viscosity": "Pa*s",
+    "angular_velocity": "rad/s"
+  },
+  "defaults_CGS": {
+    "mass": "g",
+    "length": "cm",
+    "time": "s",
+    "temperature": "K",
+    "velocity": "cm/s",
+    "area": "cm**2",
+    "force": "dyn",
+    "pressure": "dyn/cm**2",
+    "density": "g/cm**3",
+    "viscosity": "dyn*s/cm**2",
+    "angular_velocity": "rad/s"
+  },
+  "defaults_imperial": {
+    "mass": "lb",
+    "length": "ft",
+    "time": "s",
+    "temperature": "R",
+    "velocity": "ft/s",
+    "area": "ft**2",
+    "force": "lbf",
+    "pressure": "lbf/ft**2",
+    "density": "lb/ft**3",
+    "viscosity": "lbf*s/ft**2",
+    "angular_velocity": "rad/s"
+  },
+  "_type": "UnitDefaults"
+}

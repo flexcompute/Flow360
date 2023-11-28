@@ -2,6 +2,8 @@
 This module is flow360.
 """
 
+from numpy import pi
+
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -21,8 +23,9 @@ from .component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     FluidDynamicsVolumeZone,
-    Freestream,
     FreestreamBoundary,
+    FreestreamFromMach,
+    FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
     HeatTransferVolumeZone,
@@ -63,6 +66,9 @@ from .component.flow360_params.flow360_params import (
     VolumeOutput,
     VolumeZones,
     WallFunction,
+    ZeroFreestream,
+    ZeroFreestreamFromVelocity,
+    air,
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
