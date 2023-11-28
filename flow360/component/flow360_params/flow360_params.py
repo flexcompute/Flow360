@@ -916,6 +916,7 @@ class AeroacousticOutput(Flow360BaseModel):
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(alias="writePerSurfaceOutput")
 
+
 class Geometry(Flow360BaseModel):
     """
     Geometry component
