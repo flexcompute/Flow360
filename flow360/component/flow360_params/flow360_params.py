@@ -914,7 +914,7 @@ class AeroacousticOutput(Flow360BaseModel):
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
-    write_per_surface_output: Optional[bool] = pd.Field(alias="writePerSurfaceOutput")
+    write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
 
 class Geometry(Flow360BaseModel):
