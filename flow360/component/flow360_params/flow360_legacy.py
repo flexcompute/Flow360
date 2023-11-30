@@ -8,16 +8,24 @@ from abc import ABCMeta, abstractmethod
 import pydantic as pd
 from typing import Optional, Literal, Union, List, Any, Dict
 
-import unyt
-from pydantic import Extra, NonNegativeFloat
+import unyt as u
+from pydantic import NonNegativeFloat
 
 from flow360 import (
     SurfaceOutput,
     SliceOutput,
     VolumeOutput,
     BETDisk,
-    Flow360Params, SlidingInterface, Geometry, TimeStepping
+    Flow360Params,
+    SlidingInterface,
+    Geometry,
+    TimeStepping,
+    FluidDynamicsVolumeZone,
+    VolumeZones,
+    FreestreamFromMach,
+    FreestreamFromVelocity
 )
+
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 
 from flow360.component.flow360_params.solvers import (
@@ -31,14 +39,27 @@ from flow360.component.flow360_params.solvers import (
     NoneSolver
 )
 
+from flow360.component.flow360_params.unit_system import DimensionedType
+
 from flow360.component.types import (
     NonNegativeInt,
     PositiveInt,
-    PositiveFloat
+    PositiveFloat,
+    Coordinate
 )
 
-class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
 
+def _try_add_unit(model, key, unit: DimensionedType):
+    if model[key] is not None:
+        model[key] *= unit
+
+
+def _try_set(model, key, value):
+    if value is not None:
+        model[key] = value
+
+
+class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
     comments: Optional[Dict] = pd.Field()
 
     @abstractmethod
@@ -240,9 +261,78 @@ class BETDiskPrivate(BETDisk):
     volume_name: Optional[str] = pd.Field(alias="volumeName")
 
 
-class SlidingInterfacePrivate(SlidingInterface):
+class GeometryLegacy(Geometry, LegacyModel):
+    ref_area: Optional[float] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
+    moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
+    moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
+
+    def update_model(self) -> Flow360BaseModel:
+        # Apply items from comments
+        model = {
+            "momentCenter": self.moment_center,
+            "momentLength": self.moment_length,
+            "refArea": self.ref_area
+        }
+        if self.comments.get("meshUnit") is not None:
+            unit = u.unyt_quantity(1, self.comments["meshUnit"])
+            model["meshUnit"] = unit
+            _try_add_unit(model, "momentCenter", model["meshUnit"])
+            _try_add_unit(model, "momentLength", model["meshUnit"])
+            _try_add_unit(model, "refArea", model["meshUnit"] ** 2)
+
+        return Geometry.parse_obj(model)
+
+
+class FreestreamLegacy(LegacyModel):
+    """:class: `FreestreamLegacy` class"""
+    Reynolds: Optional[PositiveFloat] = pd.Field()
+    Mach: Optional[NonNegativeFloat] = pd.Field()
+    MachRef: Optional[PositiveFloat] = pd.Field()
+    mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
+    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    density: Optional[PositiveFloat]
+    speed: Optional[PositiveFloat]
+    alpha: Optional[float] = pd.Field(alias="alphaAngle")
+    beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias="turbulentViscosityRatio")
+
+    def update_model(self) -> Flow360BaseModel:
+        # Apply items from comments
+        model = {
+            "alphaAngle": self.alpha,
+            "betaAngle": self.beta,
+            "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
+            "temperature": self.temperature,
+        }
+
+        pass
+
+
+class TimeSteppingLegacy(TimeStepping, LegacyModel):
+    time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
+        alias="timeStepSize",
+        default="inf"
+    )
+
+    def update_model(self) -> Flow360BaseModel:
+        model = {
+            "CFL": self.CFL,
+            "physicalSteps": self.physical_steps,
+            "maxPseudoSteps": self.max_pseudo_steps,
+            "timeStepSize": self.time_step_size
+        }
+
+        if self.comments.get("timeStepSizeInSeconds") is not None:
+            step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
+            _try_add_unit(model, "timeStepSize", step_unit)
+
+        return TimeStepping.parse_obj(model)
+
+
+class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
+    """:class:`SlidingInterfaceLegacy` class"""
+
     omega: Optional[float] = pd.Field()
-    theta: Optional[float] = pd.Field()
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -256,49 +346,31 @@ class SlidingInterfacePrivate(SlidingInterface):
             "is_dynamic",
         ]
 
-
-class GeometryLegacy(Geometry, LegacyModel):
     def update_model(self) -> Flow360BaseModel:
-        # Apply mesh units from comments
         model = {
-            "momentCenter": self.moment_center.value,
-            "momentLength": self.moment_length.value,
-            "refArea": self.ref_area.value
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "axis": self.axis,
+                "center": self.center * u.m,
+            }
         }
-        if self.comments.get("meshUnit") is not None:
-            unit = unyt.unyt_quantity(1, self.comments["meshUnit"])
-            model["meshUnit"] = unit
-            model["momentCenter"] *= model["meshUnit"]
-            model["momentLength"] *= model["meshUnit"]
-            model["refArea"] *= model["meshUnit"]**2
 
-        return Geometry.parse_obj(model)
+        _try_set(model["referenceFrame"], "isDynamic", self.is_dynamic)
+        _try_set(model["referenceFrame"], "omega", self.omega)
+        _try_set(model["referenceFrame"], "omega", self.omega_radians)
+        _try_set(model["referenceFrame"], "omega", self.omega_degrees)
+        _try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
+        _try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
+        if self.omega_degrees is not None:
+            omega = model["referenceFrame"]["omega"] * u.deg / u.s
+            _try_set(model["referenceFrame"], "omega", omega)
 
-class FreestreamLegacy(LegacyModel):
-    Reynolds: Optional[PositiveFloat] = pd.Field()
-    Mach: Optional[NonNegativeFloat] = pd.Field()
-    MachRef: Optional[PositiveFloat] = pd.Field()
-    mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: PositiveFloat = pd.Field(alias="Temperature")
-    density: Optional[PositiveFloat]
-    speed: Optional[PositiveFloat]
-    alpha: Optional[float] = pd.Field(alias="alphaAngle")
-    beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias="turbulentViscosityRatio")
+        if self.comments.get("rpm") is not None:
+            omega = self.comments["rpm"] * u.rpm
+            _try_set(model["referenceFrame"], "omega", omega)
 
-    def update_model(self) -> Flow360BaseModel:
-        pass
-
-
-class TimeSteppingLegacy(TimeStepping, LegacyModel):
-    def update_model(self) -> Flow360BaseModel:
-        pass
-
-
-class SlidingInterfaceLegacy(SlidingInterfacePrivate, LegacyModel):
-    def update_model(self) -> Flow360BaseModel:
-        pass
+        return FluidDynamicsVolumeZone.parse_obj(model)
 
 
 class Flow360ParamsPrivate(Flow360Params):
@@ -315,7 +387,7 @@ class Flow360ParamsPrivate(Flow360Params):
     )
     heat_equation_solver: Optional[HeatEquationSolverPrivate] = pd.Field(alias="heatEquationSolver")
     bet_disks: Optional[List[BETDiskPrivate]] = pd.Field(alias="BETDisks")
-    sliding_interfaces: Optional[List[SlidingInterfacePrivate]] = pd.Field(alias="slidingInterfaces")
+    sliding_interfaces: Optional[List[SlidingInterfaceLegacy]] = pd.Field(alias="slidingInterfaces")
     surface_output: Optional[SurfaceOutputPrivate] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[VolumeOutputPrivate] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputPrivate] = pd.Field(alias="sliceOutput")
@@ -333,4 +405,12 @@ class Flow360ParamsLegacy(Flow360ParamsPrivate, LegacyModel):
     def update_model(self) -> Flow360BaseModel:
         model = Flow360Params()
         model.geometry = self.geometry.update_model()
+        model.time_stepping = self.time_stepping.update_model()
+
+        volume_zones = {}
+        for interface in self.sliding_interfaces:
+            volume_zone = interface.update_model()
+            volume_zones[interface.volume_name] = volume_zone
+        model.volume_zones = VolumeZones(**volume_zones)
+
         return model

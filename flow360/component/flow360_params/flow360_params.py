@@ -1302,7 +1302,6 @@ class Flow360Params(Flow360BaseModel):
         alias="initialCondition", discriminator="type"
     )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
-    sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
