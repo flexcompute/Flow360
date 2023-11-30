@@ -57,7 +57,6 @@ class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
         pass
 
 
-
 def _try_add_unit(model, key, unit: DimensionedType):
     if model[key] is not None:
         model[key] *= unit
@@ -74,7 +73,15 @@ def _try_update(field: Optional[LegacyModel]):
     return None
 
 
-class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
+def _get_output_fields(instance: Flow360BaseModel, exclude: list[str]):
+    fields = []
+    for key, value in instance.__fields__.items():
+        if value.type_ == bool and value.alias not in exclude and instance.__getattribute__(key) is True:
+            fields.append(value.alias)
+    return fields
+
+
+class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
     """:class: Base class for common output parameters"""
 
     Cp: Optional[bool] = pd.Field()
@@ -102,7 +109,7 @@ class OutputLegacy(pd.BaseModel, metaclass=ABCMeta):
     residual_heat_solver: Optional[bool] = pd.Field(alias="residualHeatSolver")
 
 
-class SurfaceOutputLegacy(SurfaceOutput, OutputLegacy, LegacyModel):
+class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SurfaceOutputLegacy` class"""
 
     wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
@@ -122,20 +129,32 @@ class SurfaceOutputLegacy(SurfaceOutput, OutputLegacy, LegacyModel):
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
     def update_model(self) -> Flow360BaseModel:
-        pass
+        fields = _get_output_fields(self, [])
+
+        model = {
+            "outputFields": fields
+        }
+
+        return SurfaceOutput.parse_obj(model)
 
 
-class SliceOutputLegacy(SliceOutput, OutputLegacy, LegacyModel):
+class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SliceOutputLegacy` class"""
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        pass
+        fields = _get_output_fields(self, [])
+
+        model = {
+            "outputFields": fields
+        }
+
+        return SurfaceOutput.parse_obj(model)
 
 
-class VolumeOutputLegacy(VolumeOutput, OutputLegacy, LegacyModel):
+class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     """:class:`VolumeOutputLegacy` class"""
 
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
@@ -150,7 +169,13 @@ class VolumeOutputLegacy(VolumeOutput, OutputLegacy, LegacyModel):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        pass
+        fields = _get_output_fields(self, [])
+
+        model = {
+            "outputFields": fields
+        }
+
+        return SurfaceOutput.parse_obj(model)
 
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
@@ -493,9 +518,9 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
         model.actuator_disks = self.actuator_disks
         model.porous_media = self.porous_media
         model.user_defined_dynamics = self.user_defined_dynamics
-        # model.surface_output = _try_update(self.surface_output)
-        # model.volume_output = _try_update(self.volume_output)
-        # model.slice_output = _try_update(self.slice_output)
+        model.surface_output = _try_update(self.surface_output)
+        model.volume_output = _try_update(self.volume_output)
+        model.slice_output = _try_update(self.slice_output)
         model.iso_surface_output = self.iso_surface_output
         model.monitor_output = self.monitor_output
 
