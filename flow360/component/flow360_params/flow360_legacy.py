@@ -405,12 +405,30 @@ class Flow360ParamsLegacy(Flow360ParamsPrivate, LegacyModel):
     def update_model(self) -> Flow360BaseModel:
         model = Flow360Params()
         model.geometry = self.geometry.update_model()
+        model.boundaries = self.boundaries
+        model.initial_condition = self.initial_condition
         model.time_stepping = self.time_stepping.update_model()
+        model.navier_stokes_solver = self.navier_stokes_solver
+        #model.turbulence_model_solver = self.turbulence_model_solver
+        #model.transition_model_solver = self.transition_model_solver
+        #model.heat_equation_solver = self.heat_equation_solver
+        #model.freestream = self.freestream.update_model()
+        model.bet_disks = self.bet_disks
+        model.actuator_disks = self.actuator_disks
+        model.porous_media = self.porous_media
+        model.user_defined_dynamics = self.user_defined_dynamics
+        #model.surface_output = self.surface_output.update_model()
+        #model.volume_output = self.volume_output.update_model()
+        #model.slice_output = self.slice_output.update_model()
+        model.iso_surface_output = self.iso_surface_output
+        model.monitor_output = self.monitor_output
 
         volume_zones = {}
         for interface in self.sliding_interfaces:
             volume_zone = interface.update_model()
             volume_zones[interface.volume_name] = volume_zone
         model.volume_zones = VolumeZones(**volume_zones)
+
+        model.aeroacoustic_output = self.aeroacoustic_output
 
         return model
