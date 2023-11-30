@@ -701,6 +701,13 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaRadians:
+        """
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, **kwargs)
+
 
 class ReferenceFrameOmegaDegrees(Flow360BaseModel):
     """:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame
@@ -956,9 +963,13 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: Optional[AreaType] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
-    moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
-    moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
+    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
+    moment_center: Optional[LengthType.Point] = pd.Field(
+        alias="momentCenter", default_factory=lambda: (0, 0, 0)
+    )
+    moment_length: Optional[LengthType.Moment] = pd.Field(
+        alias="momentLength", default_factory=lambda: (1, 1, 1)
+    )
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
 
     # pylint: disable=arguments-differ
@@ -978,7 +989,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     Freestream component
     """
 
-    alpha: Optional[float] = pd.Field(alias="alphaAngle")
+    alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0)
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
