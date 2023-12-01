@@ -19,7 +19,6 @@ from .params_base import (
     _self_named_property_validator,
 )
 
-
 OutputFormat = Union[Literal["paraview"], Literal["tecplot"], Literal["both"]]
 
 

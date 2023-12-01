@@ -5,7 +5,6 @@ import os
 import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Dict
 
 import zstandard as zstd
 
@@ -146,4 +145,3 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
         return None
-

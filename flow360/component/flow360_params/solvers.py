@@ -23,7 +23,7 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")
+            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance"),
         ]
 
 
@@ -86,9 +86,7 @@ class PressureCorrectionSolver(Flow360BaseModel):
     """:class:`PressureCorrectionSolver` class"""
 
     randomizer: LinearIterationsRandomizer = pd.Field()
-    linear_solver: LinearSolver = pd.Field(
-        alias="linearSolver", default=LinearSolver()
-    )
+    linear_solver: LinearSolver = pd.Field(alias="linearSolver", default=LinearSolver())
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -156,31 +154,21 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(
         alias="CFLMultiplier", displayed="CFL Multiplier"
     )
-    linear_iterations: Optional[PositiveInt] = pd.Field(
-        alias="linearIterations"
-    )
+    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
         alias="kappaMUSCL", displayed="Kappa MUSCL"
     )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
         alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
     )
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(
-        alias="equationEvalFrequency"
-    )
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(
-        alias="orderOfAccuracy"
-    )
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        alias="linearSolver", default=LinearSolver()
-    )
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
+    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity", displayed="Limit velocity")
-    limit_pressure_density: Optional[bool] = pd.Field(
-        alias="limitPressureDensity"
-    )
+    limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
 
     @classmethod
     def _get_field_order(cls) -> List[str]:
@@ -264,9 +252,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
 
     model_type: str = pd.Field(alias="modelType")
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        alias="linearSolver", default=LinearSolver()
-    )
+    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
@@ -349,7 +335,7 @@ class HeatEquationSolver(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")
+            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance"),
         ]
 
 
@@ -374,9 +360,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     model_type: Optional[Literal["AmplificationFactorTransport"]] = pd.Field(
         "AmplificationFactorTransport", alias="modelType", const=True
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        alias="linearSolver", default=LinearSolver()
-    )
+    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(

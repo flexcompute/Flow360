@@ -23,7 +23,6 @@ from .conversions import need_conversion, require, unit_converter
 from .unit_system import DimensionedType, is_flow360_unit
 
 
-
 def json_dumps(value, *args, **kwargs):
     """custom json dump with sort_keys=True"""
     return json.dumps(value, sort_keys=True, *args, **kwargs)
@@ -122,6 +121,7 @@ _json_encoders_map = {
     unyt.Unit: str,
     np.ndarray: encode_ndarray,
 }
+
 
 def _flow360_solver_dimensioned_type_serializer(x):
     """

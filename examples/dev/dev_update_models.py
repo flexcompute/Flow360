@@ -7,4 +7,3 @@ model = Flow360ParamsLegacy("../../flow360/examples/rotatingSpheres/flow360.json
 updated = model.update_model()
 
 pprint(updated.dict())
-

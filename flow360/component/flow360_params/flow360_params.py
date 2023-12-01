@@ -58,9 +58,9 @@ from .solvers import (
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverTypes,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
+    TurbulenceModelSolverTypes,
 )
 from .unit_system import (
     AngularVelocityType,
@@ -1064,12 +1064,12 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
 
 
 FreestreamTypes = Union[
-            FreestreamFromMach,
-            FreestreamFromMachReynolds,
-            FreestreamFromVelocity,
-            ZeroFreestream,
-            ZeroFreestreamFromVelocity,
-        ]
+    FreestreamFromMach,
+    FreestreamFromMachReynolds,
+    FreestreamFromVelocity,
+    ZeroFreestream,
+    ZeroFreestreamFromVelocity,
+]
 
 
 # class OldFreestream(Flow360BaseModel):
@@ -1192,7 +1192,7 @@ class _FluidProperties(Flow360BaseModel):
         Viscosity of the fluid.
 
     """
-    
+
     temperature: TemperatureType = pd.Field()
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
@@ -1297,6 +1297,7 @@ air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m
 
 FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
+
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
@@ -1305,9 +1306,7 @@ class Flow360Params(Flow360BaseModel):
     # save unit system for future use, for example processing results: TODO:
     # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current)
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(
-        alias="fluidProperties"
-    )
+    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"

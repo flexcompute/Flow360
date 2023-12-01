@@ -5,50 +5,45 @@ during validation, most legacy classes can be updated to
 the current standard via the update_model method)
 """
 from abc import ABCMeta, abstractmethod
+from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
-from typing import Optional, Literal, Union, List, Any, Dict
-
 import unyt as u
 from pydantic import NonNegativeFloat
 
 from flow360 import (
-    SurfaceOutput,
-    SliceOutput,
-    VolumeOutput,
     BETDisk,
     Flow360Params,
-    SlidingInterface,
-    Geometry,
-    TimeStepping,
     FluidDynamicsVolumeZone,
-    VolumeZones
+    Geometry,
+    SliceOutput,
+    SlidingInterface,
+    SurfaceOutput,
+    TimeStepping,
+    VolumeOutput,
+    VolumeZones,
 )
 from flow360.component.flow360_params.flow360_params import (
+    FluidPropertyTypes,
     FreestreamTypes,
-    FluidPropertyTypes
 )
-
 from flow360.component.flow360_params.params_base import Flow360BaseModel
-
 from flow360.component.flow360_params.solvers import (
+    HeatEquationSolver,
+    LinearIterationsRandomizer,
     LinearSolver,
     NavierStokesSolver,
     PressureCorrectionSolver,
-    LinearIterationsRandomizer,
-    TurbulenceModelSolver,
-    HeatEquationSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverTypes
+    TurbulenceModelSolver,
+    TurbulenceModelSolverTypes,
 )
-
 from flow360.component.flow360_params.unit_system import DimensionedType
-
 from flow360.component.types import (
+    Coordinate,
     NonNegativeInt,
-    PositiveInt,
     PositiveFloat,
-    Coordinate
+    PositiveInt,
 )
 
 
@@ -79,7 +74,11 @@ def _try_update(field: Optional[LegacyModel]):
 def _get_output_fields(instance: Flow360BaseModel, exclude: list[str]):
     fields = []
     for key, value in instance.__fields__.items():
-        if value.type_ == bool and value.alias not in exclude and instance.__getattribute__(key) is True:
+        if (
+            value.type_ == bool
+            and value.alias not in exclude
+            and getattr(instance, key) is True
+        ):
             fields.append(value.alias)
     return fields
 
@@ -142,7 +141,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
-            "startAverageIntegrationStep": self.start_average_integration_step
+            "startAverageIntegrationStep": self.start_average_integration_step,
         }
 
         return SurfaceOutput.parse_obj(model)
@@ -150,6 +149,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
 
 class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SliceOutputLegacy` class"""
+
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
@@ -162,7 +162,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
             "animationFrequencyOffset": self.animation_frequency_offset,
             "outputFormat": self.output_format,
             "outputFields": fields,
-            "slices": self.slices
+            "slices": self.slices,
         }
 
         return SliceOutput.parse_obj(model)
@@ -193,7 +193,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
-            "startAverageIntegrationStep": self.start_average_integration_step
+            "startAverageIntegrationStep": self.start_average_integration_step,
         }
 
         return VolumeOutput.parse_obj(model)
@@ -205,11 +205,10 @@ class LinearSolverLegacy(LinearSolver, LegacyModel):
     max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
 
     def update_model(self) -> Flow360BaseModel:
-
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
-            "maxIterations": self.max_iterations
+            "maxIterations": self.max_iterations,
         }
 
         return LinearSolver.parse_obj(model)
@@ -219,15 +218,11 @@ class PressureCorrectionSolverLegacy(PressureCorrectionSolver, LegacyModel):
     """:class:`PressureCorrectionSolverLegacy` class"""
 
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver",
-        default=LinearSolverLegacy()
+        alias="linearSolver", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
-        model = {
-            "randomizer": self.randomizer,
-            "linear_solver": _try_update(self.linear_solver)
-        }
+        model = {"randomizer": self.randomizer, "linear_solver": _try_update(self.linear_solver)}
 
         return PressureCorrectionSolver.parse_obj(model)
 
@@ -245,8 +240,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
     )
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver",
-        default=LinearSolverLegacy()
+        alias="linearSolver", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
@@ -262,7 +256,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "orderOfAccuracy": self.order_of_accuracy,
             "kappaMUSCL": self.kappa_MUSCL,
             "limitVelocity": self.limit_velocity,
-            "limitPressureDensity": self.limit_pressure_density
+            "limitPressureDensity": self.limit_pressure_density,
         }
 
         return NavierStokesSolver.parse_obj(model)
@@ -275,14 +269,14 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(alias="kappaMUSCL")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver",
-        default=LinearSolverLegacy()
+        alias="linearSolver", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
         class _TurbulenceTempModel(pd.BaseModel):
             """Helper class used to create
             the correct solver from dict data"""
+
             solver: TurbulenceModelSolverTypes = pd.Field(discriminator="model_type")
 
         model = {
@@ -318,7 +312,9 @@ class TurbulenceModelSolverSSTLegacy(TurbulenceModelSolverLegacy):
 class TurbulenceModelSolverSALegacy(TurbulenceModelSolverLegacy):
     """:class:`TurbulenceModelSolverSALegacy` class"""
 
-    model_type: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", alias="modelType", const=True)
+    model_type: Literal["SpalartAllmaras"] = pd.Field(
+        "SpalartAllmaras", alias="modelType", const=True
+    )
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
 
@@ -333,15 +329,14 @@ class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
         alias="maxForceJacUpdatePhysicalSteps"
     )
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver",
-        default=LinearSolverLegacy()
+        alias="linearSolver", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "linearSolver": _try_update(self.linear_solver),
-            "equationEvalFrequency": self.equation_eval_frequency
+            "equationEvalFrequency": self.equation_eval_frequency,
         }
 
         return HeatEquationSolver.parse_obj(model)
@@ -357,8 +352,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver",
-        default=LinearSolverLegacy()
+        alias="linearSolver", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
@@ -372,7 +366,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
             "orderOfAccuracy": self.order_of_accuracy,
             "turbulenceIntensityPercent": self.turbulence_intensity_percent,
-            "Ncrit": self.N_crit
+            "Ncrit": self.N_crit,
         }
 
         return HeatEquationSolver.parse_obj(model)
@@ -402,7 +396,7 @@ class BETDiskLegacy(BETDisk, LegacyModel):
             "twists": self.twists,
             "chords": self.chords,
             "sectionalPolars": self.sectional_polars,
-            "sectionalRadiuses": self.sectional_radiuses
+            "sectionalRadiuses": self.sectional_radiuses,
         }
 
         return BETDisk.parse_obj(model)
@@ -417,7 +411,7 @@ class GeometryLegacy(Geometry, LegacyModel):
         model = {
             "momentCenter": self.moment_center,
             "momentLength": self.moment_length,
-            "refArea": self.ref_area
+            "refArea": self.ref_area,
         }
         if self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
@@ -431,6 +425,7 @@ class GeometryLegacy(Geometry, LegacyModel):
 
 class FreestreamLegacy(LegacyModel):
     """:class: `FreestreamLegacy` class"""
+
     Reynolds: Optional[PositiveFloat] = pd.Field()
     Mach: Optional[NonNegativeFloat] = pd.Field()
     MachRef: Optional[PositiveFloat] = pd.Field()
@@ -440,19 +435,22 @@ class FreestreamLegacy(LegacyModel):
     speed: Optional[PositiveFloat]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias="turbulentViscosityRatio")
+    turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
 
     def update_model(self) -> Flow360BaseModel:
         class _FreestreamTempModel(pd.BaseModel):
             """Helper class used to create
-               the correct freestream from dict data"""
+            the correct freestream from dict data"""
+
             freestream: FreestreamTypes = pd.Field()
 
         model = {
             "freestream": {
                 "alphaAngle": self.alpha,
                 "betaAngle": self.beta,
-                "turbulentViscosityRatio": self.turbulent_viscosity_ratio
+                "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
             }
         }
 
@@ -473,12 +471,11 @@ class FreestreamLegacy(LegacyModel):
     def extract_fluid_properties(self) -> Flow360BaseModel:
         class _FluidPropertiesTempModel(pd.BaseModel):
             """Helper class used to create
-               the correct fluid properties from dict data"""
+            the correct fluid properties from dict data"""
+
             fluid: FluidPropertyTypes = pd.Field()
 
-        model = {
-            "fluid": {}
-        }
+        model = {"fluid": {}}
 
         _try_set(model["fluid"], "temperature", self.temperature * u.K)
 
@@ -494,8 +491,7 @@ class FreestreamLegacy(LegacyModel):
 
 class TimeSteppingLegacy(TimeStepping, LegacyModel):
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
-        alias="timeStepSize",
-        default="inf"
+        alias="timeStepSize", default="inf"
     )
 
     def update_model(self) -> Flow360BaseModel:
@@ -503,10 +499,13 @@ class TimeSteppingLegacy(TimeStepping, LegacyModel):
             "CFL": self.CFL,
             "physicalSteps": self.physical_steps,
             "maxPseudoSteps": self.max_pseudo_steps,
-            "timeStepSize": self.time_step_size
+            "timeStepSize": self.time_step_size,
         }
 
-        if model["timeStepSize"] != "inf" and self.comments.get("timeStepSizeInSeconds") is not None:
+        if (
+            model["timeStepSize"] != "inf"
+            and self.comments.get("timeStepSizeInSeconds") is not None
+        ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             _try_add_unit(model, "timeStepSize", step_unit)
 
@@ -536,7 +535,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
             "referenceFrame": {
                 "axis": self.axis,
                 "center": self.center * u.m,
-            }
+            },
         }
 
         _try_set(model["referenceFrame"], "isDynamic", self.is_dynamic)
@@ -562,8 +561,12 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
     freestream: Optional[FreestreamLegacy] = pd.Field()
     time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
     navier_stokes_solver: Optional[NavierStokesSolverLegacy] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolverLegacy] = pd.Field(alias="turbulenceModelSolver")
-    transition_model_solver: Optional[TransitionModelSolverLegacy] = pd.Field(alias="transitionModelSolver")
+    turbulence_model_solver: Optional[TurbulenceModelSolverLegacy] = pd.Field(
+        alias="turbulenceModelSolver"
+    )
+    transition_model_solver: Optional[TransitionModelSolverLegacy] = pd.Field(
+        alias="transitionModelSolver"
+    )
     heat_equation_solver: Optional[HeatEquationSolverLegacy] = pd.Field(alias="heatEquationSolver")
     bet_disks: Optional[List[BETDiskLegacy]] = pd.Field(alias="BETDisks")
     sliding_interfaces: Optional[List[SlidingInterfaceLegacy]] = pd.Field(alias="slidingInterfaces")
