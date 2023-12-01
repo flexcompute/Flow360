@@ -1298,6 +1298,7 @@ air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m
 FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
 
+# pylint: disable=too-many-instance-attributes
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters

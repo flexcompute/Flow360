@@ -29,7 +29,7 @@ geometry:
         value: 1.15315084119231
 navierStokesSolver:
     linearIterations: 10
-    linearSolverConfig:
+    linearSolver:
         absoluteTolerance: 1.0e-10
         maxIterations: 50
 sliceOutput:

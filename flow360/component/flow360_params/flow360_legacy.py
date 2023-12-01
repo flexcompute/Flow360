@@ -48,11 +48,13 @@ from flow360.component.types import (
 
 
 class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
+    """:class: `LegacyModel` is used by legacy classes to"""
+
     comments: Optional[Dict] = pd.Field()
 
     @abstractmethod
     def update_model(self) -> Flow360BaseModel:
-        pass
+        """Update the legacy model to the up-to-date version"""
 
 
 def _try_add_unit(model, key, unit: DimensionedType):
@@ -74,11 +76,7 @@ def _try_update(field: Optional[LegacyModel]):
 def _get_output_fields(instance: Flow360BaseModel, exclude: list[str]):
     fields = []
     for key, value in instance.__fields__.items():
-        if (
-            value.type_ == bool
-            and value.alias not in exclude
-            and getattr(instance, key) is True
-        ):
+        if value.type_ == bool and value.alias not in exclude and getattr(instance, key) is True:
             fields.append(value.alias)
     return fields
 
@@ -403,6 +401,8 @@ class BETDiskLegacy(BETDisk, LegacyModel):
 
 
 class GeometryLegacy(Geometry, LegacyModel):
+    """:class: `GeometryLegacy` class"""
+
     ref_area: Optional[float] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
@@ -463,12 +463,15 @@ class FreestreamLegacy(LegacyModel):
         _try_set(model["freestream"], "temperature", self.temperature)
 
         if self.Mach is None and self.comments.get("freestreamMeterPerSecond") is not None:
+            # pylint: disable=no-member
             velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
             _try_set(model["freestream"], "velocity", velocity)
 
         return _FreestreamTempModel.parse_obj(model).freestream
 
     def extract_fluid_properties(self) -> Flow360BaseModel:
+        """Extract fluid properties from the freestream comments"""
+
         class _FluidPropertiesTempModel(pd.BaseModel):
             """Helper class used to create
             the correct fluid properties from dict data"""
@@ -477,12 +480,15 @@ class FreestreamLegacy(LegacyModel):
 
         model = {"fluid": {}}
 
+        # pylint: disable=no-member
         _try_set(model["fluid"], "temperature", self.temperature * u.K)
 
         if self.comments.get("pressure"):
+            # pylint: disable=no-member
             pressure = self.comments["pressure"] * u.Pa
             _try_set(model["fluid"], "pressure", pressure)
         elif self.comments.get("density"):
+            # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             _try_set(model["fluid"], "density", density)
 
@@ -490,6 +496,8 @@ class FreestreamLegacy(LegacyModel):
 
 
 class TimeSteppingLegacy(TimeStepping, LegacyModel):
+    """:class: `TimeSteppingLegacy` class"""
+
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
         alias="timeStepSize", default="inf"
     )
@@ -519,21 +527,14 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        require_one_of = [
-            "omega",
-            "theta",
-            "omega_radians",
-            "omega_degrees",
-            "theta_radians",
-            "theta_degrees",
-            "is_dynamic",
-        ]
+        require_one_of = SlidingInterface.Config.require_one_of + ["omega"]
 
     def update_model(self) -> Flow360BaseModel:
         model = {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "axis": self.axis,
+                # pylint: disable=no-member
                 "center": self.center * u.m,
             },
         }
@@ -546,10 +547,12 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         _try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
         if self.omega_degrees is not None:
+            # pylint: disable=no-member
             omega = model["referenceFrame"]["omega"] * u.deg / u.s
             _try_set(model["referenceFrame"], "omega", omega)
 
         if self.comments.get("rpm") is not None:
+            # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             _try_set(model["referenceFrame"], "omega", omega)
 
@@ -557,6 +560,8 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
 
 
 class Flow360ParamsLegacy(Flow360Params, LegacyModel):
+    """:class: `Flow360ParamsLegacy` class"""
+
     geometry: Optional[GeometryLegacy] = pd.Field()
     freestream: Optional[FreestreamLegacy] = pd.Field()
     time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
@@ -590,10 +595,10 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
             model.fluid_properties = self.freestream.extract_fluid_properties()
 
         if self.bet_disks is not None:
-            bet_disks = []
+            disks = []
             for disk in self.bet_disks:
-                bet_disks.append(_try_update(disk))
-            model.bet_disks = bet_disks
+                disks.append(_try_update(disk))
+            model.bet_disks = disks
 
         model.actuator_disks = self.actuator_disks
         model.porous_media = self.porous_media

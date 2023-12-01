@@ -22,8 +22,8 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
-            DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance"),
+            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
 
 
@@ -66,7 +66,7 @@ class LinearSolver(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance")]
+        deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
 
 
 class RandomizerParameter(Flow360BaseModel):
@@ -90,7 +90,9 @@ class PressureCorrectionSolver(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig")]
+        deprecated_aliases = [
+            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig")
+        ]
 
 
 class NavierStokesSolver(GenericFlowSolverSettings):
@@ -334,8 +336,8 @@ class HeatEquationSolver(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
-            DeprecatedAlias(name="linearSolver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absoluteTolerance", deprecated="tolerance"),
+            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
 
 

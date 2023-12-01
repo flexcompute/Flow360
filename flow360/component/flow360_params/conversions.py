@@ -8,8 +8,8 @@ from typing import Callable, List
 
 import pydantic as pd
 
-from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
 from ...exceptions import Flow360ConfigurationError
+from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
 
 
 class ExtraDimensionedProperty(pd.BaseModel):

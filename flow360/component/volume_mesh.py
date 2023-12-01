@@ -85,7 +85,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
     return []
 
 
-def get_boundries_from_sliding_interfaces(params: Union[Flow360Params, Flow360MeshParams]):
+def get_boundaries_from_sliding_interfaces(params: Union[Flow360Params, Flow360MeshParams]):
     """
     Get wall boundary names
     :param params:
@@ -94,10 +94,11 @@ def get_boundries_from_sliding_interfaces(params: Union[Flow360Params, Flow360Me
     assert params
     res = []
 
-    if params.sliding_interfaces and params.sliding_interfaces.rotating_patches:
-        res += params.sliding_interfaces.rotating_patches[:]
-    if params.sliding_interfaces and params.sliding_interfaces.stationary_patches:
-        res += params.sliding_interfaces.stationary_patches[:]
+    # Sliding interfaces are deprecated - we need to handle this somehow
+    # if params.sliding_interfaces and params.sliding_interfaces.rotating_patches:
+    #    res += params.sliding_interfaces.rotating_patches[:]
+    # if params.sliding_interfaces and params.sliding_interfaces.stationary_patches:
+    #    res += params.sliding_interfaces.stationary_patches[:]
     return res
 
 
@@ -162,7 +163,9 @@ def validate_cgns(
     assert cgns_file
     assert params
     boundaries_in_file = get_boundaries_from_file(cgns_file, solver_version)
-    boundaries_in_params = get_no_slip_walls(params) + get_boundries_from_sliding_interfaces(params)
+    boundaries_in_params = get_no_slip_walls(params) + get_boundaries_from_sliding_interfaces(
+        params
+    )
     boundaries_in_file = set(boundaries_in_file)
     boundaries_in_params = set(boundaries_in_params)
 
