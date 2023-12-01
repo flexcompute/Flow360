@@ -1,5 +1,5 @@
 """
-Legacy field definitions (fields that are not
+Legacy field definitions and updaters (fields that are not
 specified in the documentation but can be used internally
 during validation, most legacy classes can be updated to
 the current standard via the update_model method)
@@ -24,6 +24,10 @@ from flow360 import (
     FluidDynamicsVolumeZone,
     VolumeZones
 )
+from flow360.component.flow360_params.flow360_params import (
+    FreestreamTypes,
+    FluidPropertyTypes
+)
 
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 
@@ -35,8 +39,7 @@ from flow360.component.flow360_params.solvers import (
     TurbulenceModelSolver,
     HeatEquationSolver,
     TransitionModelSolver,
-    NoneSolver,
-    TurbulenceModelSolvers
+    TurbulenceModelSolverTypes
 )
 
 from flow360.component.flow360_params.unit_system import DimensionedType
@@ -132,7 +135,14 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, [])
 
         model = {
-            "outputFields": fields
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
+            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "computeTimeAverages": self.compute_time_averages,
+            "outputFormat": self.output_format,
+            "outputFields": fields,
+            "startAverageIntegrationStep": self.start_average_integration_step
         }
 
         return SurfaceOutput.parse_obj(model)
@@ -148,10 +158,14 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, [])
 
         model = {
-            "outputFields": fields
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
+            "outputFormat": self.output_format,
+            "outputFields": fields,
+            "slices": self.slices
         }
 
-        return SurfaceOutput.parse_obj(model)
+        return SliceOutput.parse_obj(model)
 
 
 class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
@@ -172,10 +186,17 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, [])
 
         model = {
-            "outputFields": fields
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
+            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "computeTimeAverages": self.compute_time_averages,
+            "outputFormat": self.output_format,
+            "outputFields": fields,
+            "startAverageIntegrationStep": self.start_average_integration_step
         }
 
-        return SurfaceOutput.parse_obj(model)
+        return VolumeOutput.parse_obj(model)
 
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
@@ -259,10 +280,10 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     )
 
     def update_model(self) -> Flow360BaseModel:
-        class TurbulenceModelSolverVariants(pd.BaseModel):
+        class _TurbulenceTempModel(pd.BaseModel):
             """Helper class used to create
             the correct solver from dict data"""
-            solver: TurbulenceModelSolvers = pd.Field(discriminator="model_type")
+            solver: TurbulenceModelSolverTypes = pd.Field(discriminator="model_type")
 
         model = {
             "solver": {
@@ -280,11 +301,12 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
                 "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
                 "reconstructionGradientLimiter": self.reconstruction_gradient_limiter,
                 "modelConstants": self.model_constants,
-                "rotationCorrection": self.rotation_correction
             }
         }
 
-        return TurbulenceModelSolverVariants.parse_obj(model).solver
+        _try_set(model, "rotationCorrection", self.rotation_correction)
+
+        return _TurbulenceTempModel.parse_obj(model).solver
 
 
 class TurbulenceModelSolverSSTLegacy(TurbulenceModelSolverLegacy):
@@ -298,13 +320,6 @@ class TurbulenceModelSolverSALegacy(TurbulenceModelSolverLegacy):
 
     model_type: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", alias="modelType", const=True)
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
-
-
-TurbulenceModelSolversLegacy = Union[
-    TurbulenceModelSolverSALegacy,
-    TurbulenceModelSolverSSTLegacy,
-    NoneSolver
-]
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
@@ -369,7 +384,28 @@ class BETDiskLegacy(BETDisk, LegacyModel):
     volume_name: Optional[str] = pd.Field(alias="volumeName")
 
     def update_model(self):
-        pass
+        model = {
+            "rotationDirectionRule": self.rotation_direction_rule,
+            "centerOfRotation": self.center_of_rotation,
+            "axisOfRotation": self.axis_of_rotation,
+            "numberOfBlades": self.number_of_blades,
+            "radius": self.radius,
+            "chordRef": self.chord_ref,
+            "thickness": self.thickness,
+            "nLoadingNodes": self.n_loading_nodes,
+            "bladeLineChord": self.blade_line_chord,
+            "initialBladeDirection": self.initial_blade_direction,
+            "tipGap": self.tip_gap,
+            "machNumbers": self.mach_numbers,
+            "reynoldsNumbers": self.reynolds_numbers,
+            "alphas": self.alphas,
+            "twists": self.twists,
+            "chords": self.chords,
+            "sectionalPolars": self.sectional_polars,
+            "sectionalRadiuses": self.sectional_radiuses
+        }
+
+        return BETDisk.parse_obj(model)
 
 
 class GeometryLegacy(Geometry, LegacyModel):
@@ -407,15 +443,53 @@ class FreestreamLegacy(LegacyModel):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(alias="turbulentViscosityRatio")
 
     def update_model(self) -> Flow360BaseModel:
-        # Apply items from comments
+        class _FreestreamTempModel(pd.BaseModel):
+            """Helper class used to create
+               the correct freestream from dict data"""
+            freestream: FreestreamTypes = pd.Field()
+
         model = {
-            "alphaAngle": self.alpha,
-            "betaAngle": self.beta,
-            "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
-            "temperature": self.temperature,
+            "freestream": {
+                "alphaAngle": self.alpha,
+                "betaAngle": self.beta,
+                "turbulentViscosityRatio": self.turbulent_viscosity_ratio
+            }
         }
 
-        pass
+        _try_set(model["freestream"], "Reynolds", self.Reynolds)
+        _try_set(model["freestream"], "muRef", self.mu_ref)
+        _try_set(model["freestream"], "density", self.density)
+        _try_set(model["freestream"], "velocity", self.speed)
+        _try_set(model["freestream"], "Mach", self.Mach)
+        _try_set(model["freestream"], "MachRef", self.MachRef)
+        _try_set(model["freestream"], "temperature", self.temperature)
+
+        if self.Mach is None and self.comments.get("freestreamMeterPerSecond") is not None:
+            velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
+            _try_set(model["freestream"], "velocity", velocity)
+
+        return _FreestreamTempModel.parse_obj(model).freestream
+
+    def extract_fluid_properties(self) -> Flow360BaseModel:
+        class _FluidPropertiesTempModel(pd.BaseModel):
+            """Helper class used to create
+               the correct fluid properties from dict data"""
+            fluid: FluidPropertyTypes = pd.Field()
+
+        model = {
+            "fluid": {}
+        }
+
+        _try_set(model["fluid"], "temperature", self.temperature * u.K)
+
+        if self.comments.get("pressure"):
+            pressure = self.comments["pressure"] * u.Pa
+            _try_set(model["fluid"], "pressure", pressure)
+        elif self.comments.get("density"):
+            density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
+            _try_set(model["fluid"], "density", density)
+
+        return _FluidPropertiesTempModel.parse_obj(model).fluid
 
 
 class TimeSteppingLegacy(TimeStepping, LegacyModel):
@@ -507,7 +581,10 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
         model.turbulence_model_solver = _try_update(self.turbulence_model_solver)
         model.transition_model_solver = _try_update(self.transition_model_solver)
         model.heat_equation_solver = _try_update(self.heat_equation_solver)
-        # model.freestream = _try_update(self.freestream)
+        model.freestream = _try_update(self.freestream)
+
+        if self.freestream is not None:
+            model.fluid_properties = self.freestream.extract_fluid_properties()
 
         if self.bet_disks is not None:
             bet_disks = []

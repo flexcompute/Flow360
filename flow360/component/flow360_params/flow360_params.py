@@ -58,7 +58,7 @@ from .solvers import (
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolvers,
+    TurbulenceModelSolverTypes,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
 )
@@ -1062,6 +1062,15 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         )
 
 
+FreestreamTypes = Union[
+            FreestreamFromMach,
+            FreestreamFromMachReynolds,
+            FreestreamFromVelocity,
+            ZeroFreestream,
+            ZeroFreestreamFromVelocity,
+        ]
+
+
 # class OldFreestream(Flow360BaseModel):
 #     """
 #     Freestream component
@@ -1285,6 +1294,7 @@ class USstandardAtmosphere(Flow360BaseModel):
 # pylint: disable=no-member
 air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
 
+FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
 class Flow360Params(Flow360BaseModel):
     """
@@ -1294,7 +1304,7 @@ class Flow360Params(Flow360BaseModel):
     # save unit system for future use, for example processing results: TODO:
     # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current)
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(
+    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(
         alias="fluidProperties"
     )
     boundaries: Optional[Boundaries] = pd.Field()
@@ -1303,22 +1313,14 @@ class Flow360Params(Flow360BaseModel):
     )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(
+    turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[
-        Union[
-            FreestreamFromMach,
-            FreestreamFromMachReynolds,
-            FreestreamFromVelocity,
-            ZeroFreestream,
-            ZeroFreestreamFromVelocity,
-        ]
-    ] = pd.Field()
+    freestream: Optional[FreestreamTypes] = pd.Field()
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
