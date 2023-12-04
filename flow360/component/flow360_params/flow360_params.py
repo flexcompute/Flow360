@@ -963,7 +963,7 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: Optional[AreaType] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
+    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
     moment_center: Optional[LengthType.Point] = pd.Field(
         alias="momentCenter", default_factory=lambda: (0, 0, 0)
     )
