@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
-from ...exceptions import ConfigError, FileError, ValidationError
+from ...exceptions import FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
@@ -227,7 +227,7 @@ class Flow360BaseModel(BaseModel):
             aliases = [item for item in aliases if item is not None]
             intersection = list(set(set_values) & set(cls.Config.require_one_of + aliases))
             if len(intersection) == 0:
-                raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
+                raise ValueError(f"One of {cls.Config.require_one_of} is required.")
         return values
 
     # pylint: disable=no-self-argument
