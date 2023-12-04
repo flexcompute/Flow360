@@ -30,6 +30,10 @@ if not os.path.exists(f"./data/"):
 
 
 class _Freestreams(Flow360BaseModel):
+    """
+    Freestreams wrapper for schema generation
+    """
+
     freestream: Union[
         fl.FreestreamFromVelocity,
         fl.FreestreamFromMach,
@@ -39,10 +43,18 @@ class _Freestreams(Flow360BaseModel):
     ] = pd.Field()
 
 
+class _TurbulenceModelSolvers(Flow360BaseModel):
+    """
+    Turbulence solvers wrapper for schema generation
+    """
+
+    solver: Union[fl.TurbulenceModelSolverSA, fl.TurbulenceModelSolverSST]
+
+
 # pylint: disable=E0213
 class _UnsteadyTimeStepping(TimeStepping):
     """
-    Unsteady Ttme stepping component
+    Unsteady time stepping component
     """
 
     physical_steps: PositiveInt = pd.Field(alias="physicalSteps")
@@ -73,8 +85,7 @@ write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
 write_schemas(_Freestreams)
 write_schemas(fl.SlidingInterface)
-write_schemas(fl.TurbulenceModelSolverSA)
-write_schemas(fl.TurbulenceModelSolverSST)
+write_schemas(_TurbulenceModelSolvers)
 write_schemas(fl.TransitionModelSolver)
 write_schemas(fl.HeatEquationSolver)
 write_schemas(fl.NoneSolver)
