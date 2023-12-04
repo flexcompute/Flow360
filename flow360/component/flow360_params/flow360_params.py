@@ -729,10 +729,11 @@ class ReferenceFrameOmegaDegrees(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=arguments-differ
-    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaRadians:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        omega_radians = solver_values.pop("omega_degrees") / 180 * math.pi
-        return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
+    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaDegrees:
+        """
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrame(Flow360BaseModel):
@@ -955,7 +956,7 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: Optional[AreaType] = pd.Field(alias="refArea")
+    ref_area: Optional[AreaType] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
@@ -1028,7 +1029,7 @@ class ZeroFreestream(FreestreamBase):
 
 class FreestreamFromVelocity(FreestreamBase):
     velocity: VelocityType.Positive = pd.Field()
-    velocity_ref: Optional[VelocityType.Positive] = pd.Field()
+    velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -1065,7 +1066,7 @@ class FreestreamFromVelocity(FreestreamBase):
 
 class ZeroFreestreamFromVelocity(FreestreamBase):
     velocity: Literal[0] = pd.Field(0, const=True)
-    velocity_ref: VelocityType.Positive = pd.Field()
+    velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:

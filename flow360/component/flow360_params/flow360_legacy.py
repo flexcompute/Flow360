@@ -422,7 +422,7 @@ class FreestreamLegacy(LegacyModel):
 
     Reynolds: Optional[PositiveFloat] = pd.Field()
     Mach: Optional[NonNegativeFloat] = pd.Field()
-    MachRef: Optional[PositiveFloat] = pd.Field()
+    Mach_Ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
@@ -446,16 +446,38 @@ class FreestreamLegacy(LegacyModel):
             }
         }
 
-        _try_set(model["freestream"], "Reynolds", self.Reynolds)
-        _try_set(model["freestream"], "muRef", self.mu_ref)
-        _try_set(model["freestream"], "Mach", self.Mach)
-        _try_set(model["freestream"], "MachRef", self.MachRef)
-        _try_set(model["freestream"], "temperature", self.temperature)
-
-        if self.Mach is None and self.comments.get("freestreamMeterPerSecond") is not None:
+        # Set velocity
+        if self.comments.get("freestreamMeterPerSecond") is not None:
             # pylint: disable=no-member
             velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
             _try_set(model["freestream"], "velocity", velocity)
+        elif self.comments.get("speedOfSoundMeterPerSecond") is not None and self.Mach is not None:
+            # pylint: disable=no-member
+            velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
+            _try_set(model["freestream"], "velocity", velocity)
+
+        if model["freestream"].get("velocity"):
+            # Set velocity_ref
+            if (
+                self.comments.get("speedOfSoundMeterPerSecond") is not None
+                and self.Mach_Ref is not None
+            ):
+                velocity_ref = (
+                    # pylint: disable=no-member
+                    self.comments["speedOfSoundMeterPerSecond"]
+                    * self.Mach_Ref
+                    * u.m
+                    / u.s
+                )
+                _try_set(model["freestream"], "velocityRef", velocity_ref)
+            else:
+                model["freestream"]["velocityRef"] = None
+        else:
+            _try_set(model["freestream"], "Reynolds", self.Reynolds)
+            _try_set(model["freestream"], "muRef", self.mu_ref)
+            _try_set(model["freestream"], "temperature", self.temperature)
+            _try_set(model["freestream"], "Mach", self.Mach)
+            _try_set(model["freestream"], "MachRef", self.Mach_Ref)
 
         return _FreestreamTempModel.parse_obj(model).freestream
 
