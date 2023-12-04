@@ -135,34 +135,6 @@ class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
         return solver_animations
 
 
-class OutputLegacy(Flow360BaseModel, metaclass=ABCMeta):
-    """:class: Base class for common output parameters"""
-
-    Cp: Optional[bool] = pd.Field()
-    grad_w: Optional[bool] = pd.Field(alias="gradW")
-    k_omega: Optional[bool] = pd.Field(alias="kOmega")
-    Mach: Optional[bool] = pd.Field(alias="Mach")
-    mut: Optional[bool] = pd.Field()
-    mut_ratio: Optional[bool] = pd.Field(alias="mutRatio")
-    nu_hat: Optional[bool] = pd.Field(alias="nuHat")
-    primitive_vars: Optional[bool] = pd.Field(alias="primitiveVars")
-    q_criterion: Optional[bool] = pd.Field(alias="qcriterion")
-    residual_navier_stokes: Optional[bool] = pd.Field(alias="residualNavierStokes")
-    residual_transition: Optional[bool] = pd.Field(alias="residualTransition")
-    residual_turbulence: Optional[bool] = pd.Field(alias="residualTurbulence")
-    s: Optional[bool] = pd.Field()
-    solution_navier_stokes: Optional[bool] = pd.Field(alias="solutionNavierStokes")
-    solution_turbulence: Optional[bool] = pd.Field(alias="solutionTurbulence")
-    solution_transition: Optional[bool] = pd.Field(alias="solutionTransition")
-    T: Optional[bool] = pd.Field(alias="T")
-    vorticity: Optional[bool] = pd.Field()
-    wall_distance: Optional[bool] = pd.Field(alias="wallDistance")
-    low_numerical_dissipation_sensor: Optional[bool] = pd.Field(
-        alias="lowNumericalDissipationSensor"
-    )
-    residual_heat_solver: Optional[bool] = pd.Field(alias="residualHeatSolver")
-
-
 class Surface(Flow360BaseModel):
     """:class:`Surface` class"""
 
@@ -292,7 +264,6 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
             )
-
 
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):

@@ -43,7 +43,57 @@ def test_aeroacoustic_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = AeroacousticOutput()
+        output = AeroacousticOutput(observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=0)
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=-2
+    )
+
+    assert output
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=2
+    )
+
+    assert output
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=1, animation_frequency_offset=0
+    )
+
+    assert output
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=-1, animation_frequency_offset=0
+    )
+
+    assert output
+
+    to_file_from_file_test(output)
+
+    with pytest.raises(pd.ValidationError):
+        output = AeroacousticOutput(
+            observers=[(0, 0, 0), (0, 1, 1)], animation_frequency=-2, animation_frequency_offset=0
+        )
+
+    output = AeroacousticOutput(
+        observers=[(0, 0, 0), (0, 1, 1)],
+        animation_frequency=1,
+        animation_frequency_offset=-2,
+        patch_type="solid",
+    )
+
+    assert output
+
+    to_file_from_file_test(output)
+
+    with pytest.raises(pd.ValidationError):
+        output = AeroacousticOutput(
+            observers=[(0, 0, 0), (0, 1, 1)],
+            animation_frequency=1,
+            animation_frequency_offset=-2,
+            patch_type="other",
+        )
 
 
 def test_surface_output():
