@@ -20,26 +20,59 @@
         ],
         "default": ""
       }
+    },
+    "dependencies": {
+      "modelType": {
+        "oneOf": [
+          {
+            "title": "Surface",
+            "type": "object",
+            "properties": {
+              "outputFields": {
+                "title": "Output fields",
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "Coefficient of pressure",
+                    "Gradient of primitive solution",
+                    "k and omega",
+                    "Mach number",
+                    "Turbulent viscosity",
+                    "Turbulent viscosity and freestream dynamic viscosity ratio",
+                    "Spalart-Almaras variable",
+                    "rho, u, v, w, p (density, 3 velocities and pressure)",
+                    "Q criterion",
+                    "N-S residual",
+                    "Transition residual",
+                    "Turbulence residual",
+                    "Entropy",
+                    "N-S solution",
+                    "Transition solution",
+                    "Turbulence solution",
+                    "Temperature",
+                    "Vorticity",
+                    "Wall distance",
+                    "NumericalDissipationFactor sensor",
+                    "Heat equation residual",
+                    "Viscous stress coefficient vector",
+                    "Magnitude of CfVec",
+                    "Magnitude of CfVec normal to the wall",
+                    "Magnitude of CfVec tangent to the wall",
+                    "Non-dimensional heat flux",
+                    "Wall normals",
+                    "Velocity in rotating frame",
+                    "Non-dimensional wall distance"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
     }
   },
-  "dependencies": {
-    "modelType": {
-      "oneOf": [
-        {
-          "title": "Surface",
-          "type": "object",
-          "properties": {
-            "outputFields": {
-              "title": "Outputfields",
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    }
-  }
+  "definitions": {}
 }

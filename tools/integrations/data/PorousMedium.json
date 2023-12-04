@@ -3,12 +3,12 @@
   "type": "object",
   "properties": {
     "DarcyCoefficient": {
-      "title": "Darcycoefficient",
+      "title": "Darcy coefficient",
       "type": "array",
       "items": {}
     },
     "ForchheimerCoefficient": {
-      "title": "Forchheimercoefficient",
+      "title": "Forchheimer coefficient",
       "type": "array",
       "items": {}
     },
@@ -24,11 +24,11 @@
   "additionalProperties": false,
   "definitions": {
     "PorousMediumVolumeZone": {
-      "title": "PorousMediumVolumeZone",
+      "title": "Porous medium volume zone",
       "type": "object",
       "properties": {
         "zoneType": {
-          "title": "Zonetype",
+          "title": "Zone type",
           "enum": [
             "box"
           ],
@@ -91,7 +91,7 @@
           }
         },
         "windowingLengths": {
-          "title": "Windowinglengths",
+          "title": "Windowing lengths",
           "type": "array",
           "minItems": 3,
           "maxItems": 3,

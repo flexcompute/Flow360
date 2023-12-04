@@ -2,31 +2,8 @@
   "title": "IsoSurfaceOutput",
   "type": "object",
   "properties": {
-    "outputFormat": {
-      "title": "Outputformat",
-      "anyOf": [
-        {
-          "enum": [
-            "paraview"
-          ],
-          "type": "string"
-        },
-        {
-          "enum": [
-            "tecplot"
-          ],
-          "type": "string"
-        },
-        {
-          "enum": [
-            "both"
-          ],
-          "type": "string"
-        }
-      ]
-    },
     "animationFrequency": {
-      "title": "Animationfrequency",
+      "title": "Animation frequency",
       "anyOf": [
         {
           "type": "integer",
@@ -41,8 +18,20 @@
       ]
     },
     "animationFrequencyOffset": {
-      "title": "Animationfrequencyoffset",
+      "title": "Animation frequency offset",
       "type": "integer"
+    },
+    "animationSettings": {
+      "$ref": "#/definitions/AnimationSettings"
+    },
+    "outputFormat": {
+      "title": "Output format",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "type": "string"
     },
     "isoSurfaces": {
       "$ref": "#/definitions/IsoSurfaces"
@@ -50,8 +39,24 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "AnimationSettings": {
+      "title": "Animation settings",
+      "type": "object",
+      "properties": {
+        "frequency": {
+          "title": "Frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "frequencyOffset": {
+          "title": "Frequency offset",
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
     "IsoSurfaces": {
-      "title": "IsoSurfaces",
+      "title": "Iso surfaces",
       "type": "object",
       "properties": {}
     }

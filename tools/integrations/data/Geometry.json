@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "refArea": {
-      "title": "Refarea",
+      "title": "Ref area",
       "value": {
         "type": "number"
       },
@@ -18,7 +18,7 @@
       }
     },
     "momentCenter": {
-      "title": "Momentcenter",
+      "title": "Moment center",
       "value": {
         "type": "array",
         "items": {
@@ -32,7 +32,7 @@
       }
     },
     "momentLength": {
-      "title": "Momentlength",
+      "title": "Moment length",
       "value": {
         "type": "array",
         "items": {
@@ -46,7 +46,7 @@
       }
     },
     "meshUnit": {
-      "title": "Meshunit",
+      "title": "Mesh unit",
       "value": {
         "type": "number"
       },
@@ -56,7 +56,9 @@
         "enum": [
           "m",
           "cm",
-          "ft"
+          "ft",
+          "mm",
+          "inch"
         ]
       }
     }

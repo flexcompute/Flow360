@@ -3,16 +3,16 @@
   "type": "object",
   "properties": {
     "absoluteTolerance": {
-      "title": "Absolutetolerance",
+      "title": "Absolute tolerance",
       "exclusiveMinimum": 0,
       "type": "number"
     },
     "relativeTolerance": {
-      "title": "Relativetolerance",
+      "title": "Relative tolerance",
       "type": "number"
     },
     "modelType": {
-      "title": "Modeltype",
+      "title": "Model type",
       "default": "SpalartAllmaras",
       "const": "SpalartAllmaras",
       "enum": [
@@ -21,40 +21,36 @@
       "type": "string"
     },
     "CFLMultiplier": {
-      "title": "Cflmultiplier",
+      "title": "Cfl multiplier",
       "exclusiveMinimum": 0,
       "type": "number"
     },
     "linearSolverConfig": {
-      "title": "Linearsolverconfig",
+      "title": "Linear solver config",
       "default": {
         "max_iterations": 50,
         "absolute_tolerance": 1e-10,
         "relative_tolerance": null
       },
-      "allOf": [
-        {
-          "$ref": "#/definitions/LinearSolver"
-        }
-      ]
+      "$ref": "#/definitions/LinearSolver"
     },
     "updateJacobianFrequency": {
-      "title": "Updatejacobianfrequency",
+      "title": "Update jacobian frequency",
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "equationEvalFrequency": {
-      "title": "Equationevalfrequency",
+      "title": "Equation eval frequency",
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "maxForceJacUpdatePhysicalSteps": {
-      "title": "Maxforcejacupdatephysicalsteps",
+      "title": "Max force jac update physical steps",
       "minimum": 0,
       "type": "integer"
     },
     "orderOfAccuracy": {
-      "title": "Orderofaccuracy",
+      "title": "Order of accuracy",
       "enum": [
         1,
         2
@@ -66,7 +62,7 @@
       "type": "boolean"
     },
     "gridSizeForLES": {
-      "title": "Gridsizeforles",
+      "title": "Grid size for les",
       "enum": [
         "maxEdgeLength",
         "meanEdgeLength"
@@ -74,11 +70,11 @@
       "type": "string"
     },
     "quadraticConstitutiveRelation": {
-      "title": "Quadraticconstitutiverelation",
+      "title": "Quadratic constitutive relation",
       "type": "boolean"
     },
     "reconstructionGradientLimiter": {
-      "title": "Reconstructiongradientlimiter",
+      "title": "Reconstruction gradient limiter",
       "minimum": 0,
       "maximum": 2,
       "type": "number"
@@ -87,61 +83,61 @@
       "$ref": "#/definitions/TurbulenceModelConstants"
     },
     "rotationCorrection": {
-      "title": "Rotationcorrection",
+      "title": "Rotation correction",
       "type": "boolean"
     }
   },
   "additionalProperties": false,
   "definitions": {
     "LinearSolver": {
-      "title": "LinearSolver",
+      "title": "Linear solver",
       "type": "object",
       "properties": {
         "maxIterations": {
-          "title": "Maxiterations",
+          "title": "Max iterations",
           "default": 50,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "absoluteTolerance": {
-          "title": "Absolutetolerance",
+          "title": "Absolute tolerance",
           "default": 1e-10,
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "relativeTolerance": {
-          "title": "Relativetolerance",
+          "title": "Relative tolerance",
           "type": "number"
         }
       },
       "additionalProperties": false
     },
     "TurbulenceModelConstants": {
-      "title": "TurbulenceModelConstants",
+      "title": "Turbulence model constants",
       "type": "object",
       "properties": {
         "C_DES": {
-          "title": "C Des",
+          "title": "C_des",
           "type": "number"
         },
         "C_d": {
-          "title": "C D",
+          "title": "C_d",
           "type": "number"
         },
         "C_DES1": {
-          "title": "C Des1",
+          "title": "C_des1",
           "type": "number"
         },
         "C_DES2": {
-          "title": "C Des2",
+          "title": "C_des2",
           "type": "number"
         },
         "C_d1": {
-          "title": "C D1",
+          "title": "C_d1",
           "type": "number"
         },
         "C_d2": {
-          "title": "C D2",
+          "title": "C_d2",
           "type": "number"
         }
       },

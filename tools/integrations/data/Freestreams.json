@@ -1,0 +1,212 @@
+{
+  "title": "Freestreams",
+  "type": "object",
+  "properties": {
+    "freestream": {
+      "title": "Freestream",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FreestreamFromVelocity"
+        },
+        {
+          "$ref": "#/definitions/FreestreamFromMach"
+        },
+        {
+          "$ref": "#/definitions/ZeroFreestreamFromVelocity"
+        },
+        {
+          "$ref": "#/definitions/ZeroFreestream"
+        }
+      ]
+    }
+  },
+  "required": [
+    "freestream"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "FreestreamFromVelocity": {
+      "title": "Freestream from velocity",
+      "type": "object",
+      "properties": {
+        "alphaAngle": {
+          "title": "Alpha angle",
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "units": {
+            "type": "string"
+          }
+        },
+        "velocity_ref": {
+          "title": "Velocity_ref",
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "units": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "velocity"
+      ],
+      "additionalProperties": false
+    },
+    "FreestreamFromMach": {
+      "title": "Freestream from mach",
+      "type": "object",
+      "properties": {
+        "alphaAngle": {
+          "title": "Alpha angle",
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Mach ref",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Mu ref",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "Mach",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    },
+    "ZeroFreestreamFromVelocity": {
+      "title": "Zero freestream from velocity",
+      "type": "object",
+      "properties": {
+        "alphaAngle": {
+          "title": "Alpha angle",
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "default": 0,
+          "const": 0,
+          "enum": [
+            0
+          ],
+          "type": "integer"
+        },
+        "velocity_ref": {
+          "title": "Velocity_ref",
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "units": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "velocity_ref"
+      ],
+      "additionalProperties": false
+    },
+    "ZeroFreestream": {
+      "title": "Zero freestream",
+      "type": "object",
+      "properties": {
+        "alphaAngle": {
+          "title": "Alpha angle",
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach",
+          "default": 0,
+          "const": 0,
+          "enum": [
+            0
+          ],
+          "type": "integer"
+        },
+        "Mach_ref": {
+          "title": "Mach_ref",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Mu ref",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "Mach_ref",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

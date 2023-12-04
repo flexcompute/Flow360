@@ -2,31 +2,6 @@
   "title": "AeroacousticOutput",
   "type": "object",
   "properties": {
-    "animationFrequency": {
-      "title": "Animationfrequency",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0
-        },
-        {
-          "enum": [
-            -1
-          ],
-          "type": "integer"
-        }
-      ]
-    },
-    "animationFrequencyOffset": {
-      "title": "Animationfrequencyoffset",
-      "type": "integer"
-    },
-    "patchType": {
-      "title": "Patchtype",
-      "default": "solid",
-      "const": "solid",
-      "type": "string"
-    },
     "observers": {
       "title": "Observers",
       "type": "array",
