@@ -107,12 +107,6 @@ class BETDisk(Flow360BaseModel):
     )
 
 
-class BETDiskPrivate(BETDisk):
-    """:class:`BETDiskPrivate` class"""
-
-    volume_name: Optional[str] = pd.Field(alias="volumeName")
-
-
 class PorousMediumVolumeZone(Flow360BaseModel):
     """:class:`PorousMediumVolumeZone` class"""
 
