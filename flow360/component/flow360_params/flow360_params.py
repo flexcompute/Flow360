@@ -61,9 +61,9 @@ from .solvers import (
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolvers,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
+    TurbulenceModelSolverTypes,
 )
 from .unit_system import (
     AngularVelocityType,
@@ -689,7 +689,7 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
     axis : Axis
         Axis of rotation, eg. (0, 0, 1)
 
-    omega_radians: AngularVelocityType
+    omega_radians: float
         Nondimensional rotating speed, radians/nondim-unit-time
 
 
@@ -700,9 +700,43 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
 
     """
 
-    omega_radians: AngularVelocityType = pd.Field(alias="omegaRadians")
+    omega_radians: float = pd.Field(alias="omegaRadians")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
+
+
+class ReferenceFrameOmegaDegrees(Flow360BaseModel):
+    """:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame
+
+    Parameters
+    ----------
+    center : Coordinate
+        Coordinate representing the origin of rotation, eg. (0, 0, 0)
+
+    axis : Axis
+        Axis of rotation, eg. (0, 0, 1)
+
+    omega_degrees: AngularVelocityType
+        Nondimensional rotating speed, radians/nondim-unit-time
+
+
+    Returns
+    -------
+    :class:`ReferenceFrameOmegaDegrees`
+        An instance of the component class ReferenceFrameOmegaDegrees.
+
+    """
+
+    omega_degrees: float = pd.Field(alias="omegaDegrees")
+    center: LengthType.Point = pd.Field(alias="centerOfRotation")
+    axis: Axis = pd.Field(alias="axisOfRotation")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaDegrees:
+        """
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrame(Flow360BaseModel):
@@ -745,7 +779,7 @@ class ReferenceFrame(Flow360BaseModel):
         """
 
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        omega_radians = solver_values.pop("omega")
+        omega_radians = solver_values.pop("omega").value
         return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
@@ -951,7 +985,7 @@ class FreestreamFromMachReynolds(FreestreamBase):
 
 class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True)
-    Mach_ref: PositiveFloat = pd.Field()
+    Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
@@ -965,7 +999,7 @@ class ZeroFreestream(FreestreamBase):
 
 class FreestreamFromVelocity(FreestreamBase):
     velocity: VelocityType.Positive = pd.Field()
-    velocity_ref: Optional[VelocityType.Positive] = pd.Field()
+    velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -1002,7 +1036,7 @@ class FreestreamFromVelocity(FreestreamBase):
 
 class ZeroFreestreamFromVelocity(FreestreamBase):
     velocity: Literal[0] = pd.Field(0, const=True)
-    velocity_ref: VelocityType.Positive = pd.Field()
+    velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
@@ -1031,6 +1065,15 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         return ZeroFreestream(
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
         )
+
+
+FreestreamTypes = Union[
+    FreestreamFromMach,
+    FreestreamFromMachReynolds,
+    FreestreamFromVelocity,
+    ZeroFreestream,
+    ZeroFreestreamFromVelocity,
+]
 
 
 # class OldFreestream(Flow360BaseModel):
@@ -1256,7 +1299,10 @@ class USstandardAtmosphere(Flow360BaseModel):
 # pylint: disable=no-member
 air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
 
+FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
+
+# pylint: disable=too-many-instance-attributes
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
@@ -1265,32 +1311,21 @@ class Flow360Params(Flow360BaseModel):
     # save unit system for future use, for example processing results: TODO:
     # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current)
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properties: Optional[Union[AirDensityTemperature, AirPressureTemperature]] = pd.Field(
-        alias="fluidProperties"
-    )
+    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
-    sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolvers] = pd.Field(
+    turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[
-        Union[
-            FreestreamFromMach,
-            FreestreamFromMachReynolds,
-            FreestreamFromVelocity,
-            ZeroFreestream,
-            ZeroFreestreamFromVelocity,
-        ]
-    ] = pd.Field()
+    freestream: Optional[FreestreamTypes] = pd.Field()
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")

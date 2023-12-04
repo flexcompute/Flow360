@@ -68,10 +68,7 @@
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
-                "omegaRadians": {
-                    "value": 3.0773317581937964e-06,
-                    "units": "flow360_angular_velocity_unit"
-                },
+                "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,
@@ -90,10 +87,7 @@
         "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
-                "omegaRadians": {
-                    "value": 3.0773317581937964e-06,
-                    "units": "flow360_angular_velocity_unit"
-                },
+                "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,
@@ -112,10 +106,7 @@
         "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
-                "omegaRadians": {
-                    "value": 3.077331758193797e-06,
-                    "units": "flow360_angular_velocity_unit"
-                },
+                "omegaRadians": 3.077331758193797e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,

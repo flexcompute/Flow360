@@ -62,13 +62,13 @@ def test_reference_frames():
     non_dim_omega = RPM * 2 * fl.pi / 60 / ref_C_inf * mesh_unit  # 3.0773317581937964e-06
 
     assertions.assertAlmostEqual(
-        params_solver.volume_zones["zone1"].reference_frame.omega_radians.v.item(), non_dim_omega
+        params_solver.volume_zones["zone1"].reference_frame.omega_radians, non_dim_omega
     )
 
     assertions.assertAlmostEqual(
-        params_solver.volume_zones["zone2"].reference_frame.omega_radians.v.item(), non_dim_omega
+        params_solver.volume_zones["zone2"].reference_frame.omega_radians, non_dim_omega
     )
 
     assertions.assertAlmostEqual(
-        params_solver.volume_zones["zone3"].reference_frame.omega_radians.v.item(), non_dim_omega
+        params_solver.volume_zones["zone3"].reference_frame.omega_radians, non_dim_omega
     )

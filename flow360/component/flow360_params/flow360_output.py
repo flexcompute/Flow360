@@ -230,31 +230,6 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
             )
 
 
-class SurfaceOutputPrivate(SurfaceOutput):
-    """:class:`SurfaceOutputPrivate` class"""
-
-    wall_function_metric: Optional[bool] = pd.Field(alias="wallFunctionMetric")
-    node_moments_per_unit_area: Optional[bool] = pd.Field(alias="nodeMomentsPerUnitArea")
-    residual_sa: Optional[bool] = pd.Field(alias="residualSA")
-    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-
-
-# pylint: disable=too-many-ancestors
-class SurfaceOutputLegacy(SurfaceOutputPrivate, OutputLegacy):
-    """:class:`SurfaceOutputLegacy` class"""
-
-    Cf: Optional[bool] = pd.Field(alias="Cf")
-    Cf_vec: Optional[bool] = pd.Field(alias="CfVec")
-    Cf_normal: Optional[bool] = pd.Field(alias="CfNormal")
-    Cf_tangent: Optional[bool] = pd.Field(alias="CfTangent")
-    y_plus: Optional[bool] = pd.Field(alias="yPlus")
-    wall_distance: Optional[bool] = pd.Field(alias="wallDistance")
-    heat_flux: Optional[bool] = pd.Field(alias="heatFlux")
-    node_forces_per_unit_area: Optional[bool] = pd.Field(alias="nodeForcesPerUnitArea")
-    node_normals: Optional[bool] = pd.Field(alias="nodeNormals")
-    velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
-
-
 class Slice(Flow360BaseModel):
     """:class:`NamedSlice` class"""
 
@@ -319,18 +294,6 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
             )
 
 
-class SliceOutputPrivate(SliceOutput):
-    """:class:`SliceOutputPrivate` class"""
-
-    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-
-
-class SliceOutputLegacy(SliceOutputPrivate, OutputLegacy):
-    """:class:`SliceOutputLegacy` class"""
-
-    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
-    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
-
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
     """:class:`VolumeOutput` class"""
@@ -351,27 +314,6 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
             )
-
-
-class VolumeOutputPrivate(VolumeOutput):
-    """:class:`VolumeOutputPrivate` class"""
-
-    write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    write_distributed_file: Optional[bool] = pd.Field(alias="writeDistributedFile")
-    residual_components_sa: Optional[bool] = pd.Field(alias="residualComponentsSA")
-    wall_distance_dir: Optional[bool] = pd.Field(alias="wallDistanceDir")
-    velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
-    debug_transition: Optional[bool] = pd.Field(alias="debugTransition")
-    debug_turbulence: Optional[bool] = pd.Field(alias="debugTurbulence")
-    debug_navier_stokes: Optional[bool] = pd.Field(alias="debugNavierStokes")
-
-
-# pylint: disable=too-many-ancestors
-class VolumeOutputLegacy(VolumeOutputPrivate, OutputLegacy):
-    """:class:`VolumeOutputLegacy` class"""
-
-    bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
-    bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
 
 class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -516,25 +458,6 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
-
-
-class IsoSurfaceOutputPrivate(IsoSurfaceOutput):
-    """:class:`IsoSurfaceOutputPrivate` class"""
-
-    coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
-
-    # pylint: disable=too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        """:class: Model config to cull output field shorthands"""
-
-        # pylint: disable=unused-argument
-        @staticmethod
-        def schema_extra(schema, model):
-            """Remove output field shorthands from schema"""
-            _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
-            )
 
 
 class AeroacousticOutput(Flow360BaseModel):
