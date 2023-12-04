@@ -68,6 +68,7 @@ from .component.flow360_params.flow360_params import (
     WallFunction,
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
+    FreestreamFromMachReynolds,
     air,
 )
 from .component.flow360_params.unit_system import (

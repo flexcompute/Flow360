@@ -1,5 +1,5 @@
 {
-  "title": "Freestreams",
+  "title": "_Freestreams",
   "type": "object",
   "properties": {
     "freestream": {
@@ -16,6 +16,9 @@
         },
         {
           "$ref": "#/definitions/ZeroFreestream"
+        },
+        {
+          "$ref": "#/definitions/FreestreamFromMachReynolds"
         }
       ]
     }
@@ -204,6 +207,52 @@
       "required": [
         "Mach_ref",
         "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    },
+    "FreestreamFromMachReynolds": {
+      "title": "Freestream from mach reynolds",
+      "type": "object",
+      "properties": {
+        "alphaAngle": {
+          "title": "Alpha angle",
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Mach ref",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Reynolds": {
+          "title": "Reynolds",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "Mach",
+        "Reynolds",
         "Temperature"
       ],
       "additionalProperties": false

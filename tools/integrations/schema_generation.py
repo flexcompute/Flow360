@@ -29,17 +29,18 @@ if not os.path.exists(f"./data/"):
     os.mkdir(f"./data/")
 
 
-class Freestreams(Flow360BaseModel):
+class _Freestreams(Flow360BaseModel):
     freestream: Union[
         fl.FreestreamFromVelocity,
         fl.FreestreamFromMach,
         fl.ZeroFreestreamFromVelocity,
         fl.ZeroFreestream,
+        fl.FreestreamFromMachReynolds,
     ] = pd.Field()
 
 
 # pylint: disable=E0213
-class UnsteadyTimeStepping(TimeStepping):
+class _UnsteadyTimeStepping(TimeStepping):
     """
     Unsteady Ttme stepping component
     """
@@ -52,7 +53,7 @@ class UnsteadyTimeStepping(TimeStepping):
 
 
 # pylint: disable=E0213
-class SteadyTimeStepping(TimeStepping):
+class _SteadyTimeStepping(TimeStepping):
     """
     Steady time stepping component
     """
@@ -62,13 +63,15 @@ class SteadyTimeStepping(TimeStepping):
     time_step_size: Literal["inf"] = pd.Field(alias="timeStepSize", default="inf", const=True)
 
 
-class TimeSteppings(Flow360BaseModel):
-    time_stepping: Union[SteadyTimeStepping, UnsteadyTimeStepping] = pd.Field(alias="timeStepping")
+class _TimeSteppings(Flow360BaseModel):
+    time_stepping: Union[_SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
+        alias="timeStepping"
+    )
 
 
 write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
-write_schemas(Freestreams)
+write_schemas(_Freestreams)
 write_schemas(fl.SlidingInterface)
 write_schemas(fl.TurbulenceModelSolverSA)
 write_schemas(fl.TurbulenceModelSolverSST)
@@ -76,7 +79,7 @@ write_schemas(fl.TransitionModelSolver)
 write_schemas(fl.HeatEquationSolver)
 write_schemas(fl.NoneSolver)
 write_schemas(fl.PorousMedium)
-write_schemas(TimeSteppings)
+write_schemas(_TimeSteppings)
 write_schemas(fl.ActuatorDisk)
 write_schemas(fl.BETDisk)
 write_schemas(fl.SurfaceOutput)

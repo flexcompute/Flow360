@@ -1,15 +1,15 @@
 {
-  "title": "TimeSteppings",
+  "title": "_TimeSteppings",
   "type": "object",
   "properties": {
     "timeStepping": {
       "title": "Time stepping",
       "anyOf": [
         {
-          "$ref": "#/definitions/SteadyTimeStepping"
+          "$ref": "#/definitions/_SteadyTimeStepping"
         },
         {
-          "$ref": "#/definitions/UnsteadyTimeStepping"
+          "$ref": "#/definitions/_UnsteadyTimeStepping"
         }
       ]
     }
@@ -87,8 +87,8 @@
       },
       "additionalProperties": false
     },
-    "SteadyTimeStepping": {
-      "title": "Steady time stepping",
+    "_SteadyTimeStepping": {
+      "title": "_ steady time stepping",
       "type": "object",
       "properties": {
         "physicalSteps": {
@@ -130,8 +130,8 @@
       ],
       "additionalProperties": false
     },
-    "UnsteadyTimeStepping": {
-      "title": "Unsteady time stepping",
+    "_UnsteadyTimeStepping": {
+      "title": "_ unsteady time stepping",
       "type": "object",
       "properties": {
         "physicalSteps": {

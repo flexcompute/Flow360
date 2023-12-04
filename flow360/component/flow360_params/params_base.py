@@ -919,10 +919,6 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         return root_schema
 
-    @classmethod
-    def flow360_ui_schema(cls):
-        return None
-
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         extra = "allow"
