@@ -686,7 +686,7 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
     axis : Axis
         Axis of rotation, eg. (0, 0, 1)
 
-    omega_radians: AngularVelocityType
+    omega_radians: float
         Nondimensional rotating speed, radians/nondim-unit-time
 
 
@@ -697,9 +697,42 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
 
     """
 
-    omega_radians: AngularVelocityType = pd.Field(alias="omegaRadians")
+    omega_radians: float = pd.Field(alias="omegaRadians")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
+
+
+class ReferenceFrameOmegaDegrees(Flow360BaseModel):
+    """:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame
+
+    Parameters
+    ----------
+    center : Coordinate
+        Coordinate representing the origin of rotation, eg. (0, 0, 0)
+
+    axis : Axis
+        Axis of rotation, eg. (0, 0, 1)
+
+    omega_degrees: AngularVelocityType
+        Nondimensional rotating speed, radians/nondim-unit-time
+
+
+    Returns
+    -------
+    :class:`ReferenceFrameOmegaDegrees`
+        An instance of the component class ReferenceFrameOmegaDegrees.
+
+    """
+
+    omega_degrees: float = pd.Field(alias="omegaDegrees")
+    center: LengthType.Point = pd.Field(alias="centerOfRotation")
+    axis: Axis = pd.Field(alias="axisOfRotation")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params: Flow360Params, **kwargs) -> ReferenceFrameOmegaRadians:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        omega_radians = solver_values.pop("omega_degrees") / 180 * math.pi
+        return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
 class ReferenceFrame(Flow360BaseModel):
@@ -742,7 +775,7 @@ class ReferenceFrame(Flow360BaseModel):
         """
 
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        omega_radians = solver_values.pop("omega")
+        omega_radians = solver_values.pop("omega").value
         return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
@@ -922,7 +955,7 @@ class Geometry(Flow360BaseModel):
     Geometry component
     """
 
-    ref_area: Optional[AreaType] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
+    ref_area: Optional[AreaType] = pd.Field(alias="refArea")
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")

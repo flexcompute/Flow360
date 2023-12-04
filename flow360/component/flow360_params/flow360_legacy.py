@@ -36,6 +36,7 @@ from flow360.component.flow360_params.solvers import (
     PressureCorrectionSolver,
     TransitionModelSolver,
     TurbulenceModelSolver,
+    TurbulenceModelSolverSA,
     TurbulenceModelSolverTypes,
 )
 from flow360.component.flow360_params.unit_system import DimensionedType
@@ -53,7 +54,7 @@ class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
     comments: Optional[Dict] = pd.Field()
 
     @abstractmethod
-    def update_model(self) -> Flow360BaseModel:
+    def update_model(self):
         """Update the legacy model to the up-to-date version"""
 
 
@@ -63,7 +64,7 @@ def _try_add_unit(model, key, unit: DimensionedType):
 
 
 def _try_set(model, key, value):
-    if value is not None:
+    if value is not None and model.get(key) is None:
         model[key] = value
 
 
@@ -181,7 +182,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, [])
+        fields = _get_output_fields(self, ["write_single_file", "write_distributed_file"])
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -233,9 +234,6 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
     pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
         alias="pressureCorrectionSolver"
     )
-    numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
-        alias="numericalDissipationFactor"
-    )
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
         alias="linearSolver", default=LinearSolverLegacy()
@@ -246,7 +244,6 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "CFLMultiplier": self.CFL_multiplier,
-            "linearIterations": self.linear_iterations,
             "linearSolver": _try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
@@ -255,7 +252,11 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "kappaMUSCL": self.kappa_MUSCL,
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
+            "numericalDissipationFactor": self.numerical_dissipation_factor,
         }
+
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"].max_iterations = self.linear_iterations
 
         return NavierStokesSolver.parse_obj(model)
 
@@ -269,6 +270,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
         alias="linearSolver", default=LinearSolverLegacy()
     )
+    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
     def update_model(self) -> Flow360BaseModel:
         class _TurbulenceTempModel(pd.BaseModel):
@@ -296,24 +298,13 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             }
         }
 
-        _try_set(model, "rotationCorrection", self.rotation_correction)
+        if isinstance(self, TurbulenceModelSolverSA):
+            _try_set(model, "rotationCorrection", self.rotation_correction)
+
+        if self.linear_iterations is not None and model["solver"]["linearSolver"] is not None:
+            model["solver"]["linearSolver"].max_iterations = self.linear_iterations
 
         return _TurbulenceTempModel.parse_obj(model).solver
-
-
-class TurbulenceModelSolverSSTLegacy(TurbulenceModelSolverLegacy):
-    """:class:`TurbulenceModelSolverSSTLegacy` class"""
-
-    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
-
-
-class TurbulenceModelSolverSALegacy(TurbulenceModelSolverLegacy):
-    """:class:`TurbulenceModelSolverSALegacy` class"""
-
-    model_type: Literal["SpalartAllmaras"] = pd.Field(
-        "SpalartAllmaras", alias="modelType", const=True
-    )
-    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
@@ -366,6 +357,9 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "turbulenceIntensityPercent": self.turbulence_intensity_percent,
             "Ncrit": self.N_crit,
         }
+
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"].max_iterations = self.linear_iterations
 
         return HeatEquationSolver.parse_obj(model)
 
@@ -431,8 +425,6 @@ class FreestreamLegacy(LegacyModel):
     MachRef: Optional[PositiveFloat] = pd.Field()
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
-    density: Optional[PositiveFloat]
-    speed: Optional[PositiveFloat]
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
@@ -456,8 +448,6 @@ class FreestreamLegacy(LegacyModel):
 
         _try_set(model["freestream"], "Reynolds", self.Reynolds)
         _try_set(model["freestream"], "muRef", self.mu_ref)
-        _try_set(model["freestream"], "density", self.density)
-        _try_set(model["freestream"], "velocity", self.speed)
         _try_set(model["freestream"], "Mach", self.Mach)
         _try_set(model["freestream"], "MachRef", self.MachRef)
         _try_set(model["freestream"], "temperature", self.temperature)
@@ -469,7 +459,7 @@ class FreestreamLegacy(LegacyModel):
 
         return _FreestreamTempModel.parse_obj(model).freestream
 
-    def extract_fluid_properties(self) -> Flow360BaseModel:
+    def extract_fluid_properties(self) -> Optional[Flow360BaseModel]:
         """Extract fluid properties from the freestream comments"""
 
         class _FluidPropertiesTempModel(pd.BaseModel):
@@ -483,14 +473,12 @@ class FreestreamLegacy(LegacyModel):
         # pylint: disable=no-member
         _try_set(model["fluid"], "temperature", self.temperature * u.K)
 
-        if self.comments.get("pressure"):
-            # pylint: disable=no-member
-            pressure = self.comments["pressure"] * u.Pa
-            _try_set(model["fluid"], "pressure", pressure)
-        elif self.comments.get("density"):
+        if self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             _try_set(model["fluid"], "density", density)
+        else:
+            return None
 
         return _FluidPropertiesTempModel.parse_obj(model).fluid
 
@@ -540,21 +528,20 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         }
 
         _try_set(model["referenceFrame"], "isDynamic", self.is_dynamic)
-        _try_set(model["referenceFrame"], "omega", self.omega)
-        _try_set(model["referenceFrame"], "omega", self.omega_radians)
-        _try_set(model["referenceFrame"], "omega", self.omega_degrees)
+        _try_set(model["referenceFrame"], "omegaRadians", self.omega)
+        _try_set(model["referenceFrame"], "omegaRadians", self.omega_radians)
+        _try_set(model["referenceFrame"], "omegaDegrees", self.omega_degrees)
         _try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         _try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
-
-        if self.omega_degrees is not None:
-            # pylint: disable=no-member
-            omega = model["referenceFrame"]["omega"] * u.deg / u.s
-            _try_set(model["referenceFrame"], "omega", omega)
 
         if self.comments.get("rpm") is not None:
             # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             _try_set(model["referenceFrame"], "omega", omega)
+            if model["referenceFrame"].get("omegaRadians") is not None:
+                del model["referenceFrame"]["omegaRadians"]
+            if model["referenceFrame"].get("omegaDegrees") is not None:
+                del model["referenceFrame"]["omegaDegrees"]
 
         return FluidDynamicsVolumeZone.parse_obj(model)
 

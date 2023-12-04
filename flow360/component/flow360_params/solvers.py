@@ -171,6 +171,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
     limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity", displayed="Limit velocity")
     limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
+    numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
+        alias="numericalDissipationFactor"
+    )
 
     @classmethod
     def _get_field_order(cls) -> List[str]:
@@ -272,7 +275,6 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         alias="reconstructionGradientLimiter"
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
-    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
@@ -287,6 +289,7 @@ class TurbulenceModelSolverSA(TurbulenceModelSolver):
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
     )
+    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
 
 class NoneSolver(Flow360BaseModel):
