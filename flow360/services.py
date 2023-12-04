@@ -65,6 +65,6 @@ def validate_flow360_params_model(params_as_dict):
     validation_warnings = []
 
     if validation_errors is not None:
-        return validation_errors.errors, validation_warnings
+        return validation_errors.errors(), validation_warnings
 
     return None, validation_warnings
