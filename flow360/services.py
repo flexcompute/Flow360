@@ -24,3 +24,11 @@ def get_default_params(unit_system_context):
 
 
 
+def get_default_retry(params_as_dict):
+    params = Flow360Params(**params_as_dict)
+    return params
+
+
+def get_default_fork(params_as_dict):
+    params = Flow360Params(**params_as_dict)
+    return params
