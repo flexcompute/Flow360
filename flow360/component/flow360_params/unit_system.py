@@ -736,6 +736,7 @@ class UnitSystem(pd.BaseModel):
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
+    base_system: BaseSystemType = pd.Field()
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
@@ -778,7 +779,7 @@ class UnitSystem(pd.BaseModel):
 
         missing = set(self._dim_names) - set(units.keys())
 
-        super().__init__(**units)
+        super().__init__(**units, base_system=base_system)
 
         if len(missing) > 0:
             raise ValueError(

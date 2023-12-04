@@ -4,6 +4,14 @@ from .component.flow360_params.flow360_params import Flow360Params, Geometry, Na
 
 def get_default_params(unit_system_context):
 
+    """
+    example of generating default case settings. 
+    - Use Model() if all fields has defaults or there are no required fields
+    - Use Model.construct() to disable validation - when there are required fields without value
+
+    """
+
+
     with unit_system_context:
         params = Flow360Params(
             geometry=Geometry(),
