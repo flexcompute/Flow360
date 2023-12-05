@@ -201,6 +201,7 @@ class DimensionedType(ValidatedType):
                 str(_SI_system[cls.dim_name]),
                 str(_CGS_system[cls.dim_name]),
                 str(_imperial_system[cls.dim_name]),
+                str(_flow360_system[cls.dim_name]),
             ]
             units += extra_units[cls.dim_name]
             field_schema["units"]["enum"] = list(dict.fromkeys(units))

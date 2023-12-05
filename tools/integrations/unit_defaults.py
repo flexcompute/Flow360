@@ -13,6 +13,9 @@ class UnitDefaults(Flow360BaseModel):
     defaults_imperial: Dict = pd.Field(
         alias="defaultsImperial", default=fl.imperial_unit_system.defaults()
     )
+    defaults_flow360: Dict = pd.Field(
+        alias="defaultsFlow360", default=fl.flow360_unit_system.defaults()
+    )
 
 
 with open("./data/UnitDefaults.json", "w") as outfile:
