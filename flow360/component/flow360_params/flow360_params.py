@@ -189,6 +189,10 @@ class SupersonicInflow(Boundary):
         Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
         Flow360 = 1.0/gamma.
 
+    velocityDirection: BoundaryVelocityType
+        (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
+        of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
+
     Returns
     -------
     :class:`SupersonicInflow`
@@ -203,6 +207,7 @@ class SupersonicInflow(Boundary):
     totalTemperatureRatio: PositiveFloat
     totalPressureRatio: PositiveFloat
     staticPressureRatio: PositiveFloat
+    velocityDirection: Optional[BoundaryVelocityType]
 
 
 class SlidingInterfaceBoundary(Boundary):
