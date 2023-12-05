@@ -186,7 +186,7 @@ class SupersonicInflow(Boundary):
         Ratio of the total pressure to static pressure at the inlet.
 
     staticPressureRatio: PositiveFloat
-        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in 
+        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
         Flow360 = 1.0/gamma.
 
     Returns
