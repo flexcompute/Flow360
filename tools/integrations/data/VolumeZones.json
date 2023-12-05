@@ -21,275 +21,269 @@
         ],
         "default": ""
       }
+    },
+    "dependencies": {
+      "modelType": {
+        "oneOf": [
+          {
+            "title": "FluidDynamicsVolumeZone",
+            "type": "object",
+            "properties": {
+              "modelType": {
+                "title": "Model type",
+                "default": "FluidDynamics",
+                "const": "FluidDynamics",
+                "type": "string"
+              },
+              "referenceFrame": {
+                "title": "Reference frame",
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/ReferenceFrame"
+                  },
+                  {
+                    "$ref": "#/definitions/ReferenceFrameOmegaRadians"
+                  },
+                  {
+                    "$ref": "#/definitions/ReferenceFrameExpression"
+                  },
+                  {
+                    "$ref": "#/definitions/ReferenceFrameDynamic"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "title": "HeatTransferVolumeZone",
+            "type": "object",
+            "properties": {
+              "modelType": {
+                "title": "Model type",
+                "default": "HeatTransfer",
+                "const": "HeatTransfer",
+                "type": "string"
+              },
+              "thermalConductivity": {
+                "title": "Thermal conductivity",
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "volumetricHeatSource": {
+                "title": "Volumetric heat source",
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "heatCapacity": {
+                "title": "Heat capacity",
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "initialCondition": {
+                "$ref": "#/definitions/InitialConditionHeatTransfer"
+              }
+            },
+            "required": [
+              "thermalConductivity"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
     }
   },
-  "dependencies": {
-    "modelType": {
-      "oneOf": [
-        {
-          "title": "FluidDynamicsVolumeZone",
-          "type": "object",
-          "properties": {
-            "modelType": {
-              "title": "Modeltype",
-              "default": "FluidDynamics",
-              "const": "FluidDynamics",
-              "type": "string"
-            },
-            "referenceFrame": {
-              "title": "Referenceframe",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/ReferenceFrame"
-                },
-                {
-                  "$ref": "#/definitions/ReferenceFrameOmegaRadians"
-                },
-                {
-                  "$ref": "#/definitions/ReferenceFrameExpression"
-                },
-                {
-                  "$ref": "#/definitions/ReferenceFrameDynamic"
-                }
-              ]
-            }
+  "definitions": {
+    "ReferenceFrame": {
+      "title": "Reference frame",
+      "type": "object",
+      "properties": {
+        "omega": {
+          "title": "Omega",
+          "value": {
+            "type": "number"
           },
-          "additionalProperties": false,
-          "definitions": {
-            "ReferenceFrame": {
-              "title": "ReferenceFrame",
-              "type": "object",
-              "properties": {
-                "omega": {
-                  "title": "Omega",
-                  "value": {
-                    "type": "number"
-                  },
-                  "units": {
-                    "type": "string",
-                    "dimension": "angular_velocity",
-                    "enum": [
-                      "rad/s",
-                      "rad/s",
-                      "rad/s"
-                    ]
-                  }
-                },
-                "centerOfRotation": {
-                  "title": "Centerofrotation",
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
-                  },
-                  "units": {
-                    "type": "string"
-                  }
-                },
-                "axisOfRotation": {
-                  "title": "Axisofrotation",
-                  "type": "array",
-                  "items": {}
-                }
-              },
-              "required": [
-                "omega",
-                "centerOfRotation",
-                "axisOfRotation"
-              ],
-              "additionalProperties": false
-            },
-            "ReferenceFrameOmegaRadians": {
-              "title": "ReferenceFrameOmegaRadians",
-              "type": "object",
-              "properties": {
-                "omegaRadians": {
-                  "title": "Omegaradians",
-                  "value": {
-                    "type": "number"
-                  },
-                  "units": {
-                    "type": "string",
-                    "dimension": "angular_velocity",
-                    "enum": [
-                      "rad/s",
-                      "rad/s",
-                      "rad/s"
-                    ]
-                  }
-                },
-                "centerOfRotation": {
-                  "title": "Centerofrotation",
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
-                  },
-                  "units": {
-                    "type": "string"
-                  }
-                },
-                "axisOfRotation": {
-                  "title": "Axisofrotation",
-                  "type": "array",
-                  "items": {}
-                }
-              },
-              "required": [
-                "omegaRadians",
-                "centerOfRotation",
-                "axisOfRotation"
-              ],
-              "additionalProperties": false
-            },
-            "ReferenceFrameExpression": {
-              "title": "ReferenceFrameExpression",
-              "type": "object",
-              "properties": {
-                "thetaRadians": {
-                  "title": "Thetaradians",
-                  "type": "string"
-                },
-                "thetaDegrees": {
-                  "title": "Thetadegrees",
-                  "type": "string"
-                },
-                "centerOfRotation": {
-                  "title": "Centerofrotation",
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
-                  },
-                  "units": {
-                    "type": "string"
-                  }
-                },
-                "axisOfRotation": {
-                  "title": "Axisofrotation",
-                  "type": "array",
-                  "items": {}
-                }
-              },
-              "required": [
-                "centerOfRotation",
-                "axisOfRotation"
-              ],
-              "additionalProperties": false
-            },
-            "ReferenceFrameDynamic": {
-              "title": "ReferenceFrameDynamic",
-              "type": "object",
-              "properties": {
-                "centerOfRotation": {
-                  "title": "Centerofrotation",
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
-                  },
-                  "units": {
-                    "type": "string"
-                  }
-                },
-                "axisOfRotation": {
-                  "title": "Axisofrotation",
-                  "type": "array",
-                  "items": {}
-                },
-                "isDynamic": {
-                  "title": "Isdynamic",
-                  "default": true,
-                  "const": true,
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "centerOfRotation",
-                "axisOfRotation"
-              ],
-              "additionalProperties": false
-            }
+          "units": {
+            "type": "string",
+            "dimension": "angular_velocity",
+            "enum": [
+              "rad/s"
+            ]
           }
         },
-        {
-          "title": "HeatTransferVolumeZone",
-          "type": "object",
-          "properties": {
-            "modelType": {
-              "title": "Modeltype",
-              "default": "HeatTransfer",
-              "const": "HeatTransfer",
-              "type": "string"
-            },
-            "thermalConductivity": {
-              "title": "Thermalconductivity",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "volumetricHeatSource": {
-              "title": "Volumetricheatsource",
-              "anyOf": [
-                {
-                  "type": "number",
-                  "minimum": 0
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
-            "heatCapacity": {
-              "title": "Heatcapacity",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "initialCondition": {
-              "$ref": "#/definitions/InitialConditionHeatTransfer"
+        "centerOfRotation": {
+          "title": "Center of rotation",
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minItems": 3,
+              "maxItems": 3
             }
           },
-          "required": [
-            "thermalConductivity"
-          ],
-          "additionalProperties": false,
-          "definitions": {
-            "InitialConditionHeatTransfer": {
-              "title": "InitialConditionHeatTransfer",
-              "type": "object",
-              "properties": {
-                "T_solid": {
-                  "title": "T Solid",
-                  "anyOf": [
-                    {
-                      "type": "number",
-                      "exclusiveMinimum": 0
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "T_solid"
-              ],
-              "additionalProperties": false
-            }
+          "units": {
+            "type": "string"
           }
+        },
+        "axisOfRotation": {
+          "title": "Axis of rotation",
+          "type": "array",
+          "items": {}
         }
-      ]
+      },
+      "required": [
+        "omega",
+        "centerOfRotation",
+        "axisOfRotation"
+      ],
+      "additionalProperties": false
+    },
+    "ReferenceFrameOmegaRadians": {
+      "title": "Reference frame omega radians",
+      "type": "object",
+      "properties": {
+        "omegaRadians": {
+          "title": "Omega radians",
+          "value": {
+            "type": "number"
+          },
+          "units": {
+            "type": "string",
+            "dimension": "angular_velocity",
+            "enum": [
+              "rad/s"
+            ]
+          }
+        },
+        "centerOfRotation": {
+          "title": "Center of rotation",
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "units": {
+            "type": "string"
+          }
+        },
+        "axisOfRotation": {
+          "title": "Axis of rotation",
+          "type": "array",
+          "items": {}
+        }
+      },
+      "required": [
+        "omegaRadians",
+        "centerOfRotation",
+        "axisOfRotation"
+      ],
+      "additionalProperties": false
+    },
+    "ReferenceFrameExpression": {
+      "title": "Reference frame expression",
+      "type": "object",
+      "properties": {
+        "thetaRadians": {
+          "title": "Theta radians",
+          "type": "string"
+        },
+        "thetaDegrees": {
+          "title": "Theta degrees",
+          "type": "string"
+        },
+        "centerOfRotation": {
+          "title": "Center of rotation",
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "units": {
+            "type": "string"
+          }
+        },
+        "axisOfRotation": {
+          "title": "Axis of rotation",
+          "type": "array",
+          "items": {}
+        }
+      },
+      "required": [
+        "centerOfRotation",
+        "axisOfRotation"
+      ],
+      "additionalProperties": false
+    },
+    "ReferenceFrameDynamic": {
+      "title": "Reference frame dynamic",
+      "type": "object",
+      "properties": {
+        "centerOfRotation": {
+          "title": "Center of rotation",
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "units": {
+            "type": "string"
+          }
+        },
+        "axisOfRotation": {
+          "title": "Axis of rotation",
+          "type": "array",
+          "items": {}
+        },
+        "isDynamic": {
+          "title": "Is dynamic",
+          "default": true,
+          "const": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "centerOfRotation",
+        "axisOfRotation"
+      ],
+      "additionalProperties": false
+    },
+    "InitialConditionHeatTransfer": {
+      "title": "Initial condition heat transfer",
+      "type": "object",
+      "properties": {
+        "T_solid": {
+          "title": "T_solid",
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "T_solid"
+      ],
+      "additionalProperties": false
     }
   }
 }

@@ -2,31 +2,8 @@
   "title": "SliceOutput",
   "type": "object",
   "properties": {
-    "outputFormat": {
-      "title": "Outputformat",
-      "anyOf": [
-        {
-          "enum": [
-            "paraview"
-          ],
-          "type": "string"
-        },
-        {
-          "enum": [
-            "tecplot"
-          ],
-          "type": "string"
-        },
-        {
-          "enum": [
-            "both"
-          ],
-          "type": "string"
-        }
-      ]
-    },
     "animationFrequency": {
-      "title": "Animationfrequency",
+      "title": "Animation frequency",
       "anyOf": [
         {
           "type": "integer",
@@ -41,279 +18,50 @@
       ]
     },
     "animationFrequencyOffset": {
-      "title": "Animationfrequencyoffset",
+      "title": "Animation frequency offset",
       "type": "integer"
     },
+    "animationSettings": {
+      "$ref": "#/definitions/AnimationSettings"
+    },
+    "outputFormat": {
+      "title": "Output format",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "type": "string"
+    },
     "outputFields": {
-      "title": "Outputfields",
+      "title": "Output fields",
+      "uniqueItems": true,
       "type": "array",
       "items": {
-        "anyOf": [
-          {
-            "enum": [
-              "Cp"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "gradW"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "kOmega"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Mach"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "mut"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "mutRatio"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "nuHat"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "primitiveVars"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "qcriterion"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "residualNavierStokes"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "residualTransition"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "residualTurbulence"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "s"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "solutionNavierStokes"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "solutionTransition"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "solutionTurbulence"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "T"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "vorticity"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "wallDistance"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "lowNumericalDissipationSensor"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "residualHeatSolver"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Coefficient of pressure"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Gradient of primitive solution"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "k and omega"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Mach number"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Turbulent viscosity"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Turbulent viscosity and freestream dynamic viscosity ratio"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Spalart-Almaras variable"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "rho, u, v, w, p (density, 3 velocities and pressure)"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Q criterion"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "N-S residual"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Transition residual"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Turbulence residual"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Entropy"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "N-S solution"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Transition solution"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Turbulence solution"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Temperature"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Vorticity"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Wall distance"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "NumericalDissipationFactor sensor"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "Heat equation residual"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "betMetrics"
-            ],
-            "type": "string"
-          },
-          {
-            "enum": [
-              "betMetricsPerDisk"
-            ],
-            "type": "string"
-          }
-        ]
+        "enum": [
+          "Coefficient of pressure",
+          "Gradient of primitive solution",
+          "k and omega",
+          "Mach number",
+          "Turbulent viscosity",
+          "Turbulent viscosity and freestream dynamic viscosity ratio",
+          "Spalart-Almaras variable",
+          "rho, u, v, w, p (density, 3 velocities and pressure)",
+          "Q criterion",
+          "N-S residual",
+          "Transition residual",
+          "Turbulence residual",
+          "Entropy",
+          "N-S solution",
+          "Transition solution",
+          "Turbulence solution",
+          "Temperature",
+          "Vorticity",
+          "Wall distance",
+          "NumericalDissipationFactor sensor",
+          "Heat equation residual"
+        ],
+        "type": "string"
       }
     },
     "slices": {
@@ -322,6 +70,22 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "AnimationSettings": {
+      "title": "Animation settings",
+      "type": "object",
+      "properties": {
+        "frequency": {
+          "title": "Frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "frequencyOffset": {
+          "title": "Frequency offset",
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
     "Slices": {
       "title": "Slices",
       "type": "object",

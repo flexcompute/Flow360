@@ -4,6 +4,8 @@ import pydantic as pd
 import pytest
 
 from flow360.component.flow360_params.flow360_output import (
+    AnimationSettings,
+    AnimationSettingsExtended,
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -101,28 +103,22 @@ def test_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation_frequency=-2,
-            animation_frequency_time_average=-1,
+            animation_settings=AnimationSettings(frequency=-1),
             output_fields=["Cp", "qcriterion"],
         )
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation_frequency=-1,
-            animation_frequency_time_average=-2,
+            animation_settings=AnimationSettings(frequency_time_average=-1),
             output_fields=["Cp", "qcriterion"],
         )
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation_frequency=-1,
-            animation_frequency_time_average=-1,
             output_fields=["invalid_field", "qcriterion"],
         )
 
     output = SurfaceOutput(
-        animation_frequency=-1,
-        animation_frequency_time_average=-1,
         output_fields=["Cp", "qcriterion"],
     )
 
@@ -137,12 +133,23 @@ def test_slice_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = SliceOutput(animation_frequency=-2, output_fields=["Cp", "qcriterion"])
+        output = SliceOutput(
+            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
+        )
 
     with pytest.raises(pd.ValidationError):
-        output = SliceOutput(animation_frequency=-1, output_fields=["invalid_field", "qcriterion"])
+        output = SliceOutput(
+            animation_settings=AnimationSettings(frequency_offset=0),
+            output_fields=["invalid_field", "qcriterion"],
+        )
 
-    output = SliceOutput(animation_frequency=-1, output_fields=["Cp", "qcriterion"])
+    output = SliceOutput(output_fields=["Cp", "qcriterion"])
+
+    assert output
+
+    output = SliceOutput(
+        animation_settings=AnimationSettings(frequency_offset=1), output_fields=["Cp", "qcriterion"]
+    )
 
     assert output
 
@@ -155,12 +162,29 @@ def test_volume_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(animation_frequency=-2, output_fields=["Cp", "qcriterion"])
+        output = VolumeOutput(
+            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
+        )
 
     with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(animation_frequency=-1, output_fields=["invalid_field", "qcriterion"])
+        output = VolumeOutput(
+            animation_settings=AnimationSettings(frequency=0), output_fields=["Cp", "qcriterion"]
+        )
 
-    output = VolumeOutput(animation_frequency=-1, output_fields=["Cp", "qcriterion"])
+    with pytest.raises(pd.ValidationError):
+        output = VolumeOutput(
+            animation_settings=AnimationSettings(frequency=1),
+            output_fields=["invalid_field", "qcriterion"],
+        )
+
+    output = VolumeOutput(output_fields=["Cp", "qcriterion"])
+
+    assert output
+
+    output = VolumeOutput(
+        animation_settings=AnimationSettingsExtended(frequency_time_average=1),
+        output_fields=["Cp", "qcriterion"],
+    )
 
     assert output
 
@@ -170,11 +194,7 @@ def test_volume_output():
 def test_iso_surface_output():
     iso_surface = IsoSurface(
         surface_field_magnitude=0.5,
-        surface_field=[
-            "p",
-            "Mach",
-            "qcriterion",
-        ],
+        surface_field="qcriterion",
         output_fields=["Cp", "qcriterion"],
     )
 
@@ -186,12 +206,11 @@ def test_iso_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = IsoSurfaceOutput(
-            animation_frequency=-2,
+            animation_settings=AnimationSettings(frequency=0),
             iso_surfaces={"s1": iso_surface},
         )
 
     output = IsoSurfaceOutput(
-        animation_frequency=-1,
         iso_surfaces={"s1": iso_surface},
     )
 

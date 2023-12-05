@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "animationFrequency": {
-      "title": "Animationfrequency",
+      "title": "Animation frequency",
       "anyOf": [
         {
           "type": "integer",
@@ -18,11 +18,11 @@
       ]
     },
     "animationFrequencyOffset": {
-      "title": "Animationfrequencyoffset",
+      "title": "Animation frequency offset",
       "type": "integer"
     },
     "patchType": {
-      "title": "Patchtype",
+      "title": "Patch type",
       "default": "solid",
       "const": "solid",
       "type": "string"
@@ -46,6 +46,11 @@
           }
         ]
       }
+    },
+    "writePerSurfaceOutput": {
+      "title": "Write per surface output",
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [

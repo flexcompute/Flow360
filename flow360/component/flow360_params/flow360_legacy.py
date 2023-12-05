@@ -16,6 +16,7 @@ from flow360 import (
     Flow360Params,
     FluidDynamicsVolumeZone,
     Geometry,
+    IsoSurfaceOutput,
     SliceOutput,
     SlidingInterface,
     SurfaceOutput,
@@ -110,6 +111,7 @@ class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
     residual_heat_solver: Optional[bool] = pd.Field(alias="residualHeatSolver")
 
 
+# pylint: disable=too-many-ancestors
 class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SurfaceOutputLegacy` class"""
 
@@ -133,10 +135,12 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, [])
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
-            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
-            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+                "frequencyTimeAverage": self.animation_frequency_time_average,
+                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            },
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
@@ -157,8 +161,10 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, [])
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+            },
             "outputFormat": self.output_format,
             "outputFields": fields,
             "slices": self.slices,
@@ -167,6 +173,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         return SliceOutput.parse_obj(model)
 
 
+# pylint: disable=too-many-ancestors
 class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     """:class:`VolumeOutputLegacy` class"""
 
@@ -185,10 +192,12 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(self, ["write_single_file", "write_distributed_file"])
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
-            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
-            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+                "frequencyTimeAverage": self.animation_frequency_time_average,
+                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            },
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
@@ -196,6 +205,22 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         }
 
         return VolumeOutput.parse_obj(model)
+
+
+class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
+    """:class:`IsoSurfaceOutputLegacy` class"""
+
+    def update_model(self):
+        model = {
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+            },
+            "outputFormat": self.output_format,
+            "isoSurfaces": self.iso_surfaces,
+        }
+
+        return IsoSurfaceOutput.parse_obj(model)
 
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
@@ -587,6 +612,7 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
     surface_output: Optional[SurfaceOutputLegacy] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
+    iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
 
     def update_model(self) -> Flow360BaseModel:
         model = Flow360Params()
@@ -615,7 +641,7 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
         model.surface_output = _try_update(self.surface_output)
         model.volume_output = _try_update(self.volume_output)
         model.slice_output = _try_update(self.slice_output)
-        model.iso_surface_output = self.iso_surface_output
+        model.iso_surface_output = _try_update(self.iso_surface_output)
         model.monitor_output = self.monitor_output
 
         if self.sliding_interfaces is not None:

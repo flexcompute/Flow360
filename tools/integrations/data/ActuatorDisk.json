@@ -31,11 +31,7 @@
     },
     "forcePerArea": {
       "title": "Force per area",
-      "allOf": [
-        {
-          "$ref": "#/definitions/ForcePerArea"
-        }
-      ]
+      "$ref": "#/definitions/ForcePerArea"
     }
   },
   "required": [
@@ -47,7 +43,7 @@
   "additionalProperties": false,
   "definitions": {
     "ForcePerArea": {
-      "title": "ForcePerArea",
+      "title": "Force per area",
       "type": "object",
       "properties": {
         "radius": {

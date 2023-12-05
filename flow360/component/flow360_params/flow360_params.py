@@ -31,6 +31,9 @@ from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveI
 from ..utils import _get_value_or_none, beta_feature
 from .conversions import ExtraDimensionedProperty
 from .flow360_output import (
+    AeroacousticOutput,
+    AnimationSettings,
+    AnimationSettingsExtended,
     IsoSurfaceOutput,
     IsoSurfaces,
     MonitorOutput,
@@ -582,7 +585,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr]
+    T_solid: Union[PositiveFloat, StrictStr] = pd.Field()
 
 
 class HeatTransferVolumeZone(VolumeZoneBase):
@@ -916,39 +919,6 @@ class VolumeZones(Flow360SortableBaseModel):
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
-
-class AeroacousticOutput(Flow360BaseModel):
-    """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
-
-    Parameters
-    ----------
-    observers : List[Coordinate]
-        List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
-        file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
-        the simulation domain.
-    animation_frequency: Union[PositiveInt, Literal[-1]], optional
-        Frame frequency in the animation
-    animation_frequency_offset: int, optional
-        Animation frequency offset
-
-    Returns
-    -------
-    :class:`AeroacousticOutput`
-        An instance of the component class AeroacousticOutput.
-
-    Example
-    -------
-    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
-    """
-
-    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency"
-    )
-    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
-    observers: List[Coordinate] = pd.Field()
-    write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
 
 class Geometry(Flow360BaseModel):

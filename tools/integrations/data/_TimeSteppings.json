@@ -1,0 +1,176 @@
+{
+  "title": "_TimeSteppings",
+  "type": "object",
+  "properties": {
+    "timeStepping": {
+      "title": "Time stepping",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/_SteadyTimeStepping"
+        },
+        {
+          "$ref": "#/definitions/_UnsteadyTimeStepping"
+        }
+      ]
+    }
+  },
+  "required": [
+    "timeStepping"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "RampCFL": {
+      "title": "Ramp cfl",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "ramp",
+          "const": "ramp",
+          "type": "string"
+        },
+        "initial": {
+          "title": "Initial",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "final": {
+          "title": "Final",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "rampSteps": {
+          "title": "Ramp steps",
+          "type": "integer"
+        },
+        "randomizer": {
+          "title": "Randomizer",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AdaptiveCFL": {
+      "title": "Adaptive cfl",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "adaptive",
+          "const": "adaptive",
+          "type": "string"
+        },
+        "min": {
+          "title": "Min",
+          "default": 0.1,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "default": 10000,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "maxRelativeChange": {
+          "title": "Max relative change",
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "convergenceLimitingFactor": {
+          "title": "Convergence limiting factor",
+          "default": 0.25,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "_SteadyTimeStepping": {
+      "title": "_ steady time stepping",
+      "type": "object",
+      "properties": {
+        "physicalSteps": {
+          "title": "Physical steps",
+          "const": null,
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "maxPseudoSteps": {
+          "title": "Max pseudo steps",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "default": "inf",
+          "const": "inf",
+          "enum": [
+            "inf"
+          ],
+          "type": "string"
+        },
+        "CFL": {
+          "title": "Cfl",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RampCFL"
+            },
+            {
+              "$ref": "#/definitions/AdaptiveCFL"
+            }
+          ]
+        }
+      },
+      "required": [
+        "physicalSteps"
+      ],
+      "additionalProperties": false
+    },
+    "_UnsteadyTimeStepping": {
+      "title": "_ unsteady time stepping",
+      "type": "object",
+      "properties": {
+        "physicalSteps": {
+          "title": "Physical steps",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxPseudoSteps": {
+          "title": "Max pseudo steps",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "units": {
+            "type": "string"
+          }
+        },
+        "CFL": {
+          "title": "Cfl",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RampCFL"
+            },
+            {
+              "$ref": "#/definitions/AdaptiveCFL"
+            }
+          ]
+        }
+      },
+      "required": [
+        "physicalSteps",
+        "timeStepSize"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

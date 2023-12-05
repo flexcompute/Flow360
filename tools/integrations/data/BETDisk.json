@@ -169,7 +169,7 @@
   "additionalProperties": false,
   "definitions": {
     "BETDiskTwist": {
-      "title": "BETDiskTwist",
+      "title": "Bet disk twist",
       "type": "object",
       "properties": {
         "radius": {
@@ -184,7 +184,7 @@
       "additionalProperties": false
     },
     "BETDiskChord": {
-      "title": "BETDiskChord",
+      "title": "Bet disk chord",
       "type": "object",
       "properties": {
         "radius": {
@@ -199,7 +199,7 @@
       "additionalProperties": false
     },
     "BETDiskSectionalPolar": {
-      "title": "BETDiskSectionalPolar",
+      "title": "Bet disk sectional polar",
       "type": "object",
       "properties": {
         "liftCoeffs": {
