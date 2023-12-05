@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
-from ...exceptions import ConfigError, FileError, ValidationError
+from ...exceptions import FileError, ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
@@ -77,7 +77,7 @@ def _self_named_property_validator(values: dict, validator: Type[BaseModel], msg
 
     Raises
     ------
-    ValidationError
+    ValueError
         When validation fails
     """
     for key, v in values.items():
@@ -87,7 +87,7 @@ def _self_named_property_validator(values: dict, validator: Type[BaseModel], msg
         try:
             values[key] = validator(v=v).v
         except Exception as exc:
-            raise ValidationError(f"{v} (type={type(v)}) {msg}") from exc
+            raise ValueError(f"{v} (type={type(v)}) {msg}") from exc
     return values
 
 
@@ -228,7 +228,7 @@ class Flow360BaseModel(BaseModel):
             aliases = [item for item in aliases if item is not None]
             intersection = list(set(set_values) & set(cls.Config.require_one_of + aliases))
             if len(intersection) == 0:
-                raise ConfigError(f"One of {cls.Config.require_one_of} is required.")
+                raise ValueError(f"One of {cls.Config.require_one_of} is required.")
         return values
 
     # pylint: disable=no-self-argument
@@ -270,7 +270,7 @@ class Flow360BaseModel(BaseModel):
         if deprecated_value is not None:
             if actual_value is not None and actual_value != deprecated_value:
                 allowed = [deprecated_alias.deprecated, deprecated_alias.name]
-                raise ValidationError(f"Only one of {allowed} can be used.")
+                raise ValueError(f"Only one of {allowed} can be used.")
             if actual_value is None:
                 if alias and alias != deprecated_alias.name:
                     log.warning(

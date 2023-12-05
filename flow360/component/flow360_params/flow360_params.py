@@ -303,7 +303,7 @@ class ForcePerArea(Flow360BaseModel):
             values.get("circumferential"),
         )
         if len(radius) != len(thrust) or len(radius) != len(circumferential):
-            raise ValidationError(
+            raise ValueError(
                 f"length of radius, thrust, circumferential must be the same, \
                 but got: len(radius)={len(radius)}, \
                          len(thrust)={len(thrust)}, \

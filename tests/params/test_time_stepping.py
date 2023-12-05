@@ -70,10 +70,10 @@ def test_time_stepping():
     ts = TimeStepping.parse_obj({"physicalSteps": 2})
     assert ts.physical_steps == 2
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
 
