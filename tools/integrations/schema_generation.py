@@ -7,7 +7,8 @@ import pydantic as pd
 import flow360 as fl
 from flow360 import TimeStepping
 from flow360.component.flow360_params.params_base import Flow360BaseModel
-from flow360.component.flow360_params.unit_system import TimeType
+from flow360.component.flow360_params.unit_system import TimeType, MassType, LengthType, TemperatureType, VelocityType, \
+    AreaType, ForceType, PressureType, DensityType, ViscosityType, AngularVelocityType
 from flow360.component.types import PositiveInt
 
 
@@ -19,10 +20,13 @@ def write_to_file(name, content):
 def write_schemas(type_obj: Type[Flow360BaseModel]):
     data = type_obj.flow360_schema()
     schema = json.dumps(data, indent=2)
-    write_to_file(f"./data/{type_obj.__name__}.json", schema)
+    name = type_obj.__name__
+    if name.startswith("_"):
+        name = name[1:]
+    write_to_file(f"./data/{name}.json", schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
-        write_to_file(f"./data/{type_obj.__name__}.ui.json", ui_schema)
+        write_to_file(f"./data/{name}.ui.json", ui_schema)
 
 
 if not os.path.exists(f"./data/"):
@@ -81,6 +85,20 @@ class _TimeSteppings(Flow360BaseModel):
     )
 
 
+class _DimensionedVariables(Flow360BaseModel):
+    mass: Optional[MassType] = pd.Field()
+    length: LengthType = pd.Field()
+    time: TimeType = pd.Field()
+    temperature: TemperatureType = pd.Field()
+    velocity: VelocityType = pd.Field()
+    area: AreaType = pd.Field()
+    force: ForceType = pd.Field()
+    pressure: PressureType = pd.Field()
+    density: DensityType = pd.Field()
+    viscosity: ViscosityType = pd.Field()
+    angular_velocity: AngularVelocityType = pd.Field()
+
+
 write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
 write_schemas(_Freestreams)
@@ -106,3 +124,5 @@ write_schemas(fl.Boundaries)
 write_schemas(fl.Slices)
 write_schemas(fl.IsoSurfaces)
 write_schemas(fl.Monitors)
+
+write_schemas(_DimensionedVariables)

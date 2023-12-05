@@ -4,62 +4,70 @@
   "properties": {
     "refArea": {
       "title": "Ref area",
-      "value": {
-        "type": "number"
-      },
-      "units": {
-        "type": "string",
-        "dimension": "area",
-        "enum": [
-          "m**2",
-          "cm**2",
-          "ft**2"
-        ]
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "units": {
+          "type": "string",
+          "dimension": "area",
+          "enum": [
+            "m**2",
+            "cm**2",
+            "ft**2"
+          ]
+        }
       }
     },
     "momentCenter": {
       "title": "Moment center",
-      "value": {
-        "type": "array",
-        "items": {
-          "type": "number",
-          "minItems": 3,
-          "maxItems": 3
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "units": {
+          "type": "string"
         }
-      },
-      "units": {
-        "type": "string"
       }
     },
     "momentLength": {
       "title": "Moment length",
-      "value": {
-        "type": "array",
-        "items": {
-          "type": "number",
-          "minItems": 3,
-          "maxItems": 3
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "units": {
+          "type": "string"
         }
-      },
-      "units": {
-        "type": "string"
       }
     },
     "meshUnit": {
       "title": "Mesh unit",
-      "value": {
-        "type": "number"
-      },
-      "units": {
-        "type": "string",
-        "dimension": "length",
-        "enum": [
-          "m",
-          "cm",
-          "ft",
-          "mm",
-          "inch"
-        ]
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "mm",
+            "inch"
+          ]
+        }
       }
     }
   },

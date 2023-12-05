@@ -187,12 +187,13 @@ class DimensionedType(ValidatedType):
     # pylint: disable=unused-argument
     @classmethod
     def __modify_schema__(cls, field_schema, field):
-        field_schema["value"] = {}
-        field_schema["units"] = {}
-        field_schema["value"]["type"] = "number"
-        field_schema["units"]["type"] = "string"
+        field_schema["properties"] = {}
+        field_schema["properties"]["value"] = {}
+        field_schema["properties"]["units"] = {}
+        field_schema["properties"]["value"]["type"] = "number"
+        field_schema["properties"]["units"]["type"] = "string"
         if cls.dim_name is not None:
-            field_schema["units"]["dimension"] = cls.dim_name
+            field_schema["properties"]["units"]["dimension"] = cls.dim_name
             # Local import to prevent exposing mappings to the user
             # pylint: disable=import-outside-toplevel
             from flow360.component.flow360_params.exposed_units import extra_units
@@ -203,7 +204,7 @@ class DimensionedType(ValidatedType):
                 str(_imperial_system[cls.dim_name]),
             ]
             units += [str(unit) for unit in extra_units[cls.dim_name]]
-            field_schema["units"]["enum"] = list(dict.fromkeys(units))
+            field_schema["properties"]["units"]["enum"] = list(dict.fromkeys(units))
 
     class _Constrained:
         """
@@ -232,13 +233,13 @@ class DimensionedType(ValidatedType):
                 DimensionedType.__modify_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
                 if constraints.ge is not None:
-                    field_schema["value"]["minimum"] = constraints.ge
+                    field_schema["properties"]["value"]["minimum"] = constraints.ge
                 if constraints.le is not None:
-                    field_schema["value"]["maximum"] = constraints.le
+                    field_schema["properties"]["value"]["maximum"] = constraints.le
                 if constraints.gt is not None:
-                    field_schema["value"]["exclusiveMinimum"] = constraints.gt
+                    field_schema["properties"]["value"]["exclusiveMinimum"] = constraints.gt
                 if constraints.lt is not None:
-                    field_schema["value"]["exclusiveMaximum"] = constraints.lt
+                    field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
             cls_obj = type("_Constrained", (), {})
             setattr(cls_obj, "con_type", _ConType)
@@ -302,11 +303,11 @@ class DimensionedType(ValidatedType):
 
             def __modify_schema__(field_schema, field):
                 DimensionedType.__modify_schema__(field_schema, field)
-                field_schema["value"]["type"] = "array"
-                field_schema["value"]["items"] = {}
-                field_schema["value"]["items"]["type"] = "number"
-                field_schema["value"]["items"]["minItems"] = 3
-                field_schema["value"]["items"]["maxItems"] = 3
+                field_schema["properties"]["value"]["type"] = "array"
+                field_schema["properties"]["value"]["items"] = {}
+                field_schema["properties"]["value"]["items"]["type"] = "number"
+                field_schema["properties"]["value"]["items"]["minItems"] = 3
+                field_schema["properties"]["value"]["items"]["maxItems"] = 3
 
             def validate(vec_cls, value):
                 """additional validator for value"""

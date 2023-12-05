@@ -146,12 +146,14 @@
         },
         "timeStepSize": {
           "title": "Time step size",
-          "value": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "units": {
-            "type": "string"
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string"
+            }
           }
         },
         "CFL": {

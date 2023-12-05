@@ -107,29 +107,33 @@
       "properties": {
         "omega": {
           "title": "Omega",
-          "value": {
-            "type": "number"
-          },
-          "units": {
-            "type": "string",
-            "dimension": "angular_velocity",
-            "enum": [
-              "rad/s"
-            ]
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "type": "string",
+              "dimension": "angular_velocity",
+              "enum": [
+                "rad/s"
+              ]
+            }
           }
         },
         "centerOfRotation": {
           "title": "Center of rotation",
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minItems": 3,
-              "maxItems": 3
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "units": {
+              "type": "string"
             }
-          },
-          "units": {
-            "type": "string"
           }
         },
         "axisOfRotation": {
@@ -151,29 +155,22 @@
       "properties": {
         "omegaRadians": {
           "title": "Omega radians",
-          "value": {
-            "type": "number"
-          },
-          "units": {
-            "type": "string",
-            "dimension": "angular_velocity",
-            "enum": [
-              "rad/s"
-            ]
-          }
+          "type": "number"
         },
         "centerOfRotation": {
           "title": "Center of rotation",
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minItems": 3,
-              "maxItems": 3
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "units": {
+              "type": "string"
             }
-          },
-          "units": {
-            "type": "string"
           }
         },
         "axisOfRotation": {
@@ -203,16 +200,18 @@
         },
         "centerOfRotation": {
           "title": "Center of rotation",
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minItems": 3,
-              "maxItems": 3
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "units": {
+              "type": "string"
             }
-          },
-          "units": {
-            "type": "string"
           }
         },
         "axisOfRotation": {
@@ -233,16 +232,18 @@
       "properties": {
         "centerOfRotation": {
           "title": "Center of rotation",
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minItems": 3,
-              "maxItems": 3
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "units": {
+              "type": "string"
             }
-          },
-          "units": {
-            "type": "string"
           }
         },
         "axisOfRotation": {

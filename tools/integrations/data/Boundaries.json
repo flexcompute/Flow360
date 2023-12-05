@@ -55,16 +55,18 @@
                 "title": "Velocity",
                 "anyOf": [
                   {
-                    "value": {
-                      "type": "array",
-                      "items": {
-                        "type": "number",
-                        "minItems": 3,
-                        "maxItems": 3
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "units": {
+                        "type": "string"
                       }
-                    },
-                    "units": {
-                      "type": "string"
                     }
                   },
                   {
@@ -123,16 +125,18 @@
                 "title": "Velocity",
                 "anyOf": [
                   {
-                    "value": {
-                      "type": "array",
-                      "items": {
-                        "type": "number",
-                        "minItems": 3,
-                        "maxItems": 3
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "units": {
+                        "type": "string"
                       }
-                    },
-                    "units": {
-                      "type": "string"
                     }
                   },
                   {
@@ -186,16 +190,18 @@
                 "title": "Velocity",
                 "anyOf": [
                   {
-                    "value": {
-                      "type": "array",
-                      "items": {
-                        "type": "number",
-                        "minItems": 3,
-                        "maxItems": 3
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "units": {
+                        "type": "string"
                       }
-                    },
-                    "units": {
-                      "type": "string"
                     }
                   },
                   {
