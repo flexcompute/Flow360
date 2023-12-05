@@ -322,38 +322,60 @@
                 "title": "Name",
                 "type": "string"
               },
-              "Density": {
-                "title": "Density",
+              "totalTemperatureRatio": {
+                "title": "totalTemperatureRatio",
                 "exclusiveMinimum": 0,
                 "type": "number"
               },
-              "Velocity": {
-                "title": "Velocity",
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "items": [
+              "totalPressureRatio": {
+                "title": "totalPressureRatio",
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "staticPressureRatio": {
+                "title": "staticPressureRatio",
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+		"velocityDirection": {
+                "title": "velocityDirection",
+                "anyOf": [
                   {
-                    "type": "number"
+                    "value": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minItems": 3,
+                        "maxItems": 3
+                      }
+                    },
+                    "units": {
+                      "type": "string"
+                    }
                   },
                   {
-                    "type": "number"
-                  },
-                  {
-                    "type": "number"
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
                   }
                 ]
-              },
-              "Pressure": {
-                "title": "Pressure",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              }
-            },
+		}
+	    },
             "required": [
-              "Density",
-              "Velocity",
-              "Pressure"
+              "totalTemperatureRatio",
+              "totalPressureRatio",
+              "staticPressureRatio"
             ],
             "additionalProperties": false
           },
