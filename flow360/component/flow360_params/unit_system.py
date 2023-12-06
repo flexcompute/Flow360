@@ -202,6 +202,7 @@ class DimensionedType(ValidatedType):
                 str(_SI_system[cls.dim_name]),
                 str(_CGS_system[cls.dim_name]),
                 str(_imperial_system[cls.dim_name]),
+                str(_flow360_system[cls.dim_name]),
             ]
             units += [str(unit) for unit in extra_units[cls.dim_name]]
             field_schema["properties"]["units"]["enum"] = list(dict.fromkeys(units))
@@ -809,7 +810,7 @@ class UnitSystem(pd.BaseModel):
 
         defaults = {}
         for item in self._dim_names:
-            defaults[item] = str(self[item].units.expr)
+            defaults[item] = str(self[item].units)
         return defaults
 
     def __getitem__(self, item):

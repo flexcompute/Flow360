@@ -14,7 +14,8 @@
           "enum": [
             "m**2",
             "cm**2",
-            "ft**2"
+            "ft**2",
+            "flow360_area_unit"
           ]
         }
       }
@@ -64,6 +65,7 @@
             "m",
             "cm",
             "ft",
+            "flow360_length_unit",
             "mm",
             "inch"
           ]

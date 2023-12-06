@@ -115,7 +115,8 @@
               "type": "string",
               "dimension": "angular_velocity",
               "enum": [
-                "rad/s"
+                "rad/s",
+                "flow360_angular_velocity_unit"
               ]
             }
           }

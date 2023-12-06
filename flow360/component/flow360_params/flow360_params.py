@@ -179,13 +179,19 @@ class SupersonicInflow(Boundary):
 
     Parameters
     ----------
-    Density : PositiveFloat
-        Fluid density (non-dimensional). Default freestream fluid density in Flow360 is 1.0.
+    totalTemperatureRatio : PositiveFloat
+        Ratio of total temperature to static temperature at the inlet.
 
-    Velocity: Tuple[float, float, float]
-        Fluid velocity (non-dimensional), normalized to Mach number.
-    Pressure: PositiveFloat
-        Fluid pressure (non-dimensional). Default freestream fluid pressure in Flow360 = 1.0/gamma = 1.0/1.4.
+    totalPressureRatio: PositiveFloat
+        Ratio of the total pressure to static pressure at the inlet.
+
+    staticPressureRatio: PositiveFloat
+        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
+        Flow360 = 1.0/gamma.
+
+    velocityDirection: BoundaryVelocityType
+        (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
+        of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
 
     Returns
     -------
@@ -194,13 +200,14 @@ class SupersonicInflow(Boundary):
 
     Example
     -------
-    >>> supersonicInflow = SupersonifInflow(density=1.0, velocity=[2.5, 0.1, 0], pressure=0.7) # doctest: +SKIP
+    >>> supersonicInflow = SupersonifInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
     """
 
     type = pd.Field("SupersonicInflow", const=True)
-    density: PositiveFloat = pd.Field(alias="Density")
-    velocity: Tuple[float, float, float] = pd.Field(alias="Velocity")
-    pressure: PositiveFloat = pd.Field(alias="Pressure")
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
+    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
+    velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
 
 class SlidingInterfaceBoundary(Boundary):
