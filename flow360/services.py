@@ -1,4 +1,6 @@
 import pydantic as pd
+
+from .component.flow360_params.flow360_legacy import Flow360ParamsLegacy
 from .component.flow360_params.flow360_params import Flow360Params, Geometry, NavierStokesSolver, TurbulenceModelSolverSA, FreestreamFromVelocity
 from .exceptions import Flow360ConfigurationError
 
@@ -23,13 +25,21 @@ def get_default_params(unit_system_context):
     return params
 
 
-def get_default_retry(params_as_dict):
-    params = Flow360Params(**params_as_dict)
+def get_default_retry(params_as_dict, legacy=False):
+    if legacy:
+        params_legacy = Flow360ParamsLegacy(**params_as_dict)
+        params = params_legacy.update_model()
+    else:
+        params = Flow360Params(**params_as_dict)
     return params
 
 
-def get_default_fork(params_as_dict):
-    params = Flow360Params(**params_as_dict)
+def get_default_fork(params_as_dict, legacy=False):
+    if legacy:
+        params_legacy = Flow360ParamsLegacy(**params_as_dict)
+        params = params_legacy.update_model()
+    else:
+        params = Flow360Params(**params_as_dict)
     return params
 
 

@@ -407,7 +407,7 @@ class GeometryLegacy(Geometry, LegacyModel):
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if self.comments.get("meshUnit") is not None:
+        if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
             model["meshUnit"] = unit
             _try_add_unit(model, "momentCenter", model["meshUnit"])
