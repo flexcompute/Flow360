@@ -29,6 +29,7 @@ from .component.flow360_params.flow360_params import (
     FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
+    HeatFluxWall,
     HeatTransferVolumeZone,
     IsoSurfaceOutput,
     IsoSurfaces,

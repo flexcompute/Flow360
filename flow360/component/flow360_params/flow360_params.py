@@ -151,6 +151,32 @@ class IsothermalWall(Boundary):
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
+class HeatFluxWall(Boundary):
+    """:class:`HeatFluxWall` class for specifying constant heat flux wall boundaries
+
+    Parameters
+    ----------
+    heatFlux : float
+        Heat flux at the wall.
+
+    velocity: BoundaryVelocityType
+        (Optional) Velocity of the wall. If not specified, the boundary is stationary.
+
+    Returns
+    -------
+    :class:`HeatFluxWall`
+        An instance of the component class HeatFluxWall.
+
+    Example
+    -------
+    >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
+    """
+
+    type = pd.Field("HeatFluxWall", const=True)
+    heatFlux: Union[float, StrictStr] = pd.Field(alias="HeatFlux")
+    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+
 class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
@@ -254,6 +280,7 @@ BoundaryType = Union[
     SlipWall,
     FreestreamBoundary,
     IsothermalWall,
+    HeatFluxWall,
     SubsonicOutflowPressure,
     SubsonicOutflowMach,
     SubsonicInflow,
@@ -539,7 +566,7 @@ class Boundaries(Flow360SortableBaseModel):
     Parameters
     ----------
     <boundary_name> : BoundaryType
-        Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall,
+        Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall, HeatFluxWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
                                         SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
                                         MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall]
