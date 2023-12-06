@@ -1,4 +1,5 @@
 """Custom Flow360 exceptions"""
+from typing import List
 
 from .log import log
 
@@ -38,7 +39,17 @@ class ValidationError(Flow360Error):
 
 
 class Flow360ConfigurationError(Flow360Error):
-    """Error with flow360 configuration."""
+    """Error with flow360 unit conversion."""
+
+    msg: str
+    field: List[str]
+    dependency: List[str]
+
+    def __init__(self, message: str = None,field: List[str] = None, dependency: List[str] = None):
+        super().__init__(message)
+        self.msg = message
+        self.field = field
+        self.dependency = dependency
 
 
 class FileError(Flow360Error):
