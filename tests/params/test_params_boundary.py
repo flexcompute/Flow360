@@ -7,8 +7,8 @@ import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamBoundary,
-    IsothermalWall,
     HeatFluxWall,
+    IsothermalWall,
     MassInflow,
     MassOutflow,
     MeshBoundary,
