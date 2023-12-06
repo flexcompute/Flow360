@@ -152,7 +152,7 @@ class IsothermalWall(Boundary):
 
 
 class HeatFluxWall(Boundary):
-    """:class:`HeatFluxWall` class for specifying constant heat flux wall boundaries
+    """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
 
     Parameters
     ----------
