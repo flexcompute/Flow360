@@ -19,10 +19,13 @@ def write_to_file(name, content):
 def write_schemas(type_obj: Type[Flow360BaseModel]):
     data = type_obj.flow360_schema()
     schema = json.dumps(data, indent=2)
-    write_to_file(f"./data/{type_obj.__name__}.json", schema)
+    name = type_obj.__name__
+    if name.startswith("_"):
+        name = name[1:]
+    write_to_file(f"./data/{name}.json", schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
-        write_to_file(f"./data/{type_obj.__name__}.ui.json", ui_schema)
+        write_to_file(f"./data/{name}.ui.json", ui_schema)
 
 
 if not os.path.exists(f"./data/"):

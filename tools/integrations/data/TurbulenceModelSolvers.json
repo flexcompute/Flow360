@@ -100,8 +100,8 @@
           "exclusiveMinimum": 0,
           "type": "number"
         },
-        "linearSolverConfig": {
-          "title": "Linear solver config",
+        "linearSolver": {
+          "title": "Linear solver",
           "default": {
             "max_iterations": 50,
             "absolute_tolerance": 1e-10,
@@ -191,8 +191,8 @@
           "exclusiveMinimum": 0,
           "type": "number"
         },
-        "linearSolverConfig": {
-          "title": "Linear solver config",
+        "linearSolver": {
+          "title": "Linear solver",
           "default": {
             "max_iterations": 50,
             "absolute_tolerance": 1e-10,

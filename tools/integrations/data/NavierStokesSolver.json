@@ -50,8 +50,8 @@
       ],
       "type": "integer"
     },
-    "linearSolverConfig": {
-      "title": "Linear solver config",
+    "linearSolver": {
+      "title": "Linear solver",
       "default": {
         "max_iterations": 50,
         "absolute_tolerance": 1e-10,
@@ -66,6 +66,12 @@
     "limitPressureDensity": {
       "title": "Limit pressure density",
       "type": "boolean"
+    },
+    "numericalDissipationFactor": {
+      "title": "Numerical dissipation factor",
+      "minimum": 0.01,
+      "maximum": 1,
+      "type": "number"
     }
   },
   "additionalProperties": false,

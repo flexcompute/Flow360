@@ -65,7 +65,7 @@ def test_mesh_boundary():
 
 
 def test_case_boundary():
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         param = Flow360Params(
             boundaries={
                 "fluid/fuselage": TimeStepping(),
@@ -74,7 +74,7 @@ def test_case_boundary():
             }
         )
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         param = Flow360Params.parse_raw(
             """
             {
@@ -120,7 +120,7 @@ def test_case_boundary():
 
     assert boundaries
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         param = Flow360Params(
             boundaries={
                 "fluid/fuselage": "NoSlipWall",

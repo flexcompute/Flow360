@@ -71,7 +71,7 @@ def test_edges():
     assert edges
     to_file_from_file_test(edges)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         edges = Edges.parse_raw(
             """
             {
@@ -101,7 +101,7 @@ def test_faces():
     assert faces
     to_file_from_file_test(faces)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         faces = Faces.parse_raw(
             """
             {

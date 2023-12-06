@@ -48,22 +48,26 @@
         },
         "velocity": {
           "title": "Velocity",
-          "value": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "units": {
-            "type": "string"
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string"
+            }
           }
         },
-        "velocity_ref": {
-          "title": "Velocity_ref",
-          "value": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "units": {
-            "type": "string"
+        "velocityRef": {
+          "title": "Velocity ref",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string"
+            }
           }
         }
       },
@@ -145,19 +149,21 @@
           ],
           "type": "integer"
         },
-        "velocity_ref": {
-          "title": "Velocity_ref",
-          "value": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "units": {
-            "type": "string"
+        "velocityRef": {
+          "title": "Velocity ref",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string"
+            }
           }
         }
       },
       "required": [
-        "velocity_ref"
+        "velocityRef"
       ],
       "additionalProperties": false
     },
@@ -188,8 +194,8 @@
           ],
           "type": "integer"
         },
-        "Mach_ref": {
-          "title": "Mach_ref",
+        "MachRef": {
+          "title": "Mach ref",
           "exclusiveMinimum": 0,
           "type": "number"
         },
@@ -205,7 +211,7 @@
         }
       },
       "required": [
-        "Mach_ref",
+        "MachRef",
         "muRef",
         "Temperature"
       ],

@@ -20,8 +20,8 @@
       ],
       "type": "string"
     },
-    "linearSolverConfig": {
-      "title": "Linear solver config",
+    "linearSolver": {
+      "title": "Linear solver",
       "default": {
         "max_iterations": 50,
         "absolute_tolerance": 1e-10,
