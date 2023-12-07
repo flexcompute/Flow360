@@ -266,7 +266,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
 
     model_type: str = pd.Field(alias="modelType")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
-    linear_solver_config: Optional[LinearSolver] = pd.Field(
+    linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20, absolute_tolerance=None), alias="linearSolverConfig"
     )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(4, alias="updateJacobianFrequency")

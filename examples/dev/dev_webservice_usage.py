@@ -1,8 +1,8 @@
 import os
 import re
 import json
-from pprint import pprint
 
+import flow360
 from flow360.services import get_default_fork
 
 # Webservice examples
