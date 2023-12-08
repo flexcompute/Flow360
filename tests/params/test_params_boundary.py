@@ -7,6 +7,7 @@ import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamBoundary,
+    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -187,6 +188,10 @@ def test_boundary_types():
 
     assert IsothermalWall(Temperature=1).type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
+
+    assert HeatFluxWall(heatFlux=-0.01).type == "HeatFluxWall"
+    with fl.flow360_unit_system:
+        assert HeatFluxWall(heatFlux="exp(x)", velocity=(0, 0, 0))
 
     assert SubsonicOutflowPressure(staticPressureRatio=1).type == "SubsonicOutflowPressure"
     with pytest.raises(pd.ValidationError):
