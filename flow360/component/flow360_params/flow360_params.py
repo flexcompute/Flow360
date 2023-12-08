@@ -227,6 +227,7 @@ class MassInflow(Boundary):
 
     type = pd.Field("MassInflow", const=True)
     massFlowRate: PositiveFloat
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class MassOutflow(Boundary):
@@ -234,6 +235,7 @@ class MassOutflow(Boundary):
 
     type = pd.Field("MassOutflow", const=True)
     massFlowRate: PositiveFloat
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class SolidIsothermalWall(Boundary):
