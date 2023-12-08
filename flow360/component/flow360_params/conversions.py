@@ -107,7 +107,7 @@ def require(required_parameter, required_by, params):
         )
 
 
-# pylint: disable=too-many-locals, too-many-return-statements
+# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements
 def unit_converter(dimension, params, required_by: List[str] = None):
     """
 
