@@ -66,7 +66,18 @@ def _literal_union(definitions: List[Tuple[str, Union[str, None]]]):
     return Union[total]
 
 
+def _short_names(definitions: List[Tuple[str, Union[str, None]]]):
+    return [field for field in (entry[0] for entry in definitions) if field is not None]
+
+
 CommonFieldVars = _literal_union(_common_field_definitions)
 SurfaceFieldVars = _literal_union(_surface_field_definitions)
-VolumeSliceFieldVars = _literal_union(_volume_slice_field_definitions)
+VolumeFieldVars = _literal_union(_volume_slice_field_definitions)
+SliceFieldVars = _literal_union(_volume_slice_field_definitions)
 IsoSurfaceFieldVars = _literal_union(_isosurface_field_definitions)
+
+CommonFieldNames = _short_names(_common_field_definitions)
+SurfaceFieldNames = _short_names(_surface_field_definitions)
+VolumeFieldNames = _short_names(_volume_slice_field_definitions)
+SliceFieldNames = _short_names(_volume_slice_field_definitions)
+IsoSurfaceFieldNames = _short_names(_isosurface_field_definitions)

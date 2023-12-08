@@ -27,7 +27,7 @@ from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationErr
 from ...log import log
 from ...user_config import UserConfig
 from ..constants import constants
-from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveInt
+from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveInt, Vector
 from ..utils import _get_value_or_none, beta_feature
 from .conversions import ExtraDimensionedProperty
 from .flow360_output import (
@@ -152,7 +152,7 @@ class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
     type = pd.Field("SubsonicOutflowPressure", const=True)
-    staticPressureRatio: PositiveFloat
+    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
 class SubsonicOutflowMach(Boundary):
@@ -166,9 +166,10 @@ class SubsonicInflow(Boundary):
     """SubsonicInflow boundary"""
 
     type = pd.Field("SubsonicInflow", const=True)
-    totalPressureRatio: PositiveFloat
-    totalTemperatureRatio: PositiveFloat
+    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+    velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
 
 class SupersonicInflow(Boundary):
@@ -196,7 +197,7 @@ class SupersonicInflow(Boundary):
 
     type = pd.Field("SupersonicInflow", const=True)
     density: PositiveFloat = pd.Field(alias="Density")
-    velocity: Tuple[float, float, float] = pd.Field(alias="Velocity")
+    velocity: BoundaryVelocityType = pd.Field(alias="Velocity")
     pressure: PositiveFloat = pd.Field(alias="Pressure")
 
 
@@ -216,14 +217,14 @@ class MassInflow(Boundary):
     """MassInflow boundary"""
 
     type = pd.Field("MassInflow", const=True)
-    massFlowRate: PositiveFloat
+    mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
 class MassOutflow(Boundary):
     """MassOutflow boundary"""
 
     type = pd.Field("MassOutflow", const=True)
-    massFlowRate: PositiveFloat
+    mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
 class SolidIsothermalWall(Boundary):
@@ -237,6 +238,19 @@ class SolidAdiabaticWall(Boundary):
     """SolidAdiabaticWall boundary"""
 
     type = pd.Field("SolidAdiabaticWall", const=True)
+
+
+class TranslationallyPeriodic(Boundary):
+    type = pd.Field("TranslationallyPeriodic", const=True)
+    paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
+    translation_vector: Optional[Vector] = pd.Field(alias="pairedPatchName")
+
+
+class RotationallyPeriodic(Boundary):
+    type = pd.Field("RotationallyPeriodic", const=True)
+    paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
+    axis_of_rotation: Optional[Vector] = pd.Field(alias="axisOfRotation")
+    theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
 
 
 BoundaryType = Union[
@@ -254,6 +268,8 @@ BoundaryType = Union[
     MassOutflow,
     SolidIsothermalWall,
     SolidAdiabaticWall,
+    TranslationallyPeriodic,
+    RotationallyPeriodic
 ]
 
 

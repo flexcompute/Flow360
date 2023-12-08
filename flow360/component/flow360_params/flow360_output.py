@@ -11,7 +11,8 @@ from .flow360_fields import (
     CommonFieldVars,
     IsoSurfaceFieldVars,
     SurfaceFieldVars,
-    VolumeSliceFieldVars,
+    VolumeFieldVars,
+    SliceFieldVars,
 )
 from .params_base import (
     Flow360BaseModel,
@@ -115,7 +116,7 @@ class SliceOutput(Flow360BaseModel):
         alias="animationFrequency"
     )
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    output_fields: Optional[List[Union[CommonFieldVars, VolumeSliceFieldVars]]] = pd.Field(
+    output_fields: Optional[List[Union[CommonFieldVars, SliceFieldVars]]] = pd.Field(
         alias="outputFields"
     )
     slices: Optional[Slices]
@@ -137,7 +138,7 @@ class VolumeOutput(Flow360BaseModel):
     )
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
-    output_fields: Optional[List[Union[CommonFieldVars, VolumeSliceFieldVars]]] = pd.Field(
+    output_fields: Optional[List[Union[CommonFieldVars, VolumeFieldVars]]] = pd.Field(
         alias="outputFields"
     )
 

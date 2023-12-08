@@ -1,6 +1,8 @@
 import pydantic as pd
-from .component.flow360_params.flow360_params import Flow360Params, Geometry, NavierStokesSolver, TurbulenceModelSolverSA, FreestreamFromVelocity
 
+from .component.flow360_params.flow360_legacy import Flow360ParamsLegacy
+from .component.flow360_params.flow360_params import Flow360Params, Geometry, NavierStokesSolver, TurbulenceModelSolverSA, FreestreamFromVelocity
+from .exceptions import Flow360ConfigurationError
 
 
 def get_default_params(unit_system_context):
@@ -11,7 +13,6 @@ def get_default_params(unit_system_context):
     - Use Model.construct() to disable validation - when there are required fields without value
 
     """
-
 
     with unit_system_context:
         params = Flow360Params(
@@ -24,16 +25,22 @@ def get_default_params(unit_system_context):
     return params
 
 
-
-def get_default_retry(params_as_dict):
-    params = Flow360Params(**params_as_dict)
+def get_default_retry(params_as_dict, legacy=False):
+    if legacy:
+        params_legacy = Flow360ParamsLegacy(**params_as_dict)
+        params = params_legacy.update_model()
+    else:
+        params = Flow360Params(**params_as_dict)
     return params
 
 
-def get_default_fork(params_as_dict):
-    params = Flow360Params(**params_as_dict)
+def get_default_fork(params_as_dict, legacy=False):
+    if legacy:
+        params_legacy = Flow360ParamsLegacy(**params_as_dict)
+        params = params_legacy.update_model()
+    else:
+        params = Flow360Params(**params_as_dict)
     return params
-
 
 
 def validate_flow360_params_model(params_as_dict):
@@ -61,10 +68,22 @@ def validate_flow360_params_model(params_as_dict):
     # {'loc': ('freestream', 'velocity_ref'), 'msg': 'field required', 'type': 'value_error.missing'}, {'loc': ('freestream', 'Mach'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'}, 
     # {'loc': ('freestream', 'mu_ref'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'}, {'loc': ('freestream', 'temperature'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'}])
     
+    # Gather dependency errors stemming from solver conversion if no validation errors exist
+    if validation_errors is None:
+        try:
+            params = Flow360Params.parse_obj(params_as_dict)
+            params.to_solver()
+        except Flow360ConfigurationError as e:
+            validation_errors = [
+                {"loc": e.field, "msg": e.msg, "type": "configuration_error"},
+                {"loc": e.dependency, "msg": e.msg, "type": "configuration_error"},
+            ]
+    else:
+        validation_errors = validation_errors.errors()
 
     validation_warnings = []
 
     if validation_errors is not None:
-        return validation_errors.errors(), validation_warnings
+        return validation_errors, validation_warnings
 
     return None, validation_warnings
