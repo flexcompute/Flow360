@@ -173,7 +173,7 @@ class HeatFluxWall(Boundary):
     """
 
     type = pd.Field("HeatFluxWall", const=True)
-    heatFlux: Union[float, StrictStr] = pd.Field(alias="HeatFlux")
+    heat_flux: Union[float, StrictStr] = pd.Field(alias="HeatFlux")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
