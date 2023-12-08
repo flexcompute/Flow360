@@ -23,7 +23,8 @@ from flow360 import (
     VolumeOutput,
     VolumeZones, Slices,
 )
-from flow360.component.flow360_params.flow360_fields import CommonFieldNames, SurfaceFieldNames, VolumeSliceFieldNames
+from flow360.component.flow360_params.flow360_fields import CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, \
+    SliceFieldNames
 from flow360.component.flow360_params.flow360_output import Slice
 from flow360.component.flow360_params.flow360_params import (
     FluidPropertyTypes,
@@ -171,7 +172,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(
             self,
             [],
-            allowed=CommonFieldNames + VolumeSliceFieldNames)
+            allowed=CommonFieldNames + SliceFieldNames)
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -213,7 +214,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(
             self,
             exclude=["write_single_file", "write_distributed_file"],
-            allowed=CommonFieldNames + VolumeSliceFieldNames)
+            allowed=CommonFieldNames + VolumeFieldNames)
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -275,7 +276,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "CFLMultiplier": self.CFL_multiplier,
-            "linearSolverConfig": _try_update(self.linear_solver),
+            "linearSolver": _try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -286,8 +287,8 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "numericalDissipationFactor": self.numerical_dissipation_factor,
         }
 
-        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
-            model["linearSolverConfig"].max_iterations = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"].max_iterations = self.linear_iterations
 
         return NavierStokesSolver.parse_obj(model)
 
@@ -315,7 +316,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
                 "absoluteTolerance": self.absolute_tolerance,
                 "relativeTolerance": self.relative_tolerance,
                 "modelType": self.model_type,
-                "linearSolverConfig": _try_update(self.linear_solver),
+                "linearSolver": _try_update(self.linear_solver),
                 "updateJacobianFrequency": self.update_jacobian_frequency,
                 "equationEvalFrequency": self.equation_eval_frequency,
                 "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -330,8 +331,8 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
 
         _try_set(model, "rotationCorrection", self.rotation_correction)
 
-        if self.linear_iterations is not None and model["solver"]["linearSolverConfig"] is not None:
-            model["solver"]["linearSolverConfig"].max_iterations = self.linear_iterations
+        if self.linear_iterations is not None and model["solver"]["linearSolver"] is not None:
+            model["solver"]["linearSolver"].max_iterations = self.linear_iterations
 
         if self.model_type == "None":
             return NoneSolver()
@@ -356,7 +357,7 @@ class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
     def update_model(self) -> Flow360BaseModel:
         model = {
             "absoluteTolerance": self.absolute_tolerance,
-            "linearSolverConfig": _try_update(self.linear_solver),
+            "linearSolver": _try_update(self.linear_solver),
             "equationEvalFrequency": self.equation_eval_frequency,
         }
 
@@ -381,7 +382,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolverConfig": _try_update(self.linear_solver),
+            "linearSolver": _try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -390,8 +391,8 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "Ncrit": self.N_crit,
         }
 
-        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
-            model["linearSolverConfig"].max_iterations = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"].max_iterations = self.linear_iterations
 
         return HeatEquationSolver.parse_obj(model)
 
