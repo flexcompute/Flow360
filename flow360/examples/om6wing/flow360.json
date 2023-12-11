@@ -1,4 +1,50 @@
 {
+    "unitSystem": {
+        "mass": {
+            "value": 1.0,
+            "units": "kg"
+        },
+        "length": {
+            "value": 1.0,
+            "units": "m"
+        },
+        "time": {
+            "value": 1.0,
+            "units": "s"
+        },
+        "temperature": {
+            "value": 1.0,
+            "units": "K"
+        },
+        "velocity": {
+            "value": 1.0,
+            "units": "m/s"
+        },
+        "area": {
+            "value": 1.0,
+            "units": "m**2"
+        },
+        "force": {
+            "value": 1.0,
+            "units": "N"
+        },
+        "pressure": {
+            "value": 1.0,
+            "units": "Pa"
+        },
+        "density": {
+            "value": 1.0,
+            "units": "kg/m**3"
+        },
+        "viscosity": {
+            "value": 1.0,
+            "units": "Pa*s"
+        },
+        "angular_velocity": {
+            "value": 1.0,
+            "units": "rad/s"
+        }
+    },
     "version": "0.2.0b16",
     "geometry": {
         "refArea": {
@@ -50,9 +96,9 @@
         "alphaAngle": 3.06,
         "betaAngle": 0.0,
         "velocity": {
-            "value": 285.0,
+            "value": 286.0,
             "units": "m/s"
         }
     },
-    "hash": "d3829a06eb51435c596ac64eb6f509924df55d59cc5a3419129baae6a2afdb9d"
+    "hash": "8709d5775cb6fe9c1a8a1c100a55f8b510ad0ba8f1852ba6dacfd70b6879ea29"
 }

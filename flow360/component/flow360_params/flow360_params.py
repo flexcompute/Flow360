@@ -24,6 +24,7 @@ from pydantic import StrictStr
 from typing_extensions import Literal
 
 from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationError
+from ...error_messages import use_unit_system_msg, unit_system_inconsistent_msg
 from ...log import log
 from ...user_config import UserConfig
 from ..constants import constants
@@ -1312,37 +1313,18 @@ air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m
 FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
 
+
+
+
+
 # pylint: disable=too-many-instance-attributes
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
     """
 
-    # save unit system for future use, for example processing results: TODO:
-    # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current, mutable=False)
+    unit_system: UnitSystem = pd.Field(alias='unitSystem', mutable=False)
     version: str = pd.Field(__version__,  mutable=False)
-
-    major.minor.fix
-
-    24.1.0
-
-
-    24.2.0
-    24.3.0
-    24.4.0
-    24.5.0
-
-
-    24.1.1
-        .2
-        .4
-
-    24.1.0
-    24.1.1
-    24.1.2
-
-    24.2.0
-
 
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
@@ -1375,64 +1357,29 @@ class Flow360Params(Flow360BaseModel):
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
 
-
-    # save unit system for future use, for example processing results: TODO:
-    # validator: what if context is different than what is provided to the constructor (should it be ignored?)
-    # how copy should work? copy unit_system as well or use context?
-    # @pd.validator('unit_system')
-    # def should_be_consistent_with_context(cls, v):
-    #     if v == unit_system_manager.current:
-    #         return v
-    #   raise ValueError(f'unit_system is inconsistent from context unit system: \n{v}\n{unit_system_manager.current}')
-
-    # save unit system for future use, for example processing results: TODO:
-    def _handle_unit_system_init(self, init_dict):
-        """
-        handling unit systems:
-        if no unit_system provided and no context:
-        - save with the model flow360 unit system, use flow360 context to infer units - NEED TO THINK ABOUT IT!!!
-        if unit_system provided and no context:
-        - safe with the model provided unit system, use flow360 context to infer units
-        if unit_system not provided and context:
-        - safe with the model context unit system, dont use additional context (already in the context)
-        if unit_system provided and context provided:
-        - show warning, save context as model unit_system, show warning that model unit system changed.
-        """
-
-    # unit_system = init_dict.get('unit_system', init_dict.get('unitSystem', None))
-    # use_unit_system_as_context = None
-    # save_unit_system_with_model = None
-
-    # if not isinstance(unit_system, (UnitSystem, None)):
-    #     unit_system = UnitSystem(unit_system)
-
-    # if unit_system is not None:
-    #     if not isinstance(unit_system, UnitSystem):
-    #         unit_system = UnitSystem(unit_system)
-
-    #     if unit_system_manager.current is None:
-    #         save_unit_system_with_model = unit_system
-    #         use_unit_system_as_context = UnitSystem(base_system="Flow360", verbose=False)
-
-    #     if unit_system != unit_system_manager.current:
-    #         log.warning(
-    #                 f'Trying to initialize {self.__class__.__name__} with unit system: '
-    #                 f'{unit_system.system_repr()} '
-    #                 f'inside context: {unit_system_manager.current.system_repr()} '
-    #                 f'context unit system will be saved with the model.'
-    #             )
-    #         return unit_system_manager.current
-
-    # return save_unit_system_with_model, use_unit_system_as_context
+    def _init_check_unit_system(self, **kwargs):
+        if unit_system_manager.current is None:
+            raise RuntimeError(use_unit_system_msg)
             
-    
+        kwarg_unit_system = kwargs.pop('unit_system', kwargs.pop('unitSystem', None))
+        if kwarg_unit_system is not None:
+            if not isinstance(kwarg_unit_system, UnitSystem):
+                kwarg_unit_system = UnitSystem(**kwarg_unit_system)
+            if kwarg_unit_system != unit_system_manager.current:
+                raise RuntimeError(unit_system_inconsistent_msg(
+                    kwarg_unit_system.system_repr(), unit_system_manager.current.system_repr()))
+                
+        return kwargs
+
 
     def __init__(self, filename: str = None, **kwargs):
  
         if filename is not None:
             self._init_from_file(filename, **kwargs)
         else:
-            super().__init__(**kwargs)
+            kwargs = self._init_check_unit_system(**kwargs)
+            super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+
 
     def _init_from_file(self, filename, **kwargs):
         if unit_system_manager.current is not None:
@@ -1463,12 +1410,24 @@ class Flow360Params(Flow360BaseModel):
                 raise ValueError('loading from file failed')
 
 
+    def copy(self, update=None, **kwargs) -> Flow360Params:
+        if unit_system_manager.current is None:
+            with self.unit_system:
+                return super().copy(update=update, **kwargs)
+
+        return super().copy(update=update, **kwargs)
+
+
     # pylint: disable=arguments-differ
     def to_solver(self) -> Flow360Params:
         """
         returns configuration object in flow360 units system
         """
+        if unit_system_manager.current is None:
+            with self.unit_system:
+                return super().to_solver(self, exclude=["fluid_properties"])
         return super().to_solver(self, exclude=["fluid_properties"])
+
 
     def to_flow360_json(self) -> dict:
         """Generate a JSON representation of the model, as required by Flow360

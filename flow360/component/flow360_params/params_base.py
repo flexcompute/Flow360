@@ -19,7 +19,7 @@ from typing_extensions import Literal
 import hashlib
 
 from ...exceptions import FileError, ValidationError
-from ...error_messages import do_not_modify_file_manually
+from ...error_messages import do_not_modify_file_manually_msg
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
@@ -176,7 +176,6 @@ class Flow360BaseModel(BaseModel):
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._init_handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
-        self._set_immutable_fields()
 
     def _init_handle_file(self, filename: str = None, **kwargs):
         if filename is not None:
@@ -222,13 +221,14 @@ class Flow360BaseModel(BaseModel):
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
         include_hash: bool = False
 
-    def _set_immutable_fields(self):
-        for key, field in self.__fields__.items():
-            is_mutable = field.field_info.extra.get("mutable")
+        
+    def __setattr__(self, name, value): 
+        if name in self.__fields__:
+            is_mutable = self.__fields__[name].field_info.extra.get("mutable")
             if is_mutable is not None and is_mutable is False:
-                field.field_info.const = True
-                field.default = self.__dict__[key]
-                field.populate_validators()
+                raise ValueError(f"Cannot modify immutable fields: {name}")
+        super().__setattr__(name, value)
+
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
