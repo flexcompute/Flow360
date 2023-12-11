@@ -1,0 +1,255 @@
+{
+  "title": "_TurbulenceModelSolvers",
+  "type": "object",
+  "properties": {
+    "solver": {
+      "title": "Solver",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TurbulenceModelSolverSA"
+        },
+        {
+          "$ref": "#/definitions/TurbulenceModelSolverSST"
+        }
+      ]
+    }
+  },
+  "required": [
+    "solver"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "LinearSolver": {
+      "title": "Linear solver",
+      "type": "object",
+      "properties": {
+        "maxIterations": {
+          "title": "Max iterations",
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "absoluteTolerance": {
+          "title": "Absolute tolerance",
+          "default": 1e-10,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relative tolerance",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TurbulenceModelConstants": {
+      "title": "Turbulence model constants",
+      "type": "object",
+      "properties": {
+        "C_DES": {
+          "title": "C_des",
+          "type": "number"
+        },
+        "C_d": {
+          "title": "C_d",
+          "type": "number"
+        },
+        "C_DES1": {
+          "title": "C_des1",
+          "type": "number"
+        },
+        "C_DES2": {
+          "title": "C_des2",
+          "type": "number"
+        },
+        "C_d1": {
+          "title": "C_d1",
+          "type": "number"
+        },
+        "C_d2": {
+          "title": "C_d2",
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TurbulenceModelSolverSA": {
+      "title": "Turbulence model solver sa",
+      "type": "object",
+      "properties": {
+        "absoluteTolerance": {
+          "title": "Absolute tolerance",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relative tolerance",
+          "type": "number"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "SpalartAllmaras",
+          "const": "SpalartAllmaras",
+          "enum": [
+            "SpalartAllmaras"
+          ],
+          "type": "string"
+        },
+        "CFLMultiplier": {
+          "title": "Cfl multiplier",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "linearSolver": {
+          "title": "Linear solver",
+          "default": {
+            "max_iterations": 50,
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": null
+          },
+          "$ref": "#/definitions/LinearSolver"
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force jac update physical steps",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
+        },
+        "DDES": {
+          "title": "Ddes",
+          "type": "boolean"
+        },
+        "gridSizeForLES": {
+          "title": "Grid size for les",
+          "enum": [
+            "maxEdgeLength",
+            "meanEdgeLength"
+          ],
+          "type": "string"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "type": "boolean"
+        },
+        "reconstructionGradientLimiter": {
+          "title": "Reconstruction gradient limiter",
+          "minimum": 0,
+          "maximum": 2,
+          "type": "number"
+        },
+        "modelConstants": {
+          "$ref": "#/definitions/TurbulenceModelConstants"
+        },
+        "rotationCorrection": {
+          "title": "Rotation correction",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TurbulenceModelSolverSST": {
+      "title": "Turbulence model solver sst",
+      "type": "object",
+      "properties": {
+        "absoluteTolerance": {
+          "title": "Absolute tolerance",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relative tolerance",
+          "type": "number"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "kOmegaSST",
+          "const": "kOmegaSST",
+          "enum": [
+            "kOmegaSST"
+          ],
+          "type": "string"
+        },
+        "CFLMultiplier": {
+          "title": "Cfl multiplier",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "linearSolver": {
+          "title": "Linear solver",
+          "default": {
+            "max_iterations": 50,
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": null
+          },
+          "$ref": "#/definitions/LinearSolver"
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force jac update physical steps",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
+        },
+        "DDES": {
+          "title": "Ddes",
+          "type": "boolean"
+        },
+        "gridSizeForLES": {
+          "title": "Grid size for les",
+          "enum": [
+            "maxEdgeLength",
+            "meanEdgeLength"
+          ],
+          "type": "string"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "type": "boolean"
+        },
+        "reconstructionGradientLimiter": {
+          "title": "Reconstruction gradient limiter",
+          "minimum": 0,
+          "maximum": 2,
+          "type": "number"
+        },
+        "modelConstants": {
+          "$ref": "#/definitions/TurbulenceModelConstants"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

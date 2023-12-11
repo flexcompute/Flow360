@@ -16,15 +16,22 @@ from flow360 import (
     Flow360Params,
     FluidDynamicsVolumeZone,
     Geometry,
+    IsoSurfaceOutput,
     SliceOutput,
+    Slices,
     SlidingInterface,
     SurfaceOutput,
     TimeStepping,
     VolumeOutput,
-    VolumeZones, Slices,
+    VolumeZones,
 )
-from flow360.component.flow360_params.flow360_fields import CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, \
-    SliceFieldNames
+from flow360.component.flow360_params.flow360_fields import (
+    CommonFieldNames,
+    SliceFieldNames,
+    SurfaceFieldNames,
+    VolumeFieldNames,
+    get_field_values,
+)
 from flow360.component.flow360_params.flow360_output import Slice
 from flow360.component.flow360_params.flow360_params import (
     FluidPropertyTypes,
@@ -36,13 +43,18 @@ from flow360.component.flow360_params.solvers import (
     LinearIterationsRandomizer,
     LinearSolver,
     NavierStokesSolver,
+    NoneSolver,
     PressureCorrectionSolver,
     TransitionModelSolver,
     TurbulenceModelSolver,
     TurbulenceModelSolverSA,
-    TurbulenceModelSolverTypes, NoneSolver,
+    TurbulenceModelSolverTypes,
 )
-from flow360.component.flow360_params.unit_system import DimensionedType, unit_system_manager, UnitSystem
+from flow360.component.flow360_params.unit_system import (
+    DimensionedType,
+    UnitSystem,
+    unit_system_manager,
+)
 from flow360.component.types import (
     Coordinate,
     NonNegativeInt,
@@ -114,6 +126,7 @@ class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
     residual_heat_solver: Optional[bool] = pd.Field(alias="residualHeatSolver")
 
 
+# pylint: disable=too-many-ancestors
 class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SurfaceOutputLegacy` class"""
 
@@ -137,13 +150,16 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(
             self,
             exclude=[],
-            allowed=CommonFieldNames + SurfaceFieldNames)
+            allowed=get_field_values(CommonFieldNames) + get_field_values(SurfaceFieldNames),
+        )
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
-            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
-            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+                "frequencyTimeAverage": self.animation_frequency_time_average,
+                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            },
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
@@ -154,6 +170,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
 
 
 class SliceNamedLegacy(Flow360BaseModel):
+    """:class:`SliceNamedLegacy` class"""
     slice_name: str = pd.Field(alias="sliceName")
     slice_normal: Coordinate = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
@@ -170,24 +187,29 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
 
     def update_model(self) -> Flow360BaseModel:
         fields = _get_output_fields(
-            self,
-            [],
-            allowed=CommonFieldNames + SliceFieldNames)
+            self, [], allowed=get_field_values(CommonFieldNames) + get_field_values(SliceFieldNames)
+        )
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+            },
             "outputFormat": self.output_format,
             "outputFields": fields,
         }
 
-        if isinstance(self.slices, List) and len(self.slices) > 0 and isinstance(self.slices[0], SliceNamedLegacy):
+        if (
+            isinstance(self.slices, List)
+            and len(self.slices) > 0
+            and isinstance(self.slices[0], SliceNamedLegacy)
+        ):
             slices = {}
             for named_slice in self.slices:
                 slices[named_slice.slice_name] = Slice(
                     slice_normal=named_slice.slice_normal,
                     slice_origin=named_slice.slice_origin,
-                    output_fields=named_slice.output_fields
+                    output_fields=named_slice.output_fields,
                 )
             model["slices"] = Slices(**slices)
         elif isinstance(self.slices, Slices):
@@ -196,6 +218,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         return SliceOutput.parse_obj(model)
 
 
+# pylint: disable=too-many-ancestors
 class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     """:class:`VolumeOutputLegacy` class"""
 
@@ -214,13 +237,16 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         fields = _get_output_fields(
             self,
             exclude=["write_single_file", "write_distributed_file"],
-            allowed=CommonFieldNames + VolumeFieldNames)
+            allowed=get_field_values(CommonFieldNames) + get_field_values(VolumeFieldNames),
+        )
 
         model = {
-            "animationFrequency": self.animation_frequency,
-            "animationFrequencyOffset": self.animation_frequency_offset,
-            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
-            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+                "frequencyTimeAverage": self.animation_frequency_time_average,
+                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
+            },
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
@@ -228,6 +254,22 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         }
 
         return VolumeOutput.parse_obj(model)
+
+
+class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
+    """:class:`IsoSurfaceOutputLegacy` class"""
+
+    def update_model(self):
+        model = {
+            "animationSettings": {
+                "frequency": self.animation_frequency,
+                "frequencyOffset": self.animation_frequency_offset,
+            },
+            "outputFormat": self.output_format,
+            "isoSurfaces": self.iso_surfaces,
+        }
+
+        return IsoSurfaceOutput.parse_obj(model)
 
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
@@ -422,7 +464,7 @@ class BETDiskLegacy(BETDisk, LegacyModel):
             "chords": self.chords,
             "sectionalPolars": self.sectional_polars,
             "sectionalRadiuses": self.sectional_radiuses,
-            "omega": self.omega
+            "omega": self.omega,
         }
 
         return BETDisk.parse_obj(model)
@@ -486,7 +528,10 @@ class FreestreamLegacy(LegacyModel):
                 # pylint: disable=no-member
                 velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
                 _try_set(model["freestream"], "velocity", velocity)
-            elif self.comments.get("speedOfSoundMeterPerSecond") is not None and self.Mach is not None:
+            elif (
+                self.comments.get("speedOfSoundMeterPerSecond") is not None
+                and self.Mach is not None
+            ):
                 # pylint: disable=no-member
                 velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
                 _try_set(model["freestream"], "velocity", velocity)
@@ -494,15 +539,15 @@ class FreestreamLegacy(LegacyModel):
         if model["freestream"].get("velocity"):
             # Set velocity_ref
             if (
-                    self.comments.get("speedOfSoundMeterPerSecond") is not None
-                    and self.Mach_Ref is not None
+                self.comments.get("speedOfSoundMeterPerSecond") is not None
+                and self.Mach_Ref is not None
             ):
                 velocity_ref = (
                     # pylint: disable=no-member
-                        self.comments["speedOfSoundMeterPerSecond"]
-                        * self.Mach_Ref
-                        * u.m
-                        / u.s
+                    self.comments["speedOfSoundMeterPerSecond"]
+                    * self.Mach_Ref
+                    * u.m
+                    / u.s
                 )
                 _try_set(model["freestream"], "velocityRef", velocity_ref)
             else:
@@ -532,7 +577,7 @@ class FreestreamLegacy(LegacyModel):
 
         if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
-            density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m ** 3
+            density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             _try_set(model["fluid"], "density", density)
         else:
             return None
@@ -556,9 +601,9 @@ class TimeSteppingLegacy(TimeStepping, LegacyModel):
         }
 
         if (
-                model["timeStepSize"] != "inf"
-                and self.comments is not None
-                and self.comments.get("timeStepSizeInSeconds") is not None
+            model["timeStepSize"] != "inf"
+            and self.comments is not None
+            and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             _try_add_unit(model, "timeStepSize", step_unit)
@@ -623,6 +668,7 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
     surface_output: Optional[SurfaceOutputLegacy] = pd.Field(alias="surfaceOutput")
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
+    iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
 
     def _populate_fields(self, model: Flow360Params):
         model.geometry = _try_update(self.geometry)
@@ -650,7 +696,7 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
         model.surface_output = _try_update(self.surface_output)
         model.volume_output = _try_update(self.volume_output)
         model.slice_output = _try_update(self.slice_output)
-        model.iso_surface_output = self.iso_surface_output
+        model.iso_surface_output = _try_update(self.iso_surface_output)
         model.monitor_output = self.monitor_output
 
         if self.sliding_interfaces is not None:

@@ -47,7 +47,7 @@ def test_mesh_sliding_interface():
 
 
 def test_sliding_interface():
-    with pytest.raises(ConfigError):
+    with pytest.raises(ValueError):
         si = SlidingInterface(
             center=(0, 0, 0),
             axis=(0, 0, 1),

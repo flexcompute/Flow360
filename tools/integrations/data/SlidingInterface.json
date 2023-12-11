@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "centerOfRotation": {
-      "title": "Centerofrotation",
+      "title": "Center of rotation",
       "type": "array",
       "minItems": 3,
       "maxItems": 3,
@@ -20,26 +20,26 @@
       ]
     },
     "axisOfRotation": {
-      "title": "Axisofrotation",
+      "title": "Axis of rotation",
       "type": "array",
       "items": {}
     },
     "stationaryPatches": {
-      "title": "Stationarypatches",
+      "title": "Stationary patches",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
     "rotatingPatches": {
-      "title": "Rotatingpatches",
+      "title": "Rotating patches",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
     "volumeName": {
-      "title": "Volumename",
+      "title": "Volume name",
       "anyOf": [
         {
           "type": "string"
@@ -62,31 +62,31 @@
       ]
     },
     "parentVolumeName": {
-      "title": "Parentvolumename",
+      "title": "Parent volume name",
       "type": "string"
     },
     "interfaceName": {
-      "title": "Interfacename",
+      "title": "Interface name",
       "type": "string"
     },
     "thetaRadians": {
-      "title": "Thetaradians",
+      "title": "Theta radians",
       "type": "string"
     },
     "thetaDegrees": {
-      "title": "Thetadegrees",
+      "title": "Theta degrees",
       "type": "string"
     },
     "omegaRadians": {
-      "title": "Omegaradians",
+      "title": "Omega radians",
       "type": "number"
     },
     "omegaDegrees": {
-      "title": "Omegadegrees",
+      "title": "Omega degrees",
       "type": "number"
     },
     "isDynamic": {
-      "title": "Isdynamic",
+      "title": "Is dynamic",
       "type": "boolean"
     }
   },

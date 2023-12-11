@@ -27,10 +27,20 @@ from ...exceptions import ConfigError, Flow360NotImplementedError, ValidationErr
 from ...log import log
 from ...user_config import UserConfig
 from ..constants import constants
-from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, PositiveInt, Vector
+from ..types import (
+    Axis,
+    Coordinate,
+    NonNegativeFloat,
+    PositiveFloat,
+    PositiveInt,
+    Vector,
+)
 from ..utils import _get_value_or_none, beta_feature
 from .conversions import ExtraDimensionedProperty
 from .flow360_output import (
+    AeroacousticOutput,
+    AnimationSettings,
+    AnimationSettingsExtended,
     IsoSurfaceOutput,
     IsoSurfaces,
     MonitorOutput,
@@ -177,13 +187,19 @@ class SupersonicInflow(Boundary):
 
     Parameters
     ----------
-    Density : PositiveFloat
-        Fluid density (non-dimensional). Default freestream fluid density in Flow360 is 1.0.
+    totalTemperatureRatio : PositiveFloat
+        Ratio of total temperature to static temperature at the inlet.
 
-    Velocity: Tuple[float, float, float]
-        Fluid velocity (non-dimensional), normalized to Mach number.
-    Pressure: PositiveFloat
-        Fluid pressure (non-dimensional). Default freestream fluid pressure in Flow360 = 1.0/gamma = 1.0/1.4.
+    totalPressureRatio: PositiveFloat
+        Ratio of the total pressure to static pressure at the inlet.
+
+    staticPressureRatio: PositiveFloat
+        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
+        Flow360 = 1.0/gamma.
+
+    velocityDirection: BoundaryVelocityType
+        (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
+        of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
 
     Returns
     -------
@@ -192,61 +208,66 @@ class SupersonicInflow(Boundary):
 
     Example
     -------
-    >>> supersonicInflow = SupersonifInflow(density=1.0, velocity=[2.5, 0.1, 0], pressure=0.7) # doctest: +SKIP
+    >>> supersonicInflow = SupersonifInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
     """
 
     type = pd.Field("SupersonicInflow", const=True)
-    density: PositiveFloat = pd.Field(alias="Density")
-    velocity: BoundaryVelocityType = pd.Field(alias="Velocity")
-    pressure: PositiveFloat = pd.Field(alias="Pressure")
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
+    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
+    velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
 
 class SlidingInterfaceBoundary(Boundary):
-    """SlidingInterface boundary"""
+    """:class: `SlidingInterface` boundary"""
 
     type = pd.Field("SlidingInterface", const=True)
 
 
 class WallFunction(Boundary):
-    """WallFunction boundary"""
+    """:class: `WallFunction` boundary"""
 
     type = pd.Field("WallFunction", const=True)
 
 
 class MassInflow(Boundary):
-    """MassInflow boundary"""
+    """:class: `MassInflow` boundary"""
 
     type = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
 class MassOutflow(Boundary):
-    """MassOutflow boundary"""
+    """:class: `MassOutflow` boundary"""
 
     type = pd.Field("MassOutflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
 class SolidIsothermalWall(Boundary):
-    """SolidIsothermalWall boundary"""
+    """:class: `SolidIsothermalWall` boundary"""
 
     type = pd.Field("SolidIsothermalWall", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
 
 
 class SolidAdiabaticWall(Boundary):
-    """SolidAdiabaticWall boundary"""
+    """:class: `SolidAdiabaticWall` boundary"""
 
     type = pd.Field("SolidAdiabaticWall", const=True)
 
 
 class TranslationallyPeriodic(Boundary):
+    """:class: `TranslationallyPeriodic` boundary"""
+
     type = pd.Field("TranslationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     translation_vector: Optional[Vector] = pd.Field(alias="pairedPatchName")
 
 
 class RotationallyPeriodic(Boundary):
+    """:class: `RotationallyPeriodic` boundary"""
+
     type = pd.Field("RotationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     axis_of_rotation: Optional[Vector] = pd.Field(alias="axisOfRotation")
@@ -269,7 +290,7 @@ BoundaryType = Union[
     SolidIsothermalWall,
     SolidAdiabaticWall,
     TranslationallyPeriodic,
-    RotationallyPeriodic
+    RotationallyPeriodic,
 ]
 
 
@@ -316,7 +337,7 @@ class ForcePerArea(Flow360BaseModel):
             values.get("circumferential"),
         )
         if len(radius) != len(thrust) or len(radius) != len(circumferential):
-            raise ValidationError(
+            raise ValueError(
                 f"length of radius, thrust, circumferential must be the same, \
                 but got: len(radius)={len(radius)}, \
                          len(thrust)={len(thrust)}, \
@@ -598,7 +619,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr]
+    T_solid: Union[PositiveFloat, StrictStr] = pd.Field()
 
 
 class HeatTransferVolumeZone(VolumeZoneBase):
@@ -803,71 +824,6 @@ class ReferenceFrame(Flow360BaseModel):
         return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
-# class OldReferenceFrame(Flow360BaseModel):
-#     """:class:`ReferenceFrame` class for setting up reference frame
-
-#     Parameters
-#     ----------
-#     center : Coordinate
-#         Coordinate representing the origin of rotation, eg. (0, 0, 0)
-
-#     axis : Axis
-#         Axis of rotation, eg. (0, 0, 1)
-
-#     parent_volume_name : str, optional
-#         Name of the volume zone that the rotating reference frame is contained in, used to compute the acceleration in
-#         the nested rotating reference frame
-
-#     theta_radians : str, optional
-#         Expression for rotation angle (in radians) as a function of time
-
-#     theta_degrees : str, optional
-#         Expression for rotation angle (in degrees) as a function of time
-
-#     omega_radians
-#         Nondimensional rotating speed, radians/nondim-unit-time
-
-#     omega_degrees
-#         Nondimensional rotating speed, degrees/nondim-unit-time
-
-#     is_dynamic
-#         Whether rotation of this interface is dictated by userDefinedDynamics
-
-
-#     Returns
-#     -------
-#     :class:`ReferenceFrame`
-#         An instance of the component class ReferenceFrame.
-
-#     Example
-#     -------
-#     >>> rf = ReferenceFrame(
-#             center=(0, 0, 0),
-#             axis=(0, 0, 1),
-#             omega_radians=1
-#         )
-#     """
-
-#     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
-#     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
-#     omega_radians: Optional[float] = pd.Field(alias="omegaRadians")
-#     omega_degrees: Optional[float] = pd.Field(alias="omegaDegrees")
-#     center: Coordinate = pd.Field(alias="centerOfRotation")
-#     axis: Axis = pd.Field(alias="axisOfRotation")
-#     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
-#     is_dynamic: Optional[bool] = pd.Field(alias="isDynamic")
-
-#     # pylint: disable=missing-class-docstring,too-few-public-methods
-#     class Config(Flow360BaseModel.Config):
-#         require_one_of = [
-#             "omega_radians",
-#             "omega_degrees",
-#             "theta_radians",
-#             "theta_degrees",
-#             "is_dynamic",
-#         ]
-
-
 class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
@@ -941,42 +897,9 @@ class VolumeZones(Flow360SortableBaseModel):
         return super().to_solver(params, **kwargs)
 
 
-class AeroacousticOutput(Flow360BaseModel):
-    """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
-
-    Parameters
-    ----------
-    observers : List[Coordinate]
-        List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
-        file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
-        the simulation domain.
-    animation_frequency: Union[PositiveInt, Literal[-1]], optional
-        Frame frequency in the animation
-    animation_frequency_offset: int, optional
-        Animation frequency offset
-
-    Returns
-    -------
-    :class:`AeroacousticOutput`
-        An instance of the component class AeroacousticOutput.
-
-    Example
-    -------
-    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
-    """
-
-    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency"
-    )
-    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
-    patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
-    observers: List[Coordinate] = pd.Field()
-    write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
-
-
 class Geometry(Flow360BaseModel):
     """
-    Geometry component
+    :class: Geometry component
     """
 
     ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
@@ -1002,7 +925,7 @@ class Geometry(Flow360BaseModel):
 
 class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     """
-    Freestream component
+    :class: Freestream component
     """
 
     alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0)
@@ -1013,6 +936,9 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
 
 
 class FreestreamFromMach(FreestreamBase):
+    """
+    :class: Freestream component using Mach numbers
+    """
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -1027,6 +953,9 @@ class FreestreamFromMach(FreestreamBase):
 
 
 class FreestreamFromMachReynolds(FreestreamBase):
+    """
+    :class: Freestream component using Mach and Reynolds numbers
+    """
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     Reynolds: PositiveFloat = pd.Field()
@@ -1041,6 +970,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
 
 
 class ZeroFreestream(FreestreamBase):
+    """
+    :class: Zero velocity freestream component
+    """
     Mach: Literal[0] = pd.Field(0, const=True)
     Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -1055,6 +987,9 @@ class ZeroFreestream(FreestreamBase):
 
 
 class FreestreamFromVelocity(FreestreamBase):
+    """
+    :class: Freestream component using dimensioned velocity
+    """
     velocity: VelocityType.Positive = pd.Field()
     velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef")
 
@@ -1092,6 +1027,9 @@ class FreestreamFromVelocity(FreestreamBase):
 
 
 class ZeroFreestreamFromVelocity(FreestreamBase):
+    """
+    :class: Zero velocity freestream component using dimensioned velocity
+    """
     velocity: Literal[0] = pd.Field(0, const=True)
     velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef")
 
@@ -1131,110 +1069,6 @@ FreestreamTypes = Union[
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
 ]
-
-
-# class OldFreestream(Flow360BaseModel):
-#     """
-#     Freestream component
-#     """
-
-#     Reynolds: Optional[PositiveFloat] = pd.Field()
-#     Mach: Optional[NonNegativeFloat] = pd.Field()
-#     MachRef: Optional[PositiveFloat] = pd.Field()
-#     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-#     temperature: PositiveFloat = pd.Field(alias="Temperature")
-#     density: Optional[PositiveFloat]
-#     speed: Optional[Union[Velocity, PositiveFloat]]
-#     alpha: Optional[float] = pd.Field(alias="alphaAngle")
-#     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-#     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
-#         alias="turbulentViscosityRatio"
-#     )
-
-#     @pd.validator("speed", pre=True, always=True)
-#     def validate_speed(cls, v):
-#         """speed validator"""
-#         if isinstance(v, tuple):
-#             return Velocity(v=v[0], unit=v[1])
-#         return v
-
-#     def get_C_inf(self):
-#         """returns speed of sound based on model's temperature"""
-#         return self._speed_of_sound_from_temperature(self.temperature)
-
-#     @classmethod
-#     def _speed_of_sound_from_temperature(cls, T: float):
-#         """calculates speed of sound"""
-#         return math.sqrt(1.4 * constants.R * T)
-
-#     # pylint: disable=invalid-name
-#     def _mach_from_speed(self, speed):
-#         if speed:
-#             C_inf = self.get_C_inf()
-#             if isinstance(self.speed, Velocity):
-#                 self.Mach = self.speed.v / C_inf
-#             else:
-#                 self.Mach = self.speed / C_inf
-
-#     @classmethod
-#     def from_speed(
-#         cls,
-#         speed: Union[Velocity, PositiveFloat] = None,
-#         temperature: PositiveFloat = 288.15,
-#         density: PositiveFloat = 1.225,
-#         **kwargs,
-#     ) -> Freestream:
-#         """class: `Freestream`
-
-#         Parameters
-#         ----------
-#         speed : Union[Velocity, PositiveFloat]
-#             Value for freestream speed, e.g., (100.0, 'm/s'). If no unit provided, meters per second is assumed.
-#         temperature : PositiveFloat, optional
-#             temeperature, by default 288.15
-#         density : PositiveFloat, optional
-#             density, by default 1.225
-
-#         Returns
-#         -------
-#         :class: `Freestream`
-#             returns Freestream object
-
-#         Example
-#         -------
-#         >>> fs = Freestream.from_speed(speed=(10, "m/s"))
-#         """
-#         assert speed
-#         fs = cls(temperature=temperature, speed=speed, density=density, **kwargs)
-#         fs._mach_from_speed(fs.speed)
-#         return fs
-
-#     @export_to_flow360
-#     def to_flow360_json(self, return_json: bool = True, mesh_unit_length=None):
-#         """
-#         returns flow360 formatted json
-#         """
-#         if self.Reynolds is None and self.mu_ref is None:
-#             if self.density is None:
-#                 raise ConfigError("density is required.")
-#             viscosity = 1.458e-6 * pow(self.temperature, 1.5) / (self.temperature + 110.4)
-#             self.mu_ref = (
-#                 viscosity
-#                 / (self.density * self.get_C_inf())
-#                 / get_length_non_dim_unit(mesh_unit_length)
-#             )
-
-#         if self.speed:
-#             self._mach_from_speed(self.speed)
-
-#         if return_json:
-#             return self.json()
-#         return None
-
-#     # pylint: disable=missing-class-docstring,too-few-public-methods
-#     class Config(Flow360BaseModel.Config):
-#         exclude_on_flow360_export = ["speed", "density"]
-#         require_one_of = ["Mach", "speed"]
 
 
 class _FluidProperties(Flow360BaseModel):
@@ -1354,7 +1188,7 @@ class USstandardAtmosphere(Flow360BaseModel):
 
 
 # pylint: disable=no-member
-air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
+air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m ** 3)
 
 FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 

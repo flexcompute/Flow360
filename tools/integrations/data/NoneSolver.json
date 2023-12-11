@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "modelType": {
-      "title": "Modeltype",
+      "title": "Model type",
       "default": "None",
       "const": "None",
       "enum": [

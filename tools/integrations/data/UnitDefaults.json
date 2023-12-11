@@ -38,5 +38,17 @@
     "viscosity": "lbf*s/ft**2",
     "angular_velocity": "rad/s"
   },
-  "_type": "UnitDefaults"
+  "defaults_flow360": {
+    "mass": "flow360_mass_unit",
+    "length": "flow360_length_unit",
+    "time": "flow360_time_unit",
+    "temperature": "flow360_temperature_unit",
+    "velocity": "flow360_velocity_unit",
+    "area": "flow360_area_unit",
+    "force": "flow360_force_unit",
+    "pressure": "flow360_pressure_unit",
+    "density": "flow360_density_unit",
+    "viscosity": "flow360_viscosity_unit",
+    "angular_velocity": "flow360_angular_velocity_unit"
+  }
 }

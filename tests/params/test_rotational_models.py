@@ -29,7 +29,7 @@ def test_actuator_disk():
     ad = ActuatorDisk(center=(0, 0, 0), axis_thrust=(0, 0, 1), thickness=20, force_per_area=fpa)
     assert ad
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         fpa = ForcePerArea(radius=[0, 1, 3], thrust=[1, 1], circumferential=[1, 1])
 
     to_file_from_file_test(ad)

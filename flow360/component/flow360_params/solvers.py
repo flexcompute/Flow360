@@ -167,22 +167,15 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         0, alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(
-        2, alias="orderOfAccuracy"
-    )
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(2, alias="orderOfAccuracy")
     numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
         1, alias="numericalDissipationFactor"
     )
     linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=30, absolute_tolerance=None),
-        alias="linearSolver"
+        LinearSolver(max_iterations=30, absolute_tolerance=None), alias="linearSolver"
     )
-    limit_velocity: Optional[bool] = pd.Field(
-        False, alias="limitVelocity"
-    )
-    limit_pressure_density: Optional[bool] = pd.Field(
-        False, alias="limitPressureDensity"
-    )
+    limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
+    limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
     @classmethod
     def _get_field_order(cls) -> List[str]:

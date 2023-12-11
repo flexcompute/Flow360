@@ -70,7 +70,7 @@ class BETDiskSectionalPolar(Flow360BaseModel):
 class BETDisk(Flow360BaseModel):
     """:class:`BETDisk` class"""
 
-    rotation_direction_rule: Optional[Union[Literal["leftHand", "rightHand"]]] = pd.Field(
+    rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = pd.Field(
         alias="rotationDirectionRule", displayed="Rotation direction"
     )
     center_of_rotation: Coordinate = pd.Field(

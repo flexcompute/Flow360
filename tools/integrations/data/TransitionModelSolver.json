@@ -3,16 +3,16 @@
   "type": "object",
   "properties": {
     "absoluteTolerance": {
-      "title": "Absolutetolerance",
+      "title": "Absolute tolerance",
       "exclusiveMinimum": 0,
       "type": "number"
     },
     "relativeTolerance": {
-      "title": "Relativetolerance",
+      "title": "Relative tolerance",
       "type": "number"
     },
     "modelType": {
-      "title": "Modeltype",
+      "title": "Model type",
       "default": "AmplificationFactorTransport",
       "const": "AmplificationFactorTransport",
       "enum": [
@@ -20,36 +20,32 @@
       ],
       "type": "string"
     },
-    "linearSolverConfig": {
-      "title": "Linearsolverconfig",
+    "linearSolver": {
+      "title": "Linear solver",
       "default": {
         "max_iterations": 50,
         "absolute_tolerance": 1e-10,
         "relative_tolerance": null
       },
-      "allOf": [
-        {
-          "$ref": "#/definitions/LinearSolver"
-        }
-      ]
+      "$ref": "#/definitions/LinearSolver"
     },
     "updateJacobianFrequency": {
-      "title": "Updatejacobianfrequency",
+      "title": "Update jacobian frequency",
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "equationEvalFrequency": {
-      "title": "Equationevalfrequency",
+      "title": "Equation eval frequency",
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "maxForceJacUpdatePhysicalSteps": {
-      "title": "Maxforcejacupdatephysicalsteps",
+      "title": "Max force jac update physical steps",
       "minimum": 0,
       "type": "integer"
     },
     "orderOfAccuracy": {
-      "title": "Orderofaccuracy",
+      "title": "Order of accuracy",
       "enum": [
         1,
         2
@@ -57,7 +53,7 @@
       "type": "integer"
     },
     "turbulenceIntensityPercent": {
-      "title": "Turbulenceintensitypercent",
+      "title": "Turbulence intensity percent",
       "exclusiveMinimum": 0,
       "type": "number"
     },
@@ -70,23 +66,23 @@
   "additionalProperties": false,
   "definitions": {
     "LinearSolver": {
-      "title": "LinearSolver",
+      "title": "Linear solver",
       "type": "object",
       "properties": {
         "maxIterations": {
-          "title": "Maxiterations",
+          "title": "Max iterations",
           "default": 50,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "absoluteTolerance": {
-          "title": "Absolutetolerance",
+          "title": "Absolute tolerance",
           "default": 1e-10,
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "relativeTolerance": {
-          "title": "Relativetolerance",
+          "title": "Relative tolerance",
           "type": "number"
         }
       },

@@ -45,7 +45,7 @@ class Flow360ConfigurationError(Flow360Error):
     field: List[str]
     dependency: List[str]
 
-    def __init__(self, message: str = None,field: List[str] = None, dependency: List[str] = None):
+    def __init__(self, message: str = None, field: List[str] = None, dependency: List[str] = None):
         super().__init__(message)
         self.msg = message
         self.field = field

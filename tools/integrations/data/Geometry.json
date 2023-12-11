@@ -3,61 +3,73 @@
   "type": "object",
   "properties": {
     "refArea": {
-      "title": "Refarea",
-      "value": {
-        "type": "number"
-      },
-      "units": {
-        "type": "string",
-        "dimension": "area",
-        "enum": [
-          "m**2",
-          "cm**2",
-          "ft**2"
-        ]
+      "title": "Ref area",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "units": {
+          "type": "string",
+          "dimension": "area",
+          "enum": [
+            "m**2",
+            "cm**2",
+            "ft**2",
+            "flow360_area_unit"
+          ]
+        }
       }
     },
     "momentCenter": {
-      "title": "Momentcenter",
-      "value": {
-        "type": "array",
-        "items": {
-          "type": "number",
-          "minItems": 3,
-          "maxItems": 3
+      "title": "Moment center",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "units": {
+          "type": "string"
         }
-      },
-      "units": {
-        "type": "string"
       }
     },
     "momentLength": {
-      "title": "Momentlength",
-      "value": {
-        "type": "array",
-        "items": {
-          "type": "number",
-          "minItems": 3,
-          "maxItems": 3
+      "title": "Moment length",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "units": {
+          "type": "string"
         }
-      },
-      "units": {
-        "type": "string"
       }
     },
     "meshUnit": {
-      "title": "Meshunit",
-      "value": {
-        "type": "number"
-      },
-      "units": {
-        "type": "string",
-        "dimension": "length",
-        "enum": [
-          "m",
-          "cm",
-          "ft"
-        ]
+      "title": "Mesh unit",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
+        }
       }
     }
   },

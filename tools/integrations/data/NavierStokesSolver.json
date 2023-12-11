@@ -3,12 +3,12 @@
   "type": "object",
   "properties": {
     "absoluteTolerance": {
-      "title": "Absolutetolerance",
+      "title": "Absolute tolerance",
       "exclusiveMinimum": 0,
       "type": "number"
     },
     "relativeTolerance": {
-      "title": "Relativetolerance",
+      "title": "Relative tolerance",
       "type": "number"
     },
     "CFLMultiplier": {
@@ -33,7 +33,7 @@
       "type": "integer"
     },
     "equationEvalFrequency": {
-      "title": "Equation evaluation frequency",
+      "title": "Equation eval frequency",
       "exclusiveMinimum": 0,
       "type": "integer"
     },
@@ -50,18 +50,14 @@
       ],
       "type": "integer"
     },
-    "linearSolverConfig": {
-      "title": "Linear solver config",
+    "linearSolver": {
+      "title": "Linear solver",
       "default": {
         "max_iterations": 50,
         "absolute_tolerance": 1e-10,
         "relative_tolerance": null
       },
-      "allOf": [
-        {
-          "$ref": "#/definitions/LinearSolver"
-        }
-      ]
+      "$ref": "#/definitions/LinearSolver"
     },
     "limitVelocity": {
       "title": "Limit velocity",
@@ -70,28 +66,34 @@
     "limitPressureDensity": {
       "title": "Limit pressure density",
       "type": "boolean"
+    },
+    "numericalDissipationFactor": {
+      "title": "Numerical dissipation factor",
+      "minimum": 0.01,
+      "maximum": 1,
+      "type": "number"
     }
   },
   "additionalProperties": false,
   "definitions": {
     "LinearSolver": {
-      "title": "LinearSolver",
+      "title": "Linear solver",
       "type": "object",
       "properties": {
         "maxIterations": {
-          "title": "Maxiterations",
+          "title": "Max iterations",
           "default": 50,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "absoluteTolerance": {
-          "title": "Absolutetolerance",
+          "title": "Absolute tolerance",
           "default": 1e-10,
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "relativeTolerance": {
-          "title": "Relativetolerance",
+          "title": "Relative tolerance",
           "type": "number"
         }
       },

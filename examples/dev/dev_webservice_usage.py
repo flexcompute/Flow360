@@ -1,8 +1,7 @@
+import json
 import os
 import re
-import json
 
-import flow360
 from flow360.services import get_default_fork
 
 # Webservice examples
