@@ -1,4 +1,5 @@
 {
+    "version": "0.2.0b16",
     "geometry": {
         "refArea": {
             "units": "m**2",
@@ -120,5 +121,6 @@
                 ]
             }
         }
-    }
+    },
+    "hash": "3bc357f0032849255fa4ef5f52932d74486ee3417383ba32f80ab8a1ac345a93"
 }

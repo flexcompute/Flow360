@@ -1,4 +1,5 @@
 {
+    "version": "0.2.0b16",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -122,6 +123,7 @@
                 ]
             }
         }
-    }
+    },
+    "hash": "cc1717d2c8defc19adbcf400a6272f930fc29dbc9717e75884575dd41c5f608f"
 }
    

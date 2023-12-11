@@ -45,3 +45,11 @@ def submit_warning(class_name):
     return f"\
 WARNING: You have not submitted your {class_name} to cloud. \
 It will not be processed. Please run .submit() after .create()"
+
+
+do_not_modify_file_manually="""\
+The file was manually edited. It is recommended to not edit config files manually but to use:
+>>> params = Flow360Params(filename)
+>>> # edit your params here
+>>> params.to_file(filename)
+"""

@@ -946,6 +946,14 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
 flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
+
+class SIUnitSystem(UnitSystem):
+
+    def system_repr(self):
+        return 'SI'
+
+
+SI_unit_system = SIUnitSystem(base_system=BaseSystemType.SI)
 SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
 CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
 imperial_unit_system = UnitSystem(base_system=BaseSystemType.IMPERIAL)

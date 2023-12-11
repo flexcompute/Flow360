@@ -46,6 +46,8 @@ from .flow360_output import (
     Surfaces,
     VolumeOutput,
 )
+# from .updater import update
+from ...version import __version__
 from .flow360_temp import BETDisk, InitialConditions, PorousMedium, UserDefinedDynamic
 from .params_base import (
     DeprecatedAlias,
@@ -84,6 +86,7 @@ from .unit_system import (
 )
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
+BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]
 
 
 # pylint: disable=invalid-name
@@ -179,17 +182,17 @@ class SupersonicInflow(Boundary):
 
     Parameters
     ----------
-    totalTemperatureRatio : PositiveFloat
+    total_temperature_ratio : PositiveFloat
         Ratio of total temperature to static temperature at the inlet.
 
-    totalPressureRatio: PositiveFloat
+    total_pressure_ratio: PositiveFloat
         Ratio of the total pressure to static pressure at the inlet.
 
-    staticPressureRatio: PositiveFloat
+    static_pressure_ratio: PositiveFloat
         Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
         Flow360 = 1.0/gamma.
 
-    velocityDirection: BoundaryVelocityType
+    velocity_direction: BoundaryAxisType
         (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
         of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
 
@@ -204,10 +207,10 @@ class SupersonicInflow(Boundary):
     """
 
     type = pd.Field("SupersonicInflow", const=True)
-    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
-    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
-    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
-    velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio", supported_solver_version='release-23.3.2.0gt')
+    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio", supported_solver_version='release-23.3.2.0gt')
+    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio", supported_solver_version='release-23.3.2.0gt')
+    velocity_direction: Optional[BoundaryAxisType] = pd.Field(alias="velocityDirection", supported_solver_version='release-23.3.2.0gt')
 
 
 class SlidingInterfaceBoundary(Boundary):
@@ -1297,7 +1300,7 @@ class USstandardAtmosphere(Flow360BaseModel):
 
     def __init__(self):
         super().__init__()
-        raise NotImplementedError("USstandardAtmosphere not implemented yet.")
+        raise Flow360NotImplementedError("USstandardAtmosphere not implemented yet.")
 
     def to_fluid_properties(self) -> _FluidProperties:
         """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
@@ -1316,7 +1319,31 @@ class Flow360Params(Flow360BaseModel):
     """
 
     # save unit system for future use, for example processing results: TODO:
-    # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current)
+    # unit_system: UnitSystem = pd.Field(alias='unitSystem', default_factory=unit_system_manager.copy_current, mutable=False)
+    version: str = pd.Field(__version__,  mutable=False)
+
+    major.minor.fix
+
+    24.1.0
+
+
+    24.2.0
+    24.3.0
+    24.4.0
+    24.5.0
+
+
+    24.1.1
+        .2
+        .4
+
+    24.1.0
+    24.1.1
+    24.1.2
+
+    24.2.0
+
+
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
     boundaries: Optional[Boundaries] = pd.Field()
@@ -1346,6 +1373,8 @@ class Flow360Params(Flow360BaseModel):
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+
+
 
     # save unit system for future use, for example processing results: TODO:
     # validator: what if context is different than what is provided to the constructor (should it be ignored?)
@@ -1395,20 +1424,44 @@ class Flow360Params(Flow360BaseModel):
     #         return unit_system_manager.current
 
     # return save_unit_system_with_model, use_unit_system_as_context
+            
+    
 
     def __init__(self, filename: str = None, **kwargs):
-        # if filename:
-        #     obj = self.from_file(filename=filename)
-        #     init_dict = obj.dict()
-        # else:
-        #     init_dict = kwargs
-        # save_unit_system_with_model, use_unit_system_as_context = self._handle_unit_system_init(init_dict)
-
-        if unit_system_manager.current is None:
-            with UnitSystem(base_system="Flow360", verbose=False):
-                super().__init__(filename, **kwargs)
+ 
+        if filename is not None:
+            self._init_from_file(filename, **kwargs)
         else:
-            super().__init__(filename, **kwargs)
+            super().__init__(**kwargs)
+
+    def _init_from_file(self, filename, **kwargs):
+        if unit_system_manager.current is not None:
+            raise RuntimeError('When loading params from file: Flow360Params(filename), unit context must not be used.')
+
+        model_dict = self._init_handle_file(filename=filename, **kwargs)
+
+        version = model_dict.get('version')
+        if version is not None and version == __version__:
+            super().__init__(**model_dict)        
+        else:
+            self._init_with_update(model_dict)
+
+
+    def _init_with_update(self, model_dict):
+        try: 
+            super().__init__(**model_dict)
+        except Exception as err_current:
+            try:
+                pass
+                log.warning('Updater not integrated')
+                # run updater
+            except Exception as err_legacy:
+                log.error('Tried to use current params format but following errors occured:')
+                log.error(err_current)
+                log.error('Tried to use legacy params format but following errors occured:')
+                log.error(err_legacy)
+                raise ValueError('loading from file failed')
+
 
     # pylint: disable=arguments-differ
     def to_solver(self) -> Flow360Params:
@@ -1431,7 +1484,7 @@ class Flow360Params(Flow360BaseModel):
         """
 
         solver_params = self.to_solver()
-        solver_params_json = solver_params.json(encoder=flow360_json_encoder)
+        solver_params_json = solver_params.json(encoder=flow360_json_encoder, exclude=['version', 'unit_system'])
         return solver_params_json
 
     def append(self, params: Flow360Params, overwrite: bool = False):
@@ -1442,6 +1495,7 @@ class Flow360Params(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["runControl", "testControl"]
+        include_hash: bool = True
 
 
 class Flow360MeshParams(Flow360BaseModel):
