@@ -292,6 +292,10 @@ class Flow360BaseModel(BaseModel):
         return []
 
     @classmethod
+    def _get_optional_objects(cls) -> List[str]:
+        return []
+
+    @classmethod
     def _fix_single_allof(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
@@ -307,7 +311,9 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _camel_to_space(cls, name):
+    def _camel_to_space(cls, name: str):
+        if len(name) > 0 and name[0] == "_":
+            name = name[1:]
         name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
         name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
         name = name.capitalize()
@@ -367,6 +373,39 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
+    def _transform_optional_field(cls, model: dict, key: str):
+        field = model["properties"].pop(key)
+        if field is not None:
+            ref = field.get("$ref")
+            if ref is None:
+                log.warning("Trying to apply optional field transform to a non-ref field")
+
+            toggle_name = f"_add{key[0].upper() + key[1:]}"
+
+            model["properties"][toggle_name] = {
+                "title": toggle_name[1:],
+                "type": "boolean",
+                "default": False,
+            }
+
+            if model.get("dependencies") is None:
+                model["dependencies"] = {}
+
+            model["dependencies"][toggle_name] = {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            toggle_name: {"default": True, "const": True, "type": "boolean"},
+                            key: {"$ref": ref},
+                        },
+                        "additionalProperties": False,
+                    },
+                    {"additionalProperties": False},
+                ]
+            }
+
+    @classmethod
     def _clean_schema(cls, schema):
         cls._remove_key_from_nested_dict(schema, "description")
         cls._remove_key_from_nested_dict(schema, "_type")
@@ -378,6 +417,9 @@ class Flow360BaseModel(BaseModel):
         schema = cls.schema()
         cls._clean_schema(schema)
         cls._fix_single_allof(schema)
+        optional = cls._get_optional_objects()
+        for item in optional:
+            cls._transform_optional_field(schema, item)
         cls._format_titles(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
         return schema

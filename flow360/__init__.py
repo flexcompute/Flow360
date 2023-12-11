@@ -16,6 +16,8 @@ from .component.flow360_params.flow360_params import (
     ActuatorDisk,
     AdaptiveCFL,
     AeroacousticOutput,
+    AirDensityTemperature,
+    AirPressureTemperature,
     AnimationSettings,
     AnimationSettingsExtended,
     BETDisk,

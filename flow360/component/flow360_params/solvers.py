@@ -179,6 +179,10 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     def _get_field_order(cls) -> List[str]:
         return ["*", "linearSolver"]
 
+    @classmethod
+    def _get_optional_objects(cls) -> List[str]:
+        return ["linearSolver"]
+
 
 class TurbulenceModelConstants(Flow360BaseModel):
     """:class:`TurbulenceModelConstants` class"""
