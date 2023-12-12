@@ -585,7 +585,7 @@ class TimeStepping(Flow360BaseModel):
     """
 
     physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
-    max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
+    max_pseudo_steps: Optional[pd.conint(gt=0, le=100000)] = pd.Field(alias="maxPseudoSteps")
     time_step_size: Optional[Union[Literal["inf"], TimeType.Positive]] = pd.Field(
         alias="timeStepSize", default="inf"
     )
@@ -602,6 +602,17 @@ class TimeStepping(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         require_unit_system_context = True
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
+
+    @pd.root_validator
+    def check_physical_steps_for_steady(cls, values):
+        time_step_size = values.get("time_step_size")
+        physical_steps = values.get("physical_steps")
+        if time_step_size is None or time_step_size == "inf":
+            if physical_steps is not None and physical_steps > 1:
+                raise ValueError(
+                    "timeStepping/physicalSteps must be equal to 1 for steady simulation."
+                )
+        return values
 
 
 class _GenericBoundaryWrapper(Flow360BaseModel):
@@ -1345,22 +1356,28 @@ class BETDisk(Flow360BaseModel):
         alias="centerOfRotation", displayed="Center of rotation"
     )
     axis_of_rotation: Axis = pd.Field(alias="axisOfRotation", displayed="Axis of rotation")
-    number_of_blades: PositiveInt = pd.Field(alias="numberOfBlades", displayed="Number of blades")
-    radius: PositiveFloat = pd.Field()
-    omega: float = pd.Field()
-    chord_ref: PositiveFloat = pd.Field(alias="chordRef", displayed="Reference chord")
-    thickness: PositiveFloat = pd.Field(alias="thickness")
-    n_loading_nodes: PositiveInt = pd.Field(alias="nLoadingNodes", displayed="Loading nodes")
-    blade_line_chord: Optional[PositiveFloat] = pd.Field(
+    number_of_blades: pd.conint(strict=True, gt=0, le=10) = pd.Field(
+        alias="numberOfBlades", displayed="Number of blades"
+    )
+    radius: LengthType.Positive = pd.Field(alias="radius", displayed="Radius")
+    omega: AngularVelocityType.NonNegative = pd.Field(
+        alias="omega", displayed="Angular velocity (omega)"
+    )
+    chord_ref: LengthType.Positive = pd.Field(alias="chordRef", displayed="Reference chord")
+    thickness: LengthType.Positive = pd.Field(alias="thickness")
+    n_loading_nodes: pd.conint(strict=True, gt=0, le=1000) = pd.Field(
+        alias="nLoadingNodes", displayed="Loading nodes"
+    )
+    blade_line_chord: Optional[LengthType.NonNegative] = pd.Field(
         alias="bladeLineChord", displayed="Blade line chord"
     )
-    initial_blade_direction: Optional[Coordinate] = pd.Field(
+    initial_blade_direction: Optional[Axis] = pd.Field(
         alias="initialBladeDirection", displayed="Initial blade direction"
     )
-    tip_gap: Optional[Union[NonNegativeFloat, Literal["inf"]]] = pd.Field(
+    tip_gap: Optional[Union[LengthType.NonNegative, Literal["inf"]]] = pd.Field(
         alias="tipGap", displayed="Tip gap"
     )
-    mach_numbers: List[float] = pd.Field(alias="MachNumbers", displayed="Mach numbers")
+    mach_numbers: List[NonNegativeFloat] = pd.Field(alias="MachNumbers", displayed="Mach numbers")
     reynolds_numbers: List[PositiveFloat] = pd.Field(
         alias="ReynoldsNumbers", displayed="Reynolds numbers"
     )
@@ -1373,6 +1390,19 @@ class BETDisk(Flow360BaseModel):
     sectional_radiuses: List[float] = pd.Field(
         alias="sectionalRadiuses", displayed="Sectional radiuses"
     )
+
+    @pd.validator("alphas")
+    def check_alphas_in_order(cls, alpha):
+        if alpha != sorted(alpha):
+            raise ValueError("BET Disk: alphas are not in increasing order")
+        return alpha
+
+    @pd.root_validator()
+    def check_number_of_sections(cls, values):
+        sectionalRadiuses = values.get("sectional_radiuses")
+        sectionalPolars = values.get("sectional_polars")
+        assert len(sectionalRadiuses) == len(sectionalPolars)
+        return values
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):
@@ -1540,6 +1570,55 @@ class Flow360Params(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["runControl", "testControl"]
+
+    @pd.root_validator
+    def check_consistency_wallFunction_and_SurfaceOutput(cls, values):
+        boundary_types = []
+        boundaries = values.get("boundaries")
+        if boundaries is not None:
+            boundary_types = boundaries.get_subtypes()
+
+        surface_output_fields_root = []
+        surface_output = values.get("surfaceOutput")
+        if surface_output is not None:
+            surface_output_fields_root = surface_output.output_fields
+        if (
+            "WallFunctionMetric" in surface_output_fields_root
+            and WallFunction not in boundary_types
+        ):
+            raise ValueError(
+                "'WallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary types."
+            )
+        ## todo: check outputFields inside slices section
+        return values
+
+    # todo:
+    # @pd.root_validator
+    # def check_consistency_ddes_steady(cls, values):
+
+    @pd.root_validator
+    def check_consistency_DDES_volumeOutput(cls, values):
+        turbulence_model_solver = values.get("turbulence_model_solver")
+        model_type = None
+        run_DDES = False
+        if turbulence_model_solver is not None:
+            model_type = turbulence_model_solver.model_type
+            run_DDES = turbulence_model_solver.DDES
+
+        volume_output = values.get("volumeOutput")
+        if volume_output is not None and volume_output.output_fields is not None:
+            output_fields = volume_output.output_fields
+            if "SpalartAllmaras_DDES" in output_fields and not (
+                model_type == "SpalartAllmaras" and run_DDES
+            ):
+                raise ValueError(
+                    "SpalartAllmaras_DDES output can only be specified with SpalartAllmaras turbulence model and DDES turned on"
+                )
+            if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_DDES):
+                raise ValueError(
+                    "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on"
+                )
+        return values
 
 
 class Flow360MeshParams(Flow360BaseModel):
