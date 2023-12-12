@@ -81,6 +81,7 @@ from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     HeatEquationSolverLegacy,
+    IncompressibleNavierStokesSolver,
     KOmegaSST,
     LinearSolver,
     NavierStokesSolver,
