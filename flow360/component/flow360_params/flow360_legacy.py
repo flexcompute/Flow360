@@ -18,12 +18,21 @@ from flow360 import (
     Geometry,
     IsoSurfaceOutput,
     SliceOutput,
+    Slices,
     SlidingInterface,
     SurfaceOutput,
     TimeStepping,
     VolumeOutput,
     VolumeZones,
 )
+from flow360.component.flow360_params.flow360_fields import (
+    CommonFieldNames,
+    SliceFieldNames,
+    SurfaceFieldNames,
+    VolumeFieldNames,
+    get_field_values,
+)
+from flow360.component.flow360_params.flow360_output import Slice
 from flow360.component.flow360_params.flow360_params import (
     FluidPropertyTypes,
     FreestreamTypes,
@@ -34,13 +43,18 @@ from flow360.component.flow360_params.solvers import (
     LinearIterationsRandomizer,
     LinearSolver,
     NavierStokesSolver,
+    NoneSolver,
     PressureCorrectionSolver,
     TransitionModelSolver,
     TurbulenceModelSolver,
     TurbulenceModelSolverSA,
     TurbulenceModelSolverTypes,
 )
-from flow360.component.flow360_params.unit_system import DimensionedType
+from flow360.component.flow360_params.unit_system import (
+    DimensionedType,
+    UnitSystem,
+    unit_system_manager,
+)
 from flow360.component.types import (
     Coordinate,
     NonNegativeInt,
@@ -75,11 +89,12 @@ def _try_update(field: Optional[LegacyModel]):
     return None
 
 
-def _get_output_fields(instance: Flow360BaseModel, exclude: list[str]):
+def _get_output_fields(instance: Flow360BaseModel, exclude: list[str], allowed: list[str] = None):
     fields = []
     for key, value in instance.__fields__.items():
         if value.type_ == bool and value.alias not in exclude and getattr(instance, key) is True:
-            fields.append(value.alias)
+            if allowed is not None and value.alias in allowed:
+                fields.append(value.alias)
     return fields
 
 
@@ -132,7 +147,11 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, [])
+        fields = _get_output_fields(
+            self,
+            exclude=[],
+            allowed=get_field_values(CommonFieldNames) + get_field_values(SurfaceFieldNames),
+        )
 
         model = {
             "animationSettings": {
@@ -150,15 +169,27 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         return SurfaceOutput.parse_obj(model)
 
 
+class SliceNamedLegacy(Flow360BaseModel):
+    """:class:`SliceNamedLegacy` class"""
+
+    slice_name: str = pd.Field(alias="sliceName")
+    slice_normal: Coordinate = pd.Field(alias="sliceNormal")
+    slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
 class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SliceOutputLegacy` class"""
 
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+    slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field()
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, [])
+        fields = _get_output_fields(
+            self, [], allowed=get_field_values(CommonFieldNames) + get_field_values(SliceFieldNames)
+        )
 
         model = {
             "animationSettings": {
@@ -167,8 +198,23 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
             },
             "outputFormat": self.output_format,
             "outputFields": fields,
-            "slices": self.slices,
         }
+
+        if (
+            isinstance(self.slices, List)
+            and len(self.slices) > 0
+            and isinstance(self.slices[0], SliceNamedLegacy)
+        ):
+            slices = {}
+            for named_slice in self.slices:
+                slices[named_slice.slice_name] = Slice(
+                    slice_normal=named_slice.slice_normal,
+                    slice_origin=named_slice.slice_origin,
+                    output_fields=named_slice.output_fields,
+                )
+            model["slices"] = Slices(**slices)
+        elif isinstance(self.slices, Slices):
+            model["slices"] = self.slices
 
         return SliceOutput.parse_obj(model)
 
@@ -189,7 +235,11 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, ["write_single_file", "write_distributed_file"])
+        fields = _get_output_fields(
+            self,
+            exclude=["write_single_file", "write_distributed_file"],
+            allowed=get_field_values(CommonFieldNames) + get_field_values(VolumeFieldNames),
+        )
 
         model = {
             "animationSettings": {
@@ -309,7 +359,6 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
                 "absoluteTolerance": self.absolute_tolerance,
                 "relativeTolerance": self.relative_tolerance,
                 "modelType": self.model_type,
-                "CFLMultiplier": self.CFL_multiplier,
                 "linearSolver": _try_update(self.linear_solver),
                 "updateJacobianFrequency": self.update_jacobian_frequency,
                 "equationEvalFrequency": self.equation_eval_frequency,
@@ -323,13 +372,15 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             }
         }
 
-        if isinstance(self, TurbulenceModelSolverSA):
-            _try_set(model, "rotationCorrection", self.rotation_correction)
+        _try_set(model, "rotationCorrection", self.rotation_correction)
 
         if self.linear_iterations is not None and model["solver"]["linearSolver"] is not None:
             model["solver"]["linearSolver"].max_iterations = self.linear_iterations
 
-        return _TurbulenceTempModel.parse_obj(model).solver
+        if self.model_type == "None":
+            return NoneSolver()
+
+        return TurbulenceModelSolverSA.parse_obj(model["solver"])
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
@@ -407,13 +458,14 @@ class BETDiskLegacy(BETDisk, LegacyModel):
             "bladeLineChord": self.blade_line_chord,
             "initialBladeDirection": self.initial_blade_direction,
             "tipGap": self.tip_gap,
-            "machNumbers": self.mach_numbers,
-            "reynoldsNumbers": self.reynolds_numbers,
+            "MachNumbers": self.mach_numbers,
+            "ReynoldsNumbers": self.reynolds_numbers,
             "alphas": self.alphas,
             "twists": self.twists,
             "chords": self.chords,
             "sectionalPolars": self.sectional_polars,
             "sectionalRadiuses": self.sectional_radiuses,
+            "omega": self.omega,
         }
 
         return BETDisk.parse_obj(model)
@@ -432,7 +484,7 @@ class GeometryLegacy(Geometry, LegacyModel):
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if self.comments.get("meshUnit") is not None:
+        if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
             model["meshUnit"] = unit
             _try_add_unit(model, "momentCenter", model["meshUnit"])
@@ -472,14 +524,18 @@ class FreestreamLegacy(LegacyModel):
         }
 
         # Set velocity
-        if self.comments.get("freestreamMeterPerSecond") is not None:
-            # pylint: disable=no-member
-            velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
-            _try_set(model["freestream"], "velocity", velocity)
-        elif self.comments.get("speedOfSoundMeterPerSecond") is not None and self.Mach is not None:
-            # pylint: disable=no-member
-            velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
-            _try_set(model["freestream"], "velocity", velocity)
+        if self.comments is not None:
+            if self.comments.get("freestreamMeterPerSecond") is not None:
+                # pylint: disable=no-member
+                velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
+                _try_set(model["freestream"], "velocity", velocity)
+            elif (
+                self.comments.get("speedOfSoundMeterPerSecond") is not None
+                and self.Mach is not None
+            ):
+                # pylint: disable=no-member
+                velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
+                _try_set(model["freestream"], "velocity", velocity)
 
         if model["freestream"].get("velocity"):
             # Set velocity_ref
@@ -520,7 +576,7 @@ class FreestreamLegacy(LegacyModel):
         # pylint: disable=no-member
         _try_set(model["fluid"], "temperature", self.temperature * u.K)
 
-        if self.comments.get("densityKgPerCubicMeter"):
+        if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             _try_set(model["fluid"], "density", density)
@@ -547,6 +603,7 @@ class TimeSteppingLegacy(TimeStepping, LegacyModel):
 
         if (
             model["timeStepSize"] != "inf"
+            and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
@@ -581,7 +638,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         _try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         _try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
-        if self.comments.get("rpm") is not None:
+        if self.comments is not None and self.comments.get("rpm") is not None:
             # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             _try_set(model["referenceFrame"], "omega", omega)
@@ -614,8 +671,7 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
 
-    def update_model(self) -> Flow360BaseModel:
-        model = Flow360Params()
+    def _populate_fields(self, model: Flow360Params):
         model.geometry = _try_update(self.geometry)
         model.boundaries = self.boundaries
         model.initial_condition = self.initial_condition
@@ -654,3 +710,11 @@ class Flow360ParamsLegacy(Flow360Params, LegacyModel):
         model.aeroacoustic_output = self.aeroacoustic_output
 
         return model
+
+    def update_model(self) -> Flow360BaseModel:
+        model = Flow360Params()
+        if unit_system_manager.current is None:
+            with UnitSystem(base_system="Flow360", verbose=False):
+                return self._populate_fields(model)
+        else:
+            return self._populate_fields(model)

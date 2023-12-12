@@ -78,9 +78,13 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
 ]
 
-VolumeSliceFieldNamesFull = CommonFieldNamesFull
+VolumeFieldNamesFull = CommonFieldNamesFull
 
-VolumeSliceFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
+SliceFieldNamesFull = VolumeFieldNamesFull
+
+VolumeFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
+
+SliceFieldNames = VolumeFieldNames
 
 IsoSurfaceFieldNamesFull = Literal[
     CommonFieldNamesFull,

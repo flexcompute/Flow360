@@ -76,8 +76,18 @@
       "properties": {
         "frequency": {
           "title": "Frequency",
-          "exclusiveMinimum": 0,
-          "type": "integer"
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            {
+              "enum": [
+                -1
+              ],
+              "type": "integer"
+            }
+          ]
         },
         "frequencyOffset": {
           "title": "Frequency offset",

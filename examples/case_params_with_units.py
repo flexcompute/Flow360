@@ -1,11 +1,12 @@
 import json
+from pprint import pprint
 
 import flow360 as fl
 from flow360 import log
 from flow360 import units as u
+from flow360.services import validate_flow360_params_model
 
 log.set_logging_level("DEBUG")
-
 
 with fl.SI_unit_system:
     params = fl.Flow360Params(
@@ -44,6 +45,16 @@ with fl.SI_unit_system:
         },
     )
 
+log.set_logging_level("INFO")
+
+params_copy = params.copy()
+
+params_as_dict = params_copy.dict()
+
+del params_as_dict["fluid_properties"]
+
+errors, warnings = validate_flow360_params_model(params_as_dict)
+pprint(errors)
 
 params_as_json = params.json(indent=4)
 print(params_as_json)
@@ -52,11 +63,9 @@ with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
     params_reimport = fl.Flow360Params(**json.loads(params_as_json))
     assert params_reimport.geometry.ref_area == params.geometry.ref_area
 
-
 params_solver = params.to_solver()
 params_as_json = params_solver.json(indent=4)
 print(params_as_json)
-
 
 params_as_json = params_solver.to_flow360_json()
 print(params_as_json)

@@ -1,0 +1,158 @@
+{
+	"geometry": {
+		"comments": {
+			"meshUnit": "m"
+		},
+		"refArea": 24977.47,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			89.166,
+			89.166,
+			89.166
+		]
+	},
+	"freestream": {
+		"muRef": 4.2925193198151646e-8,
+		"Mach": 0.032324989016114254,
+		"Temperature": 288.15,
+		"alphaAngle": 90,
+		"betaAngle": 0,
+		"comments": {
+			"pressure": 101325.009090375,
+			"densityKgPerCubicMeter": 1.225,
+			"speedOfSoundMeterPerSecond": 340.29400580821283,
+			"freestreamMeterPerSecond": 11,
+			"meshUnitInMeter": 1
+		},
+		"MachRef": 0.24245397683113926
+	},
+	"boundaries": {
+		"rotatingBlock-rotor/hub": {
+			"type": "NoSlipWall"
+		},
+		"rotatingBlock-rotor/blade1": {
+			"type": "NoSlipWall"
+		},
+		"rotatingBlock-rotor/blade2": {
+			"type": "NoSlipWall"
+		},
+		"rotatingBlock-rotor/blade3": {
+			"type": "NoSlipWall"
+		},
+		"stationaryBlock/farfield": {
+			"type": "Freestream"
+		},
+		"stationaryBlock/slidingInterface-rotor": {
+			"type": "SlidingInterface"
+		},
+		"rotatingBlock-rotor/slidingInterface-rotor": {
+			"type": "SlidingInterface"
+		}
+	},
+	"slidingInterfaces": [
+		{
+			"stationaryPatches": [
+				"stationaryBlock/slidingInterface-rotor"
+			],
+			"rotatingPatches": [
+				"rotatingBlock-rotor/slidingInterface-rotor"
+			],
+			"axisOfRotation": [
+				0,
+				0,
+				1
+			],
+			"centerOfRotation": [
+				0,
+				0,
+				10
+			],
+			"volumeName": "rotatingBlock-rotor",
+			"comments": {
+				"rpm": 8.836
+			},
+			"omega": 0.002719130341540039
+		}
+	],
+	"timeStepping": {
+		"CFL": {
+			"initial": 10,
+			"final": 100,
+			"rampSteps": 10
+		},
+		"comments": {
+			"timeStepSizePerDegInSeconds": 0.01886223
+		},
+		"timeStepSize": 38.512223382550118,
+		"maxPhysicalSteps": 180,
+		"maxPseudoSteps": 30
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-9,
+		"relativeTolerance": 0.01,
+		"linearIterations": 35,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 1,
+		"updateJacobianFrequency": 4,
+		"equationEvalFrequency": 1
+	},
+	"turbulenceModelSolver": {
+		"modelType": "SpalartAllmaras",
+		"rotationCorrection": false,
+		"DDES": true,
+		"absoluteTolerance": 1e-8,
+		"relativeTolerance": 0.01,
+		"linearIterations": 25,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 1,
+		"updateJacobianFrequency": 4,
+		"equationEvalFrequency": 1
+	},
+	"volumeOutput": {		
+		"outputFormat": "tecplot",
+		"animationFrequency": -1,
+		"startAverageIntegrationStep": 0,
+		"computeTimeAverages": false,
+		"primitiveVars": true,
+		"vorticity": true,
+		"residualNavierStokes": true,
+		"residualTurbulence": true,
+		"residualTransition": false,
+		"solutionTurbulence": true,
+		"solutionTransition": false,
+		"T": true,
+		"s": true,
+		"Cp": true,
+		"mut": true,
+		"nuHat": true,
+		"kOmega": false,
+		"mutRatio": true,
+		"Mach": true,
+		"VelocityRelative": true,
+		"qcriterion": true,
+		"gradW": true,
+		"wallDistance": true,
+		"wallDistanceDir": true,
+		"betMetrics": false
+	},
+	"surfaceOutput": {
+		"outputFormat": "tecplot",
+		"animationFrequency": -1,
+		"primitiveVars": true,
+		"Cp": true,
+		"Cf": true,
+		"CfTangent": true,
+		"CfNormal": true,
+		"CfVec": true,
+		"heatFlux": true,
+		"yPlus": true,
+		"wallDistance": true,
+		"Mach": true,
+		"nodeForcesPerUnitArea": true,
+		"residualSA": true
+	}
+}

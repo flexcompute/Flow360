@@ -6,17 +6,11 @@
       "title": "Ref area",
       "properties": {
         "value": {
-          "type": "number"
+          "type": "number",
+          "exclusiveMinimum": 0
         },
         "units": {
-          "type": "string",
-          "dimension": "area",
-          "enum": [
-            "m**2",
-            "cm**2",
-            "ft**2",
-            "flow360_area_unit"
-          ]
+          "type": "string"
         }
       }
     },

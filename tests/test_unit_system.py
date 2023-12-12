@@ -12,6 +12,7 @@ from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
+    BaseSystemType,
     DensityType,
     ForceType,
     LengthType,

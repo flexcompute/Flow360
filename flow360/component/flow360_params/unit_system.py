@@ -803,7 +803,7 @@ class UnitSystem(pd.BaseModel):
 
         missing = set(self._dim_names) - set(units.keys())
 
-        super().__init__(**units)
+        super().__init__(**units, base_system=base_system)
 
         if len(missing) > 0:
             raise ValueError(
