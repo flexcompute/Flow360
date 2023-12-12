@@ -29,7 +29,9 @@
           "MassInflow",
           "MassOutflow",
           "SolidIsothermalWall",
-          "SolidAdiabaticWall"
+          "SolidAdiabaticWall",
+          "TranslationallyPeriodic",
+          "RotationallyPeriodic"
         ],
         "default": ""
       }
@@ -306,6 +308,42 @@
                 "title": "Ramp steps",
                 "exclusiveMinimum": 0,
                 "type": "integer"
+              },
+              "velocityDirection": {
+                "title": "Velocity direction",
+                "anyOf": [
+                  {
+                    "properties": {
+                      "value": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "units": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                ]
               }
             },
             "required": [
@@ -516,6 +554,58 @@
               "name": {
                 "title": "Name",
                 "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "title": "TranslationallyPeriodic",
+            "type": "object",
+            "properties": {
+              "type": {
+                "title": "Type",
+                "default": "TranslationallyPeriodic",
+                "const": "TranslationallyPeriodic",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "pairedPatchName": {
+                "title": "Paired patch name",
+                "type": "array",
+                "items": {}
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "title": "RotationallyPeriodic",
+            "type": "object",
+            "properties": {
+              "type": {
+                "title": "Type",
+                "default": "RotationallyPeriodic",
+                "const": "RotationallyPeriodic",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "pairedPatchName": {
+                "title": "Paired patch name",
+                "type": "string"
+              },
+              "axisOfRotation": {
+                "title": "Axis of rotation",
+                "type": "array",
+                "items": {}
+              },
+              "thetaRadians": {
+                "title": "Theta radians",
+                "type": "number"
               }
             },
             "additionalProperties": false

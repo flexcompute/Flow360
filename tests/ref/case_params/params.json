@@ -4,6 +4,14 @@
             "units": "m**2",
             "value": 1.15315084119231
         },
+        "momentCenter": {
+            "units": "m",
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
         "momentLength": {
             "units": "m",
             "value": [
@@ -35,12 +43,21 @@
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
         "linearIterations": 10,
-        "linearSolver":
-        {
-            "absoluteTolerance": 1e-10,
-            "maxIterations": 50
-        }
+        "linearSolver": {
+            "absoluteTolerance": 1.0e-10,
+            "maxIterations": 30
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
     },
     "freestream": {
         "velocity": {

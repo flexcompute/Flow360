@@ -172,7 +172,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         1, alias="numericalDissipationFactor"
     )
     linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=30, absolute_tolerance=None), alias="linearSolver"
+        LinearSolver(max_iterations=30), alias="linearSolver"
     )
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
@@ -260,7 +260,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     model_type: str = pd.Field(alias="modelType")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
     linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=20, absolute_tolerance=None), alias="linearSolver"
+        LinearSolver(max_iterations=20), alias="linearSolver"
     )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(4, alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(4, alias="equationEvalFrequency")

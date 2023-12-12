@@ -738,7 +738,6 @@ class UnitSystem(pd.BaseModel):
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
-    base_system: BaseSystemType = pd.Field()
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [

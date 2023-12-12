@@ -12,7 +12,6 @@ from flow360.component.flow360_params.flow360_params import (
     Geometry,
     TimeStepping,
 )
-from flow360.exceptions import ConfigError, ValidationError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -43,10 +42,18 @@ def test_time_stepping():
 
     assert ts.json()
 
+    with pytest.raises(pd.ValidationError):
+        params = Flow360Params(
+            geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
+            fluid_properties=fl.air,
+            freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
+            time_stepping=ts,
+        )
+
     params = Flow360Params(
-        geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
+        geometry={"meshUnit": "mm", "refArea": "m**2"},
         fluid_properties=fl.air,
-        freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
+        freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
         time_stepping=ts,
     )
 
@@ -55,12 +62,6 @@ def test_time_stepping():
     )
     to_file_from_file_test(ts)
 
-    params = Flow360Params(
-        geometry={"meshUnit": "mm", "refArea": "m**2"},
-        fluid_properties=fl.air,
-        freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
-        time_stepping=ts,
-    )
     exported_json = json.loads(params.to_flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 

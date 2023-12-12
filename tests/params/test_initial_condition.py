@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 
-from flow360.component.flow360_params.flow360_temp import (
+from flow360.component.flow360_params.flow360_params import (
     ExpressionInitialCondition,
     FreestreamInitialCondition,
 )

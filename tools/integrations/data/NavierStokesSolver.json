@@ -9,10 +9,12 @@
     },
     "relativeTolerance": {
       "title": "Relative tolerance",
+      "default": 0,
       "type": "number"
     },
     "CFLMultiplier": {
       "title": "CFL Multiplier",
+      "default": 1.0,
       "exclusiveMinimum": 0,
       "type": "number"
     },
@@ -23,55 +25,63 @@
     },
     "kappaMUSCL": {
       "title": "Kappa MUSCL",
+      "default": -1,
       "minimum": -1,
       "maximum": 1,
       "type": "number"
     },
     "updateJacobianFrequency": {
       "title": "Update Jacobian frequency",
+      "default": 4,
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "equationEvalFrequency": {
       "title": "Equation eval frequency",
+      "default": 1,
       "exclusiveMinimum": 0,
       "type": "integer"
     },
     "maxForceJacUpdatePhysicalSteps": {
       "title": "Max force JAC update physical steps",
+      "default": 0,
       "minimum": 0,
       "type": "integer"
     },
     "orderOfAccuracy": {
       "title": "Order of accuracy",
+      "default": 2,
       "enum": [
         1,
         2
       ],
       "type": "integer"
     },
+    "numericalDissipationFactor": {
+      "title": "Numerical dissipation factor",
+      "default": 1,
+      "minimum": 0.01,
+      "maximum": 1,
+      "type": "number"
+    },
     "linearSolver": {
       "title": "Linear solver",
       "default": {
-        "max_iterations": 50,
-        "absolute_tolerance": 1e-10,
+        "max_iterations": 30,
+        "absolute_tolerance": null,
         "relative_tolerance": null
       },
       "$ref": "#/definitions/LinearSolver"
     },
     "limitVelocity": {
       "title": "Limit velocity",
+      "default": false,
       "type": "boolean"
     },
     "limitPressureDensity": {
       "title": "Limit pressure density",
+      "default": false,
       "type": "boolean"
-    },
-    "numericalDissipationFactor": {
-      "title": "Numerical dissipation factor",
-      "minimum": 0.01,
-      "maximum": 1,
-      "type": "number"
     }
   },
   "additionalProperties": false,

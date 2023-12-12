@@ -171,6 +171,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
 
 class SliceNamedLegacy(Flow360BaseModel):
     """:class:`SliceNamedLegacy` class"""
+
     slice_name: str = pd.Field(alias="sliceName")
     slice_normal: Coordinate = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
