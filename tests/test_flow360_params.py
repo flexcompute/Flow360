@@ -41,6 +41,7 @@ from flow360.component.flow360_params.flow360_params import (
     VolumeZones,
     WallFunction,
 )
+from flow360.examples import OM6wing
 from flow360.exceptions import ConfigError, ValidationError
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
@@ -301,6 +302,103 @@ def test_params_with_units():
         a = json.load(fh)
     b = json.loads(params_as_json)
     assert sorted(a.items()) == sorted(b.items())
+
+
+def test_params_with_units_consistency():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=1,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            fluid_properties=fl.air,
+            freestream=fl.FreestreamFromVelocity(velocity=286),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            )
+        )
+
+        with pytest.raises(ValueError):
+            params.unit_system = fl.CGS_unit_system
+
+    with fl.CGS_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=1,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            fluid_properties=fl.air,
+            freestream=fl.FreestreamFromVelocity(velocity=286),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            )
+        )
+
+    params_as_json = params.json()
+
+    with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
+        with pytest.raises(RuntimeError):
+            params_reimport = fl.Flow360Params(**json.loads(params_as_json))
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_reimport = fl.Flow360Params(**json.loads(params_as_json))
+
+    with fl.SI_unit_system:
+        with pytest.raises(RuntimeError):
+            params_copy = params_reimport.copy()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy = params_reimport.copy()
+
+    # should raise RuntimeError error from no context
+    with pytest.raises(RuntimeError):
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=u.m ** 2,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            freestream=fl.FreestreamFromVelocity(velocity=286 * u.m / u.s),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            )
+        )
+
+    with pytest.raises(RuntimeError):
+        with fl.CGS_unit_system:
+            fl.Flow360Params(OM6wing.case_json)
+
+    # should NOT raise RuntimeError error from NOT using context on file import
+    fl.Flow360Params(OM6wing.case_json)
+
+    with fl.SI_unit_system:
+        with pytest.raises(RuntimeError):
+            params_copy.to_solver()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy.to_solver()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
+    params_copy.to_solver()
+
+    with fl.SI_unit_system:
+        with pytest.raises(RuntimeError):
+            params_copy.to_flow360_json()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy.to_flow360_json()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
+    params_copy.to_flow360_json()
 
 
 @pytest.mark.usefixtures("array_equality_override")
