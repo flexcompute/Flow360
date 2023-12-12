@@ -6,7 +6,6 @@ Flow360 solver parameters
 # pylint: disable=unused-import
 from __future__ import annotations
 
-import math
 from abc import ABCMeta
 from typing import (
     Callable,
