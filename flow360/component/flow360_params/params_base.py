@@ -373,12 +373,14 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _transform_optional_field(cls, model: dict, key: str):
+    def _generate_schema_for_optional_objects(cls, model: dict, key: str):
         field = model["properties"].pop(key)
         if field is not None:
             ref = field.get("$ref")
             if ref is None:
-                log.warning("Trying to apply optional field transform to a non-ref field")
+                raise RuntimeError(
+                    f"Trying to apply optional field transform to a non-ref field {key}"
+                )
 
             toggle_name = f"_add{key[0].upper() + key[1:]}"
 
@@ -387,6 +389,11 @@ class Flow360BaseModel(BaseModel):
                 "type": "boolean",
                 "default": False,
             }
+
+            displayed = field.get("displayed")
+
+            if displayed is not None:
+                model["properties"][toggle_name]["displayed"] = displayed
 
             if model.get("dependencies") is None:
                 model["dependencies"] = {}
@@ -417,9 +424,9 @@ class Flow360BaseModel(BaseModel):
         schema = cls.schema()
         cls._clean_schema(schema)
         cls._fix_single_allof(schema)
-        optional = cls._get_optional_objects()
-        for item in optional:
-            cls._transform_optional_field(schema, item)
+        optionals = cls._get_optional_objects()
+        for item in optionals:
+            cls._generate_schema_for_optional_objects(schema, item)
         cls._format_titles(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
         return schema
@@ -936,13 +943,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             "type": "array",
             "uniqueItemProperties": ["name"],
             "items": {
-                "title": "Model Type",
-                "type": "object",
-                "properties": {
-                    "name": {"title": "Name", "type": "string", "readOnly": True},
-                    "modelType": {"title": "Type", "enum": [], "default": ""},
-                },
-                "dependencies": {"modelType": {"oneOf": []}},
+                "oneOf": [],
             },
         }
 
@@ -951,8 +952,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         for model in models:
             schema = model.flow360_schema()
             cls._clean_schema(schema)
-            root_schema["items"]["properties"]["modelType"]["enum"].append(model.__name__)
-            root_schema["items"]["dependencies"]["modelType"]["oneOf"].append(schema)
+            root_schema["items"]["oneOf"].append(schema)
 
         definitions = {}
 

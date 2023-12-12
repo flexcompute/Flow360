@@ -65,7 +65,7 @@
       "type": "number"
     },
     "_addLinearSolver": {
-      "title": "Add linear solver",
+      "title": "Add linear solver config",
       "type": "boolean",
       "default": false
     }
