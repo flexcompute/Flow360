@@ -109,5 +109,28 @@
       },
       "additionalProperties": false
     }
+  },
+  "dependencies": {
+    "_addLinearSolver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": true,
+              "const": true,
+              "type": "boolean"
+            },
+            "linearSolver": {
+              "$ref": "#/definitions/LinearSolver"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "additionalProperties": false
+        }
+      ]
+    }
   }
 }

@@ -6,7 +6,6 @@ Flow360 solver parameters
 # pylint: disable=unused-import
 from __future__ import annotations
 
-import math
 from abc import ABCMeta
 from typing import (
     Callable,
@@ -169,6 +168,32 @@ class IsothermalWall(Boundary):
         require_unit_system_context = True
 
 
+class HeatFluxWall(Boundary):
+    """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
+
+    Parameters
+    ----------
+    heatFlux : float
+        Heat flux at the wall.
+
+    velocity: BoundaryVelocityType
+        (Optional) Velocity of the wall. If not specified, the boundary is stationary.
+
+    Returns
+    -------
+    :class:`HeatFluxWall`
+        An instance of the component class HeatFluxWall.
+
+    Example
+    -------
+    >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
+    """
+
+    type = pd.Field("HeatFluxWall", const=True)
+    heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux")
+    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
+
+
 class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
@@ -254,6 +279,7 @@ class MassInflow(Boundary):
 
     type = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class MassOutflow(Boundary):
@@ -261,6 +287,7 @@ class MassOutflow(Boundary):
 
     type = pd.Field("MassOutflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
+    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class SolidIsothermalWall(Boundary):
@@ -298,6 +325,7 @@ BoundaryType = Union[
     SlipWall,
     FreestreamBoundary,
     IsothermalWall,
+    HeatFluxWall,
     SubsonicOutflowPressure,
     SubsonicOutflowMach,
     SubsonicInflow,
@@ -586,7 +614,7 @@ class Boundaries(Flow360SortableBaseModel):
     Parameters
     ----------
     <boundary_name> : BoundaryType
-        Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall,
+        Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall, HeatFluxWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
                                         SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
                                         MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall]

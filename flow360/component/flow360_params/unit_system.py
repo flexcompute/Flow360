@@ -19,21 +19,28 @@ from ...utils import classproperty
 
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
+u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
 
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
 
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
 
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
 
 
 class UnitSystemManager:
@@ -456,6 +463,13 @@ class AngularVelocityType(DimensionedType):
     dim_name = "angular_velocity"
 
 
+class HeatFluxType(DimensionedType):
+    """:class: HeatFluxType"""
+
+    dim = u.dimensions.heat_flux
+    dim_name = "heat_flux"
+
+
 def _iterable(obj):
     try:
         len(obj)
@@ -687,6 +701,13 @@ class Flow360AngularVelocityUnit(_Flow360BaseUnit):
     unit_name = "flow360_angular_velocity_unit"
 
 
+class Flow360HeatFluxUnit(_Flow360BaseUnit):
+    """:class: Flow360HeatFluxUnit"""
+
+    dimension_type = HeatFluxType
+    unit_name = "flow360_heat_flux_unit"
+
+
 def is_flow360_unit(value):
     """
     Check if the provided value represents a dimensioned quantity with units
@@ -738,6 +759,7 @@ class UnitSystem(pd.BaseModel):
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
+    heat_flux: HeatFluxType = pd.Field()
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
@@ -752,6 +774,7 @@ class UnitSystem(pd.BaseModel):
         "density",
         "viscosity",
         "angular_velocity",
+        "heat_flux",
     ]
 
     @staticmethod
@@ -805,7 +828,7 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'angular_velocity': 'rad/s'}
+        'viscosity': 'Pa*s', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
         """
 
         defaults = {}
@@ -854,6 +877,7 @@ flow360_pressure_unit = Flow360PressureUnit()
 flow360_density_unit = Flow360DensityUnit()
 flow360_viscosity_unit = Flow360ViscosityUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
+flow360_heat_flux_unit = Flow360HeatFluxUnit()
 
 
 _flow360_system = {
@@ -870,6 +894,7 @@ _flow360_system = {
         flow360_density_unit,
         flow360_viscosity_unit,
         flow360_angular_velocity_unit,
+        flow360_heat_flux_unit,
     ]
 }
 
@@ -892,6 +917,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
     base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
     base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
+    base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
     registry: Any = pd.Field(allow_mutation=False)
     conversion_system: Any = pd.Field(allow_mutation=False)
 
@@ -928,6 +954,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["pressure"] = "flow360_pressure_unit"
         conversion_system["viscosity"] = "flow360_viscosity_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
+        conversion_system["heat_flux"] = "flow360_heat_flux_unit"
         super().__init__(registry=registry, conversion_system=conversion_system)
 
     # pylint: disable=no-self-argument
