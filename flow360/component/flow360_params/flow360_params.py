@@ -62,12 +62,12 @@ from .params_base import (
 from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
+    KOmegaSST,
     LinearSolver,
     NavierStokesSolver,
     NoneSolver,
-    TransitionModelSolver,
     SpalartAllmaras,
-    KOmegaSST,
+    TransitionModelSolver,
     TurbulenceModelSolverTypes,
 )
 from .unit_system import (

@@ -6,12 +6,12 @@ import pytest
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
+    KOmegaSST,
     LinearSolver,
     NavierStokesSolver,
     NoneSolver,
-    TransitionModelSolver,
     SpalartAllmaras,
-    KOmegaSST,
+    TransitionModelSolver,
 )
 from tests.utils import compare_to_ref, to_file_from_file_test
 

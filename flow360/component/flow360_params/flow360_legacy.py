@@ -45,9 +45,9 @@ from flow360.component.flow360_params.solvers import (
     NavierStokesSolver,
     NoneSolver,
     PressureCorrectionSolver,
+    SpalartAllmaras,
     TransitionModelSolver,
     TurbulenceModelSolver,
-    SpalartAllmaras,
     TurbulenceModelSolverTypes,
 )
 from flow360.component.flow360_params.unit_system import (
