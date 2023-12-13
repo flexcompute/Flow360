@@ -330,36 +330,29 @@
               },
               "totalTemperatureRatio": {
                 "title": "Total temperature ratio",
+                "supported_solver_version": "release-23.3.2.0gt",
                 "exclusiveMinimum": 0,
                 "type": "number"
               },
               "totalPressureRatio": {
                 "title": "Total pressure ratio",
+                "supported_solver_version": "release-23.3.2.0gt",
                 "exclusiveMinimum": 0,
                 "type": "number"
               },
               "staticPressureRatio": {
                 "title": "Static pressure ratio",
+                "supported_solver_version": "release-23.3.2.0gt",
                 "exclusiveMinimum": 0,
                 "type": "number"
               },
               "velocityDirection": {
                 "title": "Velocity direction",
+                "supported_solver_version": "release-23.3.2.0gt",
                 "anyOf": [
                   {
-                    "properties": {
-                      "value": {
-                        "type": "array",
-                        "items": {
-                          "type": "number",
-                          "minItems": 3,
-                          "maxItems": 3
-                        }
-                      },
-                      "units": {
-                        "type": "string"
-                      }
-                    }
+                    "type": "array",
+                    "items": {}
                   },
                   {
                     "type": "array",

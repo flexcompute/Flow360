@@ -1,5 +1,6 @@
 import pytest
 
+import flow360
 from flow360 import Case
 from flow360.exceptions import RuntimeError
 from flow360.log import Logger, log
@@ -11,9 +12,10 @@ Logger.log_to_file = False
 
 
 def test_case(mock_response):
-    case = Case(id=mock_id)
-    log.info(f"{case.info}")
-    log.info(f"{case.params.json()}")
+    with flow360.SI_unit_system:
+        case = Case(id=mock_id)
+        log.info(f"{case.info}")
+        log.info(f"{case.params.json()}")
     log.info(f"case finished: {case.is_finished()}")
     log.info(f"case parent (parent={case.info.parent_id}): {case.has_parent()}")
 

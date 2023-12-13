@@ -27,13 +27,14 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 3bc357f0032849255fa4ef5f52932d74486ee3417383ba32f80ab8a1ac345a93
+hash: a4ffb6ec1c6d5001b5281d45129a74fb1f9a9973524831ff1c376a75d72e9a70
 navierStokesSolver:
     linearIterations: 10
     linearSolver:
         absoluteTolerance: 1.0e-10
         maxIterations: 50
 sliceOutput:
+    animationSettings: {}
     outputFields:
     - Cp
     outputFormat: tecplot
@@ -61,26 +62,50 @@ sliceOutput:
             - 1.0
             - 0.0
 surfaceOutput:
+    animationSettings: {}
     outputFields:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
-    surfaces:
-        freestream:
-            outputFields:
-            - Cp
-            - Mach
-        symmetry:
-            outputFields:
-            - T
-            - heatFlux
-        wing:
-            outputFields:
-            - CfVec
 timeStepping:
     timeStepSize: inf
+unitSystem:
+    angular_velocity:
+        units: rad/s
+        value: 1.0
+    area:
+        units: m**2
+        value: 1.0
+    density:
+        units: kg/m**3
+        value: 1.0
+    force:
+        units: N
+        value: 1.0
+    length:
+        units: m
+        value: 1.0
+    mass:
+        units: kg
+        value: 1.0
+    pressure:
+        units: Pa
+        value: 1.0
+    temperature:
+        units: K
+        value: 1.0
+    time:
+        units: s
+        value: 1.0
+    velocity:
+        units: m/s
+        value: 1.0
+    viscosity:
+        units: Pa*s
+        value: 1.0
 version: 0.2.0b16
 volumeOutput:
+    animationSettings: {}
     outputFields:
     - Mach
     - primitiveVars

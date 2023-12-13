@@ -43,24 +43,26 @@ def test_time_stepping():
 
     assert ts.json()
 
-    params = Flow360Params(
-        geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
-        fluid_properties=fl.air,
-        freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
-        time_stepping=ts,
-    )
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
+            fluid_properties=fl.air,
+            freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
+            time_stepping=ts,
+        )
 
-    assertions.assertAlmostEqual(
-        json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
-    )
-    to_file_from_file_test(ts)
+        assertions.assertAlmostEqual(
+            json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
+        )
+        to_file_from_file_test(ts)
 
-    params = Flow360Params(
-        geometry={"meshUnit": "mm", "refArea": "m**2"},
-        fluid_properties=fl.air,
-        freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
-        time_stepping=ts,
-    )
+        params = Flow360Params(
+            geometry={"meshUnit": "mm", "refArea": "m**2"},
+            fluid_properties=fl.air,
+            freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
+            time_stepping=ts,
+        )
+
     exported_json = json.loads(params.to_flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 

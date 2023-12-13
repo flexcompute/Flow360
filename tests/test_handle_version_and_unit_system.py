@@ -8,8 +8,6 @@ import flow360
 from flow360 import Flow360Params
 from flow360.exceptions import RuntimeError
 
- 
-
 params_old_version = {
     "version": "0.2.0b01",
     "geometry": {
@@ -67,7 +65,6 @@ params_current_version = {
     "hash": "f097ce8e22c9a5f2b27b048aa775b74169fc13b2b60ab05c2913a8165d8c22c9"
 }
 
-
 params_no_version = {
     "geometry": {
         "refArea": {
@@ -96,17 +93,12 @@ params_no_version = {
 }
 
 
-
-
-
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
 def test_import_no_unit_system_no_context():
-
-
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
         json.dump(params_current_version, temp_file)
 
@@ -120,14 +112,11 @@ def test_import_no_unit_system_with_context():
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
         json.dump(params_current_version, temp_file)
 
-    with flow360.flow360_unit_system:
-        with pytest.raises(RuntimeError):
-            params = Flow360Params(temp_file.name)
-
+    with pytest.raises(RuntimeError):
+        params = Flow360Params(temp_file.name)
 
 
 def test_import_with_unit_system_no_context():
-
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
         json.dump(params_current_version, temp_file)
 
@@ -140,67 +129,59 @@ def test_import_with_unit_system_with_context():
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
         json.dump(params_current_version, temp_file)
 
-    with flow360.flow360_unit_system:
-        with pytest.raises(RuntimeError):
-            params = Flow360Params(temp_file.name)
+    with pytest.raises(RuntimeError):
+        params = Flow360Params(temp_file.name)
 
 
 def test_copy_no_unit_system_no_context():
     pass
 
 
-
 def test_copy_with_unit_system_no_context():
     pass
-
 
 
 def test_copy_no_unit_system_with_context():
     pass
 
 
-
 def test_copy_with_unit_system_with_context():
     pass
-
 
 
 def test_create_no_unit_system_no_context():
     pass
 
 
-
 def test_create_with_unit_system_no_context():
     pass
-
 
 
 def test_create_no_unit_system_with_context():
     pass
 
 
-
 def test_create_with_unit_system_with_context():
     pass
 
 
-
 def test_change_version():
-    params = Flow360Params(**params_current_version)
+    with flow360.SI_unit_system:
+        params = Flow360Params(**params_current_version)
     with pytest.raises(pd.ValidationError):
         params.version = 'changed'
 
 
 def test_parse_with_version():
-    params = Flow360Params(**params_current_version)
+    with flow360.SI_unit_system:
+        params = Flow360Params(**params_current_version)
     assert params.version == flow360.__version__
 
 
 def test_parse_no_version():
-    params = Flow360Params(**params_no_version)
+    with flow360.SI_unit_system:
+        params = Flow360Params(**params_no_version)
     assert params.version == flow360.__version__
-
-
 
 
 # def test_parse_wrong_version():
@@ -213,14 +194,9 @@ def test_parse_with_hash():
     pass
 
 
-
 def test_parse_no_hash():
     pass
 
 
-
 def test_parse_wrong_hash():
     pass
-
-
-

@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 import unyt
 
+import flow360
 from flow360.cloud.rest_api import RestApi
 from flow360.component.flow360_params import unit_system
 
@@ -51,6 +52,17 @@ def to_file_from_file_test(obj):
             obj.to_file(obj_filename)
             obj_read = factory.from_file(obj_filename)
             assert obj == obj_read
+            obj_read = factory(filename=obj_filename)
+            assert obj == obj_read
+
+
+def to_file_from_file_params_test(obj):
+    test_extentions = ["yaml", "json"]
+    factory = obj.__class__
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in test_extentions:
+            obj_filename = os.path.join(tmpdir, f"obj.{ext}")
+            obj.to_file(obj_filename)
             obj_read = factory(filename=obj_filename)
             assert obj == obj_read
 

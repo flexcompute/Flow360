@@ -172,7 +172,6 @@ class Flow360BaseModel(BaseModel):
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`_
     """
 
-
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._init_handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
@@ -221,14 +220,12 @@ class Flow360BaseModel(BaseModel):
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
         include_hash: bool = False
 
-        
-    def __setattr__(self, name, value): 
+    def __setattr__(self, name, value):
         if name in self.__fields__:
             is_mutable = self.__fields__[name].field_info.extra.get("mutable")
             if is_mutable is not None and is_mutable is False:
                 raise ValueError(f"Cannot modify immutable fields: {name}")
         super().__setattr__(name, value)
-
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -408,11 +405,11 @@ class Flow360BaseModel(BaseModel):
         return schema
 
     def _convert_dimensions_to_solver(
-        self,
-        params,
-        exclude: List[str] = None,
-        required_by: List[str] = None,
-        extra: List[Any] = None,
+            self,
+            params,
+            exclude: List[str] = None,
+            required_by: List[str] = None,
+            extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -447,7 +444,7 @@ class Flow360BaseModel(BaseModel):
         return solver_values
 
     def to_solver(
-        self, params, exclude: List[str] = None, required_by: List[str] = None
+            self, params, exclude: List[str] = None, required_by: List[str] = None
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimensioned value performs
@@ -558,7 +555,7 @@ class Flow360BaseModel(BaseModel):
 
         else:
             raise FileError(f"File must be .json, or .yaml, type, given {filename}")
-        
+
         model_dict = cls._init_handle_hash(model_dict)
         return model_dict
 
@@ -645,7 +642,6 @@ class Flow360BaseModel(BaseModel):
             model_dict['hash'] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4)
-
 
     @classmethod
     def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
@@ -803,7 +799,9 @@ class Flow360BaseModel(BaseModel):
                     f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
                 )
                 continue
-            self.__setattr__(key, value)
+            is_mutable = self.__fields__[key].field_info.extra.get("mutable")
+            if is_mutable is None or is_mutable is True:
+                self.__setattr__(key, value)
 
     @classmethod
     def add_type_field(cls) -> None:
