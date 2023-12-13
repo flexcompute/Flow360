@@ -293,14 +293,14 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
 
 
 class KOmegaSST(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSST` class"""
+    """:class:`KOmegaSST` class"""
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSA` class"""
+    """:class:`SpalartAllmaras` class"""
 
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
@@ -315,7 +315,7 @@ class NoneSolver(Flow360BaseModel):
     model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
 
 
-TurbulenceModelSolverTypes = Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST, NoneSolver]
+TurbulenceModelSolverTypes = Union[SpalartAllmaras, KOmegaSST, NoneSolver]
 
 
 class HeatEquationSolver(Flow360BaseModel):

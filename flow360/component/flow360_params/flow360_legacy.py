@@ -47,7 +47,7 @@ from flow360.component.flow360_params.solvers import (
     PressureCorrectionSolver,
     TransitionModelSolver,
     TurbulenceModelSolver,
-    TurbulenceModelSolverSA,
+    SpalartAllmaras,
     TurbulenceModelSolverTypes,
 )
 from flow360.component.flow360_params.unit_system import (
@@ -380,7 +380,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         if self.model_type == "None":
             return NoneSolver()
 
-        return TurbulenceModelSolverSA.parse_obj(model["solver"])
+        return SpalartAllmaras.parse_obj(model["solver"])
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):

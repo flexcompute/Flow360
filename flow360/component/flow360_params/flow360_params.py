@@ -66,8 +66,8 @@ from .solvers import (
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverSA,
-    TurbulenceModelSolverSST,
+    SpalartAllmaras,
+    KOmegaSST,
     TurbulenceModelSolverTypes,
 )
 from .unit_system import (

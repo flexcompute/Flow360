@@ -10,8 +10,8 @@ from flow360.component.flow360_params.flow360_params import (
     NavierStokesSolver,
     NoneSolver,
     TransitionModelSolver,
-    TurbulenceModelSolverSA,
-    TurbulenceModelSolverSST,
+    SpalartAllmaras,
+    KOmegaSST,
 )
 from tests.utils import compare_to_ref, to_file_from_file_test
 
@@ -61,14 +61,14 @@ def test_navier_stokes():
 
 
 def test_turbulence_solver():
-    ts = TurbulenceModelSolverSA()
+    ts = SpalartAllmaras()
     assert ts
-    ts = TurbulenceModelSolverSST()
+    ts = KOmegaSST()
     assert ts
     ts = NoneSolver()
     assert ts
 
-    ts = TurbulenceModelSolverSA(
+    ts = SpalartAllmaras(
         absolute_tolerance=1e-10,
         relative_tolerance=0,
         update_jacobian_frequency=4,
