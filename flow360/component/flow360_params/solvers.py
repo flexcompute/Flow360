@@ -189,17 +189,17 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 class TurbulenceModelConstantsSA(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSA` class"""
 
-    C_DES: Optional[float]
-    C_d: Optional[float]
+    C_DES: Optional[float] = pd.Field(0.72)
+    C_d: Optional[float] = pd.Field(8.0)
 
 
 class TurbulenceModelConstantsSST(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSST` class"""
 
-    C_DES1: Optional[float]
-    C_DES2: Optional[float]
-    C_d1: Optional[float]
-    C_d2: Optional[float]
+    C_DES1: Optional[float] = pd.Field(0.78)
+    C_DES2: Optional[float] = pd.Field(0.61)
+    C_d1: Optional[float] = pd.Field(20.0)
+    C_d2: Optional[float] = pd.Field(3.0)
 
 
 TurbulenceModelConstants = Union[TurbulenceModelConstantsSA, TurbulenceModelConstantsSST]
@@ -269,7 +269,6 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
-    model_type: str = pd.Field(alias="modelType")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
     linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20), alias="linearSolver"
@@ -290,22 +289,17 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
 
 class TurbulenceModelSolverSST(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSST` class"""
 
-    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
 
 
 class TurbulenceModelSolverSA(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSA` class"""
 
-    model_type: Literal["SpalartAllmaras"] = pd.Field(
-        "SpalartAllmaras", alias="modelType", const=True
-    )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
     model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
 
@@ -393,4 +387,4 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         alias="turbulenceIntensityPercent"
     )
-    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(alias="Ncrit")
+    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
