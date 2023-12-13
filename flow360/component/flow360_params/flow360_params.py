@@ -607,7 +607,7 @@ class TimeStepping(Flow360BaseModel):
     def check_physical_steps_for_steady(cls, values):
         time_step_size = values.get("time_step_size")
         physical_steps = values.get("physical_steps")
-        if time_step_size is None or time_step_size == "inf":
+        if time_step_size is None or str(time_step_size) == "inf":
             if physical_steps is not None and physical_steps > 1:
                 raise ValueError(
                     "timeStepping/physicalSteps must be equal to 1 for steady simulation."
