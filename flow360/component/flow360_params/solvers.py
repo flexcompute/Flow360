@@ -269,6 +269,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
+    model_type: str = pd.Field(alias="modelType")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
     linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20), alias="linearSolver"
@@ -291,15 +292,19 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     )
 
 
-class TurbulenceModelSolverSST(TurbulenceModelSolver):
+class KOmegaSST(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSST` class"""
 
+    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
 
 
-class TurbulenceModelSolverSA(TurbulenceModelSolver):
+class SpalartAllmaras(TurbulenceModelSolver):
     """:class:`TurbulenceModelSolverSA` class"""
 
+    model_type: Literal["SpalartAllmaras"] = pd.Field(
+        "SpalartAllmaras", alias="modelType", const=True
+    )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
     model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
 
