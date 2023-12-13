@@ -605,6 +605,9 @@ class TimeStepping(Flow360BaseModel):
 
     @pd.root_validator
     def check_physical_steps_for_steady(cls, values):
+        """
+        sanity check for steady simulations
+        """
         time_step_size = values.get("time_step_size")
         physical_steps = values.get("physical_steps")
         if time_step_size is None or str(time_step_size) == "inf":
@@ -1393,12 +1396,18 @@ class BETDisk(Flow360BaseModel):
 
     @pd.validator("alphas")
     def check_alphas_in_order(cls, alpha):
+        """
+        check alpha angles are listed in order
+        """
         if alpha != sorted(alpha):
             raise ValueError("BET Disk: alphas are not in increasing order")
         return alpha
 
     @pd.root_validator()
     def check_number_of_sections(cls, values):
+        """
+        check lengths of sectional radiuses and polars are equal
+        """
         sectionalRadiuses = values.get("sectional_radiuses")
         sectionalPolars = values.get("sectional_polars")
         assert len(sectionalRadiuses) == len(sectionalPolars)
@@ -1573,6 +1582,9 @@ class Flow360Params(Flow360BaseModel):
 
     @pd.root_validator
     def check_consistency_wallFunction_and_SurfaceOutput(cls, values):
+        """
+        check consistency between wall function usage and surface output
+        """
         boundary_types = []
         boundaries = values.get("boundaries")
         if boundaries is not None:
@@ -1589,15 +1601,13 @@ class Flow360Params(Flow360BaseModel):
             raise ValueError(
                 "'WallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary types."
             )
-        ## todo: check outputFields inside slices section
         return values
-
-    # todo:
-    # @pd.root_validator
-    # def check_consistency_ddes_steady(cls, values):
 
     @pd.root_validator
     def check_consistency_DDES_volumeOutput(cls, values):
+        """
+        check consistency between DDES usage and volume output
+        """
         turbulence_model_solver = values.get("turbulence_model_solver")
         model_type = None
         run_DDES = False
@@ -1612,7 +1622,8 @@ class Flow360Params(Flow360BaseModel):
                 model_type == "SpalartAllmaras" and run_DDES
             ):
                 raise ValueError(
-                    "SpalartAllmaras_DDES output can only be specified with SpalartAllmaras turbulence model and DDES turned on"
+                    "SpalartAllmaras_DDES output can only be specified with \
+                    SpalartAllmaras turbulence model and DDES turned on"
                 )
             if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_DDES):
                 raise ValueError(
