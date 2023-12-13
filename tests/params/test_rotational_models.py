@@ -2,6 +2,7 @@ import unittest
 
 import pytest
 
+import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     ActuatorDisk,
     BETDisk,
@@ -54,25 +55,26 @@ def test_bet_disk():
 
     assert polar1 and polar2 and polar3
 
-    bet = BETDisk(
-        rotation_direction_rule="leftHand",
-        center_of_rotation=(0, 0, 0),
-        axis_of_rotation=(0, 1, 0),
-        number_of_blades=4,
-        radius=0.5,
-        omega=0.75,
-        chord_ref=0.5,
-        thickness=0.5,
-        n_loading_nodes=6,
-        mach_numbers=[0.1, 0.2, 0.3, 0.4],
-        reynolds_numbers=[1e4, 1e5, 1e6, 1e7],
-        alphas=[15, 20, 25, 30],
-        twists=[twist1, twist2, twist3],
-        chords=[chord1, chord2, chord3],
-        sectional_polars=[polar1, polar2, polar3],
-        sectional_radiuses=[0, 0.5, 1],
-    )
+    with fl.SI_unit_system:
+        bet = BETDisk(
+            rotation_direction_rule="leftHand",
+            center_of_rotation=(0, 0, 0),
+            axis_of_rotation=(0, 1, 0),
+            number_of_blades=4,
+            radius=0.5,
+            omega=0.75,
+            chord_ref=0.5,
+            thickness=0.5,
+            n_loading_nodes=6,
+            mach_numbers=[0.1, 0.2, 0.3, 0.4],
+            reynolds_numbers=[1e4, 1e5, 1e6, 1e7],
+            alphas=[15, 20, 25, 30],
+            twists=[twist1, twist2, twist3],
+            chords=[chord1, chord2, chord3],
+            sectional_polars=[polar1, polar2, polar3],
+            sectional_radiuses=[0, 0.5, 1],
+        )
 
-    assert bet
+        assert bet
 
     to_file_from_file_test(bet)
