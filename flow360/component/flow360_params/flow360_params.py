@@ -603,20 +603,6 @@ class TimeStepping(Flow360BaseModel):
         require_unit_system_context = True
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
 
-    @pd.root_validator
-    def check_physical_steps_for_steady(cls, values):
-        """
-        sanity check for steady simulations
-        """
-        time_step_size = values.get("time_step_size")
-        physical_steps = values.get("physical_steps")
-        if time_step_size is None or str(time_step_size) == "inf":
-            if physical_steps is not None and physical_steps > 1:
-                raise ValueError(
-                    "timeStepping/physicalSteps must be equal to 1 for steady simulation."
-                )
-        return values
-
 
 class _GenericBoundaryWrapper(Flow360BaseModel):
     v: BoundaryType

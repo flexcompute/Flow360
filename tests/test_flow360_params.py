@@ -164,8 +164,7 @@ def test_flow360param():
 def test_flow360param1():
     params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
     assert params.time_stepping.max_pseudo_steps is None
-    with pytest.raises(pd.ValidationError):
-        params.time_stepping = TimeStepping(physical_steps=100)
+    params.time_stepping = TimeStepping(physical_steps=100)
     assert params
 
 
@@ -241,8 +240,7 @@ def test_depracated(capfd):
     expected = f'WARNING: "tolerance" is deprecated. Use "absolute_tolerance" OR "absoluteTolerance" instead'
     assert expected in clear_formatting(captured.out)
 
-    with pytest.raises(pd.ValidationError):
-        ns = fl.TimeStepping(maxPhysicalSteps=10)
+    ns = fl.TimeStepping(maxPhysicalSteps=10)
     captured = capfd.readouterr()
     expected = f'WARNING: "maxPhysicalSteps" is deprecated. Use "physical_steps" OR "physicalSteps" instead'
     assert expected in clear_formatting(captured.out)

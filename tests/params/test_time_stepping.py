@@ -65,10 +65,10 @@ def test_time_stepping():
     exported_json = json.loads(params.to_flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 
-    ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "time_step_size": 1 * u.s})
+    ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3})
     assert ts.physical_steps == 3
 
-    ts = TimeStepping.parse_obj({"physicalSteps": 2, "time_step_size": 1 * u.s})
+    ts = TimeStepping.parse_obj({"physicalSteps": 2})
     assert ts.physical_steps == 2
 
     with pytest.raises(ValueError):
