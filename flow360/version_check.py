@@ -24,9 +24,10 @@ from packaging.version import Version
 from requests import HTTPError
 
 from flow360.cloud.http_util import http
+from flow360.exceptions import Flow360RuntimeError
 
 from .environment import FLOW360_SKIP_VERSION_CHECK
-from .exceptions import WebError
+from .exceptions import Flow360WebError
 from .log import log
 from .version import __version__
 
@@ -52,12 +53,12 @@ def get_supported_server_versions() -> List[str]:
         response = http.portal_api_get("versions?appName=flow360-python-client-v2")
 
     except HTTPError as error:
-        raise WebError("failed to retrieve the versions for flow360-python-client-v2") from error
+        raise Flow360WebError("failed to retrieve the versions for flow360-python-client-v2") from error
 
     versions = [re.sub(r".+-", "", item["version"]) for item in response]
 
     if len(versions) == 0:
-        raise RuntimeError(
+        raise Flow360RuntimeError(
             "Something went wrong when checking python client version."
             + " The supported versions should not be empty for flow360-python-client-v2."
             + " If you see this message again, contact support."

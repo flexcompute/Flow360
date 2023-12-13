@@ -38,9 +38,9 @@ def show_dict_diff(dict1, dict2):
     dict2_lines = [f"{key}: {value}" for key, value in sorted(dict2.items())]
 
     diff = difflib.unified_diff(dict1_lines, dict2_lines)
-    print('diff')
-    print('\n'.join(diff))
-    print('end of diff')
+    print("diff")
+    print("\n".join(diff))
+    print("end of diff")
 
 
 def to_file_from_file_test(obj):
@@ -52,17 +52,6 @@ def to_file_from_file_test(obj):
             obj.to_file(obj_filename)
             obj_read = factory.from_file(obj_filename)
             assert obj == obj_read
-            obj_read = factory(filename=obj_filename)
-            assert obj == obj_read
-
-
-def to_file_from_file_params_test(obj):
-    test_extentions = ["yaml", "json"]
-    factory = obj.__class__
-    with tempfile.TemporaryDirectory() as tmpdir:
-        for ext in test_extentions:
-            obj_filename = os.path.join(tmpdir, f"obj.{ext}")
-            obj.to_file(obj_filename)
             obj_read = factory(filename=obj_filename)
             assert obj == obj_read
 

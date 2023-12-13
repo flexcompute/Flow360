@@ -17,7 +17,7 @@ import pydantic as pd
 from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..component.interfaces import BaseInterface
-from ..exceptions import RuntimeError as FlRuntimeError
+from ..exceptions import Flow360RuntimeError
 from ..log import LogLevel, log
 from ..user_config import UserConfig
 from .utils import is_valid_uuid, validate_type
@@ -101,7 +101,7 @@ def before_submit_only(func):
     @wraps(func)
     def wrapper(obj, *args, **kwargs):
         if obj.is_cloud_resource():
-            raise FlRuntimeError(
+            raise Flow360RuntimeError(
                 'Resource already have "id", cannot call this method. To modify and re-submit create a copy.'
             )
         return func(obj, *args, **kwargs)
@@ -186,7 +186,7 @@ class Flow360Resource(RestApi):
             validate_type(meta, "meta", self.info_type_class)
             self._info = meta
         else:
-            raise FlRuntimeError(f"Resource already have metadata {self._info}. Cannot assign.")
+            raise Flow360RuntimeError(f"Resource already have metadata {self._info}. Cannot assign.")
 
     @classmethod
     def _from_meta(cls, meta):
@@ -390,7 +390,7 @@ def is_object_cloud_resource(resource: Flow360Resource):
     """
     if resource is not None:
         if not resource.is_cloud_resource():
-            raise FlRuntimeError(error_messages.not_a_cloud_resource)
+            raise Flow360RuntimeError(error_messages.not_a_cloud_resource)
         return True
     return False
 

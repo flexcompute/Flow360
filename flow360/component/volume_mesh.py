@@ -14,10 +14,10 @@ from flow360.component.compress_upload import compress_and_upload_chunks
 
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
-from ..exceptions import CloudFileError
-from ..exceptions import FileError as FlFileError
-from ..exceptions import Flow360NotImplementedError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360CloudFileError
+from ..exceptions import Flow360FileError
+from ..exceptions import Flow360NotImplementedError, Flow360RuntimeError
+from ..exceptions import Flow360ValueError
 from ..log import log
 from ..solver_version import Flow360Version
 from .case import Case, CaseDraft
@@ -170,7 +170,7 @@ def validate_cgns(
     boundaries_in_params = set(boundaries_in_params)
 
     if not boundaries_in_file.issuperset(boundaries_in_params):
-        raise FlValueError(
+        raise Flow360ValueError(
             "The following input boundary names from mesh json are not found in mesh:"
             + f" {' '.join(boundaries_in_params - boundaries_in_file)}."
             + f" Boundary names in cgns: {' '.join(boundaries_in_file)}"
@@ -228,7 +228,7 @@ class VolumeMeshFileFormat(Enum):
             return VolumeMeshFileFormat.UGRID
         if ext == VolumeMeshFileFormat.CGNS.ext():
             return VolumeMeshFileFormat.CGNS
-        raise RuntimeError(f"Unsupported file format {file}")
+        raise Flow360RuntimeError(f"Unsupported file format {file}")
 
 
 class UGRIDEndianness(Enum):
@@ -264,7 +264,7 @@ class UGRIDEndianness(Enum):
             return UGRIDEndianness.LITTLE
         if ext == UGRIDEndianness.BIG.ext():
             return UGRIDEndianness.BIG
-        raise RuntimeError(f"Unknown endianness for file {file}")
+        raise Flow360RuntimeError(f"Unknown endianness for file {file}")
 
 
 class CompressionFormat(Enum):
@@ -371,7 +371,7 @@ class VolumeMeshDraft(ResourceDraft):
         isascii: bool = False,
     ):
         if file_name is not None and not os.path.exists(file_name):
-            raise FlFileError(f"File '{file_name}' not found.")
+            raise Flow360FileError(f"File '{file_name}' not found.")
 
         if endianess is not None:
             raise Flow360NotImplementedError(
@@ -507,7 +507,7 @@ class VolumeMeshDraft(ResourceDraft):
         """
 
         if not shared_account_confirm_proceed():
-            raise FlValueError("User aborted resource submit.")
+            raise Flow360ValueError("User aborted resource submit.")
 
         if self.file_name is not None:
             return self._submit_upload_mesh(progress_callback)
@@ -515,7 +515,7 @@ class VolumeMeshDraft(ResourceDraft):
         if self.surface_mesh_id is not None and self.name is not None and self.params is not None:
             return self._submit_from_surface()
 
-        raise FlValueError(
+        raise Flow360ValueError(
             "You must provide volume mesh file for upload or surface mesh Id with meshing parameters."
         )
 
@@ -691,11 +691,11 @@ class VolumeMesh(Flow360Resource):
             try:
                 VolumeMeshFileFormat.detect(file_name_no_compression)
                 remote_file_name = file["fileName"]
-            except RuntimeError:
+            except Flow360RuntimeError:
                 continue
 
         if remote_file_name is None:
-            raise CloudFileError(f"No volume mesh file found for id={self.id}")
+            raise Flow360CloudFileError(f"No volume mesh file found for id={self.id}")
 
         return remote_file_name
 

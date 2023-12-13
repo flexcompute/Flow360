@@ -9,7 +9,7 @@ import pydantic as pd
 
 from ..cloud.requests import MoveFolderItem, MoveToFolderRequest, NewFolderRequest
 from ..cloud.rest_api import RestApi
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360ValueError
 from ..log import log
 from .interfaces import FolderInterface
 from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
@@ -53,7 +53,7 @@ class FolderDraft(ResourceDraft):
         """
 
         if not shared_account_confirm_proceed():
-            raise FlValueError("User aborted resource submit.")
+            raise Flow360ValueError("User aborted resource submit.")
 
         req = NewFolderRequest(name=self.name, tags=self.tags)
         if self._parent_folder:

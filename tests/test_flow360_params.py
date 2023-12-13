@@ -43,9 +43,9 @@ from flow360.component.flow360_params.flow360_params import (
     WallFunction,
 )
 from flow360.examples import OM6wing
-from flow360.exceptions import ConfigError, ValidationError
+from flow360.exceptions import Flow360ConfigError, Flow360RuntimeError, Flow360ValidationError
 
-from .utils import array_equality_override, compare_to_ref, to_file_from_file_test, to_file_from_file_params_test
+from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -192,7 +192,7 @@ def test_update_from_multiple_files():
 
     assert params
 
-    to_file_from_file_params_test(params)
+    to_file_from_file_test(params)
 
     compare_to_ref(params, "ref/case_params/params.yaml")
     compare_to_ref(params, "ref/case_params/params.json", content_only=True)
@@ -293,18 +293,19 @@ def test_params_with_units():
         )
 
     compare_to_ref(params, "ref/case_params/params_units.json", content_only=True)
-    to_file_from_file_params_test(params)
     params_as_json = params.json(indent=4)
+
+    to_file_from_file_test(params)
 
     # This is not supported anymore I presume?
 
-    #with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
+    # with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
     #    params_reimport = fl.Flow360Params(**json.loads(params_as_json))
     #    assert params_reimport.geometry.ref_area == params.geometry.ref_area
 
     params_solver = params.to_solver()
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
-    to_file_from_file_params_test(params_solver)
+    to_file_from_file_test(params_solver)
 
     params_as_json = params_solver.to_flow360_json()
 
@@ -327,7 +328,7 @@ def test_params_with_units_consistency():
             freestream=fl.FreestreamFromVelocity(velocity=286),
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
-            )
+            ),
         )
 
         with pytest.raises(ValueError):
@@ -345,13 +346,13 @@ def test_params_with_units_consistency():
             freestream=fl.FreestreamFromVelocity(velocity=286),
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
-            )
+            ),
         )
 
     params_as_json = params.json()
 
     with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(Flow360RuntimeError):
             params_reimport = fl.Flow360Params(**json.loads(params_as_json))
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
@@ -359,7 +360,7 @@ def test_params_with_units_consistency():
         params_reimport = fl.Flow360Params(**json.loads(params_as_json))
 
     with fl.SI_unit_system:
-        with pytest.raises(RuntimeError):
+        with pytest.raises(Flow360RuntimeError):
             params_copy = params_reimport.copy()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
@@ -367,10 +368,10 @@ def test_params_with_units_consistency():
         params_copy = params_reimport.copy()
 
     # should raise RuntimeError error from no context
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         params = fl.Flow360Params(
             geometry=fl.Geometry(
-                ref_area=u.m ** 2,
+                ref_area=u.m**2,
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
                 moment_center=(1, 2, 3) * u.flow360_length_unit,
                 mesh_unit=u.mm,
@@ -378,11 +379,11 @@ def test_params_with_units_consistency():
             freestream=fl.FreestreamFromVelocity(velocity=286 * u.m / u.s),
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
-            )
+            ),
         )
 
     # should raise RuntimeError error from using context on file import
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         with fl.CGS_unit_system:
             fl.Flow360Params("ref/case_params/params_units.json")
 
@@ -390,7 +391,7 @@ def test_params_with_units_consistency():
     fl.Flow360Params("ref/case_params/params_units.json")
 
     with fl.SI_unit_system:
-        with pytest.raises(RuntimeError):
+        with pytest.raises(Flow360RuntimeError):
             params_copy.to_solver()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
@@ -401,7 +402,7 @@ def test_params_with_units_consistency():
     params_copy.to_solver()
 
     with fl.SI_unit_system:
-        with pytest.raises(RuntimeError):
+        with pytest.raises(Flow360RuntimeError):
             params_copy.to_flow360_json()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
@@ -424,9 +425,9 @@ def test_params_with_units_conversion():
             )
         )
 
-    to_file_from_file_params_test(params)
+    to_file_from_file_test(params)
     params = params.to_solver()
-    to_file_from_file_params_test(params)
+    to_file_from_file_test(params)
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -440,6 +441,6 @@ def test_params_with_solver_units():
             )
         )
 
-    to_file_from_file_params_test(params)
+    to_file_from_file_test(params)
     params = params.to_solver()
-    to_file_from_file_params_test(params)
+    to_file_from_file_test(params)

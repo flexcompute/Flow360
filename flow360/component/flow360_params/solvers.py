@@ -9,8 +9,8 @@ from typing import List, Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
-from .flow360_legacy import LegacyModel, _try_update, _try_set
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+from .flow360_legacy import LegacyModel, _try_set, _try_update
 from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
@@ -380,6 +380,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
 
 
 """ Legacy models for Flow360 updater, do not expose """
+
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
     """:class:`LinearSolverLegacy` class"""

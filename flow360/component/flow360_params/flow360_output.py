@@ -9,7 +9,6 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic as pd
 from pydantic import conlist
 
-from .flow360_legacy import LegacyModel, _get_output_fields
 from ..types import Coordinate, PositiveInt
 from .flow360_fields import (
     CommonFieldNames,
@@ -22,6 +21,7 @@ from .flow360_fields import (
     VolumeSliceFieldNamesFull,
     get_field_values,
 )
+from .flow360_legacy import LegacyModel, _get_output_fields
 from .params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,

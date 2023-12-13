@@ -27,7 +27,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: a4ffb6ec1c6d5001b5281d45129a74fb1f9a9973524831ff1c376a75d72e9a70
+hash: 7891743896c788b51564904d9eb2d1b7eb149841745dbbff2c0f5f4d3d7d376f
 navierStokesSolver:
     linearIterations: 10
     linearSolver:
@@ -70,39 +70,7 @@ surfaceOutput:
 timeStepping:
     timeStepSize: inf
 unitSystem:
-    angular_velocity:
-        units: rad/s
-        value: 1.0
-    area:
-        units: m**2
-        value: 1.0
-    density:
-        units: kg/m**3
-        value: 1.0
-    force:
-        units: N
-        value: 1.0
-    length:
-        units: m
-        value: 1.0
-    mass:
-        units: kg
-        value: 1.0
-    pressure:
-        units: Pa
-        value: 1.0
-    temperature:
-        units: K
-        value: 1.0
-    time:
-        units: s
-        value: 1.0
-    velocity:
-        units: m/s
-        value: 1.0
-    viscosity:
-        units: Pa*s
-        value: 1.0
+    name: SI
 version: 0.2.0b16
 volumeOutput:
     animationSettings: {}

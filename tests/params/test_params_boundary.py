@@ -22,8 +22,8 @@ from flow360.component.flow360_params.flow360_params import (
     TimeStepping,
     WallFunction,
 )
-from flow360.exceptions import ValidationError
-from tests.utils import compare_to_ref, to_file_from_file_test, to_file_from_file_params_test
+from flow360.exceptions import Flow360ValidationError
+from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -150,8 +150,8 @@ def test_case_boundary():
 
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/yaml.yaml")
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/json.json")
-    to_file_from_file_params_test(param)
-    to_file_from_file_params_test(param.boundaries)
+    to_file_from_file_test(param)
+    to_file_from_file_test(param.boundaries)
 
     SolidAdiabaticWall()
     SolidIsothermalWall(Temperature=10)

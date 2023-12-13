@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic import BaseModel, Field
 
 from ..environment import Env
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
 from .utils import _get_progress, _S3Action
@@ -317,7 +317,7 @@ class S3TransferType(Enum):
         :return:
         """
         if to_file != "." and to_folder != ".":
-            raise FlValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
+            raise Flow360ValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
 
         to_file = create_base_folder(resource_id, remote_file_name, to_file, to_folder, keep_folder)
         if os.path.exists(to_file) and not overwrite:

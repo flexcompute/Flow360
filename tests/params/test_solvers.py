@@ -2,8 +2,8 @@ import unittest
 
 import pydantic as pd
 import pytest
-import flow360 as fl
 
+import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
@@ -14,7 +14,7 @@ from flow360.component.flow360_params.flow360_params import (
     TurbulenceModelSolverSA,
     TurbulenceModelSolverSST,
 )
-from tests.utils import compare_to_ref, to_file_from_file_test, to_file_from_file_params_test
+from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -59,7 +59,7 @@ def test_navier_stokes():
             navier_stokes_solver=ns,
             freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
         )
-    to_file_from_file_params_test(p)
+    to_file_from_file_test(p)
 
 
 def test_turbulence_solver():

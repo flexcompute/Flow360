@@ -8,7 +8,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List
+from typing import Any, Collection, List, Literal, Optional
 
 import numpy as np
 import pydantic as pd
@@ -53,6 +53,7 @@ class UnitSystemManager:
         Get the current UnitSystem.
         :return: UnitSystem
         """
+
         return self._current
 
     def copy_current(self):
@@ -61,7 +62,8 @@ class UnitSystemManager:
         :return: UnitSystem
         """
         if self._current:
-            return self._current.copy(deep=True)
+            copy = self._current.copy(deep=True)
+            return copy
         return None
 
     def set_current(self, unit_system: UnitSystem):
@@ -738,6 +740,9 @@ class UnitSystem(pd.BaseModel):
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
+
+    name: Literal["Custom"] = pd.Field("Custom")
+
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
@@ -788,6 +793,10 @@ class UnitSystem(pd.BaseModel):
             )
 
         self._verbose = verbose
+
+    def __eq__(self, other):
+        equal = [getattr(self, name) == getattr(other, name) for name in self._dim_names]
+        return all(equal)
 
     def defaults(self):
         """
@@ -947,14 +956,84 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
 
-class SIUnitSystem(UnitSystem):
+class _PredefinedUnitSystem(UnitSystem):
+    mass: MassType = pd.Field(exclude=True)
+    length: LengthType = pd.Field(exclude=True)
+    time: TimeType = pd.Field(exclude=True)
+    temperature: TemperatureType = pd.Field(exclude=True)
+    velocity: VelocityType = pd.Field(exclude=True)
+    area: AreaType = pd.Field(exclude=True)
+    force: ForceType = pd.Field(exclude=True)
+    pressure: PressureType = pd.Field(exclude=True)
+    density: DensityType = pd.Field(exclude=True)
+    viscosity: ViscosityType = pd.Field(exclude=True)
+    angular_velocity: AngularVelocityType = pd.Field(exclude=True)
 
     def system_repr(self):
-        return 'SI'
+        return self.name
 
 
-SI_unit_system = SIUnitSystem(base_system=BaseSystemType.SI)
-SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
-CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
-imperial_unit_system = UnitSystem(base_system=BaseSystemType.IMPERIAL)
-flow360_unit_system = UnitSystem(base_system=BaseSystemType.FLOW360)
+class SIUnitSystem(_PredefinedUnitSystem):
+    name: Literal["SI"] = pd.Field("SI", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.SI)
+
+    @classmethod
+    def validate(cls, value):
+        return SIUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class CGSUnitSystem(_PredefinedUnitSystem):
+    name: Literal["CGS"] = pd.Field("CGS", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.CGS)
+
+    @classmethod
+    def validate(cls, value):
+        return CGSUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class ImperialUnitSystem(_PredefinedUnitSystem):
+    name: Literal["Imperial"] = pd.Field("Imperial", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.IMPERIAL)
+
+    @classmethod
+    def validate(cls, value):
+        return ImperialUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class Flow360UnitSystem(_PredefinedUnitSystem):
+    name: Literal["Flow360"] = pd.Field("Flow360", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.FLOW360)
+
+    @classmethod
+    def validate(cls, value):
+        return Flow360UnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+SI_unit_system = SIUnitSystem()
+CGS_unit_system = CGSUnitSystem()
+imperial_unit_system = ImperialUnitSystem()
+flow360_unit_system = Flow360UnitSystem()

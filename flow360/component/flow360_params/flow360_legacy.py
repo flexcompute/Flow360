@@ -8,6 +8,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
 
 import pydantic as pd
+
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import DimensionedType
 

@@ -3,6 +3,7 @@ Flow360 solver parameters
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from abc import ABCMeta, abstractmethod
@@ -16,16 +17,15 @@ import yaml
 from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
-import hashlib
 
-from ...exceptions import FileError, ValidationError
 from ...error_messages import do_not_modify_file_manually_msg
+from ...exceptions import Flow360FileError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
 from .unit_system import DimensionedType, is_flow360_unit
 
-supported_solver_version = 'release-23.3.2.0'
+supported_solver_version = "release-23.3.2.0"
 
 
 def json_dumps(value, *args, **kwargs):
@@ -52,7 +52,7 @@ def params_generic_validator(value, ExpectedParamsType):
             return None
     try:
         ExpectedParamsType(**params)
-    except ValidationError:
+    except Flow360ValidationError:
         return None
     except pd.ValidationError:
         return None
@@ -405,11 +405,11 @@ class Flow360BaseModel(BaseModel):
         return schema
 
     def _convert_dimensions_to_solver(
-            self,
-            params,
-            exclude: List[str] = None,
-            required_by: List[str] = None,
-            extra: List[Any] = None,
+        self,
+        params,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -444,7 +444,7 @@ class Flow360BaseModel(BaseModel):
         return solver_values
 
     def to_solver(
-            self, params, exclude: List[str] = None, required_by: List[str] = None
+        self, params, exclude: List[str] = None, required_by: List[str] = None
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .to_solver() recusrively. For dimensioned value performs
@@ -490,7 +490,8 @@ class Flow360BaseModel(BaseModel):
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
         kwargs.update({"deep": True})
         new_copy = BaseModel.copy(self, update=update, **kwargs)
-        return self.validate(new_copy.dict())
+        data = new_copy.dict()
+        return self.validate(data)
 
     def help(self, methods: bool = False) -> None:
         """Prints message describing the fields and methods of a :class:`Flow360BaseModel`.
@@ -507,7 +508,7 @@ class Flow360BaseModel(BaseModel):
         rich.inspect(self, methods=methods)
 
     @classmethod
-    def from_file(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def from_file(cls, filename: str) -> Flow360BaseModel:
         """Loads a :class:`Flow360BaseModel` from .json, or .yaml file.
 
         Parameters
@@ -526,8 +527,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> simulation = Simulation.from_file(filename='folder/sim.json') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_file(filename=filename)
-        return cls.parse_obj(model_dict, **parse_obj_kwargs)
+        return cls(filename=filename)
 
     @classmethod
     def dict_from_file(cls, filename: str) -> dict:
@@ -554,7 +554,7 @@ class Flow360BaseModel(BaseModel):
             model_dict = cls._dict_from_yaml(filename=filename)
 
         else:
-            raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+            raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
         model_dict = cls._init_handle_hash(model_dict)
         return model_dict
@@ -577,7 +577,7 @@ class Flow360BaseModel(BaseModel):
         if ".yaml" in filename:
             return self.to_yaml(filename=filename)
 
-        raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+        raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
     def from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
@@ -639,7 +639,7 @@ class Flow360BaseModel(BaseModel):
         json_string = self.json()
         model_dict = json.loads(json_string)
         if self.Config.include_hash:
-            model_dict['hash'] = self._calculate_hash(model_dict)
+            model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4)
 
@@ -703,7 +703,7 @@ class Flow360BaseModel(BaseModel):
         json_string = self.json()
         model_dict = json.loads(json_string)
         if self.Config.include_hash:
-            model_dict['hash'] = self._calculate_hash(model_dict)
+            model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             yaml.dump(model_dict, file_handle, indent=4)
 
@@ -768,17 +768,17 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def _init_handle_hash(cls, model_dict):
-        hash_from_input = model_dict.pop('hash', None)
+        hash_from_input = model_dict.pop("hash", None)
         if hash_from_input is not None:
             if hash_from_input != cls._calculate_hash(model_dict):
-                log.warning(do_not_modify_file_manually)
+                log.warning(do_not_modify_file_manually_msg)
         return model_dict
 
     @classmethod
     def _calculate_hash(cls, model_dict):
         hasher = hashlib.sha256()
         json_string = json.dumps(model_dict, sort_keys=True)
-        hasher.update(json_string.encode('utf-8'))
+        hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
     # pylint: disable=unnecessary-dunder-call

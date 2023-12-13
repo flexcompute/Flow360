@@ -13,7 +13,7 @@ from flow360.component.flow360_params.flow360_params import (
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
 )
-from flow360.exceptions import ConfigError
+from flow360.exceptions import Flow360ConfigError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

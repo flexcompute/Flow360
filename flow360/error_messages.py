@@ -47,7 +47,7 @@ WARNING: You have not submitted your {class_name} to cloud. \
 It will not be processed. Please run .submit() after .create()"
 
 
-do_not_modify_file_manually_msg="""\
+do_not_modify_file_manually_msg = """\
 The file was manually edited. It is recommended to not edit config files manually but to use:
 >>> params = Flow360Params(filename)
 >>> # edit your params here
@@ -55,7 +55,7 @@ The file was manually edited. It is recommended to not edit config files manuall
 """
 
 
-use_unit_system_msg="""\
+use_unit_system_msg = """\
 Params must be created with unit system context. For example:
 >>> with SI_unit_system: 
 >>>     params = Flow360Params(
@@ -70,4 +70,3 @@ Tried to construct model with {kwarg_unit_system} inside {context_unit_system} c
 It can be caused by .copy() operation inside unit system context, \
 or by providing unit system directly to the constructor.
 """
-

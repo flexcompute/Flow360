@@ -1,49 +1,6 @@
 {
     "unitSystem": {
-        "mass": {
-            "value": 1.0,
-            "units": "kg"
-        },
-        "length": {
-            "value": 1.0,
-            "units": "m"
-        },
-        "time": {
-            "value": 1.0,
-            "units": "s"
-        },
-        "temperature": {
-            "value": 1.0,
-            "units": "K"
-        },
-        "velocity": {
-            "value": 1.0,
-            "units": "m/s"
-        },
-        "area": {
-            "value": 1.0,
-            "units": "m**2"
-        },
-        "force": {
-            "value": 1.0,
-            "units": "N"
-        },
-        "pressure": {
-            "value": 1.0,
-            "units": "Pa"
-        },
-        "density": {
-            "value": 1.0,
-            "units": "kg/m**3"
-        },
-        "viscosity": {
-            "value": 1.0,
-            "units": "Pa*s"
-        },
-        "angular_velocity": {
-            "value": 1.0,
-            "units": "rad/s"
-        }
+        "name": "SI"
     },
     "version": "0.2.0b16",
     "geometry": {
@@ -151,5 +108,5 @@
             }
         }
     },
-    "hash": "a4ffb6ec1c6d5001b5281d45129a74fb1f9a9973524831ff1c376a75d72e9a70"
+    "hash": "7891743896c788b51564904d9eb2d1b7eb149841745dbbff2c0f5f4d3d7d376f"
 }

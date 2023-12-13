@@ -1,5 +1,6 @@
 import pytest
 
+import flow360
 from flow360.component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
@@ -16,11 +17,10 @@ from flow360.component.volume_mesh import (
     get_no_slip_walls,
     validate_cgns,
 )
-from flow360.exceptions import ValueError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from tests.data.volume_mesh_list import volume_mesh_list_raw
-import flow360
 
-from .utils import compare_to_ref, to_file_from_file_test, to_file_from_file_params_test
+from .utils import compare_to_ref, to_file_from_file_test
 
 
 @pytest.fixture(autouse=True)
@@ -57,7 +57,7 @@ def test_get_no_slip_walls():
             }
         )
 
-    to_file_from_file_params_test(param)
+    to_file_from_file_test(param)
     to_file_from_file_test(param.boundaries)
 
     walls = get_no_slip_walls(param)
@@ -75,8 +75,10 @@ def test_validate_cgns():
             }
         )
 
-        with pytest.raises(ValueError):
-            validate_cgns("data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0")
+        with pytest.raises(Flow360ValueError):
+            validate_cgns(
+                "data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0"
+            )
 
         param = Flow360Params(
             boundaries={
@@ -110,13 +112,13 @@ def test_mesh_filename_detection():
 
     file = "sdfdlkjd/kjsdf.cgns.ad"
     cmp, filename = CompressionFormat.detect(file)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         mesh_format = VolumeMeshFileFormat.detect(filename)
 
     file = "sdfdlkjd/kjsdf.ugrid"
     cmp, filename = CompressionFormat.detect(file)
     mesh_format = VolumeMeshFileFormat.detect(filename)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         endianess = UGRIDEndianness.detect(filename)
 
 
