@@ -24,7 +24,7 @@ from ...exceptions import Flow360FileError, Flow360RuntimeError, Flow360Validati
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
-from .unit_system import DimensionedType, is_flow360_unit, unit_system_manager
+from .unit_system import DimensionedType, is_flow360_unit
 
 SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 
@@ -174,15 +174,8 @@ class Flow360BaseModel(BaseModel):
     """
 
     def __init__(self, filename: str = None, **kwargs):
-        try:
-            model_dict = self._init_handle_file(filename=filename, **kwargs)
-            super().__init__(**model_dict)
-        except pd.ValidationError as exc:
-            if self.Config.require_unit_system_context and unit_system_manager.current is None:
-                raise exc from Flow360ValidationError(
-                    "Cannot instantiate model without a unit system context."
-                )
-            raise exc
+        model_dict = self._init_handle_file(filename=filename, **kwargs)
+        super().__init__(**model_dict)
 
     def _init_handle_file(self, filename: str = None, **kwargs):
         if filename is not None:
@@ -214,7 +207,6 @@ class Flow360BaseModel(BaseModel):
             Re-validate after re-assignment of field in model.
         """
 
-        require_unit_system_context = False
         arbitrary_types_allowed = True
         validate_all = True
         extra = "forbid"

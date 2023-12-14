@@ -11,7 +11,7 @@ from .component.flow360_params.flow360_params import (
     FreestreamFromVelocity,
     Geometry,
     NavierStokesSolver,
-    TurbulenceModelSolverSA,
+    SpalartAllmaras,
 )
 from .exceptions import Flow360ConfigurationError
 
@@ -31,7 +31,7 @@ def get_default_params(unit_system_context):
             ),
             freestream=FreestreamFromVelocity.construct(),
             navier_stokes_solver=NavierStokesSolver(),
-            turbulence_model_solver=TurbulenceModelSolverSA(),
+            turbulence_model_solver=SpalartAllmaras(),
         )
 
     return params

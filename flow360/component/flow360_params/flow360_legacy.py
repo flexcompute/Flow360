@@ -23,23 +23,27 @@ class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
         """Update the legacy model to the up-to-date version"""
 
 
-def _try_add_unit(model, key, unit: DimensionedType):
+def try_add_unit(model, key, unit: DimensionedType):
+    """Add unit to an existing updater field"""
     if model[key] is not None:
         model[key] *= unit
 
 
-def _try_set(model, key, value):
+def try_set(model, key, value):
+    """Set existing updater field if it exists in the legacy model"""
     if value is not None and model.get(key) is None:
         model[key] = value
 
 
-def _try_update(field: Optional[LegacyModel]):
+def try_update(field: Optional[LegacyModel]):
+    """Try running updater on the field if it exists"""
     if field is not None:
         return field.update_model()
     return None
 
 
-def _get_output_fields(instance: Flow360BaseModel, exclude: list[str], allowed: list[str] = None):
+def get_output_fields(instance: Flow360BaseModel, exclude, allowed=None):
+    """Retrieve all output fields of a legacy output instance"""
     fields = []
     for key, value in instance.__fields__.items():
         if value.type_ == bool and value.alias not in exclude and getattr(instance, key) is True:

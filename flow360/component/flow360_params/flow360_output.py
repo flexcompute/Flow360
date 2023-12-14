@@ -23,7 +23,7 @@ from .flow360_fields import (
     VolumeFieldNamesFull,
     get_field_values,
 )
-from .flow360_legacy import LegacyModel, _get_output_fields
+from .flow360_legacy import LegacyModel, get_output_fields
 from .params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
@@ -518,7 +518,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(
+        fields = get_output_fields(
             self,
             [],
             allowed=get_field_values(CommonFieldNames) + get_field_values(SurfaceFieldNames),
@@ -561,7 +561,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field()
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(
+        fields = get_output_fields(
             self, [], allowed=get_field_values(CommonFieldNames) + get_field_values(SliceFieldNames)
         )
 
@@ -612,7 +612,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(
+        fields = get_output_fields(
             self,
             ["write_single_file", "write_distributed_file"],
             allowed=get_field_values(CommonFieldNames) + get_field_values(VolumeFieldNames),

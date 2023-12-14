@@ -6,10 +6,10 @@
       "title": "Solver",
       "anyOf": [
         {
-          "$ref": "#/definitions/TurbulenceModelSolverSA"
+          "$ref": "#/definitions/SpalartAllmaras"
         },
         {
-          "$ref": "#/definitions/TurbulenceModelSolverSST"
+          "$ref": "#/definitions/KOmegaSST"
         },
         {
           "$ref": "#/definitions/NoneSolver"
@@ -76,7 +76,7 @@
       },
       "additionalProperties": false
     },
-    "TurbulenceModelSolverSA": {
+    "SpalartAllmaras": {
       "title": "Turbulence model solver sa",
       "type": "object",
       "properties": {
@@ -173,7 +173,7 @@
       },
       "additionalProperties": false
     },
-    "TurbulenceModelSolverSST": {
+    "KOmegaSST": {
       "title": "Turbulence model solver sst",
       "type": "object",
       "properties": {

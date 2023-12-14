@@ -10,7 +10,7 @@ import pydantic as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
-from .flow360_legacy import LegacyModel, _try_set, _try_update
+from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
@@ -187,15 +187,23 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         return ["linearSolver"]
 
 
-class TurbulenceModelConstants(Flow360BaseModel):
-    """:class:`TurbulenceModelConstants` class"""
+class TurbulenceModelConstantsSA(Flow360BaseModel):
+    """:class:`TurbulenceModelConstantsSA` class"""
 
-    C_DES: Optional[float]
-    C_d: Optional[float]
-    C_DES1: Optional[float]
-    C_DES2: Optional[float]
-    C_d1: Optional[float]
-    C_d2: Optional[float]
+    C_DES: Optional[float] = pd.Field(0.72)
+    C_d: Optional[float] = pd.Field(8.0)
+
+
+class TurbulenceModelConstantsSST(Flow360BaseModel):
+    """:class:`TurbulenceModelConstantsSST` class"""
+
+    C_DES1: Optional[float] = pd.Field(0.78)
+    C_DES2: Optional[float] = pd.Field(0.61)
+    C_d1: Optional[float] = pd.Field(20.0)
+    C_d2: Optional[float] = pd.Field(3.0)
+
+
+TurbulenceModelConstants = Union[TurbulenceModelConstantsSA, TurbulenceModelConstantsSST]
 
 
 class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
@@ -286,19 +294,21 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
 
-class TurbulenceModelSolverSST(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSST` class"""
+class KOmegaSST(TurbulenceModelSolver):
+    """:class:`KOmegaSST` class"""
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
+    model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
 
 
-class TurbulenceModelSolverSA(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSA` class"""
+class SpalartAllmaras(TurbulenceModelSolver):
+    """:class:`SpalartAllmaras` class"""
 
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
     )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
+    model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
 
 
 class NoneSolver(Flow360BaseModel):
@@ -307,7 +317,7 @@ class NoneSolver(Flow360BaseModel):
     model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
 
 
-TurbulenceModelSolverTypes = Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST, NoneSolver]
+TurbulenceModelSolverTypes = Union[SpalartAllmaras, KOmegaSST, NoneSolver]
 
 
 class HeatEquationSolver(Flow360BaseModel):
@@ -381,10 +391,10 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="maxForceJacUpdatePhysicalSteps"
     )
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    turbulence_intensity_percent: Optional[PositiveFloat] = pd.Field(
+    turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         alias="turbulenceIntensityPercent"
     )
-    N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
+    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
 
 
 # Legacy models for Flow360 updater, do not expose
@@ -413,7 +423,7 @@ class PressureCorrectionSolverLegacy(PressureCorrectionSolver, LegacyModel):
     )
 
     def update_model(self):
-        model = {"randomizer": self.randomizer, "linear_solver": _try_update(self.linear_solver)}
+        model = {"randomizer": self.randomizer, "linear_solver": try_update(self.linear_solver)}
 
         return model
 
@@ -436,7 +446,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "CFLMultiplier": self.CFL_multiplier,
-            "linearSolver": _try_update(self.linear_solver),
+            "linearSolver": try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -469,7 +479,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolver": _try_update(self.linear_solver),
+            "linearSolver": try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -481,7 +491,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "modelConstants": self.model_constants,
         }
 
-        _try_set(model, "rotationCorrection", self.rotation_correction)
+        try_set(model, "rotationCorrection", self.rotation_correction)
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
             model["linearSolver"]["max_iterations"] = self.linear_iterations
@@ -506,7 +516,7 @@ class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
     def update_model(self) -> Flow360BaseModel:
         model = {
             "absoluteTolerance": self.absolute_tolerance,
-            "linearSolver": _try_update(self.linear_solver),
+            "linearSolver": try_update(self.linear_solver),
             "equationEvalFrequency": self.equation_eval_frequency,
         }
 
@@ -531,7 +541,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolver": _try_update(self.linear_solver),
+            "linearSolver": try_update(self.linear_solver),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
