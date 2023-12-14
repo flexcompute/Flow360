@@ -1,0 +1,93 @@
+{
+	"geometry": {
+		"refArea": 1,
+		"momentCenter": [
+			0.25,
+			-0.5,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"residualNavierStokes": true,
+		"residualTurbulence": true,
+		"solutionTurbulence": true,
+		"T": true,
+		"s": true,
+		"mutRatio": true,
+		"gradW": true,
+		"wallDistance": true,
+		"wallDistanceDir": true
+	},
+	"surfaceOutput": {
+		"outputFormat": "tecplot",
+		"primitiveVars": true,
+		"Cp": true,
+		"Cf": true,
+		"CfTangent": true,
+		"CfNormal": true,
+		"CfVec": true,
+		"heatFlux": true,
+		"yPlus": true,
+		"wallDistance": true,
+		"Mach": true,
+		"nodeForcesPerUnitArea": true,
+		"residualSA": true
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-10
+	},
+	"turbulenceModelSolver": {
+		"modelType": "SpalartAllmaras",
+		"absoluteTolerance": 1e-8,
+		"rotationCorrection": true,
+		"equationEvalFrequency": 1
+	},
+	"freestream": {
+		"Reynolds": 6000000,
+		"Mach": 0.15,
+		"Temperature": 300,
+		"alphaAngle": 15,
+		"betaAngle": 0,
+		"turbulentViscosityRatio": 0.210438
+	},
+	"boundaries": {
+		"Zone/QUAD_bdy    1": {
+			"type": "SlipWall",
+			"name": "SymmLeft"
+		},
+		"Zone/QUAD_bdy    2": {
+			"type": "SlipWall",
+			"name": "SymmRight"
+		},
+		"Zone/QUAD_bdy    3": {
+			"type": "Freestream",
+			"name": "FarFldDnStrmLower"
+		},
+		"Zone/QUAD_bdy    4": {
+			"type": "Freestream",
+			"name": "FarFldDnStrmUpper"
+		},
+		"Zone/QUAD_bdy    5": {
+			"type": "NoSlipWall",
+			"name": "Airfoil"
+		},
+		"Zone/QUAD_bdy    6": {
+			"type": "Freestream",
+			"name": "FarFldUpStrm"
+		}
+	},
+	"timeStepping": {
+		"maxPseudoSteps": 100000,
+		"CFL": {
+			"initial": 5,
+			"final": 100,
+			"rampSteps": 10000
+		}
+	}
+}

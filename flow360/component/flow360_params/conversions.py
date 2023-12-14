@@ -98,16 +98,20 @@ def require(required_parameter, required_by, params):
 
     except Exception as err:
         raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameter)} is {required_msg}.'
+            message=f'{" -> ".join(required_parameter)} is {required_msg}.',
+            field=required_by,
+            dependency=required_parameter,
         ) from err
 
     if hasattr(value, "units") and str(value.units).startswith("flow360"):
         raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameter)} must be in physical units ({required_msg}).'
+            f'{" -> ".join(required_parameter)} must be in physical units ({required_msg}).',
+            field=required_by,
+            dependency=required_parameter,
         )
 
 
-# pylint: disable=too-many-locals, too-many-return-statements
+# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements
 def unit_converter(dimension, params, required_by: List[str] = None):
     """
 
@@ -180,6 +184,13 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_viscosity
 
+    def get_base_heat_flux():
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_heat_flux = base_density * base_velocity**3
+
+        return base_heat_flux
+
     if dimension == u.dimensions.length:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
@@ -211,6 +222,10 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     elif dimension == u.dimensions.viscosity:
         base_viscosity = get_base_viscosity()
         flow360_conversion_unit_system.base_viscosity = base_viscosity
+
+    elif dimension == u.dimensions.heat_flux:
+        base_heat_flux = get_base_heat_flux()
+        flow360_conversion_unit_system.base_heat_flux = base_heat_flux
     else:
         raise ValueError(f"Not recognised dimension: {dimension}")
 

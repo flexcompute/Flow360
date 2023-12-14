@@ -5,144 +5,123 @@
     "name"
   ],
   "items": {
-    "title": "Model Type",
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "readOnly": true
-      },
-      "modelType": {
-        "title": "Type",
-        "enum": [
-          "SurfaceIntegralMonitor",
-          "ProbeMonitor"
-        ],
-        "default": ""
-      }
-    },
-    "dependencies": {
-      "modelType": {
-        "oneOf": [
-          {
-            "title": "SurfaceIntegralMonitor",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "surfaceIntegral",
-                "const": "surfaceIntegral",
-                "type": "string"
-              },
-              "surfaces": {
-                "title": "Surfaces",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "outputFields": {
-                "title": "Output fields",
-                "uniqueItems": true,
-                "type": "array",
-                "items": {
-                  "enum": [
-                    "Coefficient of pressure",
-                    "Gradient of primitive solution",
-                    "k and omega",
-                    "Mach number",
-                    "Turbulent viscosity",
-                    "Turbulent viscosity and freestream dynamic viscosity ratio",
-                    "Spalart-Almaras variable",
-                    "rho, u, v, w, p (density, 3 velocities and pressure)",
-                    "Q criterion",
-                    "N-S residual",
-                    "Transition residual",
-                    "Turbulence residual",
-                    "Entropy",
-                    "N-S solution",
-                    "Transition solution",
-                    "Turbulence solution",
-                    "Temperature",
-                    "Vorticity",
-                    "Wall distance",
-                    "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
-                  ],
-                  "type": "string"
-                }
-              }
-            },
-            "additionalProperties": false
+    "oneOf": [
+      {
+        "title": "SurfaceIntegralMonitor",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "surfaceIntegral",
+            "const": "surfaceIntegral",
+            "type": "string"
           },
-          {
-            "title": "ProbeMonitor",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "probe",
-                "const": "probe",
-                "type": "string"
-              },
-              "monitorLocations": {
-                "title": "Monitor locations",
-                "type": "array",
-                "items": {
-                  "type": "array",
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "items": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                }
-              },
-              "outputFields": {
-                "title": "Output fields",
-                "uniqueItems": true,
-                "type": "array",
-                "items": {
-                  "enum": [
-                    "Coefficient of pressure",
-                    "Gradient of primitive solution",
-                    "k and omega",
-                    "Mach number",
-                    "Turbulent viscosity",
-                    "Turbulent viscosity and freestream dynamic viscosity ratio",
-                    "Spalart-Almaras variable",
-                    "rho, u, v, w, p (density, 3 velocities and pressure)",
-                    "Q criterion",
-                    "N-S residual",
-                    "Transition residual",
-                    "Turbulence residual",
-                    "Entropy",
-                    "N-S solution",
-                    "Transition solution",
-                    "Turbulence solution",
-                    "Temperature",
-                    "Vorticity",
-                    "Wall distance",
-                    "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
-                  ],
-                  "type": "string"
-                }
-              }
-            },
-            "additionalProperties": false
+          "surfaces": {
+            "title": "Surfaces",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outputFields": {
+            "title": "Output fields",
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "enum": [
+                "Coefficient of pressure",
+                "Gradient of primitive solution",
+                "k and omega",
+                "Mach number",
+                "Turbulent viscosity",
+                "Turbulent viscosity and freestream dynamic viscosity ratio",
+                "Spalart-Almaras variable",
+                "rho, u, v, w, p (density, 3 velocities and pressure)",
+                "Q criterion",
+                "N-S residual",
+                "Transition residual",
+                "Turbulence residual",
+                "Entropy",
+                "N-S solution",
+                "Transition solution",
+                "Turbulence solution",
+                "Temperature",
+                "Vorticity",
+                "Wall distance",
+                "NumericalDissipationFactor sensor",
+                "Heat equation residual"
+              ],
+              "type": "string"
+            }
           }
-        ]
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "ProbeMonitor",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "probe",
+            "const": "probe",
+            "type": "string"
+          },
+          "monitorLocations": {
+            "title": "Monitor locations",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "outputFields": {
+            "title": "Output fields",
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "enum": [
+                "Coefficient of pressure",
+                "Gradient of primitive solution",
+                "k and omega",
+                "Mach number",
+                "Turbulent viscosity",
+                "Turbulent viscosity and freestream dynamic viscosity ratio",
+                "Spalart-Almaras variable",
+                "rho, u, v, w, p (density, 3 velocities and pressure)",
+                "Q criterion",
+                "N-S residual",
+                "Transition residual",
+                "Turbulence residual",
+                "Entropy",
+                "N-S solution",
+                "Transition solution",
+                "Turbulence solution",
+                "Temperature",
+                "Vorticity",
+                "Wall distance",
+                "NumericalDissipationFactor sensor",
+                "Heat equation residual"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
       }
-    }
+    ]
   },
   "definitions": {}
 }

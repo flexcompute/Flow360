@@ -8,6 +8,14 @@
             "value": 1.15315084119231,
             "units": "m**2"
         },
+        "momentCenter": {
+            "units": "m",
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
         "momentLength": {
             "value": [
                 1.47602,
@@ -39,6 +47,11 @@
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
         "linearIterations": 10,
         "linearSolver": {
             "maxIterations": 50,

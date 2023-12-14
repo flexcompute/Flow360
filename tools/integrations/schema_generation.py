@@ -51,7 +51,7 @@ class _TurbulenceModelSolvers(Flow360BaseModel):
     Turbulence solvers wrapper for schema generation
     """
 
-    solver: Union[fl.TurbulenceModelSolverSA, fl.TurbulenceModelSolverSST]
+    solver: Union[fl.TurbulenceModelSolverSA, fl.TurbulenceModelSolverSST, fl.NoneSolver]
 
 
 # pylint: disable=E0213
@@ -84,16 +84,19 @@ class _TimeSteppings(Flow360BaseModel):
     )
 
 
+class _FluidProperties(Flow360BaseModel):
+    fluid_properties: Union[fl.AirDensityTemperature, fl.AirPressureTemperature] = pd.Field(
+        alias="fluidProperties"
+    )
+
+
 write_schemas(fl.NavierStokesSolver)
 write_schemas(fl.Geometry)
-write_schemas(_Freestreams)
 write_schemas(fl.SlidingInterface)
-write_schemas(_TurbulenceModelSolvers)
 write_schemas(fl.TransitionModelSolver)
 write_schemas(fl.HeatEquationSolver)
 write_schemas(fl.NoneSolver)
 write_schemas(fl.PorousMedium)
-write_schemas(_TimeSteppings)
 write_schemas(fl.ActuatorDisk)
 write_schemas(fl.BETDisk)
 write_schemas(fl.SurfaceOutput)
@@ -102,6 +105,11 @@ write_schemas(fl.VolumeOutput)
 write_schemas(fl.AeroacousticOutput)
 write_schemas(fl.MonitorOutput)
 write_schemas(fl.IsoSurfaceOutput)
+
+write_schemas(_Freestreams)
+write_schemas(_TimeSteppings)
+write_schemas(_FluidProperties)
+write_schemas(_TurbulenceModelSolvers)
 
 write_schemas(fl.Surfaces)
 write_schemas(fl.VolumeZones)

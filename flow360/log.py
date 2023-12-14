@@ -324,7 +324,7 @@ def set_logging_file(
         # pylint: disable=consider-using-with,unspecified-encoding
         file = open(fname, filemode)
     except:  # pylint: disable=bare-except
-        log.error(f"File {fname} could not be opened")
+        log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return
 
     log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level, fname)
@@ -334,10 +334,14 @@ def set_logging_file(
 
 # Set default logging output
 set_logging_console()
-log_dir = flow360_dir + "logs"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
 
 # Writing log files on Windows is currently very slow, toggled off until a fix is implemented
 if platform.system() != "Windows":
-    set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
+    log_dir = flow360_dir + "logs"
+    try:
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
+    except OSError as err:
+        log.warning(f"Could not setup file logging: {err}")

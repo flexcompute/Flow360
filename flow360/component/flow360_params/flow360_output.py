@@ -15,10 +15,12 @@ from .flow360_fields import (
     CommonFieldNamesFull,
     IsoSurfaceFieldNames,
     IsoSurfaceFieldNamesFull,
+    SliceFieldNames,
+    SliceFieldNamesFull,
     SurfaceFieldNames,
     SurfaceFieldNamesFull,
-    VolumeSliceFieldNames,
-    VolumeSliceFieldNamesFull,
+    VolumeFieldNames,
+    VolumeFieldNamesFull,
     get_field_values,
 )
 from .flow360_legacy import LegacyModel, _get_output_fields
@@ -32,8 +34,8 @@ OutputFormat = Literal["paraview", "tecplot", "both"]
 
 CommonFields = Literal[CommonFieldNames, CommonFieldNamesFull]
 SurfaceFields = Literal[SurfaceFieldNames, SurfaceFieldNamesFull]
-SliceFields = Literal[VolumeSliceFieldNames, VolumeSliceFieldNamesFull]
-VolumeFields = Literal[VolumeSliceFieldNames, VolumeSliceFieldNamesFull]
+SliceFields = Literal[SliceFieldNames, SliceFieldNamesFull]
+VolumeFields = Literal[VolumeFieldNames, VolumeFieldNamesFull]
 IsoSurfaceFields = Literal[IsoSurfaceFieldNames, IsoSurfaceFieldNamesFull]
 
 CommonOutputFields = conlist(CommonFields, unique_items=True)
@@ -52,14 +54,16 @@ def _filter_fields(fields, literal_filter):
 class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
-    frequency: Optional[PositiveInt] = pd.Field(alias="frequency")
+    frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="frequency")
     frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
 
 
 class AnimationSettingsExtended(AnimationSettings):
     """:class:`AnimationSettingsExtended` class"""
 
-    frequency_time_average: Optional[PositiveInt] = pd.Field(alias="frequencyTimeAverage")
+    frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+        alias="frequencyTimeAverage"
+    )
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
 
 
@@ -219,7 +223,7 @@ class Slice(Flow360BaseModel):
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
             _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
 
@@ -263,7 +267,7 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
             _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
 
@@ -284,7 +288,7 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
             _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], VolumeSliceFieldNamesFull
+                schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
 

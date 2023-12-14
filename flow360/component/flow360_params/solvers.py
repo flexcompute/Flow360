@@ -18,7 +18,7 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericFlowSolverSettings` class"""
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
-    relative_tolerance: Optional[float] = pd.Field(alias="relativeTolerance")
+    relative_tolerance: Optional[float] = pd.Field(0, alias="relativeTolerance")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -155,30 +155,36 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     """
 
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(
-        alias="CFLMultiplier", displayed="CFL Multiplier"
+        1.0, alias="CFLMultiplier", displayed="CFL Multiplier"
     )
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
-        alias="kappaMUSCL", displayed="Kappa MUSCL"
+        -1, alias="kappaMUSCL", displayed="Kappa MUSCL"
     )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
-        alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
+        4, alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
     )
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
-        alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
+        0, alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
-    limit_velocity: Optional[bool] = pd.Field(alias="limitVelocity", displayed="Limit velocity")
-    limit_pressure_density: Optional[bool] = pd.Field(alias="limitPressureDensity")
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(2, alias="orderOfAccuracy")
     numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
-        alias="numericalDissipationFactor"
+        1, alias="numericalDissipationFactor"
     )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=30), alias="linearSolver"
+    )
+    limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
+    limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
     @classmethod
     def _get_field_order(cls) -> List[str]:
         return ["*", "linearSolver"]
+
+    @classmethod
+    def _get_optional_objects(cls) -> List[str]:
+        return ["linearSolver"]
 
 
 class TurbulenceModelConstants(Flow360BaseModel):
@@ -257,23 +263,25 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     """
 
     model_type: str = pd.Field(alias="modelType")
-    CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
-    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
-        alias="maxForceJacUpdatePhysicalSteps"
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=20), alias="linearSolver"
     )
-    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    DDES: Optional[bool] = pd.Field(alias="DDES")
+    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(4, alias="updateJacobianFrequency")
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(4, alias="equationEvalFrequency")
+    max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
+        0, alias="maxForceJacUpdatePhysicalSteps"
+    )
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(2, alias="orderOfAccuracy")
+    DDES: Optional[bool] = pd.Field(False, alias="DDES")
     grid_size_for_LES: Optional[Literal["maxEdgeLength", "meanEdgeLength"]] = pd.Field(
-        alias="gridSizeForLES"
+        "maxEdgeLength", alias="gridSizeForLES"
     )
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
-        alias="quadraticConstitutiveRelation"
+        False, alias="quadraticConstitutiveRelation"
     )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
-        alias="reconstructionGradientLimiter"
+        1.0, alias="reconstructionGradientLimiter"
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
@@ -290,7 +298,7 @@ class TurbulenceModelSolverSA(TurbulenceModelSolver):
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
     )
-    rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
+    rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
 
 class NoneSolver(Flow360BaseModel):

@@ -12,6 +12,7 @@ from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
+    BaseSystemType,
     DensityType,
     ForceType,
     LengthType,
@@ -478,6 +479,7 @@ def test_unit_system_init():
         "density": {"value": 1.0, "units": "kg/m**3"},
         "viscosity": {"value": 1.0, "units": "Pa*s"},
         "angular_velocity": {"value": 1.0, "units": "rad/s"},
+        "heat_flux": {"value": 1.0, "units": "kg/s**3"},
     }
     us = fl.UnitSystem(**unit_system_dict)
     assert us == fl.SI_unit_system

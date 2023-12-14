@@ -207,9 +207,10 @@ def test_update_from_multiple_files_dont_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
-    params.append(outputs)
+    with fl.flow360_unit_system:
+        outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+        outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
+        params.append(outputs)
 
     assert params.geometry.ref_area == 1.15315084119231
 

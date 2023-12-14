@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 
 from flow360.component.flow360_params.flow360_params import Flow360ParamsLegacy
 
@@ -8,6 +7,4 @@ path = os.path.join(here, "../../flow360/examples/rotatingSpheres/flow360.json")
 
 model = Flow360ParamsLegacy(path)
 
-updated = model.update_model()
-
-pprint(updated.dict())
+model.update_model()

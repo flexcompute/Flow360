@@ -39,9 +39,10 @@ def _try_update(field: Optional[LegacyModel]):
     return None
 
 
-def _get_output_fields(instance: Flow360BaseModel, exclude: list[str]):
+def _get_output_fields(instance: Flow360BaseModel, exclude: list[str], allowed: list[str] = None):
     fields = []
     for key, value in instance.__fields__.items():
         if value.type_ == bool and value.alias not in exclude and getattr(instance, key) is True:
-            fields.append(value.alias)
+            if allowed is not None and value.alias in allowed:
+                fields.append(value.alias)
     return fields

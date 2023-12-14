@@ -23,7 +23,7 @@ from ...exceptions import Flow360FileError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
-from .unit_system import DimensionedType, is_flow360_unit
+from .unit_system import DimensionedType, is_flow360_unit, unit_system_manager
 
 supported_solver_version = "release-23.3.2.0"
 
@@ -173,8 +173,15 @@ class Flow360BaseModel(BaseModel):
     """
 
     def __init__(self, filename: str = None, **kwargs):
-        model_dict = self._init_handle_file(filename=filename, **kwargs)
-        super().__init__(**model_dict)
+        try:
+            model_dict = self._init_handle_file(filename=filename, **kwargs)
+            super().__init__(**model_dict)
+        except pd.ValidationError as exc:
+            if self.Config.require_unit_system_context and unit_system_manager.current is None:
+                raise exc from ValidationError(
+                    "Cannot instantiate model without a unit system context."
+                )
+            raise exc
 
     def _init_handle_file(self, filename: str = None, **kwargs):
         if filename is not None:
@@ -206,6 +213,7 @@ class Flow360BaseModel(BaseModel):
             Re-validate after re-assignment of field in model.
         """
 
+        require_unit_system_context = False
         arbitrary_types_allowed = True
         validate_all = True
         extra = "forbid"
@@ -303,6 +311,10 @@ class Flow360BaseModel(BaseModel):
         return []
 
     @classmethod
+    def _get_optional_objects(cls) -> List[str]:
+        return []
+
+    @classmethod
     def _fix_single_allof(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
@@ -318,7 +330,9 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _camel_to_space(cls, name):
+    def _camel_to_space(cls, name: str):
+        if len(name) > 0 and name[0] == "_":
+            name = name[1:]
         name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
         name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
         name = name.capitalize()
@@ -378,6 +392,46 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
+    def _generate_schema_for_optional_objects(cls, model: dict, key: str):
+        field = model["properties"].pop(key)
+        if field is not None:
+            ref = field.get("$ref")
+            if ref is None:
+                raise RuntimeError(
+                    f"Trying to apply optional field transform to a non-ref field {key}"
+                )
+
+            toggle_name = f"_add{key[0].upper() + key[1:]}"
+
+            model["properties"][toggle_name] = {
+                "title": toggle_name[1:],
+                "type": "boolean",
+                "default": False,
+            }
+
+            displayed = field.get("displayed")
+
+            if displayed is not None:
+                model["properties"][toggle_name]["displayed"] = displayed
+
+            if model.get("dependencies") is None:
+                model["dependencies"] = {}
+
+            model["dependencies"][toggle_name] = {
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            toggle_name: {"default": True, "const": True, "type": "boolean"},
+                            key: {"$ref": ref},
+                        },
+                        "additionalProperties": False,
+                    },
+                    {"additionalProperties": False},
+                ]
+            }
+
+    @classmethod
     def _clean_schema(cls, schema):
         cls._remove_key_from_nested_dict(schema, "description")
         cls._remove_key_from_nested_dict(schema, "_type")
@@ -389,6 +443,9 @@ class Flow360BaseModel(BaseModel):
         schema = cls.schema()
         cls._clean_schema(schema)
         cls._fix_single_allof(schema)
+        optionals = cls._get_optional_objects()
+        for item in optionals:
+            cls._generate_schema_for_optional_objects(schema, item)
         cls._format_titles(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
         return schema
@@ -931,13 +988,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             "type": "array",
             "uniqueItemProperties": ["name"],
             "items": {
-                "title": "Model Type",
-                "type": "object",
-                "properties": {
-                    "name": {"title": "Name", "type": "string", "readOnly": True},
-                    "modelType": {"title": "Type", "enum": [], "default": ""},
-                },
-                "dependencies": {"modelType": {"oneOf": []}},
+                "oneOf": [],
             },
         }
 
@@ -946,8 +997,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         for model in models:
             schema = model.flow360_schema()
             cls._clean_schema(schema)
-            root_schema["items"]["properties"]["modelType"]["enum"].append(model.__name__)
-            root_schema["items"]["dependencies"]["modelType"]["oneOf"].append(schema)
+            root_schema["items"]["oneOf"].append(schema)
 
         definitions = {}
 

@@ -115,8 +115,18 @@
       "properties": {
         "frequency": {
           "title": "Frequency",
-          "exclusiveMinimum": 0,
-          "type": "integer"
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            {
+              "enum": [
+                -1
+              ],
+              "type": "integer"
+            }
+          ]
         },
         "frequencyOffset": {
           "title": "Frequency offset",
@@ -124,8 +134,18 @@
         },
         "frequencyTimeAverage": {
           "title": "Frequency time average",
-          "exclusiveMinimum": 0,
-          "type": "integer"
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            {
+              "enum": [
+                -1
+              ],
+              "type": "integer"
+            }
+          ]
         },
         "frequencyTimeAverageOffset": {
           "title": "Frequency time average offset",

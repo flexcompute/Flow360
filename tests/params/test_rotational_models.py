@@ -5,12 +5,10 @@ import pytest
 from flow360.component.flow360_params.flow360_params import (
     ActuatorDisk,
     BETDisk,
-    ForcePerArea,
-)
-from flow360.component.flow360_params.flow360_temp import (
     BETDiskChord,
     BETDiskSectionalPolar,
     BETDiskTwist,
+    ForcePerArea,
 )
 from flow360.exceptions import Flow360ValidationError
 from tests.utils import compare_to_ref, to_file_from_file_test

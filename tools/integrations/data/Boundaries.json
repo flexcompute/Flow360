@@ -29,7 +29,9 @@
           "MassInflow",
           "MassOutflow",
           "SolidIsothermalWall",
-          "SolidAdiabaticWall"
+          "SolidAdiabaticWall",
+          "TranslationallyPeriodic",
+          "RotationallyPeriodic"
         ],
         "default": ""
       }
@@ -51,245 +53,119 @@
                 "title": "Name",
                 "type": "string"
               },
-              "Velocity": {
-                "title": "Velocity",
-                "anyOf": [
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
                   {
-                    "properties": {
-                      "value": {
-                        "type": "array",
-                        "items": {
-                          "type": "number",
-                          "minItems": 3,
-                          "maxItems": 3
-                        }
-                      },
-                      "units": {
-                        "type": "string"
-                      }
-                    }
+                    "type": "string"
                   },
                   {
-                    "type": "array",
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "items": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  }
-                ]
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "title": "SlipWall",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SlipWall",
-                "const": "SlipWall",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "title": "FreestreamBoundary",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "Freestream",
-                "const": "Freestream",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "Velocity": {
-                "title": "Velocity",
-                "anyOf": [
-                  {
-                    "properties": {
-                      "value": {
-                        "type": "array",
-                        "items": {
-                          "type": "number",
-                          "minItems": 3,
-                          "maxItems": 3
-                        }
-                      },
-                      "units": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  {
-                    "type": "array",
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "items": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  }
-                ]
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "title": "IsothermalWall",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "IsothermalWall",
-                "const": "IsothermalWall",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "Temperature": {
-                "title": "Temperature",
-                "anyOf": [
-                  {
-                    "type": "number",
-                    "exclusiveMinimum": 0
+                    "type": "string"
                   },
                   {
                     "type": "string"
                   }
                 ]
-              },
-              "Velocity": {
-                "title": "Velocity",
-                "anyOf": [
-                  {
-                    "properties": {
-                      "value": {
-                        "type": "array",
-                        "items": {
-                          "type": "number",
-                          "minItems": 3,
-                          "maxItems": 3
-                        }
-                      },
-                      "units": {
-                        "type": "string"
-                      }
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "SlipWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SlipWall",
+            "const": "SlipWall",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "FreestreamBoundary",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "Freestream",
+            "const": "Freestream",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "Velocity": {
+            "title": "Velocity",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
                     }
                   },
+                  "units": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
                   {
-                    "type": "array",
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "items": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
                   }
                 ]
               }
-            },
-            "required": [
-              "Temperature"
-            ],
-            "additionalProperties": false
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "IsothermalWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "IsothermalWall",
+            "const": "IsothermalWall",
+            "type": "string"
           },
-          {
-            "title": "SubsonicOutflowPressure",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SubsonicOutflowPressure",
-                "const": "SubsonicOutflowPressure",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "staticPressureRatio": {
-                "title": "Static pressure ratio",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              }
-            },
-            "required": [
-              "staticPressureRatio"
-            ],
-            "additionalProperties": false
+          "name": {
+            "title": "Name",
+            "type": "string"
           },
-          {
-            "title": "SubsonicOutflowMach",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SubsonicOutflowMach",
-                "const": "SubsonicOutflowMach",
-                "type": "string"
+          "Temperature": {
+            "title": "Temperature",
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
               },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "MachNumber": {
-                "title": "Mach number",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              }
-            },
-            "required": [
-              "MachNumber"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "title": "SubsonicInflow",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SubsonicInflow",
-                "const": "SubsonicInflow",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
+              {
                 "type": "string"
               },
               "totalPressureRatio": {
@@ -372,150 +248,376 @@
                   }
                 ]
               }
-            },
-            "required": [
-              "totalTemperatureRatio",
-              "totalPressureRatio",
-              "staticPressureRatio"
-            ],
-            "additionalProperties": false
+            ]
           },
-          {
-            "title": "SlidingInterfaceBoundary",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SlidingInterface",
-                "const": "SlidingInterface",
-                "type": "string"
+          "Velocity": {
+            "title": "Velocity",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "units": {
+                    "type": "string"
+                  }
+                }
               },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "title": "WallFunction",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "WallFunction",
-                "const": "WallFunction",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "title": "MassInflow",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "MassInflow",
-                "const": "MassInflow",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "massFlowRate": {
-                "title": "Mass flow rate",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              }
-            },
-            "required": [
-              "massFlowRate"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "title": "MassOutflow",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "MassOutflow",
-                "const": "MassOutflow",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "massFlowRate": {
-                "title": "Mass flow rate",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              }
-            },
-            "required": [
-              "massFlowRate"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "title": "SolidIsothermalWall",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "SolidIsothermalWall",
-                "const": "SolidIsothermalWall",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "Temperature": {
-                "title": "Temperature",
-                "anyOf": [
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
                   {
-                    "type": "number",
-                    "exclusiveMinimum": 0
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
                   },
                   {
                     "type": "string"
                   }
                 ]
               }
+            ]
+          }
+        },
+        "required": [
+          "Temperature"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SubsonicOutflowPressure",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SubsonicOutflowPressure",
+            "const": "SubsonicOutflowPressure",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "staticPressureRatio": {
+            "title": "Static pressure ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "staticPressureRatio"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SubsonicOutflowMach",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SubsonicOutflowMach",
+            "const": "SubsonicOutflowMach",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "MachNumber": {
+            "title": "Mach number",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "MachNumber"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SubsonicInflow",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SubsonicInflow",
+            "const": "SubsonicInflow",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "totalPressureRatio": {
+            "title": "Total pressure ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "totalTemperatureRatio": {
+            "title": "Total temperature ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "rampSteps": {
+            "title": "Ramp steps",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalPressureRatio",
+          "totalTemperatureRatio"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SupersonicInflow",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SupersonicInflow",
+            "const": "SupersonicInflow",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "totalTemperatureRatio": {
+            "title": "Total temperature ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "totalPressureRatio": {
+            "title": "Total pressure ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "staticPressureRatio": {
+            "title": "Static pressure ratio",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "velocityDirection": {
+            "title": "Velocity direction",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "units": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "totalTemperatureRatio",
+          "totalPressureRatio",
+          "staticPressureRatio"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SlidingInterfaceBoundary",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SlidingInterface",
+            "const": "SlidingInterface",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "WallFunction",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "WallFunction",
+            "const": "WallFunction",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "MassInflow",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "MassInflow",
+            "const": "MassInflow",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "massFlowRate": {
+            "title": "Mass flow rate",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "massFlowRate"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "MassOutflow",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "MassOutflow",
+            "const": "MassOutflow",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "massFlowRate": {
+            "title": "Mass flow rate",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "massFlowRate"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SolidIsothermalWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SolidIsothermalWall",
+            "const": "SolidIsothermalWall",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "Temperature": {
+            "title": "Temperature",
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "string"
+              }
             },
-            "required": [
-              "Temperature"
-            ],
             "additionalProperties": false
           },
           {
-            "title": "SolidAdiabaticWall",
+            "title": "TranslationallyPeriodic",
             "type": "object",
             "properties": {
               "type": {
                 "title": "Type",
-                "default": "SolidAdiabaticWall",
-                "const": "SolidAdiabaticWall",
+                "default": "TranslationallyPeriodic",
+                "const": "TranslationallyPeriodic",
                 "type": "string"
               },
               "name": {
                 "title": "Name",
                 "type": "string"
+              },
+              "pairedPatchName": {
+                "title": "Paired patch name",
+                "type": "array",
+                "items": {}
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "title": "RotationallyPeriodic",
+            "type": "object",
+            "properties": {
+              "type": {
+                "title": "Type",
+                "default": "RotationallyPeriodic",
+                "const": "RotationallyPeriodic",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "pairedPatchName": {
+                "title": "Paired patch name",
+                "type": "string"
+              },
+              "axisOfRotation": {
+                "title": "Axis of rotation",
+                "type": "array",
+                "items": {}
+              },
+              "thetaRadians": {
+                "title": "Theta radians",
+                "type": "number"
               }
             },
             "additionalProperties": false
           }
-        ]
+        },
+        "additionalProperties": false
       }
-    }
+    ]
   },
   "definitions": {}
 }

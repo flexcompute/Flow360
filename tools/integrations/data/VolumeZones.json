@@ -5,100 +5,79 @@
     "name"
   ],
   "items": {
-    "title": "Model Type",
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "readOnly": true
-      },
-      "modelType": {
-        "title": "Type",
-        "enum": [
-          "FluidDynamicsVolumeZone",
-          "HeatTransferVolumeZone"
-        ],
-        "default": ""
-      }
-    },
-    "dependencies": {
-      "modelType": {
-        "oneOf": [
-          {
-            "title": "FluidDynamicsVolumeZone",
-            "type": "object",
-            "properties": {
-              "modelType": {
-                "title": "Model type",
-                "default": "FluidDynamics",
-                "const": "FluidDynamics",
-                "type": "string"
-              },
-              "referenceFrame": {
-                "title": "Reference frame",
-                "anyOf": [
-                  {
-                    "$ref": "#/definitions/ReferenceFrame"
-                  },
-                  {
-                    "$ref": "#/definitions/ReferenceFrameOmegaRadians"
-                  },
-                  {
-                    "$ref": "#/definitions/ReferenceFrameExpression"
-                  },
-                  {
-                    "$ref": "#/definitions/ReferenceFrameDynamic"
-                  }
-                ]
-              }
-            },
-            "additionalProperties": false
+    "oneOf": [
+      {
+        "title": "FluidDynamicsVolumeZone",
+        "type": "object",
+        "properties": {
+          "modelType": {
+            "title": "Model type",
+            "default": "FluidDynamics",
+            "const": "FluidDynamics",
+            "type": "string"
           },
-          {
-            "title": "HeatTransferVolumeZone",
-            "type": "object",
-            "properties": {
-              "modelType": {
-                "title": "Model type",
-                "default": "HeatTransfer",
-                "const": "HeatTransfer",
-                "type": "string"
+          "referenceFrame": {
+            "title": "Reference frame",
+            "anyOf": [
+              {
+                "$ref": "#/definitions/ReferenceFrame"
               },
-              "thermalConductivity": {
-                "title": "Thermal conductivity",
-                "exclusiveMinimum": 0,
-                "type": "number"
+              {
+                "$ref": "#/definitions/ReferenceFrameOmegaRadians"
               },
-              "volumetricHeatSource": {
-                "title": "Volumetric heat source",
-                "anyOf": [
-                  {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
+              {
+                "$ref": "#/definitions/ReferenceFrameExpression"
               },
-              "heatCapacity": {
-                "title": "Heat capacity",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              },
-              "initialCondition": {
-                "$ref": "#/definitions/InitialConditionHeatTransfer"
+              {
+                "$ref": "#/definitions/ReferenceFrameDynamic"
               }
-            },
-            "required": [
-              "thermalConductivity"
-            ],
-            "additionalProperties": false
+            ]
           }
-        ]
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "HeatTransferVolumeZone",
+        "type": "object",
+        "properties": {
+          "modelType": {
+            "title": "Model type",
+            "default": "HeatTransfer",
+            "const": "HeatTransfer",
+            "type": "string"
+          },
+          "thermalConductivity": {
+            "title": "Thermal conductivity",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "volumetricHeatSource": {
+            "title": "Volumetric heat source",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "heatCapacity": {
+            "title": "Heat capacity",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "initialCondition": {
+            "$ref": "#/definitions/InitialConditionHeatTransfer"
+          }
+        },
+        "required": [
+          "thermalConductivity"
+        ],
+        "additionalProperties": false
       }
-    }
+    ]
   },
   "definitions": {
     "ReferenceFrame": {

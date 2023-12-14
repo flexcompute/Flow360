@@ -10,6 +10,9 @@
         },
         {
           "$ref": "#/definitions/TurbulenceModelSolverSST"
+        },
+        {
+          "$ref": "#/definitions/NoneSolver"
         }
       ]
     }
@@ -79,11 +82,13 @@
       "properties": {
         "absoluteTolerance": {
           "title": "Absolute tolerance",
+          "default": 1e-08,
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "relativeTolerance": {
           "title": "Relative tolerance",
+          "default": 0,
           "type": "number"
         },
         "modelType": {
@@ -95,37 +100,36 @@
           ],
           "type": "string"
         },
-        "CFLMultiplier": {
-          "title": "Cfl multiplier",
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
         "linearSolver": {
           "title": "Linear solver",
           "default": {
-            "max_iterations": 50,
-            "absolute_tolerance": 1e-10,
+            "max_iterations": 20,
+            "absolute_tolerance": null,
             "relative_tolerance": null
           },
           "$ref": "#/definitions/LinearSolver"
         },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
+          "default": 4,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "equationEvalFrequency": {
           "title": "Equation eval frequency",
+          "default": 4,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "maxForceJacUpdatePhysicalSteps": {
           "title": "Max force jac update physical steps",
+          "default": 0,
           "minimum": 0,
           "type": "integer"
         },
         "orderOfAccuracy": {
           "title": "Order of accuracy",
+          "default": 2,
           "enum": [
             1,
             2
@@ -134,10 +138,12 @@
         },
         "DDES": {
           "title": "Ddes",
+          "default": false,
           "type": "boolean"
         },
         "gridSizeForLES": {
           "title": "Grid size for les",
+          "default": "maxEdgeLength",
           "enum": [
             "maxEdgeLength",
             "meanEdgeLength"
@@ -146,10 +152,12 @@
         },
         "quadraticConstitutiveRelation": {
           "title": "Quadratic constitutive relation",
+          "default": false,
           "type": "boolean"
         },
         "reconstructionGradientLimiter": {
           "title": "Reconstruction gradient limiter",
+          "default": 1.0,
           "minimum": 0,
           "maximum": 2,
           "type": "number"
@@ -159,6 +167,7 @@
         },
         "rotationCorrection": {
           "title": "Rotation correction",
+          "default": false,
           "type": "boolean"
         }
       },
@@ -170,11 +179,13 @@
       "properties": {
         "absoluteTolerance": {
           "title": "Absolute tolerance",
+          "default": 1e-08,
           "exclusiveMinimum": 0,
           "type": "number"
         },
         "relativeTolerance": {
           "title": "Relative tolerance",
+          "default": 0,
           "type": "number"
         },
         "modelType": {
@@ -186,37 +197,36 @@
           ],
           "type": "string"
         },
-        "CFLMultiplier": {
-          "title": "Cfl multiplier",
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
         "linearSolver": {
           "title": "Linear solver",
           "default": {
-            "max_iterations": 50,
-            "absolute_tolerance": 1e-10,
+            "max_iterations": 20,
+            "absolute_tolerance": null,
             "relative_tolerance": null
           },
           "$ref": "#/definitions/LinearSolver"
         },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
+          "default": 4,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "equationEvalFrequency": {
           "title": "Equation eval frequency",
+          "default": 4,
           "exclusiveMinimum": 0,
           "type": "integer"
         },
         "maxForceJacUpdatePhysicalSteps": {
           "title": "Max force jac update physical steps",
+          "default": 0,
           "minimum": 0,
           "type": "integer"
         },
         "orderOfAccuracy": {
           "title": "Order of accuracy",
+          "default": 2,
           "enum": [
             1,
             2
@@ -225,10 +235,12 @@
         },
         "DDES": {
           "title": "Ddes",
+          "default": false,
           "type": "boolean"
         },
         "gridSizeForLES": {
           "title": "Grid size for les",
+          "default": "maxEdgeLength",
           "enum": [
             "maxEdgeLength",
             "meanEdgeLength"
@@ -237,16 +249,34 @@
         },
         "quadraticConstitutiveRelation": {
           "title": "Quadratic constitutive relation",
+          "default": false,
           "type": "boolean"
         },
         "reconstructionGradientLimiter": {
           "title": "Reconstruction gradient limiter",
+          "default": 1.0,
           "minimum": 0,
           "maximum": 2,
           "type": "number"
         },
         "modelConstants": {
           "$ref": "#/definitions/TurbulenceModelConstants"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoneSolver": {
+      "title": "None solver",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "None",
+          "const": "None",
+          "enum": [
+            "None"
+          ],
+          "type": "string"
         }
       },
       "additionalProperties": false

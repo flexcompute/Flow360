@@ -134,7 +134,7 @@ def test_slice_output():
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
+            animation_settings=AnimationSettings(frequency=-2), output_fields=["Cp", "qcriterion"]
         )
 
     with pytest.raises(pd.ValidationError):

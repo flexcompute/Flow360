@@ -18,6 +18,12 @@ geometry:
     meshUnit:
         units: m
         value: 1.0
+    momentCenter:
+        units: m
+        value:
+        - 0.0
+        - 0.0
+        - 0.0
     momentLength:
         units: m
         value:
@@ -29,10 +35,20 @@ geometry:
         value: 1.15315084119231
 hash: 7891743896c788b51564904d9eb2d1b7eb149841745dbbff2c0f5f4d3d7d376f
 navierStokesSolver:
+    CFLMultiplier: 1.0
+    equationEvalFrequency: 1
+    kappaMUSCL: -1.0
+    limitPressureDensity: false
+    limitVelocity: false
     linearIterations: 10
     linearSolver:
         absoluteTolerance: 1.0e-10
-        maxIterations: 50
+        maxIterations: 30
+    maxForceJacUpdatePhysicalSteps: 0
+    numericalDissipationFactor: 1.0
+    orderOfAccuracy: 2
+    relativeTolerance: 0.0
+    updateJacobianFrequency: 4
 sliceOutput:
     animationSettings: {}
     outputFields:
