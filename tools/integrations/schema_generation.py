@@ -51,7 +51,7 @@ class _TurbulenceModelSolvers(Flow360BaseModel):
     Turbulence solvers wrapper for schema generation
     """
 
-    solver: Union[fl.TurbulenceModelSolverSA, fl.TurbulenceModelSolverSST, fl.NoneSolver]
+    solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver]
 
 
 # pylint: disable=E0213

@@ -186,15 +186,23 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         return ["linearSolver"]
 
 
-class TurbulenceModelConstants(Flow360BaseModel):
-    """:class:`TurbulenceModelConstants` class"""
+class TurbulenceModelConstantsSA(Flow360BaseModel):
+    """:class:`TurbulenceModelConstantsSA` class"""
 
-    C_DES: Optional[float]
-    C_d: Optional[float]
-    C_DES1: Optional[float]
-    C_DES2: Optional[float]
-    C_d1: Optional[float]
-    C_d2: Optional[float]
+    C_DES: Optional[float] = pd.Field(0.72)
+    C_d: Optional[float] = pd.Field(8.0)
+
+
+class TurbulenceModelConstantsSST(Flow360BaseModel):
+    """:class:`TurbulenceModelConstantsSST` class"""
+
+    C_DES1: Optional[float] = pd.Field(0.78)
+    C_DES2: Optional[float] = pd.Field(0.61)
+    C_d1: Optional[float] = pd.Field(20.0)
+    C_d2: Optional[float] = pd.Field(3.0)
+
+
+TurbulenceModelConstants = Union[TurbulenceModelConstantsSA, TurbulenceModelConstantsSST]
 
 
 class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
@@ -285,19 +293,21 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
 
-class TurbulenceModelSolverSST(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSST` class"""
+class KOmegaSST(TurbulenceModelSolver):
+    """:class:`KOmegaSST` class"""
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
+    model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
 
 
-class TurbulenceModelSolverSA(TurbulenceModelSolver):
-    """:class:`TurbulenceModelSolverSA` class"""
+class SpalartAllmaras(TurbulenceModelSolver):
+    """:class:`SpalartAllmaras` class"""
 
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
     )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
+    model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
 
 
 class NoneSolver(Flow360BaseModel):
@@ -306,7 +316,7 @@ class NoneSolver(Flow360BaseModel):
     model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
 
 
-TurbulenceModelSolverTypes = Union[TurbulenceModelSolverSA, TurbulenceModelSolverSST, NoneSolver]
+TurbulenceModelSolverTypes = Union[SpalartAllmaras, KOmegaSST, NoneSolver]
 
 
 class HeatEquationSolver(Flow360BaseModel):
@@ -380,7 +390,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="maxForceJacUpdatePhysicalSteps"
     )
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(alias="orderOfAccuracy")
-    turbulence_intensity_percent: Optional[PositiveFloat] = pd.Field(
+    turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         alias="turbulenceIntensityPercent"
     )
-    N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
+    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
