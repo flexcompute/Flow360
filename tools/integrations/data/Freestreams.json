@@ -19,6 +19,9 @@
         },
         {
           "$ref": "#/definitions/FreestreamFromMachReynolds"
+        },
+        {
+          "$ref": "#/definitions/MockClassPass"
         }
       ]
     }
@@ -267,6 +270,11 @@
         "Temperature"
       ],
       "additionalProperties": false
+    },
+    "MockClassPass": {
+      "title": "Mock class pass",
+      "type": "object",
+      "properties": {}
     }
   }
 }

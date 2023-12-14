@@ -1,13 +1,17 @@
 import pytest
 
+import flow360.units as u
 from flow360 import (
     Case,
+    CGS_unit_system,
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
     SI_unit_system,
     VolumeMesh,
     air,
+    flow360_unit_system,
+    imperial_unit_system,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from flow360.log import set_logging_level

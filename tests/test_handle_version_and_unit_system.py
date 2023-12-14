@@ -90,9 +90,9 @@ def test_import_no_unit_system_no_context():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(params_no_unit_system, temp_file)
 
-    # the unit system should be flow360 unit system if imported from file and no unit system loaded
-    params = Flow360Params(temp_file.name)
-    assert params
+    # when there is no unit system, we run the updater which should fail due to dimensioned fields
+    with pytest.raises(pd.ValidationError):
+        params = Flow360Params(temp_file.name)
 
 
 def test_import_no_unit_system_with_context():
@@ -122,19 +122,6 @@ def test_import_with_unit_system_with_context():
             params = Flow360Params(temp_file.name)
 
 
-def test_copy_no_unit_system_no_context():
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(params_no_unit_system, temp_file)
-
-    # the unit system should be flow360 unit system if imported from file and no unit system loaded
-    params = Flow360Params(temp_file.name)
-    assert params
-
-    # passes, the unit system gets copied from old file
-    params_copy = params.copy()
-    assert params_copy
-
-
 def test_copy_with_unit_system_no_context():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(params_current_version, temp_file)
@@ -146,25 +133,6 @@ def test_copy_with_unit_system_no_context():
     # passes, the unit system gets copied from old file
     params_copy = params.copy()
     assert params_copy
-
-
-def test_copy_no_unit_system_with_context():
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(params_no_unit_system, temp_file)
-
-    # the unit system should be flow360 unit system if imported from file and no unit system loaded
-    params = Flow360Params(temp_file.name)
-    assert params
-
-    # passes, the models are consistent
-    with flow360.flow360_unit_system:
-        params_copy = params.copy()
-        assert params_copy
-
-    # fails, the models are inconsistent
-    with flow360.SI_unit_system:
-        with pytest.raises(Flow360RuntimeError):
-            params_copy = params.copy()
 
 
 def test_copy_with_unit_system_with_context():

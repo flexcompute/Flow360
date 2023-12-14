@@ -1,12 +1,13 @@
 """
 Module exposing utilities for the validation service
 """
+import json
+import tempfile
 
 import pydantic as pd
 
 from .component.flow360_params.flow360_params import (
     Flow360Params,
-    Flow360ParamsLegacy,
     FreestreamFromVelocity,
     Geometry,
     NavierStokesSolver,
@@ -25,7 +26,9 @@ def get_default_params(unit_system_context):
 
     with unit_system_context:
         params = Flow360Params(
-            geometry=Geometry(),
+            geometry=Geometry(
+                ref_area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1), mesh_unit=1
+            ),
             freestream=FreestreamFromVelocity.construct(),
             navier_stokes_solver=NavierStokesSolver(),
             turbulence_model_solver=TurbulenceModelSolverSA(),
@@ -34,27 +37,27 @@ def get_default_params(unit_system_context):
     return params
 
 
-def get_default_retry(params_as_dict, legacy=False):
+def get_default_retry(params_as_dict):
     """
     Return a default case file for a retry request
     """
-    if legacy:
-        params_legacy = Flow360ParamsLegacy(**params_as_dict)
-        params = params_legacy.update_model()
-    else:
-        params = Flow360Params(**params_as_dict)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(params_as_dict, temp_file)
+
+    params = Flow360Params(temp_file.name)
     return params
 
 
-def get_default_fork(params_as_dict, legacy=False):
+def get_default_fork(params_as_dict):
     """
     Return a default case file for a fork request
     """
-    if legacy:
-        params_legacy = Flow360ParamsLegacy(**params_as_dict)
-        params = params_legacy.update_model()
-    else:
-        params = Flow360Params(**params_as_dict)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(params_as_dict, temp_file)
+
+    params = Flow360Params(temp_file.name)
     return params
 
 

@@ -22,8 +22,6 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
-import flow360
-
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
     Flow360ConfigError,
@@ -115,6 +113,7 @@ from .unit_system import (
     VelocityType,
     ViscosityType,
     imperial_unit_system,
+    flow360_unit_system,
     u,
     unit_system_manager,
 )
@@ -1517,6 +1516,16 @@ class Flow360Params(Flow360BaseModel):
 
         return kwargs
 
+    def _infer_context(self, unit_system_dict):
+        class _TemporaryModel(pd.BaseModel):
+            unit_system: UnitSystemTypes = pd.Field()
+
+        params = {"unit_system": unit_system_dict}
+
+        model = _TemporaryModel(**params)
+
+        return model.unit_system
+
     def __init__(self, filename: str = None, **kwargs):
         if filename is not None:
             self._init_from_file(filename, **kwargs)
@@ -1546,15 +1555,6 @@ class Flow360Params(Flow360BaseModel):
         """
         return cls(filename=filename)
 
-    def _has_key(self, target, model_dict: dict):
-        for key, value in model_dict.items():
-            if key == target:
-                return True
-            if isinstance(value, dict):
-                if self._has_key(target, value):
-                    return True
-        return False
-
     def _init_from_file(self, filename, **kwargs):
         if unit_system_manager.current is not None:
             raise Flow360RuntimeError(
@@ -1565,36 +1565,19 @@ class Flow360Params(Flow360BaseModel):
 
         version = model_dict.get("version")
         unit_system = model_dict.get("unitSystem")
-        if version is not None and version == __version__:
-            if unit_system is None:
-                with flow360.flow360_unit_system:
-                    super().__init__(unit_system=unit_system_manager.copy_current(), **model_dict)
-            else:
+        if version is not None and unit_system is not None:
+            if version != __version__:
+                raise Flow360NotImplementedError(
+                    "No updater flow between versioned cases exists as of now."
+                )
+            with self._infer_context(unit_system):
                 super().__init__(**model_dict)
         else:
             self._init_with_update(model_dict)
 
     def _init_with_update(self, model_dict):
-        try:
-            super().__init__(**model_dict)
-        except pd.ValidationError as err_current:
-            try:
-                # Check if comments are present within the file
-                if self._has_key("comments", model_dict):
-                    with flow360.SI_unit_system:
-                        legacy = Flow360ParamsLegacy(**model_dict)
-                        super().__init__(**legacy.update_model().dict())
-                else:
-                    with flow360.flow360_unit_system:
-                        legacy = Flow360ParamsLegacy(**model_dict)
-                        super().__init__(**legacy.update_model().dict())
-            except pd.ValidationError as err_legacy:
-                log.error("Tried to use current params format but following errors occured:")
-                log.error(err_current)
-                log.error("Tried to use legacy params format but following errors occured:")
-                log.error(err_legacy)
-                # pylint: disable=raise-missing-from
-                raise Flow360ValidationError("Loading from file failed")
+        legacy = Flow360ParamsLegacy(**model_dict)
+        super().__init__(**legacy.update_model().dict())
 
     def copy(self, update=None, **kwargs) -> Flow360Params:
         if unit_system_manager.current is None:
@@ -1721,7 +1704,7 @@ class GeometryLegacy(Geometry, LegacyModel):
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if self.comments.get("meshUnit") is not None:
+        if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
             model["meshUnit"] = unit
             _try_add_unit(model, "momentCenter", model["meshUnit"])
@@ -1761,31 +1744,35 @@ class FreestreamLegacy(LegacyModel):
         }
 
         # Set velocity
-        if self.comments.get("freestreamMeterPerSecond") is not None:
-            # pylint: disable=no-member
-            velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
-            _try_set(model["freestream"], "velocity", velocity)
-        elif self.comments.get("speedOfSoundMeterPerSecond") is not None and self.Mach is not None:
-            # pylint: disable=no-member
-            velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
-            _try_set(model["freestream"], "velocity", velocity)
-
-        if model["freestream"].get("velocity"):
-            # Set velocity_ref
-            if (
+        if self.comments is not None:
+            if self.comments.get("freestreamMeterPerSecond") is not None:
+                # pylint: disable=no-member
+                velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
+                _try_set(model["freestream"], "velocity", velocity)
+            elif (
                 self.comments.get("speedOfSoundMeterPerSecond") is not None
-                and self.Mach_Ref is not None
+                and self.Mach is not None
             ):
-                velocity_ref = (
-                    # pylint: disable=no-member
-                    self.comments["speedOfSoundMeterPerSecond"]
-                    * self.Mach_Ref
-                    * u.m
-                    / u.s
-                )
-                _try_set(model["freestream"], "velocityRef", velocity_ref)
-            else:
-                model["freestream"]["velocityRef"] = None
+                # pylint: disable=no-member
+                velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
+                _try_set(model["freestream"], "velocity", velocity)
+
+            if model["freestream"].get("velocity"):
+                # Set velocity_ref
+                if (
+                    self.comments.get("speedOfSoundMeterPerSecond") is not None
+                    and self.Mach_Ref is not None
+                ):
+                    velocity_ref = (
+                        # pylint: disable=no-member
+                        self.comments["speedOfSoundMeterPerSecond"]
+                        * self.Mach_Ref
+                        * u.m
+                        / u.s
+                    )
+                    _try_set(model["freestream"], "velocityRef", velocity_ref)
+                else:
+                    model["freestream"]["velocityRef"] = None
         else:
             _try_set(model["freestream"], "Reynolds", self.Reynolds)
             _try_set(model["freestream"], "muRef", self.mu_ref)
@@ -1809,7 +1796,7 @@ class FreestreamLegacy(LegacyModel):
         # pylint: disable=no-member
         _try_set(model["fluid"], "temperature", self.temperature * u.K)
 
-        if self.comments.get("densityKgPerCubicMeter"):
+        if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             _try_set(model["fluid"], "density", density)
@@ -1848,10 +1835,6 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
     """:class:`SlidingInterfaceLegacy` class"""
 
     omega: Optional[float] = pd.Field()
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_one_of = SlidingInterface.Config.require_one_of + ["omega"]
 
     def update_model(self) -> Flow360BaseModel:
         model = {
@@ -1915,43 +1898,72 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
+    def _has_key(self, target, model_dict: dict):
+        for key, value in model_dict.items():
+            if key == target:
+                return True
+            if isinstance(value, dict):
+                if self._has_key(target, value):
+                    return True
+        return False
+
+    def _is_web_ui_generated(self, fluid_properties, freestream):
+        return (
+            fluid_properties is not None
+            and freestream is not None
+            and isinstance(freestream, FreestreamFromVelocity)
+        )
+
     def update_model(self) -> Flow360BaseModel:
-        model = Flow360Params()
-        model.geometry = _try_update(self.geometry)
-        model.boundaries = self.boundaries
-        model.initial_condition = self.initial_condition
-        model.time_stepping = _try_update(self.time_stepping)
-        model.navier_stokes_solver = _try_update(self.navier_stokes_solver)
-        model.turbulence_model_solver = _try_update(self.turbulence_model_solver)
-        model.transition_model_solver = _try_update(self.transition_model_solver)
-        model.heat_equation_solver = _try_update(self.heat_equation_solver)
-        model.freestream = _try_update(self.freestream)
+        params = {}
 
         if self.freestream is not None:
-            model.fluid_properties = self.freestream.extract_fluid_properties()
+            params["freestream"] = _try_update(self.freestream)
+            params["fluid_properties"] = self.freestream.extract_fluid_properties()
 
         if self.bet_disks is not None:
             disks = []
             for disk in self.bet_disks:
                 disks.append(_try_update(disk))
-            model.bet_disks = disks
-
-        model.actuator_disks = self.actuator_disks
-        model.porous_media = self.porous_media
-        model.user_defined_dynamics = self.user_defined_dynamics
-        model.surface_output = _try_update(self.surface_output)
-        model.volume_output = _try_update(self.volume_output)
-        model.slice_output = _try_update(self.slice_output)
-        model.iso_surface_output = _try_update(self.iso_surface_output)
-        model.monitor_output = self.monitor_output
+            params["bet_disks"] = disks
 
         if self.sliding_interfaces is not None:
             volume_zones = {}
             for interface in self.sliding_interfaces:
                 volume_zone = _try_update(interface)
                 volume_zones[interface.volume_name] = volume_zone
-            model.volume_zones = VolumeZones(**volume_zones)
+            params["volume_zones"] = VolumeZones(**volume_zones)
 
-        model.aeroacoustic_output = self.aeroacoustic_output
+        if self._is_web_ui_generated(params.get("fluid_properties"), params.get("freestream")):
+            context = SI_unit_system
+        else:
+            context = flow360_unit_system
 
-        return model
+        with context:
+            params.update(
+                {
+                    "geometry": _try_update(self.geometry),
+                    "boundaries": self.boundaries,
+                    "initial_condition": self.initial_condition,
+                    "time_stepping": _try_update(self.time_stepping),
+                    "navier_stokes_solver": _try_update(self.navier_stokes_solver),
+                    "turbulence_model_solver": _try_update(self.turbulence_model_solver),
+                    "transition_model_solver": _try_update(self.transition_model_solver),
+                    "heat_equation_solver": _try_update(self.heat_equation_solver),
+                    "actuator_disks": self.actuator_disks,
+                    "porous_media": self.porous_media,
+                    "user_defined_dynamics": self.user_defined_dynamics,
+                    "surface_output": _try_update(self.surface_output),
+                    "volume_output": _try_update(self.volume_output),
+                    "slice_output": _try_update(self.slice_output),
+                    "iso_surface_output": _try_update(self.iso_surface_output),
+                    "monitor_output": self.monitor_output,
+                    "aeroacoustic_output": self.aeroacoustic_output,
+                    "fluid_properties": None,
+                    "volume_zones": None,
+                    "bet_disks": None,
+                }
+            )
+
+            model = Flow360Params(**params)
+            return model

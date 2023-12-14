@@ -395,14 +395,14 @@ class LinearSolverLegacy(LinearSolver, LegacyModel):
 
     max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
 
-    def update_model(self) -> Flow360BaseModel:
+    def update_model(self):
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "maxIterations": self.max_iterations,
         }
 
-        return LinearSolver.parse_obj(model)
+        return model
 
 
 class PressureCorrectionSolverLegacy(PressureCorrectionSolver, LegacyModel):
@@ -412,10 +412,10 @@ class PressureCorrectionSolverLegacy(PressureCorrectionSolver, LegacyModel):
         alias="linearSolver", default=LinearSolverLegacy()
     )
 
-    def update_model(self) -> Flow360BaseModel:
+    def update_model(self):
         model = {"randomizer": self.randomizer, "linear_solver": _try_update(self.linear_solver)}
 
-        return PressureCorrectionSolver.parse_obj(model)
+        return model
 
 
 class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
@@ -431,7 +431,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         alias="linearSolver", default=LinearSolverLegacy()
     )
 
-    def update_model(self) -> Flow360BaseModel:
+    def update_model(self):
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
@@ -448,9 +448,9 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         }
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"].max_iterations = self.linear_iterations
+            model["linearSolver"]["max_iterations"] = self.linear_iterations
 
-        return NavierStokesSolver.parse_obj(model)
+        return model
 
 
 class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
@@ -464,38 +464,29 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     )
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
-    def update_model(self) -> Flow360BaseModel:
-        class _TurbulenceTempModel(pd.BaseModel):
-            """Helper class used to create
-            the correct solver from dict data"""
-
-            solver: TurbulenceModelSolverTypes = pd.Field(discriminator="model_type")
-
+    def update_model(self):
         model = {
-            "solver": {
-                "absoluteTolerance": self.absolute_tolerance,
-                "relativeTolerance": self.relative_tolerance,
-                "modelType": self.model_type,
-                "linearSolver": _try_update(self.linear_solver),
-                "updateJacobianFrequency": self.update_jacobian_frequency,
-                "equationEvalFrequency": self.equation_eval_frequency,
-                "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
-                "orderOfAccuracy": self.order_of_accuracy,
-                "DDES": self.DDES,
-                "gridSizeForLES": self.grid_size_for_LES,
-                "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
-                "reconstructionGradientLimiter": self.reconstruction_gradient_limiter,
-                "modelConstants": self.model_constants,
-            }
+            "absoluteTolerance": self.absolute_tolerance,
+            "relativeTolerance": self.relative_tolerance,
+            "modelType": self.model_type,
+            "linearSolver": _try_update(self.linear_solver),
+            "updateJacobianFrequency": self.update_jacobian_frequency,
+            "equationEvalFrequency": self.equation_eval_frequency,
+            "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
+            "orderOfAccuracy": self.order_of_accuracy,
+            "DDES": self.DDES,
+            "gridSizeForLES": self.grid_size_for_LES,
+            "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
+            "reconstructionGradientLimiter": self.reconstruction_gradient_limiter,
+            "modelConstants": self.model_constants,
         }
 
-        if isinstance(self, TurbulenceModelSolverSA):
-            _try_set(model, "rotationCorrection", self.rotation_correction)
+        _try_set(model, "rotationCorrection", self.rotation_correction)
 
-        if self.linear_iterations is not None and model["solver"]["linearSolver"] is not None:
-            model["solver"]["linearSolver"].max_iterations = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"]["max_iterations"] = self.linear_iterations
 
-        return _TurbulenceTempModel.parse_obj(model).solver
+        return model
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
@@ -550,6 +541,6 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
         }
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"].max_iterations = self.linear_iterations
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
-        return HeatEquationSolver.parse_obj(model)
+        return TransitionModelSolver.parse_obj(model)
