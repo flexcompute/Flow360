@@ -112,7 +112,16 @@
               }
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "flow360_length_unit",
+                "mm",
+                "inch"
+              ]
             }
           }
         },
@@ -149,7 +158,16 @@
               }
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "flow360_length_unit",
+                "mm",
+                "inch"
+              ]
             }
           }
         },
@@ -190,7 +208,16 @@
               }
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "flow360_length_unit",
+                "mm",
+                "inch"
+              ]
             }
           }
         },
@@ -222,7 +249,16 @@
               }
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "flow360_length_unit",
+                "mm",
+                "inch"
+              ]
             }
           }
         },

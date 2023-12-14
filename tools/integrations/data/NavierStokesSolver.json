@@ -64,15 +64,6 @@
       "maximum": 1,
       "type": "number"
     },
-    "linearSolver": {
-      "title": "Linear solver",
-      "default": {
-        "max_iterations": 30,
-        "absolute_tolerance": null,
-        "relative_tolerance": null
-      },
-      "$ref": "#/definitions/LinearSolver"
-    },
     "limitVelocity": {
       "title": "Limit velocity",
       "default": false,
@@ -82,6 +73,11 @@
       "title": "Limit pressure density",
       "default": false,
       "type": "boolean"
+    },
+    "_addLinearSolver": {
+      "title": "Add linear solver",
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false,

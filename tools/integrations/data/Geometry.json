@@ -10,7 +10,14 @@
           "exclusiveMinimum": 0
         },
         "units": {
-          "type": "string"
+          "type": "string",
+          "dimension": "area",
+          "enum": [
+            "m**2",
+            "cm**2",
+            "ft**2",
+            "flow360_area_unit"
+          ]
         }
       }
     },
@@ -26,7 +33,16 @@
           }
         },
         "units": {
-          "type": "string"
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
         }
       }
     },
@@ -42,7 +58,16 @@
           }
         },
         "units": {
-          "type": "string"
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
         }
       }
     },

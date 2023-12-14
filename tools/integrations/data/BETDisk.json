@@ -35,60 +35,143 @@
     "numberOfBlades": {
       "title": "Number of blades",
       "exclusiveMinimum": 0,
+      "maximum": 10,
       "type": "integer"
     },
     "radius": {
       "title": "Radius",
-      "exclusiveMinimum": 0,
-      "type": "number"
+      "properties": {
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
+        }
+      }
     },
     "omega": {
-      "title": "Omega",
-      "type": "number"
+      "title": "Angular velocity (omega)",
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "units": {
+          "type": "string",
+          "dimension": "angular_velocity",
+          "enum": [
+            "rad/s",
+            "flow360_angular_velocity_unit"
+          ]
+        }
+      }
     },
     "chordRef": {
       "title": "Reference chord",
-      "exclusiveMinimum": 0,
-      "type": "number"
+      "properties": {
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
+        }
+      }
     },
     "thickness": {
       "title": "Thickness",
-      "exclusiveMinimum": 0,
-      "type": "number"
+      "properties": {
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
+        }
+      }
     },
     "nLoadingNodes": {
       "title": "Loading nodes",
       "exclusiveMinimum": 0,
+      "maximum": 1000,
       "type": "integer"
     },
     "bladeLineChord": {
       "title": "Blade line chord",
-      "exclusiveMinimum": 0,
-      "type": "number"
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "units": {
+          "type": "string",
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "flow360_length_unit",
+            "mm",
+            "inch"
+          ]
+        }
+      }
     },
     "initialBladeDirection": {
       "title": "Initial blade direction",
       "type": "array",
-      "minItems": 3,
-      "maxItems": 3,
-      "items": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "number"
-        }
-      ]
+      "items": {}
     },
     "tipGap": {
       "title": "Tip gap",
       "anyOf": [
         {
-          "type": "number",
-          "minimum": 0
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "flow360_length_unit",
+                "mm",
+                "inch"
+              ]
+            }
+          }
         },
         {
           "enum": [
@@ -102,7 +185,8 @@
       "title": "Mach numbers",
       "type": "array",
       "items": {
-        "type": "number"
+        "type": "number",
+        "minimum": 0
       }
     },
     "ReynoldsNumbers": {

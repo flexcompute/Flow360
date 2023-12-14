@@ -45,39 +45,25 @@
       },
       "additionalProperties": false
     },
-    "TurbulenceModelConstants": {
-      "title": "Turbulence model constants",
+    "TurbulenceModelConstantsSA": {
+      "title": "Turbulence model constants sa",
       "type": "object",
       "properties": {
         "C_DES": {
           "title": "C_des",
+          "default": 0.72,
           "type": "number"
         },
         "C_d": {
           "title": "C_d",
-          "type": "number"
-        },
-        "C_DES1": {
-          "title": "C_des1",
-          "type": "number"
-        },
-        "C_DES2": {
-          "title": "C_des2",
-          "type": "number"
-        },
-        "C_d1": {
-          "title": "C_d1",
-          "type": "number"
-        },
-        "C_d2": {
-          "title": "C_d2",
+          "default": 8.0,
           "type": "number"
         }
       },
       "additionalProperties": false
     },
     "SpalartAllmaras": {
-      "title": "Turbulence model solver sa",
+      "title": "Spalart allmaras",
       "type": "object",
       "properties": {
         "absoluteTolerance": {
@@ -104,7 +90,7 @@
           "title": "Linear solver",
           "default": {
             "max_iterations": 20,
-            "absolute_tolerance": null,
+            "absolute_tolerance": 1e-10,
             "relative_tolerance": null
           },
           "$ref": "#/definitions/LinearSolver"
@@ -163,7 +149,7 @@
           "type": "number"
         },
         "modelConstants": {
-          "$ref": "#/definitions/TurbulenceModelConstants"
+          "$ref": "#/definitions/TurbulenceModelConstantsSA"
         },
         "rotationCorrection": {
           "title": "Rotation correction",
@@ -173,8 +159,35 @@
       },
       "additionalProperties": false
     },
+    "TurbulenceModelConstantsSST": {
+      "title": "Turbulence model constants sst",
+      "type": "object",
+      "properties": {
+        "C_DES1": {
+          "title": "C_des1",
+          "default": 0.78,
+          "type": "number"
+        },
+        "C_DES2": {
+          "title": "C_des2",
+          "default": 0.61,
+          "type": "number"
+        },
+        "C_d1": {
+          "title": "C_d1",
+          "default": 20.0,
+          "type": "number"
+        },
+        "C_d2": {
+          "title": "C_d2",
+          "default": 3.0,
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
     "KOmegaSST": {
-      "title": "Turbulence model solver sst",
+      "title": "K omega sst",
       "type": "object",
       "properties": {
         "absoluteTolerance": {
@@ -201,7 +214,7 @@
           "title": "Linear solver",
           "default": {
             "max_iterations": 20,
-            "absolute_tolerance": null,
+            "absolute_tolerance": 1e-10,
             "relative_tolerance": null
           },
           "$ref": "#/definitions/LinearSolver"
@@ -260,7 +273,7 @@
           "type": "number"
         },
         "modelConstants": {
-          "$ref": "#/definitions/TurbulenceModelConstants"
+          "$ref": "#/definitions/TurbulenceModelConstantsSST"
         }
       },
       "additionalProperties": false

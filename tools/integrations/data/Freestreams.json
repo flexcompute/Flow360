@@ -55,7 +55,14 @@
               "exclusiveMinimum": 0
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
             }
           }
         },
@@ -67,7 +74,14 @@
               "exclusiveMinimum": 0
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
             }
           }
         }
@@ -160,7 +174,14 @@
               "exclusiveMinimum": 0
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
             }
           }
         }

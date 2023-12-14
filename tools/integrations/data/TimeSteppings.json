@@ -152,7 +152,12 @@
               "exclusiveMinimum": 0
             },
             "units": {
-              "type": "string"
+              "type": "string",
+              "dimension": "time",
+              "enum": [
+                "s",
+                "flow360_time_unit"
+              ]
             }
           }
         },

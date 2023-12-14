@@ -55,12 +55,15 @@
     },
     "turbulenceIntensityPercent": {
       "title": "Turbulence intensity percent",
-      "exclusiveMinimum": 0,
+      "minimum": 0.03,
+      "maximum": 2.5,
       "type": "number"
     },
     "Ncrit": {
       "title": "Ncrit",
-      "exclusiveMinimum": 0,
+      "default": 8.15,
+      "minimum": 1,
+      "maximum": 11,
       "type": "number"
     }
   },
