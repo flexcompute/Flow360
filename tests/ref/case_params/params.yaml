@@ -18,12 +18,6 @@ geometry:
     meshUnit:
         units: m
         value: 1.0
-    momentCenter:
-        units: m
-        value:
-        - 0.0
-        - 0.0
-        - 0.0
     momentLength:
         units: m
         value:
@@ -33,7 +27,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 7891743896c788b51564904d9eb2d1b7eb149841745dbbff2c0f5f4d3d7d376f
+hash: 7207efa383d50cd2b32a419b8a591e57eecf77a6380adabc1eccf167af536a02
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1

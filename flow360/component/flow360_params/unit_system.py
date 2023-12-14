@@ -1,6 +1,7 @@
 """
 Unit system definitions and utilities
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -8,7 +9,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List, Literal, Optional
+from typing import Any, Collection, List, Literal
 
 import numpy as np
 import pydantic as pd
@@ -762,7 +763,7 @@ class UnitSystem(pd.BaseModel):
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
-      
+
     name: Literal["Custom"] = pd.Field("Custom")
 
     _verbose: bool = pd.PrivateAttr(True)
@@ -995,19 +996,22 @@ class _PredefinedUnitSystem(UnitSystem):
     density: DensityType = pd.Field(exclude=True)
     viscosity: ViscosityType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)
+    heat_flux: HeatFluxType = pd.Field(exclude=True)
 
     def system_repr(self):
         return self.name
 
 
 class SIUnitSystem(_PredefinedUnitSystem):
+    """:class: `SIUnitSystem` predefined SI system wrapper"""
+
     name: Literal["SI"] = pd.Field("SI", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.SI)
 
     @classmethod
-    def validate(cls, value):
+    def validate(cls, _):
         return SIUnitSystem()
 
     @classmethod
@@ -1016,13 +1020,15 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
 
 class CGSUnitSystem(_PredefinedUnitSystem):
+    """:class: `CGSUnitSystem` predefined CGS system wrapper"""
+
     name: Literal["CGS"] = pd.Field("CGS", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.CGS)
 
     @classmethod
-    def validate(cls, value):
+    def validate(cls, _):
         return CGSUnitSystem()
 
     @classmethod
@@ -1031,13 +1037,15 @@ class CGSUnitSystem(_PredefinedUnitSystem):
 
 
 class ImperialUnitSystem(_PredefinedUnitSystem):
+    """:class: `ImperialUnitSystem` predefined imperial system wrapper"""
+
     name: Literal["Imperial"] = pd.Field("Imperial", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.IMPERIAL)
 
     @classmethod
-    def validate(cls, value):
+    def validate(cls, _):
         return ImperialUnitSystem()
 
     @classmethod
@@ -1046,13 +1054,15 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
 
 
 class Flow360UnitSystem(_PredefinedUnitSystem):
+    """:class: `Flow360UnitSystem` predefined flow360 system wrapper"""
+
     name: Literal["Flow360"] = pd.Field("Flow360", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.FLOW360)
 
     @classmethod
-    def validate(cls, value):
+    def validate(cls, _):
         return Flow360UnitSystem()
 
     @classmethod

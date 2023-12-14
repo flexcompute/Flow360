@@ -11,8 +11,7 @@ import zstandard as zstd
 from ..accounts_utils import Accounts
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
-from ..exceptions import Flow360TypeError
-from ..exceptions import Flow360ValueError
+from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
 
 

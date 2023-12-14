@@ -186,7 +186,9 @@ class Flow360Resource(RestApi):
             validate_type(meta, "meta", self.info_type_class)
             self._info = meta
         else:
-            raise Flow360RuntimeError(f"Resource already have metadata {self._info}. Cannot assign.")
+            raise Flow360RuntimeError(
+                f"Resource already have metadata {self._info}. Cannot assign."
+            )
 
     @classmethod
     def _from_meta(cls, meta):

@@ -12,7 +12,6 @@ from flow360.component.flow360_params.flow360_params import (
     Geometry,
     TimeStepping,
 )
-
 from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 from tests.utils import to_file_from_file_test
 

@@ -1,7 +1,6 @@
 """
 Flow360 solver parameters
 """
-# This is a temporary measure until flow360_temp models are merged
 # pylint: disable=too-many-lines
 # pylint: disable=unused-import
 from __future__ import annotations
@@ -1008,13 +1007,9 @@ class Geometry(Flow360BaseModel):
     :class: Geometry component
     """
 
-    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
-    moment_center: Optional[LengthType.Point] = pd.Field(
-        alias="momentCenter", default_factory=lambda: (0, 0, 0)
-    )
-    moment_length: Optional[LengthType.Moment] = pd.Field(
-        alias="momentLength", default_factory=lambda: (1, 1, 1)
-    )
+    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea")
+    moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
+    moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
 
     # pylint: disable=arguments-differ
@@ -1555,10 +1550,9 @@ class Flow360Params(Flow360BaseModel):
         for key, value in model_dict.items():
             if key == target:
                 return True
-            else:
-                if isinstance(value, dict):
-                    if self._has_key(target, value):
-                        return True
+            if isinstance(value, dict):
+                if self._has_key(target, value):
+                    return True
         return False
 
     def _init_from_file(self, filename, **kwargs):
@@ -1583,7 +1577,7 @@ class Flow360Params(Flow360BaseModel):
     def _init_with_update(self, model_dict):
         try:
             super().__init__(**model_dict)
-        except Exception as err_current:
+        except pd.ValidationError as err_current:
             try:
                 # Check if comments are present within the file
                 if self._has_key("comments", model_dict):
@@ -1594,12 +1588,13 @@ class Flow360Params(Flow360BaseModel):
                     with flow360.flow360_unit_system:
                         legacy = Flow360ParamsLegacy(**model_dict)
                         super().__init__(**legacy.update_model().dict())
-            except Exception as err_legacy:
+            except pd.ValidationError as err_legacy:
                 log.error("Tried to use current params format but following errors occured:")
                 log.error(err_current)
                 log.error("Tried to use legacy params format but following errors occured:")
                 log.error(err_legacy)
-                raise ValueError("loading from file failed")
+                # pylint: disable=raise-missing-from
+                raise Flow360ValidationError("Loading from file failed")
 
     def copy(self, update=None, **kwargs) -> Flow360Params:
         if unit_system_manager.current is None:
@@ -1680,7 +1675,7 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
         extra = "allow"
 
 
-""" Legacy models for Flow360 updater, do not expose """
+# Legacy models for Flow360 updater, do not expose
 
 
 class BETDiskLegacy(BETDisk, LegacyModel):
@@ -1716,7 +1711,7 @@ class BETDiskLegacy(BETDisk, LegacyModel):
 class GeometryLegacy(Geometry, LegacyModel):
     """:class: `GeometryLegacy` class"""
 
-    ref_area: Optional[float] = pd.Field(alias="refArea", default_factory=lambda: 1.0)
+    ref_area: Optional[float] = pd.Field(alias="refArea")
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 

@@ -37,6 +37,7 @@ params_no_version = {
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+        "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
     "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
@@ -47,6 +48,7 @@ params_no_unit_system = {
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+        "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
     "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
@@ -59,6 +61,7 @@ params_no_hash = {
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+        "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
     "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
@@ -70,6 +73,7 @@ params_wrong_hash = {
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+        "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
     "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},

@@ -10,8 +10,7 @@ from typing import Iterator, List, Union
 import pydantic as pd
 
 from ..cloud.rest_api import RestApi
-from ..exceptions import Flow360FileError
-from ..exceptions import Flow360ValueError
+from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
 from .interfaces import SurfaceMeshInterface

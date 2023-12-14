@@ -387,7 +387,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     N_crit: Optional[PositiveFloat] = pd.Field(alias="Ncrit")
 
 
-""" Legacy models for Flow360 updater, do not expose """
+# Legacy models for Flow360 updater, do not expose
 
 
 class LinearSolverLegacy(LinearSolver, LegacyModel):
@@ -476,7 +476,6 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
                 "absoluteTolerance": self.absolute_tolerance,
                 "relativeTolerance": self.relative_tolerance,
                 "modelType": self.model_type,
-                "CFLMultiplier": self.CFL_multiplier,
                 "linearSolver": _try_update(self.linear_solver),
                 "updateJacobianFrequency": self.update_jacobian_frequency,
                 "equationEvalFrequency": self.equation_eval_frequency,

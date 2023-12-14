@@ -7,7 +7,11 @@ from functools import wraps
 import requests
 
 from ..environment import Env
-from ..exceptions import Flow360AuthorisationError, Flow360WebError, Flow360WebNotFoundError
+from ..exceptions import (
+    Flow360AuthorisationError,
+    Flow360WebError,
+    Flow360WebNotFoundError,
+)
 from ..log import log
 from ..user_config import UserConfig
 from ..version import __version__

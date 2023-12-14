@@ -53,7 +53,9 @@ def get_supported_server_versions() -> List[str]:
         response = http.portal_api_get("versions?appName=flow360-python-client-v2")
 
     except HTTPError as error:
-        raise Flow360WebError("failed to retrieve the versions for flow360-python-client-v2") from error
+        raise Flow360WebError(
+            "failed to retrieve the versions for flow360-python-client-v2"
+        ) from error
 
     versions = [re.sub(r".+-", "", item["version"]) for item in response]
 

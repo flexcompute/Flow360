@@ -53,7 +53,9 @@ class Vector(Coordinate):
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise pd.ValidationError(Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
+            raise pd.ValidationError(
+                Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls
+            )
         return vector
 
 

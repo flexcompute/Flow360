@@ -4,9 +4,9 @@ Module exposing utilities for the validation service
 
 import pydantic as pd
 
-from .component.flow360_params.flow360_legacy import Flow360ParamsLegacy
 from .component.flow360_params.flow360_params import (
     Flow360Params,
+    Flow360ParamsLegacy,
     FreestreamFromVelocity,
     Geometry,
     NavierStokesSolver,

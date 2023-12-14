@@ -50,7 +50,7 @@ def test_freesteam():
         assertions.assertAlmostEqual(fs_solver.Mach, ref_mach)
 
         with pytest.raises(pd.ValidationError):
-            fs = FreestreamFromVelocity(velocity=0*u.m/u.s)
+            fs = FreestreamFromVelocity(velocity=0 * u.m / u.s)
 
         fs = ZeroFreestreamFromVelocity(velocity=0, velocity_ref=velocity_meter_per_sec * u.m / u.s)
         to_file_from_file_test(fs)

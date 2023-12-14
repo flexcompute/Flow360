@@ -8,14 +8,6 @@
             "value": 1.15315084119231,
             "units": "m**2"
         },
-        "momentCenter": {
-            "units": "m",
-            "value": [
-                0.0,
-                0.0,
-                0.0
-            ]
-        },
         "momentLength": {
             "value": [
                 1.47602,
@@ -30,33 +22,38 @@
         }
     },
     "boundaries": {
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing"
         },
         "3": {
             "type": "Freestream",
             "name": "freestream"
         },
-        "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
         }
     },
     "timeStepping": {
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
+        "relativeTolerance": 0.0,
         "CFLMultiplier": 1.0,
-        "equationEvalFrequency": 1,
-        "kappaMUSCL": -1.0,
-        "limitPressureDensity": false,
-        "limitVelocity": false,
         "linearIterations": 10,
+        "kappaMUSCL": -1.0,
+        "updateJacobianFrequency": 4,
+        "equationEvalFrequency": 1,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "numericalDissipationFactor": 1.0,
         "linearSolver": {
-            "maxIterations": 50,
+            "maxIterations": 30,
             "absoluteTolerance": 1e-10
-        }
+        },
+        "limitVelocity": false,
+        "limitPressureDensity": false
     },
     "freestream": {
         "alphaAngle": 3.06,
@@ -121,5 +118,5 @@
             }
         }
     },
-    "hash": "7891743896c788b51564904d9eb2d1b7eb149841745dbbff2c0f5f4d3d7d376f"
+    "hash": "7207efa383d50cd2b32a419b8a591e57eecf77a6380adabc1eccf167af536a02"
 }

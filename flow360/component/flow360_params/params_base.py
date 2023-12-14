@@ -1,6 +1,7 @@
 """
 Flow360 solver parameters
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import hashlib
@@ -19,13 +20,13 @@ from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from ...error_messages import do_not_modify_file_manually_msg
-from ...exceptions import Flow360FileError, Flow360ValidationError
+from ...exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
 from .unit_system import DimensionedType, is_flow360_unit, unit_system_manager
 
-supported_solver_version = "release-23.3.2.0"
+SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 
 
 def json_dumps(value, *args, **kwargs):
@@ -178,7 +179,7 @@ class Flow360BaseModel(BaseModel):
             super().__init__(**model_dict)
         except pd.ValidationError as exc:
             if self.Config.require_unit_system_context and unit_system_manager.current is None:
-                raise exc from ValidationError(
+                raise exc from Flow360ValidationError(
                     "Cannot instantiate model without a unit system context."
                 )
             raise exc
@@ -397,7 +398,7 @@ class Flow360BaseModel(BaseModel):
         if field is not None:
             ref = field.get("$ref")
             if ref is None:
-                raise RuntimeError(
+                raise Flow360RuntimeError(
                     f"Trying to apply optional field transform to a non-ref field {key}"
                 )
 

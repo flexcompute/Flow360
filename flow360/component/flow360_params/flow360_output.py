@@ -518,7 +518,11 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     velocity_relative: Optional[bool] = pd.Field(alias="VelocityRelative")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, [])
+        fields = _get_output_fields(
+            self,
+            [],
+            allowed=get_field_values(CommonFieldNames) + get_field_values(SurfaceFieldNames),
+        )
 
         if self.output_fields is not None:
             fields += self.output_fields
@@ -539,15 +543,27 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         return SurfaceOutput.parse_obj(model)
 
 
+class SliceNamedLegacy(Flow360BaseModel):
+    """:class:`SliceNamedLegacy` class"""
+
+    slice_name: str = pd.Field(alias="sliceName")
+    slice_normal: Coordinate = pd.Field(alias="sliceNormal")
+    slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
+    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+
+
 class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SliceOutputLegacy` class"""
 
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
+    slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field()
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, [])
+        fields = _get_output_fields(
+            self, [], allowed=get_field_values(CommonFieldNames) + get_field_values(SliceFieldNames)
+        )
 
         if self.output_fields is not None:
             fields += self.output_fields
@@ -559,8 +575,23 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
             },
             "outputFormat": self.output_format,
             "outputFields": fields,
-            "slices": self.slices,
         }
+
+        if (
+            isinstance(self.slices, List)
+            and len(self.slices) > 0
+            and isinstance(self.slices[0], SliceNamedLegacy)
+        ):
+            slices = {}
+            for named_slice in self.slices:
+                slices[named_slice.slice_name] = Slice(
+                    slice_normal=named_slice.slice_normal,
+                    slice_origin=named_slice.slice_origin,
+                    output_fields=named_slice.output_fields,
+                )
+            model["slices"] = Slices(**slices)
+        elif isinstance(self.slices, Slices):
+            model["slices"] = self.slices
 
         return SliceOutput.parse_obj(model)
 
@@ -581,7 +612,11 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
 
     def update_model(self) -> Flow360BaseModel:
-        fields = _get_output_fields(self, ["write_single_file", "write_distributed_file"])
+        fields = _get_output_fields(
+            self,
+            ["write_single_file", "write_distributed_file"],
+            allowed=get_field_values(CommonFieldNames) + get_field_values(VolumeFieldNames),
+        )
 
         if self.output_fields is not None:
             fields += self.output_fields
@@ -602,7 +637,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         return VolumeOutput.parse_obj(model)
 
 
-""" Legacy models for Flow360 updater, do not expose """
+# Legacy models for Flow360 updater, do not expose
 
 
 class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):

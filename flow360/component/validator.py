@@ -5,8 +5,7 @@ from enum import Enum
 from typing import Union
 
 from ..cloud.rest_api import RestApi
-from ..exceptions import Flow360ValidationError
-from ..exceptions import Flow360ValueError
+from ..exceptions import Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
