@@ -695,7 +695,7 @@ class FluidDynamicsVolumeZone(VolumeZoneType):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
-    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="ReferenceFrame")
+    reference_frame: Optional[ReferenceFrame] = pd.Field(alias="referenceFrame")
 
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
