@@ -45,3 +45,28 @@ def submit_warning(class_name):
     return f"\
 WARNING: You have not submitted your {class_name} to cloud. \
 It will not be processed. Please run .submit() after .create()"
+
+
+do_not_modify_file_manually_msg = """\
+The file was manually edited. It is recommended to not edit config files manually but to use:
+>>> params = Flow360Params(filename)
+>>> # edit your params here
+>>> params.to_file(filename)
+"""
+
+
+use_unit_system_msg = """\
+Params must be created with unit system context. For example:
+>>> with SI_unit_system: 
+>>>     params = Flow360Params(
+            ...
+        )
+"""
+
+
+def unit_system_inconsistent_msg(kwarg_unit_system, context_unit_system):
+    return f"""\
+Tried to construct model with {kwarg_unit_system} inside {context_unit_system} context.
+It can be caused by .copy() operation inside unit system context, \
+or by providing unit system directly to the constructor.
+"""

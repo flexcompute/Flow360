@@ -3,6 +3,7 @@ import unittest
 import pydantic as pd
 import pytest
 
+import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
@@ -53,10 +54,11 @@ def test_navier_stokes():
         limit_velocity=True,
         limit_pressure_density=False,
     )
-    p = Flow360Params(
-        navier_stokes_solver=ns,
-        freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
-    )
+    with fl.SI_unit_system:
+        p = Flow360Params(
+            navier_stokes_solver=ns,
+            freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
+        )
     to_file_from_file_test(p)
 
 

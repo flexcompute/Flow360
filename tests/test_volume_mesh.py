@@ -1,5 +1,6 @@
 import pytest
 
+import flow360
 from flow360.component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
@@ -16,7 +17,7 @@ from flow360.component.volume_mesh import (
     get_no_slip_walls,
     validate_cgns,
 )
-from flow360.exceptions import ValueError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from tests.data.volume_mesh_list import volume_mesh_list_raw
 
 from .utils import compare_to_ref, to_file_from_file_test
@@ -47,13 +48,14 @@ def test_get_no_slip_walls():
     assert walls
     assert len(walls) == 3
 
-    param = Flow360Params(
-        boundaries={
-            "fluid/fuselage": NoSlipWall(),
-            "fluid/leftWing": NoSlipWall(),
-            "fluid/rightWing": NoSlipWall(),
-        }
-    )
+    with flow360.SI_unit_system:
+        param = Flow360Params(
+            boundaries={
+                "fluid/fuselage": NoSlipWall(),
+                "fluid/leftWing": NoSlipWall(),
+                "fluid/rightWing": NoSlipWall(),
+            }
+        )
 
     to_file_from_file_test(param)
     to_file_from_file_test(param.boundaries)
@@ -64,27 +66,30 @@ def test_get_no_slip_walls():
 
 
 def test_validate_cgns():
-    param = Flow360Params(
-        boundaries={
-            "fluid/fuselage": NoSlipWall(),
-            "fluid/leftWing": NoSlipWall(),
-            "fluid/rightWing": NoSlipWall(),
-        }
-    )
+    with flow360.SI_unit_system:
+        param = Flow360Params(
+            boundaries={
+                "fluid/fuselage": NoSlipWall(),
+                "fluid/leftWing": NoSlipWall(),
+                "fluid/rightWing": NoSlipWall(),
+            }
+        )
 
-    with pytest.raises(ValueError):
+        with pytest.raises(Flow360ValueError):
+            validate_cgns(
+                "data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0"
+            )
+
+        param = Flow360Params(
+            boundaries={
+                "fluid/wall": NoSlipWall(),
+                "fluid/farfield": NoSlipWall(),
+                "fluid/periodic_0_l": NoSlipWall(),
+            }
+        )
+
         validate_cgns("data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0")
-
-    param = Flow360Params(
-        boundaries={
-            "fluid/wall": NoSlipWall(),
-            "fluid/farfield": NoSlipWall(),
-            "fluid/periodic_0_l": NoSlipWall(),
-        }
-    )
-
-    validate_cgns("data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0")
-    validate_cgns("data/cylinder.cgns", param)
+        validate_cgns("data/cylinder.cgns", param)
 
 
 def test_mesh_filename_detection():
@@ -107,13 +112,13 @@ def test_mesh_filename_detection():
 
     file = "sdfdlkjd/kjsdf.cgns.ad"
     cmp, filename = CompressionFormat.detect(file)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         mesh_format = VolumeMeshFileFormat.detect(filename)
 
     file = "sdfdlkjd/kjsdf.ugrid"
     cmp, filename = CompressionFormat.detect(file)
     mesh_format = VolumeMeshFileFormat.detect(filename)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         endianess = UGRIDEndianness.detect(filename)
 
 

@@ -10,14 +10,14 @@ from flow360.component.utils import (
     validate_type,
 )
 from flow360.component.volume_mesh import VolumeMeshMeta
-from flow360.exceptions import TypeError, ValueError
+from flow360.exceptions import Flow360TypeError, Flow360ValueError
 
 from .mock_server import mock_response
 
 
 def test_validate_type():
     validate_type("str", "meta", str)
-    with pytest.raises(TypeError):
+    with pytest.raises(Flow360TypeError):
         validate_type("str", "meta", VolumeMeshMeta)
 
 
@@ -63,10 +63,10 @@ def test_shared_confirm_proceed(mock_response, monkeypatch):
 def test_valid_uuid():
     is_valid_uuid("123e4567-e89b-12d3-a456-426614174000")
     is_valid_uuid("folder-123e4567-e89b-12d3-a456-426614174000")
-    with pytest.raises(ValueError):
+    with pytest.raises(Flow360ValueError):
         is_valid_uuid("not-a-valid-uuid")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(Flow360ValueError):
         is_valid_uuid(None)
 
     is_valid_uuid(None, allow_none=True)

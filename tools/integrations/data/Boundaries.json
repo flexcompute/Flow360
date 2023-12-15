@@ -5,53 +5,38 @@
     "name"
   ],
   "items": {
-    "title": "Model Type",
-    "type": "object",
-    "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "readOnly": true
-      },
-      "modelType": {
-        "title": "Type",
-        "enum": [
-          "NoSlipWall",
-          "SlipWall",
-          "FreestreamBoundary",
-          "IsothermalWall",
-          "SubsonicOutflowPressure",
-          "SubsonicOutflowMach",
-          "SubsonicInflow",
-          "SupersonicInflow",
-          "SlidingInterfaceBoundary",
-          "WallFunction",
-          "MassInflow",
-          "MassOutflow",
-          "SolidIsothermalWall",
-          "SolidAdiabaticWall",
-          "TranslationallyPeriodic",
-          "RotationallyPeriodic"
-        ],
-        "default": ""
-      }
-    },
-    "dependencies": {
-      "modelType": {
-        "oneOf": [
-          {
-            "title": "NoSlipWall",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "NoSlipWall",
-                "const": "NoSlipWall",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
+    "oneOf": [
+      {
+        "title": "NoSlipWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "NoSlipWall",
+            "const": "NoSlipWall",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "Velocity": {
+            "title": "Velocity",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "units": {
+                    "type": "string"
+                  }
+                }
               },
               {
                 "type": "array",
@@ -167,57 +152,6 @@
               },
               {
                 "type": "string"
-              },
-              "totalPressureRatio": {
-                "title": "Total pressure ratio",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              },
-              "totalTemperatureRatio": {
-                "title": "Total temperature ratio",
-                "exclusiveMinimum": 0,
-                "type": "number"
-              },
-              "rampSteps": {
-                "title": "Ramp steps",
-                "exclusiveMinimum": 0,
-                "type": "integer"
-              },
-              "velocityDirection": {
-                "title": "Velocity direction",
-                "anyOf": [
-                  {
-                    "properties": {
-                      "value": {
-                        "type": "array",
-                        "items": {
-                          "type": "number",
-                          "minItems": 3,
-                          "maxItems": 3
-                        }
-                      },
-                      "units": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  {
-                    "type": "array",
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "items": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  }
-                ]
               }
             ]
           },
@@ -260,6 +194,73 @@
         },
         "required": [
           "Temperature"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "HeatFluxWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "HeatFluxWall",
+            "const": "HeatFluxWall",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "heatFlux": {
+            "title": "Heat flux",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "velocity": {
+            "title": "Velocity",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "units": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "heatFlux"
         ],
         "additionalProperties": false
       },
@@ -341,6 +342,42 @@
             "title": "Ramp steps",
             "exclusiveMinimum": 0,
             "type": "integer"
+          },
+          "velocityDirection": {
+            "title": "Velocity direction",
+            "anyOf": [
+              {
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  },
+                  "units": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -365,36 +402,29 @@
           },
           "totalTemperatureRatio": {
             "title": "Total temperature ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "totalPressureRatio": {
             "title": "Total pressure ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "staticPressureRatio": {
             "title": "Static pressure ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "velocityDirection": {
             "title": "Velocity direction",
+            "supported_solver_version": "release-23.3.2.0gt",
             "anyOf": [
               {
-                "properties": {
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
-                  },
-                  "units": {
-                    "type": "string"
-                  }
-                }
+                "type": "array",
+                "items": {}
               },
               {
                 "type": "array",
@@ -474,6 +504,11 @@
             "title": "Mass flow rate",
             "exclusiveMinimum": 0,
             "type": "number"
+          },
+          "rampSteps": {
+            "title": "Ramp steps",
+            "exclusiveMinimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -499,6 +534,11 @@
             "title": "Mass flow rate",
             "exclusiveMinimum": 0,
             "type": "number"
+          },
+          "rampSteps": {
+            "title": "Ramp steps",
+            "exclusiveMinimum": 0,
+            "type": "integer"
           }
         },
         "required": [
@@ -530,60 +570,79 @@
               {
                 "type": "string"
               }
-            },
-            "additionalProperties": false
+            ]
+          }
+        },
+        "required": [
+          "Temperature"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "title": "SolidAdiabaticWall",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "SolidAdiabaticWall",
+            "const": "SolidAdiabaticWall",
+            "type": "string"
           },
-          {
-            "title": "TranslationallyPeriodic",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "TranslationallyPeriodic",
-                "const": "TranslationallyPeriodic",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "pairedPatchName": {
-                "title": "Paired patch name",
-                "type": "array",
-                "items": {}
-              }
-            },
-            "additionalProperties": false
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "TranslationallyPeriodic",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "TranslationallyPeriodic",
+            "const": "TranslationallyPeriodic",
+            "type": "string"
           },
-          {
-            "title": "RotationallyPeriodic",
-            "type": "object",
-            "properties": {
-              "type": {
-                "title": "Type",
-                "default": "RotationallyPeriodic",
-                "const": "RotationallyPeriodic",
-                "type": "string"
-              },
-              "name": {
-                "title": "Name",
-                "type": "string"
-              },
-              "pairedPatchName": {
-                "title": "Paired patch name",
-                "type": "string"
-              },
-              "axisOfRotation": {
-                "title": "Axis of rotation",
-                "type": "array",
-                "items": {}
-              },
-              "thetaRadians": {
-                "title": "Theta radians",
-                "type": "number"
-              }
-            },
-            "additionalProperties": false
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pairedPatchName": {
+            "title": "Paired patch name",
+            "type": "array",
+            "items": {}
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "RotationallyPeriodic",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "RotationallyPeriodic",
+            "const": "RotationallyPeriodic",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pairedPatchName": {
+            "title": "Paired patch name",
+            "type": "string"
+          },
+          "axisOfRotation": {
+            "title": "Axis of rotation",
+            "type": "array",
+            "items": {}
+          },
+          "thetaRadians": {
+            "title": "Theta radians",
+            "type": "number"
           }
         },
         "additionalProperties": false

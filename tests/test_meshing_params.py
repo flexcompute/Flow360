@@ -13,7 +13,7 @@ from flow360.component.meshing.params import (
     Volume,
     VolumeMeshingParams,
 )
-from flow360.exceptions import ValidationError
+from flow360.exceptions import Flow360ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
 

@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 import pydantic as pd
 from typing_extensions import Annotated
 
-from ..exceptions import ValidationError
+from ..exceptions import Flow360ValidationError
 
 # type tag default name
 TYPE_TAG_STR = "_type"
@@ -53,7 +53,9 @@ class Vector(Coordinate):
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise pd.ValidationError(ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
+            raise pd.ValidationError(
+                Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls
+            )
         return vector
 
 

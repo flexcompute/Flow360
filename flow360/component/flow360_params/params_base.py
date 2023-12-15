@@ -1,8 +1,10 @@
 """
 Flow360 solver parameters
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from abc import ABCMeta, abstractmethod
@@ -17,11 +19,14 @@ from pydantic import BaseModel
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
-from ...exceptions import FileError, ValidationError
+from ...error_messages import do_not_modify_file_manually_msg
+from ...exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
-from .unit_system import DimensionedType, is_flow360_unit, unit_system_manager
+from .unit_system import DimensionedType, is_flow360_unit
+
+SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 
 
 def json_dumps(value, *args, **kwargs):
@@ -48,7 +53,7 @@ def params_generic_validator(value, ExpectedParamsType):
             return None
     try:
         ExpectedParamsType(**params)
-    except ValidationError:
+    except Flow360ValidationError:
         return None
     except pd.ValidationError:
         return None
@@ -168,22 +173,14 @@ class Flow360BaseModel(BaseModel):
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`_
     """
 
-    # comments is allowed property at every level
-    # comments: Optional[Any] = pd.Field()
-
     def __init__(self, filename: str = None, **kwargs):
-        try:
-            if filename:
-                obj = self.from_file(filename=filename)
-                super().__init__(**obj.dict())
-            else:
-                super().__init__(**kwargs)
-        except pd.ValidationError as exc:
-            if self.Config.require_unit_system_context and unit_system_manager.current is None:
-                raise exc from ValidationError(
-                    "Cannot instantiate model without a unit system context."
-                )
-            raise exc
+        model_dict = self._init_handle_file(filename=filename, **kwargs)
+        super().__init__(**model_dict)
+
+    def _init_handle_file(self, filename: str = None, **kwargs):
+        if filename is not None:
+            return self.dict_from_file(filename=filename)
+        return kwargs
 
     def __init_subclass__(cls) -> None:
         """Things that are done to each of the models."""
@@ -210,7 +207,6 @@ class Flow360BaseModel(BaseModel):
             Re-validate after re-assignment of field in model.
         """
 
-        require_unit_system_context = False
         arbitrary_types_allowed = True
         validate_all = True
         extra = "forbid"
@@ -223,6 +219,14 @@ class Flow360BaseModel(BaseModel):
         require_one_of: Optional[List[str]] = []
         allow_but_remove: Optional[List[str]] = []
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
+        include_hash: bool = False
+
+    def __setattr__(self, name, value):
+        if name in self.__fields__:
+            is_mutable = self.__fields__[name].field_info.extra.get("mutable")
+            if is_mutable is not None and is_mutable is False:
+                raise ValueError(f"Cannot modify immutable fields: {name}")
+        super().__setattr__(name, value)
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -386,7 +390,7 @@ class Flow360BaseModel(BaseModel):
         if field is not None:
             ref = field.get("$ref")
             if ref is None:
-                raise RuntimeError(
+                raise Flow360RuntimeError(
                     f"Trying to apply optional field transform to a non-ref field {key}"
                 )
 
@@ -536,7 +540,8 @@ class Flow360BaseModel(BaseModel):
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
         kwargs.update({"deep": True})
         new_copy = BaseModel.copy(self, update=update, **kwargs)
-        return self.validate(new_copy.dict())
+        data = new_copy.dict()
+        return self.validate(data)
 
     def help(self, methods: bool = False) -> None:
         """Prints message describing the fields and methods of a :class:`Flow360BaseModel`.
@@ -553,15 +558,13 @@ class Flow360BaseModel(BaseModel):
         rich.inspect(self, methods=methods)
 
     @classmethod
-    def from_file(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def from_file(cls, filename: str) -> Flow360BaseModel:
         """Loads a :class:`Flow360BaseModel` from .json, or .yaml file.
 
         Parameters
         ----------
         filename : str
             Full path to the .yaml or .json file to load the :class:`Flow360BaseModel` from.
-        **parse_obj_kwargs
-            Keyword arguments passed to either pydantic's ``parse_obj`` function when loading model.
 
         Returns
         -------
@@ -572,8 +575,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> simulation = Simulation.from_file(filename='folder/sim.json') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_file(filename=filename)
-        return cls.parse_obj(model_dict, **parse_obj_kwargs)
+        return cls(filename=filename)
 
     @classmethod
     def dict_from_file(cls, filename: str) -> dict:
@@ -595,11 +597,15 @@ class Flow360BaseModel(BaseModel):
         """
 
         if ".json" in filename:
-            return cls.dict_from_json(filename=filename)
-        if ".yaml" in filename:
-            return cls.dict_from_yaml(filename=filename)
+            model_dict = cls._dict_from_json(filename=filename)
+        elif ".yaml" in filename:
+            model_dict = cls._dict_from_yaml(filename=filename)
 
-        raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+        else:
+            raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
+
+        model_dict = cls._init_handle_hash(model_dict)
+        return model_dict
 
     def to_file(self, filename: str) -> None:
         """Exports :class:`Flow360BaseModel` instance to .json or .yaml file
@@ -619,7 +625,7 @@ class Flow360BaseModel(BaseModel):
         if ".yaml" in filename:
             return self.to_yaml(filename=filename)
 
-        raise FileError(f"File must be .json, or .yaml, type, given {filename}")
+        raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
     def from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
@@ -641,11 +647,11 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params = Flow360Params.from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_json(filename=filename)
+        model_dict = cls.dict_from_file(filename=filename)
         return cls.parse_obj(model_dict, **parse_obj_kwargs)
 
     @classmethod
-    def dict_from_json(cls, filename: str) -> dict:
+    def _dict_from_json(cls, filename: str) -> dict:
         """Load dictionary of the model from a .json file.
 
         Parameters
@@ -678,9 +684,12 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params.to_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        json_string = self.json(indent=4)
-        with open(filename, "w", encoding="utf-8") as file_handle:
-            file_handle.write(json_string)
+        json_string = self.json()
+        model_dict = json.loads(json_string)
+        if self.Config.include_hash:
+            model_dict["hash"] = self._calculate_hash(model_dict)
+        with open(filename, "w+", encoding="utf-8") as file_handle:
+            json.dump(model_dict, file_handle, indent=4)
 
     @classmethod
     def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
@@ -702,11 +711,11 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params = Flow360Params.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_yaml(filename=filename)
+        model_dict = cls.dict_from_file(filename=filename)
         return cls.parse_obj(model_dict, **parse_obj_kwargs)
 
     @classmethod
-    def dict_from_yaml(cls, filename: str) -> dict:
+    def _dict_from_yaml(cls, filename: str) -> dict:
         """Load dictionary of the model from a .yaml file.
 
         Parameters
@@ -741,6 +750,8 @@ class Flow360BaseModel(BaseModel):
         """
         json_string = self.json()
         model_dict = json.loads(json_string)
+        if self.Config.include_hash:
+            model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             yaml.dump(model_dict, file_handle, indent=4)
 
@@ -803,6 +814,21 @@ class Flow360BaseModel(BaseModel):
         exclude = self._handle_export_exclude(exclude)
         return super().json(*args, by_alias=True, exclude_none=True, exclude=exclude, **kwargs)
 
+    @classmethod
+    def _init_handle_hash(cls, model_dict):
+        hash_from_input = model_dict.pop("hash", None)
+        if hash_from_input is not None:
+            if hash_from_input != cls._calculate_hash(model_dict):
+                log.warning(do_not_modify_file_manually_msg)
+        return model_dict
+
+    @classmethod
+    def _calculate_hash(cls, model_dict):
+        hasher = hashlib.sha256()
+        json_string = json.dumps(model_dict, sort_keys=True)
+        hasher.update(json_string.encode("utf-8"))
+        return hasher.hexdigest()
+
     # pylint: disable=unnecessary-dunder-call
     def append(self, params: Flow360BaseModel, overwrite: bool = False):
         """append parametrs to the model
@@ -821,7 +847,9 @@ class Flow360BaseModel(BaseModel):
                     f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
                 )
                 continue
-            self.__setattr__(key, value)
+            is_mutable = self.__fields__[key].field_info.extra.get("mutable")
+            if is_mutable is None or is_mutable is True:
+                self.__setattr__(key, value)
 
     @classmethod
     def add_type_field(cls) -> None:

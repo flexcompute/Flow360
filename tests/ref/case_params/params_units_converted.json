@@ -1,4 +1,8 @@
 {
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "0.2.0b16",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -26,6 +30,10 @@
             "type": "SlipWall",
             "name": "symmetry"
         },
+        "3": {
+            "type": "Freestream",
+            "name": "freestream"
+        },
         "1": {
             "type": "NoSlipWall",
             "name": "wing",
@@ -37,10 +45,6 @@
                 ],
                 "units": "flow360_velocity_unit"
             }
-        },
-        "3": {
-            "type": "Freestream",
-            "name": "freestream"
         }
     },
     "timeStepping": {
@@ -65,25 +69,6 @@
         "Temperature": 288.15
     },
     "volumeZones": {
-        "zone2": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omegaRadians": 3.0773317581937964e-06,
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
-        },
         "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
@@ -121,7 +106,26 @@
                     0
                 ]
             }
+        },
+        "zone2": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "omegaRadians": 3.0773317581937964e-06,
+                "centerOfRotation": {
+                    "value": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "units": "flow360_length_unit"
+                },
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ]
+            }
         }
-    }
+    },
+    "hash": "3bceef869ee2d97a0d8999b87a1b20679e4f118272db24b49d3301e966e1364c"
 }
-   

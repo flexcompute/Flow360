@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 import unyt
 
+import flow360
 from flow360.cloud.rest_api import RestApi
 from flow360.component.flow360_params import unit_system
 
@@ -30,6 +31,16 @@ def file_compare(file1, file2):
                 different = True
 
             return not different
+
+
+def show_dict_diff(dict1, dict2):
+    dict1_lines = [f"{key}: {value}" for key, value in sorted(dict1.items())]
+    dict2_lines = [f"{key}: {value}" for key, value in sorted(dict2.items())]
+
+    diff = difflib.unified_diff(dict1_lines, dict2_lines)
+    print("diff")
+    print("\n".join(diff))
+    print("end of diff")
 
 
 def to_file_from_file_test(obj):
@@ -58,7 +69,10 @@ def compare_to_ref(obj, ref_path, content_only=False):
                 a = json.load(fh)
             with open(ref_path) as fh:
                 b = json.load(fh)
-            assert sorted(a.items()) == sorted(b.items())
+            equal = sorted(a.items()) == sorted(b.items())
+            if equal is False:
+                show_dict_diff(a, b)
+                assert equal
 
 
 @pytest.fixture()

@@ -1,4 +1,8 @@
 {
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "0.2.0b16",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -36,10 +40,6 @@
         }
     },
     "boundaries": {
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
-        },
         "1": {
             "type": "NoSlipWall",
             "name": "wing",
@@ -55,6 +55,10 @@
         "3": {
             "type": "Freestream",
             "name": "freestream"
+        },
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
         }
     },
     "timeStepping": {
@@ -80,6 +84,28 @@
         }
     },
     "volumeZones": {
+        "zone3": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "omega": {
+                    "value": 60.0,
+                    "units": "degree/s"
+                },
+                "centerOfRotation": {
+                    "value": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "units": "m"
+                },
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ]
+            }
+        },
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
@@ -123,28 +149,7 @@
                     0
                 ]
             }
-        },
-        "zone3": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omega": {
-                    "value": 60.0,
-                    "units": "degree/s"
-                },
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "m"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
         }
-    }
+    },
+    "hash": "9e1064084932afc891733e2899e0e39dfc05ac04215e0ecfff73983ee4fded61"
 }

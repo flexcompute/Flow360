@@ -23,7 +23,7 @@ from flow360.component.flow360_params.flow360_params import (
     TimeStepping,
     WallFunction,
 )
-from flow360.exceptions import ValidationError
+from flow360.exceptions import Flow360ValidationError
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -66,22 +66,42 @@ def test_mesh_boundary():
 
 
 def test_case_boundary():
-    with pytest.raises(ValueError):
-        param = Flow360Params(
-            boundaries={
-                "fluid/fuselage": TimeStepping(),
-                "fluid/leftWing": NoSlipWall(),
-                "fluid/rightWing": NoSlipWall(),
-            }
-        )
+    with fl.SI_unit_system:
+        with pytest.raises(ValueError):
+            param = Flow360Params(
+                boundaries={
+                    "fluid/fuselage": TimeStepping(),
+                    "fluid/leftWing": NoSlipWall(),
+                    "fluid/rightWing": NoSlipWall(),
+                }
+            )
 
-    with pytest.raises(ValueError):
+        with pytest.raises(ValueError):
+            param = Flow360Params.parse_raw(
+                """
+                {
+                    "boundaries": {
+                        "fluid/fuselage": {
+                            "type": "UnsupportedBC"
+                        },
+                        "fluid/leftWing": {
+                            "type": "NoSlipWall"
+                        },
+                        "fluid/rightWing": {
+                            "type": "NoSlipWall"
+                        } 
+                    }
+                }
+                """
+            )
+            print(param)
+
         param = Flow360Params.parse_raw(
             """
             {
                 "boundaries": {
                     "fluid/fuselage": {
-                        "type": "UnsupportedBC"
+                        "type": "SlipWall"
                     },
                     "fluid/leftWing": {
                         "type": "NoSlipWall"
@@ -93,60 +113,41 @@ def test_case_boundary():
             }
             """
         )
-        print(param)
 
-    param = Flow360Params.parse_raw(
-        """
-        {
-            "boundaries": {
-                "fluid/fuselage": {
-                    "type": "SlipWall"
-                },
-                "fluid/leftWing": {
-                    "type": "NoSlipWall"
-                },
-                "fluid/rightWing": {
-                    "type": "NoSlipWall"
-                } 
-            }
-        }
-        """
-    )
+        assert param
 
-    assert param
+        boundaries = fl.Boundaries(
+            wing=NoSlipWall(), symmetry=SlipWall(), freestream=FreestreamBoundary()
+        )
 
-    boundaries = fl.Boundaries(
-        wing=NoSlipWall(), symmetry=SlipWall(), freestream=FreestreamBoundary()
-    )
+        assert boundaries
 
-    assert boundaries
+        with pytest.raises(ValueError):
+            param = Flow360Params(
+                boundaries={
+                    "fluid/fuselage": "NoSlipWall",
+                    "fluid/leftWing": NoSlipWall(),
+                    "fluid/rightWing": NoSlipWall(),
+                }
+            )
 
-    with pytest.raises(ValueError):
         param = Flow360Params(
             boundaries={
-                "fluid/fuselage": "NoSlipWall",
-                "fluid/leftWing": NoSlipWall(),
+                "fluid/fuselage": NoSlipWall(),
                 "fluid/rightWing": NoSlipWall(),
+                "fluid/leftWing": NoSlipWall(),
             }
         )
 
-    param = Flow360Params(
-        boundaries={
-            "fluid/fuselage": NoSlipWall(),
-            "fluid/rightWing": NoSlipWall(),
-            "fluid/leftWing": NoSlipWall(),
-        }
-    )
+        assert param
 
-    assert param
-
-    param = Flow360Params(
-        boundaries={
-            "fluid/ fuselage": NoSlipWall(),
-            "fluid/rightWing": NoSlipWall(),
-            "fluid/leftWing": SolidIsothermalWall(temperature=1.0),
-        }
-    )
+        param = Flow360Params(
+            boundaries={
+                "fluid/ fuselage": NoSlipWall(),
+                "fluid/rightWing": NoSlipWall(),
+                "fluid/leftWing": SolidIsothermalWall(temperature=1.0),
+            }
+        )
 
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/yaml.yaml")
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/json.json")
