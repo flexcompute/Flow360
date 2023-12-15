@@ -825,6 +825,7 @@ class UnitSystem(pd.BaseModel):
     @classmethod
     def from_dict(cls, **kwargs):
         """Construct a unit system from the provided dictionary"""
+
         class _TemporaryModel(pd.BaseModel):
             unit_system: UnitSystemTypes = pd.Field(discriminator="name")
 
