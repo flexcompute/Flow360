@@ -61,11 +61,12 @@ def get_default_fork(params_as_dict):
     return params
 
 
-def validate_flow360_params_model(params_as_dict):
+def validate_flow360_params_model(params_as_dict, unit_system_context):
     """
     Validate a params dict against the pydantic model
     """
-    values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
+    with unit_system_context:
+        values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
     print(f"{validation_errors=}")
@@ -99,7 +100,8 @@ def validate_flow360_params_model(params_as_dict):
     # Gather dependency errors stemming from solver conversion if no validation errors exist
     if validation_errors is None:
         try:
-            params = Flow360Params.parse_obj(params_as_dict)
+            with unit_system_context:
+                params = Flow360Params.parse_obj(params_as_dict)
             params.to_solver()
         except Flow360ConfigurationError as exc:
             validation_errors = [
