@@ -217,12 +217,12 @@ def test_boundary_types():
 
 
 def test_duplidated_boundary_names():
-    with pytest.raises(ValueError, match="Boundary name <wing>.* appears multiple times"):
-        param = Flow360Params(
-            boundaries={
-                "fluid/fuselage": NoSlipWall(name="fuselage"),
-                "fluid/leftWing": NoSlipWall(name="wing"),
-                "fluid/rightWing": NoSlipWall(name="wing"),
-                "fluid/farfield": FreestreamBoundary(),
-            }
-        )
+    with fl.SI_unit_system:
+        with pytest.raises(ValueError, match="Boundary name <wing>.* appears multiple times"):
+            param = Flow360Params(
+                boundaries={
+                    "fluid/fuselage": NoSlipWall(name="fuselage"),
+                    "fluid/leftWing": NoSlipWall(name="wing"),
+                    "fluid/rightWing": NoSlipWall(name="wing"),
+                }
+            )
