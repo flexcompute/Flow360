@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterator, List, Union
+from typing import Any, Iterator, List, Union, Optional, Callable, Dict
 
 import pydantic as pd
+import numpy as np
 from pylab import show, subplots
 
 from .. import error_messages
@@ -683,6 +684,306 @@ class ResultsPloter:
     def residuals(self):
         """plot residuals"""
         raise NotImplementedError("Plotting residuals not supported yet.")
+
+
+from .flow360_params.unit_system import DimensionedType
+import tempfile
+import pandas
+
+class ResultCSVModel(pd.BaseModel):
+    csv_file_name: str = pd.Field()
+    save: bool = pd.Field(False)
+    save_as: Optional[str] = pd.Field()
+    download_method: Optional[Callable] = pd.Field()
+    temp_file: str = pd.Field(const=True, default_factory=lambda: tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
+    _values: Optional[Dict] = pd.PrivateAttr(None)
+    _raw_values: Optional[Dict] = pd.PrivateAttr(None)
+
+
+    def _read_csv_file(self):
+        df = pandas.read_csv(self.temp_file, skipinitialspace=True)
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+        return df.to_dict('list')
+
+    @property
+    def raw_values(self):
+        if self._raw_values is None:
+            self._download_file()
+            self._raw_values = self._read_csv_file()
+        return self._raw_values
+
+    def _download_file(self):
+        self.download_method(f"results/{self.csv_file_name}", to_file=self.temp_file)
+
+    @property
+    def values(self):
+        if self._values is None:
+            self._values = self.raw_values
+        return self._values
+    
+    def in_base(self, base):
+        '''values in base system'''
+        pass
+
+    def to_file(self, filename: str=None):
+        pass
+
+    def as_dict(self):
+        return self.values
+
+    def as_numpy(self):
+        return self.as_dataframe().to_numpy()
+
+    def as_dataframe(self):
+        return pandas.DataFrame(self.values)
+
+
+class ResidualsResultCSVModel(ResultCSVModel):
+    csv_file_name: str = pd.Field("nonlinear_residual_v2.csv", const=True)
+
+class TotalForcesResultCSVModel(ResultCSVModel):
+    csv_file_name: str = pd.Field("total_forces_v2.csv", const=True)
+
+
+from .flow360_params.unit_system import ForceType, flow360_unit_system
+from .flow360_params.conversions import unit_converter
+
+class _ActuatorDiskResults(pd.BaseModel):
+    force: ForceType.Array = pd.Field()
+
+
+class ActuatorDiskResultCSVModel(ResultCSVModel):
+    csv_file_name: str = pd.Field("actuatorDisk_output_v2.csv", const=True)
+
+    def in_base(self, base, params):
+        '''values in base system'''
+        discs = []
+        disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
+        print(disk_names)
+        with flow360_unit_system:
+            ad = _ActuatorDiskResults(force=self.values['Disk0_Force'])
+
+        log.debug(f"   -> need conversion for: force = {ad.force}")
+        flow360_conv_system = unit_converter(
+            ad.force.units.dimensions,
+            params=params,
+            required_by=['force'],
+        )
+        converted = ad.force.in_base(base, flow360_conv_system)
+        self.values['Disk0_Force'] = converted
+        self.values['ForceUnits'] = converted
+
+        log.debug(f"      converted to: {converted}")
+
+
+class ResultsDownloaderSettings(pd.BaseModel):
+    surface: bool = pd.Field(False),
+    volume: bool = pd.Field(False),
+    nonlinear_residuals: bool = pd.Field(False),
+    linear_residuals: bool = pd.Field(False),
+    cfl: bool = pd.Field(False),
+    minmax_state: bool = pd.Field(False),
+    surface_forces: bool = pd.Field(False),
+    total_forces: bool = pd.Field(False),
+    bet_forces: bool = pd.Field(False),
+    actuator_disk_output: bool = pd.Field(False),
+    all: bool = pd.Field(False),
+    overwrite: bool = False,
+    destination: str = ".",
+
+
+
+class CaseResultsModel(pd.BaseModel):
+    residuals: ResidualsResultCSVModel = pd.Field(ResidualsResultCSVModel(), const=True)
+    total_forces: TotalForcesResultCSVModel = pd.Field(TotalForcesResultCSVModel(), const=True)
+    actuator_disk: ActuatorDiskResultCSVModel = pd.Field(ActuatorDiskResultCSVModel(), const=True)
+
+    case: Any = pd.Field()
+
+
+    @pd.root_validator(pre=True)
+    def pass_download_function(cls, values):
+        if 'case' not in values:
+            raise ValueError('case is required attribute')
+        
+        if not isinstance(values['case'], Case):
+            raise TypeError('case must be of type Case')
+
+        for field in cls.__fields__.values():
+            if field.name not in values.keys():
+                value = field.default
+                if isinstance(value, ResultCSVModel):
+                    value.download_method = values['case']._download_file
+                    values[field.name] = value
+
+        return values
+
+    # pylint: disable=protected-access
+    def _download_file(
+        self,
+        downloadable: str,
+        to_file=".",
+        to_folder=".",
+        overwrite: bool = True,
+        **kwargs,
+    ):
+        """
+        Download a specific file associated with the case.
+
+        Parameters
+        ----------
+        downloadable : str
+            Name of the file to download
+
+        to_file : str, optional
+            File path to save the downloaded file. If None, the file will be saved in the current directory.
+            If provided without an extension, the extension will be automatically added based on the file type.
+
+        to_folder : str, optional
+            Folder name to save the downloaded file. If None, the file will be saved in the current directory.
+
+        overwrite : bool, optional
+            If True, overwrite existing files with the same name in the destination.
+
+        **kwargs : dict, optional
+            Additional arguments to be passed to the download process.
+
+        Returns
+        -------
+        str
+            File path of the downloaded file.
+        """
+
+        return self.case._download_file(
+            f"results/{downloadable}",
+            to_file=to_file,
+            to_folder=to_folder,
+            overwrite=overwrite,
+            **kwargs,
+        )
+
+
+    def set_destination():
+        pass
+
+
+    def set_downloader(
+        self,
+        surface: bool = False,
+        volume: bool = False,
+        nonlinear_residuals: bool = False,
+        linear_residuals: bool = False,
+        cfl: bool = False,
+        minmax_state: bool = False,
+        surface_forces: bool = False,
+        total_forces: bool = False,
+        bet_forces: bool = False,
+        actuator_disk_output: bool = False,
+        all: bool = False,
+        overwrite: bool = False,
+        destination: str = ".",
+    ):
+        """
+        Download result files associated with the case.
+
+        Parameters
+        ----------
+        surface : bool, optional
+            Download surface result file if True.
+        volume : bool, optional
+            Download volume result file if True.
+        nonlinear_residuals : bool, optional
+            Download nonlinear residuals file if True.
+        linear_residuals : bool, optional
+            Download linear residuals file if True.
+        cfl : bool, optional
+            Download CFL file if True.
+        minmax_state : bool, optional
+            Download minmax state file if True.
+        surface_forces : bool, optional
+            Download surface forces file if True.
+        total_forces : bool, optional
+            Download total forces file if True.
+        bet_forces : bool, optional
+            Download BET (Blade Element Theory) forces file if True.
+        actuator_disk_output : bool, optional
+            Download actuator disk output file if True.
+        all : bool, optional
+            Download all result files if True (ignores other parameters).
+        overwrite : bool, optional
+            If True, overwrite existing files with the same name in the destination.
+        destination : str, optional
+            Location to save downloaded files. If None, files will be saved in the current directory under ID folder.
+
+        Returns
+        -------
+        List of str
+            File paths of the downloaded files.
+        """
+
+        download_map = [
+            (surface, CaseDownloadable.SURFACE),
+            (volume, CaseDownloadable.VOLUME),
+            (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
+            (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
+            (cfl, CaseDownloadable.CFL),
+            (minmax_state, CaseDownloadable.MINMAX_STATE),
+            (surface_forces, CaseDownloadable.SURFACE_FORCES),
+            (total_forces, CaseDownloadable.TOTAL_FORCES),
+        ]
+        downloaded_files = []
+        for do_download, filename in download_map:
+            if do_download or all:
+                downloaded_files.append(
+                    self._download_file(filename, to_folder=destination, overwrite=overwrite)
+                )
+
+        if bet_forces or all:
+            try:
+                downloaded_files.append(
+                    self._download_file(
+                        CaseDownloadable.BET_FORCES,
+                        to_folder=destination,
+                        overwrite=overwrite,
+                        log_error=False,
+                    )
+                )
+            except CloudFileNotFoundError as err:
+                if not self._case.has_bet_disks():
+                    if bet_forces:
+                        log.warning("Case does not have any BET disks.")
+                else:
+                    log.error(
+                        f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
+                    )
+                    raise err
+
+        if actuator_disk_output or all:
+            try:
+                downloaded_files.append(
+                    self._download_file(
+                        CaseDownloadable.ACTUATOR_DISK_OUTPUT,
+                        to_folder=destination,
+                        overwrite=overwrite,
+                        log_error=False,
+                    )
+                )
+            except CloudFileNotFoundError as err:
+                if not self._case.has_actuator_disks():
+                    if actuator_disk_output:
+                        log.warning("Case does not have any actuator disks.")
+                else:
+                    log.error(
+                        (
+                            "A problem occured when trying to download actuator disk results:"
+                            f"{CaseDownloadable.ACTUATOR_DISK_OUTPUT}"
+                        )
+                    )
+                    raise err
+
+        return downloaded_files
+    
+
 
 
 class CaseResults:

@@ -306,7 +306,7 @@ class DimensionedType(ValidatedType):
 
     class _VectorType:
         @classmethod
-        def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True):
+        def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
             """Get a dynamically created metaclass representing the vector"""
 
             def __modify_schema__(field_schema, field):
@@ -314,16 +314,17 @@ class DimensionedType(ValidatedType):
                 field_schema["properties"]["value"]["type"] = "array"
                 field_schema["properties"]["value"]["items"] = {}
                 field_schema["properties"]["value"]["items"]["type"] = "number"
-                field_schema["properties"]["value"]["items"]["minItems"] = 3
-                field_schema["properties"]["value"]["items"]["maxItems"] = 3
+                if length is not None:
+                    field_schema["properties"]["value"]["items"]["minItems"] = length
+                    field_schema["properties"]["value"]["items"]["maxItems"] = length
 
             def validate(vec_cls, value):
                 """additional validator for value"""
                 value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
-                if not isinstance(value, Collection) and len(value) != 3:
-                    raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
+                if not isinstance(value, Collection) and length is not None and len(value) != length:
+                    raise TypeError(f"arg '{value}' needs to be a collection of {length} values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
                 if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
@@ -342,6 +343,15 @@ class DimensionedType(ValidatedType):
             setattr(cls_obj, "__modify_schema__", __modify_schema__)
             setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
             return cls_obj
+
+    # pylint: disable=invalid-name
+    @classproperty
+    def Array(self):
+        """
+        Array value which accepts any length
+        """
+        return self._VectorType.get_class_object(self, length=None)
+
 
     # pylint: disable=invalid-name
     @classproperty
@@ -622,6 +632,12 @@ class _Flow360BaseUnit(DimensionedType):
         if isinstance(other, Collection) and (not self.val or self.val == 1):
             return self.__class__(other)
         raise TypeError(f"Operation not defined on {self} and {other}")
+
+    def in_base(self, base, flow360_conv_system):
+        value = self.value * flow360_conv_system[self.dimension_type.dim_name]
+        value.units.registry = flow360_conv_system.registry
+        converted = value.in_base(unit_system=base)
+        return converted
 
 
 class Flow360LengthUnit(_Flow360BaseUnit):
@@ -977,3 +993,7 @@ SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
 CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
 imperial_unit_system = UnitSystem(base_system=BaseSystemType.IMPERIAL)
 flow360_unit_system = UnitSystem(base_system=BaseSystemType.FLOW360)
+
+# register SI unit system
+u.UnitSystem("SI", "m", "kg", "s")
+
