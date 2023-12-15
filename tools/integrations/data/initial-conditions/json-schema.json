@@ -1,0 +1,82 @@
+{
+  "title": "_InitialConditions",
+  "type": "object",
+  "properties": {
+    "initialConditions": {
+      "title": "Initial conditions",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FreestreamInitialCondition"
+        },
+        {
+          "$ref": "#/definitions/ExpressionInitialCondition"
+        }
+      ]
+    }
+  },
+  "required": [
+    "initialConditions"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "FreestreamInitialCondition": {
+      "title": "Freestream initial condition",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "freestream",
+          "const": "freestream",
+          "enum": [
+            "freestream"
+          ],
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExpressionInitialCondition": {
+      "title": "Expression initial condition",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "expression",
+          "const": "expression",
+          "enum": [
+            "expression"
+          ],
+          "type": "string"
+        },
+        "rho": {
+          "title": "Rho",
+          "type": "string"
+        },
+        "u": {
+          "title": "U",
+          "type": "string"
+        },
+        "v": {
+          "title": "V",
+          "type": "string"
+        },
+        "w": {
+          "title": "W",
+          "type": "string"
+        },
+        "p": {
+          "title": "P",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rho",
+        "u",
+        "v",
+        "w",
+        "p"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

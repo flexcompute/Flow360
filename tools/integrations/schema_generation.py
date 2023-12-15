@@ -6,6 +6,10 @@ import pydantic as pd
 
 import flow360 as fl
 from flow360 import TimeStepping
+from flow360.component.flow360_params.flow360_params import (
+    ExpressionInitialCondition,
+    FreestreamInitialCondition,
+)
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import TimeType
 from flow360.component.types import PositiveInt
@@ -16,16 +20,18 @@ def write_to_file(name, content):
         outfile.write(content)
 
 
-def write_schemas(type_obj: Type[Flow360BaseModel]):
+def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
     data = type_obj.flow360_schema()
     schema = json.dumps(data, indent=2)
     name = type_obj.__name__
     if name.startswith("_"):
         name = name[1:]
-    write_to_file(f"./data/{name}.json", schema)
+    if not os.path.exists(f"./data/{folder_name}"):
+        os.mkdir(f"./data/{folder_name}")
+    write_to_file(f"./data/{folder_name}/json-schema.json", schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
-        write_to_file(f"./data/{name}.ui.json", ui_schema)
+        write_to_file(f"./data/{folder_name}/ui-schema.json", ui_schema)
 
 
 if not os.path.exists(f"./data/"):
@@ -90,30 +96,36 @@ class _FluidProperties(Flow360BaseModel):
     )
 
 
-write_schemas(fl.NavierStokesSolver)
-write_schemas(fl.Geometry)
-write_schemas(fl.SlidingInterface)
-write_schemas(fl.TransitionModelSolver)
-write_schemas(fl.HeatEquationSolver)
-write_schemas(fl.NoneSolver)
-write_schemas(fl.PorousMedium)
-write_schemas(fl.ActuatorDisk)
-write_schemas(fl.BETDisk)
-write_schemas(fl.SurfaceOutput)
-write_schemas(fl.SliceOutput)
-write_schemas(fl.VolumeOutput)
-write_schemas(fl.AeroacousticOutput)
-write_schemas(fl.MonitorOutput)
-write_schemas(fl.IsoSurfaceOutput)
+class _InitialConditions(Flow360BaseModel):
+    initial_conditions: Union[FreestreamInitialCondition, ExpressionInitialCondition] = pd.Field(
+        alias="initialConditions"
+    )
 
-write_schemas(_Freestreams)
-write_schemas(_TimeSteppings)
-write_schemas(_FluidProperties)
-write_schemas(_TurbulenceModelSolvers)
 
-write_schemas(fl.Surfaces)
-write_schemas(fl.VolumeZones)
-write_schemas(fl.Boundaries)
-write_schemas(fl.Slices)
-write_schemas(fl.IsoSurfaces)
-write_schemas(fl.Monitors)
+write_schemas(fl.NavierStokesSolver, "navier-stokes")
+write_schemas(fl.Geometry, "geometry")
+write_schemas(fl.SlidingInterface, "sliding-interface")
+write_schemas(fl.TransitionModelSolver, "transition-model")
+write_schemas(fl.HeatEquationSolver, "heat-equation")
+write_schemas(fl.PorousMedium, "porous-media")
+write_schemas(fl.ActuatorDisk, "actuator-disk")
+write_schemas(fl.BETDisk, "bet-disk")
+write_schemas(fl.SurfaceOutput, "surface-output")
+write_schemas(fl.SliceOutput, "slice-output")
+write_schemas(fl.VolumeOutput, "volume-output")
+write_schemas(fl.AeroacousticOutput, "aeroacoustic-output")
+write_schemas(fl.MonitorOutput, "monitor-output")
+write_schemas(fl.IsoSurfaceOutput, "iso-surface-output")
+
+write_schemas(_Freestreams, "freestream")
+write_schemas(_TimeSteppings, "time-stepping")
+write_schemas(_FluidProperties, "fluid-properties")
+write_schemas(_TurbulenceModelSolvers, "turbulence-model")
+write_schemas(_InitialConditions, "initial-conditions")
+
+write_schemas(fl.Surfaces, "surfaces")
+write_schemas(fl.VolumeZones, "volume-zones")
+write_schemas(fl.Boundaries, "boundaries")
+write_schemas(fl.Slices, "slices")
+write_schemas(fl.IsoSurfaces, "iso-surfaces")
+write_schemas(fl.Monitors, "monitors")
