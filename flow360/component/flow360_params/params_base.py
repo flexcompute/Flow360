@@ -565,8 +565,6 @@ class Flow360BaseModel(BaseModel):
         ----------
         filename : str
             Full path to the .yaml or .json file to load the :class:`Flow360BaseModel` from.
-        **parse_obj_kwargs
-            Keyword arguments passed to either pydantic's ``parse_obj`` function when loading model.
 
         Returns
         -------

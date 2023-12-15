@@ -7,7 +7,7 @@ import pytest
 import flow360
 import flow360.units as u
 from flow360 import Flow360Params
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
 
 params_old_version = {
     "version": "0.2.0b01",
@@ -249,21 +249,27 @@ def test_change_version():
 
 
 def test_parse_with_version():
-    with flow360.SI_unit_system:
-        params = Flow360Params(**params_no_hash)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(params_no_hash, temp_file)
+
+    params = Flow360Params(temp_file.name)
     assert params.version == flow360.__version__
 
 
 def test_parse_no_version():
-    with flow360.SI_unit_system:
-        params = Flow360Params(**params_no_version)
-    assert params.version == flow360.__version__
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(params_no_version, temp_file)
+
+    with pytest.raises(pd.ValidationError):
+        params = Flow360Params(temp_file.name)
 
 
-# def test_parse_wrong_version():
-#     print(flow360.__version__)
-#     params = Flow360Params(**params_old_version)
-#     assert params.version == flow360.__version__
+def test_parse_wrong_version():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(params_old_version, temp_file)
+
+    with pytest.raises(Flow360NotImplementedError):
+        params = Flow360Params(temp_file.name)
 
 
 def test_parse_with_hash():

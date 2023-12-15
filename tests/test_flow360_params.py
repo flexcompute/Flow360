@@ -301,12 +301,6 @@ def test_params_with_units():
 
     to_file_from_file_test(params)
 
-    # This is not supported anymore I presume?
-
-    # with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
-    #    params_reimport = fl.Flow360Params(**json.loads(params_as_json))
-    #    assert params_reimport.geometry.ref_area == params.geometry.ref_area
-
     params_solver = params.to_solver()
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)

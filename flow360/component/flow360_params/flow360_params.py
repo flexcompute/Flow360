@@ -31,8 +31,6 @@ from ...exceptions import (
 )
 from ...log import log
 from ...user_config import UserConfig
-
-# from .updater import update
 from ...version import __version__
 from ..constants import constants
 from ..types import (
@@ -110,6 +108,7 @@ from .unit_system import (
     TemperatureType,
     TimeType,
     UnitSystem,
+    UnitSystemTypes,
     VelocityType,
     ViscosityType,
     flow360_unit_system,
@@ -1259,10 +1258,6 @@ air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m
 
 FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 
-UnitSystemTypes = Union[
-    SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
-]
-
 
 class InitialCondition(Flow360BaseModel):
     """:class:`InitialCondition` class"""
@@ -1458,21 +1453,7 @@ class Flow360Params(Flow360BaseModel):
         kwarg_unit_system = kwargs.pop("unit_system", kwargs.pop("unitSystem", None))
         if kwarg_unit_system is not None:
             if not isinstance(kwarg_unit_system, UnitSystem):
-                name = kwarg_unit_system.get("name")
-                kwarg_unit_system = None
-                if name is not None:
-                    if name == "SI":
-                        kwarg_unit_system = SIUnitSystem()
-                    elif name == "CGS":
-                        kwarg_unit_system = CGSUnitSystem()
-                    elif name == "Imperial":
-                        kwarg_unit_system = ImperialUnitSystem()
-                    elif name == "Flow360":
-                        kwarg_unit_system = Flow360UnitSystem()
-                    else:
-                        raise Flow360RuntimeError(f"Undefined unit system name provided: {name}")
-                else:
-                    kwarg_unit_system = UnitSystem(**kwarg_unit_system)
+                kwarg_unit_system = UnitSystem.from_dict(**kwarg_unit_system)
             if kwarg_unit_system != unit_system_manager.current:
                 raise Flow360RuntimeError(
                     unit_system_inconsistent_msg(
@@ -1482,16 +1463,6 @@ class Flow360Params(Flow360BaseModel):
 
         return kwargs
 
-    def _infer_context(self, unit_system_dict):
-        class _TemporaryModel(pd.BaseModel):
-            unit_system: UnitSystemTypes = pd.Field()
-
-        params = {"unit_system": unit_system_dict}
-
-        model = _TemporaryModel(**params)
-
-        return model.unit_system
-
     def __init__(self, filename: str = None, **kwargs):
         if filename is not None:
             self._init_from_file(filename, **kwargs)
@@ -1500,19 +1471,17 @@ class Flow360Params(Flow360BaseModel):
             super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
 
     @classmethod
-    def from_file(cls, filename: str) -> Flow360BaseModel:
+    def from_file(cls, filename: str) -> Flow360Params:
         """Loads a :class:`Flow360BaseModel` from .json, or .yaml file.
 
         Parameters
         ----------
         filename : str
             Full path to the .yaml or .json file to load the :class:`Flow360BaseModel` from.
-        **parse_obj_kwargs
-            Keyword arguments passed to either pydantic's ``parse_obj`` function when loading model.
 
         Returns
         -------
-        :class:`Flow360BaseModel`
+        :class:`Flow360Params`
             An instance of the component class calling `load`.
 
         Example
@@ -1536,7 +1505,7 @@ class Flow360Params(Flow360BaseModel):
                 raise Flow360NotImplementedError(
                     "No updater flow between versioned cases exists as of now."
                 )
-            with self._infer_context(unit_system):
+            with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)
         else:
             self._init_with_update(model_dict)

@@ -9,7 +9,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List, Literal
+from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
 import pydantic as pd
@@ -822,6 +822,17 @@ class UnitSystem(pd.BaseModel):
         equal = [getattr(self, name) == getattr(other, name) for name in self._dim_names]
         return all(equal)
 
+    @classmethod
+    def from_dict(cls, **kwargs):
+        """Construct a unit system from the provided dictionary"""
+        class _TemporaryModel(pd.BaseModel):
+            unit_system: UnitSystemTypes = pd.Field(discriminator="name")
+
+        params = {"unit_system": kwargs}
+        model = _TemporaryModel(**params)
+
+        return model.unit_system
+
     def defaults(self):
         """
         Get the default units for each dimension in the unit system.
@@ -1069,6 +1080,10 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
     def __get_validators__(cls):
         yield cls.validate
 
+
+UnitSystemTypes = Union[
+    SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
+]
 
 SI_unit_system = SIUnitSystem()
 CGS_unit_system = CGSUnitSystem()
