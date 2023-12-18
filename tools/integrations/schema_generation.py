@@ -5,7 +5,7 @@ from typing import Literal, Optional, Type, Union
 import pydantic as pd
 
 import flow360 as fl
-from flow360 import TimeStepping
+from flow360 import SteadyTimeStepping, UnsteadyTimeStepping
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import TimeType
 from flow360.component.types import PositiveInt
@@ -55,7 +55,7 @@ class _TurbulenceModelSolvers(Flow360BaseModel):
 
 
 # pylint: disable=E0213
-class _UnsteadyTimeStepping(TimeStepping):
+class _UnsteadyTimeStepping(UnsteadyTimeStepping):
     """
     Unsteady time stepping component
     """
@@ -68,7 +68,7 @@ class _UnsteadyTimeStepping(TimeStepping):
 
 
 # pylint: disable=E0213
-class _SteadyTimeStepping(TimeStepping):
+class _SteadyTimeStepping(SteadyTimeStepping):
     """
     Steady time stepping component
     """

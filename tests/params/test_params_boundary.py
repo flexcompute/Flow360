@@ -17,10 +17,10 @@ from flow360.component.flow360_params.flow360_params import (
     SlipWall,
     SolidAdiabaticWall,
     SolidIsothermalWall,
+    SteadyTimeStepping,
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    TimeStepping,
     WallFunction,
 )
 from flow360.exceptions import Flow360ValidationError
@@ -70,7 +70,7 @@ def test_case_boundary():
         with pytest.raises(ValueError):
             param = Flow360Params(
                 boundaries={
-                    "fluid/fuselage": TimeStepping(),
+                    "fluid/fuselage": SteadyTimeStepping(),
                     "fluid/leftWing": NoSlipWall(),
                     "fluid/rightWing": NoSlipWall(),
                 }
