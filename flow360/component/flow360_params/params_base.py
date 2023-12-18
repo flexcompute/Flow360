@@ -304,6 +304,10 @@ class Flow360BaseModel(BaseModel):
         return []
 
     @classmethod
+    def _get_widgets(cls) -> dict:
+        return {}
+
+    @classmethod
     def _fix_single_allof(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
@@ -443,9 +447,23 @@ class Flow360BaseModel(BaseModel):
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
         order = cls._get_field_order()
+        widgets = cls._get_widgets()
         schema = {}
         if len(order) > 0:
             schema["ui:order"] = order
+        if len(widgets) > 0:
+            schema["items"] = {}
+            for key, value in widgets.items():
+
+                path = key.split("/")
+
+                target = schema
+                for item in path:
+                    if target.get(item) is None:
+                        target[item] = {}
+                    target = target[item]
+
+                target["ui:widget"] = value
         schema["ui:submitButtonOptions"] = {"norender": True}
         schema["ui:options"] = {"orderable": False, "addable": False, "removable": False}
         return schema

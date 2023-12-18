@@ -427,6 +427,10 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {"center": "vector3"}
+
 
 class SlidingInterface(Flow360BaseModel):
     """:class:`SlidingInterface` class for setting up sliding interface

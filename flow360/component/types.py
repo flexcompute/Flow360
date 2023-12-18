@@ -57,5 +57,4 @@ class Vector(Coordinate):
         return vector
 
 
-class Axis(Vector):
-    """alias for class Vector"""
+Axis = Vector
