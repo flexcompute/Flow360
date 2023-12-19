@@ -49,6 +49,7 @@
     },
     "timeStepping": {
         "maxPseudoSteps": 500,
+        "physicalSteps": 20,
         "timeStepSize": {
             "value": 408352.8069698554,
             "units": "flow360_time_unit"
@@ -127,5 +128,5 @@
             }
         }
     },
-    "hash": "3bceef869ee2d97a0d8999b87a1b20679e4f118272db24b49d3301e966e1364c"
+    "hash": "47282e0fdee23926ea394987ac17b6af3dd912d7e0c39b04257c3b8ec6f40e72"
 }

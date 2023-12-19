@@ -33,6 +33,7 @@
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
+    "physicalSteps": 20,
     "timeStepSize": 408352.8069698554,
     "CFL": {
       "type": "adaptive",
