@@ -214,3 +214,15 @@ def test_boundary_types():
     assert MassOutflow(massFlowRate=1).type == "MassOutflow"
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
+
+
+def test_duplidated_boundary_names():
+    with fl.SI_unit_system:
+        with pytest.raises(ValueError, match="Boundary name <wing>.* appears multiple times"):
+            param = Flow360Params(
+                boundaries={
+                    "fluid/fuselage": NoSlipWall(name="fuselage"),
+                    "fluid/leftWing": NoSlipWall(name="wing"),
+                    "fluid/rightWing": NoSlipWall(name="wing"),
+                }
+            )

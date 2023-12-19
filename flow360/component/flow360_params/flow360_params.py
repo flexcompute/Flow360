@@ -117,6 +117,7 @@ from .unit_system import (
     u,
     unit_system_manager,
 )
+from .validations import _check_duplicate_boundary_name, _check_tri_quad_boundaries
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -1611,6 +1612,20 @@ class Flow360Params(Flow360BaseModel):
                     "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on"
                 )
         return values
+
+    @pd.root_validator
+    def check_tri_quad_boundaries(cls, values):
+        """
+        check tri_ and quad_ prefix in boundary names
+        """
+        return _check_tri_quad_boundaries(values)
+
+    @pd.root_validator
+    def check_duplicate_boundary_name(cls, values):
+        """
+        check duplicated boundary names
+        """
+        return _check_duplicate_boundary_name(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):
