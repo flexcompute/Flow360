@@ -33,6 +33,7 @@ from .component.flow360_params.flow360_params import (
     HeatEquationSolver,
     HeatFluxWall,
     HeatTransferVolumeZone,
+    IncompressibleNavierStokesSolver,
     IsoSurfaceOutput,
     IsoSurfaces,
     IsothermalWall,
