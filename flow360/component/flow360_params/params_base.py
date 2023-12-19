@@ -159,6 +159,10 @@ def flow360_json_encoder(obj):
         return _flow360_solver_json_encoder(obj)
 
 
+def _optional_toggle_name(name):
+    return f"_add{name[0].upper() + name[1:]}"
+
+
 # pylint: disable=too-many-public-methods
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
@@ -385,18 +389,17 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _generate_schema_for_optional_objects(cls, model: dict, key: str):
-        field = model["properties"].pop(key)
+    def _generate_schema_for_optional_objects(cls, schema: dict, key: str):
+        field = schema["properties"].pop(key)
         if field is not None:
             ref = field.get("$ref")
             if ref is None:
                 raise RuntimeError(
                     f"Trying to apply optional field transform to a non-ref field {key}"
                 )
+            toggle_name = _optional_toggle_name(key)
 
-            toggle_name = f"_add{key[0].upper() + key[1:]}"
-
-            model["properties"][toggle_name] = {
+            schema["properties"][toggle_name] = {
                 "title": toggle_name[1:],
                 "type": "boolean",
                 "default": False,
@@ -405,12 +408,12 @@ class Flow360BaseModel(BaseModel):
             displayed = field.get("displayed")
 
             if displayed is not None:
-                model["properties"][toggle_name]["displayed"] = displayed
+                schema["properties"][toggle_name]["displayed"] = displayed
 
-            if model.get("dependencies") is None:
-                model["dependencies"] = {}
+            if schema.get("dependencies") is None:
+                schema["dependencies"] = {}
 
-            model["dependencies"][toggle_name] = {
+            schema["dependencies"][toggle_name] = {
                 "oneOf": [
                     {
                         "type": "object",
@@ -423,6 +426,40 @@ class Flow360BaseModel(BaseModel):
                     {"additionalProperties": False},
                 ]
             }
+
+    @classmethod
+    def _apply_option_names(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            options = dictionary.get("anyOf")
+            if key == "options" and options is not None:
+                if len(value) != len(options):
+                    raise ValueError(f"Tried applying options for {value}, but lengths "
+                                     f"of anyOf items and options do not match")
+                for i in range(0, len(options)):
+                    options[i]["title"] = value[i]
+            elif isinstance(value, dict):
+                cls._apply_option_names(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._apply_option_names(item)
+
+    @classmethod
+    def _fix_single_value_enum(cls, dictionary):
+        for key, value in list(dictionary.items()):
+            if key == "enum" and len(value) == 1:
+                default = value[0]
+                del dictionary[key]
+                dictionary["const"] = default
+            elif isinstance(value, dict):
+                cls._fix_single_value_enum(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._fix_single_value_enum(item)
 
     @classmethod
     def _clean_schema(cls, schema):
@@ -440,6 +477,8 @@ class Flow360BaseModel(BaseModel):
         for item in optionals:
             cls._generate_schema_for_optional_objects(schema, item)
         cls._format_titles(schema)
+        cls._apply_option_names(schema)
+        cls._fix_single_value_enum(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
         return schema
 
@@ -447,12 +486,17 @@ class Flow360BaseModel(BaseModel):
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
         order = cls._get_field_order()
+        optionals = cls._get_optional_objects()
         widgets = cls._get_widgets()
         schema = {}
+
+        for i in range(0, len(order)):
+            if order[i] in optionals:
+                order.insert(i, _optional_toggle_name(order[i]))
+
         if len(order) > 0:
             schema["ui:order"] = order
         if len(widgets) > 0:
-            schema["items"] = {}
             for key, value in widgets.items():
 
                 path = key.split("/")

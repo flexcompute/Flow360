@@ -27,10 +27,10 @@
         "value": {
           "type": "array",
           "items": {
-            "type": "number",
-            "minItems": 3,
-            "maxItems": 3
-          }
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
         },
         "units": {
           "type": "string",
@@ -52,10 +52,10 @@
         "value": {
           "type": "array",
           "items": {
-            "type": "number",
-            "minItems": 3,
-            "maxItems": 3
-          }
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
         },
         "units": {
           "type": "string",

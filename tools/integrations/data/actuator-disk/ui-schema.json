@@ -1,6 +1,8 @@
 {
-  "items": {},
   "center": {
+    "ui:widget": "vector3"
+  },
+  "axisThrust": {
     "ui:widget": "vector3"
   },
   "ui:submitButtonOptions": {

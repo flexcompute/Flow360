@@ -1,4 +1,12 @@
 {
+  "items": {
+    "sliceNormal": {
+      "ui:widget": "vector3"
+    },
+    "sliceOrigin": {
+      "ui:widget": "vector3"
+    }
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

@@ -1,22 +1,6 @@
 {
   "title": "_InitialConditions",
   "type": "object",
-  "properties": {
-    "initialConditions": {
-      "title": "Initial conditions",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FreestreamInitialCondition"
-        },
-        {
-          "$ref": "#/definitions/ExpressionInitialCondition"
-        }
-      ]
-    }
-  },
-  "required": [
-    "initialConditions"
-  ],
   "additionalProperties": false,
   "definitions": {
     "FreestreamInitialCondition": {
@@ -27,9 +11,6 @@
           "title": "Type",
           "default": "freestream",
           "const": "freestream",
-          "enum": [
-            "freestream"
-          ],
           "type": "string"
         }
       },
@@ -43,9 +24,6 @@
           "title": "Type",
           "default": "expression",
           "const": "expression",
-          "enum": [
-            "expression"
-          ],
           "type": "string"
         },
         "rho": {
@@ -78,5 +56,15 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/definitions/FreestreamInitialCondition",
+      "title": "Freestream"
+    },
+    {
+      "$ref": "#/definitions/ExpressionInitialCondition",
+      "title": "Expression"
+    }
+  ]
 }

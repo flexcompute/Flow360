@@ -4,16 +4,20 @@
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
+      "options": [
+        "Animated",
+        "Static"
+      ],
       "anyOf": [
         {
           "type": "integer",
-          "exclusiveMinimum": 0
+          "exclusiveMinimum": 0,
+          "title": "Animated"
         },
         {
-          "enum": [
-            -1
-          ],
-          "type": "integer"
+          "type": "integer",
+          "title": "Static",
+          "const": -1
         }
       ]
     },
@@ -45,16 +49,20 @@
       "properties": {
         "frequency": {
           "title": "Frequency",
+          "options": [
+            "Animated",
+            "Static"
+          ],
           "anyOf": [
             {
               "type": "integer",
-              "exclusiveMinimum": 0
+              "exclusiveMinimum": 0,
+              "title": "Animated"
             },
             {
-              "enum": [
-                -1
-              ],
-              "type": "integer"
+              "type": "integer",
+              "title": "Static",
+              "const": -1
             }
           ]
         },

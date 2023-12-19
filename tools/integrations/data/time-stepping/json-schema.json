@@ -1,22 +1,6 @@
 {
   "title": "_TimeSteppings",
   "type": "object",
-  "properties": {
-    "timeStepping": {
-      "title": "Time stepping",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/_SteadyTimeStepping"
-        },
-        {
-          "$ref": "#/definitions/_UnsteadyTimeStepping"
-        }
-      ]
-    }
-  },
-  "required": [
-    "timeStepping"
-  ],
   "additionalProperties": false,
   "definitions": {
     "RampCFL": {
@@ -93,10 +77,8 @@
       "properties": {
         "physicalSteps": {
           "title": "Physical steps",
-          "const": null,
-          "enum": [
-            1
-          ],
+          "default": 1,
+          "const": 1,
           "type": "integer"
         },
         "maxPseudoSteps": {
@@ -108,9 +90,6 @@
           "title": "Time step size",
           "default": "inf",
           "const": "inf",
-          "enum": [
-            "inf"
-          ],
           "type": "string"
         },
         "CFL": {
@@ -125,9 +104,6 @@
           ]
         }
       },
-      "required": [
-        "physicalSteps"
-      ],
       "additionalProperties": false
     },
     "_UnsteadyTimeStepping": {
@@ -179,5 +155,15 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/definitions/_SteadyTimeStepping",
+      "title": "Steady"
+    },
+    {
+      "$ref": "#/definitions/_UnsteadyTimeStepping",
+      "title": "Unsteady"
+    }
+  ]
 }

@@ -20,8 +20,15 @@ def write_to_file(name, content):
         outfile.write(content)
 
 
-def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
+def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, root_property=None):
     data = type_obj.flow360_schema()
+    if root_property is not None:
+        current = data
+        for item in root_property:
+            current = current[item]
+        data[root_property[-1]] = current
+        del data["properties"]
+        del data["required"]
     schema = json.dumps(data, indent=2)
     name = type_obj.__name__
     if name.startswith("_"):
@@ -79,26 +86,26 @@ class _SteadyTimeStepping(TimeStepping):
     Steady time stepping component
     """
 
-    physical_steps: Literal[1] = pd.Field(alias="physicalSteps", const=True)
+    physical_steps: Literal[1] = pd.Field(1, alias="physicalSteps", const=True)
     max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
     time_step_size: Literal["inf"] = pd.Field(alias="timeStepSize", default="inf", const=True)
 
 
 class _TimeSteppings(Flow360BaseModel):
     time_stepping: Union[_SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
-        alias="timeStepping"
+        alias="timeStepping", options=["Steady", "Unsteady"]
     )
 
 
 class _FluidProperties(Flow360BaseModel):
     fluid_properties: Union[fl.AirDensityTemperature, fl.AirPressureTemperature] = pd.Field(
-        alias="fluidProperties"
+        alias="fluidProperties", options=["From density and temperature", "From pressure and temperature"]
     )
 
 
 class _InitialConditions(Flow360BaseModel):
     initial_conditions: Union[FreestreamInitialCondition, ExpressionInitialCondition] = pd.Field(
-        alias="initialConditions"
+        alias="initialConditions", options=["Freestream", "Expression"]
     )
 
 
@@ -117,12 +124,13 @@ write_schemas(fl.AeroacousticOutput, "aeroacoustic-output")
 write_schemas(fl.MonitorOutput, "monitor-output")
 write_schemas(fl.IsoSurfaceOutput, "iso-surface-output")
 
-write_schemas(_Freestreams, "freestream")
-write_schemas(_TimeSteppings, "time-stepping")
-write_schemas(_FluidProperties, "fluid-properties")
-write_schemas(_TurbulenceModelSolvers, "turbulence-model")
-write_schemas(_InitialConditions, "initial-conditions")
+write_schemas(_Freestreams, "freestream", root_property=["properties", "freestream", "anyOf"])
+write_schemas(_TimeSteppings, "time-stepping", root_property=["properties", "timeStepping", "anyOf"])
+write_schemas(_FluidProperties, "fluid-properties", root_property=["properties", "fluidProperties", "anyOf"])
+write_schemas(_TurbulenceModelSolvers, "turbulence-model", root_property=["properties", "solver", "anyOf"])
+write_schemas(_InitialConditions, "initial-conditions", root_property=["properties", "initialConditions", "anyOf"])
 
+# How to merge those self-named properties into their parent steps?
 write_schemas(fl.Surfaces, "surfaces")
 write_schemas(fl.VolumeZones, "volume-zones")
 write_schemas(fl.Boundaries, "boundaries")

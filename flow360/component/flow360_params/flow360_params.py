@@ -308,7 +308,7 @@ class TranslationallyPeriodic(Boundary):
 
     type = pd.Field("TranslationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
-    translation_vector: Optional[Vector] = pd.Field(alias="pairedPatchName")
+    translation_vector: Optional[Vector] = pd.Field(alias="translationVector")
 
 
 class RotationallyPeriodic(Boundary):
@@ -429,7 +429,10 @@ class ActuatorDisk(Flow360BaseModel):
 
     @classmethod
     def _get_widgets(cls) -> dict[str, str]:
-        return {"center": "vector3"}
+        return {
+            "center": "vector3",
+            "axisThrust": "vector3"
+        }
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -517,6 +520,12 @@ class SlidingInterface(Flow360BaseModel):
             "theta_degrees",
             "is_dynamic",
         ]
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "centerOfRotation": "vector3"
+        }
 
 
 class MeshSlidingInterface(Flow360BaseModel):
@@ -660,6 +669,16 @@ class Boundaries(Flow360SortableBaseModel):
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "items/velocity/value": "vector3",
+            "items/Velocity/value": "vector3",
+            "items/velocityDirection/value": "vector3",
+            "items/translationVector": "vector3",
+            "items/axisOfRotation": "vector3"
+        }
 
 
 class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -1403,6 +1422,14 @@ class BETDisk(Flow360BaseModel):
         assert len(sectionalRadiuses) == len(sectionalPolars)
         return values
 
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "centerOfRotation": "vector3",
+            "axisOfRotation": "vector3",
+            "initialBladeDirection": "vector3"
+        }
+
 
 class PorousMediumVolumeZone(Flow360BaseModel):
     """:class:`PorousMediumVolumeZone` class"""
@@ -1420,6 +1447,17 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: Vector = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "DarcyCoefficient": "vector3",
+            "ForchheimerCoefficient": "vector3",
+            "volumeZone/center": "vector3",
+            "volumeZone/lengths": "vector3",
+            "volumeZone/axes/items": "vector3",
+            "volumeZone/windowingLengths": "vector3"
+        }
 
 
 class UserDefinedDynamic(Flow360BaseModel):

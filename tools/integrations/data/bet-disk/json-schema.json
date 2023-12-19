@@ -30,7 +30,19 @@
     "axisOfRotation": {
       "title": "Axis of rotation",
       "type": "array",
-      "items": {}
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
     },
     "numberOfBlades": {
       "title": "Number of blades",
@@ -148,7 +160,19 @@
     "initialBladeDirection": {
       "title": "Initial blade direction",
       "type": "array",
-      "items": {}
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
     },
     "tipGap": {
       "title": "Tip gap",
@@ -174,10 +198,8 @@
           }
         },
         {
-          "enum": [
-            "inf"
-          ],
-          "type": "string"
+          "type": "string",
+          "const": "inf"
         }
       ]
     },

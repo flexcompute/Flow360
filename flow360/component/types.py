@@ -56,5 +56,26 @@ class Vector(Coordinate):
             raise pd.ValidationError(ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
         return vector
 
+    @classmethod
+    def __modify_schema__(cls, schema, field):
+        new_schema = {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "number"
+                }
+            ]
+        }
+
+        schema.update(new_schema)
+
 
 Axis = Vector

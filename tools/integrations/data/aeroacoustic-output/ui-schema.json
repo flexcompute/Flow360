@@ -1,4 +1,9 @@
 {
+  "observers": {
+    "items": {
+      "ui:widget": "vector3"
+    }
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

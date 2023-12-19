@@ -5,12 +5,36 @@
     "DarcyCoefficient": {
       "title": "Darcy coefficient",
       "type": "array",
-      "items": {}
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
     },
     "ForchheimerCoefficient": {
       "title": "Forchheimer coefficient",
       "type": "array",
-      "items": {}
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
     },
     "volumeZone": {
       "$ref": "#/definitions/PorousMediumVolumeZone"
@@ -29,10 +53,8 @@
       "properties": {
         "zoneType": {
           "title": "Zone type",
-          "enum": [
-            "box"
-          ],
-          "type": "string"
+          "type": "string",
+          "const": "box"
         },
         "center": {
           "title": "Center",

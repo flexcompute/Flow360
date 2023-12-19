@@ -1,31 +1,6 @@
 {
   "title": "_Freestreams",
   "type": "object",
-  "properties": {
-    "freestream": {
-      "title": "Freestream",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/FreestreamFromVelocity"
-        },
-        {
-          "$ref": "#/definitions/FreestreamFromMach"
-        },
-        {
-          "$ref": "#/definitions/ZeroFreestreamFromVelocity"
-        },
-        {
-          "$ref": "#/definitions/ZeroFreestream"
-        },
-        {
-          "$ref": "#/definitions/FreestreamFromMachReynolds"
-        }
-      ]
-    }
-  },
-  "required": [
-    "freestream"
-  ],
   "additionalProperties": false,
   "definitions": {
     "FreestreamFromVelocity": {
@@ -161,9 +136,6 @@
           "title": "Velocity",
           "default": 0,
           "const": 0,
-          "enum": [
-            0
-          ],
           "type": "integer"
         },
         "velocityRef": {
@@ -214,9 +186,6 @@
           "title": "Mach",
           "default": 0,
           "const": 0,
-          "enum": [
-            0
-          ],
           "type": "integer"
         },
         "MachRef": {
@@ -289,5 +258,22 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/definitions/FreestreamFromVelocity"
+    },
+    {
+      "$ref": "#/definitions/FreestreamFromMach"
+    },
+    {
+      "$ref": "#/definitions/ZeroFreestreamFromVelocity"
+    },
+    {
+      "$ref": "#/definitions/ZeroFreestream"
+    },
+    {
+      "$ref": "#/definitions/FreestreamFromMachReynolds"
+    }
+  ]
 }

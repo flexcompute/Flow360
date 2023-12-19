@@ -22,7 +22,19 @@
     "axisThrust": {
       "title": "Axis thrust",
       "type": "array",
-      "items": {}
+      "minItems": 3,
+      "maxItems": 3,
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ]
     },
     "thickness": {
       "title": "Thickness",

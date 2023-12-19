@@ -1,4 +1,27 @@
 {
+  "items": {
+    "velocity": {
+      "value": {
+        "ui:widget": "vector3"
+      }
+    },
+    "Velocity": {
+      "value": {
+        "ui:widget": "vector3"
+      }
+    },
+    "velocityDirection": {
+      "value": {
+        "ui:widget": "vector3"
+      }
+    },
+    "translationVector": {
+      "ui:widget": "vector3"
+    },
+    "axisOfRotation": {
+      "ui:widget": "vector3"
+    }
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

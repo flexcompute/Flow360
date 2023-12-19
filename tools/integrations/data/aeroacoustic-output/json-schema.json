@@ -4,22 +4,29 @@
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
+      "options": [
+        "Animated",
+        "Static"
+      ],
       "anyOf": [
         {
           "type": "integer",
-          "exclusiveMinimum": 0
+          "exclusiveMinimum": 0,
+          "title": "Animated"
         },
         {
-          "enum": [
-            -1
-          ],
-          "type": "integer"
+          "type": "integer",
+          "title": "Static",
+          "const": -1
         }
       ]
     },
     "animationFrequencyOffset": {
       "title": "Animation frequency offset",
       "type": "integer"
+    },
+    "animationSettings": {
+      "$ref": "#/definitions/AnimationSettings"
     },
     "patchType": {
       "title": "Patch type",
@@ -56,5 +63,37 @@
   "required": [
     "observers"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "definitions": {
+    "AnimationSettings": {
+      "title": "Animation settings",
+      "type": "object",
+      "properties": {
+        "frequency": {
+          "title": "Frequency",
+          "options": [
+            "Animated",
+            "Static"
+          ],
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "title": "Animated"
+            },
+            {
+              "type": "integer",
+              "title": "Static",
+              "const": -1
+            }
+          ]
+        },
+        "frequencyOffset": {
+          "title": "Frequency offset",
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

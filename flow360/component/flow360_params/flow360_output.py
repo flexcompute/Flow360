@@ -53,7 +53,9 @@ def _filter_fields(fields, literal_filter):
 class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
-    frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(alias="frequency")
+    frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+        alias="frequency", options=["Animated", "Static"]
+    )
     frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
 
 
@@ -61,7 +63,7 @@ class AnimationSettingsExtended(AnimationSettings):
     """:class:`AnimationSettingsExtended` class"""
 
     frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="frequencyTimeAverage"
+        alias="frequencyTimeAverage", options=["Animated", "Static"]
     )
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
 
@@ -70,7 +72,7 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """:class:`AnimatedOutput` class"""
 
     animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency"
+        alias="animationFrequency", options=["Animated", "Static"]
     )
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     animation_settings: Optional[AnimationSettings] = pd.Field(alias="animationSettings")
@@ -99,7 +101,7 @@ class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
     """:class:`AnimatedOutputExtended` class"""
 
     animation_frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequencyTimeAverage"
+        alias="animationFrequencyTimeAverage", options=["Animated", "Static"]
     )
     animation_frequency_time_average_offset: Optional[int] = pd.Field(
         alias="animationFrequencyTimeAverageOffset"
@@ -243,6 +245,13 @@ class Slices(Flow360SortableBaseModel):
             values, _GenericSliceWrapper, msg="is not any of supported slice types."
         )
 
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "items/sliceNormal": "vector3",
+            "items/sliceOrigin": "vector3"
+        }
+
 
 class _GenericSliceWrapper(Flow360BaseModel):
     """:class:`_GenericMonitorWrapper` class"""
@@ -363,6 +372,12 @@ class Monitors(Flow360SortableBaseModel):
             values, _GenericMonitorWrapper, msg="is not any of supported monitor types."
         )
 
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "items/monitorLocations/items": "vector3"
+        }
+
 
 class MonitorOutput(Flow360BaseModel):
     """:class:`MonitorOutput` class"""
@@ -435,7 +450,7 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
 
 
-class AeroacousticOutput(Flow360BaseModel):
+class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
 
     Parameters
@@ -459,10 +474,12 @@ class AeroacousticOutput(Flow360BaseModel):
     >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
     """
 
-    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency"
-    )
-    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "observers/items": "vector3"
+        }

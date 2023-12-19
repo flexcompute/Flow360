@@ -1,22 +1,6 @@
 {
   "title": "_FluidProperties",
   "type": "object",
-  "properties": {
-    "fluidProperties": {
-      "title": "Fluid properties",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/AirDensityTemperature"
-        },
-        {
-          "$ref": "#/definitions/AirPressureTemperature"
-        }
-      ]
-    }
-  },
-  "required": [
-    "fluidProperties"
-  ],
   "additionalProperties": false,
   "definitions": {
     "AirDensityTemperature": {
@@ -111,5 +95,15 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/definitions/AirDensityTemperature",
+      "title": "From density and temperature"
+    },
+    {
+      "$ref": "#/definitions/AirPressureTemperature",
+      "title": "From pressure and temperature"
+    }
+  ]
 }

@@ -28,10 +28,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -105,10 +105,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -177,10 +177,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -251,10 +251,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -379,10 +379,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -458,10 +458,10 @@
                   "value": {
                     "type": "array",
                     "items": {
-                      "type": "number",
-                      "minItems": 3,
-                      "maxItems": 3
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
                   },
                   "units": {
                     "type": "string",
@@ -660,8 +660,24 @@
           },
           "pairedPatchName": {
             "title": "Paired patch name",
+            "type": "string"
+          },
+          "translationVector": {
+            "title": "Translation vector",
             "type": "array",
-            "items": {}
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -687,7 +703,19 @@
           "axisOfRotation": {
             "title": "Axis of rotation",
             "type": "array",
-            "items": {}
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
           },
           "thetaRadians": {
             "title": "Theta radians",

@@ -1,25 +1,6 @@
 {
   "title": "_TurbulenceModelSolvers",
   "type": "object",
-  "properties": {
-    "solver": {
-      "title": "Solver",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/SpalartAllmaras"
-        },
-        {
-          "$ref": "#/definitions/KOmegaSST"
-        },
-        {
-          "$ref": "#/definitions/NoneSolver"
-        }
-      ]
-    }
-  },
-  "required": [
-    "solver"
-  ],
   "additionalProperties": false,
   "definitions": {
     "LinearSolver": {
@@ -81,9 +62,6 @@
           "title": "Model type",
           "default": "SpalartAllmaras",
           "const": "SpalartAllmaras",
-          "enum": [
-            "SpalartAllmaras"
-          ],
           "type": "string"
         },
         "linearSolver": {
@@ -205,9 +183,6 @@
           "title": "Model type",
           "default": "kOmegaSST",
           "const": "kOmegaSST",
-          "enum": [
-            "kOmegaSST"
-          ],
           "type": "string"
         },
         "linearSolver": {
@@ -286,13 +261,21 @@
           "title": "Model type",
           "default": "None",
           "const": "None",
-          "enum": [
-            "None"
-          ],
           "type": "string"
         }
       },
       "additionalProperties": false
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/definitions/SpalartAllmaras"
+    },
+    {
+      "$ref": "#/definitions/KOmegaSST"
+    },
+    {
+      "$ref": "#/definitions/NoneSolver"
+    }
+  ]
 }
