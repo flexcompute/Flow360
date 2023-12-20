@@ -13,7 +13,19 @@ from .component.flow360_params.flow360_params import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
+from .component.flow360_params.unit_system import UnitSystem, unit_system_manager
 from .exceptions import Flow360ConfigurationError
+
+
+def check_unit_system(unit_system):
+
+    if not isinstance(unit_system, UnitSystem):
+        raise ValueError(f'Incorrect unit system provided {unit_system=}, expected type UnitSystem')
+
+    if unit_system_manager.current is not None:
+        raise RuntimeError(
+            f"Services cannot be used inside unit system context: {unit_system_manager.current.system_repr()}."
+        )
 
 
 def get_default_params(unit_system_context):
@@ -23,6 +35,9 @@ def get_default_params(unit_system_context):
     - Use Model.construct() to disable validation - when there are required fields without value
 
     """
+
+    check_unit_system(unit_system_context)
+
 
     with unit_system_context:
         params = Flow360Params(
@@ -65,11 +80,15 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
     """
     Validate a params dict against the pydantic model
     """
-    with unit_system_context:
-        values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
+
+    check_unit_system(unit_system_context)
+
+
+
+    params_as_dict['unitSystem'] = unit_system_context.dict()
+    values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
-    print(f"{validation_errors=}")
 
     # when validating freestream, errors from all Union options
     # will be returned. Need to reduce number of validation errors:
@@ -111,7 +130,10 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
     else:
         validation_errors = validation_errors.errors()
 
-    validation_warnings = []
+    print(f"{validation_errors=}")
+
+
+    validation_warnings = None
 
     if validation_errors is not None:
         return validation_errors, validation_warnings
