@@ -1,7 +1,7 @@
 fluid/ fuselage:
-    type: NoSlipWall
+    modelType: NoSlipWall
 fluid/leftWing:
     Temperature: 1.0
-    type: SolidIsothermalWall
+    modelType: SolidIsothermalWall
 fluid/rightWing:
-    type: NoSlipWall
+    modelType: NoSlipWall

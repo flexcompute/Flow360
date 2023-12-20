@@ -303,13 +303,13 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
 class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`MonitorBase` class"""
 
-    type: Optional[str]
+    model_type: str
 
 
 class SurfaceIntegralMonitor(MonitorBase):
     """:class:`SurfaceIntegralMonitor` class"""
 
-    type = pd.Field("surfaceIntegral", const=True)
+    model_type: Literal["SurfaceIntegral"] = pd.Field("SurfaceIntegral", alias="modelType", const=True)
     surfaces: Optional[List[str]] = pd.Field()
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 
@@ -329,7 +329,7 @@ class SurfaceIntegralMonitor(MonitorBase):
 class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
 
-    type = pd.Field("probe", const=True)
+    model_type: Literal["Probe"] = pd.Field("Probe", alias="modelType", const=True)
     monitor_locations: Optional[List[Coordinate]] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 

@@ -81,13 +81,13 @@ def test_case_boundary():
             {
                 "boundaries": {
                     "fluid/fuselage": {
-                        "type": "UnsupportedBC"
+                        "modelType": "UnsupportedBC"
                     },
                     "fluid/leftWing": {
-                        "type": "NoSlipWall"
+                        "modelType": "NoSlipWall"
                     },
                     "fluid/rightWing": {
-                        "type": "NoSlipWall"
+                        "modelType": "NoSlipWall"
                     } 
                 }
             }
@@ -100,13 +100,13 @@ def test_case_boundary():
         {
             "boundaries": {
                 "fluid/fuselage": {
-                    "type": "SlipWall"
+                    "modelType": "SlipWall"
                 },
                 "fluid/leftWing": {
-                    "type": "NoSlipWall"
+                    "modelType": "NoSlipWall"
                 },
                 "fluid/rightWing": {
-                    "type": "NoSlipWall"
+                    "modelType": "NoSlipWall"
                 } 
             }
         }
@@ -176,40 +176,40 @@ def test_boundary_incorrect():
 
 
 def test_boundary_types():
-    assert NoSlipWall().type == "NoSlipWall"
+    assert NoSlipWall().model_type == "NoSlipWall"
     with fl.flow360_unit_system:
         assert NoSlipWall(velocity=(0, 0, 0))
     with fl.flow360_unit_system:
         assert NoSlipWall(name="name", velocity=[0, 0, 0])
     assert NoSlipWall(velocity=("0", "0.1*x+exp(y)+z^2", "cos(0.2*x*pi)+sqrt(z^2+1)"))
-    assert SlipWall().type == "SlipWall"
-    assert FreestreamBoundary().type == "Freestream"
+    assert SlipWall().model_type == "SlipWall"
+    assert FreestreamBoundary().model_type == "Freestream"
     assert FreestreamBoundary(name="freestream")
 
-    assert IsothermalWall(Temperature=1).type == "IsothermalWall"
+    assert IsothermalWall(Temperature=1).model_type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
 
-    assert HeatFluxWall(heatFlux=-0.01).type == "HeatFluxWall"
+    assert HeatFluxWall(heatFlux=-0.01).model_type == "HeatFluxWall"
     with fl.flow360_unit_system:
         assert HeatFluxWall(heatFlux="exp(x)", velocity=(0, 0, 0))
 
-    assert SubsonicOutflowPressure(staticPressureRatio=1).type == "SubsonicOutflowPressure"
+    assert SubsonicOutflowPressure(staticPressureRatio=1).model_type == "SubsonicOutflowPressure"
     with pytest.raises(pd.ValidationError):
         SubsonicOutflowPressure(staticPressureRatio=-1)
 
-    assert SubsonicOutflowMach(Mach=1).type == "SubsonicOutflowMach"
+    assert SubsonicOutflowMach(Mach=1).model_type == "SubsonicOutflowMach"
     with pytest.raises(pd.ValidationError):
         SubsonicOutflowMach(Mach=-1)
 
     assert (
-        SubsonicInflow(totalPressureRatio=1, totalTemperatureRatio=1, rampSteps=10).type
+        SubsonicInflow(totalPressureRatio=1, totalTemperatureRatio=1, rampSteps=10).model_type
         == "SubsonicInflow"
     )
-    assert SlidingInterfaceBoundary().type == "SlidingInterface"
-    assert WallFunction().type == "WallFunction"
-    assert MassInflow(massFlowRate=1).type == "MassInflow"
+    assert SlidingInterfaceBoundary().model_type == "SlidingInterface"
+    assert WallFunction().model_type == "WallFunction"
+    assert MassInflow(massFlowRate=1).model_type == "MassInflow"
     with pytest.raises(pd.ValidationError):
         MassInflow(massFlowRate=-1)
-    assert MassOutflow(massFlowRate=1).type == "MassOutflow"
+    assert MassOutflow(massFlowRate=1).model_type == "MassOutflow"
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)

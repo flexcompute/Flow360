@@ -7,6 +7,12 @@
       "title": "Air density temperature",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "AirDensity",
+          "const": "AirDensity",
+          "type": "string"
+        },
         "temperature": {
           "title": "Temperature",
           "properties": {
@@ -53,6 +59,12 @@
       "title": "Air pressure temperature",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "AirPressure",
+          "const": "AirPressure",
+          "type": "string"
+        },
         "pressure": {
           "title": "Pressure",
           "properties": {

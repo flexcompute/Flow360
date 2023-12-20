@@ -1,13 +1,13 @@
 boundaries:
     '1':
+        modelType: NoSlipWall
         name: wing
-        type: NoSlipWall
     '2':
+        modelType: SlipWall
         name: symmetry
-        type: SlipWall
     '3':
+        modelType: Freestream
         name: freestream
-        type: Freestream
 freestream:
     alphaAngle: 3.06
     betaAngle: 0.0

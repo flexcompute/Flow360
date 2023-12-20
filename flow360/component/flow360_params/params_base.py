@@ -176,18 +176,12 @@ class Flow360BaseModel(BaseModel):
     # comments: Optional[Any] = pd.Field()
 
     def __init__(self, filename: str = None, **kwargs):
-        try:
-            if filename:
-                obj = self.from_file(filename=filename)
-                super().__init__(**obj.dict())
-            else:
-                super().__init__(**kwargs)
-        except pd.ValidationError as exc:
-            if self.Config.require_unit_system_context and unit_system_manager.current is None:
-                raise exc from ValidationError(
-                    "Cannot instantiate model without a unit system context."
-                )
-            raise exc
+        if filename:
+            obj = self.from_file(filename=filename)
+            super().__init__(**obj.dict())
+        else:
+            super().__init__(**kwargs)
+
 
     def __init_subclass__(cls) -> None:
         """Things that are done to each of the models."""
@@ -214,7 +208,6 @@ class Flow360BaseModel(BaseModel):
             Re-validate after re-assignment of field in model.
         """
 
-        require_unit_system_context = False
         arbitrary_types_allowed = True
         validate_all = True
         extra = "forbid"

@@ -30,6 +30,12 @@
       "title": "Turbulence model constants sa",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "SA",
+          "const": "SA",
+          "type": "string"
+        },
         "C_DES": {
           "title": "C_des",
           "default": 0.72,
@@ -141,6 +147,12 @@
       "title": "Turbulence model constants sst",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "SST",
+          "const": "SST",
+          "type": "string"
+        },
         "C_DES1": {
           "title": "C_des1",
           "default": 0.78,

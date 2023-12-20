@@ -9,10 +9,10 @@
             "title": "SurfaceIntegralMonitor",
             "type": "object",
             "properties": {
-              "type": {
-                "title": "Type",
-                "default": "surfaceIntegral",
-                "const": "surfaceIntegral",
+              "modelType": {
+                "title": "Model type",
+                "default": "SurfaceIntegral",
+                "const": "SurfaceIntegral",
                 "type": "string"
               },
               "surfaces": {
@@ -60,10 +60,10 @@
             "title": "ProbeMonitor",
             "type": "object",
             "properties": {
-              "type": {
-                "title": "Type",
-                "default": "probe",
-                "const": "probe",
+              "modelType": {
+                "title": "Model type",
+                "default": "Probe",
+                "const": "Probe",
                 "type": "string"
               },
               "monitorLocations": {

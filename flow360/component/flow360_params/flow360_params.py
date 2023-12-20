@@ -122,50 +122,43 @@ class MeshBoundary(Flow360BaseModel):
 class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
-    type: str
+    model_type: str
     name: Optional[str] = pd.Field(
         None, title="Name", description="Optional unique name for boundary."
     )
+
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [
+            DeprecatedAlias(name="model_type", deprecated="type")
+        ]
 
 
 class NoSlipWall(Boundary):
     """No slip wall boundary"""
 
-    type = pd.Field("NoSlipWall", const=True)
+    model_type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", alias="modelType", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
 
-    type = pd.Field("SlipWall", const=True)
+    model_type: Literal["SlipWall"] = pd.Field("SlipWall", alias="modelType", const=True)
 
 
 class FreestreamBoundary(Boundary):
     """Freestream boundary"""
 
-    type = pd.Field("Freestream", const=True)
+    model_type: Literal["Freestream"] = pd.Field("Freestream", alias="modelType", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
-    type = pd.Field("IsothermalWall", const=True)
+    model_type: Literal["IsothermalWall"] = pd.Field("IsothermalWall", alias="modelType", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class HeatFluxWall(Boundary):
@@ -189,7 +182,7 @@ class HeatFluxWall(Boundary):
     >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
     """
 
-    type = pd.Field("HeatFluxWall", const=True)
+    model_type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", alias="modelType", const=True)
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
@@ -197,29 +190,25 @@ class HeatFluxWall(Boundary):
 class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
-    type = pd.Field("SubsonicOutflowPressure", const=True)
+    model_type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", alias="modelType", const=True)
     static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
 class SubsonicOutflowMach(Boundary):
     """SubsonicOutflowMach boundary"""
 
-    type = pd.Field("SubsonicOutflowMach", const=True)
+    model_type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", alias="modelType", const=True)
     Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
 class SubsonicInflow(Boundary):
     """SubsonicInflow boundary"""
 
-    type = pd.Field("SubsonicInflow", const=True)
+    model_type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", alias="modelType", const=True)
     total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
     total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
     velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class SupersonicInflow(Boundary):
@@ -248,36 +237,32 @@ class SupersonicInflow(Boundary):
 
     Example
     -------
-    >>> supersonicInflow = SupersonifInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
+    >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
     """
 
-    type = pd.Field("SupersonicInflow", const=True)
+    model_type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", alias="modelType", const=True)
     total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
     static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
     velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 class SlidingInterfaceBoundary(Boundary):
     """:class: `SlidingInterface` boundary"""
 
-    type = pd.Field("SlidingInterface", const=True)
+    model_type: Literal["SlidingInterface"] = pd.Field("SlidingInterface", alias="modelType", const=True)
 
 
 class WallFunction(Boundary):
     """:class: `WallFunction` boundary"""
 
-    type = pd.Field("WallFunction", const=True)
+    model_type: Literal["WallFunction"] = pd.Field("WallFunction", alias="modelType", const=True)
 
 
 class MassInflow(Boundary):
     """:class: `MassInflow` boundary"""
 
-    type = pd.Field("MassInflow", const=True)
+    model_type: Literal["MassInflow"] = pd.Field("MassInflow", alias="modelType", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
@@ -285,7 +270,7 @@ class MassInflow(Boundary):
 class MassOutflow(Boundary):
     """:class: `MassOutflow` boundary"""
 
-    type = pd.Field("MassOutflow", const=True)
+    model_type: Literal["MassOutflow"] = pd.Field("MassOutflow", alias="modelType", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
@@ -293,20 +278,20 @@ class MassOutflow(Boundary):
 class SolidIsothermalWall(Boundary):
     """:class: `SolidIsothermalWall` boundary"""
 
-    type = pd.Field("SolidIsothermalWall", const=True)
+    model_type: Literal["SolidIsothermalWall"] = pd.Field("SolidIsothermalWall", alias="modelType", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
 
 
 class SolidAdiabaticWall(Boundary):
     """:class: `SolidAdiabaticWall` boundary"""
 
-    type = pd.Field("SolidAdiabaticWall", const=True)
+    model_type: Literal["SolidAdiabaticWall"] = pd.Field("SolidAdiabaticWall", alias="modelType", const=True)
 
 
 class TranslationallyPeriodic(Boundary):
     """:class: `TranslationallyPeriodic` boundary"""
 
-    type = pd.Field("TranslationallyPeriodic", const=True)
+    model_type: Literal["TranslationallyPeriodic"] = pd.Field("TranslationallyPeriodic", alias="modelType", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     translation_vector: Optional[Vector] = pd.Field(alias="translationVector")
 
@@ -314,7 +299,7 @@ class TranslationallyPeriodic(Boundary):
 class RotationallyPeriodic(Boundary):
     """:class: `RotationallyPeriodic` boundary"""
 
-    type = pd.Field("RotationallyPeriodic", const=True)
+    model_type: Literal["RotationallyPeriodic"] = pd.Field("RotationallyPeriodic", alias="modelType", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     axis_of_rotation: Optional[Vector] = pd.Field(alias="axisOfRotation")
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
@@ -556,7 +541,7 @@ class RampCFL(Flow360BaseModel):
     Ramp CFL for time stepping component
     """
 
-    type: str = pd.Field("ramp", const=True)
+    model_type: Literal["Ramp"] = pd.Field("Ramp", alias="modelType", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
@@ -582,7 +567,7 @@ class AdaptiveCFL(Flow360BaseModel):
     Adaptive CFL for time stepping component
     """
 
-    type: str = pd.Field("adaptive", const=True)
+    model_type: Literal["Adaptive"] = pd.Field("Adaptive", alias="modelType", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
@@ -613,7 +598,6 @@ class TimeStepping(Flow360BaseModel):
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
 
 
@@ -733,10 +717,6 @@ class ReferenceFrameDynamic(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
     is_dynamic: bool = pd.Field(True, alias="isDynamic", const=True)
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 class ReferenceFrameExpression(Flow360BaseModel):
     """:class:`ReferenceFrameExpression` class for setting up reference frame using expression
@@ -785,7 +765,6 @@ class ReferenceFrameExpression(Flow360BaseModel):
             "theta_radians",
             "theta_degrees",
         ]
-        require_unit_system_context = True
 
 
 class ReferenceFrameOmegaRadians(Flow360BaseModel):
@@ -821,10 +800,6 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 class ReferenceFrameOmegaDegrees(Flow360BaseModel):
     """:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame
@@ -858,10 +833,6 @@ class ReferenceFrameOmegaDegrees(Flow360BaseModel):
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class ReferenceFrame(Flow360BaseModel):
@@ -906,10 +877,6 @@ class ReferenceFrame(Flow360BaseModel):
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         omega_radians = solver_values.pop("omega").value
         return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class FluidDynamicsVolumeZone(VolumeZoneBase):
@@ -1020,7 +987,6 @@ class Geometry(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["meshName", "endianness"]
-        require_unit_system_context = True
 
 
 class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -1129,10 +1095,6 @@ class FreestreamFromVelocity(FreestreamBase):
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
         )
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 class ZeroFreestreamFromVelocity(FreestreamBase):
     """
@@ -1169,10 +1131,6 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         return ZeroFreestream(
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
         )
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 FreestreamTypes = Union[
@@ -1225,6 +1183,7 @@ class AirPressureTemperature(Flow360BaseModel):
 
     """
 
+    model_type: str = pd.Field("AirPressure", alias="modelType", const=True)
     pressure: PressureType = pd.Field()
     temperature: TemperatureType = pd.Field()
 
@@ -1243,10 +1202,6 @@ class AirPressureTemperature(Flow360BaseModel):
         """Calculates the speed of sound in the air based on the temperature."""
         return _AirModel.speed_of_sound(self.temperature)
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 class AirDensityTemperature(Flow360BaseModel):
     """
@@ -1260,7 +1215,7 @@ class AirDensityTemperature(Flow360BaseModel):
         Density of the air.
 
     """
-
+    model_type: str = pd.Field("AirDensity", alias="modelType", const=True)
     temperature: TemperatureType = pd.Field()
     density: DensityType = pd.Field()
 
@@ -1278,10 +1233,6 @@ class AirDensityTemperature(Flow360BaseModel):
     def speed_of_sound(self) -> VelocityType:
         """Calculates the speed of sound in the air based on the temperature."""
         return _AirModel.speed_of_sound(self.temperature)
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
 
 
 class USstandardAtmosphere(Flow360BaseModel):
@@ -1307,10 +1258,6 @@ class USstandardAtmosphere(Flow360BaseModel):
     def to_fluid_properties(self) -> _FluidProperties:
         """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        require_unit_system_context = True
-
 
 # pylint: disable=no-member
 air = AirDensityTemperature(temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3)
@@ -1321,19 +1268,19 @@ FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 class InitialCondition(Flow360BaseModel):
     """:class:`InitialCondition` class"""
 
-    type: str
+    model_type: str
 
 
 class FreestreamInitialCondition(InitialCondition):
     """:class:`FreestreamInitialCondition` class"""
 
-    type: Literal["freestream"] = pd.Field("freestream", const=True)
+    model_type: Literal["freestream"] = pd.Field("freestream", alias="modelType", const=True)
 
 
 class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
 
-    type: Literal["expression"] = pd.Field("expression", const=True)
+    model_type: Literal["expression"] = pd.Field("expression", alias="modelType", const=True)
     rho: str = pd.Field()
     u: str = pd.Field()
     v: str = pd.Field()
@@ -1497,7 +1444,7 @@ class Flow360Params(Flow360BaseModel):
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
-        alias="initialCondition", discriminator="type"
+        alias="initialCondition", discriminator="model_type"
     )
     time_stepping: Optional[TimeStepping] = pd.Field(alias="timeStepping", default=TimeStepping())
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")

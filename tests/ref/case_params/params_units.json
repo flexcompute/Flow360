@@ -26,6 +26,7 @@
         }
     },
     "fluidProperties": {
+        "modelType": "AirDensity",
         "temperature": {
             "value": 288.15,
             "units": "K"
@@ -36,12 +37,8 @@
         }
     },
     "boundaries": {
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
-        },
         "1": {
-            "type": "NoSlipWall",
+            "modelType": "NoSlipWall",
             "name": "wing",
             "Velocity": {
                 "value": [
@@ -53,8 +50,12 @@
             }
         },
         "3": {
-            "type": "Freestream",
+            "modelType": "Freestream",
             "name": "freestream"
+        },
+        "2": {
+            "modelType": "SlipWall",
+            "name": "symmetry"
         }
     },
     "timeStepping": {
@@ -64,7 +65,7 @@
             "units": "s"
         },
         "CFL": {
-            "type": "adaptive",
+            "modelType": "Adaptive",
             "min": 0.1,
             "max": 10000.0,
             "maxRelativeChange": 1.0,
@@ -102,12 +103,12 @@
                 ]
             }
         },
-        "zone1": {
+        "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "omega": {
-                    "value": 10.0,
-                    "units": "rpm"
+                    "value": 60.0,
+                    "units": "degree/s"
                 },
                 "centerOfRotation": {
                     "value": [
@@ -124,12 +125,12 @@
                 ]
             }
         },
-        "zone3": {
+        "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "omega": {
-                    "value": 60.0,
-                    "units": "degree/s"
+                    "value": 10.0,
+                    "units": "rpm"
                 },
                 "centerOfRotation": {
                     "value": [

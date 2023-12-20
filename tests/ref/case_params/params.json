@@ -27,16 +27,16 @@
     },
     "boundaries": {
         "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
+            "name": "wing",
+            "modelType": "NoSlipWall"
         },
         "3": {
-            "type": "Freestream",
-            "name": "freestream"
+            "name": "freestream",
+            "modelType": "Freestream"
         },
         "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
+            "name": "symmetry",
+            "modelType": "SlipWall"
         }
     },
     "timeStepping": {

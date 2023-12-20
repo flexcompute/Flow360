@@ -189,6 +189,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 class TurbulenceModelConstantsSA(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSA` class"""
 
+    model_type: Literal["SA"] = pd.Field("SA", alias="modelType", const=True)
     C_DES: Optional[float] = pd.Field(0.72)
     C_d: Optional[float] = pd.Field(8.0)
 
@@ -196,6 +197,7 @@ class TurbulenceModelConstantsSA(Flow360BaseModel):
 class TurbulenceModelConstantsSST(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSST` class"""
 
+    model_type: Literal["SST"] = pd.Field("SST", alias="modelType", const=True)
     C_DES1: Optional[float] = pd.Field(0.78)
     C_DES2: Optional[float] = pd.Field(0.61)
     C_d1: Optional[float] = pd.Field(20.0)

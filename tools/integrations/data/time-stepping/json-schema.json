@@ -7,10 +7,10 @@
       "title": "Ramp cfl",
       "type": "object",
       "properties": {
-        "type": {
-          "title": "Type",
-          "default": "ramp",
-          "const": "ramp",
+        "modelType": {
+          "title": "Model type",
+          "default": "Ramp",
+          "const": "Ramp",
           "type": "string"
         },
         "initial": {
@@ -38,10 +38,10 @@
       "title": "Adaptive cfl",
       "type": "object",
       "properties": {
-        "type": {
-          "title": "Type",
-          "default": "adaptive",
-          "const": "adaptive",
+        "modelType": {
+          "title": "Model type",
+          "default": "Adaptive",
+          "const": "Adaptive",
           "type": "string"
         },
         "min": {
