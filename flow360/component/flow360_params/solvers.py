@@ -97,21 +97,21 @@ class PressureCorrectionSolver(Flow360BaseModel):
 
 
 class NavierStokesSolver(GenericFlowSolverSettings):
-    """:class:`NavierStokesSolver` class for setting up Navier-Stokes solver
+    """:class:`NavierStokesSolver` class for setting up compressible Navier-Stokes solver
 
     Parameters
     ----------
 
-    absoluteTolerance :
+    absolute_tolerance :
         Tolerance for the NS residual, below which the solver goes to the next physical step
 
-    relativeTolerance :
+    relative_tolerance :
         Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is
         defined as the ratio of the current pseudoStep’s residual to the maximum residual present in the first
         10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and
         only absoluteTolerance is used as the convergence criterion
 
-    CFLMultiplier :
+    CFL_multiplier :
         Factor to the CFL definitions defined in “timeStepping” section
 
     kappa_MUSCL :
@@ -119,28 +119,28 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is
         recommended for low subsonic flows leading to reduced dissipation
 
-    linearIterations :
+    linear_iterations :
         Number of linear solver iterations
 
-    updateJacobianFrequency :
+    update_jacobian_frequency :
         Frequency at which the jacobian is updated.
 
-    equationEvalFrequency :
-        Frequency at which to update the NS equation in loosely-coupled simulations
+    equation_eval_frequency :
+        Frequency at which to update the compressible NS equation in loosely-coupled simulations
 
-    maxForceJacUpdatePhysicalSteps :
+    max_force_jac_update_physical_steps :
         When which physical steps, the jacobian matrix is updated every pseudo step
 
-    orderOfAccuracy :
+    order_of_accuracy :
         Order of accuracy in space
 
-    limitVelocity :
+    limit_velocity :
         Limiter for velocity
 
-    limitPressureDensity :
+    limit_pressure_density :
         Limiter for pressure and density
 
-    numericalDissipationFactor :
+    numerical_dissipation_factor :
         A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.
         The recommended starting value for most low-dissipation runs is 0.2
 
@@ -185,6 +185,45 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     @classmethod
     def _get_optional_objects(cls) -> List[str]:
         return ["linearSolver"]
+
+
+class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
+    """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
+
+    Parameters
+    ----------
+    pressure_correction_solver :
+        Pressure correction solver settings
+
+    linear_solver:
+        Linear solver settings
+
+    update_jacobian_frequency :
+        Frequency at which the jacobian is updated.
+
+    equation_eval_frequency :
+        Frequency at which to update the incompressible NS equation in loosely-coupled simulations
+
+    Returns
+    -------
+    :class:`IncompressibleNavierStokesSolver`
+        An instance of the component class IncompressibleNavierStokesSolver.
+
+    Example
+    -------
+    >>> ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)
+    """
+
+    pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
+        alias="pressureCorrectionSolver"
+    )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=30), alias="linearSolver"
+    )
+    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
+        4, alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
+    )
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
 
 
 class TurbulenceModelConstantsSA(Flow360BaseModel):

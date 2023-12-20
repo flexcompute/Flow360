@@ -38,6 +38,7 @@
       "type": "string"
     },
     "isoSurfaces": {
+      "title": "IsoSurfaces",
       "additionalProperties": {
         "title": "IsoSurface",
         "type": "object",

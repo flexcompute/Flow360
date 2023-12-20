@@ -3,6 +3,7 @@
   "type": "object",
   "properties": {
     "monitors": {
+      "title": "Monitors",
       "additionalProperties": {
         "oneOf": [
           {

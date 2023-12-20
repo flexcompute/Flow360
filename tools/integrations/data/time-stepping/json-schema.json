@@ -71,26 +71,16 @@
       },
       "additionalProperties": false
     },
-    "_SteadyTimeStepping": {
+    "SteadyTimeStepping": {
       "title": "Steady time stepping",
       "type": "object",
       "properties": {
-        "physicalSteps": {
-          "title": "Physical steps",
-          "default": 1,
-          "const": 1,
-          "type": "integer"
-        },
         "maxPseudoSteps": {
           "title": "Max pseudo steps",
+          "default": 2000,
           "exclusiveMinimum": 0,
+          "maximum": 100000,
           "type": "integer"
-        },
-        "timeStepSize": {
-          "title": "Time step size",
-          "default": "inf",
-          "const": "inf",
-          "type": "string"
         },
         "CFL": {
           "title": "Cfl",
@@ -102,21 +92,46 @@
               "$ref": "#/definitions/AdaptiveCFL"
             }
           ]
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
+          "default": 1,
+          "const": 1,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "default": "inf",
+          "const": "inf",
+          "type": "string"
         }
       },
       "additionalProperties": false
     },
-    "_UnsteadyTimeStepping": {
+    "UnsteadyTimeStepping": {
       "title": "Unsteady time stepping",
       "type": "object",
       "properties": {
-        "physicalSteps": {
-          "title": "Physical steps",
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
         "maxPseudoSteps": {
           "title": "Max pseudo steps",
+          "default": 2000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "type": "integer"
+        },
+        "CFL": {
+          "title": "Cfl",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RampCFL"
+            },
+            {
+              "$ref": "#/definitions/AdaptiveCFL"
+            }
+          ]
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
           "exclusiveMinimum": 0,
           "type": "integer"
         },
@@ -136,33 +151,18 @@
               ]
             }
           }
-        },
-        "CFL": {
-          "title": "Cfl",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/RampCFL"
-            },
-            {
-              "$ref": "#/definitions/AdaptiveCFL"
-            }
-          ]
         }
       },
-      "required": [
-        "physicalSteps",
-        "timeStepSize"
-      ],
       "additionalProperties": false
     }
   },
   "anyOf": [
     {
-      "$ref": "#/definitions/_SteadyTimeStepping",
+      "$ref": "#/definitions/SteadyTimeStepping",
       "title": "Steady"
     },
     {
-      "$ref": "#/definitions/_UnsteadyTimeStepping",
+      "$ref": "#/definitions/UnsteadyTimeStepping",
       "title": "Unsteady"
     }
   ]

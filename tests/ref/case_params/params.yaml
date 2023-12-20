@@ -27,7 +27,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: ca861c3cdd52a9f5dc215da8954e8653a3a075432d61410cc1167ec78c0ff42c
+hash: b2d9b9aa28a67524c9a36f03a74116d9b80aba77986743a94cb03ab87dff0acb
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
@@ -78,6 +78,8 @@ surfaceOutput:
     - primitiveVars
     outputFormat: tecplot
 timeStepping:
+    maxPseudoSteps: 2000
+    physicalSteps: 1
     timeStepSize: inf
 unitSystem:
     name: SI

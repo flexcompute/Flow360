@@ -112,6 +112,7 @@
       }
     },
     "surfaces": {
+      "title": "Surfaces",
       "additionalProperties": {
         "title": "Surface",
         "type": "object",

@@ -1,131 +1,132 @@
 {
-    "unitSystem": {
-        "name": "SI"
+  "unitSystem": {
+    "name": "SI"
+  },
+  "version": "0.2.0b16",
+  "geometry": {
+    "refArea": {
+      "value": 1.0,
+      "units": "flow360_area_unit"
     },
-    "version": "0.2.0b16",
-    "geometry": {
-        "refArea": {
-            "value": 1.0,
-            "units": "flow360_area_unit"
-        },
-        "momentCenter": {
-            "value": [
-                1,
-                2,
-                3
-            ],
-            "units": "flow360_length_unit"
-        },
-        "momentLength": {
-            "value": [
-                37.490908,
-                20.362493146213485,
-                37.490908
-            ],
-            "units": "flow360_length_unit"
-        }
+    "momentCenter": {
+      "value": [
+        1,
+        2,
+        3
+      ],
+      "units": "flow360_length_unit"
     },
-    "boundaries": {
-        "3": {
-            "modelType": "Freestream",
-            "name": "freestream"
-        },
-        "2": {
-            "modelType": "SlipWall",
-            "name": "symmetry"
-        },
-        "1": {
-            "modelType": "NoSlipWall",
-            "name": "wing",
-            "Velocity": {
-                "value": [
-                    0.0008162876014170267,
-                    0.0016325752028340534,
-                    0.0024488628042510802
-                ],
-                "units": "flow360_velocity_unit"
-            }
-        }
+    "momentLength": {
+      "value": [
+        37.490908,
+        20.362493146213485,
+        37.490908
+      ],
+      "units": "flow360_length_unit"
+    }
+  },
+  "boundaries": {
+    "2": {
+      "modelType": "SlipWall",
+      "name": "symmetry"
     },
-    "timeStepping": {
-        "maxPseudoSteps": 500,
-        "timeStepSize": {
-            "value": 408352.8069698554,
-            "units": "flow360_time_unit"
-        },
-        "CFL": {
-            "modelType": "Adaptive",
-            "min": 0.1,
-            "max": 10000.0,
-            "maxRelativeChange": 1.0,
-            "convergenceLimitingFactor": 0.25
-        }
+    "3": {
+      "modelType": "Freestream",
+      "name": "freestream"
     },
-    "freestream": {
-        "alphaAngle": 3.06,
-        "betaAngle": 0.0,
-        "Mach": 0.8404497144189705,
-        "muRef": 4.292519319815164e-05,
-        "Temperature": 288.15
+    "1": {
+      "modelType": "NoSlipWall",
+      "name": "wing",
+      "Velocity": {
+        "value": [
+          0.0008162876014170267,
+          0.0016325752028340534,
+          0.0024488628042510802
+        ],
+        "units": "flow360_velocity_unit"
+      }
+    }
+  },
+  "timeStepping": {
+    "maxPseudoSteps": 500,
+    "CFL": {
+      "modelType": "Adaptive",
+      "min": 0.1,
+      "max": 10000.0,
+      "maxRelativeChange": 1.0,
+      "convergenceLimitingFactor": 0.25
     },
-    "volumeZones": {
-        "zone1": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omegaRadians": 3.0773317581937964e-06,
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
+    "physicalSteps": 20,
+    "timeStepSize": {
+      "value": 408352.8069698554,
+      "units": "flow360_time_unit"
+    }
+  },
+  "freestream": {
+    "alphaAngle": 3.06,
+    "betaAngle": 0.0,
+    "Mach": 0.8404497144189705,
+    "muRef": 4.292519319815164e-05,
+    "Temperature": 288.15
+  },
+  "volumeZones": {
+    "zone1": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "omegaRadians": 3.0773317581937964e-06,
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "flow360_length_unit"
         },
-        "zone2": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omegaRadians": 3.0773317581937964e-06,
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
-        },
-        "zone3": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omegaRadians": 3.077331758193797e-06,
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
-        }
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
     },
-    "hash": "4b5841f3dc688a9b4129b6fdaeb73c6e37f0b4ef1c4ccc602b929213c75e1a00"
+    "zone2": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "omegaRadians": 3.0773317581937964e-06,
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "flow360_length_unit"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "zone3": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "omegaRadians": 3.077331758193797e-06,
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "flow360_length_unit"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "hash": "f5430aeb5ae29c762ab9d9fc311c99a6b84ff2c76d5af6676b28658d08571635"
 }

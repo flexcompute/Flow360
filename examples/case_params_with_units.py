@@ -17,7 +17,7 @@ with fl.SI_unit_system:
             mesh_unit=u.mm,
         ),
         freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-        time_stepping=fl.TimeStepping(
+        time_stepping=fl.UnsteadyTimeStepping(
             max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
         ),
         boundaries={

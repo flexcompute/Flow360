@@ -5,14 +5,12 @@ from typing import Literal, Optional, Type, Union
 import pydantic as pd
 
 import flow360 as fl
-from flow360 import TimeStepping
 from flow360.component.flow360_params.flow360_params import (
     ExpressionInitialCondition,
     FreestreamInitialCondition,
+    TimeStepping,
 )
 from flow360.component.flow360_params.params_base import Flow360BaseModel
-from flow360.component.flow360_params.unit_system import TimeType
-from flow360.component.types import PositiveInt
 
 
 def write_to_file(name, content):
@@ -72,34 +70,8 @@ class _TurbulenceModelSolvers(Flow360BaseModel):
     solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver]
 
 
-# pylint: disable=E0213
-class _UnsteadyTimeStepping(TimeStepping):
-    """
-    Unsteady time stepping component
-    """
-
-    physical_steps: PositiveInt = pd.Field(alias="physicalSteps")
-    max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
-    time_step_size: TimeType.Positive = pd.Field(
-        alias="timeStepSize",
-    )
-
-
-# pylint: disable=E0213
-class _SteadyTimeStepping(TimeStepping):
-    """
-    Steady time stepping component
-    """
-
-    physical_steps: Literal[1] = pd.Field(1, alias="physicalSteps", const=True)
-    max_pseudo_steps: Optional[PositiveInt] = pd.Field(alias="maxPseudoSteps")
-    time_step_size: Literal["inf"] = pd.Field(alias="timeStepSize", default="inf", const=True)
-
-
 class _TimeSteppings(Flow360BaseModel):
-    time_stepping: Union[_SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
-        alias="timeStepping", options=["Steady", "Unsteady"]
-    )
+    time_stepping: TimeStepping = pd.Field(alias="timeStepping", options=["Steady", "Unsteady"])
 
 
 class _FluidProperties(Flow360BaseModel):

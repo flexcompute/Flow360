@@ -69,6 +69,7 @@
       }
     },
     "slices": {
+      "title": "Slices",
       "additionalProperties": {
         "title": "Slice",
         "type": "object",

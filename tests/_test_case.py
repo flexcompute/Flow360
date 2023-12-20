@@ -1,6 +1,9 @@
 from flow360 import Env
 from flow360.component.case import Case
-from flow360.component.flow360_params.flow360_params import Flow360Params, TimeStepping
+from flow360.component.flow360_params.flow360_params import (
+    Flow360Params,
+    UnsteadyTimeStepping,
+)
 
 
 def test_from_cloud():
@@ -27,7 +30,7 @@ def test_submit_multiple_phases():
 
 def test_submit_multiple_3_phases():
     Env.dev.active()
-    params = Flow360Params(time_stepping=TimeStepping(max_physical_steps=5))
+    params = Flow360Params(time_stepping=UnsteadyTimeStepping(max_physical_steps=5))
     cases = Case.submit_multiple_phases(
         "test_client", "05aadf62-6624-48b2-ace1-ea002d4c66c1", params, phase_steps=2
     )
