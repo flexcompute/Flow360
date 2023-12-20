@@ -14,7 +14,6 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.flow360_params import (
     ActuatorDisk,
-    AdaptiveCFL,
     AeroacousticOutput,
     AirDensityTemperature,
     AirPressureTemperature,
@@ -48,7 +47,6 @@ from .component.flow360_params.flow360_params import (
     NoSlipWall,
     PorousMedium,
     ProbeMonitor,
-    RampCFL,
     ReferenceFrame,
     SliceOutput,
     Slices,
@@ -58,7 +56,6 @@ from .component.flow360_params.flow360_params import (
     SolidAdiabaticWall,
     SolidIsothermalWall,
     SpalartAllmaras,
-    SteadyTimeStepping,
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
@@ -67,7 +64,6 @@ from .component.flow360_params.flow360_params import (
     SurfaceOutput,
     Surfaces,
     TransitionModelSolver,
-    UnsteadyTimeStepping,
     UnvalidatedFlow360Params,
     VolumeOutput,
     VolumeZones,
@@ -75,6 +71,13 @@ from .component.flow360_params.flow360_params import (
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
     air,
+)
+from .component.flow360_params.time_stepping import (
+    AdaptiveCFL,
+    RampCFL,
+    SteadyTimeStepping,
+    TimeStepping,
+    UnsteadyTimeStepping,
 )
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
