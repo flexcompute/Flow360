@@ -115,6 +115,7 @@ from .unit_system import (
     imperial_unit_system,
     u,
     unit_system_manager,
+    Flow360UnitSystem
 )
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -1808,7 +1809,7 @@ class TimeSteppingLegacy(TimeStepping, LegacyModel):
         }
 
         if (
-            model["timeStepSize"] != "inf"
+            model["timeStepSize"] != "inf" and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
@@ -1839,7 +1840,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
-        if self.comments.get("rpm") is not None:
+        if self.comments is not None and self.comments.get("rpm") is not None:
             # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             try_set(model["referenceFrame"], "omega", omega)
@@ -1849,6 +1850,18 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
                 del model["referenceFrame"]["omegaDegrees"]
 
         return FluidDynamicsVolumeZone.parse_obj(model)
+
+
+class BoundariesLegacy(Boundaries):
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
+
+
+class VolumeZonesLegacy(VolumeZones):
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
 
 
 class Flow360ParamsLegacy(LegacyModel):
@@ -1871,7 +1884,7 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
-    boundaries: Optional[Boundaries] = pd.Field()
+    boundaries: Optional[BoundariesLegacy] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
@@ -1881,7 +1894,7 @@ class Flow360ParamsLegacy(LegacyModel):
         alias="userDefinedDynamics"
     )
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
-    volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
+    volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     def _has_key(self, target, model_dict: dict):

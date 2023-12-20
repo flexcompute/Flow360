@@ -1070,8 +1070,8 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
 
     name: Literal["Flow360"] = pd.Field("Flow360", const=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.FLOW360)
+    def __init__(self, verbose: bool=True):
+        super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
 
     @classmethod
     def validate(cls, _):
