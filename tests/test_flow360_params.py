@@ -31,20 +31,22 @@ from flow360.component.flow360_params.flow360_params import (
     AeroacousticOutput,
     Flow360MeshParams,
     Flow360Params,
-    FluidDynamicsVolumeZone,
     ForcePerArea,
     FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
-    HeatTransferVolumeZone,
-    InitialConditionHeatTransfer,
     MeshBoundary,
     MeshSlidingInterface,
     NavierStokesSolver,
-    ReferenceFrame,
     SlidingInterface,
     UnsteadyTimeStepping,
     VolumeZones,
+)
+from flow360.component.flow360_params.volume_zones import (
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    InitialConditionHeatTransfer,
+    ReferenceFrame,
 )
 from flow360.examples import OM6wing
 from flow360.exceptions import (

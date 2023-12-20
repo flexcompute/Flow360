@@ -40,13 +40,11 @@ from .component.flow360_params.flow360_params import (
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
-    FluidDynamicsVolumeZone,
     FreestreamFromMach,
     FreestreamFromMachReynolds,
     FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
-    HeatTransferVolumeZone,
     IncompressibleNavierStokesSolver,
     IsoSurfaceOutput,
     IsoSurfaces,
@@ -58,7 +56,6 @@ from .component.flow360_params.flow360_params import (
     NoneSolver,
     PorousMedium,
     ProbeMonitor,
-    ReferenceFrame,
     SliceOutput,
     Slices,
     SlidingInterface,
@@ -87,6 +84,11 @@ from .component.flow360_params.unit_system import (
     UnitSystem,
     flow360_unit_system,
     imperial_unit_system,
+)
+from .component.flow360_params.volume_zones import (
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    ReferenceFrame,
 )
 from .component.folder import Folder
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
