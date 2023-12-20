@@ -1,10 +1,5 @@
 {
-  "title": "VolumeZones",
-  "type": "array",
-  "uniqueItemProperties": [
-    "name"
-  ],
-  "items": {
+  "additionalProperties": {
     "oneOf": [
       {
         "title": "FluidDynamicsVolumeZone",
@@ -16,25 +11,50 @@
             "const": "FluidDynamics",
             "type": "string"
           },
-          "referenceFrame": {
-            "title": "Reference frame",
-            "anyOf": [
+          "_addReferenceFrame": {
+            "title": "Add reference frame",
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "dependencies": {
+          "_addReferenceFrame": {
+            "oneOf": [
               {
-                "$ref": "#/definitions/ReferenceFrame"
+                "type": "object",
+                "properties": {
+                  "_addReferenceFrame": {
+                    "default": true,
+                    "const": true,
+                    "type": "boolean"
+                  },
+                  "referenceFrame": {
+                    "title": "Reference frame",
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/ReferenceFrame"
+                      },
+                      {
+                        "$ref": "#/definitions/ReferenceFrameOmegaRadians"
+                      },
+                      {
+                        "$ref": "#/definitions/ReferenceFrameExpression"
+                      },
+                      {
+                        "$ref": "#/definitions/ReferenceFrameDynamic"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
               },
               {
-                "$ref": "#/definitions/ReferenceFrameOmegaRadians"
-              },
-              {
-                "$ref": "#/definitions/ReferenceFrameExpression"
-              },
-              {
-                "$ref": "#/definitions/ReferenceFrameDynamic"
+                "additionalProperties": false
               }
             ]
           }
-        },
-        "additionalProperties": false
+        }
       },
       {
         "title": "HeatTransferVolumeZone",

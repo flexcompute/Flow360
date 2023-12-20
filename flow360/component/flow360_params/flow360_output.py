@@ -245,13 +245,6 @@ class Slices(Flow360SortableBaseModel):
             values, _GenericSliceWrapper, msg="is not any of supported slice types."
         )
 
-    @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
-        return {
-            "items/sliceNormal": "vector3",
-            "items/sliceOrigin": "vector3"
-        }
-
 
 class _GenericSliceWrapper(Flow360BaseModel):
     """:class:`_GenericMonitorWrapper` class"""
@@ -277,6 +270,13 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "slices/additionalProperties/sliceNormal": "vector3",
+            "slices/additionalProperties/sliceOrigin": "vector3"
+        }
 
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
@@ -372,12 +372,6 @@ class Monitors(Flow360SortableBaseModel):
             values, _GenericMonitorWrapper, msg="is not any of supported monitor types."
         )
 
-    @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
-        return {
-            "items/monitorLocations/items": "vector3"
-        }
-
 
 class MonitorOutput(Flow360BaseModel):
     """:class:`MonitorOutput` class"""
@@ -396,6 +390,12 @@ class MonitorOutput(Flow360BaseModel):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "monitors/additionalProperties/monitorLocations/items": "vector3"
+        }
 
 
 class IsoSurface(Flow360BaseModel):

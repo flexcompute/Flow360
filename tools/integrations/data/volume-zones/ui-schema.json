@@ -1,4 +1,16 @@
 {
+  "additionalProperties": {
+    "referenceFrame": {
+      "centerOfRotation": {
+        "value": {
+          "ui:widget": "vector3"
+        }
+      },
+      "axisOfRotation": {
+        "ui:widget": "vector3"
+      }
+    }
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

@@ -1,10 +1,5 @@
 {
-  "title": "Boundaries",
-  "type": "array",
-  "uniqueItemProperties": [
-    "name"
-  ],
-  "items": {
+  "additionalProperties": {
     "oneOf": [
       {
         "title": "NoSlipWall",

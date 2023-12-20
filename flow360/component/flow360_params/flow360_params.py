@@ -673,11 +673,11 @@ class Boundaries(Flow360SortableBaseModel):
     @classmethod
     def _get_widgets(cls) -> dict[str, str]:
         return {
-            "items/velocity/value": "vector3",
-            "items/Velocity/value": "vector3",
-            "items/velocityDirection/value": "vector3",
-            "items/translationVector": "vector3",
-            "items/axisOfRotation": "vector3"
+            "additionalProperties/velocity/value": "vector3",
+            "additionalProperties/Velocity/value": "vector3",
+            "additionalProperties/velocityDirection/value": "vector3",
+            "additionalProperties/translationVector": "vector3",
+            "additionalProperties/axisOfRotation": "vector3"
         }
 
 
@@ -932,6 +932,10 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         """
         return super().to_solver(params, **kwargs)
 
+    @classmethod
+    def _get_optional_objects(cls) -> List[str]:
+        return ["referenceFrame"]
+
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
 
@@ -983,6 +987,13 @@ class VolumeZones(Flow360SortableBaseModel):
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
+
+    @classmethod
+    def _get_widgets(cls) -> dict[str, str]:
+        return {
+            "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
+            "additionalProperties/referenceFrame/axisOfRotation": "vector3",
+        }
 
 
 class Geometry(Flow360BaseModel):

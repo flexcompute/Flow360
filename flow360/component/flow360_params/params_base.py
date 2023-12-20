@@ -392,11 +392,6 @@ class Flow360BaseModel(BaseModel):
     def _generate_schema_for_optional_objects(cls, schema: dict, key: str):
         field = schema["properties"].pop(key)
         if field is not None:
-            ref = field.get("$ref")
-            if ref is None:
-                raise RuntimeError(
-                    f"Trying to apply optional field transform to a non-ref field {key}"
-                )
             toggle_name = _optional_toggle_name(key)
 
             schema["properties"][toggle_name] = {
@@ -419,7 +414,7 @@ class Flow360BaseModel(BaseModel):
                         "type": "object",
                         "properties": {
                             toggle_name: {"default": True, "const": True, "type": "boolean"},
-                            key: {"$ref": ref},
+                            key: field,
                         },
                         "additionalProperties": False,
                     },
@@ -1009,20 +1004,19 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
     def flow360_schema(cls):
         title = cls.__name__
         root_schema = {
-            "title": title,
-            "type": "array",
-            "uniqueItemProperties": ["name"],
-            "items": {
-                "oneOf": [],
-            },
+            "additionalProperties": {}
         }
 
         models = cls.get_subtypes()
 
-        for model in models:
-            schema = model.flow360_schema()
-            cls._clean_schema(schema)
-            root_schema["items"]["oneOf"].append(schema)
+        if len(models) == 1:
+            schema = models[0].flow360_schema()
+            root_schema["additionalProperties"] = schema
+        else:
+            root_schema["additionalProperties"]["oneOf"] = []
+            for model in models:
+                schema = model.flow360_schema()
+                root_schema["additionalProperties"]["oneOf"].append(schema)
 
         definitions = {}
 

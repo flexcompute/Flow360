@@ -20,7 +20,7 @@ def write_to_file(name, content):
         outfile.write(content)
 
 
-def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, root_property=None):
+def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, root_property=None, swap_fields=None):
     data = type_obj.flow360_schema()
     if root_property is not None:
         current = data
@@ -29,6 +29,9 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, root_property=N
         data[root_property[-1]] = current
         del data["properties"]
         del data["required"]
+    if swap_fields is not None:
+        for key, value in swap_fields.items():
+            data["properties"][key] = value
     schema = json.dumps(data, indent=2)
     name = type_obj.__name__
     if name.startswith("_"):
@@ -117,12 +120,12 @@ write_schemas(fl.HeatEquationSolver, "heat-equation")
 write_schemas(fl.PorousMedium, "porous-media")
 write_schemas(fl.ActuatorDisk, "actuator-disk")
 write_schemas(fl.BETDisk, "bet-disk")
-write_schemas(fl.SurfaceOutput, "surface-output")
-write_schemas(fl.SliceOutput, "slice-output")
 write_schemas(fl.VolumeOutput, "volume-output")
 write_schemas(fl.AeroacousticOutput, "aeroacoustic-output")
-write_schemas(fl.MonitorOutput, "monitor-output")
-write_schemas(fl.IsoSurfaceOutput, "iso-surface-output")
+write_schemas(fl.SliceOutput, "slice-output", swap_fields={"slices": fl.Slices.flow360_schema()})
+write_schemas(fl.MonitorOutput, "monitor-output", swap_fields={"monitors": fl.Monitors.flow360_schema()})
+write_schemas(fl.SurfaceOutput, "surface-output", swap_fields={"surfaces": fl.Surfaces.flow360_schema()})
+write_schemas(fl.IsoSurfaceOutput, "iso-surface-output", swap_fields={"isoSurfaces": fl.IsoSurfaces.flow360_schema()})
 
 write_schemas(_Freestreams, "freestream", root_property=["properties", "freestream", "anyOf"])
 write_schemas(_TimeSteppings, "time-stepping", root_property=["properties", "timeStepping", "anyOf"])
@@ -131,9 +134,5 @@ write_schemas(_TurbulenceModelSolvers, "turbulence-model", root_property=["prope
 write_schemas(_InitialConditions, "initial-conditions", root_property=["properties", "initialConditions", "anyOf"])
 
 # How to merge those self-named properties into their parent steps?
-write_schemas(fl.Surfaces, "surfaces")
 write_schemas(fl.VolumeZones, "volume-zones")
 write_schemas(fl.Boundaries, "boundaries")
-write_schemas(fl.Slices, "slices")
-write_schemas(fl.IsoSurfaces, "iso-surfaces")
-write_schemas(fl.Monitors, "monitors")
