@@ -14,5 +14,5 @@ for root, dirs, files in os.walk(rootdir):
         if regex.match(file):
             f = open(os.path.join(rootdir, file))
             legacy = json.load(f)
-            get_default_fork(legacy, legacy=True)
+            get_default_fork(legacy)
             print(f"Forked {file}")

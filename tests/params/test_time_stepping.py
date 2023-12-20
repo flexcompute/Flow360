@@ -12,6 +12,7 @@ from flow360.component.flow360_params.flow360_params import (
     Geometry,
     TimeStepping,
 )
+from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -42,7 +43,7 @@ def test_time_stepping():
 
     assert ts.json()
 
-    with pytest.raises(pd.ValidationError):
+    with fl.SI_unit_system:
         params = Flow360Params(
             geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
             fluid_properties=fl.air,
@@ -50,17 +51,17 @@ def test_time_stepping():
             time_stepping=ts,
         )
 
-    params = Flow360Params(
-        geometry={"meshUnit": "mm", "refArea": "m**2"},
-        fluid_properties=fl.air,
-        freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
-        time_stepping=ts,
-    )
+        assertions.assertAlmostEqual(
+            json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
+        )
+        to_file_from_file_test(ts)
 
-    assertions.assertAlmostEqual(
-        json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
-    )
-    to_file_from_file_test(ts)
+        params = Flow360Params(
+            geometry={"meshUnit": "mm", "refArea": "m**2"},
+            fluid_properties=fl.air,
+            freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
+            time_stepping=ts,
+        )
 
     exported_json = json.loads(params.to_flow360_json())
     assert "meshUnit" not in exported_json["geometry"]

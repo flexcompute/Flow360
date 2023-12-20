@@ -1,4 +1,8 @@
 {
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "0.2.0b16",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -22,13 +26,13 @@
         }
     },
     "boundaries": {
-        "2": {
-            "modelType": "SlipWall",
-            "name": "symmetry"
-        },
         "3": {
             "modelType": "Freestream",
             "name": "freestream"
+        },
+        "2": {
+            "modelType": "SlipWall",
+            "name": "symmetry"
         },
         "1": {
             "modelType": "NoSlipWall",
@@ -65,6 +69,25 @@
         "Temperature": 288.15
     },
     "volumeZones": {
+        "zone1": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "omegaRadians": 3.0773317581937964e-06,
+                "centerOfRotation": {
+                    "value": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "units": "flow360_length_unit"
+                },
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ]
+            }
+        },
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
@@ -102,25 +125,7 @@
                     0
                 ]
             }
-        },
-        "zone1": {
-            "modelType": "FluidDynamics",
-            "referenceFrame": {
-                "omegaRadians": 3.0773317581937964e-06,
-                "centerOfRotation": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "axisOfRotation": [
-                    1,
-                    0,
-                    0
-                ]
-            }
         }
-    }
+    },
+    "hash": "4b5841f3dc688a9b4129b6fdaeb73c6e37f0b4ef1c4ccc602b929213c75e1a00"
 }

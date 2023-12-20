@@ -6,6 +6,7 @@ import unittest
 import pydantic as pd
 import pytest
 
+import flow360
 import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
@@ -41,7 +42,12 @@ from flow360.component.flow360_params.flow360_params import (
     VolumeZones,
     WallFunction,
 )
-from flow360.exceptions import ConfigError, ValidationError
+from flow360.examples import OM6wing
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360RuntimeError,
+    Flow360ValidationError,
+)
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
 
@@ -98,74 +104,76 @@ def test_flow360meshparam():
 
 
 def test_flow360param():
-    mesh = Flow360Params.parse_raw(
-        """
-        {
-    "boundaries": {
-        "fluid/fuselage": {
-            "type": "NoSlipWall"
-        },
-        "fluid/leftWing": {
-            "type": "NoSlipWall"
-        },
-        "fluid/rightWing": {
-            "type": "NoSlipWall"
-        },
-        "fluid/farfield": {
-            "type": "Freestream"
-        }
-    },
-    "actuatorDisks": [
-        {
-            "center": [
-                3.6,
-                -5.08354845,
-                0
-            ],
-            "axisThrust": [
-                -0.96836405,
-                -0.06052275,
-                0.24209101
-            ],
-            "thickness": 0.42,
-            "forcePerArea": {
-                "radius": [],
-                "thrust": [],
-                "circumferential": []
+    with flow360.SI_unit_system:
+        mesh = Flow360Params.parse_raw(
+            """
+            {
+        "boundaries": {
+            "fluid/fuselage": {
+                "type": "NoSlipWall"
+            },
+            "fluid/leftWing": {
+                "type": "NoSlipWall"
+            },
+            "fluid/rightWing": {
+                "type": "NoSlipWall"
+            },
+            "fluid/farfield": {
+                "type": "Freestream"
             }
         },
-        {
-            "center": [
-                3.6,
-                5.08354845,
-                0
-            ],
-            "axisThrust": [
-                -0.96836405,
-                0.06052275,
-                0.24209101
-            ],
-            "thickness": 0.42,
-            "forcePerArea": {
-                "radius": [],
-                "thrust": [],
-                "circumferential": []
+        "actuatorDisks": [
+            {
+                "center": [
+                    3.6,
+                    -5.08354845,
+                    0
+                ],
+                "axisThrust": [
+                    -0.96836405,
+                    -0.06052275,
+                    0.24209101
+                ],
+                "thickness": 0.42,
+                "forcePerArea": {
+                    "radius": [],
+                    "thrust": [],
+                    "circumferential": []
+                }
+            },
+            {
+                "center": [
+                    3.6,
+                    5.08354845,
+                    0
+                ],
+                "axisThrust": [
+                    -0.96836405,
+                    0.06052275,
+                    0.24209101
+                ],
+                "thickness": 0.42,
+                "forcePerArea": {
+                    "radius": [],
+                    "thrust": [],
+                    "circumferential": []
+                }
             }
-        }
-    ],
-    "freestream": {"temperature": 1, "Mach": 0.5, "mu_ref": 1}
-}
-        """
-    )
+        ],
+        "freestream": {"temperature": 1, "Mach": 0.5, "mu_ref": 1}
+    }
+            """
+        )
 
-    assert mesh
+        assert mesh
 
 
 def test_flow360param1():
-    params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
-    assert params.time_stepping.max_pseudo_steps is None
-    params.time_stepping = TimeStepping(physical_steps=100)
-    assert params
+    with flow360.SI_unit_system:
+        params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
+        assert params.time_stepping.max_pseudo_steps is None
+        params.time_stepping = TimeStepping(physical_steps=100)
+        assert params
 
 
 def test_tuple_from_yaml():
@@ -187,7 +195,9 @@ def test_update_from_multiple_files():
     params.append(outputs)
 
     assert params
+
     to_file_from_file_test(params)
+
     compare_to_ref(params, "ref/case_params/params.yaml")
     compare_to_ref(params, "ref/case_params/params.json", content_only=True)
 
@@ -201,10 +211,9 @@ def test_update_from_multiple_files_dont_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    with fl.flow360_unit_system:
-        outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-        outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
-        params.append(outputs)
+    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
+    params.append(outputs)
 
     assert params.geometry.ref_area == 1.15315084119231
 
@@ -218,10 +227,12 @@ def test_update_from_multiple_files_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    with fl.flow360_unit_system:
-        outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-        outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
-        params.append(outputs, overwrite=True)
+    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
+
+    # We cannot overwrite immutable fields, so we make sure those are removed beforehand
+
+    params.append(outputs, overwrite=True)
 
     assert params.geometry.ref_area == 2 * u.flow360_area_unit
 
@@ -286,12 +297,9 @@ def test_params_with_units():
         )
 
     compare_to_ref(params, "ref/case_params/params_units.json", content_only=True)
-    to_file_from_file_test(params)
     params_as_json = params.json(indent=4)
 
-    with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
-        params_reimport = fl.Flow360Params(**json.loads(params_as_json))
-        assert params_reimport.geometry.ref_area == params.geometry.ref_area
+    to_file_from_file_test(params)
 
     params_solver = params.to_solver()
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
@@ -303,6 +311,104 @@ def test_params_with_units():
         a = json.load(fh)
     b = json.loads(params_as_json)
     assert sorted(a.items()) == sorted(b.items())
+
+
+def test_params_with_units_consistency():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=1,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            fluid_properties=fl.air,
+            freestream=fl.FreestreamFromVelocity(velocity=286),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            ),
+        )
+
+        with pytest.raises(ValueError):
+            params.unit_system = fl.CGS_unit_system
+
+    with fl.CGS_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=1,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            fluid_properties=fl.air,
+            freestream=fl.FreestreamFromVelocity(velocity=286),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            ),
+        )
+
+    params_as_json = params.json()
+
+    with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
+        with pytest.raises(Flow360RuntimeError):
+            params_reimport = fl.Flow360Params(**json.loads(params_as_json))
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_reimport = fl.Flow360Params(**json.loads(params_as_json))
+
+    with fl.SI_unit_system:
+        with pytest.raises(Flow360RuntimeError):
+            params_copy = params_reimport.copy()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy = params_reimport.copy()
+
+    # should raise RuntimeError error from no context
+    with pytest.raises(Flow360RuntimeError):
+        params = fl.Flow360Params(
+            geometry=fl.Geometry(
+                ref_area=u.m**2,
+                moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
+                moment_center=(1, 2, 3) * u.flow360_length_unit,
+                mesh_unit=u.mm,
+            ),
+            freestream=fl.FreestreamFromVelocity(velocity=286 * u.m / u.s),
+            time_stepping=fl.TimeStepping(
+                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+            ),
+        )
+
+    # should raise RuntimeError error from using context on file import
+    with pytest.raises(Flow360RuntimeError):
+        with fl.CGS_unit_system:
+            fl.Flow360Params("ref/case_params/params_units.json")
+
+    # should NOT raise RuntimeError error from NOT using context on file import
+    fl.Flow360Params("ref/case_params/params_units.json")
+
+    with fl.SI_unit_system:
+        with pytest.raises(Flow360RuntimeError):
+            params_copy.to_solver()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy.to_solver()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
+    params_copy.to_solver()
+
+    with fl.SI_unit_system:
+        with pytest.raises(Flow360RuntimeError):
+            params_copy.to_flow360_json()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
+    with fl.CGS_unit_system:
+        params_copy.to_flow360_json()
+
+    # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
+    params_copy.to_flow360_json()
 
 
 @pytest.mark.usefixtures("array_equality_override")

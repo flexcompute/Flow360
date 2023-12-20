@@ -1,15 +1,19 @@
 import pytest
 
+import flow360.units as u
 from flow360 import (
     Case,
+    CGS_unit_system,
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
     SI_unit_system,
     VolumeMesh,
     air,
+    flow360_unit_system,
+    imperial_unit_system,
 )
-from flow360.exceptions import RuntimeError, ValueError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
@@ -68,7 +72,7 @@ def test_fork_from_draft(mock_response):
             volume_mesh_id=mock_id,
         )
     case2 = case.continuation()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         case2.submit()
 
 
@@ -99,7 +103,7 @@ def test_parent_id(mock_response):
     print(case)
     case.submit()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(Flow360ValueError):
         with SI_unit_system:
             case = Case.create(
                 name="hi",

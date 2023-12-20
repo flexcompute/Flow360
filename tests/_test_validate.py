@@ -5,7 +5,7 @@ import pytest
 import flow360 as fl
 from flow360.component.types import TimeStep
 from flow360.component.validator import Validator
-from flow360.exceptions import ConfigError, ValidationError
+from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 
 assertions = unittest.TestCase("__init__")
 

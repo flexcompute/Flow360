@@ -5,8 +5,8 @@
         "title": "NoSlipWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "NoSlipWall",
             "const": "NoSlipWall",
             "type": "string"
@@ -65,8 +65,8 @@
         "title": "SlipWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SlipWall",
             "const": "SlipWall",
             "type": "string"
@@ -82,8 +82,8 @@
         "title": "FreestreamBoundary",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "Freestream",
             "const": "Freestream",
             "type": "string"
@@ -142,8 +142,8 @@
         "title": "IsothermalWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "IsothermalWall",
             "const": "IsothermalWall",
             "type": "string"
@@ -217,8 +217,8 @@
         "title": "HeatFluxWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "HeatFluxWall",
             "const": "HeatFluxWall",
             "type": "string"
@@ -291,8 +291,8 @@
         "title": "SubsonicOutflowPressure",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SubsonicOutflowPressure",
             "const": "SubsonicOutflowPressure",
             "type": "string"
@@ -316,8 +316,8 @@
         "title": "SubsonicOutflowMach",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SubsonicOutflowMach",
             "const": "SubsonicOutflowMach",
             "type": "string"
@@ -341,8 +341,8 @@
         "title": "SubsonicInflow",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SubsonicInflow",
             "const": "SubsonicInflow",
             "type": "string"
@@ -420,8 +420,8 @@
         "title": "SupersonicInflow",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SupersonicInflow",
             "const": "SupersonicInflow",
             "type": "string"
@@ -432,43 +432,41 @@
           },
           "totalTemperatureRatio": {
             "title": "Total temperature ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "totalPressureRatio": {
             "title": "Total pressure ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "staticPressureRatio": {
             "title": "Static pressure ratio",
+            "supported_solver_version": "release-23.3.2.0gt",
             "exclusiveMinimum": 0,
             "type": "number"
           },
           "velocityDirection": {
             "title": "Velocity direction",
+            "supported_solver_version": "release-23.3.2.0gt",
             "anyOf": [
               {
-                "properties": {
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3
+                "type": "array",
+                "items": [
+                  {
+                    "type": "number"
                   },
-                  "units": {
-                    "type": "string",
-                    "dimension": "velocity",
-                    "enum": [
-                      "m/s",
-                      "cm/s",
-                      "ft/s",
-                      "flow360_velocity_unit"
-                    ]
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
                   }
-                }
+                ],
+                "minItems": 3,
+                "maxItems": 3
               },
               {
                 "type": "array",
@@ -500,8 +498,8 @@
         "title": "SlidingInterfaceBoundary",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SlidingInterface",
             "const": "SlidingInterface",
             "type": "string"
@@ -517,8 +515,8 @@
         "title": "WallFunction",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "WallFunction",
             "const": "WallFunction",
             "type": "string"
@@ -534,8 +532,8 @@
         "title": "MassInflow",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "MassInflow",
             "const": "MassInflow",
             "type": "string"
@@ -564,8 +562,8 @@
         "title": "MassOutflow",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "MassOutflow",
             "const": "MassOutflow",
             "type": "string"
@@ -594,8 +592,8 @@
         "title": "SolidIsothermalWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SolidIsothermalWall",
             "const": "SolidIsothermalWall",
             "type": "string"
@@ -626,8 +624,8 @@
         "title": "SolidAdiabaticWall",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "SolidAdiabaticWall",
             "const": "SolidAdiabaticWall",
             "type": "string"
@@ -643,8 +641,8 @@
         "title": "TranslationallyPeriodic",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "TranslationallyPeriodic",
             "const": "TranslationallyPeriodic",
             "type": "string"
@@ -681,8 +679,8 @@
         "title": "RotationallyPeriodic",
         "type": "object",
         "properties": {
-          "type": {
-            "title": "Type",
+          "modelType": {
+            "title": "Model type",
             "default": "RotationallyPeriodic",
             "const": "RotationallyPeriodic",
             "type": "string"

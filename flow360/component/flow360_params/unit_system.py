@@ -1,6 +1,7 @@
 """
 Unit system definitions and utilities
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -8,7 +9,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List
+from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
 import pydantic as pd
@@ -60,6 +61,7 @@ class UnitSystemManager:
         Get the current UnitSystem.
         :return: UnitSystem
         """
+
         return self._current
 
     def copy_current(self):
@@ -68,7 +70,8 @@ class UnitSystemManager:
         :return: UnitSystem
         """
         if self._current:
-            return self._current.copy(deep=True)
+            copy = self._current.copy(deep=True)
+            return copy
         return None
 
     def set_current(self, unit_system: UnitSystem):
@@ -761,6 +764,9 @@ class UnitSystem(pd.BaseModel):
     viscosity: ViscosityType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
+
+    name: Literal["Custom"] = pd.Field("Custom")
+
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
@@ -812,6 +818,22 @@ class UnitSystem(pd.BaseModel):
             )
 
         self._verbose = verbose
+
+    def __eq__(self, other):
+        equal = [getattr(self, name) == getattr(other, name) for name in self._dim_names]
+        return all(equal)
+
+    @classmethod
+    def from_dict(cls, **kwargs):
+        """Construct a unit system from the provided dictionary"""
+
+        class _TemporaryModel(pd.BaseModel):
+            unit_system: UnitSystemTypes = pd.Field(discriminator="name")
+
+        params = {"unit_system": kwargs}
+        model = _TemporaryModel(**params)
+
+        return model.unit_system
 
     def defaults(self):
         """
@@ -974,7 +996,98 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
 flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
-SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
-CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
-imperial_unit_system = UnitSystem(base_system=BaseSystemType.IMPERIAL)
-flow360_unit_system = UnitSystem(base_system=BaseSystemType.FLOW360)
+
+class _PredefinedUnitSystem(UnitSystem):
+    mass: MassType = pd.Field(exclude=True)
+    length: LengthType = pd.Field(exclude=True)
+    time: TimeType = pd.Field(exclude=True)
+    temperature: TemperatureType = pd.Field(exclude=True)
+    velocity: VelocityType = pd.Field(exclude=True)
+    area: AreaType = pd.Field(exclude=True)
+    force: ForceType = pd.Field(exclude=True)
+    pressure: PressureType = pd.Field(exclude=True)
+    density: DensityType = pd.Field(exclude=True)
+    viscosity: ViscosityType = pd.Field(exclude=True)
+    angular_velocity: AngularVelocityType = pd.Field(exclude=True)
+    heat_flux: HeatFluxType = pd.Field(exclude=True)
+
+    def system_repr(self):
+        return self.name
+
+
+class SIUnitSystem(_PredefinedUnitSystem):
+    """:class: `SIUnitSystem` predefined SI system wrapper"""
+
+    name: Literal["SI"] = pd.Field("SI", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.SI)
+
+    @classmethod
+    def validate(cls, _):
+        return SIUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class CGSUnitSystem(_PredefinedUnitSystem):
+    """:class: `CGSUnitSystem` predefined CGS system wrapper"""
+
+    name: Literal["CGS"] = pd.Field("CGS", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.CGS)
+
+    @classmethod
+    def validate(cls, _):
+        return CGSUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class ImperialUnitSystem(_PredefinedUnitSystem):
+    """:class: `ImperialUnitSystem` predefined imperial system wrapper"""
+
+    name: Literal["Imperial"] = pd.Field("Imperial", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.IMPERIAL)
+
+    @classmethod
+    def validate(cls, _):
+        return ImperialUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class Flow360UnitSystem(_PredefinedUnitSystem):
+    """:class: `Flow360UnitSystem` predefined flow360 system wrapper"""
+
+    name: Literal["Flow360"] = pd.Field("Flow360", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.FLOW360)
+
+    @classmethod
+    def validate(cls, _):
+        return Flow360UnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+UnitSystemTypes = Union[
+    SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
+]
+
+SI_unit_system = SIUnitSystem()
+CGS_unit_system = CGSUnitSystem()
+imperial_unit_system = ImperialUnitSystem()
+flow360_unit_system = Flow360UnitSystem()
