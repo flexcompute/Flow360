@@ -75,7 +75,7 @@
       "type": "boolean"
     },
     "_addLinearSolver": {
-      "title": "Add linear solver",
+      "displayed": "Linear solver",
       "type": "boolean",
       "default": false
     }

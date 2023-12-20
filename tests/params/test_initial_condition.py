@@ -19,10 +19,10 @@ def change_test_dir(request, monkeypatch):
 def test_initial_condition():
     ic = FreestreamInitialCondition()
     assert ic
-    assert ic.model_type == "freestream"
+    assert ic.type == "freestream"
 
     ic = ExpressionInitialCondition(rho="x*y", u="x+y", v="x-y", w="z+x+y", p="x/y")
     assert ic
-    assert ic.model_type == "expression"
+    assert ic.type == "expression"
 
     to_file_from_file_test(ic)

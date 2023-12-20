@@ -87,7 +87,7 @@ class PressureCorrectionSolver(Flow360BaseModel):
     """:class:`PressureCorrectionSolver` class"""
 
     randomizer: LinearIterationsRandomizer = pd.Field()
-    linear_solver: LinearSolver = pd.Field(alias="linearSolver")
+    linear_solver: LinearSolver = pd.Field(LinearSolver(), alias="linearSolver")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -179,11 +179,11 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
     @classmethod
-    def _get_field_order(cls) -> List[str]:
+    def _schema_get_field_order(cls) -> List[str]:
         return ["*", "linearSolver"]
 
     @classmethod
-    def _get_optional_objects(cls) -> List[str]:
+    def _schema_get_optional_objects(cls) -> List[str]:
         return ["linearSolver"]
 
 
@@ -229,7 +229,9 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
 class TurbulenceModelConstantsSA(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSA` class"""
 
-    model_type: Literal["SA"] = pd.Field("SA", alias="modelType", const=True)
+    model_type: Literal["SpalartAllmarasConsts"] = pd.Field(
+        "SpalartAllmarasConsts", alias="modelType", const=True
+    )
     C_DES: Optional[float] = pd.Field(0.72)
     C_d: Optional[float] = pd.Field(8.0)
 
@@ -237,7 +239,9 @@ class TurbulenceModelConstantsSA(Flow360BaseModel):
 class TurbulenceModelConstantsSST(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSST` class"""
 
-    model_type: Literal["SST"] = pd.Field("SST", alias="modelType", const=True)
+    model_type: Literal[" kOmegaSSTConsts"] = pd.Field(
+        "kOmegaSSTConsts", alias="modelType", const=True
+    )
     C_DES1: Optional[float] = pd.Field(0.78)
     C_DES2: Optional[float] = pd.Field(0.61)
     C_d1: Optional[float] = pd.Field(20.0)
@@ -394,7 +398,7 @@ class HeatEquationSolver(Flow360BaseModel):
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver")
+    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -425,7 +429,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     model_type: Optional[Literal["AmplificationFactorTransport"]] = pd.Field(
         "AmplificationFactorTransport", alias="modelType", const=True
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver")
+    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(

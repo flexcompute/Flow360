@@ -17,7 +17,7 @@ params_old_version = {
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
-    "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+    "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
 }
 
 params_current_version = {
@@ -28,7 +28,7 @@ params_current_version = {
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
-    "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+    "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     "hash": "f097ce8e22c9a5f2b27b048aa775b74169fc13b2b60ab05c2913a8165d8c22c9",
 }
 
@@ -51,7 +51,7 @@ params_no_unit_system = {
         "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
-    "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+    "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     "hash": "f097ce8e22c9a5f2b27b048aa775b74169fc13b2b60ab05c2913a8165d8c22c9",
 }
 
@@ -64,7 +64,7 @@ params_no_hash = {
         "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
-    "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+    "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
 }
 
 params_wrong_hash = {
@@ -76,7 +76,7 @@ params_wrong_hash = {
         "momentCenter": {"units": "m", "value": [0, 0, 0]},
         "meshUnit": {"units": "m", "value": 1.0},
     },
-    "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+    "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     "hash": "invalid",
 }
 

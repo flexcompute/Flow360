@@ -82,8 +82,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
         return [
             wall_name
             for wall_name, wall in params.boundaries.dict().items()
-            if wall_name != COMMENTS
-            and _GenericBoundaryWrapper(v=wall).v.model_type == NoSlipWall().model_type
+            if wall_name != COMMENTS and _GenericBoundaryWrapper(v=wall).v.type == NoSlipWall().type
         ]
 
     return []

@@ -7,8 +7,8 @@
       "title": "Freestream initial condition",
       "type": "object",
       "properties": {
-        "modelType": {
-          "title": "Model type",
+        "type": {
+          "title": "Type",
           "default": "freestream",
           "const": "freestream",
           "type": "string"
@@ -20,8 +20,8 @@
       "title": "Expression initial condition",
       "type": "object",
       "properties": {
-        "modelType": {
-          "title": "Model type",
+        "type": {
+          "title": "Type",
           "default": "expression",
           "const": "expression",
           "type": "string"

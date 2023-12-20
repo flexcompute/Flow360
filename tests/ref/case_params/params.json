@@ -22,21 +22,22 @@
         }
     },
     "boundaries": {
-        "2": {
-            "modelType": "SlipWall",
-            "name": "symmetry"
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing"
         },
         "3": {
-            "modelType": "Freestream",
+            "type": "Freestream",
             "name": "freestream"
         },
-        "1": {
-            "modelType": "NoSlipWall",
-            "name": "wing"
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
         }
     },
     "timeStepping": {
         "maxPseudoSteps": 2000,
+        "modelType": "Steady",
         "physicalSteps": 1,
         "timeStepSize": "inf"
     },
@@ -58,6 +59,7 @@
         "limitPressureDensity": false
     },
     "freestream": {
+        "modelType": "FromVelocity",
         "alphaAngle": 3.06,
         "betaAngle": 0.0,
         "velocity": {
@@ -66,7 +68,6 @@
         }
     },
     "surfaceOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "yPlus",
@@ -74,7 +75,6 @@
         ]
     },
     "volumeOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "Mach",
@@ -82,7 +82,6 @@
         ]
     },
     "sliceOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "Cp"
@@ -120,5 +119,5 @@
             }
         }
     },
-    "hash": "b2d9b9aa28a67524c9a36f03a74116d9b80aba77986743a94cb03ab87dff0acb"
+    "hash": "35b4c84fc1d6592080f7860170f30d859cc650ce073dfd7c43334310096dff80"
 }

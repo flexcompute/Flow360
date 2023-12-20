@@ -25,9 +25,6 @@
       "title": "Animation frequency offset",
       "type": "integer"
     },
-    "animationSettings": {
-      "$ref": "#/definitions/AnimationSettings"
-    },
     "outputFormat": {
       "title": "Output format",
       "enum": [
@@ -151,36 +148,6 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "AnimationSettings": {
-      "title": "Animation settings",
-      "type": "object",
-      "properties": {
-        "frequency": {
-          "title": "Frequency",
-          "options": [
-            "Animated",
-            "Static"
-          ],
-          "anyOf": [
-            {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "title": "Animated"
-            },
-            {
-              "type": "integer",
-              "title": "Static",
-              "const": -1
-            }
-          ]
-        },
-        "frequencyOffset": {
-          "title": "Frequency offset",
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
     "Slices": {
       "title": "Slices",
       "type": "object",

@@ -155,42 +155,36 @@ class MeshBoundary(Flow360BaseModel):
 class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
 
-    model_type: str
+    type: str
     name: Optional[str] = pd.Field(
         None, title="Name", description="Optional unique name for boundary."
     )
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="model_type", deprecated="type")]
 
 
 class NoSlipWall(Boundary):
     """No slip wall boundary"""
 
-    model_type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", alias="modelType", const=True)
+    type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
 
-    model_type: Literal["SlipWall"] = pd.Field("SlipWall", alias="modelType", const=True)
+    type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
 
 class FreestreamBoundary(Boundary):
     """Freestream boundary"""
 
-    model_type: Literal["Freestream"] = pd.Field("Freestream", alias="modelType", const=True)
+    type: Literal["Freestream"] = pd.Field("Freestream", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
-    model_type: Literal["IsothermalWall"] = pd.Field(
-        "IsothermalWall", alias="modelType", const=True
-    )
+    type: Literal["IsothermalWall"] = pd.Field("IsothermalWall", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
@@ -216,7 +210,7 @@ class HeatFluxWall(Boundary):
     >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
     """
 
-    model_type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", alias="modelType", const=True)
+    type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
@@ -224,27 +218,21 @@ class HeatFluxWall(Boundary):
 class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
-    model_type: Literal["SubsonicOutflowPressure"] = pd.Field(
-        "SubsonicOutflowPressure", alias="modelType", const=True
-    )
+    type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
     static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
 class SubsonicOutflowMach(Boundary):
     """SubsonicOutflowMach boundary"""
 
-    model_type: Literal["SubsonicOutflowMach"] = pd.Field(
-        "SubsonicOutflowMach", alias="modelType", const=True
-    )
+    type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
     Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
 class SubsonicInflow(Boundary):
     """SubsonicInflow boundary"""
 
-    model_type: Literal["SubsonicInflow"] = pd.Field(
-        "SubsonicInflow", alias="modelType", const=True
-    )
+    type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
     total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
     total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
@@ -280,9 +268,7 @@ class SupersonicInflow(Boundary):
     >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
     """
 
-    model_type: Literal["SupersonicInflow"] = pd.Field(
-        "SupersonicInflow", alias="modelType", const=True
-    )
+    type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
     total_temperature_ratio: PositiveFloat = pd.Field(
         alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
     )
@@ -300,21 +286,19 @@ class SupersonicInflow(Boundary):
 class SlidingInterfaceBoundary(Boundary):
     """:class: `SlidingInterface` boundary"""
 
-    model_type: Literal["SlidingInterface"] = pd.Field(
-        "SlidingInterface", alias="modelType", const=True
-    )
+    type: Literal["SlidingInterface"] = pd.Field("SlidingInterface", const=True)
 
 
 class WallFunction(Boundary):
     """:class: `WallFunction` boundary"""
 
-    model_type: Literal["WallFunction"] = pd.Field("WallFunction", alias="modelType", const=True)
+    type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
 
 class MassInflow(Boundary):
     """:class: `MassInflow` boundary"""
 
-    model_type: Literal["MassInflow"] = pd.Field("MassInflow", alias="modelType", const=True)
+    type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
@@ -322,7 +306,7 @@ class MassInflow(Boundary):
 class MassOutflow(Boundary):
     """:class: `MassOutflow` boundary"""
 
-    model_type: Literal["MassOutflow"] = pd.Field("MassOutflow", alias="modelType", const=True)
+    type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
@@ -330,26 +314,20 @@ class MassOutflow(Boundary):
 class SolidIsothermalWall(Boundary):
     """:class: `SolidIsothermalWall` boundary"""
 
-    model_type: Literal["SolidIsothermalWall"] = pd.Field(
-        "SolidIsothermalWall", alias="modelType", const=True
-    )
+    type: Literal["SolidIsothermalWall"] = pd.Field("SolidIsothermalWall", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
 
 
 class SolidAdiabaticWall(Boundary):
     """:class: `SolidAdiabaticWall` boundary"""
 
-    model_type: Literal["SolidAdiabaticWall"] = pd.Field(
-        "SolidAdiabaticWall", alias="modelType", const=True
-    )
+    type: Literal["SolidAdiabaticWall"] = pd.Field("SolidAdiabaticWall", const=True)
 
 
 class TranslationallyPeriodic(Boundary):
     """:class: `TranslationallyPeriodic` boundary"""
 
-    model_type: Literal["TranslationallyPeriodic"] = pd.Field(
-        "TranslationallyPeriodic", alias="modelType", const=True
-    )
+    type: Literal["TranslationallyPeriodic"] = pd.Field("TranslationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     translation_vector: Optional[Vector] = pd.Field(alias="translationVector")
 
@@ -357,9 +335,7 @@ class TranslationallyPeriodic(Boundary):
 class RotationallyPeriodic(Boundary):
     """:class: `RotationallyPeriodic` boundary"""
 
-    model_type: Literal["RotationallyPeriodic"] = pd.Field(
-        "RotationallyPeriodic", alias="modelType", const=True
-    )
+    type: Literal["RotationallyPeriodic"] = pd.Field("RotationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     axis_of_rotation: Optional[Vector] = pd.Field(alias="axisOfRotation")
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
@@ -473,7 +449,8 @@ class ActuatorDisk(Flow360BaseModel):
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {"center": "vector3", "axisThrust": "vector3"}
 
 
@@ -564,7 +541,8 @@ class SlidingInterface(Flow360BaseModel):
         ]
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {"centerOfRotation": "vector3"}
 
 
@@ -596,7 +574,7 @@ class RampCFL(Flow360BaseModel):
     Ramp CFL for time stepping component
     """
 
-    model_type: Literal["Ramp"] = pd.Field("Ramp", alias="modelType", const=True)
+    type: Literal["Ramp"] = pd.Field("Ramp", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
@@ -622,7 +600,7 @@ class AdaptiveCFL(Flow360BaseModel):
     Adaptive CFL for time stepping component
     """
 
-    model_type: Literal["Adaptive"] = pd.Field("Adaptive", alias="modelType", const=True)
+    type: Literal["Adaptive"] = pd.Field("Adaptive", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
@@ -657,6 +635,7 @@ class SteadyTimeStepping(BaseTimeStepping):
     Steady time stepping component
     """
 
+    model_type: Literal["Steady"] = pd.Field("Steady", alias="modelType", const=True)
     physical_steps: Literal[1] = pd.Field(1, alias="physicalSteps", const=True)
     time_step_size: Literal["inf"] = pd.Field("inf", alias="timeStepSize", const=True)
 
@@ -666,6 +645,7 @@ class UnsteadyTimeStepping(BaseTimeStepping):
     Unsteady time stepping component
     """
 
+    model_type: Literal["Unsteady"] = pd.Field("Unsteady", alias="modelType", const=True)
     physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     time_step_size: Optional[TimeType.Positive] = pd.Field(alias="timeStepSize")
 
@@ -727,7 +707,8 @@ class Boundaries(Flow360SortableBaseModel):
         return super().to_solver(params, **kwargs)
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {
             "additionalProperties/velocity/value": "vector3",
             "additionalProperties/Velocity/value": "vector3",
@@ -972,7 +953,7 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         return super().to_solver(params, **kwargs)
 
     @classmethod
-    def _get_optional_objects(cls) -> List[str]:
+    def _schema_get_optional_objects(cls) -> List[str]:
         return ["referenceFrame"]
 
 
@@ -1028,7 +1009,8 @@ class VolumeZones(Flow360SortableBaseModel):
         return super().to_solver(params, **kwargs)
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {
             "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
             "additionalProperties/referenceFrame/axisOfRotation": "vector3",
@@ -1062,6 +1044,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     :class: Freestream component
     """
 
+    model_type: str
     alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0)
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
@@ -1074,6 +1057,7 @@ class FreestreamFromMach(FreestreamBase):
     :class: Freestream component using Mach numbers
     """
 
+    model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -1092,6 +1076,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     :class: Freestream component using Mach and Reynolds numbers
     """
 
+    model_type: Literal["FromMachReynolds"] = pd.Field(
+        "FromMachReynolds", alias="modelType", const=True
+    )
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     Reynolds: PositiveFloat = pd.Field()
@@ -1110,6 +1097,7 @@ class ZeroFreestream(FreestreamBase):
     :class: Zero velocity freestream component
     """
 
+    model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
     Mach: Literal[0] = pd.Field(0, const=True)
     Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -1128,6 +1116,7 @@ class FreestreamFromVelocity(FreestreamBase):
     :class: Freestream component using dimensioned velocity
     """
 
+    model_type: Literal["FromVelocity"] = pd.Field("FromVelocity", alias="modelType", const=True)
     velocity: VelocityType.Positive = pd.Field()
     velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef")
 
@@ -1156,6 +1145,9 @@ class FreestreamFromVelocity(FreestreamBase):
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
 
+        if solver_values.get("model_type") is not None:
+            solver_values.pop("model_type")
+
         if mach_ref is not None:
             mach_ref = mach_ref.v.item()
 
@@ -1169,6 +1161,7 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
     :class: Zero velocity freestream component using dimensioned velocity
     """
 
+    model_type: Literal["ZeroVelocity"] = pd.Field("ZeroVelocity", alias="modelType", const=True)
     velocity: Literal[0] = pd.Field(0, const=True)
     velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef")
 
@@ -1195,6 +1188,9 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         mach_ref = solver_values.pop("velocity_ref", None)
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
+
+        if solver_values.get("model_type") is not None:
+            solver_values.pop("model_type")
 
         return ZeroFreestream(
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
@@ -1337,32 +1333,24 @@ FluidPropertyTypes = Union[AirDensityTemperature, AirPressureTemperature]
 class InitialCondition(Flow360BaseModel):
     """:class:`InitialCondition` class"""
 
-    model_type: str
+    type: str
 
 
 class FreestreamInitialCondition(InitialCondition):
     """:class:`FreestreamInitialCondition` class"""
 
-    model_type: Literal["freestream"] = pd.Field("freestream", alias="modelType", const=True)
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="model_type", deprecated="type")]
+    type: Literal["freestream"] = pd.Field("freestream", const=True)
 
 
 class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
 
-    model_type: Literal["expression"] = pd.Field("expression", alias="modelType", const=True)
+    type: Literal["expression"] = pd.Field("expression", const=True)
     rho: str = pd.Field()
     u: str = pd.Field()
     v: str = pd.Field()
     w: str = pd.Field()
     p: str = pd.Field()
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [DeprecatedAlias(name="model_type", deprecated="type")]
 
 
 InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
@@ -1458,7 +1446,8 @@ class BETDisk(Flow360BaseModel):
         return values
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {
             "centerOfRotation": "vector3",
             "axisOfRotation": "vector3",
@@ -1484,7 +1473,8 @@ class PorousMedium(Flow360BaseModel):
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {
             "DarcyCoefficient": "vector3",
             "ForchheimerCoefficient": "vector3",
@@ -1522,10 +1512,10 @@ class Flow360Params(Flow360BaseModel):
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
-        alias="initialCondition", discriminator="model_type"
+        alias="initialCondition", discriminator="type"
     )
     time_stepping: Optional[TimeStepping] = pd.Field(
-        alias="timeStepping", default=SteadyTimeStepping()
+        alias="timeStepping", default=SteadyTimeStepping(), discriminator="model_type"
     )
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
@@ -1535,7 +1525,7 @@ class Flow360Params(Flow360BaseModel):
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[FreestreamTypes] = pd.Field()
+    freestream: Optional[FreestreamTypes] = pd.Field(discriminator="model_type")
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
@@ -1837,10 +1827,10 @@ class FreestreamLegacy(LegacyModel):
             """Helper class used to create
             the correct freestream from dict data"""
 
-            freestream: FreestreamTypes = pd.Field()
+            field: FreestreamTypes = pd.Field(discriminator="model_type")
 
         model = {
-            "freestream": {
+            "field": {
                 "alphaAngle": self.alpha,
                 "betaAngle": self.beta,
                 "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
@@ -1852,17 +1842,22 @@ class FreestreamLegacy(LegacyModel):
             if self.comments.get("freestreamMeterPerSecond") is not None:
                 # pylint: disable=no-member
                 velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
-                try_set(model["freestream"], "velocity", velocity)
+                try_set(model["field"], "velocity", velocity)
             elif (
                 self.comments.get("speedOfSoundMeterPerSecond") is not None
                 and self.Mach is not None
             ):
                 # pylint: disable=no-member
                 velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
-                try_set(model["freestream"], "velocity", velocity)
+                try_set(model["field"], "velocity", velocity)
 
-            if model["freestream"].get("velocity"):
-                # Set velocity_ref
+            # Set velocity_ref
+            if model["field"].get("velocity"):
+                if model["field"].get("velocity") == 0:
+                    model["field"]["modelType"] = "ZeroVelocity"
+                else:
+                    model["field"]["modelType"] = "FromVelocity"
+
                 if (
                     self.comments.get("speedOfSoundMeterPerSecond") is not None
                     and self.Mach_Ref is not None
@@ -1874,17 +1869,24 @@ class FreestreamLegacy(LegacyModel):
                         * u.m
                         / u.s
                     )
-                    try_set(model["freestream"], "velocityRef", velocity_ref)
+                    try_set(model["field"], "velocityRef", velocity_ref)
                 else:
-                    model["freestream"]["velocityRef"] = None
+                    model["field"]["velocityRef"] = None
         else:
-            try_set(model["freestream"], "Reynolds", self.Reynolds)
-            try_set(model["freestream"], "muRef", self.mu_ref)
-            try_set(model["freestream"], "temperature", self.temperature)
-            try_set(model["freestream"], "Mach", self.Mach)
-            try_set(model["freestream"], "MachRef", self.Mach_Ref)
+            try_set(model["field"], "Reynolds", self.Reynolds)
+            try_set(model["field"], "muRef", self.mu_ref)
+            try_set(model["field"], "temperature", self.temperature)
+            try_set(model["field"], "Mach", self.Mach)
+            try_set(model["field"], "MachRef", self.Mach_Ref)
 
-        return _FreestreamTempModel.parse_obj(model).freestream
+            if self.Mach is not None and self.Mach == 0:
+                model["field"]["modelType"] = "ZeroMach"
+            elif self.Reynolds is not None:
+                model["field"]["modelType"] = "FromMachReynolds"
+            else:
+                model["field"]["modelType"] = "FromMach"
+
+        return _FreestreamTempModel.parse_obj(model).field
 
     def extract_fluid_properties(self) -> Optional[Flow360BaseModel]:
         """Extract fluid properties from the freestream comments"""
@@ -1893,46 +1895,60 @@ class FreestreamLegacy(LegacyModel):
             """Helper class used to create
             the correct fluid properties from dict data"""
 
-            fluid: FluidPropertyTypes = pd.Field()
+            field: FluidPropertyTypes = pd.Field()
 
-        model = {"fluid": {}}
+        model = {"field": {}}
 
         # pylint: disable=no-member
-        try_set(model["fluid"], "temperature", self.temperature * u.K)
+        try_set(model["field"], "temperature", self.temperature * u.K)
 
         if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
-            try_set(model["fluid"], "density", density)
+            try_set(model["field"], "density", density)
         else:
             return None
 
-        return _FluidPropertiesTempModel.parse_obj(model).fluid
+        return _FluidPropertiesTempModel.parse_obj(model).field
 
 
-class TimeSteppingLegacy(UnsteadyTimeStepping, LegacyModel):
+class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
     """:class: `TimeSteppingLegacy` class"""
 
+    physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
         alias="timeStepSize", default="inf"
     )
 
     def update_model(self) -> Flow360BaseModel:
+        class _TimeSteppingTempModel(pd.BaseModel):
+            """Helper class used to create
+            the correct time stepping from dict data"""
+
+            field: TimeStepping = pd.Field(discriminator="model_type")
+
         model = {
-            "CFL": self.CFL,
-            "physicalSteps": self.physical_steps,
-            "maxPseudoSteps": self.max_pseudo_steps,
-            "timeStepSize": self.time_step_size,
+            "field": {
+                "CFL": self.CFL,
+                "physicalSteps": self.physical_steps,
+                "maxPseudoSteps": self.max_pseudo_steps,
+                "timeStepSize": self.time_step_size,
+            }
         }
 
         if (
-            model["timeStepSize"] != "inf"
+            model["field"]["timeStepSize"] != "inf"
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             try_add_unit(model, "timeStepSize", step_unit)
 
-        return TimeStepping.parse_obj(model)
+        if model["field"]["timeStepSize"] == "inf" and model["field"]["physicalSteps"] == 1:
+            model["field"]["modelType"] = "Steady"
+        else:
+            model["field"]["modelType"] = "Unsteady"
+
+        return _TimeSteppingTempModel.parse_obj(model).field
 
 
 class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
@@ -1991,7 +2007,7 @@ class Flow360ParamsLegacy(LegacyModel):
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
     boundaries: Optional[Boundaries] = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
-        alias="initialCondition", discriminator="model_type"
+        alias="initialCondition", discriminator="type"
     )
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")

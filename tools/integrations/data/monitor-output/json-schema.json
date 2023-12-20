@@ -12,8 +12,8 @@
             "properties": {
               "modelType": {
                 "title": "Model type",
-                "default": "SurfaceIntegral",
-                "const": "SurfaceIntegral",
+                "default": "surfaceIntegral",
+                "const": "surfaceIntegral",
                 "type": "string"
               },
               "surfaces": {
@@ -63,8 +63,8 @@
             "properties": {
               "modelType": {
                 "title": "Model type",
-                "default": "Probe",
-                "const": "Probe",
+                "default": "probe",
+                "const": "probe",
                 "type": "string"
               },
               "monitorLocations": {

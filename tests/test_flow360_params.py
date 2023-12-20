@@ -160,7 +160,7 @@ def test_flow360param():
                 }
             }
         ],
-        "freestream": {"temperature": 1, "Mach": 0.5, "mu_ref": 1}
+        "freestream": {"modelType": "FromMach", "temperature": 1, "Mach": 0.5, "mu_ref": 1}
     }
             """
         )
@@ -300,7 +300,6 @@ def test_params_with_units():
         )
 
     compare_to_ref(params, "ref/case_params/params_units.json", content_only=True)
-    params_as_json = params.json(indent=4)
 
     to_file_from_file_test(params)
 

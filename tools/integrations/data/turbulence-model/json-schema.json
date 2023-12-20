@@ -32,8 +32,8 @@
       "properties": {
         "modelType": {
           "title": "Model type",
-          "default": "SA",
-          "const": "SA",
+          "default": "SpalartAllmarasConsts",
+          "const": "SpalartAllmarasConsts",
           "type": "string"
         },
         "C_DES": {
@@ -149,8 +149,8 @@
       "properties": {
         "modelType": {
           "title": "Model type",
-          "default": "SST",
-          "const": "SST",
+          "default": "kOmegaSSTConsts",
+          "const": " kOmegaSSTConsts",
           "type": "string"
         },
         "C_DES1": {

@@ -7,6 +7,12 @@
       "title": "Freestream from velocity",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromVelocity",
+          "const": "FromVelocity",
+          "type": "string"
+        },
         "alphaAngle": {
           "title": "Alpha angle",
           "default": 0,
@@ -70,6 +76,12 @@
       "title": "Freestream from mach",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMach",
+          "const": "FromMach",
+          "type": "string"
+        },
         "alphaAngle": {
           "title": "Alpha angle",
           "default": 0,
@@ -117,6 +129,12 @@
       "title": "Zero freestream from velocity",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroVelocity",
+          "const": "ZeroVelocity",
+          "type": "string"
+        },
         "alphaAngle": {
           "title": "Alpha angle",
           "default": 0,
@@ -167,6 +185,12 @@
       "title": "Zero freestream",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroMach",
+          "const": "ZeroMach",
+          "type": "string"
+        },
         "alphaAngle": {
           "title": "Alpha angle",
           "default": 0,
@@ -215,6 +239,12 @@
       "title": "Freestream from mach reynolds",
       "type": "object",
       "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMachReynolds",
+          "const": "FromMachReynolds",
+          "type": "string"
+        },
         "alphaAngle": {
           "title": "Alpha angle",
           "default": 0,

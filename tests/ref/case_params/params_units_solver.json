@@ -13,16 +13,16 @@
     ]
   },
   "boundaries": {
-    "3": {
-      "modelType": "Freestream",
-      "name": "freestream"
-    },
     "2": {
-      "modelType": "SlipWall",
+      "type": "SlipWall",
       "name": "symmetry"
     },
+    "3": {
+      "type": "Freestream",
+      "name": "freestream"
+    },
     "1": {
-      "modelType": "NoSlipWall",
+      "type": "NoSlipWall",
       "name": "wing",
       "Velocity": [
         0.0008162876014170267,
@@ -34,16 +34,18 @@
   "timeStepping": {
     "maxPseudoSteps": 500,
     "CFL": {
-      "modelType": "Adaptive",
+      "type": "Adaptive",
       "min": 0.1,
       "max": 10000.0,
       "maxRelativeChange": 1.0,
       "convergenceLimitingFactor": 0.25
     },
+    "modelType": "Unsteady",
     "physicalSteps": 20,
     "timeStepSize": 408352.8069698554
   },
   "freestream": {
+    "modelType": "FromMach",
     "alphaAngle": 3.06,
     "betaAngle": 0.0,
     "Mach": 0.8404497144189705,
@@ -67,10 +69,10 @@
         ]
       }
     },
-    "zone2": {
+    "zone3": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
-        "omegaRadians": 3.0773317581937964e-06,
+        "omegaRadians": 3.077331758193797e-06,
         "centerOfRotation": [
           0.0,
           0.0,
@@ -83,10 +85,10 @@
         ]
       }
     },
-    "zone3": {
+    "zone2": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
-        "omegaRadians": 3.077331758193797e-06,
+        "omegaRadians": 3.0773317581937964e-06,
         "centerOfRotation": [
           0.0,
           0.0,

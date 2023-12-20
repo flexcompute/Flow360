@@ -41,16 +41,12 @@
     }
   },
   "boundaries": {
-    "2": {
-      "modelType": "SlipWall",
-      "name": "symmetry"
-    },
     "3": {
-      "modelType": "Freestream",
+      "type": "Freestream",
       "name": "freestream"
     },
     "1": {
-      "modelType": "NoSlipWall",
+      "type": "NoSlipWall",
       "name": "wing",
       "Velocity": {
         "value": [
@@ -60,17 +56,22 @@
         ],
         "units": "km/hr"
       }
+    },
+    "2": {
+      "type": "SlipWall",
+      "name": "symmetry"
     }
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
     "CFL": {
-      "modelType": "Adaptive",
+      "type": "Adaptive",
       "min": 0.1,
       "max": 10000.0,
       "maxRelativeChange": 1.0,
       "convergenceLimitingFactor": 0.25
     },
+    "modelType": "Unsteady",
     "physicalSteps": 20,
     "timeStepSize": {
       "value": 1.2,
@@ -78,6 +79,7 @@
     }
   },
   "freestream": {
+    "modelType": "FromVelocity",
     "alphaAngle": 3.06,
     "betaAngle": 0.0,
     "velocity": {
@@ -92,28 +94,6 @@
         "omega": {
           "value": 10.0,
           "units": "rpm"
-        },
-        "centerOfRotation": {
-          "value": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "units": "m"
-        },
-        "axisOfRotation": [
-          1,
-          0,
-          0
-        ]
-      }
-    },
-    "zone2": {
-      "modelType": "FluidDynamics",
-      "referenceFrame": {
-        "omega": {
-          "value": 1.0471975511965976,
-          "units": "rad/s"
         },
         "centerOfRotation": {
           "value": [
@@ -151,7 +131,29 @@
           0
         ]
       }
+    },
+    "zone2": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "omega": {
+          "value": 1.0471975511965976,
+          "units": "rad/s"
+        },
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "m"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
     }
   },
-  "hash": "d4a76ac9aa9f03058d8c6224bedb1fe448163c1c9c075e6efa313bc7b4d5c2e2"
+  "hash": "a8d8d7cb89267afe054059762a45e3c94417f1799c7002865d9ca4914132da27"
 }

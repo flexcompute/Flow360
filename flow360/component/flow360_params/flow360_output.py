@@ -76,11 +76,14 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
         alias="animationFrequency", options=["Animated", "Static"]
     )
     animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
+
+    # Temporarily disabled until solver-side support for new animation format is introduced
+    """
     animation_settings: Optional[AnimationSettings] = pd.Field(alias="animationSettings")
 
     # pylint: disable=unused-argument
     def to_solver(self, params, **kwargs) -> AnimatedOutput:
-        """Convert animation settings (UI representation) to solver representation"""
+        # Convert animation settings (UI representation) to solver representation
         if self.animation_settings is not None:
             if self.animation_settings.frequency is not None:
                 self.animation_frequency = self.animation_settings.frequency
@@ -96,6 +99,7 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
             animation_frequency_offset=self.animation_frequency_offset,
         )
         return solver_animations
+    """
 
 
 class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
@@ -107,6 +111,9 @@ class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
     animation_frequency_time_average_offset: Optional[int] = pd.Field(
         alias="animationFrequencyTimeAverageOffset"
     )
+
+    # Temporarily disabled until solver-side support for new animation format is introduced
+    """
     animation_settings: Optional[AnimationSettingsExtended] = pd.Field(alias="animationSettings")
 
     # pylint: disable=unused-argument
@@ -139,7 +146,7 @@ class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
             animation_frequency=self.animation_frequency,
             animation_frequency_offset=self.animation_frequency_offset,
         )
-        return solver_animations
+        return solver_animations"""
 
 
 class Surface(Flow360BaseModel):
@@ -273,7 +280,8 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
             )
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {
             "slices/additionalProperties/sliceNormal": "vector3",
             "slices/additionalProperties/sliceOrigin": "vector3",
@@ -310,8 +318,8 @@ class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
 class SurfaceIntegralMonitor(MonitorBase):
     """:class:`SurfaceIntegralMonitor` class"""
 
-    model_type: Literal["SurfaceIntegral"] = pd.Field(
-        "SurfaceIntegral", alias="modelType", const=True
+    model_type: Literal["surfaceIntegral"] = pd.Field(
+        "surfaceIntegral", alias="modelType", const=True
     )
     surfaces: Optional[List[str]] = pd.Field()
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
@@ -332,7 +340,7 @@ class SurfaceIntegralMonitor(MonitorBase):
 class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
 
-    model_type: Literal["Probe"] = pd.Field("Probe", alias="modelType", const=True)
+    model_type: Literal["probe"] = pd.Field("probe", alias="modelType", const=True)
     monitor_locations: Optional[List[Coordinate]] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 
@@ -395,7 +403,8 @@ class MonitorOutput(Flow360BaseModel):
             )
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {"monitors/additionalProperties/monitorLocations/items": "vector3"}
 
 
@@ -480,7 +489,8 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
     @classmethod
-    def _get_widgets(cls) -> dict[str, str]:
+    def _schema_get_widgets(cls) -> dict[str, str]:
+        # Return widget paths for the UI schema
         return {"observers/items": "vector3"}
 
 
@@ -543,12 +553,10 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             fields += self.output_fields
 
         model = {
-            "animationSettings": {
-                "frequency": self.animation_frequency,
-                "frequencyOffset": self.animation_frequency_offset,
-                "frequencyTimeAverage": self.animation_frequency_time_average,
-                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
-            },
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
+            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
@@ -584,10 +592,8 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
             fields += self.output_fields
 
         model = {
-            "animationSettings": {
-                "frequency": self.animation_frequency,
-                "frequencyOffset": self.animation_frequency_offset,
-            },
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
             "outputFormat": self.output_format,
             "outputFields": fields,
         }
@@ -637,12 +643,10 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
             fields += self.output_fields
 
         model = {
-            "animationSettings": {
-                "frequency": self.animation_frequency,
-                "frequencyOffset": self.animation_frequency_offset,
-                "frequencyTimeAverage": self.animation_frequency_time_average,
-                "frequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
-            },
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
+            "animationFrequencyTimeAverage": self.animation_frequency_time_average,
+            "animationFrequencyTimeAverageOffset": self.animation_frequency_time_average_offset,
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,

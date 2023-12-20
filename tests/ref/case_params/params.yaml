@@ -1,16 +1,17 @@
 boundaries:
     '1':
-        modelType: NoSlipWall
         name: wing
+        type: NoSlipWall
     '2':
-        modelType: SlipWall
         name: symmetry
+        type: SlipWall
     '3':
-        modelType: Freestream
         name: freestream
+        type: Freestream
 freestream:
     alphaAngle: 3.06
     betaAngle: 0.0
+    modelType: FromVelocity
     velocity:
         units: m/s
         value: 286.0
@@ -27,7 +28,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: b2d9b9aa28a67524c9a36f03a74116d9b80aba77986743a94cb03ab87dff0acb
+hash: 35b4c84fc1d6592080f7860170f30d859cc650ce073dfd7c43334310096dff80
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
@@ -44,7 +45,6 @@ navierStokesSolver:
     relativeTolerance: 0.0
     updateJacobianFrequency: 4
 sliceOutput:
-    animationSettings: {}
     outputFields:
     - Cp
     outputFormat: tecplot
@@ -72,20 +72,19 @@ sliceOutput:
             - 1.0
             - 0.0
 surfaceOutput:
-    animationSettings: {}
     outputFields:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
 timeStepping:
     maxPseudoSteps: 2000
+    modelType: Steady
     physicalSteps: 1
     timeStepSize: inf
 unitSystem:
     name: SI
 version: 0.2.0b16
 volumeOutput:
-    animationSettings: {}
     outputFields:
     - Mach
     - primitiveVars

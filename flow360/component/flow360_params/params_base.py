@@ -304,19 +304,19 @@ class Flow360BaseModel(BaseModel):
         return values
 
     @classmethod
-    def _get_field_order(cls) -> List[str]:
+    def _schema_get_field_order(cls) -> List[str]:
         return []
 
     @classmethod
-    def _get_optional_objects(cls) -> List[str]:
+    def _schema_get_optional_objects(cls) -> List[str]:
         return []
 
     @classmethod
-    def _get_widgets(cls) -> dict:
+    def _schema_get_widgets(cls) -> dict:
         return {}
 
     @classmethod
-    def _fix_single_allof(cls, dictionary):
+    def _schema_fix_single_allof(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -326,12 +326,12 @@ class Flow360BaseModel(BaseModel):
                     dictionary[allOfKey] = allOfValue
                 del dictionary["allOf"]
             elif isinstance(value, dict):
-                cls._fix_single_allof(value)
+                cls._schema_fix_single_allof(value)
 
         return dictionary
 
     @classmethod
-    def _camel_to_space(cls, name: str):
+    def _schema_camel_to_space(cls, name: str):
         if len(name) > 0 and name[0] == "_":
             name = name[1:]
         name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
@@ -340,7 +340,7 @@ class Flow360BaseModel(BaseModel):
         return name
 
     @classmethod
-    def _format_titles(cls, dictionary):
+    def _schema_format_titles(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -348,31 +348,31 @@ class Flow360BaseModel(BaseModel):
             if isinstance(value, dict):
                 title = value.get("title")
                 if title is not None and value.get("displayed") is None:
-                    value["title"] = cls._camel_to_space(key)
-                cls._format_titles(value)
+                    value["title"] = cls._schema_camel_to_space(key)
+                cls._schema_format_titles(value)
             if isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        cls._format_titles(item)
+                        cls._schema_format_titles(item)
 
         return dictionary
 
     @classmethod
-    def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
-        if not isinstance(dictionary, dict):
+    def _schema_remove_key(cls, schema, key_to_remove):
+        if not isinstance(schema, dict):
             raise ValueError("Input must be a dictionary")
 
-        for key, value in list(dictionary.items()):
+        for key, value in list(schema.items()):
             if key == key_to_remove:
-                del dictionary[key]
+                del schema[key]
             elif isinstance(value, dict):
-                cls._remove_key_from_nested_dict(value, key_to_remove)
+                cls._schema_remove_key(value, key_to_remove)
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        cls._remove_key_from_nested_dict(item, key_to_remove)
+                        cls._schema_remove_key(item, key_to_remove)
 
-        return dictionary
+        return schema
 
     @classmethod
     def _swap_key_in_nested_dict(cls, dictionary, key_to_replace, replacement_key):
@@ -399,7 +399,7 @@ class Flow360BaseModel(BaseModel):
             toggle_name = _optional_toggle_name(key)
 
             schema["properties"][toggle_name] = {
-                "title": toggle_name[1:],
+                "displayed": cls._schema_camel_to_space(key),
                 "type": "boolean",
                 "default": False,
             }
@@ -464,20 +464,20 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def _clean_schema(cls, schema):
-        cls._remove_key_from_nested_dict(schema, "description")
-        cls._remove_key_from_nested_dict(schema, "_type")
-        cls._remove_key_from_nested_dict(schema, "comments")
+        cls._schema_remove_key(schema, "description")
+        cls._schema_remove_key(schema, "_type")
+        cls._schema_remove_key(schema, "comments")
 
     @classmethod
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
         cls._clean_schema(schema)
-        cls._fix_single_allof(schema)
-        optionals = cls._get_optional_objects()
+        cls._schema_fix_single_allof(schema)
+        optionals = cls._schema_get_optional_objects()
         for item in optionals:
             cls._generate_schema_for_optional_objects(schema, item)
-        cls._format_titles(schema)
+        cls._schema_format_titles(schema)
         cls._apply_option_names(schema)
         cls._fix_single_value_enum(schema)
         cls._swap_key_in_nested_dict(schema, "title", "displayed")
@@ -486,9 +486,9 @@ class Flow360BaseModel(BaseModel):
     @classmethod
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
-        order = cls._get_field_order()
-        optionals = cls._get_optional_objects()
-        widgets = cls._get_widgets()
+        order = cls._schema_get_field_order()
+        optionals = cls._schema_get_optional_objects()
+        widgets = cls._schema_get_widgets()
         schema = {}
 
         # pylint: disable=consider-using-enumerate

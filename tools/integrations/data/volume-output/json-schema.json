@@ -25,9 +25,6 @@
       "title": "Animation frequency offset",
       "type": "integer"
     },
-    "animationSettings": {
-      "$ref": "#/definitions/AnimationSettingsExtended"
-    },
     "animationFrequencyTimeAverage": {
       "title": "Animation frequency time average",
       "options": [
@@ -100,60 +97,5 @@
       }
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "AnimationSettingsExtended": {
-      "title": "Animation settings extended",
-      "type": "object",
-      "properties": {
-        "frequency": {
-          "title": "Frequency",
-          "options": [
-            "Animated",
-            "Static"
-          ],
-          "anyOf": [
-            {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "title": "Animated"
-            },
-            {
-              "type": "integer",
-              "title": "Static",
-              "const": -1
-            }
-          ]
-        },
-        "frequencyOffset": {
-          "title": "Frequency offset",
-          "type": "integer"
-        },
-        "frequencyTimeAverage": {
-          "title": "Frequency time average",
-          "options": [
-            "Animated",
-            "Static"
-          ],
-          "anyOf": [
-            {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "title": "Animated"
-            },
-            {
-              "type": "integer",
-              "title": "Static",
-              "const": -1
-            }
-          ]
-        },
-        "frequencyTimeAverageOffset": {
-          "title": "Frequency time average offset",
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false
 }

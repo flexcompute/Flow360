@@ -7,8 +7,8 @@
       "title": "Ramp cfl",
       "type": "object",
       "properties": {
-        "modelType": {
-          "title": "Model type",
+        "type": {
+          "title": "Type",
           "default": "Ramp",
           "const": "Ramp",
           "type": "string"
@@ -38,8 +38,8 @@
       "title": "Adaptive cfl",
       "type": "object",
       "properties": {
-        "modelType": {
-          "title": "Model type",
+        "type": {
+          "title": "Type",
           "default": "Adaptive",
           "const": "Adaptive",
           "type": "string"
@@ -93,6 +93,12 @@
             }
           ]
         },
+        "modelType": {
+          "title": "Model type",
+          "default": "Steady",
+          "const": "Steady",
+          "type": "string"
+        },
         "physicalSteps": {
           "title": "Physical steps",
           "default": 1,
@@ -129,6 +135,12 @@
               "$ref": "#/definitions/AdaptiveCFL"
             }
           ]
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "Unsteady",
+          "const": "Unsteady",
+          "type": "string"
         },
         "physicalSteps": {
           "title": "Physical steps",
