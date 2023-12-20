@@ -127,7 +127,15 @@ from .unit_system import (
     u,
     unit_system_manager,
 )
-from .validations import _check_duplicate_boundary_name, _check_tri_quad_boundaries
+from .validations import (
+    _check_aero_acoustics,
+    _check_cht_solver_settings,
+    _check_consistency_ddes_volume_output,
+    _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_boundary_name,
+    _check_equation_eval_frequency_for_unsteady_simulations,
+    _check_tri_quad_boundaries,
+)
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
 
 
@@ -1118,56 +1126,19 @@ class Flow360Params(Flow360BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator
-    def check_consistency_wallFunction_and_SurfaceOutput(cls, values):
+    def check_consistency_wall_function_and_surface_output(cls, values):
         """
         check consistency between wall function usage and surface output
         """
-        boundary_types = []
-        boundaries = values.get("boundaries")
-        if boundaries is not None:
-            boundary_types = boundaries.get_subtypes()
-
-        surface_output_fields_root = []
-        surface_output = values.get("surfaceOutput")
-        if surface_output is not None:
-            surface_output_fields_root = surface_output.output_fields
-        if (
-            "WallFunctionMetric" in surface_output_fields_root
-            and WallFunction not in boundary_types
-        ):
-            raise ValueError(
-                "'WallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary types."
-            )
-        return values
+        return _check_consistency_wall_function_and_surface_output(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
-    def check_consistency_DDES_volumeOutput(cls, values):
+    def check_consistency_ddes_volumeOutput(cls, values):
         """
         check consistency between DDES usage and volume output
         """
-        turbulence_model_solver = values.get("turbulence_model_solver")
-        model_type = None
-        run_DDES = False
-        if turbulence_model_solver is not None:
-            model_type = turbulence_model_solver.model_type
-            run_DDES = turbulence_model_solver.DDES
-
-        volume_output = values.get("volumeOutput")
-        if volume_output is not None and volume_output.output_fields is not None:
-            output_fields = volume_output.output_fields
-            if "SpalartAllmaras_DDES" in output_fields and not (
-                model_type == "SpalartAllmaras" and run_DDES
-            ):
-                raise ValueError(
-                    "SpalartAllmaras_DDES output can only be specified with \
-                    SpalartAllmaras turbulence model and DDES turned on"
-                )
-            if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_DDES):
-                raise ValueError(
-                    "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on"
-                )
-        return values
+        return _check_consistency_ddes_volume_output(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
@@ -1184,6 +1155,29 @@ class Flow360Params(Flow360BaseModel):
         check duplicated boundary names
         """
         return _check_duplicate_boundary_name(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_cht_solver_settings(cls, values):
+        """
+        check conjugate heat transfer settings
+        """
+        return _check_cht_solver_settings(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_equation_eval_frequency_for_unsteady_simulations(cls, values):
+        """
+        check equation evaluation frequency for unsteady simulations
+        """
+        return _check_equation_eval_frequency_for_unsteady_simulations(values)
+
+    # pylint: disable=no-self-argument
+    def check_aero_acoustics(cls, values):
+        """
+        check aeroacoustics settings
+        """
+        return _check_aero_acoustics(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):
