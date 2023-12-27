@@ -1,5 +1,5 @@
 {
-  "title": "_TimeSteppings",
+  "title": "Time steppings",
   "type": "object",
   "additionalProperties": false,
   "definitions": {
@@ -83,7 +83,7 @@
           "type": "integer"
         },
         "CFL": {
-          "title": "Cfl",
+          "title": "C fl",
           "anyOf": [
             {
               "$ref": "#/definitions/RampCFL"
@@ -126,7 +126,7 @@
           "type": "integer"
         },
         "CFL": {
-          "title": "Cfl",
+          "title": "C fl",
           "anyOf": [
             {
               "$ref": "#/definitions/RampCFL"

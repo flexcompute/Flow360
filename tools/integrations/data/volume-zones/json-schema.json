@@ -1,9 +1,9 @@
 {
-  "title": "VolumeZones",
+  "title": "Volume zones",
   "additionalProperties": {
     "oneOf": [
       {
-        "title": "FluidDynamicsVolumeZone",
+        "title": "Fluid dynamics volume zone",
         "type": "object",
         "properties": {
           "modelType": {
@@ -58,7 +58,7 @@
         }
       },
       {
-        "title": "HeatTransferVolumeZone",
+        "title": "Heat transfer volume zone",
         "type": "object",
         "properties": {
           "modelType": {

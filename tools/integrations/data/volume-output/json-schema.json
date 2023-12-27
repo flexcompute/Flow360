@@ -1,13 +1,9 @@
 {
-  "title": "VolumeOutput",
+  "title": "Volume output",
   "type": "object",
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
-      "options": [
-        "Animated",
-        "Static"
-      ],
       "anyOf": [
         {
           "type": "integer",
@@ -27,10 +23,6 @@
     },
     "animationFrequencyTimeAverage": {
       "title": "Animation frequency time average",
-      "options": [
-        "Animated",
-        "Static"
-      ],
       "anyOf": [
         {
           "type": "integer",

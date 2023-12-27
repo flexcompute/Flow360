@@ -1,5 +1,5 @@
 {
-  "title": "_InitialConditions",
+  "title": "Initial conditions",
   "type": "object",
   "additionalProperties": false,
   "definitions": {

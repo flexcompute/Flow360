@@ -68,6 +68,7 @@ class LinearSolver(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
+        include_defaults_in_schema = False
 
 
 class RandomizerParameter(Flow360BaseModel):

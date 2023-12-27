@@ -1,5 +1,5 @@
 {
-  "title": "BETDisk",
+  "title": "B et disk",
   "type": "object",
   "properties": {
     "rotationDirectionRule": {
@@ -275,7 +275,7 @@
   "additionalProperties": false,
   "definitions": {
     "BETDiskTwist": {
-      "title": "Bet disk twist",
+      "title": "B et disk twist",
       "type": "object",
       "properties": {
         "radius": {
@@ -290,7 +290,7 @@
       "additionalProperties": false
     },
     "BETDiskChord": {
-      "title": "Bet disk chord",
+      "title": "B et disk chord",
       "type": "object",
       "properties": {
         "radius": {
@@ -305,7 +305,7 @@
       "additionalProperties": false
     },
     "BETDiskSectionalPolar": {
-      "title": "Bet disk sectional polar",
+      "title": "B et disk sectional polar",
       "type": "object",
       "properties": {
         "liftCoeffs": {

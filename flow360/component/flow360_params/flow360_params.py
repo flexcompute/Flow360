@@ -2005,17 +2005,25 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
+    # Needs decoupling from current model
     boundaries: Optional[Boundaries] = pd.Field()
+    # Needs decoupling from current model
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
+    # Needs decoupling from current model
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
+    # Needs decoupling from current model
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    # Needs decoupling from current model
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
         alias="userDefinedDynamics"
     )
+    # Needs decoupling from current model
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
+    # Needs decoupling from current model
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
+    # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     def _has_key(self, target, model_dict: dict):

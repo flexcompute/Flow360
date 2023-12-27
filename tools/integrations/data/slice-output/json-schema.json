@@ -1,13 +1,9 @@
 {
-  "title": "SliceOutput",
+  "title": "Slice output",
   "type": "object",
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
-      "options": [
-        "Animated",
-        "Static"
-      ],
       "anyOf": [
         {
           "type": "integer",

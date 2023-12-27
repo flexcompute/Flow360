@@ -1,5 +1,5 @@
 {
-  "title": "TransitionModelSolver",
+  "title": "Transition model solver",
   "type": "object",
   "properties": {
     "absoluteTolerance": {

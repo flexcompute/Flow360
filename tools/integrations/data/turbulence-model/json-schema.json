@@ -1,5 +1,5 @@
 {
-  "title": "_TurbulenceModelSolvers",
+  "title": "Turbulence model solvers",
   "type": "object",
   "additionalProperties": false,
   "definitions": {
@@ -107,7 +107,7 @@
           "type": "integer"
         },
         "DDES": {
-          "title": "Ddes",
+          "title": "D des",
           "default": false,
           "type": "boolean"
         },
@@ -234,7 +234,7 @@
           "type": "integer"
         },
         "DDES": {
-          "title": "Ddes",
+          "title": "D des",
           "default": false,
           "type": "boolean"
         },

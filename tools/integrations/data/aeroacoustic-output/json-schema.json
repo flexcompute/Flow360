@@ -1,13 +1,9 @@
 {
-  "title": "AeroacousticOutput",
+  "title": "Aeroacoustic output",
   "type": "object",
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
-      "options": [
-        "Animated",
-        "Static"
-      ],
       "anyOf": [
         {
           "type": "integer",

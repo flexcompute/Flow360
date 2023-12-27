@@ -18,4 +18,5 @@ extra_units = {
     "density": [],
     "viscosity": [],
     "angular_velocity": [],
+    "heat_flux": [],
 }

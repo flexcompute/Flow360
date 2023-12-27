@@ -1,5 +1,5 @@
 {
-  "title": "MonitorOutput",
+  "title": "Monitor output",
   "type": "object",
   "properties": {
     "monitors": {
@@ -7,7 +7,7 @@
       "additionalProperties": {
         "oneOf": [
           {
-            "title": "SurfaceIntegralMonitor",
+            "title": "Surface integral monitor",
             "type": "object",
             "properties": {
               "modelType": {
@@ -58,7 +58,7 @@
             "additionalProperties": false
           },
           {
-            "title": "ProbeMonitor",
+            "title": "Probe monitor",
             "type": "object",
             "properties": {
               "modelType": {

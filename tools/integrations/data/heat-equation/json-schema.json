@@ -1,5 +1,5 @@
 {
-  "title": "HeatEquationSolver",
+  "title": "Heat equation solver",
   "type": "object",
   "properties": {
     "absoluteTolerance": {

@@ -1,5 +1,5 @@
 {
-  "title": "ActuatorDisk",
+  "title": "Actuator disk",
   "type": "object",
   "properties": {
     "center": {

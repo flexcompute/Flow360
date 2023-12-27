@@ -1,13 +1,9 @@
 {
-  "title": "IsoSurfaceOutput",
+  "title": "Iso surface output",
   "type": "object",
   "properties": {
     "animationFrequency": {
       "title": "Animation frequency",
-      "options": [
-        "Animated",
-        "Static"
-      ],
       "anyOf": [
         {
           "type": "integer",
@@ -35,9 +31,9 @@
       "type": "string"
     },
     "isoSurfaces": {
-      "title": "IsoSurfaces",
+      "title": "Iso surfaces",
       "additionalProperties": {
-        "title": "IsoSurface",
+        "title": "Iso surface",
         "type": "object",
         "properties": {
           "surfaceField": {

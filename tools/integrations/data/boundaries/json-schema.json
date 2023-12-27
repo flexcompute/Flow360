@@ -3,7 +3,7 @@
   "additionalProperties": {
     "oneOf": [
       {
-        "title": "NoSlipWall",
+        "title": "No slip wall",
         "type": "object",
         "properties": {
           "type": {
@@ -63,7 +63,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SlipWall",
+        "title": "Slip wall",
         "type": "object",
         "properties": {
           "type": {
@@ -80,7 +80,7 @@
         "additionalProperties": false
       },
       {
-        "title": "FreestreamBoundary",
+        "title": "Freestream boundary",
         "type": "object",
         "properties": {
           "type": {
@@ -140,7 +140,7 @@
         "additionalProperties": false
       },
       {
-        "title": "IsothermalWall",
+        "title": "Isothermal wall",
         "type": "object",
         "properties": {
           "type": {
@@ -215,7 +215,7 @@
         "additionalProperties": false
       },
       {
-        "title": "HeatFluxWall",
+        "title": "Heat flux wall",
         "type": "object",
         "properties": {
           "type": {
@@ -289,7 +289,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SubsonicOutflowPressure",
+        "title": "Subsonic outflow pressure",
         "type": "object",
         "properties": {
           "type": {
@@ -314,7 +314,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SubsonicOutflowMach",
+        "title": "Subsonic outflow mach",
         "type": "object",
         "properties": {
           "type": {
@@ -339,7 +339,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SubsonicInflow",
+        "title": "Subsonic inflow",
         "type": "object",
         "properties": {
           "type": {
@@ -418,7 +418,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SupersonicInflow",
+        "title": "Supersonic inflow",
         "type": "object",
         "properties": {
           "type": {
@@ -496,7 +496,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SlidingInterfaceBoundary",
+        "title": "Sliding interface boundary",
         "type": "object",
         "properties": {
           "type": {
@@ -513,7 +513,7 @@
         "additionalProperties": false
       },
       {
-        "title": "WallFunction",
+        "title": "Wall function",
         "type": "object",
         "properties": {
           "type": {
@@ -530,7 +530,7 @@
         "additionalProperties": false
       },
       {
-        "title": "MassInflow",
+        "title": "Mass inflow",
         "type": "object",
         "properties": {
           "type": {
@@ -560,7 +560,7 @@
         "additionalProperties": false
       },
       {
-        "title": "MassOutflow",
+        "title": "Mass outflow",
         "type": "object",
         "properties": {
           "type": {
@@ -590,7 +590,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SolidIsothermalWall",
+        "title": "Solid isothermal wall",
         "type": "object",
         "properties": {
           "type": {
@@ -622,7 +622,7 @@
         "additionalProperties": false
       },
       {
-        "title": "SolidAdiabaticWall",
+        "title": "Solid adiabatic wall",
         "type": "object",
         "properties": {
           "type": {
@@ -639,7 +639,7 @@
         "additionalProperties": false
       },
       {
-        "title": "TranslationallyPeriodic",
+        "title": "Translationally periodic",
         "type": "object",
         "properties": {
           "type": {
@@ -677,7 +677,7 @@
         "additionalProperties": false
       },
       {
-        "title": "RotationallyPeriodic",
+        "title": "Rotationally periodic",
         "type": "object",
         "properties": {
           "type": {
