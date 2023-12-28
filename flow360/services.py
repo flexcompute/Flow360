@@ -18,9 +18,8 @@ from .exceptions import Flow360ConfigurationError
 
 
 def check_unit_system(unit_system):
-
     if not isinstance(unit_system, UnitSystem):
-        raise ValueError(f'Incorrect unit system provided {unit_system=}, expected type UnitSystem')
+        raise ValueError(f"Incorrect unit system provided {unit_system=}, expected type UnitSystem")
 
     if unit_system_manager.current is not None:
         raise RuntimeError(
@@ -37,7 +36,6 @@ def get_default_params(unit_system_context):
     """
 
     check_unit_system(unit_system_context)
-
 
     with unit_system_context:
         params = Flow360Params(
@@ -83,9 +81,7 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
 
     check_unit_system(unit_system_context)
 
-
-
-    params_as_dict['unitSystem'] = unit_system_context.dict()
+    params_as_dict["unitSystem"] = unit_system_context.dict()
     values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
@@ -131,7 +127,6 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
         validation_errors = validation_errors.errors()
 
     print(f"{validation_errors=}")
-
 
     validation_warnings = None
 

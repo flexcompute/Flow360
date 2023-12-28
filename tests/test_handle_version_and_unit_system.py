@@ -12,6 +12,7 @@ from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
 params_old_version = {
     "version": "0.2.0b01",
     "unitSystem": {"name": "SI"},
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -23,6 +24,7 @@ params_old_version = {
 params_current_version = {
     "version": "0.2.0b16",
     "unitSystem": {"name": "SI"},
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -34,6 +36,7 @@ params_current_version = {
 
 params_no_version = {
     "unitSystem": {"name": "SI"},
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -45,6 +48,7 @@ params_no_version = {
 
 params_no_unit_system = {
     "version": "0.2.0b16",
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -58,6 +62,7 @@ params_no_unit_system = {
 params_no_hash = {
     "version": "0.2.0b16",
     "unitSystem": {"name": "SI"},
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -70,6 +75,7 @@ params_no_hash = {
 params_wrong_hash = {
     "version": "0.2.0b16",
     "unitSystem": {"name": "SI"},
+    "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
         "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
@@ -198,6 +204,7 @@ def test_create_no_unit_system_with_context():
                 moment_center=(1, 2, 3) * u.flow360_length_unit,
                 mesh_unit=u.mm,
             ),
+            boundaries={},
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286),
             time_stepping=flow360.TimeStepping(
@@ -215,6 +222,7 @@ def test_create_with_unit_system_with_context():
                 moment_center=(1, 2, 3) * u.flow360_length_unit,
                 mesh_unit=u.mm,
             ),
+            boundaries={},
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286),
             time_stepping=flow360.TimeStepping(
@@ -232,6 +240,7 @@ def test_create_with_unit_system_with_context():
                     moment_center=(1, 2, 3) * u.flow360_length_unit,
                     mesh_unit=u.mm,
                 ),
+                boundaries={},
                 fluid_properties=flow360.air,
                 freestream=flow360.FreestreamFromVelocity(velocity=286),
                 time_stepping=flow360.TimeStepping(

@@ -170,7 +170,9 @@ def test_flow360param():
 
 def test_flow360param1():
     with flow360.SI_unit_system:
-        params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
+        params = Flow360Params(
+            freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
+        )
         assert params.time_stepping.max_pseudo_steps is None
         params.time_stepping = TimeStepping(physical_steps=100)
         assert params
@@ -191,7 +193,7 @@ def test_update_from_multiple_files():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     params.append(outputs)
 
     assert params
@@ -211,7 +213,7 @@ def test_update_from_multiple_files_dont_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
     params.append(outputs)
 
@@ -227,7 +229,7 @@ def test_update_from_multiple_files_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
 
     # We cannot overwrite immutable fields, so we make sure those are removed beforehand
@@ -327,6 +329,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
         with pytest.raises(ValueError):
@@ -345,6 +348,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
     params_as_json = params.json()
@@ -378,6 +382,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.TimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
     # should raise RuntimeError error from using context on file import
@@ -420,7 +425,9 @@ def test_params_with_units_conversion():
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
                 moment_center=(1, 2, 3) * u.flow360_length_unit,
                 mesh_unit=u.mm,
-            )
+            ),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     to_file_from_file_test(params)
@@ -436,7 +443,9 @@ def test_params_with_solver_units():
                 ref_area=1.0,
                 moment_length=(1.47602, 0.801672958512342, 1.47602),
                 moment_center=[1, 2, 3],
-            )
+            ),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     to_file_from_file_test(params)

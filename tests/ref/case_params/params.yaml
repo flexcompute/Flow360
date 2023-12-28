@@ -27,7 +27,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 7207efa383d50cd2b32a419b8a591e57eecf77a6380adabc1eccf167af536a02
+hash: f233cd251b05e7b90d8db5b5e00389c4cf7252c144ab02f6901e68f067752847
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
@@ -44,7 +44,6 @@ navierStokesSolver:
     relativeTolerance: 0.0
     updateJacobianFrequency: 4
 sliceOutput:
-    animationSettings: {}
     outputFields:
     - Cp
     outputFormat: tecplot
@@ -72,18 +71,28 @@ sliceOutput:
             - 1.0
             - 0.0
 surfaceOutput:
-    animationSettings: {}
     outputFields:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
+    surfaces:
+        freestream:
+            outputFields:
+            - Cp
+            - Mach
+        symmetry:
+            outputFields:
+            - T
+            - heatFlux
+        wing:
+            outputFields:
+            - CfVec
 timeStepping:
     timeStepSize: inf
 unitSystem:
     name: SI
 version: 0.2.0b16
 volumeOutput:
-    animationSettings: {}
     outputFields:
     - Mach
     - primitiveVars

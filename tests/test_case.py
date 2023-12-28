@@ -30,6 +30,7 @@ def test_case(mock_response):
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                 fluid_properties=air,
+                boundaries={},
             ),
             volume_mesh_id=mock_id,
         )
@@ -49,6 +50,7 @@ def test_retry_with_parent(mock_response):
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                 fluid_properties=air,
+                boundaries={},
             ),
             volume_mesh_id=mock_id,
         )
@@ -68,6 +70,7 @@ def test_fork_from_draft(mock_response):
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                 fluid_properties=air,
+                boundaries={},
             ),
             volume_mesh_id=mock_id,
         )
@@ -85,6 +88,7 @@ def test_parent_id(mock_response):
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                 fluid_properties=air,
+                boundaries={},
             ),
         )
     print(case)
@@ -97,6 +101,7 @@ def test_parent_id(mock_response):
                 geometry=Geometry(mesh_unit="m"),
                 freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                 fluid_properties=air,
+                boundaries={},
             ),
             parent_id=mock_id,
         )
@@ -111,6 +116,7 @@ def test_parent_id(mock_response):
                     geometry=Geometry(mesh_unit="m"),
                     freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
                     fluid_properties=air,
+                    boundaries={},
                 ),
                 parent_id="incorrect parentId",
             )

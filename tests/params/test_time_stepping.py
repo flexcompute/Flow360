@@ -47,6 +47,7 @@ def test_time_stepping():
         params = Flow360Params(
             geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
             fluid_properties=fl.air,
+            boundaries={},
             freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
             time_stepping=ts,
         )
@@ -58,6 +59,7 @@ def test_time_stepping():
 
         params = Flow360Params(
             geometry={"meshUnit": "mm", "refArea": "m**2"},
+            boundaries={},
             fluid_properties=fl.air,
             freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
             time_stepping=ts,

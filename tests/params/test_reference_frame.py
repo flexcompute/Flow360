@@ -37,6 +37,7 @@ def test_reference_frames():
                 mesh_unit=u.mm,
             ),
             fluid_properties=fl.air,
+            boundaries={},
             volume_zones={
                 "zone1": fl.FluidDynamicsVolumeZone(
                     reference_frame=fl.ReferenceFrame(
@@ -54,6 +55,7 @@ def test_reference_frames():
                     )
                 ),
             },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     params_solver = params.to_solver()

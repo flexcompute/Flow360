@@ -4,6 +4,7 @@ import flow360
 from flow360.component.flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
+    FreestreamFromMach,
     MeshBoundary,
     NoSlipWall,
 )
@@ -54,7 +55,8 @@ def test_get_no_slip_walls():
                 "fluid/fuselage": NoSlipWall(),
                 "fluid/leftWing": NoSlipWall(),
                 "fluid/rightWing": NoSlipWall(),
-            }
+            },
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     to_file_from_file_test(param)
@@ -72,7 +74,8 @@ def test_validate_cgns():
                 "fluid/fuselage": NoSlipWall(),
                 "fluid/leftWing": NoSlipWall(),
                 "fluid/rightWing": NoSlipWall(),
-            }
+            },
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
         with pytest.raises(Flow360ValueError):
@@ -85,7 +88,8 @@ def test_validate_cgns():
                 "fluid/wall": NoSlipWall(),
                 "fluid/farfield": NoSlipWall(),
                 "fluid/periodic_0_l": NoSlipWall(),
-            }
+            },
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
         validate_cgns("data/volume_mesh/cylinder.cgns", param, solver_version="release-22.2.0.0")

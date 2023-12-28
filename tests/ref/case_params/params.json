@@ -64,15 +64,24 @@
         }
     },
     "surfaceOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "yPlus",
             "primitiveVars"
-        ]
+        ],
+        "surfaces": {
+            "symmetry": {
+                "outputFields": ["T", "heatFlux"]
+            }, 
+            "freestream": {
+                "outputFields": ["Cp", "Mach"]
+            }, 
+            "wing": {
+                "outputFields": ["CfVec"]
+            }
+        }
     },
     "volumeOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "Mach",
@@ -80,27 +89,11 @@
         ]
     },
     "sliceOutput": {
-        "animationSettings": {},
         "outputFormat": "tecplot",
         "outputFields": [
             "Cp"
         ],
         "slices": {
-            "x0": {
-                "sliceNormal": [
-                    1.0,
-                    0.0,
-                    0.0
-                ],
-                "sliceOrigin": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "outputFields": [
-                    "Mach"
-                ]
-            },
             "y1": {
                 "sliceNormal": [
                     0.0,
@@ -115,8 +108,23 @@
                 "outputFields": [
                     "T"
                 ]
+            },
+            "x0": {
+                "sliceNormal": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "outputFields": [
+                    "Mach"
+                ]
             }
         }
     },
-    "hash": "7207efa383d50cd2b32a419b8a591e57eecf77a6380adabc1eccf167af536a02"
+    "hash": "f233cd251b05e7b90d8db5b5e00389c4cf7252c144ab02f6901e68f067752847"
 }

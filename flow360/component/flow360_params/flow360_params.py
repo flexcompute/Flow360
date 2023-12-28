@@ -115,7 +115,6 @@ from .unit_system import (
     imperial_unit_system,
     u,
     unit_system_manager,
-    Flow360UnitSystem
 )
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -999,7 +998,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
 
 class FreestreamFromMach(FreestreamBase):
     """
-    :class: Freestream component using Mach numbers
+    :class: Freestream component using Mach number
     """
 
     Mach: PositiveFloat = pd.Field()
@@ -1017,7 +1016,7 @@ class FreestreamFromMach(FreestreamBase):
 
 class FreestreamFromMachReynolds(FreestreamBase):
     """
-    :class: Freestream component using Mach and Reynolds numbers
+    :class: Freestream component using Mach and Reynolds number
     """
 
     Mach: PositiveFloat = pd.Field()
@@ -1419,7 +1418,7 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
-    boundaries: Optional[Boundaries] = pd.Field()
+    boundaries: Boundaries = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
@@ -1432,7 +1431,7 @@ class Flow360Params(Flow360BaseModel):
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[FreestreamTypes] = pd.Field()
+    freestream: FreestreamTypes = pd.Field()
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
@@ -1555,6 +1554,27 @@ class Flow360Params(Flow360BaseModel):
         if not isinstance(params, Flow360Params):
             raise ValueError("params must be type of Flow360Params")
         super().append(params=params, overwrite=overwrite)
+
+    @classmethod
+    def construct(cls, filename: str = None, **kwargs) -> Flow360Params:
+        """
+        Creates a new model from trusted or pre-validated data.
+        Default values are respected, but no other validation is performed.
+        Behaves as if `Config.extra = 'allow'` was set since it adds all passed values
+        """
+
+        if filename is not None:
+            model_dict = cls._init_handle_file(filename=filename, **kwargs)
+        else:
+            model_dict = kwargs
+
+        # the default .construct() method will return field by both alias and field name so preprocessing here before
+        # passing to .construct() method
+        for name, field in cls.__fields__.items():
+            if field.alt_alias and field.alias in model_dict:
+                model_dict[name] = model_dict.pop(field.alias)
+
+        return super().construct(**model_dict)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -1809,7 +1829,8 @@ class TimeSteppingLegacy(TimeStepping, LegacyModel):
         }
 
         if (
-            model["timeStepSize"] != "inf" and self.comments is not None
+            model["timeStepSize"] != "inf"
+            and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
@@ -1853,12 +1874,14 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
 
 
 class BoundariesLegacy(Boundaries):
+    """Legacy Boundaries class"""
     def __init__(self, *args, **kwargs):
         with Flow360UnitSystem(verbose=False):
             super().__init__(*args, **kwargs)
 
 
 class VolumeZonesLegacy(VolumeZones):
+    """Legacy VolumeZones class"""
     def __init__(self, *args, **kwargs):
         with Flow360UnitSystem(verbose=False):
             super().__init__(*args, **kwargs)

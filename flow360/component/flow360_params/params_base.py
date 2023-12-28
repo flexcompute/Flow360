@@ -177,9 +177,10 @@ class Flow360BaseModel(BaseModel):
         model_dict = self._init_handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
 
-    def _init_handle_file(self, filename: str = None, **kwargs):
+    @classmethod
+    def _init_handle_file(cls, filename: str = None, **kwargs):
         if filename is not None:
-            return self.dict_from_file(filename=filename)
+            return cls.dict_from_file(filename=filename)
         return kwargs
 
     def __init_subclass__(cls) -> None:
