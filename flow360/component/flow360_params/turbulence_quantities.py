@@ -155,8 +155,9 @@ TurbulenceQuantitiesType = Union[
 ]
 
 
-# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
-def get_turbulence_quantities(
+# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches, invalid-name
+# using class naming convetion here
+def TurbulenceQuantities(
     viscosity_ratio=None,
     modified_viscosity_ratio=None,
     modified_viscosity=None,
@@ -164,7 +165,7 @@ def get_turbulence_quantities(
     turbulent_kinetic_energy=None,
     turbulent_length_scale=None,
     turbulent_intensity=None,
-):
+) -> TurbulenceQuantitiesType:
     """Return a matching tubulence specification object"""
     non_none_arg_count = sum(arg is not None for arg in locals().values())
     if non_none_arg_count == 0:
