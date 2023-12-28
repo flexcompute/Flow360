@@ -16,7 +16,7 @@ with fl.SI_unit_system:
         ),
         freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
         fluid_properties=fl.air,
-        time_stepping=fl.TimeStepping(max_pseudo_steps=500),
+        time_stepping=fl.SteadyTimeStepping(max_pseudo_steps=500),
         boundaries={
             "1": fl.NoSlipWall(name="wing"),
             "2": fl.SlipWall(name="symmetry"),

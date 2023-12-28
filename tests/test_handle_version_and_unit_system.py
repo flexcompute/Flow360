@@ -171,8 +171,11 @@ def test_create_no_unit_system_no_context():
             ),
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286 * u.m / u.s),
-            time_stepping=flow360.TimeStepping(
-                max_pseudo_steps=500, CFL=flow360.AdaptiveCFL(), time_step_size=1.2 * u.s
+            time_stepping=flow360.UnsteadyTimeStepping(
+                max_pseudo_steps=500,
+                CFL=flow360.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
         )
 
@@ -188,8 +191,11 @@ def test_create_with_unit_system_no_context():
             ),
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286 * u.m / u.s),
-            time_stepping=flow360.TimeStepping(
-                max_pseudo_steps=500, CFL=flow360.AdaptiveCFL(), time_step_size=1.2 * u.s
+            time_stepping=flow360.UnsteadyTimeStepping(
+                max_pseudo_steps=500,
+                CFL=flow360.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
             unit_system=flow360.SI_unit_system,
         )
@@ -207,8 +213,11 @@ def test_create_no_unit_system_with_context():
             boundaries={},
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286),
-            time_stepping=flow360.TimeStepping(
-                max_pseudo_steps=500, CFL=flow360.AdaptiveCFL(), time_step_size=1.2 * u.s
+            time_stepping=flow360.UnsteadyTimeStepping(
+                max_pseudo_steps=500,
+                CFL=flow360.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
         )
 
@@ -225,8 +234,11 @@ def test_create_with_unit_system_with_context():
             boundaries={},
             fluid_properties=flow360.air,
             freestream=flow360.FreestreamFromVelocity(velocity=286),
-            time_stepping=flow360.TimeStepping(
-                max_pseudo_steps=500, CFL=flow360.AdaptiveCFL(), time_step_size=1.2 * u.s
+            time_stepping=flow360.UnsteadyTimeStepping(
+                max_pseudo_steps=500,
+                CFL=flow360.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
             unit_system=flow360.SI_unit_system,
         )
@@ -243,8 +255,11 @@ def test_create_with_unit_system_with_context():
                 boundaries={},
                 fluid_properties=flow360.air,
                 freestream=flow360.FreestreamFromVelocity(velocity=286),
-                time_stepping=flow360.TimeStepping(
-                    max_pseudo_steps=500, CFL=flow360.AdaptiveCFL(), time_step_size=1.2 * u.s
+                time_stepping=flow360.UnsteadyTimeStepping(
+                    max_pseudo_steps=500,
+                    CFL=flow360.AdaptiveCFL(),
+                    time_step_size=1.2 * u.s,
+                    physical_steps=10,
                 ),
                 unit_system=flow360.SI_unit_system,
             )

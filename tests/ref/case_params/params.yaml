@@ -88,6 +88,8 @@ surfaceOutput:
             outputFields:
             - CfVec
 timeStepping:
+    maxPseudoSteps: 2000
+    physicalSteps: 1
     timeStepSize: inf
 unitSystem:
     name: SI

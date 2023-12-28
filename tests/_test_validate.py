@@ -23,7 +23,7 @@ def test_():
             mesh_unit="m",
         ),
         freestream=fl.Freestream.from_speed((286, "m/s"), alpha=3.06),
-        time_stepping=fl.TimeStepping(max_pseudo_steps=500),
+        time_stepping=fl.UnsteadyTimeStepping(max_pseudo_steps=500),
         boundaries={
             "1": fl.NoSlipWall(name="wing"),
             "2": fl.SlipWall(name="symmetry"),

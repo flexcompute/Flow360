@@ -36,6 +36,8 @@
         }
     },
     "timeStepping": {
+        "maxPseudoSteps": 2000,
+        "physicalSteps": 1,
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {

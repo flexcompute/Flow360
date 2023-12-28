@@ -10,7 +10,8 @@ from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    TimeStepping,
+    SteadyTimeStepping,
+    UnsteadyTimeStepping,
 )
 from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 from tests.utils import to_file_from_file_test
@@ -24,20 +25,20 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_time_stepping():
-    ts = TimeStepping()
+    ts = SteadyTimeStepping()
     assert ts.json()
     to_file_from_file_test(ts)
 
     with pytest.raises(pd.ValidationError):
-        ts = TimeStepping(physical_steps=10, time_step_size=-0.01)
+        ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=-0.01)
 
     with pytest.raises(pd.ValidationError):
-        ts = TimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
+        ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
 
-    ts = TimeStepping(time_step_size="inf")
+    ts = SteadyTimeStepping(time_step_size="inf")
     to_file_from_file_test(ts)
 
-    ts = TimeStepping(physical_steps=10, time_step_size=0.001 * u.s)
+    ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=0.001 * u.s)
 
     to_file_from_file_test(ts)
 
@@ -68,17 +69,17 @@ def test_time_stepping():
     exported_json = json.loads(params.to_flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 
-    ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3})
+    ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3})
     assert ts.physical_steps == 3
 
-    ts = TimeStepping.parse_obj({"physicalSteps": 2})
+    ts = UnsteadyTimeStepping.parse_obj({"physicalSteps": 2})
     assert ts.physical_steps == 2
 
     with pytest.raises(ValueError):
-        ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
+        ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
 
     with pytest.raises(ValueError):
-        ts = TimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
+        ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
 
 def test_time_stepping_cfl():
