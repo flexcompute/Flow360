@@ -75,7 +75,7 @@
       "type": "boolean"
     },
     "_addLinearSolver": {
-      "displayed": "Linear solver",
+      "title": "Add linear solver",
       "type": "boolean",
       "default": false
     }
@@ -119,12 +119,11 @@
             },
             "linearSolver": {
               "title": "Linear solver",
-              "default": {
-                "max_iterations": 30,
-                "absolute_tolerance": 1e-10,
-                "relative_tolerance": null
-              },
-              "$ref": "#/definitions/LinearSolver"
+              "allOf": [
+                {
+                  "$ref": "#/definitions/LinearSolver"
+                }
+              ]
             }
           },
           "additionalProperties": false

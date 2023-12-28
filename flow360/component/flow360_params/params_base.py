@@ -261,7 +261,7 @@ class Flow360BaseModel(BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
-    def handle_depracated_aliases(cls, values):
+    def handle_deprecated_aliases(cls, values):
         """
         root validator to handle deprecated aliases
         """
@@ -304,17 +304,29 @@ class Flow360BaseModel(BaseModel):
 
         return values
 
-    @classmethod
-    def _schema_get_field_order(cls) -> List[str]:
-        return []
+    # pylint: disable=too-few-public-methods
+    class _SchemaConfig:
+        """Sets JSON schema generation config for :class:`Flow360BaseModel` objects.
 
-    @classmethod
-    def _schema_get_optional_objects(cls) -> List[str]:
-        return []
+        Configuration Options
+        ---------------------
+        field_order : List[str]
+            Ordering of schema fields in the output JSON dictionary
+        optional_objects : List[str]
+            Fields for which optional schema structure is generated
+        exclude_fields : List[str]
+            Fields to be excluded from the output schema (slash-separated paths to the field in nested objects)
+        widgets : Dict[str, str]
+            Widget mappings for the UI schema
+        displayed : Optional[str]
+            Title override for the class name in the schema root
+        """
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict:
-        return {}
+        field_order = []
+        optional_objects = []
+        exclude_fields = []
+        widgets = {}
+        displayed = None
 
     @classmethod
     def _schema_fix_single_allof(cls, dictionary):
@@ -364,7 +376,20 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _schema_remove_key(cls, schema, key_to_remove):
+    def _schema_remove(cls, schema, key_path: List[str]):
+        if not isinstance(schema, dict):
+            raise ValueError("Input must be a dictionary")
+
+        if len(key_path) == 1:
+            del schema[key_path[0]]
+        elif len(key_path) > 1:
+            cls._schema_remove(schema[key_path[0]], key_path[1:])
+
+        return schema
+
+    @classmethod
+    def _schema_remove_all(cls, schema, key_to_remove: str):
+        """Removes all occurences of a"""
         if not isinstance(schema, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -372,11 +397,11 @@ class Flow360BaseModel(BaseModel):
             if key == key_to_remove:
                 del schema[key]
             elif isinstance(value, dict):
-                cls._schema_remove_key(value, key_to_remove)
+                cls._schema_remove_all(value, key_to_remove)
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        cls._schema_remove_key(item, key_to_remove)
+                        cls._schema_remove_all(item, key_to_remove)
 
         return schema
 
@@ -405,7 +430,7 @@ class Flow360BaseModel(BaseModel):
             toggle_name = _optional_toggle_name(key)
 
             schema["properties"][toggle_name] = {
-                "displayed": cls._schema_camel_to_space(key),
+                "title": cls._schema_camel_to_space(key),
                 "type": "boolean",
                 "default": False,
             }
@@ -470,21 +495,24 @@ class Flow360BaseModel(BaseModel):
 
     @classmethod
     def _schema_clean(cls, schema):
-        cls._schema_remove_key(schema, "description")
-        cls._schema_remove_key(schema, "_type")
-        cls._schema_remove_key(schema, "comments")
-        cls._schema_remove_key(schema, "options")
+        cls._schema_remove_all(schema, "description")
+        cls._schema_remove_all(schema, "_type")
+        cls._schema_remove_all(schema, "comments")
+        cls._schema_remove_all(schema, "options")
 
     @classmethod
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
-        cls._schema_fix_single_allof(schema)
-        optionals = cls._schema_get_optional_objects()
-        for item in optionals:
+        for item in cls._SchemaConfig.exclude_fields:
+            cls._schema_remove(schema, item.split("/"))
+        for item in cls._SchemaConfig.optional_objects:
             cls._schema_generate_optional_objects(schema, item)
         cls._schema_format_titles(schema)
+        if cls._SchemaConfig.displayed is not None:
+            schema["title"] = cls._SchemaConfig.displayed
         cls._schema_apply_option_names(schema)
+        cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
         cls._schema_swap_key(schema, "title", "displayed")
         cls._schema_clean(schema)
@@ -493,9 +521,9 @@ class Flow360BaseModel(BaseModel):
     @classmethod
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
-        order = cls._schema_get_field_order()
-        optionals = cls._schema_get_optional_objects()
-        widgets = cls._schema_get_widgets()
+        order = cls._SchemaConfig.field_order
+        optionals = cls._SchemaConfig.optional_objects
+        widgets = cls._SchemaConfig.widgets
         schema = {}
 
         # pylint: disable=consider-using-enumerate

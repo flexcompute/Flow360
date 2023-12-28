@@ -18,15 +18,6 @@
       "const": "AmplificationFactorTransport",
       "type": "string"
     },
-    "linearSolver": {
-      "title": "Linear solver",
-      "default": {
-        "max_iterations": 50,
-        "absolute_tolerance": 1e-10,
-        "relative_tolerance": null
-      },
-      "$ref": "#/definitions/LinearSolver"
-    },
     "updateJacobianFrequency": {
       "title": "Update jacobian frequency",
       "exclusiveMinimum": 0,
@@ -62,6 +53,11 @@
       "minimum": 1,
       "maximum": 11,
       "type": "number"
+    },
+    "_addLinearSolver": {
+      "title": "Add linear solver",
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false,
@@ -88,6 +84,34 @@
         }
       },
       "additionalProperties": false
+    }
+  },
+  "dependencies": {
+    "_addLinearSolver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": true,
+              "const": true,
+              "type": "boolean"
+            },
+            "linearSolver": {
+              "title": "Linear solver",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/LinearSolver"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

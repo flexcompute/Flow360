@@ -26,10 +26,6 @@
         "rampSteps": {
           "title": "Ramp steps",
           "type": "integer"
-        },
-        "randomizer": {
-          "title": "Randomizer",
-          "type": "object"
         }
       },
       "additionalProperties": false

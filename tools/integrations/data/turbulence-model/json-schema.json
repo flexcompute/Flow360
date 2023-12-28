@@ -107,7 +107,7 @@
           "type": "integer"
         },
         "DDES": {
-          "title": "D des",
+          "title": "DDES",
           "default": false,
           "type": "boolean"
         },
@@ -234,7 +234,7 @@
           "type": "integer"
         },
         "DDES": {
-          "title": "D des",
+          "title": "DDES",
           "default": false,
           "type": "boolean"
         },

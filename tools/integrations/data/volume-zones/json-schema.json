@@ -13,7 +13,7 @@
             "type": "string"
           },
           "_addReferenceFrame": {
-            "displayed": "Reference frame",
+            "title": "Add reference frame",
             "type": "boolean",
             "default": false
           }

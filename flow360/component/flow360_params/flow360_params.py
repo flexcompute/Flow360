@@ -448,10 +448,9 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {"center": "vector3", "axisThrust": "vector3"}
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"center": "vector3", "axisThrust": "vector3"}
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -540,10 +539,9 @@ class SlidingInterface(Flow360BaseModel):
             "is_dynamic",
         ]
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {"centerOfRotation": "vector3"}
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"centerOfRotation": "vector3"}
 
 
 class MeshSlidingInterface(Flow360BaseModel):
@@ -578,7 +576,6 @@ class RampCFL(Flow360BaseModel):
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
-    randomizer: Optional[Dict] = pd.Field()
 
     @classmethod
     def default_steady(cls):
@@ -706,10 +703,9 @@ class Boundaries(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
             "additionalProperties/velocity/value": "vector3",
             "additionalProperties/Velocity/value": "vector3",
             "additionalProperties/velocityDirection/value": "vector3",
@@ -952,9 +948,9 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         """
         return super().to_solver(params, **kwargs)
 
-    @classmethod
-    def _schema_get_optional_objects(cls) -> List[str]:
-        return ["referenceFrame"]
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        optional_objects = ["referenceFrame"]
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
@@ -1008,10 +1004,9 @@ class VolumeZones(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
             "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
             "additionalProperties/referenceFrame/axisOfRotation": "vector3",
         }
@@ -1445,14 +1440,14 @@ class BETDisk(Flow360BaseModel):
         assert len(sectionalRadiuses) == len(sectionalPolars)
         return values
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
             "centerOfRotation": "vector3",
             "axisOfRotation": "vector3",
             "initialBladeDirection": "vector3",
         }
+        displayed = "BET disk"
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):
@@ -1472,10 +1467,9 @@ class PorousMedium(Flow360BaseModel):
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
             "DarcyCoefficient": "vector3",
             "ForchheimerCoefficient": "vector3",
             "volumeZone/center": "vector3",

@@ -279,10 +279,9 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
             "slices/additionalProperties/sliceNormal": "vector3",
             "slices/additionalProperties/sliceOrigin": "vector3",
         }
@@ -402,10 +401,9 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {"monitors/additionalProperties/monitorLocations/items": "vector3"}
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"monitors/additionalProperties/monitorLocations/items": "vector3"}
 
 
 class IsoSurface(Flow360BaseModel):
@@ -488,10 +486,9 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
-    @classmethod
-    def _schema_get_widgets(cls) -> dict[str, str]:
-        # Return widget paths for the UI schema
-        return {"observers/items": "vector3"}
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"observers/items": "vector3"}
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
