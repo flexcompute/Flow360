@@ -1317,23 +1317,30 @@ class TimeSteppingLegacy(UnsteadyTimeStepping, LegacyModel):
     )
 
     def update_model(self) -> Flow360BaseModel:
+        class _TimeSteppingTempModel(pd.BaseModel):
+            """Helper class used to create
+            the correct freestream from dict data"""
+
+            time_stepping: TimeStepping = pd.Field()
+
         model = {
-            "CFL": self.CFL,
-            "physicalSteps": self.physical_steps,
-            "maxPseudoSteps": self.max_pseudo_steps,
-            "timeStepSize": self.time_step_size,
+            "time_stepping": {
+                "CFL": self.CFL,
+                "physicalSteps": self.physical_steps,
+                "maxPseudoSteps": self.max_pseudo_steps,
+                "timeStepSize": self.time_step_size,
+            }
         }
 
         if (
-            model["timeStepSize"] != "inf"
+            model['time_stepping']["timeStepSize"] != "inf"
             and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
-            try_add_unit(model, "timeStepSize", step_unit)
+            try_add_unit(model['time_stepping'], "timeStepSize", step_unit)
 
-        return TimeStepping.parse_obj(model)
-
+        return _TimeSteppingTempModel.parse_obj(model).time_stepping
 
 class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
     """:class:`SlidingInterfaceLegacy` class"""
