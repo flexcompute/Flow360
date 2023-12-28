@@ -42,6 +42,7 @@ def get_default_params(unit_system_context):
             geometry=Geometry(
                 ref_area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1), mesh_unit=1
             ),
+            boundaries={},
             freestream=FreestreamFromVelocity.construct(),
             navier_stokes_solver=NavierStokesSolver(),
             turbulence_model_solver=SpalartAllmaras(),
