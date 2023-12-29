@@ -2,9 +2,9 @@
   "title": "Initial conditions",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
-    "FreestreamInitialCondition": {
-      "title": "Freestream initial condition",
+  "anyOf": [
+    {
+      "title": "Freestream",
       "type": "object",
       "properties": {
         "type": {
@@ -16,8 +16,8 @@
       },
       "additionalProperties": false
     },
-    "ExpressionInitialCondition": {
-      "title": "Expression initial condition",
+    {
+      "title": "Expression",
       "type": "object",
       "properties": {
         "type": {
@@ -55,16 +55,6 @@
         "p"
       ],
       "additionalProperties": false
-    }
-  },
-  "anyOf": [
-    {
-      "$ref": "#/definitions/FreestreamInitialCondition",
-      "title": "Freestream"
-    },
-    {
-      "$ref": "#/definitions/ExpressionInitialCondition",
-      "title": "Expression"
     }
   ]
 }

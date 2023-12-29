@@ -151,12 +151,5 @@
       "definitions": {}
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "Surfaces": {
-      "title": "Surfaces",
-      "type": "object",
-      "properties": {}
-    }
-  }
+  "additionalProperties": false
 }

@@ -41,6 +41,10 @@
     }
   },
   "boundaries": {
+    "2": {
+      "type": "SlipWall",
+      "name": "symmetry"
+    },
     "3": {
       "type": "Freestream",
       "name": "freestream"
@@ -56,16 +60,12 @@
         ],
         "units": "km/hr"
       }
-    },
-    "2": {
-      "type": "SlipWall",
-      "name": "symmetry"
     }
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
     "CFL": {
-      "type": "Adaptive",
+      "type": "adaptive",
       "min": 0.1,
       "max": 10000.0,
       "maxRelativeChange": 1.0,
@@ -88,12 +88,12 @@
     }
   },
   "volumeZones": {
-    "zone1": {
+    "zone2": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
         "omega": {
-          "value": 10.0,
-          "units": "rpm"
+          "value": 1.0471975511965976,
+          "units": "rad/s"
         },
         "centerOfRotation": {
           "value": [
@@ -132,12 +132,12 @@
         ]
       }
     },
-    "zone2": {
+    "zone1": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
         "omega": {
-          "value": 1.0471975511965976,
-          "units": "rad/s"
+          "value": 10.0,
+          "units": "rpm"
         },
         "centerOfRotation": {
           "value": [
@@ -155,5 +155,5 @@
       }
     }
   },
-  "hash": "a8d8d7cb89267afe054059762a45e3c94417f1799c7002865d9ca4914132da27"
+  "hash": "81d8ccc2062ae8f7199c7c22a2755cb011f046bfa1aa93a1e138f7c3f7a354bf"
 }

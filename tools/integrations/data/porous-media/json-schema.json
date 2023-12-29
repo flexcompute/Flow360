@@ -37,18 +37,7 @@
       ]
     },
     "volumeZone": {
-      "$ref": "#/definitions/PorousMediumVolumeZone"
-    }
-  },
-  "required": [
-    "DarcyCoefficient",
-    "ForchheimerCoefficient",
-    "volumeZone"
-  ],
-  "additionalProperties": false,
-  "definitions": {
-    "PorousMediumVolumeZone": {
-      "title": "Porous medium volume zone",
+      "title": "Volume zone",
       "type": "object",
       "properties": {
         "zoneType": {
@@ -138,5 +127,11 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "required": [
+    "DarcyCoefficient",
+    "ForchheimerCoefficient",
+    "volumeZone"
+  ],
+  "additionalProperties": false
 }

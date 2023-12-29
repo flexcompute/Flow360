@@ -572,7 +572,7 @@ class RampCFL(Flow360BaseModel):
     Ramp CFL for time stepping component
     """
 
-    type: Literal["Ramp"] = pd.Field("Ramp", const=True)
+    type: Literal["ramp"] = pd.Field("ramp", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
@@ -597,7 +597,7 @@ class AdaptiveCFL(Flow360BaseModel):
     Adaptive CFL for time stepping component
     """
 
-    type: Literal["Adaptive"] = pd.Field("Adaptive", const=True)
+    type: Literal["adaptive"] = pd.Field("adaptive", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
@@ -1357,12 +1357,20 @@ class BETDiskTwist(Flow360BaseModel):
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk twist"
+
 
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class"""
 
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk chord"
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -1374,6 +1382,10 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
         alias="dragCoeffs", displayed="Drag coefficients"
     )
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk sectional polar"
 
 
 class BETDisk(Flow360BaseModel):
@@ -1412,8 +1424,8 @@ class BETDisk(Flow360BaseModel):
         alias="ReynoldsNumbers", displayed="Reynolds numbers"
     )
     alphas: List[float] = pd.Field()
-    twists: List[BETDiskTwist] = pd.Field()
-    chords: List[BETDiskChord] = pd.Field()
+    twists: List[BETDiskTwist] = pd.Field(displayed="BET disk twists")
+    chords: List[BETDiskChord] = pd.Field(displayed="BET disk chords")
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         alias="sectionalPolars", displayed="Sectional polars"
     )

@@ -164,7 +164,7 @@ def flow360_json_encoder(obj):
         return _flow360_solver_json_encoder(obj)
 
 
-def _optional_toggle_name(name):
+def _schema_optional_toggle_name(name):
     return f"_add{name[0].upper() + name[1:]}"
 
 
@@ -232,6 +232,13 @@ class Flow360BaseModel(BaseModel):
             if is_mutable is not None and is_mutable is False:
                 raise ValueError(f"Cannot modify immutable fields: {name}")
         super().__setattr__(name, value)
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def __modify_schema__(cls, field_schema, field):
+        field_schema.update(cls.schema())
+        if cls._SchemaConfig.displayed is not None:
+            field_schema["displayed"] = cls._SchemaConfig.displayed
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -427,10 +434,11 @@ class Flow360BaseModel(BaseModel):
     def _schema_generate_optional_objects(cls, schema: dict, key: str):
         field = schema["properties"].pop(key)
         if field is not None:
-            toggle_name = _optional_toggle_name(key)
+            toggle_name = _schema_optional_toggle_name(key)
 
             schema["properties"][toggle_name] = {
-                "title": cls._schema_camel_to_space(key),
+                "title": "",
+                "displayed": cls._schema_camel_to_space(key),
                 "type": "boolean",
                 "default": False,
             }
@@ -504,13 +512,13 @@ class Flow360BaseModel(BaseModel):
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
+        if cls._SchemaConfig.displayed is not None:
+            schema["displayed"] = cls._SchemaConfig.displayed
         for item in cls._SchemaConfig.exclude_fields:
             cls._schema_remove(schema, item.split("/"))
         for item in cls._SchemaConfig.optional_objects:
             cls._schema_generate_optional_objects(schema, item)
         cls._schema_format_titles(schema)
-        if cls._SchemaConfig.displayed is not None:
-            schema["title"] = cls._SchemaConfig.displayed
         cls._schema_apply_option_names(schema)
         cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
@@ -529,7 +537,7 @@ class Flow360BaseModel(BaseModel):
         # pylint: disable=consider-using-enumerate
         for i in range(0, len(order)):
             if order[i] in optionals:
-                order.insert(i, _optional_toggle_name(order[i]))
+                order.insert(i, _schema_optional_toggle_name(order[i]))
 
         if len(order) > 0:
             schema["ui:order"] = order

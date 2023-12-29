@@ -2,9 +2,9 @@
   "title": "Fluid properties",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
-    "AirDensityTemperature": {
-      "title": "Air density temperature",
+  "anyOf": [
+    {
+      "title": "From density and temperature",
       "type": "object",
       "properties": {
         "modelType": {
@@ -55,8 +55,8 @@
       ],
       "additionalProperties": false
     },
-    "AirPressureTemperature": {
-      "title": "Air pressure temperature",
+    {
+      "title": "From pressure and temperature",
       "type": "object",
       "properties": {
         "modelType": {
@@ -106,16 +106,6 @@
         "temperature"
       ],
       "additionalProperties": false
-    }
-  },
-  "anyOf": [
-    {
-      "$ref": "#/definitions/AirDensityTemperature",
-      "title": "From density and temperature"
-    },
-    {
-      "$ref": "#/definitions/AirPressureTemperature",
-      "title": "From pressure and temperature"
     }
   ]
 }

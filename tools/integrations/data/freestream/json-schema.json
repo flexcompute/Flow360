@@ -2,8 +2,8 @@
   "title": "Freestreams",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
-    "FreestreamFromVelocity": {
+  "anyOf": [
+    {
       "title": "Freestream from velocity",
       "type": "object",
       "properties": {
@@ -72,7 +72,7 @@
       ],
       "additionalProperties": false
     },
-    "FreestreamFromMach": {
+    {
       "title": "Freestream from mach",
       "type": "object",
       "properties": {
@@ -125,7 +125,7 @@
       ],
       "additionalProperties": false
     },
-    "ZeroFreestreamFromVelocity": {
+    {
       "title": "Zero freestream from velocity",
       "type": "object",
       "properties": {
@@ -181,7 +181,7 @@
       ],
       "additionalProperties": false
     },
-    "ZeroFreestream": {
+    {
       "title": "Zero freestream",
       "type": "object",
       "properties": {
@@ -235,7 +235,7 @@
       ],
       "additionalProperties": false
     },
-    "FreestreamFromMachReynolds": {
+    {
       "title": "Freestream from mach reynolds",
       "type": "object",
       "properties": {
@@ -287,23 +287,6 @@
         "Temperature"
       ],
       "additionalProperties": false
-    }
-  },
-  "anyOf": [
-    {
-      "$ref": "#/definitions/FreestreamFromVelocity"
-    },
-    {
-      "$ref": "#/definitions/FreestreamFromMach"
-    },
-    {
-      "$ref": "#/definitions/ZeroFreestreamFromVelocity"
-    },
-    {
-      "$ref": "#/definitions/ZeroFreestream"
-    },
-    {
-      "$ref": "#/definitions/FreestreamFromMachReynolds"
     }
   ]
 }

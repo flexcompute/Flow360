@@ -2,73 +2,9 @@
   "title": "Time steppings",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
-    "RampCFL": {
-      "title": "Ramp cfl",
-      "type": "object",
-      "properties": {
-        "type": {
-          "title": "Type",
-          "default": "Ramp",
-          "const": "Ramp",
-          "type": "string"
-        },
-        "initial": {
-          "title": "Initial",
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "final": {
-          "title": "Final",
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "rampSteps": {
-          "title": "Ramp steps",
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
-    "AdaptiveCFL": {
-      "title": "Adaptive cfl",
-      "type": "object",
-      "properties": {
-        "type": {
-          "title": "Type",
-          "default": "Adaptive",
-          "const": "Adaptive",
-          "type": "string"
-        },
-        "min": {
-          "title": "Min",
-          "default": 0.1,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "max": {
-          "title": "Max",
-          "default": 10000,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "maxRelativeChange": {
-          "title": "Max relative change",
-          "default": 1,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "convergenceLimitingFactor": {
-          "title": "Convergence limiting factor",
-          "default": 0.25,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "SteadyTimeStepping": {
-      "title": "Steady time stepping",
+  "anyOf": [
+    {
+      "title": "Steady",
       "type": "object",
       "properties": {
         "maxPseudoSteps": {
@@ -82,10 +18,68 @@
           "title": "C fl",
           "anyOf": [
             {
-              "$ref": "#/definitions/RampCFL"
+              "title": "Ramp cfl",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "ramp",
+                  "const": "ramp",
+                  "type": "string"
+                },
+                "initial": {
+                  "title": "Initial",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "final": {
+                  "title": "Final",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "rampSteps": {
+                  "title": "Ramp steps",
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
             },
             {
-              "$ref": "#/definitions/AdaptiveCFL"
+              "title": "Adaptive cfl",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "adaptive",
+                  "const": "adaptive",
+                  "type": "string"
+                },
+                "min": {
+                  "title": "Min",
+                  "default": 0.1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "max": {
+                  "title": "Max",
+                  "default": 10000,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "maxRelativeChange": {
+                  "title": "Max relative change",
+                  "default": 1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "convergenceLimitingFactor": {
+                  "title": "Convergence limiting factor",
+                  "default": 0.25,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
             }
           ]
         },
@@ -110,8 +104,8 @@
       },
       "additionalProperties": false
     },
-    "UnsteadyTimeStepping": {
-      "title": "Unsteady time stepping",
+    {
+      "title": "Unsteady",
       "type": "object",
       "properties": {
         "maxPseudoSteps": {
@@ -125,10 +119,68 @@
           "title": "C fl",
           "anyOf": [
             {
-              "$ref": "#/definitions/RampCFL"
+              "title": "Ramp cfl",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "ramp",
+                  "const": "ramp",
+                  "type": "string"
+                },
+                "initial": {
+                  "title": "Initial",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "final": {
+                  "title": "Final",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "rampSteps": {
+                  "title": "Ramp steps",
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
             },
             {
-              "$ref": "#/definitions/AdaptiveCFL"
+              "title": "Adaptive cfl",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "adaptive",
+                  "const": "adaptive",
+                  "type": "string"
+                },
+                "min": {
+                  "title": "Min",
+                  "default": 0.1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "max": {
+                  "title": "Max",
+                  "default": 10000,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "maxRelativeChange": {
+                  "title": "Max relative change",
+                  "default": 1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "convergenceLimitingFactor": {
+                  "title": "Convergence limiting factor",
+                  "default": 0.25,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
             }
           ]
         },
@@ -162,16 +214,6 @@
         }
       },
       "additionalProperties": false
-    }
-  },
-  "anyOf": [
-    {
-      "$ref": "#/definitions/SteadyTimeStepping",
-      "title": "Steady"
-    },
-    {
-      "$ref": "#/definitions/UnsteadyTimeStepping",
-      "title": "Unsteady"
     }
   ]
 }

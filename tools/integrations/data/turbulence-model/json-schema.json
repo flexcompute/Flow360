@@ -2,54 +2,8 @@
   "title": "Turbulence model solvers",
   "type": "object",
   "additionalProperties": false,
-  "definitions": {
-    "LinearSolver": {
-      "title": "Linear solver",
-      "type": "object",
-      "properties": {
-        "maxIterations": {
-          "title": "Max iterations",
-          "default": 50,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "absoluteTolerance": {
-          "title": "Absolute tolerance",
-          "default": 1e-10,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "relativeTolerance": {
-          "title": "Relative tolerance",
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "TurbulenceModelConstantsSA": {
-      "title": "Turbulence model constants sa",
-      "type": "object",
-      "properties": {
-        "modelType": {
-          "title": "Model type",
-          "default": "SpalartAllmarasConsts",
-          "const": "SpalartAllmarasConsts",
-          "type": "string"
-        },
-        "C_DES": {
-          "title": "C_des",
-          "default": 0.72,
-          "type": "number"
-        },
-        "C_d": {
-          "title": "C_d",
-          "default": 8.0,
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "SpalartAllmaras": {
+  "anyOf": [
+    {
       "title": "Spalart allmaras",
       "type": "object",
       "properties": {
@@ -77,7 +31,26 @@
             "absolute_tolerance": 1e-10,
             "relative_tolerance": null
           },
-          "$ref": "#/definitions/LinearSolver"
+          "type": "object",
+          "properties": {
+            "maxIterations": {
+              "title": "Max iterations",
+              "default": 50,
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            "absoluteTolerance": {
+              "title": "Absolute tolerance",
+              "default": 1e-10,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "relativeTolerance": {
+              "title": "Relative tolerance",
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
         },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
@@ -133,7 +106,27 @@
           "type": "number"
         },
         "modelConstants": {
-          "$ref": "#/definitions/TurbulenceModelConstantsSA"
+          "title": "Model constants",
+          "type": "object",
+          "properties": {
+            "modelType": {
+              "title": "Model type",
+              "default": "SpalartAllmarasConsts",
+              "const": "SpalartAllmarasConsts",
+              "type": "string"
+            },
+            "C_DES": {
+              "title": "C_des",
+              "default": 0.72,
+              "type": "number"
+            },
+            "C_d": {
+              "title": "C_d",
+              "default": 8.0,
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
         },
         "rotationCorrection": {
           "title": "Rotation correction",
@@ -143,40 +136,7 @@
       },
       "additionalProperties": false
     },
-    "TurbulenceModelConstantsSST": {
-      "title": "Turbulence model constants sst",
-      "type": "object",
-      "properties": {
-        "modelType": {
-          "title": "Model type",
-          "default": "kOmegaSSTConsts",
-          "const": " kOmegaSSTConsts",
-          "type": "string"
-        },
-        "C_DES1": {
-          "title": "C_des1",
-          "default": 0.78,
-          "type": "number"
-        },
-        "C_DES2": {
-          "title": "C_des2",
-          "default": 0.61,
-          "type": "number"
-        },
-        "C_d1": {
-          "title": "C_d1",
-          "default": 20.0,
-          "type": "number"
-        },
-        "C_d2": {
-          "title": "C_d2",
-          "default": 3.0,
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "KOmegaSST": {
+    {
       "title": "K omega sst",
       "type": "object",
       "properties": {
@@ -204,7 +164,26 @@
             "absolute_tolerance": 1e-10,
             "relative_tolerance": null
           },
-          "$ref": "#/definitions/LinearSolver"
+          "type": "object",
+          "properties": {
+            "maxIterations": {
+              "title": "Max iterations",
+              "default": 50,
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            "absoluteTolerance": {
+              "title": "Absolute tolerance",
+              "default": 1e-10,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "relativeTolerance": {
+              "title": "Relative tolerance",
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
         },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
@@ -260,12 +239,42 @@
           "type": "number"
         },
         "modelConstants": {
-          "$ref": "#/definitions/TurbulenceModelConstantsSST"
+          "title": "Model constants",
+          "type": "object",
+          "properties": {
+            "modelType": {
+              "title": "Model type",
+              "default": "kOmegaSSTConsts",
+              "const": " kOmegaSSTConsts",
+              "type": "string"
+            },
+            "C_DES1": {
+              "title": "C_des1",
+              "default": 0.78,
+              "type": "number"
+            },
+            "C_DES2": {
+              "title": "C_des2",
+              "default": 0.61,
+              "type": "number"
+            },
+            "C_d1": {
+              "title": "C_d1",
+              "default": 20.0,
+              "type": "number"
+            },
+            "C_d2": {
+              "title": "C_d2",
+              "default": 3.0,
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     },
-    "NoneSolver": {
+    {
       "title": "None solver",
       "type": "object",
       "properties": {
@@ -277,17 +286,6 @@
         }
       },
       "additionalProperties": false
-    }
-  },
-  "anyOf": [
-    {
-      "$ref": "#/definitions/SpalartAllmaras"
-    },
-    {
-      "$ref": "#/definitions/KOmegaSST"
-    },
-    {
-      "$ref": "#/definitions/NoneSolver"
     }
   ]
 }

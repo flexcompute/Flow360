@@ -41,7 +41,7 @@ def write_schemas(
     write_to_file(f"./data/{folder_name}/json-schema.json", schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
-        write_to_file(f"./data/{folder_name}/ui-schema.json", ui_schema)
+        write_to_file(f"./data/{folder_name}/ui-schema.json" f"", ui_schema)
 
 
 if not os.path.exists(f"./data/"):

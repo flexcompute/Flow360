@@ -227,24 +227,78 @@
       }
     },
     "twists": {
-      "title": "Twists",
+      "title": "BET disk twists",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/BETDiskTwist"
+        "title": "BET disk twist",
+        "type": "object",
+        "properties": {
+          "radius": {
+            "title": "Radius",
+            "type": "number"
+          },
+          "twist": {
+            "title": "Twist",
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "chords": {
-      "title": "Chords",
+      "title": "BET disk chords",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/BETDiskChord"
+        "title": "BET disk chord",
+        "type": "object",
+        "properties": {
+          "radius": {
+            "title": "Radius",
+            "type": "number"
+          },
+          "chord": {
+            "title": "Chord",
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "sectionalPolars": {
       "title": "Sectional polars",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/BETDiskSectionalPolar"
+        "title": "BET disk sectional polar",
+        "type": "object",
+        "properties": {
+          "liftCoeffs": {
+            "title": "Lift coefficients",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "dragCoeffs": {
+            "title": "Drag coefficients",
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
       }
     },
     "sectionalRadiuses": {
@@ -272,70 +326,5 @@
     "sectionalPolars",
     "sectionalRadiuses"
   ],
-  "additionalProperties": false,
-  "definitions": {
-    "BETDiskTwist": {
-      "title": "B et disk twist",
-      "type": "object",
-      "properties": {
-        "radius": {
-          "title": "Radius",
-          "type": "number"
-        },
-        "twist": {
-          "title": "Twist",
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "BETDiskChord": {
-      "title": "B et disk chord",
-      "type": "object",
-      "properties": {
-        "radius": {
-          "title": "Radius",
-          "type": "number"
-        },
-        "chord": {
-          "title": "Chord",
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "BETDiskSectionalPolar": {
-      "title": "B et disk sectional polar",
-      "type": "object",
-      "properties": {
-        "liftCoeffs": {
-          "title": "Lift coefficients",
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "type": "number"
-              }
-            }
-          }
-        },
-        "dragCoeffs": {
-          "title": "Drag coefficients",
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "type": "number"
-              }
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false
 }

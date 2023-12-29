@@ -10,8 +10,8 @@
             "title": "Surface integral monitor",
             "type": "object",
             "properties": {
-              "modelType": {
-                "title": "Model type",
+              "type": {
+                "title": "Type",
                 "default": "surfaceIntegral",
                 "const": "surfaceIntegral",
                 "type": "string"
@@ -61,8 +61,8 @@
             "title": "Probe monitor",
             "type": "object",
             "properties": {
-              "modelType": {
-                "title": "Model type",
+              "type": {
+                "title": "Type",
                 "default": "probe",
                 "const": "probe",
                 "type": "string"
@@ -157,12 +157,5 @@
       }
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "Monitors": {
-      "title": "Monitors",
-      "type": "object",
-      "properties": {}
-    }
-  }
+  "additionalProperties": false
 }

@@ -142,12 +142,5 @@
       "definitions": {}
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "Slices": {
-      "title": "Slices",
-      "type": "object",
-      "properties": {}
-    }
-  }
+  "additionalProperties": false
 }

@@ -106,12 +106,5 @@
       "definitions": {}
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "IsoSurfaces": {
-      "title": "Iso surfaces",
-      "type": "object",
-      "properties": {}
-    }
-  }
+  "additionalProperties": false
 }

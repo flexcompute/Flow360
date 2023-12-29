@@ -304,6 +304,7 @@ def test_params_with_units():
     to_file_from_file_test(params)
 
     params_solver = params.to_solver()
+
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)
 

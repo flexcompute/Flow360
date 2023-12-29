@@ -43,19 +43,6 @@
     },
     "forcePerArea": {
       "title": "Force per area",
-      "$ref": "#/definitions/ForcePerArea"
-    }
-  },
-  "required": [
-    "center",
-    "axisThrust",
-    "thickness",
-    "forcePerArea"
-  ],
-  "additionalProperties": false,
-  "definitions": {
-    "ForcePerArea": {
-      "title": "Force per area",
       "type": "object",
       "properties": {
         "radius": {
@@ -87,5 +74,12 @@
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "required": [
+    "center",
+    "axisThrust",
+    "thickness",
+    "forcePerArea"
+  ],
+  "additionalProperties": false
 }

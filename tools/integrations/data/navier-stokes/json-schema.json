@@ -75,37 +75,12 @@
       "type": "boolean"
     },
     "_addLinearSolver": {
-      "title": "Add linear solver",
+      "title": "Linear solver",
       "type": "boolean",
       "default": false
     }
   },
   "additionalProperties": false,
-  "definitions": {
-    "LinearSolver": {
-      "title": "Linear solver",
-      "type": "object",
-      "properties": {
-        "maxIterations": {
-          "title": "Max iterations",
-          "default": 50,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "absoluteTolerance": {
-          "title": "Absolute tolerance",
-          "default": 1e-10,
-          "exclusiveMinimum": 0,
-          "type": "number"
-        },
-        "relativeTolerance": {
-          "title": "Relative tolerance",
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    }
-  },
   "dependencies": {
     "_addLinearSolver": {
       "oneOf": [
@@ -119,11 +94,26 @@
             },
             "linearSolver": {
               "title": "Linear solver",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/LinearSolver"
+              "type": "object",
+              "properties": {
+                "maxIterations": {
+                  "title": "Max iterations",
+                  "default": 50,
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                "absoluteTolerance": {
+                  "title": "Absolute tolerance",
+                  "default": 1e-10,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "relativeTolerance": {
+                  "title": "Relative tolerance",
+                  "type": "number"
                 }
-              ]
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

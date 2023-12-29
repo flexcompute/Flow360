@@ -60,7 +60,7 @@ class Vector(Coordinate):
 
     # pylint: disable=unused-argument
     @classmethod
-    def __modify_schema__(cls, schema, field):
+    def __modify_schema__(cls, field_schema, field):
         new_schema = {
             "type": "array",
             "minItems": 3,
@@ -68,7 +68,7 @@ class Vector(Coordinate):
             "items": [{"type": "number"}, {"type": "number"}, {"type": "number"}],
         }
 
-        schema.update(new_schema)
+        field_schema.update(new_schema)
 
 
 Axis = Vector
