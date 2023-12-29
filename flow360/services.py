@@ -27,6 +27,19 @@ def check_unit_system(unit_system):
         )
 
 
+def remove_properties_with_prefix(data, prefix):
+    if isinstance(data, dict):
+        return {
+            key: remove_properties_with_prefix(value, prefix)
+            for key, value in data.items() if not key.startswith(prefix)
+        }
+    elif isinstance(data, list):
+        return [remove_properties_with_prefix(item, prefix) for item in data]
+    else:
+        return data
+
+
+
 def get_default_params(unit_system_context):
     """
     example of generating default case settings.
@@ -81,6 +94,9 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
     """
 
     check_unit_system(unit_system_context)
+
+    # removing _add properties as these are only used in WebUI
+    params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
 
     params_as_dict["unitSystem"] = unit_system_context.dict()
     values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
