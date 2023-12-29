@@ -6,6 +6,11 @@ import flow360 as fl
 from flow360 import services
 
 
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
+
+
 def test_validate_service():
     params_data = {
         "geometry": {
@@ -120,3 +125,11 @@ def test_validate_service_should_not_be_called_with_context():
             errors, warning = services.validate_flow360_params_model(
                 params_as_dict=params_data, unit_system_context=fl.SI_unit_system
             )
+
+
+def test_validate_service_should_not_be_called_with_context():
+    with open("data/cases/case_13.json", "r") as fh:
+        params = json.load(fh)
+
+    defaults = services.get_default_fork(params)
+    assert defaults

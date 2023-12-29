@@ -497,7 +497,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         }
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["max_iterations"] = self.linear_iterations
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
         return model
 
@@ -533,7 +533,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         try_set(model, "rotationCorrection", self.rotation_correction)
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["max_iterations"] = self.linear_iterations
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
         return model
 

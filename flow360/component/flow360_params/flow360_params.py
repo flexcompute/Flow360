@@ -1313,8 +1313,9 @@ class TimeSteppingLegacy(UnsteadyTimeStepping, LegacyModel):
     """:class: `TimeSteppingLegacy` class"""
 
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
-        alias="timeStepSize", default="inf"
+        "inf", alias="timeStepSize"
     )
+    physical_steps: Optional[PositiveInt] = pd.Field(1, alias="physicalSteps")
 
     def update_model(self) -> Flow360BaseModel:
         class _TimeSteppingTempModel(pd.BaseModel):
@@ -1333,14 +1334,15 @@ class TimeSteppingLegacy(UnsteadyTimeStepping, LegacyModel):
         }
 
         if (
-            model['time_stepping']["timeStepSize"] != "inf"
+            model["time_stepping"]["timeStepSize"] != "inf"
             and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
-            try_add_unit(model['time_stepping'], "timeStepSize", step_unit)
+            try_add_unit(model["time_stepping"], "timeStepSize", step_unit)
 
         return _TimeSteppingTempModel.parse_obj(model).time_stepping
+
 
 class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
     """:class:`SlidingInterfaceLegacy` class"""
@@ -1378,6 +1380,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
 
 class BoundariesLegacy(Boundaries):
     """Legacy Boundaries class"""
+
     def __init__(self, *args, **kwargs):
         with Flow360UnitSystem(verbose=False):
             super().__init__(*args, **kwargs)
@@ -1385,6 +1388,7 @@ class BoundariesLegacy(Boundaries):
 
 class VolumeZonesLegacy(VolumeZones):
     """Legacy VolumeZones class"""
+
     def __init__(self, *args, **kwargs):
         with Flow360UnitSystem(verbose=False):
             super().__init__(*args, **kwargs)

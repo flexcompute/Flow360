@@ -176,7 +176,9 @@ def test_flow360param():
 
 def test_flow360param1():
     with flow360.SI_unit_system:
-        params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={})
+        params = Flow360Params(
+            freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
+        )
         assert params.time_stepping.max_pseudo_steps == 2000
         params.time_stepping = UnsteadyTimeStepping(physical_steps=100, time_step_size=2 * u.s)
         assert params

@@ -1,7 +1,15 @@
 import json
 import tempfile
 
+import pytest
+
 import flow360 as fl
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
+
 
 data = {
     "geometry": {
@@ -71,3 +79,8 @@ def test_updater():
 
     params = fl.Flow360Params(temp_file.name)
     print(params)
+
+
+def test_updater2():
+    params = fl.Flow360Params("data/cases/case_13.json")
+    assert params

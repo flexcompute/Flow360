@@ -27,7 +27,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: f233cd251b05e7b90d8db5b5e00389c4cf7252c144ab02f6901e68f067752847
+hash: 6694e582266388ba076871726f1cdfabc2145ae0112f2de7b785d2632491a5fd
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
