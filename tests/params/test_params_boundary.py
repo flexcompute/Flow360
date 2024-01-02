@@ -98,6 +98,7 @@ def test_case_boundary():
                         } 
                     }.
                     "freestream": {
+                        "modelType": "FromMach",
                         "Mach": 1,
                         "temperature": 1,
                         "mu_ref": 1
@@ -122,6 +123,7 @@ def test_case_boundary():
                     } 
                 },
                 "freestream": {
+                    "modelType": "FromMach",
                     "Mach": 1,
                     "temperature": 1,
                     "mu_ref": 1

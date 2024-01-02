@@ -449,8 +449,8 @@ def test_units_serializer():
     assert data_schema["properties"]["l"]["properties"]["value"]["type"] == "number"
     assert data_schema["properties"]["lc"]["properties"]["value"]["minimum"] == 0
     assert data_schema["properties"]["pt"]["properties"]["value"]["type"] == "array"
-    assert data_schema["properties"]["pt"]["properties"]["value"]["items"]["minItems"] == 3
-    assert data_schema["properties"]["pt"]["properties"]["value"]["items"]["maxItems"] == 3
+    assert data_schema["properties"]["pt"]["properties"]["value"]["minItems"] == 3
+    assert data_schema["properties"]["pt"]["properties"]["value"]["maxItems"] == 3
 
     with fl.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))

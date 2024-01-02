@@ -4,6 +4,7 @@ Case component
 from __future__ import annotations
 
 import json
+import tempfile
 from enum import Enum
 from typing import Iterator, List, Union
 
@@ -385,7 +386,12 @@ class Case(CaseBase, Flow360Resource):
         if self._params is None:
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
             try:
-                self._params = Flow360Params(**self._raw_params)
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=False
+                ) as temp_file:
+                    json.dump(self._raw_params, temp_file)
+
+                self._params = Flow360Params(temp_file.name)
             except pd.ValidationError as err:
                 raise Flow360ValidationError(error_messages.params_fetching_error(err)) from err
 

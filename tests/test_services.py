@@ -19,7 +19,7 @@ def test_validate_service():
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
-        "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
         "fluidProperties": {
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
@@ -42,7 +42,7 @@ def test_validate_service_missing_fluid_properties():
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
-        "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
     errors, warning = services.validate_flow360_params_model(
@@ -60,7 +60,7 @@ def test_validate_service_missing_unit_system():
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
-        "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
     with pytest.raises(ValueError):
@@ -77,7 +77,7 @@ def test_validate_service_incorrect_unit():
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
-        "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
     errors, warning = services.validate_flow360_params_model(
@@ -95,7 +95,7 @@ def test_validate_service_incorrect_value():
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
-        "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
     errors, warning = services.validate_flow360_params_model(

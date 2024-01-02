@@ -13,7 +13,6 @@ from flow360.component.flow360_params.flow360_params import (
     SteadyTimeStepping,
     UnsteadyTimeStepping,
 )
-from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -62,7 +61,7 @@ def test_time_stepping():
             geometry={"meshUnit": "mm", "refArea": "m**2"},
             boundaries={},
             fluid_properties=fl.air,
-            freestream={"temperature": 1, "Mach": 1, "mu_ref": 1},
+            freestream={"modelType": "FromMach", "temperature": 1, "Mach": 1, "mu_ref": 1},
             time_stepping=ts,
         )
 

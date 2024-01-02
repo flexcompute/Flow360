@@ -57,8 +57,8 @@ def test_navier_stokes():
     with fl.SI_unit_system:
         p = Flow360Params(
             navier_stokes_solver=ns,
-            freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
             boundaries={},
+            freestream={"modelType": "FromMach", "Mach": 1, "Temperature": 1, "muRef": 1},
         )
     to_file_from_file_test(p)
 

@@ -20,7 +20,7 @@ from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from ...error_messages import do_not_modify_file_manually_msg
-from ...exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValidationError
+from ...exceptions import Flow360FileError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
@@ -164,6 +164,10 @@ def flow360_json_encoder(obj):
         return _flow360_solver_json_encoder(obj)
 
 
+def _schema_optional_toggle_name(name):
+    return f"_add{name[0].upper() + name[1:]}"
+
+
 # pylint: disable=too-many-public-methods
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
@@ -221,6 +225,7 @@ class Flow360BaseModel(BaseModel):
         allow_but_remove: Optional[List[str]] = []
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
         include_hash: bool = False
+        include_defaults_in_schema: bool = True
 
     def __setattr__(self, name, value):
         if name in self.__fields__:
@@ -228,6 +233,13 @@ class Flow360BaseModel(BaseModel):
             if is_mutable is not None and is_mutable is False:
                 raise ValueError(f"Cannot modify immutable fields: {name}")
         super().__setattr__(name, value)
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def __modify_schema__(cls, field_schema, field):
+        field_schema.update(cls.schema())
+        if cls._SchemaConfig.displayed is not None:
+            field_schema["displayed"] = cls._SchemaConfig.displayed
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -257,7 +269,7 @@ class Flow360BaseModel(BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
-    def handle_depracated_aliases(cls, values):
+    def handle_deprecated_aliases(cls, values):
         """
         root validator to handle deprecated aliases
         """
@@ -300,16 +312,32 @@ class Flow360BaseModel(BaseModel):
 
         return values
 
-    @classmethod
-    def _get_field_order(cls) -> List[str]:
-        return []
+    # pylint: disable=too-few-public-methods
+    class _SchemaConfig:
+        """Sets JSON schema generation config for :class:`Flow360BaseModel` objects.
+
+        Configuration Options
+        ---------------------
+        field_order : List[str]
+            Ordering of schema fields in the output JSON dictionary
+        optional_objects : List[str]
+            Fields for which optional schema structure is generated
+        exclude_fields : List[str]
+            Fields to be excluded from the output schema (slash-separated paths to the field in nested objects)
+        widgets : Dict[str, str]
+            Widget mappings for the UI schema
+        displayed : Optional[str]
+            Title override for the class name in the schema root
+        """
+
+        field_order = []
+        optional_objects = []
+        exclude_fields = []
+        widgets = {}
+        displayed = None
 
     @classmethod
-    def _get_optional_objects(cls) -> List[str]:
-        return []
-
-    @classmethod
-    def _fix_single_allof(cls, dictionary):
+    def _schema_fix_single_allof(cls, dictionary):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -319,56 +347,74 @@ class Flow360BaseModel(BaseModel):
                     dictionary[allOfKey] = allOfValue
                 del dictionary["allOf"]
             elif isinstance(value, dict):
-                cls._fix_single_allof(value)
+                cls._schema_fix_single_allof(value)
 
         return dictionary
 
     @classmethod
-    def _camel_to_space(cls, name: str):
-        if len(name) > 0 and name[0] == "_":
-            name = name[1:]
+    def _schema_camel_to_space(cls, name: str):
+        if len(name) > 0:
+            if name[0] == "_":
+                name = name[1:]
+            if name[0].isupper():
+                name = name[0].lower() + name[1:]
         name = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", name)
         name = re.sub("([a-z0-9])([A-Z])", r"\1 \2", name).lower()
         name = name.capitalize()
         return name
 
     @classmethod
-    def _format_titles(cls, dictionary):
+    def _schema_format_titles(cls, dictionary, name=None):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
 
         for key, value in list(dictionary.items()):
             if isinstance(value, dict):
-                title = value.get("title")
-                if title is not None and value.get("displayed") is None:
-                    value["title"] = cls._camel_to_space(key)
-                cls._format_titles(value)
-            if isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        cls._format_titles(item)
-
-        return dictionary
-
-    @classmethod
-    def _remove_key_from_nested_dict(cls, dictionary, key_to_remove):
-        if not isinstance(dictionary, dict):
-            raise ValueError("Input must be a dictionary")
-
-        for key, value in list(dictionary.items()):
-            if key == key_to_remove:
-                del dictionary[key]
-            elif isinstance(value, dict):
-                cls._remove_key_from_nested_dict(value, key_to_remove)
+                cls._schema_format_titles(value, name=key)
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        cls._remove_key_from_nested_dict(item, key_to_remove)
+                        cls._schema_format_titles(item)
+            elif key == "title" and dictionary.get("displayed") is None:
+                if name is None:
+                    dictionary["title"] = cls._schema_camel_to_space(value)
+                else:
+                    dictionary["title"] = cls._schema_camel_to_space(name)
 
         return dictionary
 
     @classmethod
-    def _swap_key_in_nested_dict(cls, dictionary, key_to_replace, replacement_key):
+    def _schema_remove(cls, schema, key_path: List[str]):
+        if not isinstance(schema, dict):
+            raise ValueError("Input must be a dictionary")
+
+        if len(key_path) == 1:
+            del schema[key_path[0]]
+        elif len(key_path) > 1:
+            cls._schema_remove(schema[key_path[0]], key_path[1:])
+
+        return schema
+
+    @classmethod
+    def _schema_remove_all(cls, schema, key_to_remove: str):
+        """Removes all occurences of a"""
+        if not isinstance(schema, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(schema.items()):
+            if key == key_to_remove:
+                del schema[key]
+            elif isinstance(value, dict):
+                cls._schema_remove_all(value, key_to_remove)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._schema_remove_all(item, key_to_remove)
+
+        return schema
+
+    @classmethod
+    def _schema_swap_key(cls, dictionary, key_to_replace, replacement_key):
         if not isinstance(dictionary, dict):
             raise ValueError("Input must be a dictionary")
 
@@ -377,28 +423,23 @@ class Flow360BaseModel(BaseModel):
                 dictionary[key_to_replace] = dictionary[replacement_key]
                 del dictionary[replacement_key]
             elif isinstance(value, dict):
-                cls._swap_key_in_nested_dict(value, key_to_replace, replacement_key)
+                cls._schema_swap_key(value, key_to_replace, replacement_key)
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
-                        cls._swap_key_in_nested_dict(item, key_to_replace, replacement_key)
+                        cls._schema_swap_key(item, key_to_replace, replacement_key)
 
         return dictionary
 
     @classmethod
-    def _generate_schema_for_optional_objects(cls, model: dict, key: str):
-        field = model["properties"].pop(key)
+    def _schema_generate_optional_objects(cls, schema: dict, key: str):
+        field = schema["properties"].pop(key)
         if field is not None:
-            ref = field.get("$ref")
-            if ref is None:
-                raise Flow360RuntimeError(
-                    f"Trying to apply optional field transform to a non-ref field {key}"
-                )
+            toggle_name = _schema_optional_toggle_name(key)
 
-            toggle_name = f"_add{key[0].upper() + key[1:]}"
-
-            model["properties"][toggle_name] = {
-                "title": toggle_name[1:],
+            schema["properties"][toggle_name] = {
+                "title": "",
+                "displayed": cls._schema_camel_to_space(key),
                 "type": "boolean",
                 "default": False,
             }
@@ -406,18 +447,18 @@ class Flow360BaseModel(BaseModel):
             displayed = field.get("displayed")
 
             if displayed is not None:
-                model["properties"][toggle_name]["displayed"] = displayed
+                schema["properties"][toggle_name]["displayed"] = displayed
 
-            if model.get("dependencies") is None:
-                model["dependencies"] = {}
+            if schema.get("dependencies") is None:
+                schema["dependencies"] = {}
 
-            model["dependencies"][toggle_name] = {
+            schema["dependencies"][toggle_name] = {
                 "oneOf": [
                     {
                         "type": "object",
                         "properties": {
                             toggle_name: {"default": True, "const": True, "type": "boolean"},
-                            key: {"$ref": ref},
+                            key: field,
                         },
                         "additionalProperties": False,
                     },
@@ -426,31 +467,92 @@ class Flow360BaseModel(BaseModel):
             }
 
     @classmethod
-    def _clean_schema(cls, schema):
-        cls._remove_key_from_nested_dict(schema, "description")
-        cls._remove_key_from_nested_dict(schema, "_type")
-        cls._remove_key_from_nested_dict(schema, "comments")
+    def _schema_apply_option_names(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            options = dictionary.get("anyOf")
+            if key == "options" and options is not None:
+                if len(value) != len(options):
+                    raise ValueError(
+                        f"Tried applying options for {value}, but lengths "
+                        f"of anyOf items and options do not match"
+                    )
+                for option, title in zip(options, value):
+                    option["title"] = title
+            elif isinstance(value, dict):
+                cls._schema_apply_option_names(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._schema_apply_option_names(item)
+
+    @classmethod
+    def _schema_fix_single_value_enum(cls, dictionary):
+        for key, value in list(dictionary.items()):
+            if key == "enum" and len(value) == 1:
+                default = value[0]
+                del dictionary[key]
+                dictionary["const"] = default
+            elif isinstance(value, dict):
+                cls._schema_fix_single_value_enum(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._schema_fix_single_value_enum(item)
+
+    @classmethod
+    def _schema_clean(cls, schema):
+        cls._schema_remove_all(schema, "description")
+        cls._schema_remove_all(schema, "_type")
+        cls._schema_remove_all(schema, "comments")
+        cls._schema_remove_all(schema, "options")
 
     @classmethod
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
-        cls._clean_schema(schema)
-        cls._fix_single_allof(schema)
-        optionals = cls._get_optional_objects()
-        for item in optionals:
-            cls._generate_schema_for_optional_objects(schema, item)
-        cls._format_titles(schema)
-        cls._swap_key_in_nested_dict(schema, "title", "displayed")
+        if cls._SchemaConfig.displayed is not None:
+            schema["displayed"] = cls._SchemaConfig.displayed
+        for item in cls._SchemaConfig.exclude_fields:
+            cls._schema_remove(schema, item.split("/"))
+        for item in cls._SchemaConfig.optional_objects:
+            cls._schema_generate_optional_objects(schema, item)
+        cls._schema_format_titles(schema)
+        cls._schema_apply_option_names(schema)
+        cls._schema_fix_single_allof(schema)
+        cls._schema_fix_single_value_enum(schema)
+        cls._schema_swap_key(schema, "title", "displayed")
+        cls._schema_clean(schema)
         return schema
 
     @classmethod
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
-        order = cls._get_field_order()
+        order = cls._SchemaConfig.field_order
+        optionals = cls._SchemaConfig.optional_objects
+        widgets = cls._SchemaConfig.widgets
         schema = {}
+
+        # pylint: disable=consider-using-enumerate
+        for i in range(0, len(order)):
+            if order[i] in optionals:
+                order.insert(i, _schema_optional_toggle_name(order[i]))
+
         if len(order) > 0:
             schema["ui:order"] = order
+        if len(widgets) > 0:
+            for key, value in widgets.items():
+                path = key.split("/")
+
+                target = schema
+                for item in path:
+                    if target.get(item) is None:
+                        target[item] = {}
+                    target = target[item]
+
+                target["ui:widget"] = value
         schema["ui:submitButtonOptions"] = {"norender": True}
         schema["ui:options"] = {"orderable": False, "addable": False, "removable": False}
         return schema
@@ -975,21 +1077,18 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
     @classmethod
     def flow360_schema(cls):
         title = cls.__name__
-        root_schema = {
-            "title": title,
-            "type": "array",
-            "uniqueItemProperties": ["name"],
-            "items": {
-                "oneOf": [],
-            },
-        }
+        root_schema = {"title": cls._schema_camel_to_space(title), "additionalProperties": {}}
 
         models = cls.get_subtypes()
 
-        for model in models:
-            schema = model.flow360_schema()
-            cls._clean_schema(schema)
-            root_schema["items"]["oneOf"].append(schema)
+        if len(models) == 1:
+            schema = models[0].flow360_schema()
+            root_schema["additionalProperties"] = schema
+        else:
+            root_schema["additionalProperties"]["oneOf"] = []
+            for model in models:
+                schema = model.flow360_schema()
+                root_schema["additionalProperties"]["oneOf"].append(schema)
 
         definitions = {}
 

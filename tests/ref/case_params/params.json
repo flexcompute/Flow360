@@ -37,6 +37,7 @@
     },
     "timeStepping": {
         "maxPseudoSteps": 2000,
+        "modelType": "Steady",
         "physicalSteps": 1,
         "timeStepSize": "inf"
     },
@@ -58,6 +59,7 @@
         "limitPressureDensity": false
     },
     "freestream": {
+        "modelType": "FromVelocity",
         "alphaAngle": 3.06,
         "betaAngle": 0.0,
         "velocity": {
@@ -128,5 +130,5 @@
             }
         }
     },
-    "hash": "6694e582266388ba076871726f1cdfabc2145ae0112f2de7b785d2632491a5fd"
+    "hash": "593a6bf361a7a483fa5f3d14cead56038662e02790eec32a21a7d14063e7fb18"
 }
