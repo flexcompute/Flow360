@@ -1510,7 +1510,6 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
-    # Needs decoupling from current model
     boundaries: Optional[BoundariesLegacy] = pd.Field()
     # Needs decoupling from current model
     initial_condition: Optional[InitialConditions] = pd.Field(
@@ -1527,8 +1526,6 @@ class Flow360ParamsLegacy(LegacyModel):
     # Needs decoupling from current model
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
-    # Needs decoupling from current model
-    volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
