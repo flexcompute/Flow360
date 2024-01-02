@@ -53,13 +53,14 @@ params_as_dict = params_copy.dict()
 
 del params_as_dict["fluid_properties"]
 
-errors, warnings = validate_flow360_params_model(params_as_dict)
-pprint(errors)
+with fl.SI_unit_system:
+    errors, warnings = validate_flow360_params_model(params_as_dict)
+    pprint(errors)
 
 params_as_json = params.json(indent=4)
 print(params_as_json)
 
-with fl.UnitSystem(base_system=u.BaseSystemType.CGS, length=2.0 * u.cm):
+with fl.UnitSystem(base_system=u.BaseSystemType.SI):
     params_reimport = fl.Flow360Params(**json.loads(params_as_json))
     assert params_reimport.geometry.ref_area == params.geometry.ref_area
 
@@ -69,3 +70,9 @@ print(params_as_json)
 
 params_as_json = params_solver.to_flow360_json()
 print(params_as_json)
+
+# Class name removal from loc
+with fl.SI_unit_system:
+    params_as_dict["freestream"]["foo"] = "bar"
+    errors, warnings = validate_flow360_params_model(params_as_dict)
+    pprint(errors)
