@@ -13,18 +13,29 @@ from .component.flow360_params.flow360_params import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
-from .component.flow360_params.unit_system import UnitSystem, unit_system_manager
+from .component.flow360_params.unit_system import UnitSystem, unit_system_manager, SI_unit_system, CGS_unit_system, imperial_unit_system, flow360_unit_system
 from .exceptions import Flow360ConfigurationError
 
 
-def check_unit_system(unit_system):
+
+unit_system_map = {
+    'SI': SI_unit_system,
+    'CGS': CGS_unit_system,
+    'Imperial': imperial_unit_system,
+    'Flow360': flow360_unit_system
+}
+
+
+def init_unit_system(unit_system_name):
+    unit_system = unit_system_map.get(unit_system_name, None)
     if not isinstance(unit_system, UnitSystem):
         raise ValueError(f"Incorrect unit system provided {unit_system=}, expected type UnitSystem")
 
     if unit_system_manager.current is not None:
         raise RuntimeError(
-            f"Services cannot be used inside unit system context: {unit_system_manager.current.system_repr()}."
+            f"Services cannot be used inside unit system context. Used: {unit_system_manager.current.system_repr()}."
         )
+    return unit_system
 
 
 def remove_properties_with_prefix(data, prefix):
@@ -40,7 +51,7 @@ def remove_properties_with_prefix(data, prefix):
 
 
 
-def get_default_params(unit_system_context):
+def get_default_params(unit_system_name):
     """
     example of generating default case settings.
     - Use Model() if all fields has defaults or there are no required fields
@@ -48,9 +59,9 @@ def get_default_params(unit_system_context):
 
     """
 
-    check_unit_system(unit_system_context)
+    unit_system = init_unit_system(unit_system_name)
 
-    with unit_system_context:
+    with unit_system:
         params = Flow360Params(
             geometry=Geometry(
                 ref_area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1), mesh_unit=1
@@ -88,17 +99,17 @@ def get_default_fork(params_as_dict):
     return params
 
 
-def validate_flow360_params_model(params_as_dict, unit_system_context):
+def validate_flow360_params_model(params_as_dict, unit_system_name):
     """
     Validate a params dict against the pydantic model
     """
 
-    check_unit_system(unit_system_context)
+    unit_system = init_unit_system(unit_system_name)
 
     # removing _add properties as these are only used in WebUI
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
 
-    params_as_dict["unitSystem"] = unit_system_context.dict()
+    params_as_dict["unitSystem"] = unit_system.dict()
     values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
@@ -132,7 +143,7 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
     # Gather dependency errors stemming from solver conversion if no validation errors exist
     if validation_errors is None:
         try:
-            with unit_system_context:
+            with unit_system:
                 params = Flow360Params.parse_obj(params_as_dict)
             params.to_solver()
         except Flow360ConfigurationError as exc:
@@ -151,3 +162,20 @@ def validate_flow360_params_model(params_as_dict, unit_system_context):
         return validation_errors, validation_warnings
 
     return None, validation_warnings
+
+
+
+
+def handle_case_submit(params_as_dict, unit_system_name):
+    
+    unit_system = init_unit_system(unit_system_name)
+    params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
+
+    with unit_system:
+        params = Flow360Params(**params_as_dict)
+    
+    solver_json = params.to_flow360_json()
+    solver_dict = json.loads(solver_json)
+
+
+    return params, solver_dict

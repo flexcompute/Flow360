@@ -27,7 +27,7 @@ def test_validate_service():
     }
 
     errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_context=fl.SI_unit_system
+        params_as_dict=params_data, unit_system_name="SI"
     )
 
     assert errors is None
@@ -46,7 +46,7 @@ def test_validate_service_missing_fluid_properties():
     }
 
     errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_context=fl.SI_unit_system
+        params_as_dict=params_data, unit_system_name="SI"
     )
 
     assert errors[0]["msg"] == "fluid_properties is required by freestream for unit conversion."
@@ -65,7 +65,7 @@ def test_validate_service_missing_unit_system():
 
     with pytest.raises(ValueError):
         errors, warning = services.validate_flow360_params_model(
-            params_as_dict=params_data, unit_system_context=None
+            params_as_dict=params_data, unit_system_name=None
         )
 
 
@@ -81,7 +81,7 @@ def test_validate_service_incorrect_unit():
     }
 
     errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_context=fl.SI_unit_system
+        params_as_dict=params_data, unit_system_name="SI"
     )
 
     assert errors[0]["msg"] == "arg '1.15315084119231 m' does not match (length)**2"
@@ -99,7 +99,7 @@ def test_validate_service_incorrect_value():
     }
 
     errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_context=fl.SI_unit_system
+        params_as_dict=params_data, unit_system_name="CGS"
     )
 
     assert errors[0]["msg"] == "ensure this value is greater than 0"
@@ -123,7 +123,7 @@ def test_validate_service_should_not_be_called_with_context():
     with fl.CGS_unit_system:
         with pytest.raises(RuntimeError):
             errors, warning = services.validate_flow360_params_model(
-                params_as_dict=params_data, unit_system_context=fl.SI_unit_system
+                params_as_dict=params_data, unit_system_name="Imperial"
             )
 
 
