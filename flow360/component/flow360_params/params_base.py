@@ -595,16 +595,6 @@ class Flow360BaseModel(BaseModel):
 
         return solver_values
 
-    def get_raw_dict(self) -> dict:
-        """
-        get raw dictionary where sub-models are not converted to dictionaries,
-        without comments and _type.
-        """
-        self_copy = dict(self.copy(deep=True))
-        for key in [COMMENTS, TYPE_TAG_STR]:
-            self_copy.pop(key, None)
-        return dict(self_copy)
-
     def to_solver(
         self, params, exclude: List[str] = None, required_by: List[str] = None
     ) -> Flow360BaseModel:

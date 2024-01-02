@@ -11,7 +11,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    NoReturn,
     Optional,
     Tuple,
     Union,
@@ -84,11 +83,10 @@ from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     HeatEquationSolverLegacy,
-    IncompressibleNavierStokesSolver,
     KOmegaSST,
     LinearSolver,
-    NavierStokesSolver,
     NavierStokesSolverLegacy,
+    NavierStokesSolverTypes,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
@@ -129,11 +127,18 @@ from .unit_system import (
 )
 from .validations import (
     _check_aero_acoustics,
+    _check_bet_disks_3d_coefficients_in_polars,
+    _check_bet_disks_alphas_in_order,
+    _check_bet_disks_duplicate_chords_or_twists,
+    _check_bet_disks_number_of_defined_polars,
     _check_cht_solver_settings,
+    _check_consistency_ddes_unsteady,
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
+    _check_incompressible_navier_stokes_solver,
+    _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
@@ -582,7 +587,7 @@ class ZeroFreestream(FreestreamBase):
 
     model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
     Mach: Literal[0] = pd.Field(0, const=True)
-    Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
+    Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
     temperature: PositiveFloat = pd.Field(alias="Temperature")
 
@@ -895,27 +900,6 @@ class BETDisk(Flow360BaseModel):
         alias="sectionalRadiuses", displayed="Sectional radiuses"
     )
 
-    # pylint: disable=no-self-argument
-    @pd.validator("alphas")
-    def check_alphas_in_order(cls, alpha):
-        """
-        check alpha angles are listed in order
-        """
-        if alpha != sorted(alpha):
-            raise ValueError("BET Disk: alphas are not in increasing order")
-        return alpha
-
-    # pylint: disable=no-self-argument
-    @pd.root_validator()
-    def check_number_of_sections(cls, values):
-        """
-        check lengths of sectional radiuses and polars are equal
-        """
-        sectionalRadiuses = values.get("sectional_radiuses")
-        sectionalPolars = values.get("sectional_polars")
-        assert len(sectionalRadiuses) == len(sectionalPolars)
-        return values
-
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
@@ -987,7 +971,7 @@ class Flow360Params(Flow360BaseModel):
     time_stepping: Optional[TimeStepping] = pd.Field(
         alias="timeStepping", default=SteadyTimeStepping(), discriminator="model_type"
     )
-    navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
+    navier_stokes_solver: Optional[NavierStokesSolverTypes] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
@@ -1136,7 +1120,7 @@ class Flow360Params(Flow360BaseModel):
     @pd.root_validator
     def check_consistency_ddes_volumeOutput(cls, values):
         """
-        check consistency between DDES usage and volume output
+        check consistency between delayed detached eddy simulation and volume output
         """
         return _check_consistency_ddes_volume_output(values)
 
@@ -1173,11 +1157,49 @@ class Flow360Params(Flow360BaseModel):
         return _check_equation_eval_frequency_for_unsteady_simulations(values)
 
     # pylint: disable=no-self-argument
+    def check_consistency_ddes_unsteady(cls, values):
+        """
+        check consistency between delayed detached eddy and unsteady simulation
+        """
+        return _check_consistency_ddes_unsteady(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_periodic_boundary_mapping(cls, values):
+        """
+        check periodic boundary mapping
+        """
+        return _check_periodic_boundary_mapping(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
     def check_aero_acoustics(cls, values):
         """
         check aeroacoustics settings
         """
         return _check_aero_acoustics(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_incompressible_navier_stokes_solver(cls, values):
+        """
+        check incompressible Navier-Stokes solver
+        """
+        return _check_incompressible_navier_stokes_solver(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_bet_disks(cls, values):
+        """
+        check BET Disks settings
+        """
+        bet_disks = values.get("bet_disks")
+        if bet_disks is not None:
+            _check_bet_disks_alphas_in_order(bet_disks)
+            _check_bet_disks_duplicate_chords_or_twists(bet_disks)
+            _check_bet_disks_number_of_defined_polars(bet_disks)
+            _check_bet_disks_3d_coefficients_in_polars(bet_disks)
+        return values
 
 
 class Flow360MeshParams(Flow360BaseModel):

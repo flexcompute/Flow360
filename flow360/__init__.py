@@ -45,14 +45,12 @@ from .component.flow360_params.flow360_params import (
     FreestreamFromVelocity,
     Geometry,
     HeatEquationSolver,
-    IncompressibleNavierStokesSolver,
     IsoSurfaceOutput,
     IsoSurfaces,
     KOmegaSST,
     MeshBoundary,
     MonitorOutput,
     Monitors,
-    NavierStokesSolver,
     NoneSolver,
     PorousMedium,
     ProbeMonitor,
@@ -70,6 +68,10 @@ from .component.flow360_params.flow360_params import (
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
     air,
+)
+from .component.flow360_params.solvers import (
+    IncompressibleNavierStokesSolver,
+    NavierStokesSolver,
 )
 from .component.flow360_params.time_stepping import (
     AdaptiveCFL,

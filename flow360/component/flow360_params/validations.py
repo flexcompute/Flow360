@@ -2,6 +2,8 @@
 validation logic
 """
 
+from typing import NoReturn, Optional, Tuple
+
 from ...log import log
 from .boundaries import (
     RotationallyPeriodic,
@@ -12,7 +14,8 @@ from .boundaries import (
     WallFunction,
 )
 from .initial_condition import ExpressionInitialCondition
-from .time_stepping import UnsteadyTimeStepping
+from .solvers import IncompressibleNavierStokesSolver
+from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
 
 
@@ -20,7 +23,7 @@ def _check_tri_quad_boundaries(values):
     boundaries = values.get("boundaries")
     boundary_names = []
     if boundaries is not None:
-        boundary_names = list(boundaries.get_raw_dict().keys())
+        boundary_names = list(boundaries.names())
     for boundary_name in boundary_names:
         if "/tri_" in boundary_name:
             patch = boundary_name[boundary_name.find("/tri_") + len("/tri_") :]
@@ -38,7 +41,8 @@ def _check_duplicate_boundary_name(values):
     boundaries = values.get("boundaries")
     boundary_names = set()
     if boundaries is not None:
-        for patch_name, patch_obj in boundaries.get_raw_dict().items():
+        for patch_name in boundaries.names():
+            patch_obj = boundaries[patch_name]
             if patch_obj.name is not None:
                 boundary_name_curr = patch_obj.name
             else:
@@ -93,14 +97,15 @@ def _check_consistency_ddes_volume_output(values):
     return values
 
 
-def _validate_cht_has_heat_transfer_zone(values):
+def _validate_cht_no_heat_transfer_zone(values):
     heat_equation_solver = values.get("heat_equation_solver")
     if heat_equation_solver is not None:
         raise ValueError("Heat equation solver activated with no zone definition")
 
     boundaries = values.get("boundaries")
     if boundaries is not None:
-        for boundary_prop in boundaries.get_raw_dict().values():
+        for boundary_name in boundaries.names():
+            boundary_prop = boundaries[boundary_name]
             if isinstance(boundary_prop, (SolidIsothermalWall, SolidAdiabaticWall)):
                 raise ValueError("CHT boundary defined with no zone definition")
     for output_name in [
@@ -117,19 +122,27 @@ def _validate_cht_has_heat_transfer_zone(values):
     return values
 
 
-def _validate_cht_no_heat_transfer_zone(values):
+def _validate_cht_has_heat_transfer_zone(values):
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if navier_stokes_solver is not None and isinstance(
+        navier_stokes_solver, IncompressibleNavierStokesSolver
+    ):
+        raise ValueError("Conjugate heat transfer cannnot be used with incompressible flow solver.")
+
     boundaries = values.get("boundaries")
     freestream = values.get("freestream")
     if boundaries is not None and freestream is not None:
-        for boundary_prop in boundaries.get_raw_dict().values():
-            if isinstance(boundary_prop, SolidIsothermalWall) and freestream.temperature == -1:
+        for boundary_name in boundaries.names():
+            boundary_prop = boundaries[boundary_name]
+            if isinstance(boundary_prop, SolidIsothermalWall) and freestream.temperature is None:
                 raise ValueError(
                     "Wall temperature is invalid when no freestream reference is specified."
                 )
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")
     if time_stepping is not None and isinstance(time_stepping, UnsteadyTimeStepping):
-        for volume_prop in volume_zones.get_raw_dict().values():
+        for volume_name in volume_zones.names():
+            volume_prop = volume_zones[volume_name]
             if isinstance(volume_prop, HeatTransferVolumeZone):
                 if volume_prop.heat_capacity is None:
                     raise ValueError(
@@ -144,7 +157,8 @@ def _validate_cht_no_heat_transfer_zone(values):
 
     initial_condition = values.get("initial_condition")
     if isinstance(initial_condition, ExpressionInitialCondition):
-        for volume_prop in volume_zones.get_raw_dict().values():
+        for volume_name in volume_zones.names():
+            volume_prop = volume_zones[volume_name]
             if (
                 isinstance(volume_prop, HeatTransferVolumeZone)
                 and volume_prop.initial_condition is None
@@ -161,46 +175,48 @@ def _check_cht_solver_settings(values):
     volume_zones = values.get("volume_zones")
     if volume_zones is None:
         return values
-    for volume_prop in volume_zones.get_raw_dict().values():
+    for volume_name in volume_zones.names():
+        volume_prop = volume_zones[volume_name]
         if isinstance(volume_prop, HeatTransferVolumeZone):
             has_heat_transfer_zone = True
     if has_heat_transfer_zone is False:
-        values = _validate_cht_has_heat_transfer_zone(values)
-    if has_heat_transfer_zone is True:
         values = _validate_cht_no_heat_transfer_zone(values)
+    if has_heat_transfer_zone is True:
+        values = _validate_cht_has_heat_transfer_zone(values)
 
     return values
 
 
+def _check_eval_frequency_max_pseudo_steps_in_one_solver(
+    max_pseudo_steps, values, solver_name
+) -> NoReturn:
+    solver = values.get(solver_name)
+    solver_eq_eval_freq = None
+    if solver is not None:
+        solver_eq_eval_freq = solver.equation_eval_frequency
+    if (
+        max_pseudo_steps is not None
+        and solver_eq_eval_freq is not None
+        and max_pseudo_steps < solver_eq_eval_freq
+    ):
+        raise ValueError(
+            f"'equation evaluation frequency' in {solver_name} is greater than max_pseudo_steps."
+        )
+
+
 def _check_equation_eval_frequency_for_unsteady_simulations(values):
     time_stepping = values.get("time_stepping")
-    turbulence_model_solver = values.get("turbulence_model_solver")
-    transition_model_solver = values.get("transition_model_solver")
     max_pseudo_steps = None
-    turbulence_eq_eval_freq = None
-    transition_eq_eval_freq = None
     if time_stepping is not None and isinstance(time_stepping, UnsteadyTimeStepping):
         max_pseudo_steps = time_stepping.max_pseudo_steps
-    if turbulence_model_solver is not None:
-        turbulence_eq_eval_freq = turbulence_model_solver.equation_eval_frequency
-    if (
-        max_pseudo_steps is not None
-        and turbulence_eq_eval_freq is not None
-        and max_pseudo_steps < turbulence_eq_eval_freq
-    ):
-        raise ValueError(
-            "'equation evaluation frequency' in turbulence_model_solver is greater than max_pseudo_steps."
-        )
-    if transition_model_solver is not None:
-        transition_eq_eval_freq = transition_model_solver.equation_eval_frequency
-    if (
-        max_pseudo_steps is not None
-        and transition_eq_eval_freq is not None
-        and max_pseudo_steps < transition_eq_eval_freq
-    ):
-        raise ValueError(
-            "'equation evaluation frequency' in transition_model_solver is greater than max_pseudo_steps."
-        )
+
+    _check_eval_frequency_max_pseudo_steps_in_one_solver(
+        max_pseudo_steps, values, "turbulence_model_solver"
+    )
+    _check_eval_frequency_max_pseudo_steps_in_one_solver(
+        max_pseudo_steps, values, "transition_model_solver"
+    )
+
     return values
 
 
@@ -208,17 +224,196 @@ def _check_aero_acoustics(values):
     aeroacoustic_output = values.get("aeroacoustic_output")
     boundaries = values.get("boundaries")
     if aeroacoustic_output is not None and len(aeroacoustic_output.observers) > 0:
-        for boundary_prop in boundaries.get_raw_dict().values():
-            if isinstance(boundary_prop, TranslationallyPeriodic):
+        for boundary_name in boundaries.names():
+            boundary_prop = boundaries[boundary_name]
+            if isinstance(boundary_prop, (TranslationallyPeriodic, RotationallyPeriodic, SlipWall)):
                 log.warning(
-                    "Aeroacoustic solver is inaccurate for simulations with TranslationallyPeriodic boundary condition."
+                    f"Aeroacoustic solver is inaccurate for simulations with {boundary_prop.type} boundary condition."
                 )
-            if isinstance(boundary_prop, RotationallyPeriodic):
-                log.warning(
-                    "Aeroacoustic solver is inaccurate for simulations with RotationallyPeriodic boundary condition."
+    return values
+
+
+def _check_incompressible_navier_stokes_solver(values):
+    return values
+
+
+def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoReturn:
+    paired_patch_name = boundary_obj.paired_patch_name
+    if paired_patch_name is None:
+        return
+    if paired_patch_name == boundary_key:
+        raise ValueError(
+            f"{boundary_key}'s paired_patch_name should not be equal to the name of itself."
+        )
+    if paired_patch_name not in boundaries.names():
+        raise ValueError(f"{boundary_key}'s paired_patch_name does not exist in boundaries.")
+    paired_patch_obj = boundaries[paired_patch_name]
+    if boundary_obj.type != paired_patch_obj.type:
+        raise ValueError(
+            f"{boundary_key} and its paired boundary {paired_patch_name} \
+            do not have the same type of boundary condition."
+        )
+    if isinstance(boundary_obj, TranslationallyPeriodic):
+        if (
+            paired_patch_obj.paired_patch_name is not None
+            or paired_patch_obj.translation_vector is not None
+        ):
+            raise ValueError(
+                f"Flow360 doesn't allow periodic pairing information of {boundary_key} \
+                and {paired_patch_name} specified for both patches."
+            )
+    elif isinstance(boundary_obj, RotationallyPeriodic):
+        if (
+            paired_patch_obj.paired_patch_name is not None
+            or paired_patch_obj.axis_of_rotation is not None
+            or paired_patch_obj.theta_radians is not None
+        ):
+            raise ValueError(
+                f"Flow360 doesn't allow periodic pairing information of {boundary_key} \
+                and {paired_patch_name} specified for both patches."
+            )
+
+
+def _check_periodic_boundary_mapping(values):
+    boundaries = values.get("boundaries")
+    if boundaries is None:
+        return values
+    for boundary_key in boundaries.names():
+        boundary_obj = boundaries[boundary_key]
+        if isinstance(boundary_obj, (TranslationallyPeriodic, RotationallyPeriodic)):
+            _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj)
+
+    periodic_boundary_keys = set()
+    for boundary_key in boundaries.names():
+        boundary_obj = boundaries[boundary_key]
+        if isinstance(boundary_obj, (TranslationallyPeriodic, RotationallyPeriodic)):
+            paired_patch_name = boundary_obj.paired_patch_name
+            if paired_patch_name is not None:
+                periodic_boundary_keys.add(boundary_key)
+                periodic_boundary_keys.add(paired_patch_name)
+
+    for boundary_key in boundaries.names():
+        boundary_obj = boundaries[boundary_key]
+        if (
+            isinstance(boundary_obj, (TranslationallyPeriodic, RotationallyPeriodic))
+            and boundary_key not in periodic_boundary_keys
+        ):
+            raise ValueError(f"Periodic pair for patch {boundary_key} is not specified.")
+
+    return values
+
+
+def _check_bet_disks_alphas_in_order(bet_disks) -> NoReturn:
+    for index, disk in enumerate(bet_disks):
+        alphas = disk.alphas
+        if alphas != sorted(alphas):
+            raise ValueError(f"BET Disk {index}: alphas are not in increasing order.")
+
+
+def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional[float]]:
+    existing_radius = set()
+    for item in radial_list:
+        radius = item.radius
+        if radius not in existing_radius:
+            existing_radius.add(radius)
+        else:
+            return True, radius
+    return False, None
+
+
+def _check_bet_disks_duplicate_chords_or_twists(bet_disks) -> NoReturn:
+    for index, disk in enumerate(bet_disks):
+        chords = disk.chords
+        duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(chords)
+        if has_duplicate:
+            raise ValueError(
+                f"BET Disk {index} has duplicated radius at {duplicated_radius} in chords."
+            )
+        twists = disk.twists
+        duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(twists)
+        if has_duplicate:
+            raise ValueError(
+                f"BET Disk {index} has duplicated radius at {duplicated_radius} in twists."
+            )
+
+
+def _check_bet_disks_number_of_defined_polars(bet_disks) -> NoReturn:
+    for index, disk in enumerate(bet_disks):
+        sectional_radiuses = disk.sectional_radiuses
+        sectional_polars = disk.sectional_polars
+        if len(sectional_radiuses) != len(sectional_polars):
+            raise ValueError(
+                f"In BET Disk {index}, length of sectional_radiuses ({len(sectional_radiuses)})\
+                is not the same as that of sectional_polars ({len(sectional_polars)})."
+            )
+
+
+# pylint: disable=invalid-name
+# pylint: disable=too-many-arguments
+def _check_3d_coeffs_in_BET_polars(
+    coeffs_3d, num_Mach, num_Re, num_alphas, bet_index, section_index, coeffs_name
+) -> NoReturn:
+    if len(coeffs_3d) != num_Mach:
+        raise ValueError(
+            f"BET Disk {bet_index} (cross section: {section_index}): \
+            number of MachNumbers = {num_Mach}, but first dimension of {coeffs_name} is {len(coeffs_3d)}."
+        )
+    for index_Mach, coeffs_2d in enumerate(coeffs_3d):
+        if len(coeffs_2d) != num_Re:
+            raise ValueError(
+                f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}): \
+                number of Reynolds = {num_Re}, but the second dimension of {coeffs_name} is {len(coeffs_2d)}."
+            )
+        for index_Re, coeffs_1d in enumerate(coeffs_2d):
+            if len(coeffs_1d) != num_alphas:
+                raise ValueError(
+                    f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}, \
+                    Reynolds index (0-based) {index_Re}): number of Alphas = {num_alphas}, \
+                    but the third dimension of {coeffs_name} is {len(coeffs_1d)}."
                 )
-            if isinstance(boundary_prop, SlipWall):
-                log.warning(
-                    "Aeroacoustic solver is inaccurate for simulations with SlipWall boundary condition."
+
+
+def _check_bet_disks_3d_coefficients_in_polars(bet_disks) -> NoReturn:
+    for bet_index, disk in enumerate(bet_disks):
+        mach_numbers = disk.mach_numbers
+        reynolds_numbers = disk.reynolds_numbers
+        alphas = disk.alphas
+        num_Mach = len(mach_numbers)
+        num_Re = len(reynolds_numbers)
+        num_alphas = len(alphas)
+        polars_all_sections = disk.sectional_polars
+
+        for section_index, polars_one_section in enumerate(polars_all_sections):
+            lift_coeffs = polars_one_section.lift_coeffs
+            drag_coeffs = polars_one_section.drag_coeffs
+            if lift_coeffs is not None:
+                _check_3d_coeffs_in_BET_polars(
+                    lift_coeffs,
+                    num_Mach,
+                    num_Re,
+                    num_alphas,
+                    bet_index,
+                    section_index,
+                    "lift_coeffs",
                 )
+            if drag_coeffs is not None:
+                _check_3d_coeffs_in_BET_polars(
+                    drag_coeffs,
+                    num_Mach,
+                    num_Re,
+                    num_alphas,
+                    bet_index,
+                    section_index,
+                    "drag_coeffs",
+                )
+
+
+def _check_consistency_ddes_unsteady(values):
+    time_stepping = values.get("time_stepping")
+    turbulence_model_solver = values.get("turbulence_model_solver")
+    run_ddes = False
+    if turbulence_model_solver is not None:
+        run_ddes = turbulence_model_solver.DDES
+    if run_ddes and isinstance(time_stepping, SteadyTimeStepping):
+        raise ValueError("Running DDES with steady simulation is invalid.")
     return values
