@@ -24,10 +24,10 @@ from ..exceptions import (
 from ..log import log
 from ..solver_version import Flow360Version
 from .case import Case, CaseDraft
+from .flow360_params.boundaries import NoSlipWall
 from .flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
-    NoSlipWall,
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
