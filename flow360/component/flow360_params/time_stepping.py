@@ -28,11 +28,10 @@ class RampCFL(Flow360BaseModel):
     Ramp CFL for time stepping component
     """
 
-    type: str = pd.Field("ramp", const=True)
+    type: Literal["ramp"] = pd.Field("ramp", const=True)
     initial: Optional[PositiveFloat] = pd.Field()
     final: Optional[PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
-    randomizer: Optional[Dict] = pd.Field()
 
     @classmethod
     def default_steady(cls):
@@ -54,7 +53,7 @@ class AdaptiveCFL(Flow360BaseModel):
     Adaptive CFL for time stepping component
     """
 
-    type: str = pd.Field("adaptive", const=True)
+    type: Literal["adaptive"] = pd.Field("adaptive", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
     max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
@@ -89,6 +88,7 @@ class SteadyTimeStepping(BaseTimeStepping):
     Steady time stepping component
     """
 
+    model_type: Literal["Steady"] = pd.Field("Steady", alias="modelType", const=True)
     physical_steps: Literal[1] = pd.Field(1, alias="physicalSteps", const=True)
     time_step_size: Literal["inf"] = pd.Field("inf", alias="timeStepSize", const=True)
 
@@ -98,6 +98,7 @@ class UnsteadyTimeStepping(BaseTimeStepping):
     Unsteady time stepping component
     """
 
+    model_type: Literal["Unsteady"] = pd.Field("Unsteady", alias="modelType", const=True)
     physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     time_step_size: Optional[TimeType.Positive] = pd.Field(alias="timeStepSize")
 

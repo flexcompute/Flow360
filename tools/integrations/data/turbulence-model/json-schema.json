@@ -1,0 +1,291 @@
+{
+  "title": "Turbulence model solvers",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "Spalart allmaras",
+      "type": "object",
+      "properties": {
+        "absoluteTolerance": {
+          "title": "Absolute tolerance",
+          "default": 1e-08,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relative tolerance",
+          "default": 0,
+          "type": "number"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "SpalartAllmaras",
+          "const": "SpalartAllmaras",
+          "type": "string"
+        },
+        "linearSolver": {
+          "title": "Linear solver",
+          "default": {
+            "max_iterations": 20,
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": null
+          },
+          "type": "object",
+          "properties": {
+            "maxIterations": {
+              "title": "Max iterations",
+              "default": 50,
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            "absoluteTolerance": {
+              "title": "Absolute tolerance",
+              "default": 1e-10,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "relativeTolerance": {
+              "title": "Relative tolerance",
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force jac update physical steps",
+          "default": 0,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "default": 2,
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
+        },
+        "DDES": {
+          "title": "DDES",
+          "default": false,
+          "type": "boolean"
+        },
+        "gridSizeForLES": {
+          "title": "Grid size for les",
+          "default": "maxEdgeLength",
+          "enum": [
+            "maxEdgeLength",
+            "meanEdgeLength"
+          ],
+          "type": "string"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "default": false,
+          "type": "boolean"
+        },
+        "reconstructionGradientLimiter": {
+          "title": "Reconstruction gradient limiter",
+          "default": 1.0,
+          "minimum": 0,
+          "maximum": 2,
+          "type": "number"
+        },
+        "modelConstants": {
+          "title": "Model constants",
+          "type": "object",
+          "properties": {
+            "modelType": {
+              "title": "Model type",
+              "default": "SpalartAllmarasConsts",
+              "const": "SpalartAllmarasConsts",
+              "type": "string"
+            },
+            "C_DES": {
+              "title": "C_des",
+              "default": 0.72,
+              "type": "number"
+            },
+            "C_d": {
+              "title": "C_d",
+              "default": 8.0,
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "rotationCorrection": {
+          "title": "Rotation correction",
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "K omega sst",
+      "type": "object",
+      "properties": {
+        "absoluteTolerance": {
+          "title": "Absolute tolerance",
+          "default": 1e-08,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "relativeTolerance": {
+          "title": "Relative tolerance",
+          "default": 0,
+          "type": "number"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "kOmegaSST",
+          "const": "kOmegaSST",
+          "type": "string"
+        },
+        "linearSolver": {
+          "title": "Linear solver",
+          "default": {
+            "max_iterations": 20,
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": null
+          },
+          "type": "object",
+          "properties": {
+            "maxIterations": {
+              "title": "Max iterations",
+              "default": 50,
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            "absoluteTolerance": {
+              "title": "Absolute tolerance",
+              "default": 1e-10,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "relativeTolerance": {
+              "title": "Relative tolerance",
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force jac update physical steps",
+          "default": 0,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "default": 2,
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
+        },
+        "DDES": {
+          "title": "DDES",
+          "default": false,
+          "type": "boolean"
+        },
+        "gridSizeForLES": {
+          "title": "Grid size for les",
+          "default": "maxEdgeLength",
+          "enum": [
+            "maxEdgeLength",
+            "meanEdgeLength"
+          ],
+          "type": "string"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "default": false,
+          "type": "boolean"
+        },
+        "reconstructionGradientLimiter": {
+          "title": "Reconstruction gradient limiter",
+          "default": 1.0,
+          "minimum": 0,
+          "maximum": 2,
+          "type": "number"
+        },
+        "modelConstants": {
+          "title": "Model constants",
+          "type": "object",
+          "properties": {
+            "modelType": {
+              "title": "Model type",
+              "default": "kOmegaSSTConsts",
+              "const": " kOmegaSSTConsts",
+              "type": "string"
+            },
+            "C_DES1": {
+              "title": "C_des1",
+              "default": 0.78,
+              "type": "number"
+            },
+            "C_DES2": {
+              "title": "C_des2",
+              "default": 0.61,
+              "type": "number"
+            },
+            "C_d1": {
+              "title": "C_d1",
+              "default": 20.0,
+              "type": "number"
+            },
+            "C_d2": {
+              "title": "C_d2",
+              "default": 3.0,
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "None solver",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "None",
+          "const": "None",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

@@ -33,17 +33,19 @@
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
-    "physicalSteps": 20,
-    "timeStepSize": 408352.8069698554,
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
       "max": 10000.0,
       "maxRelativeChange": 1.0,
       "convergenceLimitingFactor": 0.25
-    }
+    },
+    "modelType": "Unsteady",
+    "physicalSteps": 20,
+    "timeStepSize": 408352.8069698554
   },
   "freestream": {
+    "modelType": "FromMach",
     "alphaAngle": 3.06,
     "betaAngle": 0.0,
     "Mach": 0.8404497144189705,
@@ -67,7 +69,7 @@
         ]
       }
     },
-    "zone2": {
+    "zone1": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
         "omegaRadians": 3.0773317581937964e-06,
@@ -83,7 +85,7 @@
         ]
       }
     },
-    "zone1": {
+    "zone2": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
         "omegaRadians": 3.0773317581937964e-06,

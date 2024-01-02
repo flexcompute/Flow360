@@ -2,7 +2,7 @@
 Boundaries parameters
 """
 from abc import ABCMeta
-from typing import Optional, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from pydantic import StrictStr
@@ -37,27 +37,27 @@ class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
 class NoSlipWall(Boundary):
     """No slip wall boundary"""
 
-    type = pd.Field("NoSlipWall", const=True)
+    type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
 
-    type = pd.Field("SlipWall", const=True)
+    type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
 
 class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
     """Freestream boundary"""
 
-    type = pd.Field("Freestream", const=True)
+    type: Literal["Freestream"] = pd.Field("Freestream", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
-    type = pd.Field("IsothermalWall", const=True)
+    type: Literal["IsothermalWall"] = pd.Field("IsothermalWall", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
@@ -83,7 +83,7 @@ class HeatFluxWall(Boundary):
     >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
     """
 
-    type = pd.Field("HeatFluxWall", const=True)
+    type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux")
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
@@ -91,21 +91,21 @@ class HeatFluxWall(Boundary):
 class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
     """SubsonicOutflowPressure boundary"""
 
-    type = pd.Field("SubsonicOutflowPressure", const=True)
+    type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
     static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
 class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
     """SubsonicOutflowMach boundary"""
 
-    type = pd.Field("SubsonicOutflowMach", const=True)
+    type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
     Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
 class SubsonicInflow(BoundaryWithTurbulenceQuantities):
     """SubsonicInflow boundary"""
 
-    type = pd.Field("SubsonicInflow", const=True)
+    type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
     total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
     total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
@@ -138,10 +138,10 @@ class SupersonicInflow(Boundary):
 
     Example
     -------
-    >>> supersonicInflow = SupersonifInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
+    >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
     """
 
-    type = pd.Field("SupersonicInflow", const=True)
+    type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
     total_temperature_ratio: PositiveFloat = pd.Field(
         alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
     )
@@ -159,27 +159,27 @@ class SupersonicInflow(Boundary):
 class SlidingInterfaceBoundary(Boundary):
     """:class: `SlidingInterface` boundary"""
 
-    type = pd.Field("SlidingInterface", const=True)
+    type: Literal["SlidingInterface"] = pd.Field("SlidingInterface", const=True)
 
 
 class WallFunction(Boundary):
     """:class: `WallFunction` boundary"""
 
-    type = pd.Field("WallFunction", const=True)
+    type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
 
 class MassInflow(BoundaryWithTurbulenceQuantities):
-    """MassInflow boundary"""
+    """:class: `MassInflow` boundary"""
 
-    type = pd.Field("MassInflow", const=True)
+    type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class MassOutflow(BoundaryWithTurbulenceQuantities):
-    """MassOutflow boundary"""
+    """:class: `MassOutflow` boundary"""
 
-    type = pd.Field("MassOutflow", const=True)
+    type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
@@ -187,28 +187,28 @@ class MassOutflow(BoundaryWithTurbulenceQuantities):
 class SolidIsothermalWall(Boundary):
     """:class: `SolidIsothermalWall` boundary"""
 
-    type = pd.Field("SolidIsothermalWall", const=True)
+    type: Literal["SolidIsothermalWall"] = pd.Field("SolidIsothermalWall", const=True)
     temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
 
 
 class SolidAdiabaticWall(Boundary):
     """:class: `SolidAdiabaticWall` boundary"""
 
-    type = pd.Field("SolidAdiabaticWall", const=True)
+    type: Literal["SolidAdiabaticWall"] = pd.Field("SolidAdiabaticWall", const=True)
 
 
 class TranslationallyPeriodic(Boundary):
     """:class: `TranslationallyPeriodic` boundary"""
 
-    type = pd.Field("TranslationallyPeriodic", const=True)
+    type: Literal["TranslationallyPeriodic"] = pd.Field("TranslationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
-    translation_vector: Optional[Vector] = pd.Field(alias="pairedPatchName")
+    translation_vector: Optional[Vector] = pd.Field(alias="translationVector")
 
 
 class RotationallyPeriodic(Boundary):
     """:class: `RotationallyPeriodic` boundary"""
 
-    type = pd.Field("RotationallyPeriodic", const=True)
+    type: Literal["RotationallyPeriodic"] = pd.Field("RotationallyPeriodic", const=True)
     paired_patch_name: Optional[str] = pd.Field(alias="pairedPatchName")
     axis_of_rotation: Optional[Vector] = pd.Field(alias="axisOfRotation")
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")

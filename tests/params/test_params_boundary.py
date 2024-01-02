@@ -118,6 +118,24 @@ def test_case_boundary():
             """
         )
 
+        param = Flow360Params.parse_raw(
+            """
+            {
+                "boundaries": {
+                    "fluid/fuselage": {
+                        "type": "SlipWall"
+                    },
+                    "fluid/leftWing": {
+                        "type": "NoSlipWall"
+                    },
+                    "fluid/rightWing": {
+                        "type": "NoSlipWall"
+                    } 
+                }
+            }
+            """
+        )
+
         assert param
 
         boundaries = fl.Boundaries(

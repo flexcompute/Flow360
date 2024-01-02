@@ -215,7 +215,8 @@ class DimensionedType(ValidatedType):
                 str(_flow360_system[cls.dim_name]),
             ]
             units += [str(unit) for unit in extra_units[cls.dim_name]]
-            field_schema["properties"]["units"]["enum"] = list(dict.fromkeys(units))
+            units = list(dict.fromkeys(units))
+            field_schema["properties"]["units"]["enum"] = units
 
     class _Constrained:
         """
@@ -241,7 +242,7 @@ class DimensionedType(ValidatedType):
                 return dimensioned_value
 
             def __modify_schema__(con_cls, field_schema, field):
-                DimensionedType.__modify_schema__(field_schema, field)
+                dim_type.__modify_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
                 if constraints.ge is not None:
                     field_schema["properties"]["value"]["minimum"] = constraints.ge
@@ -313,12 +314,12 @@ class DimensionedType(ValidatedType):
             """Get a dynamically created metaclass representing the vector"""
 
             def __modify_schema__(field_schema, field):
-                DimensionedType.__modify_schema__(field_schema, field)
+                dim_type.__modify_schema__(field_schema, field)
                 field_schema["properties"]["value"]["type"] = "array"
                 field_schema["properties"]["value"]["items"] = {}
                 field_schema["properties"]["value"]["items"]["type"] = "number"
-                field_schema["properties"]["value"]["items"]["minItems"] = 3
-                field_schema["properties"]["value"]["items"]["maxItems"] = 3
+                field_schema["properties"]["value"]["minItems"] = 3
+                field_schema["properties"]["value"]["maxItems"] = 3
 
             def validate(vec_cls, value):
                 """additional validator for value"""

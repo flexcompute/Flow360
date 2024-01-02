@@ -4,7 +4,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -87,7 +87,7 @@ class PressureCorrectionSolver(Flow360BaseModel):
     """:class:`PressureCorrectionSolver` class"""
 
     randomizer: LinearIterationsRandomizer = pd.Field()
-    linear_solver: LinearSolver = pd.Field(alias="linearSolver", default=LinearSolver())
+    linear_solver: LinearSolver = pd.Field(LinearSolver(), alias="linearSolver")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -178,13 +178,11 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
-    @classmethod
-    def _get_field_order(cls) -> List[str]:
-        return ["*", "linearSolver"]
-
-    @classmethod
-    def _get_optional_objects(cls) -> List[str]:
-        return ["linearSolver"]
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
@@ -229,6 +227,9 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
 class TurbulenceModelConstantsSA(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSA` class"""
 
+    model_type: Literal["SpalartAllmarasConsts"] = pd.Field(
+        "SpalartAllmarasConsts", alias="modelType", const=True
+    )
     C_DES: Optional[float] = pd.Field(0.72)
     C_d: Optional[float] = pd.Field(8.0)
 
@@ -236,6 +237,9 @@ class TurbulenceModelConstantsSA(Flow360BaseModel):
 class TurbulenceModelConstantsSST(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSST` class"""
 
+    model_type: Literal[" kOmegaSSTConsts"] = pd.Field(
+        "kOmegaSSTConsts", alias="modelType", const=True
+    )
     C_DES1: Optional[float] = pd.Field(0.78)
     C_DES2: Optional[float] = pd.Field(0.61)
     C_d1: Optional[float] = pd.Field(20.0)
@@ -320,7 +324,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         0, alias="maxForceJacUpdatePhysicalSteps"
     )
     order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(2, alias="orderOfAccuracy")
-    DDES: Optional[bool] = pd.Field(False, alias="DDES")
+    DDES: Optional[bool] = pd.Field(False, alias="DDES", displayed="DDES")
     grid_size_for_LES: Optional[Literal["maxEdgeLength", "meanEdgeLength"]] = pd.Field(
         "maxEdgeLength", alias="gridSizeForLES"
     )
@@ -331,6 +335,12 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         1.0, alias="reconstructionGradientLimiter"
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -392,7 +402,7 @@ class HeatEquationSolver(Flow360BaseModel):
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
+    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -400,6 +410,12 @@ class HeatEquationSolver(Flow360BaseModel):
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
             DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class TransitionModelSolver(GenericFlowSolverSettings):
@@ -423,7 +439,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     model_type: Optional[Literal["AmplificationFactorTransport"]] = pd.Field(
         "AmplificationFactorTransport", alias="modelType", const=True
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(alias="linearSolver", default=LinearSolver())
+    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
@@ -434,6 +450,12 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="turbulenceIntensityPercent"
     )
     N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 # Legacy models for Flow360 updater, do not expose
@@ -497,7 +519,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         }
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["max_iterations"] = self.linear_iterations
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
         return model
 
@@ -533,7 +555,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         try_set(model, "rotationCorrection", self.rotation_correction)
 
         if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["max_iterations"] = self.linear_iterations
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
         return model
 

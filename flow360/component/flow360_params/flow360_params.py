@@ -96,7 +96,12 @@ from .solvers import (
     TurbulenceModelSolverLegacy,
     TurbulenceModelSolverTypes,
 )
-from .time_stepping import SteadyTimeStepping, TimeStepping, UnsteadyTimeStepping
+from .time_stepping import (
+    BaseTimeStepping,
+    SteadyTimeStepping,
+    TimeStepping,
+    UnsteadyTimeStepping,
+)
 from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import (
     AngularVelocityType,
@@ -240,6 +245,10 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"center": "vector3", "axisThrust": "vector3"}
+
 
 class SlidingInterface(Flow360BaseModel):
     """:class:`SlidingInterface` class for setting up sliding interface
@@ -327,6 +336,10 @@ class SlidingInterface(Flow360BaseModel):
             "is_dynamic",
         ]
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {"centerOfRotation": "vector3"}
+
 
 class MeshSlidingInterface(Flow360BaseModel):
     """
@@ -405,6 +418,16 @@ class Boundaries(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "additionalProperties/velocity/value": "vector3",
+            "additionalProperties/Velocity/value": "vector3",
+            "additionalProperties/velocityDirection/value": "vector3",
+            "additionalProperties/translationVector": "vector3",
+            "additionalProperties/axisOfRotation": "vector3",
+        }
+
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
     v: VolumeZoneType
@@ -455,6 +478,13 @@ class VolumeZones(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
+            "additionalProperties/referenceFrame/axisOfRotation": "vector3",
+        }
+
 
 class Geometry(Flow360BaseModel):
     """
@@ -483,6 +513,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     :class: Freestream component
     """
 
+    model_type: str
     alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0)
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
@@ -501,6 +532,7 @@ class FreestreamFromMach(FreestreamBase):
     :class: Freestream component using Mach numbers
     """
 
+    model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -519,6 +551,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     :class: Freestream component using Mach and Reynolds numbers
     """
 
+    model_type: Literal["FromMachReynolds"] = pd.Field(
+        "FromMachReynolds", alias="modelType", const=True
+    )
     Mach: PositiveFloat = pd.Field()
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     Reynolds: PositiveFloat = pd.Field()
@@ -537,6 +572,7 @@ class ZeroFreestream(FreestreamBase):
     :class: Zero velocity freestream component
     """
 
+    model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
     Mach: Literal[0] = pd.Field(0, const=True)
     Mach_ref: PositiveFloat = pd.Field(alias="MachRef")
     mu_ref: PositiveFloat = pd.Field(alias="muRef")
@@ -555,6 +591,7 @@ class FreestreamFromVelocity(FreestreamBase):
     :class: Freestream component using dimensioned velocity
     """
 
+    model_type: Literal["FromVelocity"] = pd.Field("FromVelocity", alias="modelType", const=True)
     velocity: VelocityType.Positive = pd.Field()
     velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef")
 
@@ -583,6 +620,9 @@ class FreestreamFromVelocity(FreestreamBase):
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
 
+        if solver_values.get("model_type") is not None:
+            solver_values.pop("model_type")
+
         if mach_ref is not None:
             mach_ref = mach_ref.v.item()
 
@@ -596,6 +636,7 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
     :class: Zero velocity freestream component using dimensioned velocity
     """
 
+    model_type: Literal["ZeroVelocity"] = pd.Field("ZeroVelocity", alias="modelType", const=True)
     velocity: Literal[0] = pd.Field(0, const=True)
     velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef")
 
@@ -622,6 +663,9 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         mach_ref = solver_values.pop("velocity_ref", None)
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
+
+        if solver_values.get("model_type") is not None:
+            solver_values.pop("model_type")
 
         return ZeroFreestream(
             Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
@@ -678,6 +722,7 @@ class AirPressureTemperature(Flow360BaseModel):
 
     """
 
+    model_type: str = pd.Field("AirPressure", alias="modelType", const=True)
     pressure: PressureType = pd.Field()
     temperature: TemperatureType = pd.Field()
 
@@ -710,6 +755,7 @@ class AirDensityTemperature(Flow360BaseModel):
 
     """
 
+    model_type: str = pd.Field("AirDensity", alias="modelType", const=True)
     temperature: TemperatureType = pd.Field()
     density: DensityType = pd.Field()
 
@@ -765,12 +811,20 @@ class BETDiskTwist(Flow360BaseModel):
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk twist"
+
 
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class"""
 
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk chord"
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -782,6 +836,10 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
         alias="dragCoeffs", displayed="Drag coefficients"
     )
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        displayed = "BET disk sectional polar"
 
 
 class BETDisk(Flow360BaseModel):
@@ -820,8 +878,8 @@ class BETDisk(Flow360BaseModel):
         alias="ReynoldsNumbers", displayed="Reynolds numbers"
     )
     alphas: List[float] = pd.Field()
-    twists: List[BETDiskTwist] = pd.Field()
-    chords: List[BETDiskChord] = pd.Field()
+    twists: List[BETDiskTwist] = pd.Field(displayed="BET disk twists")
+    chords: List[BETDiskChord] = pd.Field(displayed="BET disk chords")
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         alias="sectionalPolars", displayed="Sectional polars"
     )
@@ -850,6 +908,15 @@ class BETDisk(Flow360BaseModel):
         assert len(sectionalRadiuses) == len(sectionalPolars)
         return values
 
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "centerOfRotation": "vector3",
+            "axisOfRotation": "vector3",
+            "initialBladeDirection": "vector3",
+        }
+        displayed = "BET disk"
+
 
 class PorousMediumVolumeZone(Flow360BaseModel):
     """:class:`PorousMediumVolumeZone` class"""
@@ -867,6 +934,17 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: Vector = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
+
+    # pylint: disable=protected-access, too-few-public-methods
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "DarcyCoefficient": "vector3",
+            "ForchheimerCoefficient": "vector3",
+            "volumeZone/center": "vector3",
+            "volumeZone/lengths": "vector3",
+            "volumeZone/axes/items": "vector3",
+            "volumeZone/windowingLengths": "vector3",
+        }
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -899,7 +977,7 @@ class Flow360Params(Flow360BaseModel):
         alias="initialCondition", discriminator="type"
     )
     time_stepping: Optional[TimeStepping] = pd.Field(
-        alias="timeStepping", default=SteadyTimeStepping()
+        alias="timeStepping", default=SteadyTimeStepping(), discriminator="model_type"
     )
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
@@ -909,7 +987,7 @@ class Flow360Params(Flow360BaseModel):
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[FreestreamTypes] = pd.Field()
+    freestream: Optional[FreestreamTypes] = pd.Field(discriminator="model_type")
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
@@ -1215,10 +1293,10 @@ class FreestreamLegacy(LegacyModel):
             """Helper class used to create
             the correct freestream from dict data"""
 
-            freestream: FreestreamTypes = pd.Field()
+            field: FreestreamTypes = pd.Field(discriminator="model_type")
 
         model = {
-            "freestream": {
+            "field": {
                 "alphaAngle": self.alpha,
                 "betaAngle": self.beta,
                 "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
@@ -1230,17 +1308,22 @@ class FreestreamLegacy(LegacyModel):
             if self.comments.get("freestreamMeterPerSecond") is not None:
                 # pylint: disable=no-member
                 velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
-                try_set(model["freestream"], "velocity", velocity)
+                try_set(model["field"], "velocity", velocity)
             elif (
                 self.comments.get("speedOfSoundMeterPerSecond") is not None
                 and self.Mach is not None
             ):
                 # pylint: disable=no-member
                 velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
-                try_set(model["freestream"], "velocity", velocity)
+                try_set(model["field"], "velocity", velocity)
 
-            if model["freestream"].get("velocity"):
-                # Set velocity_ref
+            # Set velocity_ref
+            if model["field"].get("velocity"):
+                if model["field"].get("velocity") == 0:
+                    model["field"]["modelType"] = "ZeroVelocity"
+                else:
+                    model["field"]["modelType"] = "FromVelocity"
+
                 if (
                     self.comments.get("speedOfSoundMeterPerSecond") is not None
                     and self.Mach_Ref is not None
@@ -1252,17 +1335,24 @@ class FreestreamLegacy(LegacyModel):
                         * u.m
                         / u.s
                     )
-                    try_set(model["freestream"], "velocityRef", velocity_ref)
+                    try_set(model["field"], "velocityRef", velocity_ref)
                 else:
-                    model["freestream"]["velocityRef"] = None
+                    model["field"]["velocityRef"] = None
         else:
-            try_set(model["freestream"], "Reynolds", self.Reynolds)
-            try_set(model["freestream"], "muRef", self.mu_ref)
-            try_set(model["freestream"], "temperature", self.temperature)
-            try_set(model["freestream"], "Mach", self.Mach)
-            try_set(model["freestream"], "MachRef", self.Mach_Ref)
+            try_set(model["field"], "Reynolds", self.Reynolds)
+            try_set(model["field"], "muRef", self.mu_ref)
+            try_set(model["field"], "temperature", self.temperature)
+            try_set(model["field"], "Mach", self.Mach)
+            try_set(model["field"], "MachRef", self.Mach_Ref)
 
-        return _FreestreamTempModel.parse_obj(model).freestream
+            if self.Mach is not None and self.Mach == 0:
+                model["field"]["modelType"] = "ZeroMach"
+            elif self.Reynolds is not None:
+                model["field"]["modelType"] = "FromMachReynolds"
+            else:
+                model["field"]["modelType"] = "FromMach"
+
+        return _FreestreamTempModel.parse_obj(model).field
 
     def extract_fluid_properties(self) -> Optional[Flow360BaseModel]:
         """Extract fluid properties from the freestream comments"""
@@ -1271,46 +1361,60 @@ class FreestreamLegacy(LegacyModel):
             """Helper class used to create
             the correct fluid properties from dict data"""
 
-            fluid: FluidPropertyTypes = pd.Field()
+            field: FluidPropertyTypes = pd.Field()
 
-        model = {"fluid": {}}
+        model = {"field": {}}
 
         # pylint: disable=no-member
-        try_set(model["fluid"], "temperature", self.temperature * u.K)
+        try_set(model["field"], "temperature", self.temperature * u.K)
 
         if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
             # pylint: disable=no-member
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
-            try_set(model["fluid"], "density", density)
+            try_set(model["field"], "density", density)
         else:
             return None
 
-        return _FluidPropertiesTempModel.parse_obj(model).fluid
+        return _FluidPropertiesTempModel.parse_obj(model).field
 
 
-class TimeSteppingLegacy(UnsteadyTimeStepping, LegacyModel):
+class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
     """:class: `TimeSteppingLegacy` class"""
 
+    physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
         alias="timeStepSize", default="inf"
     )
 
     def update_model(self) -> Flow360BaseModel:
+        class _TimeSteppingTempModel(pd.BaseModel):
+            """Helper class used to create
+            the correct time stepping from dict data"""
+
+            field: TimeStepping = pd.Field(discriminator="model_type")
+
         model = {
-            "CFL": self.CFL,
-            "physicalSteps": self.physical_steps,
-            "maxPseudoSteps": self.max_pseudo_steps,
-            "timeStepSize": self.time_step_size,
+            "field": {
+                "CFL": self.CFL,
+                "physicalSteps": self.physical_steps,
+                "maxPseudoSteps": self.max_pseudo_steps,
+                "timeStepSize": self.time_step_size,
+            }
         }
 
         if (
-            model["timeStepSize"] != "inf"
+            model["field"]["timeStepSize"] != "inf"
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             try_add_unit(model, "timeStepSize", step_unit)
 
-        return TimeStepping.parse_obj(model)
+        if model["field"]["timeStepSize"] == "inf" and model["field"]["physicalSteps"] == 1:
+            model["field"]["modelType"] = "Steady"
+        else:
+            model["field"]["modelType"] = "Unsteady"
+
+        return _TimeSteppingTempModel.parse_obj(model).field
 
 
 class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
@@ -1367,17 +1471,25 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
+    # Needs decoupling from current model
     boundaries: Optional[Boundaries] = pd.Field()
+    # Needs decoupling from current model
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
+    # Needs decoupling from current model
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
+    # Needs decoupling from current model
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    # Needs decoupling from current model
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
         alias="userDefinedDynamics"
     )
+    # Needs decoupling from current model
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
+    # Needs decoupling from current model
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
+    # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     def _has_key(self, target, model_dict: dict):
