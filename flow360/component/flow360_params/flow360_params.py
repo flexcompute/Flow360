@@ -365,7 +365,7 @@ class MeshSlidingInterface(Flow360BaseModel):
 
 
 class _GenericBoundaryWrapper(Flow360BaseModel):
-    v: BoundaryType
+    v: BoundaryType = pd.Field(discriminator="type")
 
 
 class Boundaries(Flow360SortableBaseModel):
