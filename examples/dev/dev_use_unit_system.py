@@ -7,6 +7,7 @@ import pydantic as pd
 import unyt
 
 import flow360 as fl
+from flow360 import Geometry
 from flow360 import units as u
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
@@ -131,7 +132,6 @@ with fl.flow360_unit_system:
 
     value = data.m - 4 * u.flow360_mass_unit
 
-
 with u.UnitSystem(base_system=BaseSystemType.SI, length=u.flow360_length_unit):
     data_with_context = DataWithUnits(
         l=1, m=2, t=u.flow360_time_unit * 3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=2, omega=5
@@ -139,7 +139,6 @@ with u.UnitSystem(base_system=BaseSystemType.SI, length=u.flow360_length_unit):
 
     for n, v in data_with_context:
         print(f"{n}={v}")
-
 
 threaded_data = DataWithUnits(
     l=1 * u.m,
@@ -199,3 +198,12 @@ print(f"After running both threads: {threaded_data.m}")
 schema = fl.SI_unit_system.schema()
 
 print(schema)
+
+data = {
+    "refArea": {"units": "flow360_area_unit"},
+    "momentCenter": {"value": [1, 2, 3], "units": "flow360_length_unit"},
+    "momentLength": {"value": [1.47602, 0.801672958512342, 1.47602], "units": "inch"},
+    "meshUnit": {"value": 1.0, "units": "mm"},
+}
+
+model = Geometry(**data)
