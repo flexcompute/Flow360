@@ -32,7 +32,7 @@ def params_to_dict(params: Flow360Params) -> dict:
 
     params_as_dict = json.loads(params.json())
 
-    if len(params.bet_disks) > 0:
+    if params.bet_disks is not None:
         params_as_dict['BETDisks'] = [json.loads(bet_disk.json(encoder=flow360_json_encoder)) for bet_disk in params.bet_disks]
 
     return params_as_dict
