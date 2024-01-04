@@ -156,20 +156,20 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
 
     print(f"{validation_errors=}")
 
-    # Check if all validation loc paths are valid params dict paths that can be traversed
-    for error in validation_errors:
-        current = params_as_dict
-        for field in error["loc"][:-1]:
-            if current.get(field):
-                current = current.get(field)
-            else:
-                errors_as_list = list(error["loc"])
-                errors_as_list.remove(field)
-                error["loc"] = tuple(errors_as_list)
-
     validation_warnings = None
 
+    # Check if all validation loc paths are valid params dict paths that can be traversed
     if validation_errors is not None:
+        for error in validation_errors:
+            current = params_as_dict
+            for field in error["loc"][:-1]:
+                if current.get(field):
+                    current = current.get(field)
+                else:
+                    errors_as_list = list(error["loc"])
+                    errors_as_list.remove(field)
+                    error["loc"] = tuple(errors_as_list)
+
         return validation_errors, validation_warnings
 
     return None, validation_warnings
