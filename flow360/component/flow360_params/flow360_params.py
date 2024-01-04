@@ -1245,6 +1245,10 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
 class BETDiskLegacy(BETDisk, LegacyModel):
     """:class:`BETDiskLegacy` class"""
 
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
+
     volume_name: Optional[str] = pd.Field(alias="volumeName")
 
     def update_model(self):
@@ -1254,14 +1258,15 @@ class BETDiskLegacy(BETDisk, LegacyModel):
             "axisOfRotation": self.axis_of_rotation,
             "numberOfBlades": self.number_of_blades,
             "radius": self.radius,
+            "omega": self.omega,
             "chordRef": self.chord_ref,
             "thickness": self.thickness,
             "nLoadingNodes": self.n_loading_nodes,
             "bladeLineChord": self.blade_line_chord,
             "initialBladeDirection": self.initial_blade_direction,
             "tipGap": self.tip_gap,
-            "machNumbers": self.mach_numbers,
-            "reynoldsNumbers": self.reynolds_numbers,
+            "MachNumbers": self.mach_numbers,
+            "ReynoldsNumbers": self.reynolds_numbers,
             "alphas": self.alphas,
             "twists": self.twists,
             "chords": self.chords,

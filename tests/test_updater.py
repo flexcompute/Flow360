@@ -81,6 +81,9 @@ def test_updater():
     print(params)
 
 
-def test_updater2():
-    params = fl.Flow360Params("data/cases/case_13.json")
-    assert params
+def test_updater_from_files():
+    files = ["case_13.json", "case_14_bet.json"]
+
+    for file in files:
+        params = fl.Flow360Params(f"data/cases/{file}")
+        assert params

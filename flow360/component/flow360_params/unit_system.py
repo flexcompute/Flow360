@@ -122,7 +122,10 @@ def _is_unit_validator(value):
     Parses str (eg: "m", "cm"), into unyt.Unit object
     """
     if isinstance(value, str):
-        value = u.Unit(value)
+        try:
+            value = u.Unit(value)
+        except u.exceptions.UnitParseError as err:
+            raise TypeError(str(err)) from err
     return value
 
 
