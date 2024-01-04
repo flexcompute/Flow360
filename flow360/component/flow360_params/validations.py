@@ -56,18 +56,20 @@ def _check_duplicate_boundary_name(values):
 
 
 def _check_consistency_wall_function_and_surface_output(values):
-    boundary_types = []
+    has_wall_function_boundary = False
     boundaries = values.get("boundaries")
     if boundaries is not None:
-        boundary_types = boundaries.get_subtypes()
+        for boundary_name in boundaries.names():
+            if isinstance(boundaries[boundary_name], WallFunction):
+                has_wall_function_boundary = True
 
-    surface_output_fields_root = []
-    surface_output = values.get("surfaceOutput")
+    surface_output_fields = []
+    surface_output = values.get("surface_output")
     if surface_output is not None:
-        surface_output_fields_root = surface_output.output_fields
-    if "WallFunctionMetric" in surface_output_fields_root and WallFunction not in boundary_types:
+        surface_output_fields = surface_output.output_fields
+    if "wallFunctionMetric" in surface_output_fields and (not has_wall_function_boundary):
         raise ValueError(
-            "'WallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary types."
+            "'wallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary type."
         )
     return values
 
