@@ -323,7 +323,7 @@ class Flow360BaseModel(BaseModel):
             Fields for which optional schema structure is generated
         exclude_fields : List[str]
             Fields to be excluded from the output schema (slash-separated paths to the field in nested objects)
-        widgets : Dict[str, str]
+        widgets : Dict[str, (str, str)]
             Widget mappings for the UI schema
         displayed : Optional[str]
             Title override for the class name in the schema root
@@ -551,7 +551,7 @@ class Flow360BaseModel(BaseModel):
                         target[item] = {}
                     target = target[item]
 
-                target["ui:widget"] = value
+                target[f"ui:{value[0]}"] = value[1]
         schema["ui:submitButtonOptions"] = {"norender": True}
         schema["ui:options"] = {"orderable": False, "addable": False, "removable": False}
         return schema

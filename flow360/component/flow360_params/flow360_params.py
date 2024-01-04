@@ -247,7 +247,7 @@ class ActuatorDisk(Flow360BaseModel):
 
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"center": "vector3", "axisThrust": "vector3"}
+        widgets = {"center": ("widget", "vector3"), "axisThrust": ("widget", "vector3")}
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -338,7 +338,7 @@ class SlidingInterface(Flow360BaseModel):
 
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"centerOfRotation": "vector3"}
+        widgets = {"centerOfRotation": ("widget", "vector3")}
 
 
 class MeshSlidingInterface(Flow360BaseModel):
@@ -421,11 +421,13 @@ class Boundaries(Flow360SortableBaseModel):
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
-            "additionalProperties/velocity/value": "vector3",
-            "additionalProperties/Velocity/value": "vector3",
-            "additionalProperties/velocityDirection/value": "vector3",
-            "additionalProperties/translationVector": "vector3",
-            "additionalProperties/axisOfRotation": "vector3",
+            "additionalProperties/velocity/value": ("widget", "vector3"),
+            "additionalProperties/Velocity/value": ("widget", "vector3"),
+            "additionalProperties/velocityDirection/value": ("widget", "vector3"),
+            "additionalProperties/translationVector": ("widget", "vector3"),
+            "additionalProperties/axisOfRotation": ("widget", "vector3"),
+            "additionalProperties/velocity": ("field", "unitInput"),
+            "additionalProperties/Velocity": ("field", "unitInput")
         }
 
 
@@ -481,8 +483,9 @@ class VolumeZones(Flow360SortableBaseModel):
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
-            "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
-            "additionalProperties/referenceFrame/axisOfRotation": "vector3",
+            "additionalProperties/referenceFrame/centerOfRotation": ("field", "unitInput"),
+            "additionalProperties/referenceFrame/omega": ("field", "unitInput"),
+            "additionalProperties/referenceFrame/axisOfRotation": ("widget", "vector3"),
         }
 
 
@@ -506,6 +509,14 @@ class Geometry(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["meshName", "endianness"]
+
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "refArea": ("field", "unitInput"),
+            "momentCenter": ("field", "unitInput"),
+            "momentLength": ("field", "unitInput"),
+            "meshUnit": ("field", "unitInput"),
+        }
 
 
 class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -911,9 +922,14 @@ class BETDisk(Flow360BaseModel):
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
-            "centerOfRotation": "vector3",
-            "axisOfRotation": "vector3",
-            "initialBladeDirection": "vector3",
+            "centerOfRotation": ("widget", "vector3"),
+            "axisOfRotation": ("widget", "vector3"),
+            "initialBladeDirection": ("widget", "vector3"),
+            "radius": ("field", "unitInput"),
+            "omega": ("field", "unitInput"),
+            "chordRef": ("field", "unitInput"),
+            "thickness": ("field", "unitInput"),
+            "bladeLineChord": ("field", "unitInput"),
         }
         displayed = "BET disk"
 
@@ -938,12 +954,12 @@ class PorousMedium(Flow360BaseModel):
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
-            "DarcyCoefficient": "vector3",
-            "ForchheimerCoefficient": "vector3",
-            "volumeZone/center": "vector3",
-            "volumeZone/lengths": "vector3",
-            "volumeZone/axes/items": "vector3",
-            "volumeZone/windowingLengths": "vector3",
+            "DarcyCoefficient": ("widget", "vector3"),
+            "ForchheimerCoefficient": ("widget", "vector3"),
+            "volumeZone/center": ("widget", "vector3"),
+            "volumeZone/lengths": ("widget", "vector3"),
+            "volumeZone/axes/items": ("widget", "vector3"),
+            "volumeZone/windowingLengths": ("widget", "vector3"),
         }
 
 

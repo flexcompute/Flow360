@@ -1,4 +1,16 @@
 {
+  "refArea": {
+    "ui:field": "unitInput"
+  },
+  "momentCenter": {
+    "ui:field": "unitInput"
+  },
+  "momentLength": {
+    "ui:field": "unitInput"
+  },
+  "meshUnit": {
+    "ui:field": "unitInput"
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

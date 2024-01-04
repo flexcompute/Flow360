@@ -5,11 +5,8 @@ from typing import Literal, Optional, Type, Union
 import pydantic as pd
 
 import flow360 as fl
-from flow360.component.flow360_params.flow360_params import (
-    ExpressionInitialCondition,
-    FreestreamInitialCondition,
-    TimeStepping,
-)
+from flow360.component.flow360_params.flow360_params import TimeStepping
+from flow360.component.flow360_params.initial_condition import ExpressionInitialCondition, FreestreamInitialCondition
 from flow360.component.flow360_params.params_base import Flow360BaseModel
 
 
@@ -19,7 +16,7 @@ def write_to_file(name, content):
 
 
 def write_schemas(
-    type_obj: Type[Flow360BaseModel], folder_name, root_property=None, swap_fields=None
+        type_obj: Type[Flow360BaseModel], folder_name, root_property=None, swap_fields=None
 ):
     data = type_obj.flow360_schema()
     if root_property is not None:
@@ -61,6 +58,12 @@ class _Freestreams(Flow360BaseModel):
         fl.FreestreamFromMachReynolds,
     ] = pd.Field()
 
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "velocity": ("field", "unitInput"),
+            "velocityRef": ("field", "unitInput")
+        }
+
 
 class _TurbulenceModelSolvers(Flow360BaseModel):
     """
@@ -79,6 +82,13 @@ class _FluidProperties(Flow360BaseModel):
         alias="fluidProperties",
         options=["From density and temperature", "From pressure and temperature"],
     )
+
+    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
+        widgets = {
+            "temperature": ("field", "unitInput"),
+            "density": ("field", "unitInput"),
+            "pressure": ("field", "unitInput"),
+        }
 
 
 class _InitialConditions(Flow360BaseModel):

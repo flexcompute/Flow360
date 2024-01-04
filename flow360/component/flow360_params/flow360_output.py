@@ -282,8 +282,8 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
         widgets = {
-            "slices/additionalProperties/sliceNormal": "vector3",
-            "slices/additionalProperties/sliceOrigin": "vector3",
+            "slices/additionalProperties/sliceNormal": ("widget", "vector3"),
+            "slices/additionalProperties/sliceOrigin": ("widget", "vector3"),
         }
 
 
@@ -401,7 +401,7 @@ class MonitorOutput(Flow360BaseModel):
 
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"monitors/additionalProperties/monitorLocations/items": "vector3"}
+        widgets = {"monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")}
 
 
 class IsoSurface(Flow360BaseModel):
@@ -486,7 +486,7 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
 
     # pylint: disable=protected-access, too-few-public-methods
     class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"observers/items": "vector3"}
+        widgets = {"observers/items": ("widget", "vector3")}
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
