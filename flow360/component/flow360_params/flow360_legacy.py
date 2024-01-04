@@ -38,7 +38,10 @@ def try_set(model, key, value):
 def try_update(field: Optional[LegacyModel]):
     """Try running updater on the field if it exists"""
     if field is not None:
-        return field.update_model()
+        if isinstance(field, LegacyModel):
+            return field.update_model()
+        if isinstance(field, list):
+            return [try_update(item) for item in field]
     return None
 
 

@@ -13,6 +13,7 @@ from .component.flow360_params.flow360_params import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
+from .component.flow360_params.params_base import flow360_json_encoder
 from .component.flow360_params.unit_system import UnitSystem, unit_system_manager, SI_unit_system, CGS_unit_system, imperial_unit_system, flow360_unit_system
 from .exceptions import Flow360ConfigurationError
 
@@ -24,6 +25,18 @@ unit_system_map = {
     'Imperial': imperial_unit_system,
     'Flow360': flow360_unit_system
 }
+
+
+
+def params_to_dict(params: Flow360Params) -> dict:
+
+    params_as_dict = json.loads(params.json())
+
+    if len(params.bet_disks) > 0:
+        params_as_dict['BETDisks'] = [json.loads(bet_disk.json(encoder=flow360_json_encoder)) for bet_disk in params.bet_disks]
+
+    return params_as_dict
+
 
 
 def init_unit_system(unit_system_name):

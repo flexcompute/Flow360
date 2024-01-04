@@ -1596,8 +1596,8 @@ class Flow360ParamsLegacy(LegacyModel):
                     "monitor_output": self.monitor_output,
                     "aeroacoustic_output": self.aeroacoustic_output,
                     "fluid_properties": None,
-                    "volume_zones": None,
-                    "bet_disks": None,
+                    "volume_zones": self.volume_zones,
+                    "bet_disks": try_update(self.bet_disks),
                 }
             )
 

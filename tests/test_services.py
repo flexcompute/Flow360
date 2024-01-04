@@ -127,9 +127,27 @@ def test_validate_service_should_not_be_called_with_context():
             )
 
 
-def test_validate_service_should_not_be_called_with_context():
+def test_init_fork_with_update():
     with open("data/cases/case_13.json", "r") as fh:
         params = json.load(fh)
 
-    defaults = services.get_default_fork(params)
-    assert defaults
+    data = services.get_default_fork(params)
+    assert data
+
+
+
+def test_init_fork_with_update_2():
+    with open("data/cases/case_14_bet.json", "r") as fh:
+        data = json.load(fh)
+
+    params = services.get_default_fork(data)
+    assert len(params.bet_disks) == 1
+    assert params 
+
+    params_as_dict = services.params_to_dict(params)
+
+    assert len(params_as_dict['BETDisks']) == 1
+    assert params_as_dict['BETDisks'][0]['thickness'] == 30.0
+
+
+
