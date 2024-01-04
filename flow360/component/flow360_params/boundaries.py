@@ -58,7 +58,7 @@ class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
 
     type: Literal["IsothermalWall"] = pd.Field("IsothermalWall", const=True)
-    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
+    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature", options=["Value", "Expression"])
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
@@ -84,7 +84,7 @@ class HeatFluxWall(Boundary):
     """
 
     type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
-    heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux")
+    heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
 
@@ -188,7 +188,7 @@ class SolidIsothermalWall(Boundary):
     """:class: `SolidIsothermalWall` boundary"""
 
     type: Literal["SolidIsothermalWall"] = pd.Field("SolidIsothermalWall", const=True)
-    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature")
+    temperature: Union[PositiveFloat, StrictStr] = pd.Field(alias="Temperature", options=["Value", "Expression"])
 
 
 class SolidAdiabaticWall(Boundary):

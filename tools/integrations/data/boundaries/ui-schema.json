@@ -3,14 +3,12 @@
     "velocity": {
       "value": {
         "ui:widget": "vector3"
-      },
-      "ui:field": "unitInput"
+      }
     },
     "Velocity": {
       "value": {
         "ui:widget": "vector3"
-      },
-      "ui:field": "unitInput"
+      }
     },
     "velocityDirection": {
       "value": {

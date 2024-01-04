@@ -394,10 +394,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           },
@@ -471,10 +473,12 @@
             "title": "Heat flux",
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           },
@@ -2003,10 +2007,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           }

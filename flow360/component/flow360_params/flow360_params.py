@@ -425,9 +425,7 @@ class Boundaries(Flow360SortableBaseModel):
             "additionalProperties/Velocity/value": ("widget", "vector3"),
             "additionalProperties/velocityDirection/value": ("widget", "vector3"),
             "additionalProperties/translationVector": ("widget", "vector3"),
-            "additionalProperties/axisOfRotation": ("widget", "vector3"),
-            "additionalProperties/velocity": ("field", "unitInput"),
-            "additionalProperties/Velocity": ("field", "unitInput")
+            "additionalProperties/axisOfRotation": ("widget", "vector3")
         }
 
 
