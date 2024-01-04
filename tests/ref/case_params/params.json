@@ -22,10 +22,6 @@
         }
     },
     "boundaries": {
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
-        },
         "3": {
             "type": "Freestream",
             "name": "freestream"
@@ -33,6 +29,10 @@
         "1": {
             "type": "NoSlipWall",
             "name": "wing"
+        },
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
         }
     },
     "timeStepping": {
@@ -119,5 +119,5 @@
             }
         }
     },
-    "hash": "940f4644e6e3328da9178751e8e2722f6fb8210245e7e0a74f6d8187a26da6e3"
+    "hash": "4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead"
 }
