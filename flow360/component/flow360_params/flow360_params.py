@@ -245,9 +245,6 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"center": ("widget", "vector3"), "axisThrust": ("widget", "vector3")}
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -336,10 +333,6 @@ class SlidingInterface(Flow360BaseModel):
             "is_dynamic",
         ]
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"centerOfRotation": ("widget", "vector3")}
-
 
 class MeshSlidingInterface(Flow360BaseModel):
     """
@@ -418,16 +411,6 @@ class Boundaries(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "additionalProperties/velocity/value": ("widget", "vector3"),
-            "additionalProperties/Velocity/value": ("widget", "vector3"),
-            "additionalProperties/velocityDirection/value": ("widget", "vector3"),
-            "additionalProperties/translationVector": ("widget", "vector3"),
-            "additionalProperties/axisOfRotation": ("widget", "vector3")
-        }
-
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
     v: VolumeZoneType
@@ -478,14 +461,6 @@ class VolumeZones(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "additionalProperties/referenceFrame/centerOfRotation": ("field", "unitInput"),
-            "additionalProperties/referenceFrame/omega": ("field", "unitInput"),
-            "additionalProperties/referenceFrame/axisOfRotation": ("widget", "vector3"),
-        }
-
 
 class Geometry(Flow360BaseModel):
     """
@@ -507,14 +482,6 @@ class Geometry(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["meshName", "endianness"]
-
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "refArea": ("field", "unitInput"),
-            "momentCenter": ("field", "unitInput"),
-            "momentLength": ("field", "unitInput"),
-            "meshUnit": ("field", "unitInput"),
-        }
 
 
 class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -820,20 +787,12 @@ class BETDiskTwist(Flow360BaseModel):
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk twist"
-
 
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class"""
 
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk chord"
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -845,10 +804,6 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
         alias="dragCoeffs", displayed="Drag coefficients"
     )
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk sectional polar"
 
 
 class BETDisk(Flow360BaseModel):
@@ -917,19 +872,6 @@ class BETDisk(Flow360BaseModel):
         assert len(sectionalRadiuses) == len(sectionalPolars)
         return values
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "centerOfRotation": ("widget", "vector3"),
-            "axisOfRotation": ("widget", "vector3"),
-            "initialBladeDirection": ("widget", "vector3"),
-            "radius": ("field", "unitInput"),
-            "omega": ("field", "unitInput"),
-            "chordRef": ("field", "unitInput"),
-            "thickness": ("field", "unitInput"),
-            "bladeLineChord": ("field", "unitInput"),
-        }
-        displayed = "BET disk"
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):
@@ -948,17 +890,6 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: Vector = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "DarcyCoefficient": ("widget", "vector3"),
-            "ForchheimerCoefficient": ("widget", "vector3"),
-            "volumeZone/center": ("widget", "vector3"),
-            "volumeZone/lengths": ("widget", "vector3"),
-            "volumeZone/axes/items": ("widget", "vector3"),
-            "volumeZone/windowingLengths": ("widget", "vector3"),
-        }
 
 
 class UserDefinedDynamic(Flow360BaseModel):

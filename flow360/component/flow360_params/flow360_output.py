@@ -46,7 +46,7 @@ IsoSurfaceOutputField = IsoSurfaceFields
 
 
 def _filter_fields(fields, literal_filter):
-    """Take two literals, filter"""
+    """Take two literals, keep only arguments present in the filter"""
     values = get_field_values(literal_filter)
     fields[:] = [field for field in fields if field in values]
 
@@ -164,9 +164,7 @@ class Surface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
-            )
+            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull)
 
 
 class _GenericSurfaceWrapper(Flow360BaseModel):
@@ -279,12 +277,7 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "slices/additionalProperties/sliceNormal": ("widget", "vector3"),
-            "slices/additionalProperties/sliceOrigin": ("widget", "vector3"),
-        }
+
 
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
@@ -399,10 +392,6 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")}
-
 
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
@@ -419,9 +408,7 @@ class IsoSurface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(
-                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
-            )
+            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull)
             _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
 
 
@@ -483,10 +470,6 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"observers/items": ("widget", "vector3")}
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):

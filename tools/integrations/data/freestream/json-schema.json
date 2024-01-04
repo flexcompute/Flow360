@@ -1,5 +1,5 @@
 {
-  "title": "Freestreams",
+  "title": "Freestream",
   "type": "object",
   "additionalProperties": false,
   "anyOf": [

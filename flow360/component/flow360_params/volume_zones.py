@@ -259,9 +259,5 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        optional_objects = ["referenceFrame"]
-
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]

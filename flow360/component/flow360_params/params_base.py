@@ -237,8 +237,8 @@ class Flow360BaseModel(BaseModel):
     @classmethod
     def __modify_schema__(cls, field_schema, field):
         field_schema.update(cls.schema())
-        if cls._SchemaConfig.displayed is not None:
-            field_schema["displayed"] = cls._SchemaConfig.displayed
+        if cls.SchemaConfig.displayed is not None:
+            field_schema["displayed"] = cls.SchemaConfig.displayed
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -312,7 +312,7 @@ class Flow360BaseModel(BaseModel):
         return values
 
     # pylint: disable=too-few-public-methods
-    class _SchemaConfig:
+    class SchemaConfig:
         """Sets JSON schema generation config for :class:`Flow360BaseModel` objects.
 
         Configuration Options
@@ -327,12 +327,16 @@ class Flow360BaseModel(BaseModel):
             Widget mappings for the UI schema
         displayed : Optional[str]
             Title override for the class name in the schema root
+        root_property : Optional[str]
+            Title
         """
 
         field_order = []
         optional_objects = []
-        exclude_fields = []
-        widgets = {}
+        exclude_by_path = []
+        field_properties = {}
+        root_property = None
+        swap_fields = {}
         displayed = None
 
     @classmethod
@@ -512,16 +516,27 @@ class Flow360BaseModel(BaseModel):
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
-        if cls._SchemaConfig.displayed is not None:
-            schema["displayed"] = cls._SchemaConfig.displayed
-        for item in cls._SchemaConfig.exclude_fields:
-            cls._schema_remove(schema, item.split("/"))
-        for item in cls._SchemaConfig.optional_objects:
-            cls._schema_generate_optional_objects(schema, item)
-        cls._schema_format_titles(schema)
         cls._schema_apply_option_names(schema)
+        if cls.SchemaConfig.root_property is not None:
+            current = schema
+            path = cls.SchemaConfig.root_property.split("/")
+            for item in path:
+                current = current[item]
+            schema[path[-1]] = current
+            del schema["properties"]
+            del schema["required"]
+        if cls.SchemaConfig.displayed is not None:
+            schema["displayed"] = cls.SchemaConfig.displayed
+        for item in cls.SchemaConfig.exclude_by_path:
+            cls._schema_remove(schema, item.split("/"))
+        cls._schema_format_titles(schema)
         cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
+        for item in cls.SchemaConfig.optional_objects:
+            cls._schema_generate_optional_objects(schema, item)
+        if cls.SchemaConfig.swap_fields is not None:
+            for key, value in cls.SchemaConfig.swap_fields.items():
+                schema["properties"][key] = value
         cls._schema_swap_key(schema, "title", "displayed")
         cls._schema_clean(schema)
         return schema
@@ -529,9 +544,9 @@ class Flow360BaseModel(BaseModel):
     @classmethod
     def flow360_ui_schema(cls):
         """Generate a UI schema json string for the flow360 model"""
-        order = cls._SchemaConfig.field_order
-        optionals = cls._SchemaConfig.optional_objects
-        widgets = cls._SchemaConfig.widgets
+        order = cls.SchemaConfig.field_order
+        optionals = cls.SchemaConfig.optional_objects
+        widgets = cls.SchemaConfig.field_properties
         schema = {}
 
         # pylint: disable=consider-using-enumerate

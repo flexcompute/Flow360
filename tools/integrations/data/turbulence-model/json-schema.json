@@ -1,5 +1,5 @@
 {
-  "title": "Turbulence model solvers",
+  "title": "Turbulence model solver",
   "type": "object",
   "additionalProperties": false,
   "anyOf": [

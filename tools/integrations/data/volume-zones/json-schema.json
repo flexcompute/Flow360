@@ -107,67 +107,6 @@
                         "additionalProperties": false
                       },
                       {
-                        "title": "Reference frame omega radians",
-                        "type": "object",
-                        "properties": {
-                          "omegaRadians": {
-                            "title": "Omega radians",
-                            "type": "number"
-                          },
-                          "centerOfRotation": {
-                            "title": "Center of rotation",
-                            "properties": {
-                              "value": {
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                },
-                                "minItems": 3,
-                                "maxItems": 3
-                              },
-                              "units": {
-                                "type": "string",
-                                "dimension": "length",
-                                "enum": [
-                                  "m",
-                                  "cm",
-                                  "ft",
-                                  "flow360_length_unit",
-                                  "mm",
-                                  "inch"
-                                ]
-                              }
-                            },
-                            "strictType": {
-                              "type": "vector3"
-                            }
-                          },
-                          "axisOfRotation": {
-                            "title": "Axis of rotation",
-                            "type": "array",
-                            "minItems": 3,
-                            "maxItems": 3,
-                            "items": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "omegaRadians",
-                          "centerOfRotation",
-                          "axisOfRotation"
-                        ],
-                        "additionalProperties": false
-                      },
-                      {
                         "title": "Reference frame expression",
                         "type": "object",
                         "properties": {

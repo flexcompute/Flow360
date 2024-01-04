@@ -178,12 +178,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
-
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
@@ -336,12 +330,6 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
-
 
 class KOmegaSST(TurbulenceModelSolver):
     """:class:`KOmegaSST` class"""
@@ -411,12 +399,6 @@ class HeatEquationSolver(Flow360BaseModel):
             DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
-
 
 class TransitionModelSolver(GenericFlowSolverSettings):
     """:class:`TransitionModelSolver` class for setting up transition model solver
@@ -450,12 +432,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="turbulenceIntensityPercent"
     )
     N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
 
 
 # Legacy models for Flow360 updater, do not expose

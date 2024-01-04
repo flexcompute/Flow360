@@ -1,5 +1,5 @@
 {
-  "title": "Time steppings",
+  "title": "Time stepping",
   "type": "object",
   "additionalProperties": false,
   "anyOf": [
