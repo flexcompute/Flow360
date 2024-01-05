@@ -353,8 +353,7 @@ def _check_bet_disks_number_of_defined_polars(bet_disks) -> NoReturn:
         sectional_polars = disk.sectional_polars
         if len(sectional_radiuses) != len(sectional_polars):
             raise ValueError(
-                f"In BET Disk {index}, length of sectional_radiuses ({len(sectional_radiuses)})\
-                is not the same as that of sectional_polars ({len(sectional_polars)})."
+                f"In BET Disk {index}, length of sectional_radiuses ({len(sectional_radiuses)}) is not the same as that of sectional_polars ({len(sectional_polars)})."
             )
 
 
@@ -365,21 +364,17 @@ def _check_3d_coeffs_in_BET_polars(
 ) -> NoReturn:
     if len(coeffs_3d) != num_Mach:
         raise ValueError(
-            f"BET Disk {bet_index} (cross section: {section_index}): \
-            number of MachNumbers = {num_Mach}, but first dimension of {coeffs_name} is {len(coeffs_3d)}."
+            f"BET Disk {bet_index} (cross section: {section_index}): number of MachNumbers = {num_Mach}, but the first dimension of {coeffs_name} is {len(coeffs_3d)}."
         )
     for index_Mach, coeffs_2d in enumerate(coeffs_3d):
         if len(coeffs_2d) != num_Re:
             raise ValueError(
-                f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}): \
-                number of Reynolds = {num_Re}, but the second dimension of {coeffs_name} is {len(coeffs_2d)}."
+                f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}): number of Reynolds = {num_Re}, but the second dimension of {coeffs_name} is {len(coeffs_2d)}."
             )
         for index_Re, coeffs_1d in enumerate(coeffs_2d):
             if len(coeffs_1d) != num_alphas:
                 raise ValueError(
-                    f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}, \
-                    Reynolds index (0-based) {index_Re}): number of Alphas = {num_alphas}, \
-                    but the third dimension of {coeffs_name} is {len(coeffs_1d)}."
+                    f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}, Reynolds index (0-based) {index_Re}): number of Alphas = {num_alphas}, but the third dimension of {coeffs_name} is {len(coeffs_1d)}."
                 )
 
 
