@@ -90,37 +90,58 @@ def _check_consistency_ddes_volume_output(values):
         ):
             raise ValueError(
                 "SpalartAllmaras_DDES output can only be specified with \
-                SpalartAllmaras turbulence model and DDES turned on"
+                SpalartAllmaras turbulence model and DDES turned on."
             )
         if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_ddes):
             raise ValueError(
-                "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on"
+                "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
             )
     return values
 
 
+# pylint: disable=line-too-long
 def _validate_cht_no_heat_transfer_zone(values):
     heat_equation_solver = values.get("heat_equation_solver")
     if heat_equation_solver is not None:
-        raise ValueError("Heat equation solver activated with no zone definition")
+        raise ValueError("Heat equation solver activated with no zone definition.")
 
     boundaries = values.get("boundaries")
     if boundaries is not None:
         for boundary_name in boundaries.names():
             boundary_prop = boundaries[boundary_name]
-            if isinstance(boundary_prop, (SolidIsothermalWall, SolidAdiabaticWall)):
-                raise ValueError("CHT boundary defined with no zone definition")
+            if isinstance(boundary_prop, SolidIsothermalWall):
+                raise ValueError(
+                    "SolidIsothermalWall boundary is defined with no definition of volume zone of heat transfer."
+                )
+            if isinstance(boundary_prop, SolidAdiabaticWall):
+                raise ValueError(
+                    "SolidAdiabaticWall boundary is defined with no definition of volume zone of heat transfer."
+                )
     for output_name in [
         "surface_output",
         "volume_output",
         "slice_output",
-        "iso_surface_output",
         "monitor_output",
     ]:
         output_obj = values.get(output_name)
         if output_obj is not None and output_obj.output_fields is not None:
             if "residualHeatSolver" in output_obj.output_fields:
-                raise ValueError("Heat equation output variables requested with no zone definition")
+                raise ValueError(
+                    "Heat equation output variables: residualHeatSolver is requested with no definition of volume zone of heat transfer."
+                )
+    iso_surface_output = values.get("iso_surface_output")
+    if iso_surface_output is not None:
+        iso_surfaces = iso_surface_output.iso_surfaces
+        if iso_surfaces is not None:
+            for iso_surface_name in iso_surfaces.names():
+                iso_surface_obj = iso_surfaces[iso_surface_name]
+                if (
+                    iso_surface_obj.output_fields is not None
+                    and "residualHeatSolver" in iso_surface_obj.output_fields
+                ):
+                    raise ValueError(
+                        "Heat equation output variables: residualHeatSolver is requested with no definition of volume zone of heat transfer."
+                    )
     return values
 
 
@@ -129,32 +150,21 @@ def _validate_cht_has_heat_transfer_zone(values):
     if navier_stokes_solver is not None and isinstance(
         navier_stokes_solver, IncompressibleNavierStokesSolver
     ):
-        raise ValueError("Conjugate heat transfer cannnot be used with incompressible flow solver.")
+        raise ValueError("Conjugate heat transfer can not be used with incompressible flow solver.")
 
-    boundaries = values.get("boundaries")
-    freestream = values.get("freestream")
-    if boundaries is not None and freestream is not None:
-        for boundary_name in boundaries.names():
-            boundary_prop = boundaries[boundary_name]
-            if isinstance(boundary_prop, SolidIsothermalWall) and freestream.temperature is None:
-                raise ValueError(
-                    "Wall temperature is invalid when no freestream reference is specified."
-                )
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")
-    if time_stepping is not None and isinstance(time_stepping, UnsteadyTimeStepping):
+    if isinstance(time_stepping, UnsteadyTimeStepping):
         for volume_name in volume_zones.names():
             volume_prop = volume_zones[volume_name]
             if isinstance(volume_prop, HeatTransferVolumeZone):
                 if volume_prop.heat_capacity is None:
                     raise ValueError(
-                        "Heat capacity needs to be specified for all heat \
-                        transfer volume zones for unsteady simulations."
+                        "Heat capacity needs to be specified for all heat transfer volume zones for unsteady simulations."
                     )
                 if volume_prop.initial_condition is None:
                     raise ValueError(
-                        "Initial condition needs to be specified for all \
-                        heat transfer volume zones for unsteady simulations."
+                        "Initial condition needs to be specified for all heat transfer volume zones for unsteady simulations."
                     )
 
     initial_condition = values.get("initial_condition")
@@ -166,12 +176,12 @@ def _validate_cht_has_heat_transfer_zone(values):
                 and volume_prop.initial_condition is None
             ):
                 raise ValueError(
-                    "Initial condition needs to be specified for all \
-                    heat transfer zones for initialization with expressions."
+                    "Initial condition needs to be specified for all heat transfer zones for initialization with expressions."
                 )
     return values
 
 
+# pylint: disable=line-too-long
 def _check_cht_solver_settings(values):
     has_heat_transfer_zone = False
     volume_zones = values.get("volume_zones")
