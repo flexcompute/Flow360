@@ -32,11 +32,6 @@
             },
             "linearSolver": {
               "title": "Linear solver",
-              "default": {
-                "max_iterations": 50,
-                "absolute_tolerance": 1e-10,
-                "relative_tolerance": null
-              },
               "type": "object",
               "properties": {
                 "maxIterations": {
@@ -62,6 +57,14 @@
           "additionalProperties": false
         },
         {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
           "additionalProperties": false
         }
       ]

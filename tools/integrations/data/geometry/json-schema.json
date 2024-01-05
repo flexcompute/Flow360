@@ -30,7 +30,10 @@
             "type": "number"
           },
           "minItems": 3,
-          "maxItems": 3
+          "maxItems": 3,
+          "strictType": {
+            "type": "vector3"
+          }
         },
         "units": {
           "type": "string",
@@ -44,9 +47,6 @@
             "inch"
           ]
         }
-      },
-      "strictType": {
-        "type": "vector3"
       }
     },
     "momentLength": {
@@ -58,7 +58,10 @@
             "type": "number"
           },
           "minItems": 3,
-          "maxItems": 3
+          "maxItems": 3,
+          "strictType": {
+            "type": "vector3"
+          }
         },
         "units": {
           "type": "string",
@@ -72,9 +75,6 @@
             "inch"
           ]
         }
-      },
-      "strictType": {
-        "type": "vector3"
       }
     },
     "meshUnit": {

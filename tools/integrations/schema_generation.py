@@ -1,28 +1,28 @@
 import json
 import os
-from typing import Type, Union, get_args, Optional, List
+from typing import List, Optional, Type, Union, get_args
 
 import pydantic as pd
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
-    BETDiskTwist,
     BETDiskChord,
-    BETDiskSectionalPolar
+    BETDiskSectionalPolar,
+    BETDiskTwist,
 )
 from flow360.component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
-    FreestreamInitialCondition
+    FreestreamInitialCondition,
 )
 from flow360.component.flow360_params.params_base import (
     Flow360BaseModel,
-    Flow360SortableBaseModel
+    Flow360SortableBaseModel,
 )
 from flow360.component.flow360_params.volume_zones import (
-    VolumeZoneBase,
     ReferenceFrame,
+    ReferenceFrameDynamic,
     ReferenceFrameExpression,
-    ReferenceFrameDynamic
+    VolumeZoneBase,
 )
 
 
@@ -61,7 +61,7 @@ class _Freestream(Flow360BaseModel):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_properties = {
             "velocity": ("field", "unitInput"),
-            "velocityRef": ("field", "unitInput")
+            "velocityRef": ("field", "unitInput"),
         }
         root_property = "properties/freestream/anyOf"
 
@@ -71,7 +71,8 @@ class _TurbulenceModelSolver(Flow360BaseModel):
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
+        optional_objects = ["anyOf/properties/linearSolver"]
+        exclude_fields = ["anyOf/properties/linearSolver/default"]
         root_property = "properties/solver/anyOf"
 
 
@@ -119,7 +120,7 @@ class _FluidDynamicsVolumeZone(VolumeZoneBase):
     ] = pd.Field(alias="referenceFrame")
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        optional_objects = ["referenceFrame"]
+        optional_objects = ["properties/referenceFrame"]
 
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
@@ -152,21 +153,21 @@ class _Geometry(fl.Geometry):
 class _NavierStokesSolver(fl.NavierStokesSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
-        exclude_by_path = ["properties/linearSolver/default"]
+        optional_objects = ["properties/linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class _TransitionModelSolver(fl.TransitionModelSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
+        optional_objects = ["properties/linearSolver"]
         exclude_fields = ["properties/linearSolver/default"]
 
 
 class _HeatEquationSolver(fl.HeatEquationSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "linearSolver"]
-        optional_objects = ["linearSolver"]
+        optional_objects = ["properties/linearSolver"]
         exclude_fields = ["properties/linearSolver/default"]
 
 
@@ -189,10 +190,7 @@ class _PorousMedium(fl.PorousMedium):
 
 class _ActuatorDisk(fl.ActuatorDisk):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_properties = {
-            "center": ("widget", "vector3"),
-            "axisThrust": ("widget", "vector3")
-        }
+        field_properties = {"center": ("widget", "vector3"), "axisThrust": ("widget", "vector3")}
 
 
 class _BETDiskTwist(BETDiskTwist):
@@ -213,7 +211,9 @@ class _BETDiskSectionalPolar(BETDiskSectionalPolar):
 class _BETDisk(fl.BETDisk):
     twists: List[_BETDiskTwist] = pd.Field(displayed="BET disk twists")
     chords: List[_BETDiskChord] = pd.Field(displayed="BET disk chords")
-    sectional_polars: List[_BETDiskSectionalPolar] = pd.Field(displayed="Sectional polars", alias="sectionalPolars")
+    sectional_polars: List[_BETDiskSectionalPolar] = pd.Field(
+        displayed="Sectional polars", alias="sectionalPolars"
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_properties = {
@@ -250,7 +250,9 @@ class _SliceOutput(fl.SliceOutput):
 
 class _MonitorOutput(fl.MonitorOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_properties = {"monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")}
+        field_properties = {
+            "monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")
+        }
         swap_fields = {"monitors": fl.Monitors.flow360_schema()}
 
 
@@ -271,7 +273,7 @@ class _Boundaries(fl.Boundaries):
             "additionalProperties/Velocity/value": ("widget", "vector3"),
             "additionalProperties/velocityDirection/value": ("widget", "vector3"),
             "additionalProperties/translationVector": ("widget", "vector3"),
-            "additionalProperties/axisOfRotation": ("widget", "vector3")
+            "additionalProperties/axisOfRotation": ("widget", "vector3"),
         }
 
 
@@ -289,10 +291,10 @@ write_schemas(_AeroacousticOutput, "aeroacoustic-output")
 write_schemas(_SliceOutput, "slice-output")
 write_schemas(_MonitorOutput, "monitor-output")
 write_schemas(_SurfaceOutput, "surface-output")
-write_schemas(_IsoSurfaceOutput,"iso-surface-output")
+write_schemas(_IsoSurfaceOutput, "iso-surface-output")
 write_schemas(_Freestream, "freestream")
 write_schemas(_TimeStepping, "time-stepping")
 write_schemas(_FluidProperties, "fluid-properties")
-write_schemas(_InitialConditions,"initial-conditions")
+write_schemas(_InitialConditions, "initial-conditions")
 write_schemas(_VolumeZones, "volume-zones")
 write_schemas(_Boundaries, "boundaries")

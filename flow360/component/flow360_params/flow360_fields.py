@@ -82,11 +82,7 @@ VolumeFieldNamesFull = CommonFieldNamesFull
 
 SliceFieldNamesFull = VolumeFieldNamesFull
 
-VolumeFieldNames = Literal[
-    CommonFieldNames,
-    "betMetrics",
-    "betMetricsPerDisk"
-]
+VolumeFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
 
 SliceFieldNames = VolumeFieldNames
 

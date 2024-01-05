@@ -246,7 +246,6 @@ class ActuatorDisk(Flow360BaseModel):
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
 
-
 class SlidingInterface(Flow360BaseModel):
     """:class:`SlidingInterface` class for setting up sliding interface
 
@@ -871,7 +870,6 @@ class BETDisk(Flow360BaseModel):
         sectionalPolars = values.get("sectional_polars")
         assert len(sectionalRadiuses) == len(sectionalPolars)
         return values
-
 
 
 class PorousMediumVolumeZone(Flow360BaseModel):

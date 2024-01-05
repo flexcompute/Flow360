@@ -119,6 +119,14 @@
           "additionalProperties": false
         },
         {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
           "additionalProperties": false
         }
       ]

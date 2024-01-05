@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 from abc import ABCMeta, abstractmethod
-from typing import Any, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
 import pydantic as pd
@@ -333,7 +333,7 @@ class Flow360BaseModel(BaseModel):
 
         field_order = []
         optional_objects = []
-        exclude_by_path = []
+        exclude_fields = []
         field_properties = {}
         root_property = None
         swap_fields = {}
@@ -391,10 +391,17 @@ class Flow360BaseModel(BaseModel):
         if not isinstance(schema, dict):
             raise ValueError("Input must be a dictionary")
 
-        if len(key_path) == 1:
-            del schema[key_path[0]]
-        elif len(key_path) > 1:
-            cls._schema_remove(schema[key_path[0]], key_path[1:])
+        if schema.get(key_path[0]) is not None:
+            if len(key_path) == 1:
+                del schema[key_path[0]]
+            elif len(key_path) > 1:
+                value = schema[key_path[0]]
+                if isinstance(value, Dict):
+                    cls._schema_remove(value, key_path[1:])
+                elif isinstance(value, List):
+                    for item in value:
+                        if isinstance(item, dict):
+                            cls._schema_remove(item, key_path[1:])
 
         return schema
 
@@ -435,9 +442,12 @@ class Flow360BaseModel(BaseModel):
         return dictionary
 
     @classmethod
-    def _schema_generate_optional_objects(cls, schema: dict, key: str):
-        field = schema["properties"].pop(key)
+    def _schema_apply_optional_objects(cls, schema: dict, key):
+        field = schema["properties"].get(key)
+
         if field is not None:
+            schema["properties"].pop(key)
+
             toggle_name = _schema_optional_toggle_name(key)
 
             schema["properties"][toggle_name] = {
@@ -447,7 +457,7 @@ class Flow360BaseModel(BaseModel):
                 "default": False,
             }
 
-            displayed = field.get("displayed")
+            displayed = schema.get("displayed")
 
             if displayed is not None:
                 schema["properties"][toggle_name]["displayed"] = displayed
@@ -465,9 +475,37 @@ class Flow360BaseModel(BaseModel):
                         },
                         "additionalProperties": False,
                     },
-                    {"additionalProperties": False},
+                    {
+                        "type": "object",
+                        "properties": {
+                            toggle_name: {"default": False, "const": False, "type": "boolean"}
+                        },
+                        "additionalProperties": False,
+                    },
                 ]
             }
+
+    @classmethod
+    def _schema_generate_optional(cls, schema: dict, path):
+        if not isinstance(schema, dict):
+            raise ValueError("Input must be a dictionary")
+
+        if len(path) == 2:
+            if path[0] != "properties":
+                raise ValueError(
+                    "Path must point to a property, ending with (...)/properties/fieldName"
+                )
+            cls._schema_apply_optional_objects(schema, path[1])
+        else:
+            key = path[0]
+            value = schema.get(key)
+            if value is not None:
+                if isinstance(value, Dict):
+                    cls._schema_generate_optional(value, path[1:])
+                elif isinstance(value, List):
+                    for item in value:
+                        if isinstance(item, dict):
+                            cls._schema_generate_optional(item, path[1:])
 
     @classmethod
     def _schema_apply_option_names(cls, dictionary):
@@ -516,7 +554,6 @@ class Flow360BaseModel(BaseModel):
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
-        cls._schema_apply_option_names(schema)
         if cls.SchemaConfig.root_property is not None:
             current = schema
             path = cls.SchemaConfig.root_property.split("/")
@@ -527,13 +564,14 @@ class Flow360BaseModel(BaseModel):
             del schema["required"]
         if cls.SchemaConfig.displayed is not None:
             schema["displayed"] = cls.SchemaConfig.displayed
-        for item in cls.SchemaConfig.exclude_by_path:
+        for item in cls.SchemaConfig.exclude_fields:
             cls._schema_remove(schema, item.split("/"))
         cls._schema_format_titles(schema)
+        cls._schema_apply_option_names(schema)
         cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
         for item in cls.SchemaConfig.optional_objects:
-            cls._schema_generate_optional_objects(schema, item)
+            cls._schema_generate_optional(schema, item.split("/"))
         if cls.SchemaConfig.swap_fields is not None:
             for key, value in cls.SchemaConfig.swap_fields.items():
                 schema["properties"][key] = value
@@ -546,18 +584,19 @@ class Flow360BaseModel(BaseModel):
         """Generate a UI schema json string for the flow360 model"""
         order = cls.SchemaConfig.field_order
         optionals = cls.SchemaConfig.optional_objects
-        widgets = cls.SchemaConfig.field_properties
+        properties = cls.SchemaConfig.field_properties
         schema = {}
 
         # pylint: disable=consider-using-enumerate
         for i in range(0, len(order)):
-            if order[i] in optionals:
-                order.insert(i, _schema_optional_toggle_name(order[i]))
+            name = order[i].split("/")[:-1]
+            if name in optionals:
+                order.insert(i, _schema_optional_toggle_name(name))
 
         if len(order) > 0:
             schema["ui:order"] = order
-        if len(widgets) > 0:
-            for key, value in widgets.items():
+        if len(properties) > 0:
+            for key, value in properties.items():
                 path = key.split("/")
 
                 target = schema
@@ -1090,8 +1129,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
     @classmethod
     def flow360_schema(cls):
-        title = cls.__name__
-        root_schema = {"title": cls._schema_camel_to_space(title), "additionalProperties": {}}
+        root_schema = {"additionalProperties": {}}
 
         models = cls.get_subtypes()
 

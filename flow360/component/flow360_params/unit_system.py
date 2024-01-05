@@ -319,7 +319,7 @@ class DimensionedType(ValidatedType):
                 field_schema["properties"]["value"]["items"] = {"type": "number"}
                 field_schema["properties"]["value"]["minItems"] = 3
                 field_schema["properties"]["value"]["maxItems"] = 3
-                field_schema["strictType"] = {"type": "vector3"}
+                field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
             def validate(vec_cls, value):
                 """additional validator for value"""

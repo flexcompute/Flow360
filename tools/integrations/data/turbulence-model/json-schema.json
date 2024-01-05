@@ -24,34 +24,6 @@
           "const": "SpalartAllmaras",
           "type": "string"
         },
-        "linearSolver": {
-          "title": "Linear solver",
-          "default": {
-            "max_iterations": 20,
-            "absolute_tolerance": 1e-10,
-            "relative_tolerance": null
-          },
-          "type": "object",
-          "properties": {
-            "maxIterations": {
-              "title": "Max iterations",
-              "default": 50,
-              "exclusiveMinimum": 0,
-              "type": "integer"
-            },
-            "absoluteTolerance": {
-              "title": "Absolute tolerance",
-              "default": 1e-10,
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "relativeTolerance": {
-              "title": "Relative tolerance",
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
           "default": 4,
@@ -132,9 +104,65 @@
           "title": "Rotation correction",
           "default": false,
           "type": "boolean"
+        },
+        "_addLinearSolver": {
+          "title": "Linear solver",
+          "type": "boolean",
+          "default": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependencies": {
+        "_addLinearSolver": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "linearSolver": {
+                  "title": "Linear solver",
+                  "type": "object",
+                  "properties": {
+                    "maxIterations": {
+                      "title": "Max iterations",
+                      "default": 50,
+                      "exclusiveMinimum": 0,
+                      "type": "integer"
+                    },
+                    "absoluteTolerance": {
+                      "title": "Absolute tolerance",
+                      "default": 1e-10,
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "relativeTolerance": {
+                      "title": "Relative tolerance",
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
     },
     {
       "title": "K omega sst",
@@ -156,34 +184,6 @@
           "default": "kOmegaSST",
           "const": "kOmegaSST",
           "type": "string"
-        },
-        "linearSolver": {
-          "title": "Linear solver",
-          "default": {
-            "max_iterations": 20,
-            "absolute_tolerance": 1e-10,
-            "relative_tolerance": null
-          },
-          "type": "object",
-          "properties": {
-            "maxIterations": {
-              "title": "Max iterations",
-              "default": 50,
-              "exclusiveMinimum": 0,
-              "type": "integer"
-            },
-            "absoluteTolerance": {
-              "title": "Absolute tolerance",
-              "default": 1e-10,
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "relativeTolerance": {
-              "title": "Relative tolerance",
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
         },
         "updateJacobianFrequency": {
           "title": "Update jacobian frequency",
@@ -270,9 +270,65 @@
             }
           },
           "additionalProperties": false
+        },
+        "_addLinearSolver": {
+          "title": "Linear solver",
+          "type": "boolean",
+          "default": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependencies": {
+        "_addLinearSolver": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "linearSolver": {
+                  "title": "Linear solver",
+                  "type": "object",
+                  "properties": {
+                    "maxIterations": {
+                      "title": "Max iterations",
+                      "default": 50,
+                      "exclusiveMinimum": 0,
+                      "type": "integer"
+                    },
+                    "absoluteTolerance": {
+                      "title": "Absolute tolerance",
+                      "default": 1e-10,
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "relativeTolerance": {
+                      "title": "Relative tolerance",
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
     },
     {
       "title": "None solver",

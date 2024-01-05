@@ -164,7 +164,9 @@ class Surface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
+            )
 
 
 class _GenericSurfaceWrapper(Flow360BaseModel):
@@ -276,8 +278,6 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
-
-
 
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
@@ -408,7 +408,9 @@ class IsoSurface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
-            _filter_fields(schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull)
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
             _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
 
 

@@ -1,5 +1,4 @@
 {
-  "title": "Boundaries",
   "additionalProperties": {
     "oneOf": [
       {
@@ -27,7 +26,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -39,9 +41,6 @@
                       "flow360_velocity_unit"
                     ]
                   }
-                },
-                "strictType": {
-                  "type": "vector3"
                 }
               },
               {
@@ -337,7 +336,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -349,9 +351,6 @@
                       "flow360_velocity_unit"
                     ]
                   }
-                },
-                "strictType": {
-                  "type": "vector3"
                 }
               },
               {
@@ -414,7 +413,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -426,9 +428,6 @@
                       "flow360_velocity_unit"
                     ]
                   }
-                },
-                "strictType": {
-                  "type": "vector3"
                 }
               },
               {
@@ -493,7 +492,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -505,9 +507,6 @@
                       "flow360_velocity_unit"
                     ]
                   }
-                },
-                "strictType": {
-                  "type": "vector3"
                 }
               },
               {
@@ -1314,7 +1313,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -1326,9 +1328,6 @@
                       "flow360_velocity_unit"
                     ]
                   }
-                },
-                "strictType": {
-                  "type": "vector3"
                 }
               },
               {
