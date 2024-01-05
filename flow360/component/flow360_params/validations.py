@@ -426,6 +426,6 @@ def _check_consistency_ddes_unsteady(values):
     run_ddes = False
     if turbulence_model_solver is not None:
         run_ddes = turbulence_model_solver.DDES
-    if run_ddes and isinstance(time_stepping, SteadyTimeStepping):
+    if run_ddes and (time_stepping is None or isinstance(time_stepping, SteadyTimeStepping)):
         raise ValueError("Running DDES with steady simulation is invalid.")
     return values

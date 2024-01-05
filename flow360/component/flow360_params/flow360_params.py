@@ -1157,6 +1157,7 @@ class Flow360Params(Flow360BaseModel):
         return _check_equation_eval_frequency_for_unsteady_simulations(values)
 
     # pylint: disable=no-self-argument
+    @pd.root_validator
     def check_consistency_ddes_unsteady(cls, values):
         """
         check consistency between delayed detached eddy and unsteady simulation
