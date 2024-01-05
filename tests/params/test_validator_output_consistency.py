@@ -28,6 +28,11 @@ def test_consistency_wall_function_and_surface_output():
             surface_output=SurfaceOutput(output_fields=["Cp"]),
         )
 
+        param = Flow360Params(
+            boundaries={"fluid/wing": WallFunction(), "fluid/farfield": FreestreamBoundary()},
+            surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
+        )
+
     with pytest.raises(
         ValueError,
         match="'wallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary type",
