@@ -219,7 +219,7 @@ def _check_eval_frequency_max_pseudo_steps_in_one_solver(
 def _check_equation_eval_frequency_for_unsteady_simulations(values):
     time_stepping = values.get("time_stepping")
     max_pseudo_steps = None
-    if time_stepping is not None and isinstance(time_stepping, UnsteadyTimeStepping):
+    if isinstance(time_stepping, UnsteadyTimeStepping):
         max_pseudo_steps = time_stepping.max_pseudo_steps
 
     _check_eval_frequency_max_pseudo_steps_in_one_solver(
