@@ -249,6 +249,7 @@ def _check_incompressible_navier_stokes_solver(values):
     return values
 
 
+# pylint: disable=line-too-long
 def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoReturn:
     paired_patch_name = boundary_obj.paired_patch_name
     if paired_patch_name is None:
@@ -262,8 +263,7 @@ def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoRe
     paired_patch_obj = boundaries[paired_patch_name]
     if boundary_obj.type != paired_patch_obj.type:
         raise ValueError(
-            f"{boundary_key} and its paired boundary {paired_patch_name} \
-            do not have the same type of boundary condition."
+            f"{boundary_key} and its paired boundary {paired_patch_name} do not have the same type of boundary condition."
         )
     if isinstance(boundary_obj, TranslationallyPeriodic):
         if (
@@ -271,8 +271,7 @@ def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoRe
             or paired_patch_obj.translation_vector is not None
         ):
             raise ValueError(
-                f"Flow360 doesn't allow periodic pairing information of {boundary_key} \
-                and {paired_patch_name} specified for both patches."
+                f"Flow360 doesn't allow periodic pairing information of {boundary_key} and {paired_patch_name} specified for both patches."
             )
     elif isinstance(boundary_obj, RotationallyPeriodic):
         if (
@@ -281,8 +280,7 @@ def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoRe
             or paired_patch_obj.theta_radians is not None
         ):
             raise ValueError(
-                f"Flow360 doesn't allow periodic pairing information of {boundary_key} \
-                and {paired_patch_name} specified for both patches."
+                f"Flow360 doesn't allow periodic pairing information of {boundary_key} and {paired_patch_name} specified for both patches."
             )
 
 
