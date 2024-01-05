@@ -1118,7 +1118,7 @@ class Flow360Params(Flow360BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator
-    def check_consistency_ddes_volumeOutput(cls, values):
+    def check_consistency_ddes_volume_output(cls, values):
         """
         check consistency between delayed detached eddy simulation and volume output
         """

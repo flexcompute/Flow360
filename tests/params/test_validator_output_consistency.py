@@ -37,3 +37,10 @@ def test_consistency_wall_function_and_surface_output():
                 boundaries={"fluid/wing": NoSlipWall(), "fluid/farfield": FreestreamBoundary()},
                 surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
             )
+
+
+def test_consistency_ddes_and_volume_output():
+    """
+    todo: add check for DDES and volume output
+    """
+    return
