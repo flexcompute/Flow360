@@ -41,6 +41,6 @@ def test_consistency_wall_function_and_surface_output():
 
 def test_consistency_ddes_and_volume_output():
     """
-    todo: add check for DDES and volume output
+    todo: add check for DDES and volume output (beta feature)
     """
     return

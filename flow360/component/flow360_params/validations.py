@@ -246,6 +246,9 @@ def _check_aero_acoustics(values):
 
 
 def _check_incompressible_navier_stokes_solver(values):
+    """
+    todo: beta feature
+    """
     return values
 
 
