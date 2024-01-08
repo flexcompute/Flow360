@@ -29,6 +29,7 @@ from .component.flow360_params.boundaries import (
     SupersonicInflow,
     WallFunction,
 )
+from .component.flow360_params.flow360_output import Slice, Slices
 from .component.flow360_params.flow360_params import (
     ActuatorDisk,
     AeroacousticOutput,
@@ -55,7 +56,6 @@ from .component.flow360_params.flow360_params import (
     PorousMedium,
     ProbeMonitor,
     SliceOutput,
-    Slices,
     SlidingInterface,
     SpalartAllmaras,
     SurfaceIntegralMonitor,
@@ -71,6 +71,7 @@ from .component.flow360_params.flow360_params import (
 )
 from .component.flow360_params.solvers import (
     IncompressibleNavierStokesSolver,
+    LinearSolver,
     NavierStokesSolver,
 )
 from .component.flow360_params.time_stepping import (

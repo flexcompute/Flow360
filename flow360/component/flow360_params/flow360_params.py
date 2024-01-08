@@ -63,7 +63,6 @@ from .flow360_output import (
     ProbeMonitor,
     SliceOutput,
     SliceOutputLegacy,
-    Slices,
     SurfaceIntegralMonitor,
     SurfaceOutput,
     SurfaceOutputLegacy,
