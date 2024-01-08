@@ -13,6 +13,7 @@ from .boundaries import (
     TranslationallyPeriodic,
     WallFunction,
 )
+from .flow360_fields import get_aliases
 from .initial_condition import ExpressionInitialCondition
 from .solvers import IncompressibleNavierStokesSolver
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
@@ -67,7 +68,9 @@ def _check_consistency_wall_function_and_surface_output(values):
     surface_output = values.get("surface_output")
     if surface_output is not None:
         surface_output_fields = surface_output.output_fields
-    if "wallFunctionMetric" in surface_output_fields and (not has_wall_function_boundary):
+    aliases = get_aliases("wallFunctionMetric")
+    fields = surface_output_fields
+    if [i for i in aliases if i in fields] and (not has_wall_function_boundary):
         raise ValueError(
             "'wallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary type."
         )
