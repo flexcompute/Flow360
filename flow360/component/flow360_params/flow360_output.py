@@ -9,7 +9,7 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic as pd
 from pydantic import conlist
 
-from ..types import Coordinate, PositiveInt
+from ..types import Axis, Coordinate, PositiveInt
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -219,7 +219,7 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
 class Slice(Flow360BaseModel):
     """:class:`NamedSlice` class"""
 
-    slice_normal: Coordinate = pd.Field(alias="sliceNormal")
+    slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 
@@ -565,7 +565,7 @@ class SliceNamedLegacy(Flow360BaseModel):
     """:class:`SliceNamedLegacy` class"""
 
     slice_name: str = pd.Field(alias="sliceName")
-    slice_normal: Coordinate = pd.Field(alias="sliceNormal")
+    slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
     output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
 

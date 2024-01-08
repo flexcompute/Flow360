@@ -10,9 +10,9 @@ from .component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    NavierStokesSolver,
     SpalartAllmaras,
 )
+from .component.flow360_params.solvers import NavierStokesSolver
 from .exceptions import Flow360ConfigurationError
 
 

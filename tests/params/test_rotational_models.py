@@ -1,5 +1,6 @@
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360 as fl
@@ -49,9 +50,11 @@ def test_bet_disk():
 
     assert chord1 and chord2 and chord3
 
-    polar1 = BETDiskSectionalPolar(lift_coeffs=[[[0.5]]], drag_coeffs=[[[0.5]]])
-    polar2 = BETDiskSectionalPolar(lift_coeffs=[[[0.5]]], drag_coeffs=[[[0.5]]])
-    polar3 = BETDiskSectionalPolar(lift_coeffs=[[[0.5]]], drag_coeffs=[[[0.5]]])
+    cl = np.random.rand(4, 4, 4).tolist()
+    cd = (np.random.rand(4, 4, 4) * 0.1).tolist()
+    polar1 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
+    polar2 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
+    polar3 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
 
     assert polar1 and polar2 and polar3
 
