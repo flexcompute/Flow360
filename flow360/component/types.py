@@ -3,9 +3,9 @@
 from typing import List, Optional, Tuple, Union
 
 import pydantic as pd
-from typing_extensions import Annotated, Literal
+from typing_extensions import Annotated
 
-from ..exceptions import ValidationError
+from ..exceptions import Flow360ValidationError
 
 # type tag default name
 TYPE_TAG_STR = "_type"
@@ -28,42 +28,6 @@ List2D = List[List[float]]
 
 # we use tuple for fixed length lists, beacause List is a mutable, variable length structure
 Coordinate = Tuple[float, float, float]
-
-
-class DimensionedValue(pd.BaseModel):
-    """DimensionedValue class"""
-
-    v: float
-    unit: Literal[None]
-
-
-class Omega(DimensionedValue):
-    """Omega type class"""
-
-    unit: Literal["non-dim", "rad/s", "deg/s"]
-
-
-class Velocity(DimensionedValue):
-    """Velocity type class"""
-
-    unit: Literal["m/s"]
-
-
-class TimeStep(DimensionedValue):
-    """TimeStep type class"""
-
-    v: PositiveFloat
-    unit: Literal["s", "sec", "seconds", "deg"]
-
-    def is_second(self) -> bool:
-        """is value in seconds
-
-        Returns
-        -------
-        bool
-            returns True if value is in seconds
-        """
-        return self.unit in ["s", "sec", "seconds"]
 
 
 class _PydanticValidate(pd.BaseModel):
@@ -89,9 +53,22 @@ class Vector(Coordinate):
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise pd.ValidationError(ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
+            raise pd.ValidationError(
+                Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls
+            )
         return vector
 
+    # pylint: disable=unused-argument
+    @classmethod
+    def __modify_schema__(cls, field_schema, field):
+        new_schema = {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [{"type": "number"}, {"type": "number"}, {"type": "number"}],
+        }
 
-class Axis(Vector):
-    """alias for class Vector"""
+        field_schema.update(new_schema)
+
+
+Axis = Vector

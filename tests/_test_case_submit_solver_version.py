@@ -2,7 +2,7 @@ import pytest
 
 import flow360 as fl
 from flow360.examples import OM6wing
-from flow360.exceptions import RuntimeError, ValidationError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValidationError
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
@@ -21,12 +21,12 @@ def test_versions():
     params = fl.Flow360Params(OM6wing.case_json)
 
     params2 = params.copy()
-    params2.time_stepping.CFL = fl.TimeSteppingCFL.adaptive()
+    params2.time_stepping.CFL = fl.AdaptiveCFL()
     try:
         # should error out because of adaptive not supported in 22.3.3.0
         case = vm.create_case(name="test-release-22.3.3.0", params=params2).submit()
         raise AssertionError
-    except ValidationError:
+    except Flow360ValidationError:
         case = vm.create_case(name="test-release-22.3.3.0", params=params).submit()
     assert case.solver_version == "release-22.3.3.0"
 
@@ -34,7 +34,7 @@ def test_versions():
         # should error out because of adaptive not supported in 22.3.3.0
         case2 = case.fork(name="test-fork-release-22.3.3.0", params=params2).submit()
         raise AssertionError
-    except ValidationError:
+    except Flow360ValidationError:
         case2 = case.fork(name="test-fork-release-22.3.3.0", params=params).submit()
     assert case2.solver_version == "release-22.3.3.0"
     assert case2.info.parent_id == case.id
@@ -43,7 +43,7 @@ def test_versions():
         # should error out because of adaptive not supported in 22.3.3.0
         case3 = case2.retry(name="test-retry-fork-release-22.3.3.0", params=params2).submit()
         raise AssertionError
-    except ValidationError:
+    except Flow360ValidationError:
         case3 = case2.retry(name="test-retry-fork-release-22.3.3.0", params=params).submit()
     assert case3.solver_version == "release-22.3.3.0"
     assert case3.info.parent_id == case2.info.parent_id
@@ -69,7 +69,7 @@ def test_versions():
             name="test-retry-release-23.1.1.0", solver_version="release-23.1.1.0"
         ).submit()
         raise AssertionError
-    except ValidationError:
+    except Flow360ValidationError:
         case3 = case.retry(
             name="test-retry-release-23.1.1.0", solver_version="release-23.1.1.0", params=params
         ).submit()
@@ -80,7 +80,7 @@ def test_versions():
     assert case4.solver_version == "release-23.2.1.0"
     assert case4.info.parent_id == case.id
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         # this is not allowed to change solver version from parent to child
         case4 = case2.retry(
             name="test-retry-fork-release-23.1.1.0", solver_version="release-23.1.1.0"

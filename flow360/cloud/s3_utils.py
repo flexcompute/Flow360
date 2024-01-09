@@ -3,7 +3,7 @@ s3 util file for material uploading and downloading.
 """
 import os
 import urllib
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
 
@@ -13,22 +13,15 @@ from boto3.s3.transfer import TransferConfig
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic import BaseModel, Field
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TextColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
 
 from ..environment import Env
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
+from .utils import _get_progress, _S3Action
 
 
-class ProgressCallbackInterface(ABC):
+class ProgressCallbackInterface(metaclass=ABCMeta):
     """
     Progress callback abstract class
     """
@@ -86,11 +79,7 @@ def create_base_folder(
     """
 
     if to_folder != ".":
-        to_file = (
-            os.path.join(to_folder, target_name)
-            if keep_folder
-            else os.path.join(to_folder, os.path.basename(target_name))
-        )
+        to_file = os.path.join(to_folder, os.path.basename(target_name))
 
     elif os.path.isdir(to_file):
         to_file = (
@@ -102,35 +91,6 @@ def create_base_folder(
     if dirname:
         os.makedirs(dirname, exist_ok=True)
     return to_file
-
-
-class _S3Action(Enum):
-    """
-    Enum for s3 action
-    """
-
-    UPLOADING = "↑"
-    DOWNLOADING = "↓"
-
-
-def _get_progress(action: _S3Action):
-    col = (
-        TextColumn(f"[bold green]{_S3Action.DOWNLOADING.value}")
-        if action == _S3Action.DOWNLOADING
-        else TextColumn(f"[bold red]{_S3Action.UPLOADING.value}")
-    )
-    return Progress(
-        col,
-        TextColumn("[bold blue]{task.fields[filename]}"),
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.1f}%",
-        "•",
-        DownloadColumn(),
-        "•",
-        TransferSpeedColumn(),
-        "•",
-        TimeRemainingColumn(),
-    )
 
 
 class _UserCredential(BaseModel):
@@ -209,6 +169,88 @@ class S3TransferType(Enum):
 
         return None
 
+    def create_multipart_upload(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+    ):
+        """
+        Creates a multipart upload for the specified resource ID and remote file name.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+
+        Returns:
+            str: The upload ID of the multipart upload.
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        return client.create_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+        )["UploadId"]
+
+    # pylint: disable=too-many-arguments
+    def upload_part(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        """
+        Uploads a part of the file as part of a multipart upload.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            part_number (int): The part number of the upload.
+            compressed_chunk: The compressed chunk data to upload.
+
+        Returns:
+            dict: A dictionary containing the e_tag and part_number of the uploaded part.
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        response = client.upload_part(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+            PartNumber=part_number,
+            UploadId=upload_id,
+            Body=compressed_chunk,
+        )
+
+        # Return the e_tag of the uploaded part
+        return {"ETag": response["ETag"], "PartNumber": part_number}
+
+    def complete_multipart_upload(
+        self, resource_id: str, remote_file_name: str, upload_id: str, uploaded_parts: dict
+    ):
+        """
+        Completes a multipart upload for the specified resource ID, remote file name, upload ID, e_tag, and part number.
+
+        Args:
+            resource_id (str): The ID of the resource.
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            e_tag (str): The e_tag of the uploaded part.
+            part_number (int): The part number of the completed upload.
+
+        Returns:
+            None
+        """
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        client.complete_multipart_upload(
+            Bucket=token.get_bucket(),
+            Key=token.get_s3_key(),
+            UploadId=upload_id,
+            MultipartUpload={"Parts": uploaded_parts},
+        )
+
     def upload_file(
         self, resource_id: str, remote_file_name: str, file_name: str, progress_callback=None
     ):
@@ -275,7 +317,9 @@ class S3TransferType(Enum):
         :return:
         """
         if to_file != "." and to_folder != ".":
-            raise FlValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
+            raise Flow360ValueError(
+                "Only one of 'to_file' or 'to_folder' should be provided, not both."
+            )
 
         to_file = create_base_folder(resource_id, remote_file_name, to_file, to_folder, keep_folder)
         if os.path.exists(to_file) and not overwrite:

@@ -7,7 +7,11 @@ from functools import wraps
 import requests
 
 from ..environment import Env
-from ..exceptions import AuthorisationError, WebError, WebNotFoundError
+from ..exceptions import (
+    Flow360AuthorisationError,
+    Flow360WebError,
+    Flow360WebNotFoundError,
+)
 from ..log import log
 from ..user_config import UserConfig
 from ..version import __version__
@@ -22,7 +26,11 @@ def api_key_auth(request):
     """
     key = api_key()
     if not key:
-        raise AuthorisationError(
+        if Env.current.name == "dev":
+            raise Flow360AuthorisationError(
+                "API key not found for env=dev, please set it by commandline: flow360 configure --dev."
+            )
+        raise Flow360AuthorisationError(
             f"API key not found for profile={UserConfig.profile}, please set it by commandline: flow360 configure."
         )
     request.headers["simcloud-api-key"] = key
@@ -51,19 +59,19 @@ def http_interceptor(func):
         log.debug(f"response: {resp}")
 
         if resp.status_code == 400:
-            raise WebError(f"Web {args[1]}: Bad request error: {resp.json()['error']}")
+            raise Flow360WebError(f"Web {args[1]}: Bad request error: {resp.json()['error']}")
 
         if resp.status_code == 401:
-            raise AuthorisationError("Unauthorized.")
+            raise Flow360AuthorisationError("Unauthorized.")
 
         if resp.status_code == 404:
-            raise WebNotFoundError(f"Web {args[1]}: Not found error: {resp.json()}")
+            raise Flow360WebNotFoundError(f"Web {args[1]}: Not found error: {resp.json()}")
 
         if resp.status_code == 200:
             result = resp.json()
             return result.get("data")
 
-        raise WebError(f"Web {args[1]}: Unexpected response error: {resp.status_code}")
+        raise Flow360WebError(f"Web {args[1]}: Unexpected response error: {resp.status_code}")
 
     return wrapper
 
@@ -118,7 +126,7 @@ class Http:
         :param json:
         :return:
         """
-        return self.session.put(Env.current.get_real_url(path), data=json, auth=api_key_auth)
+        return self.session.put(Env.current.get_real_url(path), json=json, auth=api_key_auth)
 
     @http_interceptor
     def delete(self, path: str):

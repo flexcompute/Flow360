@@ -3,14 +3,17 @@ import pytest
 from flow360.component.meshing.params import (
     Aniso,
     BoxRefinement,
+    CylinderRefinement,
     Edges,
     Face,
     Faces,
     ProjectAniso,
+    RotorDisk,
     SurfaceMeshingParams,
+    Volume,
     VolumeMeshingParams,
 )
-from flow360.exceptions import ValidationError
+from flow360.exceptions import Flow360ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
 
@@ -68,7 +71,7 @@ def test_edges():
     assert edges
     to_file_from_file_test(edges)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         edges = Edges.parse_raw(
             """
             {
@@ -98,7 +101,7 @@ def test_faces():
     assert faces
     to_file_from_file_test(faces)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         faces = Faces.parse_raw(
             """
             {
@@ -148,7 +151,7 @@ def test_surface_meshing_params():
     compare_to_ref(params, "ref/meshing_params/ref.yaml")
 
 
-def test_volume_meshing_params():
+def test_volume_meshing_params_from_obj():
     params = VolumeMeshingParams.parse_obj(
         {
             "volume": {"firstLayerThickness": 1e-3},
@@ -246,3 +249,41 @@ def test_volume_meshing_sliding_interfaces():
         }
     )
     print(params)
+
+
+def test_volume_meshing_params():
+    box_refinement_left = BoxRefinement(
+        center=(3.6, -5, 0),
+        axis_of_rotation=(0.06052275, -0.96836405, 0),
+        angle_of_rotation=76,
+        size=(2, 2, 0.5),
+        spacing=0.1,
+    )
+    box_refinement_right = box_refinement_left.copy(update={"center": (3.6, 5, 0)})
+
+    rotor_disk_left = RotorDisk(
+        innerRadius=0.0,
+        outerRadius=2,
+        thickness=0.42,
+        axisThrust=(-0.96836405, -0.06052275, 0.24209101),
+        center=(3.6, -5, 0),
+        spacingAxial=0.03,
+        spacingRadial=0.09,
+        spacingCircumferential=0.09,
+    )
+    rotor_disk_right = rotor_disk_left.copy(update={"center": (3.6, 5, 0)})
+
+    params = VolumeMeshingParams(
+        refinement_factor=1,
+        volume=Volume(first_layer_thickness=1e-5),
+        refinement=[
+            box_refinement_left,
+            box_refinement_right,
+            BoxRefinement(center=(10, 0, 0), size=(20, 15, 10), spacing=1),
+            CylinderRefinement(
+                radius=0.75, length=11, spacing=0.2, axis=(1, 0, 0), center=(5, 0, 0)
+            ),
+        ],
+        rotor_disks=[rotor_disk_left, rotor_disk_right],
+    )
+    assert params

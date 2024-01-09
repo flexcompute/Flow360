@@ -1,7 +1,7 @@
 """
 Flow360 meshing parameters
 """
-from typing import List, Optional, Union
+from typing import List, Optional, Union, get_args
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -10,6 +10,7 @@ from ..flow360_params.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
+    flow360_json_encoder,
 )
 from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
 
@@ -62,6 +63,10 @@ class Edges(Flow360SortableBaseModel):
     >>>
     """
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericEdgeWrapper.__fields__["v"].type_))
+
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_edge(cls, values):
@@ -109,6 +114,10 @@ class Faces(Flow360SortableBaseModel):
     >>>
     """
 
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericFaceWrapper.__fields__["v"].type_]
+
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_face(cls, values):
@@ -137,6 +146,21 @@ class SurfaceMeshingParams(Flow360BaseModel):
         alias="curvatureResolutionAngle", default=15
     )
     growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
+
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Returns
+        -------
+        json
+            Returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+
+        return self.json(encoder=flow360_json_encoder)
 
 
 class Refinement(Flow360BaseModel):
@@ -220,7 +244,23 @@ class VolumeMeshingParams(Flow360BaseModel):
     """
 
     volume: Volume = pd.Field()
+    refinement_factor: Optional[PositiveFloat] = pd.Field(alias="refinementFactor")
     farfield: Optional[Farfield] = pd.Field()
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
+
+    def to_flow360_json(self) -> dict:
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Returns
+        -------
+        json
+            Returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+
+        return self.json(encoder=flow360_json_encoder)

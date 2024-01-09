@@ -7,6 +7,8 @@ from os.path import expanduser
 import click
 import toml
 
+from flow360.cli import dict_utils
+
 home = expanduser("~")
 config_file = f"{home}/.flow360/config.toml"
 
@@ -31,6 +33,9 @@ def flow360():
 )
 @click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, dev.")
 @click.option(
+    "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in dev environment."
+)
+@click.option(
     "--suppress-submit-warning",
     type=bool,
     is_flag=True,
@@ -42,7 +47,7 @@ def flow360():
     is_flag=True,
     help='Whether to show warnings for "submit()" when creating new Case, new VolumeMesh etc.',
 )
-def configure(apikey, profile, suppress_submit_warning, show_submit_warning):
+def configure(apikey, profile, dev, suppress_submit_warning, show_submit_warning):
     """
     Configure flow360.
     """
@@ -56,7 +61,8 @@ def configure(apikey, profile, suppress_submit_warning, show_submit_warning):
             config = toml.loads(file_handler.read())
 
     if apikey is not None:
-        config.update({profile: {"apikey": apikey}})
+        entry = {profile: {"apikey": apikey}} if not dev else {profile: {"dev": {"apikey": apikey}}}
+        dict_utils.merge_overwrite(config, entry)
         changed = True
 
     if suppress_submit_warning and show_submit_warning:

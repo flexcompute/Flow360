@@ -1,21 +1,34 @@
 {
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "0.2.0b16",
     "geometry": {
-        "refArea": 1.15315084119231,
-        "momentLength": [
-            1.47602,
-            0.801672958512342,
-            1.47602
-        ],
-        "meshUnit": "m"
+        "refArea": {
+            "value": 1.15315084119231,
+            "units": "m**2"
+        },
+        "momentLength": {
+            "value": [
+                1.47602,
+                0.801672958512342,
+                1.47602
+            ],
+            "units": "m"
+        },
+        "meshUnit": {
+            "value": 1.0,
+            "units": "m"
+        }
     },
     "boundaries": {
-        "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
-        },
         "3": {
             "type": "Freestream",
             "name": "freestream"
+        },
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing"
         },
         "2": {
             "type": "SlipWall",
@@ -23,47 +36,43 @@
         }
     },
     "timeStepping": {
+        "maxPseudoSteps": 2000,
+        "modelType": "Steady",
+        "physicalSteps": 1,
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
-        "linearIterations": 10
+        "relativeTolerance": 0.0,
+        "CFLMultiplier": 1.0,
+        "linearIterations": 10,
+        "kappaMUSCL": -1.0,
+        "updateJacobianFrequency": 4,
+        "equationEvalFrequency": 1,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "numericalDissipationFactor": 1.0,
+        "linearSolver": {
+            "maxIterations": 30,
+            "absoluteTolerance": 1e-10
+        },
+        "limitVelocity": false,
+        "limitPressureDensity": false
     },
     "freestream": {
-        "Mach": 0.8404497144189707,
-        "Temperature": 288.15,
-        "density": 1.225,
-        "speed": {
-            "v": 286.0,
-            "unit": "m/s"
-        },
+        "modelType": "FromVelocity",
         "alphaAngle": 3.06,
-        "betaAngle": 0.0
+        "betaAngle": 0.0,
+        "velocity": {
+            "value": 286.0,
+            "units": "m/s"
+        }
     },
     "surfaceOutput": {
         "outputFormat": "tecplot",
         "outputFields": [
             "yPlus",
             "primitiveVars"
-        ],
-        "surfaces": {
-            "freestream": {
-                "outputFields": [
-                    "Cp",
-                    "Mach"
-                ]
-            },
-            "symmetry": {
-                "outputFields": [
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "wing": {
-                "outputFields": [
-                    "CfVec"
-                ]
-            }
-        }
+        ]
     },
     "volumeOutput": {
         "outputFormat": "tecplot",
@@ -79,35 +88,36 @@
         ],
         "slices": {
             "x0": {
-                "outputFields": [
-                    "Mach"
-                ],
                 "sliceNormal": [
                     1,
                     0,
                     0
                 ],
                 "sliceOrigin": [
-                    0,
-                    0,
-                    0
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "outputFields": [
+                    "Mach"
                 ]
             },
             "y1": {
-                "outputFields": [
-                    "T"
-                ],
                 "sliceNormal": [
                     0,
                     1,
                     0
                 ],
                 "sliceOrigin": [
-                    2,
-                    1,
-                    0
+                    2.0,
+                    1.0,
+                    0.0
+                ],
+                "outputFields": [
+                    "T"
                 ]
             }
         }
-    }
+    },
+    "hash": "4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead"
 }

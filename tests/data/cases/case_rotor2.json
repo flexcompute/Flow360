@@ -1,0 +1,201 @@
+{
+   "geometry": {
+      "refArea": 3576668.679,
+      "momentCenter": [
+         0,
+         0,
+         0
+      ],
+      "momentLength": [
+         1067,
+         1067,
+         1067
+      ]
+   },
+   "runControl": {
+      "restart": false
+   },
+   "volumeOutput": {
+      "outputFormat": "tecplot",
+      "primitiveVars": true,
+      "vorticity": true,
+      "residualNavierStokes": false,
+      "residualTurbulence": false,
+      "wallDistanceDir": false,
+      "T": false,
+      "s": false,
+      "Cp": false,
+      "Mach": true,
+      "qcriterion": true,
+      "mut": false,
+      "VelocityRelative": false,
+      "nuHat": false,
+      "mutRatio": false,
+      "animationFrequency": -1,
+      "computeTimeAverages": false,
+      "startAverageIntegrationStep": 100000
+   },
+   "surfaceOutput": {
+      "outputFormat": "both",
+      "primitiveVars": false,
+      "Cp": true,
+      "Cf": true,
+      "CfTangent": false,
+      "CfNormal": false,
+      "CfVec": true,
+      "yPlus": true,
+      "wallDistance": false,
+      "Mach": false,
+      "animationFrequency": -1,
+      "nodeForcesPerUnitArea": false
+   },
+   "sliceOutput": {
+      "outputFormat": "tecplot",
+      "slices": [
+         {
+            "sliceName": "xy",
+            "sliceNormal": [
+               0,
+               0,
+               1000
+            ],
+            "sliceOrigin": [
+               0,
+               0,
+               0
+            ]
+         },
+         {
+            "sliceName": "x0",
+            "sliceNormal": [
+               1000,
+               0,
+               0
+            ],
+            "sliceOrigin": [
+               0,
+               0,
+               0
+            ]
+         },
+         {
+            "sliceName": "x1",
+            "sliceNormal": [
+               1000,
+               0,
+               0
+            ],
+            "sliceOrigin": [
+               200,
+               0,
+               0
+            ]
+         },
+         {
+            "sliceName": "x2",
+            "sliceNormal": [
+               1000,
+               0,
+               0
+            ],
+            "sliceOrigin": [
+               1000,
+               0,
+               0
+            ]
+         },
+         {
+            "sliceName": "x3",
+            "sliceNormal": [
+               1000,
+               0,
+               0
+            ],
+            "sliceOrigin": [
+               2500,
+               0,
+               0
+            ]
+         }
+      ],
+      "animationFrequency": 24
+   },
+   "navierStokesSolver": {
+      "absoluteTolerance": 1e-9,
+      "relativeTolerance": 0.001,
+      "linearIterations": 35,
+      "kappaMUSCL": -1,
+      "orderOfAccuracy": 1,
+      "updateJacobianFrequency": 1,
+      "equationEvalFrequency": 1
+   },
+   "turbulenceModelSolver": {
+      "modelType": "SpalartAllmaras",
+      "absoluteTolerance": 1e-8,
+      "relativeTolerance": 0.01,
+      "linearIterations": 35,
+      "kappaMUSCL": -1,
+      "DDES": true,
+      "orderOfAccuracy": 1,
+      "updateJacobianFrequency": 1,
+      "equationEvalFrequency": 1,
+      "rotationCorrection": true
+   },
+   "freestream": {
+      "muRef": 0.0000429,
+      "Mach": 0.13224792076,
+      "MachRef": 0.459691839,
+      "Temperature": 288.15,
+      "alphaAngle": 0,
+      "betaAngle": 0
+   },
+   "boundaries": {
+      "farfieldBlock/Farfield": {
+         "type": "Freestream"
+      },
+      "farfieldBlock/rotationInterface": {
+         "type": "SlidingInterface"
+      },
+      "nearfieldBlock/rotationInterface": {
+         "type": "SlidingInterface"
+      },
+      "nearfieldBlock/Hub": {
+         "type": "NoSlipWall"
+      },
+      "nearfieldBlock/Blades": {
+         "type": "NoSlipWall"
+      }
+   },
+   "slidingInterfaces": [
+      {
+         "stationaryPatches": [
+            "farfieldBlock/rotationInterface"
+         ],
+         "rotatingPatches": [
+            "nearfieldBlock/rotationInterface"
+         ],
+         "axisOfRotation": [
+            1,
+            0,
+            0
+         ],
+         "centerOfRotation": [
+            0,
+            0,
+            0
+         ],
+         "omega": 0.000430826465,
+         "volumeName": "nearfieldBlock"
+      }
+   ],
+   "timeStepping": {
+      "timeStepSize": 243.067136,
+      "maxPhysicalSteps": 120,
+      "maxPseudoSteps": 15,
+      "CFL": {
+         "initial": 1,
+         "final": 1000,
+         "rampSteps": 13
+      }
+   }
+}

@@ -1,6 +1,7 @@
 """
 Security related functions.
 """
+from ..environment import Env
 from ..user_config import UserConfig
 
 
@@ -10,5 +11,5 @@ def api_key():
     :return:
     """
 
-    apikey = UserConfig.apikey()
+    apikey = UserConfig.apikey(Env.current)
     return apikey

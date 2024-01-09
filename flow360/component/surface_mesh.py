@@ -10,8 +10,7 @@ from typing import Iterator, List, Union
 import pydantic as pd
 
 from ..cloud.rest_api import RestApi
-from ..exceptions import FileError as FlFileError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
 from .interfaces import SurfaceMeshInterface
@@ -22,7 +21,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .utils import validate_type
+from .utils import shared_account_confirm_proceed, validate_type
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
 
@@ -84,15 +83,15 @@ class SurfaceMeshDraft(ResourceDraft):
     def _validate(self):
         _, ext = os.path.splitext(self.geometry_file)
         if ext not in [".csm", ".egads"]:
-            raise FlValueError(
+            raise Flow360ValueError(
                 f"Unsupported geometry file extensions: {ext}. Supported: [csm, egads]."
             )
 
         if not os.path.exists(self.geometry_file):
-            raise FlFileError(f"{self.geometry_file} not found.")
+            raise Flow360FileError(f"{self.geometry_file} not found.")
 
         if not isinstance(self.params, SurfaceMeshingParams):
-            raise FlValueError(
+            raise Flow360ValueError(
                 f"params must be of type: SurfaceMeshingParams, got {self.params}, type={type(self.params)} instead."
             )
 
@@ -120,6 +119,9 @@ class SurfaceMeshDraft(ResourceDraft):
         name = self.name
         if name is None:
             name = os.path.splitext(os.path.basename(self.geometry_file))[0]
+
+        if not shared_account_confirm_proceed():
+            raise Flow360ValueError("User aborted resource submit.")
 
         data = {
             "name": self.name,

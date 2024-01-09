@@ -10,19 +10,24 @@ from typing import Iterator, List, Optional, Union
 import numpy as np
 from pydantic import Extra, Field, validator
 
+from flow360.component.compress_upload import compress_and_upload_chunks
+
 from ..cloud.requests import NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
-from ..exceptions import CloudFileError
-from ..exceptions import FileError as FlFileError
-from ..exceptions import Flow360NotImplementedError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import (
+    Flow360CloudFileError,
+    Flow360FileError,
+    Flow360NotImplementedError,
+    Flow360RuntimeError,
+    Flow360ValueError,
+)
 from ..log import log
 from ..solver_version import Flow360Version
 from .case import Case, CaseDraft
+from .flow360_params.boundaries import NoSlipWall
 from .flow360_params.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
-    NoSlipWall,
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
@@ -35,7 +40,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import validate_type
+from .utils import shared_account_confirm_proceed, validate_type, zstd_compress
 from .validator import Validator
 
 try:
@@ -83,7 +88,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
     return []
 
 
-def get_boundries_from_sliding_interfaces(params: Union[Flow360Params, Flow360MeshParams]):
+def get_boundaries_from_sliding_interfaces(params: Union[Flow360Params, Flow360MeshParams]):
     """
     Get wall boundary names
     :param params:
@@ -92,10 +97,11 @@ def get_boundries_from_sliding_interfaces(params: Union[Flow360Params, Flow360Me
     assert params
     res = []
 
-    if params.sliding_interfaces and params.sliding_interfaces.rotating_patches:
-        res += params.sliding_interfaces.rotating_patches[:]
-    if params.sliding_interfaces and params.sliding_interfaces.stationary_patches:
-        res += params.sliding_interfaces.stationary_patches[:]
+    # Sliding interfaces are deprecated - we need to handle this somehow
+    # if params.sliding_interfaces and params.sliding_interfaces.rotating_patches:
+    #    res += params.sliding_interfaces.rotating_patches[:]
+    # if params.sliding_interfaces and params.sliding_interfaces.stationary_patches:
+    #    res += params.sliding_interfaces.stationary_patches[:]
     return res
 
 
@@ -160,12 +166,14 @@ def validate_cgns(
     assert cgns_file
     assert params
     boundaries_in_file = get_boundaries_from_file(cgns_file, solver_version)
-    boundaries_in_params = get_no_slip_walls(params) + get_boundries_from_sliding_interfaces(params)
+    boundaries_in_params = get_no_slip_walls(params) + get_boundaries_from_sliding_interfaces(
+        params
+    )
     boundaries_in_file = set(boundaries_in_file)
     boundaries_in_params = set(boundaries_in_params)
 
     if not boundaries_in_file.issuperset(boundaries_in_params):
-        raise FlValueError(
+        raise Flow360ValueError(
             "The following input boundary names from mesh json are not found in mesh:"
             + f" {' '.join(boundaries_in_params - boundaries_in_file)}."
             + f" Boundary names in cgns: {' '.join(boundaries_in_file)}"
@@ -223,7 +231,7 @@ class VolumeMeshFileFormat(Enum):
             return VolumeMeshFileFormat.UGRID
         if ext == VolumeMeshFileFormat.CGNS.ext():
             return VolumeMeshFileFormat.CGNS
-        raise RuntimeError(f"Unsupported file format {file}")
+        raise Flow360RuntimeError(f"Unsupported file format {file}")
 
 
 class UGRIDEndianness(Enum):
@@ -259,7 +267,7 @@ class UGRIDEndianness(Enum):
             return UGRIDEndianness.LITTLE
         if ext == UGRIDEndianness.BIG.ext():
             return UGRIDEndianness.BIG
-        raise RuntimeError(f"Unknown endianness for file {file}")
+        raise Flow360RuntimeError(f"Unknown endianness for file {file}")
 
 
 class CompressionFormat(Enum):
@@ -269,6 +277,7 @@ class CompressionFormat(Enum):
 
     GZ = "gz"
     BZ2 = "bz2"
+    ZST = "zst"
     NONE = None
 
     def ext(self) -> str:
@@ -280,6 +289,8 @@ class CompressionFormat(Enum):
             return ".gz"
         if self is CompressionFormat.BZ2:
             return ".bz2"
+        if self is CompressionFormat.ZST:
+            return ".zst"
         return ""
 
     @classmethod
@@ -292,6 +303,8 @@ class CompressionFormat(Enum):
             return CompressionFormat.GZ, file_name
         if ext == CompressionFormat.BZ2.ext():
             return CompressionFormat.BZ2, file_name
+        if ext == CompressionFormat.ZST.ext():
+            return CompressionFormat.ZST, file_name
         return CompressionFormat.NONE, file
 
 
@@ -348,7 +361,7 @@ class VolumeMeshDraft(ResourceDraft):
     Volume mesh draft component (before submit)
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_name: str = None,
@@ -361,7 +374,7 @@ class VolumeMeshDraft(ResourceDraft):
         isascii: bool = False,
     ):
         if file_name is not None and not os.path.exists(file_name):
-            raise FlFileError(f"File '{file_name}' not found.")
+            raise Flow360FileError(f"File '{file_name}' not found.")
 
         if endianess is not None:
             raise Flow360NotImplementedError(
@@ -390,6 +403,7 @@ class VolumeMeshDraft(ResourceDraft):
         self.tags = tags
         self.solver_version = solver_version
         self._id = None
+        self.compress_method = CompressionFormat.ZST
         ResourceDraft.__init__(self)
 
     def _submit_from_surface(self):
@@ -415,18 +429,22 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-locals
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
-        compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
+        original_compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
         mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
         endianness = UGRIDEndianness.detect(file_name_no_compression)
-
         if mesh_format is VolumeMeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
             remote_file_name = "mesh"
+        compression = (
+            original_compression
+            if original_compression != CompressionFormat.NONE
+            else self.compress_method
+        )
         remote_file_name = (
             f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
         )
@@ -452,8 +470,28 @@ class VolumeMeshDraft(ResourceDraft):
         info = VolumeMeshMeta(**resp)
         self._id = info.id
         mesh = VolumeMesh(self.id)
-        mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
+
+        # parallel compress and upload
+        if (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.BZ2
+        ):
+            upload_id = mesh.create_multipart_upload(remote_file_name)
+            compress_and_upload_chunks(self.file_name, upload_id, mesh, remote_file_name)
+
+        elif (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.ZST
+        ):
+            compressed_file_name = zstd_compress(self.file_name)
+            mesh._upload_file(
+                remote_file_name, compressed_file_name, progress_callback=progress_callback
+            )
+            os.remove(compressed_file_name)
+        else:
+            mesh._upload_file(remote_file_name, self.file_name, progress_callback=progress_callback)
         mesh._complete_upload(remote_file_name)
+
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
@@ -471,13 +509,16 @@ class VolumeMeshDraft(ResourceDraft):
             VolumeMesh object with id
         """
 
+        if not shared_account_confirm_proceed():
+            raise Flow360ValueError("User aborted resource submit.")
+
         if self.file_name is not None:
             return self._submit_upload_mesh(progress_callback)
 
         if self.surface_mesh_id is not None and self.name is not None and self.params is not None:
             return self._submit_from_surface()
 
-        raise FlValueError(
+        raise Flow360ValueError(
             "You must provide volume mesh file for upload or surface mesh Id with meshing parameters."
         )
 
@@ -653,11 +694,11 @@ class VolumeMesh(Flow360Resource):
             try:
                 VolumeMeshFileFormat.detect(file_name_no_compression)
                 remote_file_name = file["fileName"]
-            except RuntimeError:
+            except Flow360RuntimeError:
                 continue
 
         if remote_file_name is None:
-            raise CloudFileError(f"No volume mesh file found for id={self.id}")
+            raise Flow360CloudFileError(f"No volume mesh file found for id={self.id}")
 
         return remote_file_name
 
@@ -681,7 +722,6 @@ class VolumeMesh(Flow360Resource):
         :param solver_version:
         :return:
         """
-
         return VolumeMeshDraft(
             file_name=file_name,
             name=name,

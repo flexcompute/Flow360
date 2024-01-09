@@ -1,0 +1,157 @@
+{
+   "geometry": {
+      "refArea": 2.265,
+      "momentCenter": [
+         0,
+         0,
+         0
+      ],
+      "momentLength": [
+         1,
+         1,
+         1
+      ]
+   },
+   "runControl": {
+      "restart": false
+   },
+   "volumeOutput": {
+      "outputFormat": "tecplot",
+      "animationFrequency": -1,
+      "primitiveVars": true,
+      "vorticity": false,
+      "residualNavierStokes": false,
+      "residualTurbulence": false,
+      "T": false,
+      "s": false,
+      "Cp": false,
+      "mut": false,
+      "mutRatio": false,
+      "qcriterion": true
+   },
+   "surfaceOutput": {
+      "outputFormat": "tecplot",
+      "animationFrequency": -1,
+      "primitiveVars": true,
+      "Cp": true,
+      "Cf": true,
+      "CfVec": true,
+      "yPlus": true,
+      "wallDistance": false
+   },
+   "navierStokesSolver": {
+      "tolerance": 1e-10,
+      "linearIterations": 35,
+      "kappaMUSCL": 0.33,
+      "updateJacobianFrequency": 4,
+      "equationEvalFrequency": 1,
+      "orderOfAccuracy": 2
+   },
+   "turbulenceModelSolver": {
+      "modelType": "SpalartAllmaras",
+      "tolerance": 1e-8,
+      "linearIterations": 25,
+      "updateJacobianFrequency": 4,
+      "equationEvalFrequency": 4,
+      "orderOfAccuracy": 2
+   },
+   "freestream": {
+      "Reynolds": 4840000,
+      "Mach": 0.2123,
+      "Temperature": 289.44,
+      "alphaAngle": 30,
+      "betaAngle": 0
+   },
+   "boundaries": {
+      "1": {
+         "type": "NoSlipWall",
+         "name": "Canard"
+      },
+      "2": {
+         "type": "NoSlipWall",
+         "name": "ElevatorP"
+      },
+      "3": {
+         "type": "NoSlipWall",
+         "name": "ElevatorPP"
+      },
+      "4": {
+         "type": "Freestream",
+         "name": "FarField"
+      },
+      "5": {
+         "type": "NoSlipWall",
+         "name": "Fuselage"
+      },
+      "6": {
+         "type": "NoSlipWall",
+         "name": "HorTail"
+      },
+      "7": {
+         "type": "NoSlipWall",
+         "name": "MainWing"
+      },
+      "8": {
+         "type": "NoSlipWall",
+         "name": "Pod1"
+      },
+      "9": {
+         "type": "NoSlipWall",
+         "name": "Pod3"
+      },
+      "10": {
+         "type": "NoSlipWall",
+         "name": "Pod4"
+      },
+      "11": {
+         "type": "NoSlipWall",
+         "name": "Pod5"
+      },
+      "12": {
+         "type": "SlipWall",
+         "name": "SymmPlane"
+      },
+      "13": {
+         "type": "NoSlipWall",
+         "name": "VertTail"
+      },
+      "14": {
+         "type": "NoSlipWall",
+         "name": "AileronP"
+      },
+      "15": {
+         "type": "NoSlipWall",
+         "name": "AileronPP"
+      },
+      "16": {
+         "type": "NoSlipWall",
+         "name": "AileronPPP"
+      },
+      "17": {
+         "type": "NoSlipWall",
+         "name": "RudderMid"
+      },
+      "18": {
+         "type": "SlipWall",
+         "name": "RudderRoot"
+      },
+      "19": {
+         "type": "NoSlipWall",
+         "name": "RudderTip"
+      },
+      "20": {
+         "type": "NoSlipWall",
+         "name": "WingRoot"
+      }
+   },
+   "timeStepping": {
+      "maxPhysicalSteps": 1,
+      "timeStepSize": "inf",
+      "maxPseudoSteps": 10000,
+      "CFL": {
+         "initial": 1,
+         "final": 100,
+         "rampSteps": 1000
+      }
+   }
+}

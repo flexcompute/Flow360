@@ -5,7 +5,7 @@ import os
 import re
 import shutil
 import traceback
-from abc import ABC
+from abc import ABCMeta
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -17,7 +17,7 @@ import pydantic as pd
 from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..component.interfaces import BaseInterface
-from ..exceptions import RuntimeError as FlRuntimeError
+from ..exceptions import Flow360RuntimeError
 from ..log import LogLevel, log
 from ..user_config import UserConfig
 from .utils import is_valid_uuid, validate_type
@@ -101,7 +101,7 @@ def before_submit_only(func):
     @wraps(func)
     def wrapper(obj, *args, **kwargs):
         if obj.is_cloud_resource():
-            raise FlRuntimeError(
+            raise Flow360RuntimeError(
                 'Resource already have "id", cannot call this method. To modify and re-submit create a copy.'
             )
         return func(obj, *args, **kwargs)
@@ -109,7 +109,7 @@ def before_submit_only(func):
     return wrapper
 
 
-class ResourceDraft(ABC):
+class ResourceDraft(metaclass=ABCMeta):
     """
     Abstract base class for resources in draft state (before submission).
     """
@@ -186,7 +186,9 @@ class Flow360Resource(RestApi):
             validate_type(meta, "meta", self.info_type_class)
             self._info = meta
         else:
-            raise FlRuntimeError(f"Resource already have metadata {self._info}. Cannot assign.")
+            raise Flow360RuntimeError(
+                f"Resource already have metadata {self._info}. Cannot assign."
+            )
 
     @classmethod
     def _from_meta(cls, meta):
@@ -286,7 +288,7 @@ class Flow360Resource(RestApi):
         to_folder : str, optional
             Folder name to save the downloaded file. If None, the file will be saved in the current directory.
         keep_folder : bool, optional
-            If True, preserve the original folder structure of the file in the destination.
+            If True, preserve the original folder structure of the file in the destination. Does not work with to_folder
         overwrite : bool, optional
             If True, overwrite existing files with the same name in the destination.
         progress_callback : callable, optional
@@ -325,6 +327,64 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, file_name, progress_callback=progress_callback
         )
 
+    def create_multipart_upload(self, remote_file_name: str):
+        """
+        Creates a multipart upload for the specified remote file name and file.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+
+        Returns:
+            UploadID
+        """
+        return self.s3_transfer_method.create_multipart_upload(self.id, remote_file_name)
+
+    def upload_part(
+        self,
+        remote_file_name: str,
+        upload_id: str,
+        part_number: int,
+        compressed_chunk,
+    ):
+        """
+        Uploads a part of the file as part of a multipart upload.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            part_number (int): The part number of the upload.
+            compressed_chunk: The compressed chunk data to upload.
+
+        Returns:
+            {"ETag": response["ETag"], "PartNumber": part_number}
+        """
+        return self.s3_transfer_method.upload_part(
+            self.id, remote_file_name, upload_id, part_number, compressed_chunk
+        )
+
+    def complete_multipart_upload(
+        self, remote_file_name: str, upload_id: str, uploaded_parts: dict
+    ):
+        """
+        Completes a multipart upload for the specified remote file name and upload ID.
+
+        Args:
+            remote_file_name (str): The name of the remote file.
+            upload_id (str): The ID of the multipart upload.
+            uploaded_parts (dict): A dictionary containing information about the uploaded parts.
+                The dictionary should have the following structure:
+                {
+                    "ETag": "string",       # The ETag of each uploaded part.
+                    "part_number": int      # The part number of each uploaded part.
+                }
+
+        Returns:
+            None
+        """
+        self.s3_transfer_method.complete_multipart_upload(
+            self.id, remote_file_name, upload_id, uploaded_parts
+        )
+
 
 def is_object_cloud_resource(resource: Flow360Resource):
     """
@@ -332,7 +392,7 @@ def is_object_cloud_resource(resource: Flow360Resource):
     """
     if resource is not None:
         if not resource.is_cloud_resource():
-            raise FlRuntimeError(error_messages.not_a_cloud_resource)
+            raise Flow360RuntimeError(error_messages.not_a_cloud_resource)
         return True
     return False
 

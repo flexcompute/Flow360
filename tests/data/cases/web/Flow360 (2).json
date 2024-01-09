@@ -1,0 +1,103 @@
+{
+    "geometry" : {
+        "refArea" : 297360.0,
+        "momentCenter" : [1325.90, 468.75, 177.95],
+        "momentLength" : [1156.75, 275.8, 1156.75]
+    },
+    "runControl" : {
+        "startAlphaControlPseudoStep" : 500,                                   
+        "targetCL" : 0.5
+    },
+    "volumeOutput" : {
+        "outputFormat" : "paraview",
+        "primitiveVars" : true,
+        "vorticity" : true,
+        "residualNavierStokes" : true,
+        "residualTurbulence" : true,
+        "wallDistanceDir" : true,
+        "T" : true,
+        "s" : false,
+        "Cp" : true,
+        "Mach" : true,
+        "mut" : true,
+        "VelocityRelative" : true,
+        "nuHat" : true,
+        "mutRatio" : false,
+        "animationFrequency": 10000,
+        "computeTimeAverages" : false,
+        "startAverageIntegrationStep" : 100000,
+	"qcriterion" : true
+    },
+    "surfaceOutput" : {
+        "outputFormat" : "paraview",
+        "primitiveVars" : true,
+        "Cp" : true,
+        "Cf" : true,
+        "CfTangent" : true,
+        "CfNormal" : true,
+        "CfVec" : false,
+        "yPlus" : true,
+        "wallDistance" : false,
+        "Mach" : false,
+        "animationFrequency": 10000,
+	"residualSA" : true,
+        "nodeForcesPerUnitArea" : true
+    },
+    "sliceOutput" : {
+        "outputFormat":"paraview",
+        "slices":[
+        {
+          "sliceName" : "sliceTest",
+          "sliceNormal" : [0.0, 0.0, 1.0],
+          "sliceOrigin" : [0.0,0.0,0.0]
+        }
+        ],
+        "animationFrequency": 10000
+    },
+    "navierStokesSolver" : {
+        "absoluteTolerance" : 1e-10,
+        "relativeTolerance" : 1e-2,
+        "linearIterations" : 25,
+        "kappaMUSCL" : -1.0,
+        "orderOfAccuracy" : 2,
+        "updateJacobianFrequency" : 2,
+        "equationEvalFrequency" : 1
+    },
+    "turbulenceModelSolver" : {
+        "modelType" : "SpalartAllmaras",
+        "absoluteTolerance" : 1e-8,
+        "relativeTolerance" : 1e-2,
+        "linearIterations" : 25,
+        "kappaMUSCL" : -1.0,
+        "DDES" : false,
+        "orderOfAccuracy" : 2,
+        "updateJacobianFrequency" : 1,
+        "equationEvalFrequency" : 2,
+        "rotationCorrection" : false
+    },
+    "freestream" :
+    {
+        "Reynolds" : 18129.0790427846,
+        "Mach" : 0.85,
+        "Temperature" : 310.928,
+        "alphaAngle" : 0.0,
+        "betaAngle" : 0.0
+    },
+    "boundaries" : {
+        "blk-1/tri_aircraft" : { "type" : "NoSlipWall" },
+        "blk-1/quad_aircraft" : { "type" : "NoSlipWall" },
+        "blk-1/farfield" :   { "type" : "Freestream" },
+        "blk-1/tri_symm" :   { "type" : "SlipWall" },
+        "blk-1/quad_symm" :   { "type" : "SlipWall" }
+    },
+    "timeStepping" : {
+		"timeStepSize" : "inf",
+		"maxPhysicalSteps" : 1,
+		"maxPseudoSteps" : 3500,
+        "CFL" : {
+            "initial" : 1,
+            "final" : 100,
+            "rampSteps" : 600
+        }
+    }
+}

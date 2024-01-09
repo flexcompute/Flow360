@@ -17,7 +17,7 @@ case = case.submit()
 print(case)
 
 case2 = case.retry(name="OM6wing-adaptive-CFL", solver_version="release-23.2.1.0")
-case2.params.time_stepping.CFL = fl.TimeSteppingCFL.adaptive()
+case2.params.time_stepping.CFL = fl.AdaptiveCFL()
 case2.params.time_stepping.max_pseudo_steps = 1000
 case2 = case2.submit()
 print(case2)

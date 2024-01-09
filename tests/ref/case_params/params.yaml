@@ -9,23 +9,41 @@ boundaries:
         name: freestream
         type: Freestream
 freestream:
-    Mach: 0.8404497144189707
-    Temperature: 288.15
     alphaAngle: 3.06
     betaAngle: 0.0
-    density: 1.225
-    speed:
-        unit: m/s
-        v: 286.0
+    modelType: FromVelocity
+    velocity:
+        units: m/s
+        value: 286.0
 geometry:
-    meshUnit: m
+    meshUnit:
+        units: m
+        value: 1.0
     momentLength:
-    - 1.47602
-    - 0.801672958512342
-    - 1.47602
-    refArea: 1.15315084119231
+        units: m
+        value:
+        - 1.47602
+        - 0.801672958512342
+        - 1.47602
+    refArea:
+        units: m**2
+        value: 1.15315084119231
+hash: 4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead
 navierStokesSolver:
+    CFLMultiplier: 1.0
+    equationEvalFrequency: 1
+    kappaMUSCL: -1.0
+    limitPressureDensity: false
+    limitVelocity: false
     linearIterations: 10
+    linearSolver:
+        absoluteTolerance: 1.0e-10
+        maxIterations: 30
+    maxForceJacUpdatePhysicalSteps: 0
+    numericalDissipationFactor: 1.0
+    orderOfAccuracy: 2
+    relativeTolerance: 0.0
+    updateJacobianFrequency: 4
 sliceOutput:
     outputFields:
     - Cp
@@ -39,9 +57,9 @@ sliceOutput:
             - 0
             - 0
             sliceOrigin:
-            - 0
-            - 0
-            - 0
+            - 0.0
+            - 0.0
+            - 0.0
         y1:
             outputFields:
             - T
@@ -50,28 +68,22 @@ sliceOutput:
             - 1
             - 0
             sliceOrigin:
-            - 2
-            - 1
-            - 0
+            - 2.0
+            - 1.0
+            - 0.0
 surfaceOutput:
     outputFields:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
-    surfaces:
-        freestream:
-            outputFields:
-            - Cp
-            - Mach
-        symmetry:
-            outputFields:
-            - T
-            - heatFlux
-        wing:
-            outputFields:
-            - CfVec
 timeStepping:
+    maxPseudoSteps: 2000
+    modelType: Steady
+    physicalSteps: 1
     timeStepSize: inf
+unitSystem:
+    name: SI
+version: 0.2.0b16
 volumeOutput:
     outputFields:
     - Mach

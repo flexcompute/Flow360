@@ -1,0 +1,359 @@
+{
+  "title": "Volume zones",
+  "additionalProperties": {
+    "oneOf": [
+      {
+        "title": "Fluid dynamics volume zone",
+        "type": "object",
+        "properties": {
+          "modelType": {
+            "title": "Model type",
+            "default": "FluidDynamics",
+            "const": "FluidDynamics",
+            "type": "string"
+          },
+          "_addReferenceFrame": {
+            "title": "Reference frame",
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "dependencies": {
+          "_addReferenceFrame": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "_addReferenceFrame": {
+                    "default": true,
+                    "const": true,
+                    "type": "boolean"
+                  },
+                  "referenceFrame": {
+                    "title": "Reference frame",
+                    "anyOf": [
+                      {
+                        "title": "Reference frame",
+                        "type": "object",
+                        "properties": {
+                          "omega": {
+                            "title": "Omega",
+                            "properties": {
+                              "value": {
+                                "type": "number"
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "angular_velocity",
+                                "enum": [
+                                  "rad/s",
+                                  "flow360_angular_velocity_unit"
+                                ]
+                              }
+                            }
+                          },
+                          "centerOfRotation": {
+                            "title": "Center of rotation",
+                            "properties": {
+                              "value": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "length",
+                                "enum": [
+                                  "m",
+                                  "cm",
+                                  "ft",
+                                  "flow360_length_unit",
+                                  "mm",
+                                  "inch"
+                                ]
+                              }
+                            }
+                          },
+                          "axisOfRotation": {
+                            "title": "Axis of rotation",
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "omega",
+                          "centerOfRotation",
+                          "axisOfRotation"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "title": "Reference frame omega radians",
+                        "type": "object",
+                        "properties": {
+                          "omegaRadians": {
+                            "title": "Omega radians",
+                            "type": "number"
+                          },
+                          "centerOfRotation": {
+                            "title": "Center of rotation",
+                            "properties": {
+                              "value": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "length",
+                                "enum": [
+                                  "m",
+                                  "cm",
+                                  "ft",
+                                  "flow360_length_unit",
+                                  "mm",
+                                  "inch"
+                                ]
+                              }
+                            }
+                          },
+                          "axisOfRotation": {
+                            "title": "Axis of rotation",
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "omegaRadians",
+                          "centerOfRotation",
+                          "axisOfRotation"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "title": "Reference frame expression",
+                        "type": "object",
+                        "properties": {
+                          "thetaRadians": {
+                            "title": "Theta radians",
+                            "type": "string"
+                          },
+                          "thetaDegrees": {
+                            "title": "Theta degrees",
+                            "type": "string"
+                          },
+                          "centerOfRotation": {
+                            "title": "Center of rotation",
+                            "properties": {
+                              "value": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "length",
+                                "enum": [
+                                  "m",
+                                  "cm",
+                                  "ft",
+                                  "flow360_length_unit",
+                                  "mm",
+                                  "inch"
+                                ]
+                              }
+                            }
+                          },
+                          "axisOfRotation": {
+                            "title": "Axis of rotation",
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "centerOfRotation",
+                          "axisOfRotation"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "title": "Reference frame dynamic",
+                        "type": "object",
+                        "properties": {
+                          "centerOfRotation": {
+                            "title": "Center of rotation",
+                            "properties": {
+                              "value": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "length",
+                                "enum": [
+                                  "m",
+                                  "cm",
+                                  "ft",
+                                  "flow360_length_unit",
+                                  "mm",
+                                  "inch"
+                                ]
+                              }
+                            }
+                          },
+                          "axisOfRotation": {
+                            "title": "Axis of rotation",
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          },
+                          "isDynamic": {
+                            "title": "Is dynamic",
+                            "default": true,
+                            "const": true,
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "centerOfRotation",
+                          "axisOfRotation"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      {
+        "title": "Heat transfer volume zone",
+        "type": "object",
+        "properties": {
+          "modelType": {
+            "title": "Model type",
+            "default": "HeatTransfer",
+            "const": "HeatTransfer",
+            "type": "string"
+          },
+          "thermalConductivity": {
+            "title": "Thermal conductivity",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "volumetricHeatSource": {
+            "title": "Volumetric heat source",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "heatCapacity": {
+            "title": "Heat capacity",
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "initialCondition": {
+            "title": "Initial condition",
+            "type": "object",
+            "properties": {
+              "T_solid": {
+                "title": "T_solid",
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "T_solid"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "thermalConductivity"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "definitions": {}
+}

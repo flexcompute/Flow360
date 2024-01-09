@@ -1,0 +1,8 @@
+{
+  "modelType": "HeatEquation",
+  "linearSolverConfig": {
+    "absoluteTolerance": 1e-10,
+    "maxIterations": 50
+  },
+  "equationEvalFrequency": 10
+}

@@ -4,8 +4,6 @@ Environment Setup
 
 from pydantic import BaseModel
 
-from .user_config import UserConfig
-
 
 class EnvironmentConfig(BaseModel):
     """
@@ -24,7 +22,6 @@ class EnvironmentConfig(BaseModel):
         :return:
         """
         Env.set_current(self)
-        UserConfig.set_profile(self.apikey_profile)
 
     def get_real_url(self, path: str):
         """
@@ -62,7 +59,7 @@ uat = EnvironmentConfig(
 prod = EnvironmentConfig(
     name="prod",
     web_api_endpoint="https://flow360-api.simulation.cloud",
-    portal_web_api_endpoint="https://portal-api.cloud",
+    portal_web_api_endpoint="https://portal-api.simulation.cloud",
     aws_region="us-gov-west-1",
     apikey_profile="default",
 )

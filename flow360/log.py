@@ -1,5 +1,6 @@
 """Logging for Flow360."""
 import os
+import platform
 import time
 from datetime import datetime
 from typing import Union
@@ -69,15 +70,16 @@ class LogHandler:
         self.level = _get_level_int(level)
         self.console = console
         self.backup_count = 10
-        self.max_bytes = 10000
+        self.max_bytes = 1000000
         self.fname = fname
         self.previous_logged_time = None
         self.previous_logged_version = None
+        self.is_rotating = True
 
     def handle(self, level, level_name, message, log_time=False):
         """Output log messages depending on log level"""
         try:
-            if self.fname is not None and self.should_roll_over(message):
+            if self.fname is not None and self.is_rotating and self.should_roll_over(message):
                 self.do_roll_over()
         except OSError as error:
             self.console.log(
@@ -289,7 +291,7 @@ def set_logging_file(
     filemode: str = "a",
     level: LogValue = DEFAULT_LEVEL,
     back_up_count: int = 10,
-    max_bytes: int = 10000,
+    max_bytes: int = 1000000,
 ) -> None:
     """Set a file to write log to, independently from the stdout and stderr
     output chosen using :meth:`set_logging_level`.
@@ -302,6 +304,10 @@ def set_logging_file(
     level : str
         One of ``{'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}``. This is set for the file
         independently of the console output level set by :meth:`set_logging_level`.
+    back_up_count : int
+        How many backup log files are preserved when rotating log files
+    max_bytes : int
+        Maximum log file size in bytes before a log rotation is performed
     """
     if filemode not in "wa":
         raise ValueError("filemode must be either 'w' or 'a'")
@@ -318,7 +324,7 @@ def set_logging_file(
         # pylint: disable=consider-using-with,unspecified-encoding
         file = open(fname, filemode)
     except:  # pylint: disable=bare-except
-        log.error(f"File {fname} could not be opened")
+        log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return
 
     log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level, fname)
@@ -328,7 +334,14 @@ def set_logging_file(
 
 # Set default logging output
 set_logging_console()
-log_dir = flow360_dir + "logs"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
+
+# Writing log files on Windows is currently very slow, toggled off until a fix is implemented
+if platform.system() != "Windows":
+    log_dir = flow360_dir + "logs"
+    try:
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
+    except OSError as err:
+        log.warning(f"Could not setup file logging: {err}")

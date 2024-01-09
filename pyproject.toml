@@ -5,7 +5,7 @@ description = ""
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7.4"
+python = ">=3.8,<3.12"
 pydantic = "^1.10.0"
 pytest = "^7.1.2"
 click = "^8.1.3"
@@ -15,14 +15,17 @@ boto3 = "^1.24.63"
 numpy = [{ python = "^3.7", version = "^1.19.0" },
     { python = "^3.8", version = "^1.20.0" },
     { python = "^3.9", version = "^1.23.0" },
-    { python = "^3.10", version = "^1.23.0" }]
+    { python = "^3.12", version = "^1.26.0" }]
 matplotlib =  [{ python = "^3.7", version = "^3.5.3" },
     { python = "^3.8", version = "^3.6.2" },
     { python = "^3.9", version = "^3.6.2" },
     { python = "^3.10", version = "^3.6.2" }]
-pyyaml = "^6.0"
+pyyaml = "^6.0.1"
 rich = "^13.3.4"
-h5py = "^3.8.0"
+h5py = "^3.10.0"
+zstandard = "^0.21.0"
+unyt = [{ python = "^3.7", version = "^2.8.0" },
+    { python = "^3.8", version = "^2.9.5" }]
 
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.20.3"
@@ -33,6 +36,9 @@ autohooks-plugin-isort = "^22.8.0"
 autohooks-plugin-pylint = "^22.8.1"
 pytest = "^7.3.0"
 pylint = "^2.17.2"
+unyt = [{ python = "^3.7", version = "^2.8.0" },
+    { python = "^3.8", version = "^2.9.5" }]
+notebook = "^7.0.6"
 
 [tool.isort]
 profile = "black"
