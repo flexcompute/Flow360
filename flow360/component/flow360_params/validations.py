@@ -422,3 +422,23 @@ def _check_consistency_ddes_unsteady(values):
     if run_ddes and (time_stepping is None or isinstance(time_stepping, SteadyTimeStepping)):
         raise ValueError("Running DDES with steady simulation is invalid.")
     return values
+
+
+def _check_consistency_temperature(values):
+    freestream = values.get("freestream")
+    fluid_properties = values.get("fluid_properties")
+
+    if (
+        freestream is not None
+        and fluid_properties is not None
+        and hasattr(freestream, "temperature")
+    ):
+        freestream_temp = freestream.temperature
+        fluid_temp = fluid_properties.temperature
+        if freestream_temp is not None and fluid_temp is not None and freestream_temp != fluid_temp:
+            raise ValueError(
+                f"Freestream and fluid property temperature values do not match: "
+                f"{freestream_temp} != {fluid_temp}"
+            )
+
+    return values

@@ -134,6 +134,7 @@ from .validations import (
     _check_cht_solver_settings,
     _check_consistency_ddes_unsteady,
     _check_consistency_ddes_volume_output,
+    _check_consistency_temperature,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
@@ -1147,6 +1148,14 @@ class Flow360Params(Flow360BaseModel):
         check consistency between wall function usage and surface output
         """
         return _check_consistency_wall_function_and_surface_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_temperature_consistency(cls, values):
+        """
+        check if temperature values in freestream and fluid_properties match
+        """
+        return _check_consistency_temperature(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
