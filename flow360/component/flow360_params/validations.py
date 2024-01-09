@@ -319,11 +319,11 @@ def _check_periodic_boundary_mapping(values):
     return values
 
 
-def _check_bet_disks_alphas_in_order(bet_disks) -> NoReturn:
-    for index, disk in enumerate(bet_disks):
-        alphas = disk.alphas
-        if alphas != sorted(alphas):
-            raise ValueError(f"BET Disk {index}: alphas are not in increasing order.")
+def _check_bet_disks_alphas_in_order(disk):
+    alphas = disk.get("alphas")
+    if alphas != sorted(alphas):
+        raise ValueError("alphas are not in increasing order.")
+    return disk
 
 
 def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional[float]]:
@@ -337,86 +337,80 @@ def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional
     return False, None
 
 
-def _check_bet_disks_duplicate_chords_or_twists(bet_disks) -> NoReturn:
-    for index, disk in enumerate(bet_disks):
-        chords = disk.chords
-        duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(chords)
-        if has_duplicate:
-            raise ValueError(
-                f"BET Disk {index} has duplicated radius at {duplicated_radius} in chords."
-            )
-        twists = disk.twists
-        duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(twists)
-        if has_duplicate:
-            raise ValueError(
-                f"BET Disk {index} has duplicated radius at {duplicated_radius} in twists."
-            )
+def _check_bet_disks_duplicate_chords_or_twists(disk):
+    chords = disk.get("chords")
+    duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(chords)
+    if has_duplicate:
+        raise ValueError(f"BET disk has duplicated radius at {duplicated_radius} in chords.")
+    twists = disk.get("twists")
+    duplicated_radius, has_duplicate = _check_has_duplicate_in_one_radial_list(twists)
+    if has_duplicate:
+        raise ValueError(f"BET disk has duplicated radius at {duplicated_radius} in twists.")
+    return disk
 
 
-def _check_bet_disks_number_of_defined_polars(bet_disks) -> NoReturn:
-    for index, disk in enumerate(bet_disks):
-        sectional_radiuses = disk.sectional_radiuses
-        sectional_polars = disk.sectional_polars
-        if len(sectional_radiuses) != len(sectional_polars):
-            raise ValueError(
-                f"In BET Disk {index}, length of sectional_radiuses ({len(sectional_radiuses)}) is not the same as that of sectional_polars ({len(sectional_polars)})."
-            )
+def _check_bet_disks_number_of_defined_polars(disk):
+    sectional_radiuses = disk.get("sectional_radiuses")
+    sectional_polars = disk.get("sectional_polars")
+    if len(sectional_radiuses) != len(sectional_polars):
+        raise ValueError(
+            f"length of sectional_radiuses ({len(sectional_radiuses)}) is not the same as that of sectional_polars ({len(sectional_polars)})."
+        )
+    return disk
 
 
 # pylint: disable=invalid-name
 # pylint: disable=too-many-arguments
 def _check_3d_coeffs_in_BET_polars(
-    coeffs_3d, num_Mach, num_Re, num_alphas, bet_index, section_index, coeffs_name
-) -> NoReturn:
+    coeffs_3d, num_Mach, num_Re, num_alphas, section_index, coeffs_name
+):
     if len(coeffs_3d) != num_Mach:
         raise ValueError(
-            f"BET Disk {bet_index} (cross section: {section_index}): number of MachNumbers = {num_Mach}, but the first dimension of {coeffs_name} is {len(coeffs_3d)}."
+            f"(cross section: {section_index}): number of MachNumbers = {num_Mach}, but the first dimension of {coeffs_name} is {len(coeffs_3d)}."
         )
     for index_Mach, coeffs_2d in enumerate(coeffs_3d):
         if len(coeffs_2d) != num_Re:
             raise ValueError(
-                f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}): number of Reynolds = {num_Re}, but the second dimension of {coeffs_name} is {len(coeffs_2d)}."
+                f"(cross section: {section_index}) (Mach index (0-based) {index_Mach}): number of Reynolds = {num_Re}, but the second dimension of {coeffs_name} is {len(coeffs_2d)}."
             )
         for index_Re, coeffs_1d in enumerate(coeffs_2d):
             if len(coeffs_1d) != num_alphas:
                 raise ValueError(
-                    f"BET Disk {bet_index} (cross section: {section_index}) (Mach index (0-based) {index_Mach}, Reynolds index (0-based) {index_Re}): number of Alphas = {num_alphas}, but the third dimension of {coeffs_name} is {len(coeffs_1d)}."
+                    f"(cross section: {section_index}) (Mach index (0-based) {index_Mach}, Reynolds index (0-based) {index_Re}): number of Alphas = {num_alphas}, but the third dimension of {coeffs_name} is {len(coeffs_1d)}."
                 )
 
 
-def _check_bet_disks_3d_coefficients_in_polars(bet_disks) -> NoReturn:
-    for bet_index, disk in enumerate(bet_disks):
-        mach_numbers = disk.mach_numbers
-        reynolds_numbers = disk.reynolds_numbers
-        alphas = disk.alphas
-        num_Mach = len(mach_numbers)
-        num_Re = len(reynolds_numbers)
-        num_alphas = len(alphas)
-        polars_all_sections = disk.sectional_polars
+def _check_bet_disks_3d_coefficients_in_polars(disk):
+    mach_numbers = disk.get("mach_numbers")
+    reynolds_numbers = disk.get("reynolds_numbers")
+    alphas = disk.get("alphas")
+    num_Mach = len(mach_numbers)
+    num_Re = len(reynolds_numbers)
+    num_alphas = len(alphas)
+    polars_all_sections = disk.get("sectional_polars")
 
-        for section_index, polars_one_section in enumerate(polars_all_sections):
-            lift_coeffs = polars_one_section.lift_coeffs
-            drag_coeffs = polars_one_section.drag_coeffs
-            if lift_coeffs is not None:
-                _check_3d_coeffs_in_BET_polars(
-                    lift_coeffs,
-                    num_Mach,
-                    num_Re,
-                    num_alphas,
-                    bet_index,
-                    section_index,
-                    "lift_coeffs",
-                )
-            if drag_coeffs is not None:
-                _check_3d_coeffs_in_BET_polars(
-                    drag_coeffs,
-                    num_Mach,
-                    num_Re,
-                    num_alphas,
-                    bet_index,
-                    section_index,
-                    "drag_coeffs",
-                )
+    for section_index, polars_one_section in enumerate(polars_all_sections):
+        lift_coeffs = polars_one_section.lift_coeffs
+        drag_coeffs = polars_one_section.drag_coeffs
+        if lift_coeffs is not None:
+            _check_3d_coeffs_in_BET_polars(
+                lift_coeffs,
+                num_Mach,
+                num_Re,
+                num_alphas,
+                section_index,
+                "lift_coeffs",
+            )
+        if drag_coeffs is not None:
+            _check_3d_coeffs_in_BET_polars(
+                drag_coeffs,
+                num_Mach,
+                num_Re,
+                num_alphas,
+                section_index,
+                "drag_coeffs",
+            )
+    return disk
 
 
 def _check_consistency_ddes_unsteady(values):

@@ -909,6 +909,38 @@ class BETDisk(Flow360BaseModel):
         }
         displayed = "BET disk"
 
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_bet_disks_alphas_in_order(cls, values):
+        """
+        check order of alphas in BET disks
+        """
+        return _check_bet_disks_alphas_in_order(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_bet_disks_duplicate_chords_or_twists(cls, values):
+        """
+        check duplication of radial locations in chords or twists
+        """
+        return _check_bet_disks_duplicate_chords_or_twists(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_bet_disks_number_of_defined_polars(cls, values):
+        """
+        check number of polars
+        """
+        return _check_bet_disks_number_of_defined_polars(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_bet_disks_3d_coefficients_in_polars(cls, values):
+        """
+        check dimension of force coefficients in polars
+        """
+        return _check_bet_disks_3d_coefficients_in_polars(values)
+
 
 class PorousMediumVolumeZone(Flow360BaseModel):
     """:class:`PorousMediumVolumeZone` class"""
@@ -1187,20 +1219,6 @@ class Flow360Params(Flow360BaseModel):
         check incompressible Navier-Stokes solver
         """
         return _check_incompressible_navier_stokes_solver(values)
-
-    # pylint: disable=no-self-argument
-    @pd.root_validator
-    def check_bet_disks(cls, values):
-        """
-        check BET Disks settings
-        """
-        bet_disks = values.get("bet_disks")
-        if bet_disks is not None:
-            _check_bet_disks_alphas_in_order(bet_disks)
-            _check_bet_disks_duplicate_chords_or_twists(bet_disks)
-            _check_bet_disks_number_of_defined_polars(bet_disks)
-            _check_bet_disks_3d_coefficients_in_polars(bet_disks)
-        return values
 
 
 class Flow360MeshParams(Flow360BaseModel):
