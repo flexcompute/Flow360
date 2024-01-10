@@ -105,6 +105,70 @@ def test_validate_service_incorrect_value():
     assert errors[0]["msg"] == "ensure this value is greater than 0"
 
 
+def test_validate_service_no_value():
+    params_data = {
+        "geometry": {
+            "refArea": {"units": "m**2", "value": None},
+            "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "meshUnit": {"units": "m", "value": 1.0},
+        },
+        "boundaries": {},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": None, "units": "m/s"}},
+        "fluidProperties": {
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 1.225, "units": "kg/m**3"},
+        },
+    }
+
+    errors, warning = services.validate_flow360_params_model(
+        params_as_dict=params_data, unit_system_name="CGS"
+    )
+
+    assert errors[0]["msg"] == "field required"
+
+
+def test_remove_dimensioned_type_none_leaves():
+    data = {
+        "geometry": {
+            "refArea": {"units": "m**2", "value": None},
+            "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "meshUnit": {"units": "m", "value": 1.0},
+        },
+        "list": [
+            {
+                "refArea": {"units": "m**2", "value": None},
+                "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            }
+        ],
+        "boundaries": {},
+        "freestream": {"modelType": "FromVelocity", "velocity": {"value": None, "units": "m/s"}},
+        "fluidProperties": {
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 1.225, "units": "kg/m**3"},
+        },
+    }
+    expected = {
+        "geometry": {
+            "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "meshUnit": {"units": "m", "value": 1.0},
+        },
+        "list": [
+            {
+                "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            }
+        ],
+        "boundaries": {},
+        "freestream": {"modelType": "FromVelocity"},
+        "fluidProperties": {
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 1.225, "units": "kg/m**3"},
+        },
+    }
+
+    processed = services.remove_dimensioned_type_none_leaves(data)
+    assert processed == expected
+
+
 def test_validate_service_should_not_be_called_with_context():
     params_data = {
         "geometry": {
@@ -135,19 +199,15 @@ def test_init_fork_with_update():
     assert data
 
 
-
 def test_init_fork_with_update_2():
     with open("data/cases/case_14_bet.json", "r") as fh:
         data = json.load(fh)
 
     params = services.get_default_fork(data)
     assert len(params.bet_disks) == 1
-    assert params 
+    assert params
 
     params_as_dict = services.params_to_dict(params)
 
-    assert len(params_as_dict['BETDisks']) == 1
-    assert params_as_dict['BETDisks'][0]['thickness'] == 30.0
-
-
-
+    assert len(params_as_dict["BETDisks"]) == 1
+    assert params_as_dict["BETDisks"][0]["thickness"] == 30.0

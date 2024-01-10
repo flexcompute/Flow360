@@ -14,29 +14,34 @@ from .component.flow360_params.flow360_params import (
     SpalartAllmaras,
 )
 from .component.flow360_params.params_base import flow360_json_encoder
-from .component.flow360_params.unit_system import UnitSystem, unit_system_manager, SI_unit_system, CGS_unit_system, imperial_unit_system, flow360_unit_system
+from .component.flow360_params.unit_system import (
+    UnitSystem,
+    unit_system_manager,
+    SI_unit_system,
+    CGS_unit_system,
+    imperial_unit_system,
+    flow360_unit_system,
+)
 from .exceptions import Flow360ConfigurationError
 
 
-
 unit_system_map = {
-    'SI': SI_unit_system,
-    'CGS': CGS_unit_system,
-    'Imperial': imperial_unit_system,
-    'Flow360': flow360_unit_system
+    "SI": SI_unit_system,
+    "CGS": CGS_unit_system,
+    "Imperial": imperial_unit_system,
+    "Flow360": flow360_unit_system,
 }
 
 
-
 def params_to_dict(params: Flow360Params) -> dict:
-
     params_as_dict = json.loads(params.json())
 
     if params.bet_disks is not None:
-        params_as_dict['BETDisks'] = [json.loads(bet_disk.json(encoder=flow360_json_encoder)) for bet_disk in params.bet_disks]
+        params_as_dict["BETDisks"] = [
+            json.loads(bet_disk.json(encoder=flow360_json_encoder)) for bet_disk in params.bet_disks
+        ]
 
     return params_as_dict
-
 
 
 def init_unit_system(unit_system_name):
@@ -55,13 +60,31 @@ def remove_properties_with_prefix(data, prefix):
     if isinstance(data, dict):
         return {
             key: remove_properties_with_prefix(value, prefix)
-            for key, value in data.items() if not key.startswith(prefix)
+            for key, value in data.items()
+            if not key.startswith(prefix)
         }
     elif isinstance(data, list):
         return [remove_properties_with_prefix(item, prefix) for item in data]
     else:
         return data
 
+
+def remove_dimensioned_type_none_leaves(data):
+    if isinstance(data, dict):
+        return {
+            key: remove_dimensioned_type_none_leaves(value)
+            for key, value in data.items()
+            if not (
+                isinstance(value, dict)
+                and "value" in value
+                and "units" in value
+                and value["value"] is None
+            )
+        }
+    elif isinstance(data, list):
+        return [remove_dimensioned_type_none_leaves(item) for item in data if item is not None]
+    else:
+        return data
 
 
 def get_default_params(unit_system_name):
@@ -121,37 +144,12 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
 
     # removing _add properties as these are only used in WebUI
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
+    params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
 
     params_as_dict["unitSystem"] = unit_system.dict()
     values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
-
-    # when validating freestream, errors from all Union options
-    # will be returned. Need to reduce number of validation errors:
-    # example when provided temperature -1
-    # validation_errors=ValidationError(model='Flow360Params', errors=[
-    # {'loc': ('freestream', 'Temperature'), 'msg': 'ensure this value is greater than 0',
-    # 'type': 'value_error.number.not_gt', 'ctx': {'limit_value': 0}},
-    # {'loc': ('freestream', 'Reynolds'), 'msg': 'field required', 'type': 'value_error.missing'},
-    # {'loc': ('freestream', 'Temperature'), 'msg': 'ensure this value is greater than 0',
-    # 'type': 'value_error.number.not_gt', 'ctx': {'limit_value': 0}},
-    # {'loc': ('freestream', 'mu_ref'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'},
-    # {'loc': ('freestream', 'velocity'), 'msg': 'field required', 'type': 'value_error.missing'},
-    # {'loc': ('freestream', 'Mach'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'},
-    # {'loc': ('freestream', 'mu_ref'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'},
-    # {'loc': ('freestream', 'temperature'), 'msg': 'extra fields not permitted', 'type': 'value_error.extra'},
-    # {'loc': ('freestream', 'Mach'), 'msg': 'unexpected value; permitted: 0',
-    # 'type': 'value_error.const', 'ctx': {'given': 0.5, 'permitted': (0,)}},
-    # {'loc': ('freestream', 'Mach_ref'), 'msg': 'field required', 'type': 'value_error.missing'},
-    # {'loc': ('freestream', 'Temperature'), 'msg': 'ensure this value is greater than 0',
-    # 'type': 'value_error.number.not_gt', 'ctx': {'limit_value': 0}},
-    # {'loc': ('freestream', 'velocity_ref'), 'msg': 'field required',
-    # 'type': 'value_error.missing'}, {'loc': ('freestream', 'Mach'),
-    # 'msg': 'extra fields not permitted', 'type': 'value_error.extra'},
-    # {'loc': ('freestream', 'mu_ref'), 'msg': 'extra fields not permitted',
-    # 'type': 'value_error.extra'}, {'loc': ('freestream', 'temperature'),
-    # 'msg': 'extra fields not permitted', 'type': 'value_error.extra'}])
 
     # Gather dependency errors stemming from solver conversion if no validation errors exist
     if validation_errors is None:
@@ -188,18 +186,15 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
     return None, validation_warnings
 
 
-
-
 def handle_case_submit(params_as_dict, unit_system_name):
-    
     unit_system = init_unit_system(unit_system_name)
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
+    params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
 
     with unit_system:
         params = Flow360Params(**params_as_dict)
-    
+
     solver_json = params.to_flow360_json()
     solver_dict = json.loads(solver_json)
-
 
     return params, solver_dict
