@@ -15,15 +15,14 @@ from .component.flow360_params.flow360_params import (
 )
 from .component.flow360_params.params_base import flow360_json_encoder
 from .component.flow360_params.unit_system import (
-    UnitSystem,
-    unit_system_manager,
-    SI_unit_system,
     CGS_unit_system,
-    imperial_unit_system,
+    SI_unit_system,
+    UnitSystem,
     flow360_unit_system,
+    imperial_unit_system,
+    unit_system_manager,
 )
 from .exceptions import Flow360ConfigurationError
-
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -34,6 +33,10 @@ unit_system_map = {
 
 
 def params_to_dict(params: Flow360Params) -> dict:
+    """
+    converts Flow360Params to dictionary representation. For BET it removes all dimensioned fields as they are not
+    supported yet by webUI
+    """
     params_as_dict = json.loads(params.json())
 
     if params.bet_disks is not None:
@@ -44,7 +47,27 @@ def params_to_dict(params: Flow360Params) -> dict:
     return params_as_dict
 
 
-def init_unit_system(unit_system_name):
+def init_unit_system(unit_system_name) -> UnitSystem:
+    """Returns UnitSystem object from string representation.
+
+    Parameters
+    ----------
+    unit_system_name : ["SI", "CGS", "Imperial", "Flow360"]
+        Unit system string representation
+
+    Returns
+    -------
+    UnitSystem
+        unit system
+
+    Raises
+    ------
+    ValueError
+        If unit system doesn't exist
+    RuntimeError
+        If this function is run inside unit system context
+    """
+
     unit_system = unit_system_map.get(unit_system_name, None)
     if not isinstance(unit_system, UnitSystem):
         raise ValueError(f"Incorrect unit system provided {unit_system=}, expected type UnitSystem")
@@ -57,19 +80,52 @@ def init_unit_system(unit_system_name):
 
 
 def remove_properties_with_prefix(data, prefix):
+    """
+    Recursively removes properties from a nested dictionary and its lists
+    whose keys start with a specified prefix.
+
+    Parameters
+    ----------
+    data : dict or list or scalar
+        The input data, which can be a nested dictionary, a list, or a scalar value.
+
+    prefix : str
+        The prefix used to filter properties. Properties with keys starting with
+        this prefix will be removed.
+
+    Returns
+    -------
+    dict or list or scalar
+        Processed data with properties removed based on the specified prefix.
+    """
+
     if isinstance(data, dict):
         return {
             key: remove_properties_with_prefix(value, prefix)
             for key, value in data.items()
             if not key.startswith(prefix)
         }
-    elif isinstance(data, list):
+    if isinstance(data, list):
         return [remove_properties_with_prefix(item, prefix) for item in data]
-    else:
-        return data
+    return data
 
 
 def remove_dimensioned_type_none_leaves(data):
+    """
+    Recursively removes leaves from a nested dictionary and its lists where the value
+    is `None` and the structure contains keys 'value' and 'units' in the dictionary.
+
+    Parameters
+    ----------
+    data : dict or list or scalar
+        The input data, which can be a nested dictionary, a list, or a scalar value.
+
+    Returns
+    -------
+    dict or list or scalar
+        Processed data with leaves removed where 'value' is `None` in dictionaries.
+    """
+
     if isinstance(data, dict):
         return {
             key: remove_dimensioned_type_none_leaves(value)
@@ -81,17 +137,27 @@ def remove_dimensioned_type_none_leaves(data):
                 and value["value"] is None
             )
         }
-    elif isinstance(data, list):
+    if isinstance(data, list):
         return [remove_dimensioned_type_none_leaves(item) for item in data if item is not None]
-    else:
-        return data
+    return data
 
 
 def get_default_params(unit_system_name):
     """
-    example of generating default case settings.
+    Returns default parameters in a given unit system. The defaults are not correct Flow360Params object as they may
+    contain empty required values. When generating default case settings:
     - Use Model() if all fields has defaults or there are no required fields
     - Use Model.construct() to disable validation - when there are required fields without value
+
+    Parameters
+    ----------
+    unit_system_name : str
+        The name of the unit system to use for parameter initialization.
+
+    Returns
+    -------
+    Flow360Params
+        Default parameters for Flow360 simulation.
 
     """
 
@@ -113,7 +179,7 @@ def get_default_params(unit_system_name):
 
 def get_default_retry(params_as_dict):
     """
-    Return a default case file for a retry request
+    Returns Flow360Params object for a retry request. It will perform update if neccessary.
     """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
@@ -125,7 +191,7 @@ def get_default_retry(params_as_dict):
 
 def get_default_fork(params_as_dict):
     """
-    Return a default case file for a fork request
+    Returns Flow360Params object for a retry request. It will perform update if neccessary.
     """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
@@ -187,6 +253,9 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
 
 
 def handle_case_submit(params_as_dict, unit_system_name):
+    """
+    Handles case submit. Performs pydantic validation, converts units to solver units, and exports JSON representation.
+    """
     unit_system = init_unit_system(unit_system_name)
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
     params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
