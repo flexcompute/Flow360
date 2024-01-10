@@ -37,11 +37,11 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     MeshBoundary,
     MeshSlidingInterface,
-    NavierStokesSolver,
     SlidingInterface,
     UnsteadyTimeStepping,
     VolumeZones,
 )
+from flow360.component.flow360_params.solvers import NavierStokesSolver
 from flow360.component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,

@@ -28,7 +28,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 593a6bf361a7a483fa5f3d14cead56038662e02790eec32a21a7d14063e7fb18
+hash: 4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
@@ -53,9 +53,9 @@ sliceOutput:
             outputFields:
             - Mach
             sliceNormal:
-            - 1.0
-            - 0.0
-            - 0.0
+            - 1
+            - 0
+            - 0
             sliceOrigin:
             - 0.0
             - 0.0
@@ -64,9 +64,9 @@ sliceOutput:
             outputFields:
             - T
             sliceNormal:
-            - 0.0
-            - 1.0
-            - 0.0
+            - 0
+            - 1
+            - 0
             sliceOrigin:
             - 2.0
             - 1.0

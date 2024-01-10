@@ -9,11 +9,11 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     KOmegaSST,
     LinearSolver,
-    NavierStokesSolver,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
 )
+from flow360.component.flow360_params.solvers import NavierStokesSolver
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

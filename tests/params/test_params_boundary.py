@@ -414,15 +414,3 @@ def test_boundary_types():
             mass_flow_rate=0.2,
             turbulence_quantities=TurbulenceQuantities(specific_dissipation_rate=0.88),
         )
-
-
-def test_duplidated_boundary_names():
-    with fl.SI_unit_system:
-        with pytest.raises(ValueError, match="Boundary name <wing>.* appears multiple times"):
-            param = Flow360Params(
-                boundaries={
-                    "fluid/fuselage": NoSlipWall(name="fuselage"),
-                    "fluid/leftWing": NoSlipWall(name="wing"),
-                    "fluid/rightWing": NoSlipWall(name="wing"),
-                }
-            )

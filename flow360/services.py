@@ -10,7 +10,6 @@ from .component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    NavierStokesSolver,
     SpalartAllmaras,
 )
 from .component.flow360_params.params_base import flow360_json_encoder
@@ -22,6 +21,7 @@ from .component.flow360_params.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
+from .component.flow360_params.solvers import NavierStokesSolver
 from .exceptions import Flow360ConfigurationError
 
 unit_system_map = {
