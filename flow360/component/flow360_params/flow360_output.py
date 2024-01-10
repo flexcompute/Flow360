@@ -22,6 +22,7 @@ from .flow360_fields import (
     VolumeFieldNames,
     VolumeFieldNamesFull,
     get_field_values,
+    to_short,
 )
 from .flow360_legacy import LegacyModel, get_output_fields
 from .params_base import (
@@ -215,6 +216,13 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
                 schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
             )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SurfaceOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SurfaceOutput(**solver_values, output_fields=fields)
+
 
 class Slice(Flow360BaseModel):
     """:class:`NamedSlice` class"""
@@ -234,6 +242,13 @@ class Slice(Flow360BaseModel):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> Slice:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return Slice(**solver_values, output_fields=fields)
 
 
 class Slices(Flow360SortableBaseModel):
@@ -279,6 +294,13 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SliceOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SliceOutput(**solver_values, output_fields=fields)
+
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
     """:class:`VolumeOutput` class"""
@@ -299,6 +321,13 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> VolumeOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return VolumeOutput(**solver_values, output_fields=fields)
 
 
 class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -326,6 +355,13 @@ class SurfaceIntegralMonitor(MonitorBase):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SurfaceIntegralMonitor(**solver_values, output_fields=fields)
+
 
 class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
@@ -345,6 +381,13 @@ class ProbeMonitor(MonitorBase):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ProbeMonitor:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return ProbeMonitor(**solver_values, output_fields=fields)
 
 
 MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
@@ -392,6 +435,13 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> MonitorOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return MonitorOutput(**solver_values, output_fields=fields)
+
 
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
@@ -412,6 +462,13 @@ class IsoSurface(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
             _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsoSurface:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return IsoSurface(**solver_values, output_fields=fields)
 
 
 class _GenericIsoSurfaceWrapper(Flow360BaseModel):

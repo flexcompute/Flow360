@@ -151,6 +151,34 @@ def get_aliases(name) -> List[str]:
     raise ValueError(f"{name} is not a valid output field name.")
 
 
+def to_short(name) -> str:
+    """Retrieve shorthand equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in short:
+        return name
+    if name in full:
+        i = full.index(name)
+        return short[i]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+def to_full(name) -> str:
+    """Retrieve full name equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in full:
+        return name
+    if name in short:
+        i = short.index(name)
+        return full[i]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
 if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFull)):
     raise ImportError(
         "Full names and shorthands for output fields have mismatched lengths, which is not allowed"
