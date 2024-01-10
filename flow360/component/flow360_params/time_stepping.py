@@ -81,6 +81,7 @@ class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
+        exclude_on_flow360_export = ["model_type"]
 
 
 class SteadyTimeStepping(BaseTimeStepping):
