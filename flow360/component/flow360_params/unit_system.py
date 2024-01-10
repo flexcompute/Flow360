@@ -103,12 +103,17 @@ def _unit_object_parser(value, unyt_types: List[type]):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
-    if isinstance(value, dict) and "value" in value and "units" in value:
-        for unyt_type in unyt_types:
-            try:
-                return unyt_type(value["value"], value["units"])
-            except u.exceptions.UnitParseError:
-                pass
+    if isinstance(value, dict) and "units" in value:
+        if "value" in value:
+            for unyt_type in unyt_types:
+                try:
+                    return unyt_type(value["value"], value["units"])
+                except u.exceptions.UnitParseError:
+                    pass
+        else:
+            raise TypeError(
+                f"Dimensioned type instance {value} expects a 'value' field which was not given"
+            )
     return value
 
 

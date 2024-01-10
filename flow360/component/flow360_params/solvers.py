@@ -218,6 +218,9 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
 
 
+NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
+
+
 class TurbulenceModelConstantsSA(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSA` class"""
 

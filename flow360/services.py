@@ -10,9 +10,9 @@ from .component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    NavierStokesSolver,
     SpalartAllmaras,
 )
+from .component.flow360_params.solvers import NavierStokesSolver
 from .exceptions import Flow360ConfigurationError
 
 
@@ -108,6 +108,17 @@ def validate_flow360_params_model(params_as_dict):
             ]
     else:
         validation_errors = validation_errors.errors()
+
+    # Check if all validation loc paths are valid params dict paths that can be traversed
+    for error in validation_errors:
+        current = params_as_dict
+        for field in error["loc"][:-1]:
+            if current.get(field):
+                current = current.get(field)
+            else:
+                errors_as_list = list(error["loc"])
+                errors_as_list.remove(field)
+                error["loc"] = tuple(errors_as_list)
 
     validation_warnings = []
 
