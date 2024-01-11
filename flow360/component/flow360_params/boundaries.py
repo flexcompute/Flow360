@@ -9,7 +9,9 @@ from pydantic import StrictStr
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
-from .turbulence_quantities import TurbulenceQuantitiesType
+
+# release 23.3.2+ feature
+# from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import VelocityType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -26,12 +28,13 @@ class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
-    """Turbulence Quantities on Boundaries"""
-
-    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-        alias="turbulenceQuantities"
-    )
+# release 23.3.2+ feature
+# class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
+#     """Turbulence Quantities on Boundaries"""
+#
+#     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+#         alias="turbulenceQuantities"
+#     )
 
 
 class NoSlipWall(Boundary):
@@ -47,7 +50,9 @@ class SlipWall(Boundary):
     type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
 
-class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
+class FreestreamBoundary(Boundary):
     """Freestream boundary"""
 
     type: Literal["Freestream"] = pd.Field("Freestream", const=True)
@@ -90,21 +95,27 @@ class HeatFluxWall(Boundary):
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
 
-class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
+class SubsonicOutflowPressure(Boundary):
     """SubsonicOutflowPressure boundary"""
 
     type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
     static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
-class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
+class SubsonicOutflowMach(Boundary):
     """SubsonicOutflowMach boundary"""
 
     type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
     Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
-class SubsonicInflow(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class SubsonicInflow(BoundaryWithTurbulenceQuantities):
+class SubsonicInflow(Boundary):
     """SubsonicInflow boundary"""
 
     type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
@@ -170,7 +181,9 @@ class WallFunction(Boundary):
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
 
-class MassInflow(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class MassInflow(BoundaryWithTurbulenceQuantities):
+class MassInflow(Boundary):
     """:class: `MassInflow` boundary"""
 
     type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
@@ -179,7 +192,9 @@ class MassInflow(BoundaryWithTurbulenceQuantities):
     # ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
-class MassOutflow(BoundaryWithTurbulenceQuantities):
+# release 23.3.2+ feature
+# class MassOutflow(BoundaryWithTurbulenceQuantities):
+class MassOutflow(Boundary):
     """:class: `MassOutflow` boundary"""
 
     type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)

@@ -54,7 +54,9 @@ from flow360.component.flow360_params.solvers import (
     TransitionModelSolver,
 )
 from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
-from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
+
+# release 23.3.2+ feature
+# from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
 from flow360.component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
