@@ -5,6 +5,7 @@ Flow360 solver parameters
 # pylint: disable=unused-import
 from __future__ import annotations
 
+import json
 import math
 from abc import ABCMeta, abstractmethod
 from typing import (
@@ -1058,7 +1059,7 @@ class Flow360Params(Flow360BaseModel):
                 return super().to_solver(self, exclude=["fluid_properties"])
         return super().to_solver(self, exclude=["fluid_properties"])
 
-    def to_flow360_json(self) -> dict:
+    def to_flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
 
         Returns
@@ -1075,6 +1076,22 @@ class Flow360Params(Flow360BaseModel):
         solver_params.set_will_export_to_flow360(True)
         solver_params_json = solver_params.json(encoder=flow360_json_encoder)
         return solver_params_json
+
+    def to_flow360_dict(self) -> dict:
+        """Generate a dict representation of the model, as required by Flow360
+
+        Returns
+        -------
+        dict
+            Returns dict representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_dict() # doctest: +SKIP
+        """
+
+        flow360_dict = json.loads(self.to_flow360_json())
+        return flow360_dict
 
     def append(self, params: Flow360Params, overwrite: bool = False):
         if not isinstance(params, Flow360Params):

@@ -328,10 +328,10 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
         False, alias="quadraticConstitutiveRelation"
     )
-    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[float] = pd.Field(
         alias="reconstructionGradientLimiter"
     )
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -339,6 +339,9 @@ class KOmegaSST(TurbulenceModelSolver):
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+        1.0, alias="reconstructionGradientLimiter"
+    )
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
@@ -349,6 +352,9 @@ class SpalartAllmaras(TurbulenceModelSolver):
     )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
     model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+        0.5, alias="reconstructionGradientLimiter"
+    )
 
 
 class NoneSolver(Flow360BaseModel):
