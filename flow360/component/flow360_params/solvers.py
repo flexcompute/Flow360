@@ -328,10 +328,10 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
         False, alias="quadraticConstitutiveRelation"
     )
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
     reconstruction_gradient_limiter: Optional[float] = pd.Field(
         alias="reconstructionGradientLimiter"
     )
+    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
 
 class KOmegaSST(TurbulenceModelSolver):
