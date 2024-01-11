@@ -220,7 +220,6 @@ def test_update_from_multiple_files_dont_overwrite():
         )
 
     outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
     params.append(outputs)
 
     assert params.geometry.ref_area == 1.15315084119231
@@ -236,13 +235,9 @@ def test_update_from_multiple_files_overwrite():
         )
 
     outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
-
-    # We cannot overwrite immutable fields, so we make sure those are removed beforehand
-
     params.append(outputs, overwrite=True)
 
-    assert params.geometry.ref_area == 2 * u.flow360_area_unit
+    assert params.geometry.ref_area == 2 * u.m**2
 
 
 def clear_formatting(message):

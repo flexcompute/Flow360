@@ -67,7 +67,9 @@ def test_cht_solver_no_heat_transfer_zone():
             volume_zones={
                 "blk-1": FluidDynamicsVolumeZone(),
                 "blk-2": FluidDynamicsVolumeZone(),
-            }
+            },
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(ValueError, match="Heat equation solver activated with no zone definition."):
@@ -78,6 +80,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with pytest.raises(
@@ -93,6 +97,7 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with pytest.raises(
@@ -108,6 +113,7 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with pytest.raises(
@@ -121,6 +127,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with pytest.raises(
@@ -134,6 +142,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with pytest.raises(
         ValueError,
@@ -146,6 +156,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with pytest.raises(
         ValueError,
@@ -163,6 +175,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with pytest.raises(
         ValueError,
@@ -175,6 +189,8 @@ def test_cht_solver_no_heat_transfer_zone():
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -184,7 +200,9 @@ def test_cht_solver_has_heat_transfer_zone():
             volume_zones={
                 "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
                 "blk-2": FluidDynamicsVolumeZone(),
-            }
+            },
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -197,6 +215,8 @@ def test_cht_solver_has_heat_transfer_zone():
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with fl.SI_unit_system:
@@ -210,6 +230,8 @@ def test_cht_solver_has_heat_transfer_zone():
                 ),
                 "blk-2": FluidDynamicsVolumeZone(),
             },
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -223,6 +245,8 @@ def test_cht_solver_has_heat_transfer_zone():
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with pytest.raises(
         ValueError,
@@ -235,6 +259,8 @@ def test_cht_solver_has_heat_transfer_zone():
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1, heat_capacity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with fl.SI_unit_system:
         param = Flow360Params(
@@ -246,6 +272,8 @@ def test_cht_solver_has_heat_transfer_zone():
                 ),
                 "blk-2": FluidDynamicsVolumeZone(),
             },
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -259,4 +287,6 @@ def test_cht_solver_has_heat_transfer_zone():
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )

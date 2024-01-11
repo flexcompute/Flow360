@@ -49,7 +49,8 @@ def test_duplidated_boundary_names():
                     "fluid/fuselage": NoSlipWall(name="fuselage"),
                     "fluid/leftWing": NoSlipWall(name="wing"),
                     "fluid/rightWing": NoSlipWall(name="wing"),
-                }
+                },
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -64,5 +65,6 @@ def test_tri_quad_boundaries():
                 "fluid/quad_fuselage": NoSlipWall(),
                 "fluid/tri_wing": NoSlipWall(),
                 "fluid/quad_wing": NoSlipWall(),
-            }
+            },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )

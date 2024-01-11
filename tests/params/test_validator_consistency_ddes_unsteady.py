@@ -68,16 +68,22 @@ def test_consistency_ddes_unsteady():
         param = Flow360Params(
             time_stepping=UnsteadyTimeStepping(),
             turbulence_model_solver=SpalartAllmaras(DDES=True),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with fl.SI_unit_system:
         param = Flow360Params(
             time_stepping=SteadyTimeStepping(),
             turbulence_model_solver=SpalartAllmaras(),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
     with fl.SI_unit_system:
         param = Flow360Params(
             turbulence_model_solver=SpalartAllmaras(),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -88,6 +94,8 @@ def test_consistency_ddes_unsteady():
             param = Flow360Params(
                 time_stepping=SteadyTimeStepping(),
                 turbulence_model_solver=SpalartAllmaras(DDES=True),
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
     with pytest.raises(
@@ -97,4 +105,6 @@ def test_consistency_ddes_unsteady():
         with fl.SI_unit_system:
             param = Flow360Params(
                 turbulence_model_solver=SpalartAllmaras(DDES=True),
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
