@@ -224,7 +224,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr] = pd.Field()
+    T_solid: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
 
 class HeatTransferVolumeZone(VolumeZoneBase):
@@ -233,7 +233,7 @@ class HeatTransferVolumeZone(VolumeZoneBase):
     model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
-        alias="volumetricHeatSource"
+        alias="volumetricHeatSource", options=["Value", "Expression"]
     )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
     initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
@@ -258,10 +258,6 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        optional_objects = ["referenceFrame"]
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]

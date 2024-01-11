@@ -1,5 +1,4 @@
 {
-  "title": "Volume zones",
   "additionalProperties": {
     "oneOf": [
       {
@@ -62,7 +61,10 @@
                                   "type": "number"
                                 },
                                 "minItems": 3,
-                                "maxItems": 3
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
                               },
                               "units": {
                                 "type": "string",
@@ -104,64 +106,6 @@
                         "additionalProperties": false
                       },
                       {
-                        "title": "Reference frame omega radians",
-                        "type": "object",
-                        "properties": {
-                          "omegaRadians": {
-                            "title": "Omega radians",
-                            "type": "number"
-                          },
-                          "centerOfRotation": {
-                            "title": "Center of rotation",
-                            "properties": {
-                              "value": {
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                },
-                                "minItems": 3,
-                                "maxItems": 3
-                              },
-                              "units": {
-                                "type": "string",
-                                "dimension": "length",
-                                "enum": [
-                                  "m",
-                                  "cm",
-                                  "ft",
-                                  "flow360_length_unit",
-                                  "mm",
-                                  "inch"
-                                ]
-                              }
-                            }
-                          },
-                          "axisOfRotation": {
-                            "title": "Axis of rotation",
-                            "type": "array",
-                            "minItems": 3,
-                            "maxItems": 3,
-                            "items": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "omegaRadians",
-                          "centerOfRotation",
-                          "axisOfRotation"
-                        ],
-                        "additionalProperties": false
-                      },
-                      {
                         "title": "Reference frame expression",
                         "type": "object",
                         "properties": {
@@ -182,7 +126,10 @@
                                   "type": "number"
                                 },
                                 "minItems": 3,
-                                "maxItems": 3
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
                               },
                               "units": {
                                 "type": "string",
@@ -235,7 +182,10 @@
                                   "type": "number"
                                 },
                                 "minItems": 3,
-                                "maxItems": 3
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
                               },
                               "units": {
                                 "type": "string",
@@ -287,6 +237,14 @@
                 "additionalProperties": false
               },
               {
+                "type": "object",
+                "properties": {
+                  "_addReferenceFrame": {
+                    "default": false,
+                    "const": false,
+                    "type": "boolean"
+                  }
+                },
                 "additionalProperties": false
               }
             ]
@@ -313,10 +271,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           },
@@ -334,10 +294,12 @@
                 "anyOf": [
                   {
                     "type": "number",
-                    "exclusiveMinimum": 0
+                    "exclusiveMinimum": 0,
+                    "title": "Value"
                   },
                   {
-                    "type": "string"
+                    "type": "string",
+                    "title": "Expression"
                   }
                 ]
               }

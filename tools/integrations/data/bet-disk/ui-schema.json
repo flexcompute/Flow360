@@ -8,6 +8,21 @@
   "initialBladeDirection": {
     "ui:widget": "vector3"
   },
+  "radius": {
+    "ui:field": "unitInput"
+  },
+  "omega": {
+    "ui:field": "unitInput"
+  },
+  "chordRef": {
+    "ui:field": "unitInput"
+  },
+  "thickness": {
+    "ui:field": "unitInput"
+  },
+  "bladeLineChord": {
+    "ui:field": "unitInput"
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

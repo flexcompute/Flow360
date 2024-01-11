@@ -47,7 +47,7 @@ IsoSurfaceOutputField = IsoSurfaceFields
 
 
 def _filter_fields(fields, literal_filter):
-    """Take two literals, filter"""
+    """Take two literals, keep only arguments present in the filter"""
     values = get_field_values(literal_filter)
     fields[:] = [field for field in fields if field in values]
 
@@ -294,13 +294,6 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "slices/additionalProperties/sliceNormal": "vector3",
-            "slices/additionalProperties/sliceOrigin": "vector3",
-        }
-
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SliceOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
@@ -442,10 +435,6 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"monitors/additionalProperties/monitorLocations/items": "vector3"}
-
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> MonitorOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
@@ -540,10 +529,6 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"observers/items": "vector3"}
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
