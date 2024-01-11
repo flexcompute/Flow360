@@ -12,7 +12,11 @@ from .component.flow360_params.flow360_params import (
     Geometry,
     SpalartAllmaras,
 )
-from .component.flow360_params.params_base import flow360_json_encoder
+from .component.flow360_params.params_base import (
+    Flow360BaseModel,
+    _schema_optional_toggle_name,
+    flow360_json_encoder,
+)
 from .component.flow360_params.solvers import NavierStokesSolver
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
@@ -32,6 +36,43 @@ unit_system_map = {
 }
 
 
+def _is_dimensioned_value_dict(value):
+    return isinstance(value, dict) and "value" in value and "units" in value
+
+
+def _add_nested_object_flag(params: Flow360BaseModel, params_as_dict: dict, level: int = 0) -> dict:
+    if isinstance(params, Flow360BaseModel):
+        for property_name, value in params.__dict__.items():
+            # pylint: disable=protected-access
+            alias_name = params._get_field_alias(property_name)
+            key = property_name
+            if alias_name is not None:
+                key = alias_name
+
+            if key in params_as_dict:
+                if isinstance(params_as_dict[key], dict) and not _is_dimensioned_value_dict(
+                    params_as_dict[key]
+                ):
+                    if level > 0:
+                        params_as_dict[_schema_optional_toggle_name(key)] = True
+                params_as_dict[key] = _add_nested_object_flag(
+                    value, params_as_dict[key], level=level + 1
+                )
+
+    elif isinstance(params, list):
+        params_as_dict = [
+            _add_nested_object_flag(item, params_as_dict[i], level=level + 1)
+            for i, item in enumerate(params)
+        ]
+
+    return params_as_dict
+
+
+def handle_add_nested_object_flag(params, params_as_dict: dict) -> dict:
+    """will add _add<KeyName>=True flag to nested objects"""
+    return _add_nested_object_flag(params, params_as_dict)
+
+
 def params_to_dict(params: Flow360Params) -> dict:
     """
     converts Flow360Params to dictionary representation. For BET it removes all dimensioned fields as they are not
@@ -43,6 +84,8 @@ def params_to_dict(params: Flow360Params) -> dict:
         params_as_dict["BETDisks"] = [
             json.loads(bet_disk.json(encoder=flow360_json_encoder)) for bet_disk in params.bet_disks
         ]
+
+    params_as_dict = handle_add_nested_object_flag(params, params_as_dict)
 
     return params_as_dict
 

@@ -211,3 +211,4 @@ def test_init_fork_with_update_2():
 
     assert len(params_as_dict["BETDisks"]) == 1
     assert params_as_dict["BETDisks"][0]["thickness"] == 30.0
+    assert params_as_dict["timeStepping"]["_addCFL"] == True
