@@ -30,7 +30,7 @@ def test_freesteam():
             fluid_properties=fl.air,
             geometry=fl.Geometry(mesh_unit=u.m),
             boundaries={},
-            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            freestream=FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
         )
 
         fs = FreestreamFromMach(Mach=1, temperature=300, mu_ref=1)

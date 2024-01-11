@@ -464,6 +464,7 @@ def test_params_temperature_consistency():
             fluid_properties=fl.AirDensityTemperature(
                 temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3
             ),
+            boundaries={},
         )
 
     assert params

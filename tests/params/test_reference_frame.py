@@ -54,7 +54,7 @@ def test_reference_frames():
                     )
                 ),
             },
-            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
         )
 
     params_solver = params.to_solver()
