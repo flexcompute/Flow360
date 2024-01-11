@@ -329,7 +329,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         False, alias="quadraticConstitutiveRelation"
     )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
-        1.0, alias="reconstructionGradientLimiter"
+        alias="reconstructionGradientLimiter"
     )
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
 
