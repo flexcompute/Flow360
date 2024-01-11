@@ -1,7 +1,6 @@
 {
   "ui:order": [
     "*",
-    "_addLinearSolver",
     "linearSolver"
   ],
   "ui:submitButtonOptions": {

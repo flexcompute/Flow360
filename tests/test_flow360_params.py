@@ -455,3 +455,24 @@ def test_params_with_solver_units():
     to_file_from_file_test(params)
     params = params.to_solver()
     to_file_from_file_test(params)
+
+
+def test_params_temperature_consistency():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            freestream=fl.FreestreamFromMach(Mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+            fluid_properties=fl.AirDensityTemperature(
+                temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3
+            ),
+        )
+
+    assert params
+
+    with pytest.raises(pd.ValidationError):
+        with fl.SI_unit_system:
+            params = fl.Flow360Params(
+                freestream=fl.FreestreamFromMach(mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+                fluid_properties=fl.AirDensityTemperature(
+                    temperature=300.15 * u.K, density=1.225 * u.kg / u.m**3
+                ),
+            )

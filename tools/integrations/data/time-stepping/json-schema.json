@@ -1,10 +1,10 @@
 {
-  "title": "Time steppings",
+  "title": "Time stepping",
   "type": "object",
   "additionalProperties": false,
   "anyOf": [
     {
-      "title": "Steady",
+      "title": "Steady time stepping",
       "type": "object",
       "properties": {
         "maxPseudoSteps": {
@@ -15,10 +15,10 @@
           "type": "integer"
         },
         "CFL": {
-          "title": "C fl",
+          "title": "CFL",
           "anyOf": [
             {
-              "title": "Ramp cfl",
+              "title": "Ramp CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -45,7 +45,7 @@
               "additionalProperties": false
             },
             {
-              "title": "Adaptive cfl",
+              "title": "Adaptive CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -105,7 +105,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Unsteady",
+      "title": "Unsteady time stepping",
       "type": "object",
       "properties": {
         "maxPseudoSteps": {
@@ -116,10 +116,10 @@
           "type": "integer"
         },
         "CFL": {
-          "title": "C fl",
+          "title": "CFL",
           "anyOf": [
             {
-              "title": "Ramp cfl",
+              "title": "Ramp CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -146,7 +146,7 @@
               "additionalProperties": false
             },
             {
-              "title": "Adaptive cfl",
+              "title": "Adaptive CFL",
               "type": "object",
               "properties": {
                 "type": {

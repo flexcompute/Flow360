@@ -1,4 +1,10 @@
 {
+  "velocity": {
+    "ui:field": "unitInput"
+  },
+  "velocityRef": {
+    "ui:field": "unitInput"
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },

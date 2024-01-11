@@ -134,6 +134,7 @@ from .validations import (
     _check_cht_solver_settings,
     _check_consistency_ddes_unsteady,
     _check_consistency_ddes_volume_output,
+    _check_consistency_temperature,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
@@ -258,10 +259,6 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"center": "vector3", "axisThrust": "vector3"}
-
 
 class SlidingInterface(Flow360BaseModel):
     """:class:`SlidingInterface` class for setting up sliding interface
@@ -349,10 +346,6 @@ class SlidingInterface(Flow360BaseModel):
             "is_dynamic",
         ]
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"centerOfRotation": "vector3"}
-
 
 class MeshSlidingInterface(Flow360BaseModel):
     """
@@ -431,16 +424,6 @@ class Boundaries(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "additionalProperties/velocity/value": "vector3",
-            "additionalProperties/Velocity/value": "vector3",
-            "additionalProperties/velocityDirection/value": "vector3",
-            "additionalProperties/translationVector": "vector3",
-            "additionalProperties/axisOfRotation": "vector3",
-        }
-
 
 class _GenericVolumeZonesWrapper(Flow360BaseModel):
     v: VolumeZoneType
@@ -491,13 +474,6 @@ class VolumeZones(Flow360SortableBaseModel):
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "additionalProperties/referenceFrame/centerOfRotation/value": "vector3",
-            "additionalProperties/referenceFrame/axisOfRotation": "vector3",
-        }
-
 
 class Geometry(Flow360BaseModel):
     """
@@ -538,6 +514,10 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
         alias="turbulenceQuantities"
     )
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        exclude_on_flow360_export = ["model_type"]
 
 
 class FreestreamFromMach(FreestreamBase):
@@ -824,20 +804,12 @@ class BETDiskTwist(Flow360BaseModel):
     radius: Optional[float] = pd.Field()
     twist: Optional[float] = pd.Field()
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk twist"
-
 
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class"""
 
     radius: Optional[float] = pd.Field()
     chord: Optional[float] = pd.Field()
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk chord"
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -849,10 +821,6 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
         alias="dragCoeffs", displayed="Drag coefficients"
     )
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        displayed = "BET disk sectional polar"
 
 
 class BETDisk(Flow360BaseModel):
@@ -899,15 +867,6 @@ class BETDisk(Flow360BaseModel):
     sectional_radiuses: List[float] = pd.Field(
         alias="sectionalRadiuses", displayed="Sectional radiuses"
     )
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "centerOfRotation": "vector3",
-            "axisOfRotation": "vector3",
-            "initialBladeDirection": "vector3",
-        }
-        displayed = "BET disk"
 
     # pylint: disable=no-self-argument
     @pd.root_validator
@@ -958,17 +917,6 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: Vector = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
     volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "DarcyCoefficient": "vector3",
-            "ForchheimerCoefficient": "vector3",
-            "volumeZone/center": "vector3",
-            "volumeZone/lengths": "vector3",
-            "volumeZone/axes/items": "vector3",
-            "volumeZone/windowingLengths": "vector3",
-        }
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -1125,9 +1073,8 @@ class Flow360Params(Flow360BaseModel):
         """
 
         solver_params = self.to_solver()
-        solver_params_json = solver_params.json(
-            encoder=flow360_json_encoder, exclude=["version", "unit_system"]
-        )
+        solver_params.set_will_export_to_flow360(True)
+        solver_params_json = solver_params.json(encoder=flow360_json_encoder)
         return solver_params_json
 
     def append(self, params: Flow360Params, overwrite: bool = False):
@@ -1160,6 +1107,7 @@ class Flow360Params(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["runControl", "testControl"]
         include_hash: bool = True
+        exclude_on_flow360_export = ["version", "unit_system"]
 
     # pylint: disable=no-self-argument
     @pd.root_validator
@@ -1168,6 +1116,14 @@ class Flow360Params(Flow360BaseModel):
         check consistency between wall function usage and surface output
         """
         return _check_consistency_wall_function_and_surface_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_temperature_consistency(cls, values):
+        """
+        check if temperature values in freestream and fluid_properties match
+        """
+        return _check_consistency_temperature(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator

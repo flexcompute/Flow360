@@ -2,9 +2,10 @@
   "additionalProperties": {
     "referenceFrame": {
       "centerOfRotation": {
-        "value": {
-          "ui:widget": "vector3"
-        }
+        "ui:field": "unitInput"
+      },
+      "omega": {
+        "ui:field": "unitInput"
       },
       "axisOfRotation": {
         "ui:widget": "vector3"

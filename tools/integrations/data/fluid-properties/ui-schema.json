@@ -1,4 +1,13 @@
 {
+  "temperature": {
+    "ui:field": "unitInput"
+  },
+  "density": {
+    "ui:field": "unitInput"
+  },
+  "pressure": {
+    "ui:field": "unitInput"
+  },
   "ui:submitButtonOptions": {
     "norender": true
   },
