@@ -175,7 +175,8 @@ class MassInflow(BoundaryWithTurbulenceQuantities):
 
     type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+    # release 23.3.2+ feature
+    # ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class MassOutflow(BoundaryWithTurbulenceQuantities):
@@ -183,7 +184,8 @@ class MassOutflow(BoundaryWithTurbulenceQuantities):
 
     type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+    # release 23.3.2+ feature
+    # ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
 class SolidIsothermalWall(Boundary):
