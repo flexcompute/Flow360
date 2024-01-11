@@ -40,12 +40,10 @@
       "maxRelativeChange": 1.0,
       "convergenceLimitingFactor": 0.25
     },
-    "modelType": "Unsteady",
     "physicalSteps": 20,
     "timeStepSize": 408352.8069698554
   },
   "freestream": {
-    "modelType": "FromMach",
     "alphaAngle": 3.06,
     "betaAngle": 0.0,
     "Mach": 0.8404497144189705,

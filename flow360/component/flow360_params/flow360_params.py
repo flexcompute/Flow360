@@ -515,6 +515,10 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
         alias="turbulenceQuantities"
     )
 
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        exclude_on_flow360_export = ["model_type"]
+
 
 class FreestreamFromMach(FreestreamBase):
     """
@@ -1069,9 +1073,8 @@ class Flow360Params(Flow360BaseModel):
         """
 
         solver_params = self.to_solver()
-        solver_params_json = solver_params.json(
-            encoder=flow360_json_encoder, exclude=["version", "unit_system"]
-        )
+        solver_params.set_will_export_to_flow360(True)
+        solver_params_json = solver_params.json(encoder=flow360_json_encoder)
         return solver_params_json
 
     def append(self, params: Flow360Params, overwrite: bool = False):
@@ -1083,6 +1086,7 @@ class Flow360Params(Flow360BaseModel):
     class Config(Flow360BaseModel.Config):
         allow_but_remove = ["runControl", "testControl"]
         include_hash: bool = True
+        exclude_on_flow360_export = ["version", "unit_system"]
 
     # pylint: disable=no-self-argument
     @pd.root_validator

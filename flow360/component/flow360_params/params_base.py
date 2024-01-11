@@ -177,6 +177,8 @@ class Flow360BaseModel(BaseModel):
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`_
     """
 
+    _will_export_to_flow360: bool = pd.PrivateAttr(False)
+
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._init_handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
@@ -225,6 +227,7 @@ class Flow360BaseModel(BaseModel):
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
         include_hash: bool = False
         include_defaults_in_schema: bool = True
+        exclude_on_flow360_export: Optional[Any] = None
 
     def __setattr__(self, name, value):
         if name in self.__fields__:
@@ -917,7 +920,25 @@ class Flow360BaseModel(BaseModel):
         else:
             exclude = {TYPE_TAG_STR}
 
+        if self._will_export_to_flow360 is True:
+            if self.Config.exclude_on_flow360_export:
+                exclude = {*exclude, *self.Config.exclude_on_flow360_export}
+            self.Config.will_export = False
+
         return exclude
+
+    def set_will_export_to_flow360(self, flag: bool):
+        """Recursivly sets flag will_export_to_flow360
+
+        Parameters
+        ----------
+        flag : bool
+            set to true before exporting to flow360 json
+        """
+        self._will_export_to_flow360 = flag
+        for value in self.__dict__.values():
+            if isinstance(value, Flow360BaseModel):
+                value.set_will_export_to_flow360(flag)
 
     def dict(self, *args, exclude=None, **kwargs) -> dict:
         """Returns dict representation of the model.
