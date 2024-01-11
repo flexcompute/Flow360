@@ -1,8 +1,6 @@
 """
 Module exposing utilities for the validation service
 """
-import json
-import tempfile
 
 import pydantic as pd
 
@@ -42,10 +40,7 @@ def get_default_retry(params_as_dict):
     Return a default case file for a retry request
     """
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(params_as_dict, temp_file)
-
-    params = Flow360Params(temp_file.name)
+    params = Flow360Params(legacy_fallback=True, **params_as_dict)
     return params
 
 
@@ -54,10 +49,7 @@ def get_default_fork(params_as_dict):
     Return a default case file for a fork request
     """
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(params_as_dict, temp_file)
-
-    params = Flow360Params(temp_file.name)
+    params = Flow360Params(legacy_fallback=True, **params_as_dict)
     return params
 
 

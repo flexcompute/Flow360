@@ -1043,12 +1043,12 @@ class Flow360Params(Flow360BaseModel):
 
         return kwargs
 
-    def __init__(self, filename: str = None, **kwargs):
-        if filename is not None:
-            self._init_from_file(filename, **kwargs)
+    # pylint: disable=super-init-not-called
+    def __init__(self, filename: str = None, legacy_fallback: bool = False, **kwargs):
+        if filename is not None or legacy_fallback:
+            self._init_no_context(filename, legacy_fallback, **kwargs)
         else:
-            kwargs = self._init_check_unit_system(**kwargs)
-            super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+            self._init_with_context(**kwargs)
 
     @classmethod
     def from_file(cls, filename: str) -> Flow360Params:
@@ -1070,13 +1070,22 @@ class Flow360Params(Flow360BaseModel):
         """
         return cls(filename=filename)
 
-    def _init_from_file(self, filename, **kwargs):
+    def _init_with_context(self, **kwargs):
+        kwargs = self._init_check_unit_system(**kwargs)
+        super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+
+    def _init_no_context(self, filename, legacy_fallback=False, **kwargs):
         if unit_system_manager.current is not None:
             raise Flow360RuntimeError(
-                "When loading params from file: Flow360Params(filename), unit context must not be used."
+                "When loading params from file: Flow360Params(filename), "
+                "or from dict with the legacy_fallback flag set unit "
+                "context must not be used."
             )
 
-        model_dict = self._init_handle_file(filename=filename, **kwargs)
+        if legacy_fallback:
+            model_dict = kwargs
+        else:
+            model_dict = self._init_handle_file(filename=filename, **kwargs)
 
         version = model_dict.get("version")
         unit_system = model_dict.get("unitSystem")
