@@ -18,7 +18,6 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    SupersonicInflow,
     WallFunction,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -26,10 +25,11 @@ from flow360.component.flow360_params.flow360_params import (
     MeshBoundary,
     SteadyTimeStepping,
 )
+from globals.flags import Flags
 
-# release 23.3.2+ feature
-# from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
-from flow360.exceptions import Flow360ValidationError
+if Flags.beta_features():
+    from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
+
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -239,216 +239,185 @@ def test_boundary_types():
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
 
-    # Test the turbulence quantities on the boundaries
-    bc = SubsonicOutflowMach(
-        name="SomeBC",
-        Mach=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(turbulent_intensity=0.2, viscosity_ratio=10),
-    )
+    if Flags.beta_features():
+        # Test the turbulence quantities on the boundaries
+        bc = SubsonicOutflowMach(
+            name="SomeBC",
+            Mach=0.2,
+            turbulence_quantities=TurbulenceQuantities(turbulent_intensity=0.2, viscosity_ratio=10),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_intensity == 0.2
-    # assert bc.turbulence_quantities.turbulent_viscosity_ratio == 10
+        assert bc.turbulence_quantities.turbulent_intensity == 0.2
+        assert bc.turbulence_quantities.turbulent_viscosity_ratio == 10
 
-    bc = SubsonicOutflowPressure(
-        name="SomeBC",
-        static_pressure_ratio=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(),
-    )
+        bc = SubsonicOutflowPressure(
+            name="SomeBC",
+            static_pressure_ratio=0.2,
+            turbulence_quantities=TurbulenceQuantities(),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities is None
+        assert bc.turbulence_quantities is None
 
-    bc = FreestreamBoundary(
-        name="SomeBC",
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(viscosity_ratio=14),
-    )
+        bc = FreestreamBoundary(
+            name="SomeBC",
+            turbulence_quantities=TurbulenceQuantities(viscosity_ratio=14),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_viscosity_ratio == 14
+        assert bc.turbulence_quantities.turbulent_viscosity_ratio == 14
 
-    bc = SubsonicOutflowPressure(
-        name="SomeBC",
-        static_pressure_ratio=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     viscosity_ratio=124, turbulent_kinetic_energy=0.2
-        # ),
-    )
+        bc = SubsonicOutflowPressure(
+            name="SomeBC",
+            static_pressure_ratio=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                viscosity_ratio=124, turbulent_kinetic_energy=0.2
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_viscosity_ratio == 124
-    # assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.2
+        assert bc.turbulence_quantities.turbulent_viscosity_ratio == 124
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.2
 
-    bc = SubsonicOutflowMach(
-        name="SomeBC",
-        Mach=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     specific_dissipation_rate=124, viscosity_ratio=0.2
-        # ),
-    )
+        bc = SubsonicOutflowMach(
+            name="SomeBC",
+            Mach=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                specific_dissipation_rate=124, viscosity_ratio=0.2
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.specific_dissipation_rate == 124
-    # assert bc.turbulence_quantities.turbulent_viscosity_ratio == 0.2
+        assert bc.turbulence_quantities.specific_dissipation_rate == 124
+        assert bc.turbulence_quantities.turbulent_viscosity_ratio == 0.2
 
-    bc = SubsonicInflow(
-        name="SomeBC",
-        total_pressure_ratio=0.2,
-        total_temperature_ratio=0.43,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(viscosity_ratio=124, turbulent_length_scale=1.2),
-    )
+        bc = SubsonicInflow(
+            name="SomeBC",
+            total_pressure_ratio=0.2,
+            total_temperature_ratio=0.43,
+            turbulence_quantities=TurbulenceQuantities(
+                viscosity_ratio=124, turbulent_length_scale=1.2
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_viscosity_ratio == 124
-    # assert bc.turbulence_quantities.turbulent_length_scale == 1.2
+        assert bc.turbulence_quantities.turbulent_viscosity_ratio == 124
+        assert bc.turbulence_quantities.turbulent_length_scale == 1.2
 
-    bc = MassInflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(modified_viscosity_ratio=1.2),
-    )
+        bc = MassInflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(modified_viscosity_ratio=1.2),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.modified_turbulent_viscosity_ratio == 1.2
+        assert bc.turbulence_quantities.modified_turbulent_viscosity_ratio == 1.2
 
-    bc = MassInflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(turbulent_intensity=0.2),
-    )
+        bc = MassInflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(turbulent_intensity=0.2),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_intensity == 0.2
+        assert bc.turbulence_quantities.turbulent_intensity == 0.2
 
-    bc = MassInflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(turbulent_kinetic_energy=12.2),
-    )
+        bc = MassInflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(turbulent_kinetic_energy=12.2),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_kinetic_energy == 12.2
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 12.2
 
-    bc = MassInflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(turbulent_length_scale=1.23),
-    )
+        bc = MassInflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(turbulent_length_scale=1.23),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_length_scale == 1.23
+        assert bc.turbulence_quantities.turbulent_length_scale == 1.23
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(modified_viscosity=1.2),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(modified_viscosity=1.2),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.modified_turbulent_viscosity == 1.2
+        assert bc.turbulence_quantities.modified_turbulent_viscosity == 1.2
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     turbulent_intensity=0.88, specific_dissipation_rate=100
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_intensity=0.88, specific_dissipation_rate=100
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_intensity == 0.88
-    # assert bc.turbulence_quantities.specific_dissipation_rate == 100
+        assert bc.turbulence_quantities.turbulent_intensity == 0.88
+        assert bc.turbulence_quantities.specific_dissipation_rate == 100
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     turbulent_intensity=0.88, turbulent_length_scale=10
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_intensity=0.88, turbulent_length_scale=10
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_intensity == 0.88
-    # assert bc.turbulence_quantities.turbulent_length_scale == 10
+        assert bc.turbulence_quantities.turbulent_intensity == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
-    # assert bc.turbulence_quantities.specific_dissipation_rate == 10
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.specific_dissipation_rate == 10
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
-    # assert bc.turbulence_quantities.specific_dissipation_rate == 10
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.specific_dissipation_rate == 10
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     turbulent_kinetic_energy=0.88, turbulent_length_scale=10
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, turbulent_length_scale=10
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
-    # assert bc.turbulence_quantities.turbulent_length_scale == 10
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
 
-    bc = MassOutflow(
-        name="SomeBC",
-        mass_flow_rate=0.2,
-        # release 23.3.2+ feature
-        # turbulence_quantities=TurbulenceQuantities(
-        #     specific_dissipation_rate=0.88, turbulent_length_scale=10
-        # ),
-    )
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                specific_dissipation_rate=0.88, turbulent_length_scale=10
+            ),
+        )
 
-    # release 23.3.2+ feature
-    # assert bc.turbulence_quantities.specific_dissipation_rate == 0.88
-    # assert bc.turbulence_quantities.turbulent_length_scale == 10
+    if Flags.beta_features():
+        assert bc.turbulence_quantities.specific_dissipation_rate == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
 
-    # release 23.3.2+ feature
-    # with pytest.raises(ValueError):
-    #     MassOutflow(
-    #         name="SomeBC",
-    #         mass_flow_rate=0.2,
-    #         turbulence_quantities=TurbulenceQuantities(
-    #             specific_dissipation_rate=0.88, modified_viscosity=10
-    #         ),
-    #     )
-    #
-    # with pytest.raises(ValueError):
-    #     MassOutflow(
-    #         name="SomeBC",
-    #         mass_flow_rate=0.2,
-    #         turbulence_quantities=TurbulenceQuantities(specific_dissipation_rate=0.88),
-    #     )
+        with pytest.raises(ValueError):
+            MassOutflow(
+                name="SomeBC",
+                mass_flow_rate=0.2,
+                turbulence_quantities=TurbulenceQuantities(
+                    specific_dissipation_rate=0.88, modified_viscosity=10
+                ),
+            )
+
+        with pytest.raises(ValueError):
+            MassOutflow(
+                name="SomeBC",
+                mass_flow_rate=0.2,
+                turbulence_quantities=TurbulenceQuantities(specific_dissipation_rate=0.88),
+            )

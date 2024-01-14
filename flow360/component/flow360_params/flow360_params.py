@@ -22,6 +22,8 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
+from globals.flags import Flags
+
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
     Flow360ConfigError,
@@ -101,8 +103,9 @@ from .time_stepping import (
     UnsteadyTimeStepping,
 )
 
-# release 23.3.2+ feature
-# from .turbulence_quantities import TurbulenceQuantitiesType
+if Flags.beta_features():
+    from .turbulence_quantities import TurbulenceQuantitiesType
+
 from .unit_system import (
     AngularVelocityType,
     AreaType,
@@ -513,10 +516,10 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ##  should be oneOf{turbulent_viscosity_ratio, turbulence_quantities}, legacy update also pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
-    # release 23.3.2+ feature
-    # turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-    #     alias="turbulenceQuantities"
-    # )
+    if Flags.beta_features():
+        turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+            alias="turbulenceQuantities"
+        )
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
