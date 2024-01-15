@@ -28,7 +28,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead
+hash: 4aa5efab272a24cb4b2540c6f3ddb1357a4a405a2c8ebda6393ea3affb496b03
 navierStokesSolver:
     CFLMultiplier: 1.0
     equationEvalFrequency: 1
@@ -76,6 +76,18 @@ surfaceOutput:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
+    surfaces:
+        freestream:
+            outputFields:
+            - Cp
+            - Mach
+        symmetry:
+            outputFields:
+            - T
+            - heatFlux
+        wing:
+            outputFields:
+            - CfVec
 timeStepping:
     maxPseudoSteps: 2000
     modelType: Steady

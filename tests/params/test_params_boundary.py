@@ -23,6 +23,7 @@ from flow360.component.flow360_params.boundaries import (
 )
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
+    FreestreamFromMach,
     MeshBoundary,
     SteadyTimeStepping,
 )
@@ -77,7 +78,8 @@ def test_case_boundary():
                     "fluid/fuselage": SteadyTimeStepping(),
                     "fluid/leftWing": NoSlipWall(),
                     "fluid/rightWing": NoSlipWall(),
-                }
+                },
+                freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
         with pytest.raises(ValueError):
@@ -94,6 +96,12 @@ def test_case_boundary():
                         "fluid/rightWing": {
                             "type": "NoSlipWall"
                         } 
+                    }.
+                    "freestream": {
+                        "modelType": "FromMach",
+                        "Mach": 1,
+                        "temperature": 1,
+                        "mu_ref": 1
                     }
                 }
                 """
@@ -113,24 +121,12 @@ def test_case_boundary():
                     "fluid/rightWing": {
                         "type": "NoSlipWall"
                     } 
-                }
-            }
-            """
-        )
-
-        param = Flow360Params.parse_raw(
-            """
-            {
-                "boundaries": {
-                    "fluid/fuselage": {
-                        "type": "SlipWall"
-                    },
-                    "fluid/leftWing": {
-                        "type": "NoSlipWall"
-                    },
-                    "fluid/rightWing": {
-                        "type": "NoSlipWall"
-                    } 
+                },
+                "freestream": {
+                    "modelType": "FromMach",
+                    "Mach": 1,
+                    "temperature": 1,
+                    "mu_ref": 1
                 }
             }
             """
@@ -150,7 +146,8 @@ def test_case_boundary():
                     "fluid/fuselage": "NoSlipWall",
                     "fluid/leftWing": NoSlipWall(),
                     "fluid/rightWing": NoSlipWall(),
-                }
+                },
+                freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
         param = Flow360Params(
@@ -158,7 +155,8 @@ def test_case_boundary():
                 "fluid/fuselage": NoSlipWall(),
                 "fluid/rightWing": NoSlipWall(),
                 "fluid/leftWing": NoSlipWall(),
-            }
+            },
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
         assert param
@@ -168,7 +166,8 @@ def test_case_boundary():
                 "fluid/ fuselage": NoSlipWall(),
                 "fluid/rightWing": NoSlipWall(),
                 "fluid/leftWing": SolidIsothermalWall(temperature=1.0),
-            }
+            },
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     compare_to_ref(param.boundaries, "../ref/case_params/boundaries/yaml.yaml")

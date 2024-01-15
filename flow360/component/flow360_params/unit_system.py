@@ -122,7 +122,10 @@ def _is_unit_validator(value):
     Parses str (eg: "m", "cm"), into unyt.Unit object
     """
     if isinstance(value, str):
-        value = u.Unit(value)
+        try:
+            value = u.Unit(value)
+        except u.exceptions.UnitParseError as err:
+            raise TypeError(str(err)) from err
     return value
 
 
@@ -1076,8 +1079,8 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
 
     name: Literal["Flow360"] = pd.Field("Flow360", const=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.FLOW360)
+    def __init__(self, verbose: bool = True):
+        super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
 
     @classmethod
     def validate(cls, _):

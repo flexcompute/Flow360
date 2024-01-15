@@ -522,7 +522,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
 
 class FreestreamFromMach(FreestreamBase):
     """
-    :class: Freestream component using Mach numbers
+    :class: Freestream component using Mach number
     """
 
     model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
@@ -541,7 +541,7 @@ class FreestreamFromMach(FreestreamBase):
 
 class FreestreamFromMachReynolds(FreestreamBase):
     """
-    :class: Freestream component using Mach and Reynolds numbers
+    :class: Freestream component using Mach and Reynolds number
     """
 
     model_type: Literal["FromMachReynolds"] = pd.Field(
@@ -944,7 +944,7 @@ class Flow360Params(Flow360BaseModel):
 
     geometry: Optional[Geometry] = pd.Field()
     fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties")
-    boundaries: Optional[Boundaries] = pd.Field()
+    boundaries: Boundaries = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
@@ -959,7 +959,7 @@ class Flow360Params(Flow360BaseModel):
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
-    freestream: Optional[FreestreamTypes] = pd.Field(discriminator="model_type")
+    freestream: FreestreamTypes = pd.Field(discriminator="model_type")
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
@@ -1081,6 +1081,27 @@ class Flow360Params(Flow360BaseModel):
         if not isinstance(params, Flow360Params):
             raise ValueError("params must be type of Flow360Params")
         super().append(params=params, overwrite=overwrite)
+
+    @classmethod
+    def construct(cls, filename: str = None, **kwargs) -> Flow360Params:
+        """
+        Creates a new model from trusted or pre-validated data.
+        Default values are respected, but no other validation is performed.
+        Behaves as if `Config.extra = 'allow'` was set since it adds all passed values
+        """
+
+        if filename is not None:
+            model_dict = cls._init_handle_file(filename=filename, **kwargs)
+        else:
+            model_dict = kwargs
+
+        # the default .construct() method will return field by both alias and field name so preprocessing here before
+        # passing to .construct() method
+        for name, field in cls.__fields__.items():
+            if field.alt_alias and field.alias in model_dict:
+                model_dict[name] = model_dict.pop(field.alias)
+
+        return super().construct(**model_dict)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -1215,6 +1236,10 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
 class BETDiskLegacy(BETDisk, LegacyModel):
     """:class:`BETDiskLegacy` class"""
 
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
+
     volume_name: Optional[str] = pd.Field(alias="volumeName")
 
     def update_model(self):
@@ -1224,14 +1249,15 @@ class BETDiskLegacy(BETDisk, LegacyModel):
             "axisOfRotation": self.axis_of_rotation,
             "numberOfBlades": self.number_of_blades,
             "radius": self.radius,
+            "omega": self.omega,
             "chordRef": self.chord_ref,
             "thickness": self.thickness,
             "nLoadingNodes": self.n_loading_nodes,
             "bladeLineChord": self.blade_line_chord,
             "initialBladeDirection": self.initial_blade_direction,
             "tipGap": self.tip_gap,
-            "machNumbers": self.mach_numbers,
-            "reynoldsNumbers": self.reynolds_numbers,
+            "MachNumbers": self.mach_numbers,
+            "ReynoldsNumbers": self.reynolds_numbers,
             "alphas": self.alphas,
             "twists": self.twists,
             "chords": self.chords,
@@ -1374,8 +1400,9 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
 
     physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
     time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
-        alias="timeStepSize", default="inf"
+        "inf", alias="timeStepSize"
     )
+    physical_steps: Optional[PositiveInt] = pd.Field(1, alias="physicalSteps")
 
     def update_model(self) -> Flow360BaseModel:
         class _TimeSteppingTempModel(pd.BaseModel):
@@ -1395,10 +1422,11 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
 
         if (
             model["field"]["timeStepSize"] != "inf"
+            and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
-            try_add_unit(model, "timeStepSize", step_unit)
+            try_add_unit(model["time_stepping"], "timeStepSize", step_unit)
 
         if model["field"]["timeStepSize"] == "inf" and model["field"]["physicalSteps"] == 1:
             model["field"]["modelType"] = "Steady"
@@ -1430,7 +1458,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
-        if self.comments.get("rpm") is not None:
+        if self.comments is not None and self.comments.get("rpm") is not None:
             # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             try_set(model["referenceFrame"], "omega", omega)
@@ -1440,6 +1468,22 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
                 del model["referenceFrame"]["omegaDegrees"]
 
         return FluidDynamicsVolumeZone.parse_obj(model)
+
+
+class BoundariesLegacy(Boundaries):
+    """Legacy Boundaries class"""
+
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
+
+
+class VolumeZonesLegacy(VolumeZones):
+    """Legacy VolumeZones class"""
+
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
 
 
 class Flow360ParamsLegacy(LegacyModel):
@@ -1462,8 +1506,7 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_output: Optional[VolumeOutputLegacy] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutputLegacy] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
-    # Needs decoupling from current model
-    boundaries: Optional[Boundaries] = pd.Field()
+    boundaries: Optional[BoundariesLegacy] = pd.Field()
     # Needs decoupling from current model
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
@@ -1478,8 +1521,7 @@ class Flow360ParamsLegacy(LegacyModel):
     )
     # Needs decoupling from current model
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
-    # Needs decoupling from current model
-    volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
+    volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
@@ -1545,8 +1587,8 @@ class Flow360ParamsLegacy(LegacyModel):
                     "monitor_output": self.monitor_output,
                     "aeroacoustic_output": self.aeroacoustic_output,
                     "fluid_properties": None,
-                    "volume_zones": None,
-                    "bet_disks": None,
+                    "volume_zones": self.volume_zones,
+                    "bet_disks": try_update(self.bet_disks),
                 }
             )
 
