@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pytest
@@ -9,9 +10,8 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from flow360.component.flow360_params.solvers import SpalartAllmaras
 from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
-from globals.flags import Flags
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     pass
 
 assertions = unittest.TestCase("__init__")

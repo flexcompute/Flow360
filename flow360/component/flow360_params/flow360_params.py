@@ -6,6 +6,7 @@ Flow360 solver parameters
 from __future__ import annotations
 
 import math
+import os
 from abc import ABCMeta, abstractmethod
 from typing import (
     Callable,
@@ -21,8 +22,6 @@ from typing import (
 import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
-
-from globals.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
@@ -145,7 +144,7 @@ from .validations import (
 )
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 
@@ -515,7 +514,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ##  should be oneOf{turbulent_viscosity_ratio, turbulence_quantities}, legacy update also pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
-    if Flags.beta_features():
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
         turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
             alias="turbulenceQuantities"
         )

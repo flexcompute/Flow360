@@ -3,13 +3,12 @@ Flow360 output parameters models
 """
 from __future__ import annotations
 
+import os
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 from pydantic import conlist
-
-from globals.flags import Flags
 
 from ..types import Axis, Coordinate, PositiveInt
 from .flow360_fields import (
@@ -530,7 +529,7 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
 
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
-    if Flags.beta_features():
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
         write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
 

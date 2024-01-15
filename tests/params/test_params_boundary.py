@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pydantic as pd
@@ -6,7 +7,6 @@ import pytest
 import flow360 as fl
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
-    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -26,9 +26,9 @@ from flow360.component.flow360_params.flow360_params import (
     MeshBoundary,
     SteadyTimeStepping,
 )
-from globals.flags import Flags
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
+    from flow360.component.flow360_params.boundaries import HeatFluxWall
     from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
 
 from tests.utils import compare_to_ref, to_file_from_file_test
@@ -213,9 +213,10 @@ def test_boundary_types():
     assert IsothermalWall(Temperature=1).type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
 
-    assert HeatFluxWall(heatFlux=-0.01).type == "HeatFluxWall"
-    with fl.flow360_unit_system:
-        assert HeatFluxWall(heatFlux="exp(x)", velocity=(0, 0, 0))
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
+        assert HeatFluxWall(heatFlux=-0.01).type == "HeatFluxWall"
+        with fl.flow360_unit_system:
+            assert HeatFluxWall(heatFlux="exp(x)", velocity=(0, 0, 0))
 
     assert SubsonicOutflowPressure(staticPressureRatio=1).type == "SubsonicOutflowPressure"
     with pytest.raises(pd.ValidationError):
@@ -238,7 +239,7 @@ def test_boundary_types():
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
 
-    if Flags.beta_features():
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
         # Test the turbulence quantities on the boundaries
         bc = SubsonicOutflowMach(
             name="SomeBC",
@@ -401,7 +402,7 @@ def test_boundary_types():
             ),
         )
 
-    if Flags.beta_features():
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
         assert bc.turbulence_quantities.specific_dissipation_rate == 0.88
         assert bc.turbulence_quantities.turbulent_length_scale == 10
 

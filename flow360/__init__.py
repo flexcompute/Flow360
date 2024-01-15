@@ -2,9 +2,9 @@
 This module is flow360.
 """
 
-from numpy import pi
+import os
 
-from globals.flags import Flags
+from numpy import pi
 
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
@@ -102,7 +102,7 @@ from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     from flow360.component.flow360_params.boundaries import (
         HeatFluxWall,
         SupersonicInflow,

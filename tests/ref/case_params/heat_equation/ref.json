@@ -1,5 +1,5 @@
 {
-  "linearSolver": {
+  "linearSolverConfig": {
     "absoluteTolerance": 1e-10,
     "maxIterations": 50
   },

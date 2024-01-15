@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pytest
@@ -24,9 +25,8 @@ from flow360.component.flow360_params.solvers import (
     IncompressibleNavierStokesSolver,
 )
 from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
-from globals.flags import Flags
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     pass
 
 from flow360.component.flow360_params.volume_zones import (

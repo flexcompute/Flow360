@@ -1,19 +1,18 @@
 """
 Boundaries parameters
 """
+import os
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from pydantic import StrictStr
 
-from globals.flags import Flags
-
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
 from .unit_system import VelocityType
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -30,7 +29,7 @@ class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
         """Turbulence Quantities on Boundaries"""
@@ -53,7 +52,7 @@ class SlipWall(Boundary):
     type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
         """Freestream boundary"""
@@ -80,7 +79,7 @@ class IsothermalWall(Boundary):
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class HeatFluxWall(Boundary):
         """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
@@ -110,7 +109,7 @@ if Flags.beta_features():
         velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
         """SubsonicOutflowPressure boundary"""
@@ -127,7 +126,7 @@ else:
         static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
         """SubsonicOutflowMach boundary"""
@@ -144,7 +143,7 @@ else:
         Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class SubsonicInflow(BoundaryWithTurbulenceQuantities):
         """SubsonicInflow boundary"""
@@ -167,7 +166,7 @@ else:
         velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class SupersonicInflow(Boundary):
         """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
@@ -229,7 +228,7 @@ class WallFunction(Boundary):
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class MassInflow(BoundaryWithTurbulenceQuantities):
         """:class: `MassInflow` boundary"""
@@ -247,7 +246,7 @@ else:
         mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
 
     class MassOutflow(BoundaryWithTurbulenceQuantities):
         """:class: `MassOutflow` boundary"""
@@ -297,7 +296,7 @@ class RotationallyPeriodic(Boundary):
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
 
 
-if Flags.beta_features():
+if os.environ.get("FLOW360_BETA_FEATURES", False):
     BoundaryType = Union[
         NoSlipWall,
         SlipWall,

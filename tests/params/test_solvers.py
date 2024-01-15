@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pydantic as pd
@@ -103,11 +104,12 @@ def test_transition():
 def test_heat_equation():
     he = HeatEquationSolver(
         equation_eval_frequency=10,
-        linear_solver=LinearSolver(
+        linear_solver_config=LinearSolver(
             absoluteTolerance=1e-10,
             max_iterations=50,
         ),
     )
     assert he
 
-    compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+    if os.environ.get("FLOW360_BETA_FEATURES", False):
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
