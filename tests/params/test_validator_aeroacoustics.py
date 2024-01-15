@@ -31,11 +31,13 @@ def test_aero_acoustics():
             boundaries={
                 "blk-1/left": TranslationallyPeriodic(paired_patch_name="blk-1/right"),
                 "blk-1/right": TranslationallyPeriodic(),
-            }
+            },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
         param = Flow360Params(
             aeroacoustic_output=AeroacousticOutput(observers=[(1, 2, 3), (4, 5, 6)]),
             boundaries={
                 "blk-1/right": NoSlipWall(),
             },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )

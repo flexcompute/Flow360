@@ -31,6 +31,8 @@ def test_equation_eval_frequency_for_unsteady_simulations():
             time_stepping=UnsteadyTimeStepping(max_pseudo_steps=30),
             turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=2),
             transition_model_solver=TransitionModelSolver(equation_eval_frequency=4),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with fl.SI_unit_system:
@@ -38,6 +40,8 @@ def test_equation_eval_frequency_for_unsteady_simulations():
             time_stepping=SteadyTimeStepping(max_pseudo_steps=10),
             turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=12),
             transition_model_solver=TransitionModelSolver(equation_eval_frequency=15),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -48,6 +52,8 @@ def test_equation_eval_frequency_for_unsteady_simulations():
             param = Flow360Params(
                 time_stepping=UnsteadyTimeStepping(max_pseudo_steps=2),
                 turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=3),
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
     with pytest.raises(
         ValueError,
@@ -57,4 +63,6 @@ def test_equation_eval_frequency_for_unsteady_simulations():
             param = Flow360Params(
                 time_stepping=UnsteadyTimeStepping(max_pseudo_steps=2),
                 transition_model_solver=TransitionModelSolver(equation_eval_frequency=3),
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )

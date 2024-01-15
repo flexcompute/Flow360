@@ -52,7 +52,9 @@ def test_bet_disks_good():
                     sectional_polars=[BETDiskSectionalPolar()] * 3,
                     sectional_radiuses=[0.1, 0.3, 0.8],
                 ),
-            ]
+            ],
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
         param = Flow360Params(
@@ -74,7 +76,9 @@ def test_bet_disks_good():
                     sectional_polars=polars,
                     sectional_radiuses=[0.1],
                 ),
-            ]
+            ],
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
 
@@ -103,7 +107,9 @@ def test_bet_disks_alphas_disorder():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -134,7 +140,9 @@ def test_bet_disks_duplicated_radial_locations():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
         with pytest.raises(
@@ -162,7 +170,9 @@ def test_bet_disks_duplicated_radial_locations():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -193,7 +203,9 @@ def test_bet_disks_number_of_polars():
                         sectional_polars=polars_wrong,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -223,7 +235,9 @@ def test_bet_disks_dimension_polars():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
         with pytest.raises(
             ValueError,
@@ -249,7 +263,9 @@ def test_bet_disks_dimension_polars():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
         with pytest.raises(
             ValueError,
@@ -275,7 +291,9 @@ def test_bet_disks_dimension_polars():
                         sectional_polars=polars,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
         with pytest.raises(
             ValueError,
@@ -306,5 +324,7 @@ def test_bet_disks_dimension_polars():
                         sectional_polars=polars_local,
                         sectional_radiuses=[0.1],
                     ),
-                ]
+                ],
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )

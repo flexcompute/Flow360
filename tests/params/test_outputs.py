@@ -19,6 +19,7 @@ from flow360.component.flow360_params.flow360_output import (
 from flow360.component.flow360_params.flow360_params import (
     AeroacousticOutput,
     Flow360Params,
+    FreestreamFromMach,
 )
 from tests.utils import to_file_from_file_test
 
@@ -135,7 +136,11 @@ def test_surface_output():
     )
 
     with flow360.SI_unit_system:
-        params = Flow360Params(surface_output=output)
+        params = Flow360Params(
+            surface_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
         solver_params = params.to_solver()
 
         assert solver_params.surface_output.output_fields == ["Cp", "qcriterion"]
@@ -170,7 +175,11 @@ def test_slice_output():
     )
 
     with flow360.SI_unit_system:
-        params = Flow360Params(slice_output=output)
+        params = Flow360Params(
+            slice_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
         solver_params = params.to_solver()
 
         assert solver_params.slice_output.output_fields == ["Cp", "qcriterion"]
@@ -211,7 +220,11 @@ def test_volume_output():
     )
 
     with flow360.SI_unit_system:
-        params = Flow360Params(volume_output=output)
+        params = Flow360Params(
+            volume_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
         solver_params = params.to_solver()
 
         assert solver_params.volume_output.output_fields == ["Cp", "qcriterion"]

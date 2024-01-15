@@ -1,3 +1,5 @@
+geometry:
+    refArea: 2*m*m
 sliceOutput:
     outputFormat: tecplot
     outputFields:
