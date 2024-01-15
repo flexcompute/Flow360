@@ -174,7 +174,7 @@ def test_flow360param():
 
 
 def test_flow360param1():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         params = Flow360Params(
             freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
         )

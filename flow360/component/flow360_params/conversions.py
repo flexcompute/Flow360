@@ -8,8 +8,6 @@ from typing import Callable, List
 
 import pydantic as pd
 
-from globals.flags import Flags
-
 from ...exceptions import Flow360ConfigurationError
 from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
 
@@ -186,14 +184,12 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_viscosity
 
-    if Flags.beta_features():
+    def get_base_heat_flux():
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_heat_flux = base_density * base_velocity**3
 
-        def get_base_heat_flux():
-            base_density = get_base_density()
-            base_velocity = get_base_velocity()
-            base_heat_flux = base_density * base_velocity**3
-
-            return base_heat_flux
+        return base_heat_flux
 
     if dimension == u.dimensions.length:
         base_length = get_base_length()
@@ -227,9 +223,10 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         base_viscosity = get_base_viscosity()
         flow360_conversion_unit_system.base_viscosity = base_viscosity
 
-    elif Flags.beta_features() and dimension == u.dimensions.heat_flux:
+    elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
+
     else:
         raise ValueError(f"Not recognised dimension: {dimension}")
 
