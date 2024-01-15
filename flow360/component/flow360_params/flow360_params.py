@@ -12,6 +12,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    NoReturn,
     Optional,
     Tuple,
     Union,
@@ -930,7 +931,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     update_law: List[str] = pd.Field(alias="updateLaw")
     output_law: List[str] = pd.Field(alias="outputLaw")
     input_boundary_patches: List[str] = pd.Field(alias="inputBoundaryPatches")
-    output_target_name: str = pd.Field(alias="outputTargetName")
+    output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -1092,6 +1093,18 @@ class Flow360Params(Flow360BaseModel):
 
         flow360_dict = json.loads(self.to_flow360_json())
         return flow360_dict
+
+    def to_flow360_json_file(self, filename: str) -> NoReturn:
+        """Exports :class:`Flow360Params` instance to .json file
+
+        Example
+        -------
+        >>> params.to_flow360_json_file() # doctest: +SKIP
+        """
+
+        flow360_dict = self.to_flow360_dict()
+        with open(filename, "w", encoding="utf-8") as fh:
+            json.dump(flow360_dict, fh, indent=4)
 
     def append(self, params: Flow360Params, overwrite: bool = False):
         if not isinstance(params, Flow360Params):
