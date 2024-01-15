@@ -14,7 +14,6 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.boundaries import (
     FreestreamBoundary,
-    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -26,7 +25,6 @@ from .component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    SupersonicInflow,
     WallFunction,
 )
 from .component.flow360_params.flow360_params import (
@@ -101,3 +99,8 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
+
+from globals.flags import Flags
+
+if Flags.beta_features():
+    from flow360.component.flow360_params.boundaries import HeatFluxWall, SupersonicInflow

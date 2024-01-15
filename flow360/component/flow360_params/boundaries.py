@@ -163,38 +163,37 @@ else:
         ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
         velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
+if Flags.beta_features():
+    class SupersonicInflow(Boundary):
+        """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
 
-class SupersonicInflow(Boundary):
-    """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
+        Parameters
+        ----------
+        total_temperature_ratio : PositiveFloat
+            Ratio of total temperature to static temperature at the inlet.
 
-    Parameters
-    ----------
-    total_temperature_ratio : PositiveFloat
-        Ratio of total temperature to static temperature at the inlet.
+        total_pressure_ratio: PositiveFloat
+            Ratio of the total pressure to static pressure at the inlet.
 
-    total_pressure_ratio: PositiveFloat
-        Ratio of the total pressure to static pressure at the inlet.
+        static_pressure_ratio: PositiveFloat
+            Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
+            Flow360 = 1.0/gamma.
 
-    static_pressure_ratio: PositiveFloat
-        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
-        Flow360 = 1.0/gamma.
+        velocity_direction: BoundaryAxisType
+            (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
+            of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
 
-    velocity_direction: BoundaryAxisType
-        (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
-        of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
+        Returns
+        -------
+        :class:`SupersonicInflow`
+            An instance of the component class SupersonicInflow.
 
-    Returns
-    -------
-    :class:`SupersonicInflow`
-        An instance of the component class SupersonicInflow.
+        Example
+        -------
+        >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
+        """
 
-    Example
-    -------
-    >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
-    """
-
-    type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
-    if Flags.beta_features():
+        type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
         total_temperature_ratio: PositiveFloat = pd.Field(
             alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
         )
@@ -207,10 +206,6 @@ class SupersonicInflow(Boundary):
         velocity_direction: Optional[BoundaryAxisType] = pd.Field(
             alias="velocityDirection", supported_solver_version="release-23.3.2.0gt"
         )
-    else:
-        density: PositiveFloat = pd.Field(alias="Density")
-        velocity: Tuple[float, float, float] = pd.Field(alias="Velocity")
-        pressure: PositiveFloat = pd.Field(alias="Pressure")
 
 
 class SlidingInterfaceBoundary(Boundary):
