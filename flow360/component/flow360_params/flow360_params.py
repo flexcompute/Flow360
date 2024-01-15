@@ -102,8 +102,6 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
-
-
 from .unit_system import (
     AngularVelocityType,
     AreaType,

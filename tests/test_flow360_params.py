@@ -6,7 +6,6 @@ import unittest
 import pydantic as pd
 import pytest
 
-import flow360
 import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
@@ -110,7 +109,7 @@ def test_flow360meshparam():
 
 
 def test_flow360param():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         mesh = Flow360Params.parse_raw(
             """
             {
@@ -175,7 +174,7 @@ def test_flow360param():
 
 
 def test_flow360param1():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
         assert params.time_stepping.max_pseudo_steps == 2000
         params.time_stepping = UnsteadyTimeStepping(physical_steps=100, time_step_size=2 * u.s)

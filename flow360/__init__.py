@@ -4,6 +4,8 @@ This module is flow360.
 
 from numpy import pi
 
+from globals.flags import Flags
+
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -100,7 +102,8 @@ from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
 
-from globals.flags import Flags
-
 if Flags.beta_features():
-    from flow360.component.flow360_params.boundaries import HeatFluxWall, SupersonicInflow
+    from flow360.component.flow360_params.boundaries import (
+        HeatFluxWall,
+        SupersonicInflow,
+    )

@@ -11,7 +11,6 @@ from globals.flags import Flags
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
-
 from .unit_system import VelocityType
 
 if Flags.beta_features():
@@ -81,30 +80,34 @@ class IsothermalWall(Boundary):
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
-class HeatFluxWall(Boundary):
-    """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
+if Flags.beta_features():
 
-    Parameters
-    ----------
-    heatFlux : float
-        Heat flux at the wall.
+    class HeatFluxWall(Boundary):
+        """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
 
-    velocity: BoundaryVelocityType
-        (Optional) Velocity of the wall. If not specified, the boundary is stationary.
+        Parameters
+        ----------
+        heatFlux : float
+            Heat flux at the wall.
 
-    Returns
-    -------
-    :class:`HeatFluxWall`
-        An instance of the component class HeatFluxWall.
+        velocity: BoundaryVelocityType
+            (Optional) Velocity of the wall. If not specified, the boundary is stationary.
 
-    Example
-    -------
-    >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
-    """
+        Returns
+        -------
+        :class:`HeatFluxWall`
+            An instance of the component class HeatFluxWall.
 
-    type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
-    heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
-    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
+        Example
+        -------
+        >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
+        """
+
+        type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
+        heat_flux: Union[float, StrictStr] = pd.Field(
+            alias="heatFlux", options=["Value", "Expression"]
+        )
+        velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
 
 if Flags.beta_features():
@@ -163,7 +166,9 @@ else:
         ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
         velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
+
 if Flags.beta_features():
+
     class SupersonicInflow(Boundary):
         """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
 
@@ -190,7 +195,11 @@ if Flags.beta_features():
 
         Example
         -------
-        >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
+        >>> supersonicInflow = SupersonicInflow(
+            totalTemperatureRatio=2.1,
+            totalPressureRatio=3.0,
+            staticPressureRatio=1.2
+        )
         """
 
         type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
@@ -288,22 +297,41 @@ class RotationallyPeriodic(Boundary):
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
 
 
-BoundaryType = Union[
-    NoSlipWall,
-    SlipWall,
-    FreestreamBoundary,
-    IsothermalWall,
-    HeatFluxWall,
-    SubsonicOutflowPressure,
-    SubsonicOutflowMach,
-    SubsonicInflow,
-    SupersonicInflow,
-    SlidingInterfaceBoundary,
-    WallFunction,
-    MassInflow,
-    MassOutflow,
-    SolidIsothermalWall,
-    SolidAdiabaticWall,
-    TranslationallyPeriodic,
-    RotationallyPeriodic,
-]
+if Flags.beta_features():
+    BoundaryType = Union[
+        NoSlipWall,
+        SlipWall,
+        FreestreamBoundary,
+        IsothermalWall,
+        HeatFluxWall,
+        SubsonicOutflowPressure,
+        SubsonicOutflowMach,
+        SubsonicInflow,
+        SupersonicInflow,
+        SlidingInterfaceBoundary,
+        WallFunction,
+        MassInflow,
+        MassOutflow,
+        SolidIsothermalWall,
+        SolidAdiabaticWall,
+        TranslationallyPeriodic,
+        RotationallyPeriodic,
+    ]
+else:
+    BoundaryType = Union[
+        NoSlipWall,
+        SlipWall,
+        FreestreamBoundary,
+        IsothermalWall,
+        SubsonicOutflowPressure,
+        SubsonicOutflowMach,
+        SubsonicInflow,
+        SlidingInterfaceBoundary,
+        WallFunction,
+        MassInflow,
+        MassOutflow,
+        SolidIsothermalWall,
+        SolidAdiabaticWall,
+        TranslationallyPeriodic,
+        RotationallyPeriodic,
+    ]
