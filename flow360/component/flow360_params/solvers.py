@@ -9,6 +9,8 @@ from typing import Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
+from globals.flags import Flags
+
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import DeprecatedAlias, Flow360BaseModel
@@ -393,14 +395,27 @@ class HeatEquationSolver(Flow360BaseModel):
 
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
-    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [
-            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-        ]
+    if Flags.beta_features():
+        linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
+
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(Flow360BaseModel.Config):
+            deprecated_aliases = [
+                DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+            ]
+
+    else:
+        linear_solver_config: Optional[LinearSolver] = pd.Field(
+            LinearSolver(), alias="linearSolverConfig"
+        )
+
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(Flow360BaseModel.Config):
+            deprecated_aliases = [
+                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+            ]
 
 
 class TransitionModelSolver(GenericFlowSolverSettings):

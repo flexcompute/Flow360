@@ -103,8 +103,6 @@ from .time_stepping import (
     UnsteadyTimeStepping,
 )
 
-if Flags.beta_features():
-    from .turbulence_quantities import TurbulenceQuantitiesType
 
 from .unit_system import (
     AngularVelocityType,
@@ -148,6 +146,9 @@ from .validations import (
     _check_tri_quad_boundaries,
 )
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
+
+if Flags.beta_features():
+    from .turbulence_quantities import TurbulenceQuantitiesType
 
 
 # pylint: disable=invalid-name
