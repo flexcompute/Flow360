@@ -4,6 +4,7 @@ Turbulence quantities parameters
 from globals.flags import Flags
 
 if Flags.beta_features():
+    from abc import ABCMeta
     from typing import Optional, Union
 
     import pydantic as pd
