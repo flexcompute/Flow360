@@ -27,6 +27,7 @@ from flow360.component.flow360_params.volume_zones import (
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+
 def write_to_file(name, content):
     with open(name, "w") as outfile:
         outfile.write(content)
@@ -57,7 +58,15 @@ class _Freestream(Flow360BaseModel):
         fl.FreestreamFromMachReynolds,
         fl.ZeroFreestream,
         fl.ZeroFreestreamFromVelocity,
-    ] = pd.Field(options=["Freestream from velocity", "Freestream from Mach number", "Freestream from Mach number and Reynolds number", "Zero freestream with reference Mach number",  "Zero freestream with reference velocity"])
+    ] = pd.Field(
+        options=[
+            "Freestream from velocity",
+            "Freestream from Mach number",
+            "Freestream from Mach number and Reynolds number",
+            "Zero freestream with reference Mach number",
+            "Zero freestream with reference velocity",
+        ]
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "turbulentViscosityRatio"]
@@ -69,7 +78,9 @@ class _Freestream(Flow360BaseModel):
 
 
 class _TurbulenceModelSolver(Flow360BaseModel):
-    solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver] = pd.Field(options=['Spalart-Allmaras', 'kOmegaSST', 'None'])
+    solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver] = pd.Field(
+        options=["Spalart-Allmaras", "kOmegaSST", "None"]
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["modelType", "*", "linearSolver"]
@@ -188,8 +199,11 @@ class _PorousMedium(fl.PorousMedium):
             "volumeZone/center": ("widget", "vector3"),
             "volumeZone/lengths": ("widget", "vector3"),
             "volumeZone/axes/items": ("widget", "vector3"),
-            "volumeZone/axes": ("options", {"orderable": False, "addable": False, "removable": False}),
-            "volumeZone/windowingLengths": ("widget", "vector3")
+            "volumeZone/axes": (
+                "options",
+                {"orderable": False, "addable": False, "removable": False},
+            ),
+            "volumeZone/windowingLengths": ("widget", "vector3"),
         }
 
 

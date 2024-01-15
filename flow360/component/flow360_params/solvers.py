@@ -330,7 +330,9 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     reconstruction_gradient_limiter: Optional[float] = pd.Field(
         alias="reconstructionGradientLimiter"
     )
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants", discriminator="model_type")
+    model_constants: Optional[TurbulenceModelConstants] = pd.Field(
+        alias="modelConstants", discriminator="model_type"
+    )
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -486,7 +488,6 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         alias="linearSolver", default=LinearSolverLegacy()
     )
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-
 
     def update_model(self):
         model = {

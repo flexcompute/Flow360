@@ -480,7 +480,7 @@ class Geometry(Flow360BaseModel):
     :class: Geometry component
     """
 
-    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", displayed='Reference area')
+    ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", displayed="Reference area")
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
@@ -503,8 +503,8 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     model_type: str
-    alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0, displayed='Alpha angle [deg]')
-    beta: Optional[float] = pd.Field(alias="betaAngle", default=0, displayed='Beta angle [deg]')
+    alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0, displayed="Alpha angle [deg]")
+    beta: Optional[float] = pd.Field(alias="betaAngle", default=0, displayed="Beta angle [deg]")
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
@@ -526,10 +526,10 @@ class FreestreamFromMach(FreestreamBase):
     """
 
     model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
-    Mach: PositiveFloat = pd.Field(displayed='Mach number')
-    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed='Reference Mach number')
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed='Dynamic viscosity [non-dim]')
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed='Temperature [K]')
+    Mach: PositiveFloat = pd.Field(displayed="Mach number")
+    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
+    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -547,10 +547,10 @@ class FreestreamFromMachReynolds(FreestreamBase):
     model_type: Literal["FromMachReynolds"] = pd.Field(
         "FromMachReynolds", alias="modelType", const=True
     )
-    Mach: PositiveFloat = pd.Field(displayed='Mach number')
-    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed='Reference Mach number')
-    Reynolds: PositiveFloat = pd.Field(displayed='Reynolds number')
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed='Temperature [K]')
+    Mach: PositiveFloat = pd.Field(displayed="Mach number")
+    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
+    Reynolds: PositiveFloat = pd.Field(displayed="Reynolds number")
+    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -566,10 +566,10 @@ class ZeroFreestream(FreestreamBase):
     """
 
     model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
-    Mach: Literal[0] = pd.Field(0, const=True, displayed='Mach number')
-    Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef",  displayed='Reference Mach number')
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed='Dynamic viscosity [non-dim]')
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed='Temperature [K]')
+    Mach: Literal[0] = pd.Field(0, const=True, displayed="Mach number")
+    Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
+    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
@@ -586,7 +586,9 @@ class FreestreamFromVelocity(FreestreamBase):
 
     model_type: Literal["FromVelocity"] = pd.Field("FromVelocity", alias="modelType", const=True)
     velocity: VelocityType.Positive = pd.Field()
-    velocity_ref: Optional[VelocityType.Positive] = pd.Field(alias="velocityRef", displayed='Reference velocity')
+    velocity_ref: Optional[VelocityType.Positive] = pd.Field(
+        alias="velocityRef", displayed="Reference velocity"
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -631,7 +633,9 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
 
     model_type: Literal["ZeroVelocity"] = pd.Field("ZeroVelocity", alias="modelType", const=True)
     velocity: Literal[0] = pd.Field(0, const=True)
-    velocity_ref: VelocityType.Positive = pd.Field(alias="velocityRef", displayed='Reference velocity')
+    velocity_ref: VelocityType.Positive = pd.Field(
+        alias="velocityRef", displayed="Reference velocity"
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
@@ -715,7 +719,7 @@ class AirPressureTemperature(Flow360BaseModel):
 
     """
 
-    model_type: Literal['AirPressure'] = pd.Field("AirPressure", alias="modelType", const=True)
+    model_type: Literal["AirPressure"] = pd.Field("AirPressure", alias="modelType", const=True)
     pressure: PressureType = pd.Field()
     temperature: TemperatureType = pd.Field()
 
@@ -748,7 +752,7 @@ class AirDensityTemperature(Flow360BaseModel):
 
     """
 
-    model_type: Literal['AirDensity'] = pd.Field("AirDensity", alias="modelType", const=True)
+    model_type: Literal["AirDensity"] = pd.Field("AirDensity", alias="modelType", const=True)
     temperature: TemperatureType = pd.Field()
     density: DensityType = pd.Field()
 
@@ -943,7 +947,9 @@ class Flow360Params(Flow360BaseModel):
     version: str = pd.Field(__version__, mutable=False)
 
     geometry: Optional[Geometry] = pd.Field()
-    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(alias="fluidProperties", discriminator='model_type')
+    fluid_properties: Optional[FluidPropertyTypes] = pd.Field(
+        alias="fluidProperties", discriminator="model_type"
+    )
     boundaries: Boundaries = pd.Field()
     initial_condition: Optional[InitialConditions] = pd.Field(
         alias="initialCondition", discriminator="type"
