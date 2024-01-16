@@ -121,9 +121,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is
         recommended for low subsonic flows leading to reduced dissipation
 
-    linear_iterations :
-        Number of linear solver iterations
-
     update_jacobian_frequency :
         Frequency at which the jacobian is updated.
 
@@ -146,6 +143,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.
         The recommended starting value for most low-dissipation runs is 0.2
 
+    linear_solver:
+        Linear solver settings
+
     Returns
     -------
     :class:`NavierStokesSolver`
@@ -159,7 +159,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(
         1.0, alias="CFLMultiplier", displayed="CFL Multiplier"
     )
-    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
         -1, alias="kappaMUSCL", displayed="Kappa MUSCL"
     )
@@ -175,7 +174,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         1, alias="numericalDissipationFactor"
     )
     linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=30), alias="linearSolver"
+        LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver config"
     )
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
@@ -330,10 +329,12 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
         False, alias="quadraticConstitutiveRelation"
     )
-    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
-        1.0, alias="reconstructionGradientLimiter"
+    reconstruction_gradient_limiter: Optional[float] = pd.Field(
+        alias="reconstructionGradientLimiter"
     )
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(alias="modelConstants")
+    model_constants: Optional[TurbulenceModelConstants] = pd.Field(
+        alias="modelConstants", discriminator="model_type"
+    )
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -341,6 +342,9 @@ class KOmegaSST(TurbulenceModelSolver):
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+        1.0, alias="reconstructionGradientLimiter"
+    )
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
@@ -351,6 +355,9 @@ class SpalartAllmaras(TurbulenceModelSolver):
     )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
     model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+        0.5, alias="reconstructionGradientLimiter"
+    )
 
 
 class NoneSolver(Flow360BaseModel):
@@ -495,6 +502,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
     linear_solver: Optional[LinearSolverLegacy] = pd.Field(
         alias="linearSolver", default=LinearSolverLegacy()
     )
+    linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
 
     def update_model(self):
         model = {

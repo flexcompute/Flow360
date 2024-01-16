@@ -15,6 +15,11 @@
     "axes": {
       "items": {
         "ui:widget": "vector3"
+      },
+      "ui:options": {
+        "orderable": false,
+        "addable": false,
+        "removable": false
       }
     },
     "windowingLengths": {

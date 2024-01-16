@@ -1,4 +1,9 @@
 {
+  "ui:order": [
+    "modelType",
+    "temperature",
+    "*"
+  ],
   "temperature": {
     "ui:field": "unitInput"
   },

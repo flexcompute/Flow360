@@ -25,6 +25,8 @@ from flow360.component.flow360_params.volume_zones import (
     VolumeZoneBase,
 )
 
+here = os.path.dirname(os.path.abspath(__file__))
+
 
 def write_to_file(name, content):
     with open(name, "w") as outfile:
@@ -37,28 +39,37 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
     name = type_obj.__name__
     if name.startswith("_"):
         name = name[1:]
-    if not os.path.exists(f"./data/{folder_name}"):
-        os.mkdir(f"./data/{folder_name}")
-    write_to_file(f"./data/{folder_name}/json-schema.json", schema)
+    if not os.path.exists(os.path.join(here, "data", folder_name)):
+        os.mkdir(os.path.join(here, "data", folder_name))
+    write_to_file(os.path.join(here, "data", folder_name, "json-schema.json"), schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
     if ui_schema is not None:
-        write_to_file(f"./data/{folder_name}/ui-schema.json" f"", ui_schema)
+        write_to_file(os.path.join(here, "data", folder_name, "ui-schema.json"), ui_schema)
 
 
-if not os.path.exists(f"./data/"):
-    os.mkdir(f"./data/")
+if not os.path.exists(os.path.join(here, "data")):
+    os.mkdir(os.path.join(here, "data"))
 
 
 class _Freestream(Flow360BaseModel):
     freestream: Union[
         fl.FreestreamFromVelocity,
         fl.FreestreamFromMach,
-        fl.ZeroFreestreamFromVelocity,
-        fl.ZeroFreestream,
         fl.FreestreamFromMachReynolds,
-    ] = pd.Field()
+        fl.ZeroFreestream,
+        fl.ZeroFreestreamFromVelocity,
+    ] = pd.Field(
+        options=[
+            "Freestream from velocity",
+            "Freestream from Mach number",
+            "Freestream from Mach number and Reynolds number",
+            "Zero freestream with reference Mach number",
+            "Zero freestream with reference velocity",
+        ]
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["*", "turbulentViscosityRatio"]
         field_properties = {
             "velocity": ("field", "unitInput"),
             "velocityRef": ("field", "unitInput"),
@@ -67,10 +78,12 @@ class _Freestream(Flow360BaseModel):
 
 
 class _TurbulenceModelSolver(Flow360BaseModel):
-    solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver]
+    solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver] = pd.Field(
+        options=["Spalart-Allmaras", "kOmegaSST", "None"]
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolver"]
+        field_order = ["modelType", "*", "linearSolver"]
         optional_objects = ["anyOf/properties/linearSolver"]
         exclude_fields = ["anyOf/properties/linearSolver/default"]
         root_property = "properties/solver/anyOf"
@@ -80,6 +93,7 @@ class _TimeStepping(Flow360BaseModel):
     time_stepping: fl.TimeStepping = pd.Field(alias="timeStepping", options=["Steady", "Unsteady"])
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["*", "CFL"]
         root_property = "properties/timeStepping/anyOf"
 
 
@@ -90,6 +104,7 @@ class _FluidProperties(Flow360BaseModel):
     )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["modelType", "temperature", "*"]
         field_properties = {
             "temperature": ("field", "unitInput"),
             "density": ("field", "unitInput"),
@@ -159,7 +174,7 @@ class _NavierStokesSolver(fl.NavierStokesSolver):
 
 class _TransitionModelSolver(fl.TransitionModelSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolver"]
+        field_order = ["modelType", "*", "linearSolver"]
         optional_objects = ["properties/linearSolver"]
         exclude_fields = ["properties/linearSolver/default"]
 
@@ -184,6 +199,10 @@ class _PorousMedium(fl.PorousMedium):
             "volumeZone/center": ("widget", "vector3"),
             "volumeZone/lengths": ("widget", "vector3"),
             "volumeZone/axes/items": ("widget", "vector3"),
+            "volumeZone/axes": (
+                "options",
+                {"orderable": False, "addable": False, "removable": False},
+            ),
             "volumeZone/windowingLengths": ("widget", "vector3"),
         }
 

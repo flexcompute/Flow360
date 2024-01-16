@@ -201,7 +201,7 @@ def test_update_from_multiple_files():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
     outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
@@ -221,7 +221,7 @@ def test_update_from_multiple_files_dont_overwrite():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
     outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
@@ -236,7 +236,7 @@ def test_update_from_multiple_files_overwrite():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
     outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")

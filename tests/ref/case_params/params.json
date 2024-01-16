@@ -42,9 +42,9 @@
         "timeStepSize": "inf"
     },
     "navierStokesSolver": {
+        "absoluteTolerance": 1.0e-10,
         "relativeTolerance": 0.0,
         "CFLMultiplier": 1.0,
-        "linearIterations": 10,
         "kappaMUSCL": -1.0,
         "updateJacobianFrequency": 4,
         "equationEvalFrequency": 1,
@@ -130,5 +130,5 @@
             }
         }
     },
-    "hash": "4aa5efab272a24cb4b2540c6f3ddb1357a4a405a2c8ebda6393ea3affb496b03"
+    "hash": "8f6a65d066ce8a92d34e973a7b357429d6cd6071b8ec27080bcbc3be2e810b84"
 }

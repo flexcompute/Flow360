@@ -1,4 +1,8 @@
 {
+  "ui:order": [
+    "*",
+    "CFL"
+  ],
   "ui:submitButtonOptions": {
     "norender": true
   },

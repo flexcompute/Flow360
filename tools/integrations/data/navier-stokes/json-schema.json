@@ -18,11 +18,6 @@
       "exclusiveMinimum": 0,
       "type": "number"
     },
-    "linearIterations": {
-      "title": "Linear iterations",
-      "exclusiveMinimum": 0,
-      "type": "integer"
-    },
     "kappaMUSCL": {
       "title": "Kappa MUSCL",
       "default": -1,
@@ -93,7 +88,7 @@
               "type": "boolean"
             },
             "linearSolver": {
-              "title": "Linear solver",
+              "title": "Linear solver config",
               "type": "object",
               "properties": {
                 "maxIterations": {

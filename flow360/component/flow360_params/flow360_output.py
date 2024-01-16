@@ -3,7 +3,6 @@ Flow360 output parameters models
 """
 from __future__ import annotations
 
-import os
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 

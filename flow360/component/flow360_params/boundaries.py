@@ -1,7 +1,6 @@
 """
 Boundaries parameters
 """
-import os
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union
 

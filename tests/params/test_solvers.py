@@ -48,7 +48,6 @@ def test_navier_stokes():
         kappa_MUSCL=-1,
         relative_tolerance=0,
         CFL_multiplier=1,
-        linear_iterations=30,
         update_jacobian_frequency=4,
         equation_eval_frequency=1,
         max_force_jac_update_physical_steps=1,
