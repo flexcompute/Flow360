@@ -1,4 +1,10 @@
 {
+  "ui:order": [
+    "outputFormat",
+    "outputFields",
+    "*",
+    "slices"
+  ],
   "slices": {
     "additionalProperties": {
       "sliceNormal": {

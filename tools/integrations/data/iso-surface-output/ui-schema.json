@@ -1,4 +1,9 @@
 {
+  "ui:order": [
+    "outputFormat",
+    "*",
+    "isoSurfaces"
+  ],
   "ui:submitButtonOptions": {
     "norender": true
   },
