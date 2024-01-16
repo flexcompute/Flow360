@@ -27,23 +27,23 @@
           "type": "string"
         },
         "rho": {
-          "title": "Rho",
+          "title": "rho [non-dim]",
           "type": "string"
         },
         "u": {
-          "title": "U",
+          "title": "u [non-dim]",
           "type": "string"
         },
         "v": {
-          "title": "V",
+          "title": "v [non-dim]",
           "type": "string"
         },
         "w": {
-          "title": "W",
+          "title": "w [non-dim]",
           "type": "string"
         },
         "p": {
-          "title": "P",
+          "title": "p [non-dim]",
           "type": "string"
         }
       },

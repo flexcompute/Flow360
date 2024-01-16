@@ -83,7 +83,9 @@
           "Vorticity",
           "Wall distance",
           "NumericalDissipationFactor sensor",
-          "Heat equation residual"
+          "Heat equation residual",
+          "BET Metrics",
+          "BET Metrics per Disk"
         ],
         "type": "string"
       }

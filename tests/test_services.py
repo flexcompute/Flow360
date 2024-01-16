@@ -21,6 +21,7 @@ def test_validate_service():
         "boundaries": {},
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
         "fluidProperties": {
+            "modelType": "AirDensity",
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },
@@ -115,6 +116,7 @@ def test_validate_service_no_value():
         "boundaries": {},
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": None, "units": "m/s"}},
         "fluidProperties": {
+            "modelType": "AirDensity",
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },
@@ -143,6 +145,7 @@ def test_remove_dimensioned_type_none_leaves():
         "boundaries": {},
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": None, "units": "m/s"}},
         "fluidProperties": {
+            "modelType": "AirDensity",
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },
@@ -160,6 +163,7 @@ def test_remove_dimensioned_type_none_leaves():
         "boundaries": {},
         "freestream": {"modelType": "FromVelocity"},
         "fluidProperties": {
+            "modelType": "AirDensity",
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },
@@ -179,6 +183,7 @@ def test_validate_service_should_not_be_called_with_context():
         "freestream": {"velocity": {"value": 286.0, "units": "m/s"}},
         "boundaries": {},
         "fluidProperties": {
+            "modelType": "AirDensity",
             "temperature": {"value": 288.15, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },

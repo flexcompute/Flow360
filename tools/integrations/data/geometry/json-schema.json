@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "refArea": {
-      "title": "Ref area",
+      "title": "Reference area",
       "properties": {
         "value": {
           "type": "number",

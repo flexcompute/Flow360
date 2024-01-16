@@ -94,8 +94,10 @@
           "Magnitude of CfVec tangent to the wall",
           "Non-dimensional heat flux",
           "Wall normals",
+          "Spalart-Allmaras variable",
           "Velocity in rotating frame",
-          "Non-dimensional wall distance"
+          "Non-dimensional wall distance",
+          "Wall function metrics"
         ],
         "type": "string"
       }
@@ -138,8 +140,10 @@
                 "Magnitude of CfVec tangent to the wall",
                 "Non-dimensional heat flux",
                 "Wall normals",
+                "Spalart-Allmaras variable",
                 "Velocity in rotating frame",
-                "Non-dimensional wall distance"
+                "Non-dimensional wall distance",
+                "Wall function metrics"
               ],
               "type": "string"
             }

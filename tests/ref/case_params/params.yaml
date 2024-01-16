@@ -28,14 +28,14 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 4aa5efab272a24cb4b2540c6f3ddb1357a4a405a2c8ebda6393ea3affb496b03
+hash: 8f6a65d066ce8a92d34e973a7b357429d6cd6071b8ec27080bcbc3be2e810b84
 navierStokesSolver:
     CFLMultiplier: 1.0
+    absoluteTolerance: 1.0e-10
     equationEvalFrequency: 1
     kappaMUSCL: -1.0
     limitPressureDensity: false
     limitVelocity: false
-    linearIterations: 10
     linearSolver:
         absoluteTolerance: 1.0e-10
         maxIterations: 30
