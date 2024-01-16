@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "anyOf": [
     {
-      "title": "Spalart allmaras",
+      "title": "Spalart- allmaras",
       "type": "object",
       "properties": {
         "absoluteTolerance": {
@@ -72,7 +72,7 @@
         },
         "reconstructionGradientLimiter": {
           "title": "Reconstruction gradient limiter",
-          "default": 1.0,
+          "default": 0.5,
           "minimum": 0,
           "maximum": 2,
           "type": "number"
@@ -331,7 +331,7 @@
       }
     },
     {
-      "title": "None solver",
+      "title": "None",
       "type": "object",
       "properties": {
         "modelType": {
