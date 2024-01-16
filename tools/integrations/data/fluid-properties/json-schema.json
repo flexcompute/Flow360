@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "anyOf": [
     {
-      "title": "Air density temperature",
+      "title": "From density and temperature",
       "type": "object",
       "properties": {
         "modelType": {
@@ -56,7 +56,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Air pressure temperature",
+      "title": "From pressure and temperature",
       "type": "object",
       "properties": {
         "modelType": {
