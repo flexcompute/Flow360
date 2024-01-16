@@ -5,6 +5,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from config.flags import Flags
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
     IsothermalWall,
@@ -27,7 +28,7 @@ from flow360.component.flow360_params.flow360_params import (
     SteadyTimeStepping,
 )
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
+if Flags.beta_features():
     from flow360.component.flow360_params.boundaries import HeatFluxWall
     from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
 
@@ -213,7 +214,7 @@ def test_boundary_types():
     assert IsothermalWall(Temperature=1).type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
 
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         assert HeatFluxWall(heatFlux=-0.01).type == "HeatFluxWall"
         with fl.flow360_unit_system:
             assert HeatFluxWall(heatFlux="exp(x)", velocity=(0, 0, 0))
@@ -239,7 +240,7 @@ def test_boundary_types():
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
 
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         # Test the turbulence quantities on the boundaries
         bc = SubsonicOutflowMach(
             name="SomeBC",
@@ -402,7 +403,7 @@ def test_boundary_types():
             ),
         )
 
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         assert bc.turbulence_quantities.specific_dissipation_rate == 0.88
         assert bc.turbulence_quantities.turbulent_length_scale == 10
 

@@ -3,12 +3,13 @@ Flow360 solvers parameters
 """
 from __future__ import annotations
 
-import os
 from abc import ABCMeta
 from typing import Optional, Union
 
 import pydantic as pd
 from typing_extensions import Literal
+
+from config.flags import Flags
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update
@@ -395,7 +396,7 @@ class HeatEquationSolver(Flow360BaseModel):
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
 
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
         # pylint: disable=missing-class-docstring,too-few-public-methods

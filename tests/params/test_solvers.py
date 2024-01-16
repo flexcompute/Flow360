@@ -5,6 +5,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from config.flags import Flags
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
@@ -111,5 +112,5 @@ def test_heat_equation():
     )
     assert he
 
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)

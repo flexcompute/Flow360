@@ -1,9 +1,10 @@
 """
 Turbulence quantities parameters
 """
-import os
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
+from config.flags import Flags
+
+if Flags.beta_features():
     # pylint: disable=unused-import
     from abc import ABCMeta
     from typing import Optional, Union

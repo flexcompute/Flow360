@@ -11,9 +11,6 @@ from flow360.component.flow360_params.boundaries import (
 from flow360.component.flow360_params.flow360_output import AeroacousticOutput
 from flow360.component.flow360_params.flow360_params import Flow360Params
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
-    pass
-
 assertions = unittest.TestCase("__init__")
 
 

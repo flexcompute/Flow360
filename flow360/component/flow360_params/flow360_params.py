@@ -23,6 +23,8 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
+from config.flags import Flags
+
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
     Flow360ConfigError,
@@ -144,7 +146,7 @@ from .validations import (
 )
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
+if Flags.beta_features():
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 
@@ -514,7 +516,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ##  should be oneOf{turbulent_viscosity_ratio, turbulence_quantities}, legacy update also pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
-    if os.environ.get("FLOW360_BETA_FEATURES", False):
+    if Flags.beta_features():
         turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
             alias="turbulenceQuantities"
         )

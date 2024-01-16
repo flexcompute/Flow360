@@ -6,6 +6,8 @@ import os
 
 from numpy import pi
 
+from config.flags import Flags
+
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -102,7 +104,7 @@ from .environment import Env
 from .user_config import UserConfig
 from .version import __version__
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
+if Flags.beta_features():
     from flow360.component.flow360_params.boundaries import (
         HeatFluxWall,
         SupersonicInflow,

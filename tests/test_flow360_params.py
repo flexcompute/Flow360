@@ -8,6 +8,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from config.flags import Flags
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
@@ -55,7 +56,7 @@ from flow360.exceptions import (
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
 
-if os.environ.get("FLOW360_BETA_FEATURES", False):
+if Flags.beta_features():
     from flow360.component.flow360_params.boundaries import (
         HeatFluxWall,
         SupersonicInflow,
