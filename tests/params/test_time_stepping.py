@@ -53,7 +53,7 @@ def test_time_stepping():
         )
 
         assertions.assertAlmostEqual(
-            json.loads(params.to_flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
+            json.loads(params.flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
         )
         to_file_from_file_test(ts)
 
@@ -65,7 +65,7 @@ def test_time_stepping():
             time_stepping=ts,
         )
 
-    exported_json = json.loads(params.to_flow360_json())
+    exported_json = json.loads(params.flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 
     ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3})

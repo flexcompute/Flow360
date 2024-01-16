@@ -306,7 +306,7 @@ def handle_case_submit(params_as_dict, unit_system_name):
     with unit_system:
         params = Flow360Params(**params_as_dict)
 
-    solver_json = params.to_flow360_json()
+    solver_json = params.flow360_json()
     solver_dict = json.loads(solver_json)
 
     return params, solver_dict

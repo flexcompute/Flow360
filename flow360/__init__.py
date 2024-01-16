@@ -63,6 +63,7 @@ from .component.flow360_params.flow360_params import (
     Surfaces,
     TransitionModelSolver,
     UnvalidatedFlow360Params,
+    UserDefinedDynamic,
     VolumeOutput,
     VolumeZones,
     ZeroFreestream,
@@ -81,6 +82,7 @@ from .component.flow360_params.time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
+from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,

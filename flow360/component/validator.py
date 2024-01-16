@@ -73,7 +73,7 @@ class Validator(Enum):
             )
 
         api = RestApi(self._get_url())
-        body = {"jsonConfig": params.to_flow360_json(), "version": solver_version}
+        body = {"jsonConfig": params.flow360_json(), "version": solver_version}
 
         if mesh_id is not None:
             body["meshId"] = mesh_id
