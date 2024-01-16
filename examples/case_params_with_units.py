@@ -68,7 +68,7 @@ params_solver = params.to_solver()
 params_as_json = params_solver.json(indent=4)
 print(params_as_json)
 
-params_as_json = params_solver.to_flow360_json()
+params_as_json = params_solver.flow360_json()
 print(params_as_json)
 
 # Class name removal from loc

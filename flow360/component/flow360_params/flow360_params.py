@@ -1060,7 +1060,7 @@ class Flow360Params(Flow360BaseModel):
                 return super().to_solver(self, exclude=["fluid_properties"])
         return super().to_solver(self, exclude=["fluid_properties"])
 
-    def to_flow360_json(self) -> str:
+    def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
 
         Returns
@@ -1070,7 +1070,7 @@ class Flow360Params(Flow360BaseModel):
 
         Example
         -------
-        >>> params.to_flow360_json() # doctest: +SKIP
+        >>> params.flow360_json() # doctest: +SKIP
         """
 
         solver_params = self.to_solver()
@@ -1078,7 +1078,7 @@ class Flow360Params(Flow360BaseModel):
         solver_params_json = solver_params.json(encoder=flow360_json_encoder)
         return solver_params_json
 
-    def to_flow360_dict(self) -> dict:
+    def flow360_dict(self) -> dict:
         """Generate a dict representation of the model, as required by Flow360
 
         Returns
@@ -1088,21 +1088,21 @@ class Flow360Params(Flow360BaseModel):
 
         Example
         -------
-        >>> params.to_flow360_dict() # doctest: +SKIP
+        >>> params.flow360_dict() # doctest: +SKIP
         """
 
-        flow360_dict = json.loads(self.to_flow360_json())
+        flow360_dict = json.loads(self.flow360_json())
         return flow360_dict
 
-    def to_flow360_json_file(self, filename: str) -> NoReturn:
+    def to_flow360_json(self, filename: str) -> NoReturn:
         """Exports :class:`Flow360Params` instance to .json file
 
         Example
         -------
-        >>> params.to_flow360_json_file() # doctest: +SKIP
+        >>> params.to_flow360_json() # doctest: +SKIP
         """
 
-        flow360_dict = self.to_flow360_dict()
+        flow360_dict = self.flow360_dict()
         with open(filename, "w", encoding="utf-8") as fh:
             json.dump(flow360_dict, fh, indent=4)
 
@@ -1235,6 +1235,27 @@ class Flow360MeshParams(Flow360BaseModel):
     boundaries: MeshBoundary = pd.Field()
     sliding_interfaces: Optional[List[MeshSlidingInterface]] = pd.Field(alias="slidingInterfaces")
 
+    def flow360_json(self, return_json: bool = True):
+        """Generate a JSON representation of the model, as required by Flow360
+
+        Parameters
+        ----------
+        return_json : bool, optional
+            whether to return value or return None, by default True
+
+        Returns
+        -------
+        json
+            If return_json==True, returns JSON representation of the model.
+
+        Example
+        -------
+        >>> params.to_flow360_json() # doctest: +SKIP
+        """
+        if return_json:
+            return self.json()
+        return None
+
 
 class UnvalidatedFlow360Params(Flow360BaseModel):
     """
@@ -1249,7 +1270,7 @@ class UnvalidatedFlow360Params(Flow360BaseModel):
         log.warning("This is DEV feature, use it only when you know what you are doing.")
         super().__init__(filename, **kwargs)
 
-    def to_flow360_json(self) -> dict:
+    def flow360_json(self) -> str:
         """Generate a JSON representation of the model"""
 
         return self.json(encoder=flow360_json_encoder)

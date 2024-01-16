@@ -43,7 +43,7 @@ class NewVolumeMeshRequest(Flow360Requests):
     def set_mesh_params(cls, value: Union[Flow360MeshParams, None]):
         """validate mesh params"""
         if value:
-            return value.to_flow360_json()
+            return value.flow360_json()
         return value
 
 

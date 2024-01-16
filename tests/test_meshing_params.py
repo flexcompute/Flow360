@@ -145,7 +145,7 @@ def test_surface_meshing_params():
     )
     to_file_from_file_test(params)
 
-    assert params.to_flow360_json()
+    assert params.flow360_json()
 
     compare_to_ref(params, "ref/meshing_params/ref.json")
     compare_to_ref(params, "ref/meshing_params/ref.yaml")
