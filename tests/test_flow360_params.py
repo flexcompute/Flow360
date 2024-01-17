@@ -8,7 +8,6 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
-from config.flags import Flags
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
@@ -53,6 +52,7 @@ from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360ValidationError,
 )
+from flow360.flags import Flags
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
 

@@ -5,7 +5,6 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
-from config.flags import Flags
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
     IsothermalWall,
@@ -27,6 +26,7 @@ from flow360.component.flow360_params.flow360_params import (
     MeshBoundary,
     SteadyTimeStepping,
 )
+from flow360.flags import Flags
 
 if Flags.beta_features():
     from flow360.component.flow360_params.boundaries import HeatFluxWall

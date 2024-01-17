@@ -6,8 +6,6 @@ import os
 
 from numpy import pi
 
-from config.flags import Flags
-
 from . import global_exception_handler, units
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -102,6 +100,7 @@ from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
 from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
+from .flags import Flags
 from .user_config import UserConfig
 from .version import __version__
 

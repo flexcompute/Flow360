@@ -9,7 +9,7 @@ from typing import Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
-from config.flags import Flags
+from flow360.flags import Flags
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update

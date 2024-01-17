@@ -9,7 +9,7 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic as pd
 from pydantic import conlist
 
-from config.flags import Flags
+from flow360.flags import Flags
 
 from ..types import Axis, Coordinate, PositiveInt
 from .flow360_fields import (

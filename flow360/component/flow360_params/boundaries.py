@@ -7,7 +7,7 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic as pd
 from pydantic import StrictStr
 
-from config.flags import Flags
+from flow360.flags import Flags
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel

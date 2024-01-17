@@ -2,7 +2,7 @@
 Turbulence quantities parameters
 """
 
-from config.flags import Flags
+from flow360.flags import Flags
 
 if Flags.beta_features():
     # pylint: disable=unused-import
