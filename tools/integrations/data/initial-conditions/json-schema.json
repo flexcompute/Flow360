@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "anyOf": [
     {
-      "title": "Freestream initial condition",
+      "title": "Freestream",
       "type": "object",
       "properties": {
         "type": {
@@ -17,7 +17,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Expression initial condition",
+      "title": "Expression",
       "type": "object",
       "properties": {
         "type": {

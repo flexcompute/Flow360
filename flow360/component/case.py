@@ -293,7 +293,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         data = {
             "name": self.name,
             "meshId": volume_mesh_id,
-            "runtimeParams": self.params.to_flow360_json(),
+            "runtimeParams": self.params.flow360_json(),
             "tags": self.tags,
             "parentId": parent_id,
         }

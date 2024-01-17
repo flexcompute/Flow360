@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "anyOf": [
     {
-      "title": "Spalart allmaras",
+      "title": "Spalart- allmaras",
       "type": "object",
       "properties": {
         "absoluteTolerance": {
@@ -331,7 +331,7 @@
       }
     },
     {
-      "title": "None solver",
+      "title": "None",
       "type": "object",
       "properties": {
         "modelType": {

@@ -316,7 +316,7 @@ def test_params_with_units():
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)
 
-    params_as_json = params_solver.to_flow360_json()
+    params_as_json = params_solver.flow360_json()
 
     with open("ref/case_params/params_units_solver.json") as fh:
         a = json.load(fh)
@@ -415,14 +415,14 @@ def test_params_with_units_consistency():
 
     with fl.SI_unit_system:
         with pytest.raises(Flow360RuntimeError):
-            params_copy.to_flow360_json()
+            params_copy.flow360_json()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
     with fl.CGS_unit_system:
-        params_copy.to_flow360_json()
+        params_copy.flow360_json()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
-    params_copy.to_flow360_json()
+    params_copy.flow360_json()
 
 
 @pytest.mark.usefixtures("array_equality_override")
