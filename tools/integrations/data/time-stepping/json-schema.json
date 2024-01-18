@@ -18,7 +18,7 @@
           "title": "CFL",
           "anyOf": [
             {
-              "title": "Ramp cfl",
+              "title": "Ramp CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -45,7 +45,7 @@
               "additionalProperties": false
             },
             {
-              "title": "Adaptive cfl",
+              "title": "Adaptive CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -119,7 +119,7 @@
           "title": "CFL",
           "anyOf": [
             {
-              "title": "Ramp cfl",
+              "title": "Ramp CFL",
               "type": "object",
               "properties": {
                 "type": {
@@ -146,7 +146,7 @@
               "additionalProperties": false
             },
             {
-              "title": "Adaptive cfl",
+              "title": "Adaptive CFL",
               "type": "object",
               "properties": {
                 "type": {

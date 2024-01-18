@@ -73,7 +73,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Freestream from  mach number",
+      "title": "Freestream from Mach number",
       "type": "object",
       "properties": {
         "modelType": {
@@ -126,7 +126,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Freestream from  mach number and  reynolds number",
+      "title": "Freestream from Mach number and Reynolds number",
       "type": "object",
       "properties": {
         "modelType": {
@@ -179,7 +179,7 @@
       "additionalProperties": false
     },
     {
-      "title": "Zero freestream with reference  mach number",
+      "title": "Zero freestream with reference Mach number",
       "type": "object",
       "properties": {
         "modelType": {
