@@ -249,7 +249,8 @@ class _BETDisk(fl.BETDisk):
 
 
 class _VolumeOutput(fl.VolumeOutput):
-    pass
+    class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["outputFormat", "outputFields", "*"]
 
 
 class _AeroacousticOutput(fl.AeroacousticOutput):
@@ -260,6 +261,7 @@ class _AeroacousticOutput(fl.AeroacousticOutput):
 class _SliceOutput(fl.SliceOutput):
     # pylint: disable=protected-access, too-few-public-methods
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["outputFormat", "outputFields", "*", "slices"]
         field_properties = {
             "slices/additionalProperties/sliceNormal": ("widget", "vector3"),
             "slices/additionalProperties/sliceOrigin": ("widget", "vector3"),
@@ -269,6 +271,7 @@ class _SliceOutput(fl.SliceOutput):
 
 class _MonitorOutput(fl.MonitorOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["outputFields", "*"]
         field_properties = {
             "monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")
         }
@@ -277,11 +280,13 @@ class _MonitorOutput(fl.MonitorOutput):
 
 class _SurfaceOutput(fl.SurfaceOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["outputFormat", "outputFields", "*", "surfaces"]
         swap_fields = {"surfaces": fl.Surfaces.flow360_schema()}
 
 
 class _IsoSurfaceOutput(fl.IsoSurfaceOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        field_order = ["outputFormat", "*", "isoSurfaces"]
         swap_fields = {"isoSurfaces": fl.IsoSurfaces.flow360_schema()}
 
 

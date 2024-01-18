@@ -1,4 +1,8 @@
 {
+  "ui:order": [
+    "outputFields",
+    "*"
+  ],
   "monitors": {
     "additionalProperties": {
       "monitorLocations": {

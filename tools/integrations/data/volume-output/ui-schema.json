@@ -1,4 +1,9 @@
 {
+  "ui:order": [
+    "outputFormat",
+    "outputFields",
+    "*"
+  ],
   "ui:submitButtonOptions": {
     "norender": true
   },
