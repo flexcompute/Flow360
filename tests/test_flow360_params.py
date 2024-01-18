@@ -1,17 +1,16 @@
 import json
 import math
+import os
 import re
 import unittest
 
 import pydantic as pd
 import pytest
 
-import flow360
 import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
-    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -23,7 +22,6 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    SupersonicInflow,
     WallFunction,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -54,8 +52,15 @@ from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360ValidationError,
 )
+from flow360.flags import Flags
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
+
+if Flags.beta_features():
+    from flow360.component.flow360_params.boundaries import (
+        HeatFluxWall,
+        SupersonicInflow,
+    )
 
 assertions = unittest.TestCase("__init__")
 
@@ -110,7 +115,7 @@ def test_flow360meshparam():
 
 
 def test_flow360param():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         mesh = Flow360Params.parse_raw(
             """
             {
@@ -175,7 +180,7 @@ def test_flow360param():
 
 
 def test_flow360param1():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         params = Flow360Params(
             freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
         )

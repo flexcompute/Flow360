@@ -1,7 +1,9 @@
 import difflib
+import importlib
 import json
 import os
 import tempfile
+import types
 from numbers import Number
 from typing import Collection
 

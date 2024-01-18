@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import pydantic as pd
@@ -14,6 +15,7 @@ from flow360.component.flow360_params.flow360_params import (
     TransitionModelSolver,
 )
 from flow360.component.flow360_params.solvers import NavierStokesSolver
+from flow360.flags import Flags
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -102,11 +104,15 @@ def test_transition():
 def test_heat_equation():
     he = HeatEquationSolver(
         equation_eval_frequency=10,
-        linear_solver=LinearSolver(
+        linearSolverConfig=LinearSolver(
             absoluteTolerance=1e-10,
             max_iterations=50,
         ),
     )
+
     assert he
 
-    compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+    if Flags.beta_features():
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+    else:
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref_old.json", content_only=True)

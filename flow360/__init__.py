@@ -2,6 +2,8 @@
 This module is flow360.
 """
 
+import os
+
 from numpy import pi
 
 from . import global_exception_handler, units
@@ -14,7 +16,6 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.boundaries import (
     FreestreamBoundary,
-    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -26,7 +27,6 @@ from .component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    SupersonicInflow,
     WallFunction,
 )
 from .component.flow360_params.flow360_output import Slice, Slices
@@ -82,7 +82,6 @@ from .component.flow360_params.time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -102,5 +101,10 @@ from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
 from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
+from .flags import Flags
 from .user_config import UserConfig
 from .version import __version__
+
+if Flags.beta_features():
+    from .component.flow360_params.boundaries import HeatFluxWall, SupersonicInflow
+    from .component.flow360_params.turbulence_quantities import TurbulenceQuantities

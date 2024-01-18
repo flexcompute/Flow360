@@ -910,24 +910,22 @@ flow360_viscosity_unit = Flow360ViscosityUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
 
+dimensions = [
+    flow360_length_unit,
+    flow360_mass_unit,
+    flow360_time_unit,
+    flow360_temperature_unit,
+    flow360_velocity_unit,
+    flow360_area_unit,
+    flow360_force_unit,
+    flow360_pressure_unit,
+    flow360_density_unit,
+    flow360_viscosity_unit,
+    flow360_angular_velocity_unit,
+    flow360_heat_flux_unit,
+]
 
-_flow360_system = {
-    u.dimension_type.dim_name: u
-    for u in [
-        flow360_length_unit,
-        flow360_mass_unit,
-        flow360_time_unit,
-        flow360_temperature_unit,
-        flow360_velocity_unit,
-        flow360_area_unit,
-        flow360_force_unit,
-        flow360_pressure_unit,
-        flow360_density_unit,
-        flow360_viscosity_unit,
-        flow360_angular_velocity_unit,
-        flow360_heat_flux_unit,
-    ]
-}
+_flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
 
 
 # pylint: disable=too-many-instance-attributes

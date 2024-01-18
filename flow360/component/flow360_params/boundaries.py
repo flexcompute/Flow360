@@ -7,10 +7,14 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic as pd
 from pydantic import StrictStr
 
+from flow360.flags import Flags
+
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
-from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import VelocityType
+
+if Flags.beta_features():
+    from .turbulence_quantities import TurbulenceQuantitiesType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]
@@ -26,12 +30,14 @@ class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
-    """Turbulence Quantities on Boundaries"""
+if Flags.beta_features():
 
-    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-        alias="turbulenceQuantities"
-    )
+    class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
+        """Turbulence Quantities on Boundaries"""
+
+        turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+            alias="turbulenceQuantities"
+        )
 
 
 class NoSlipWall(Boundary):
@@ -47,11 +53,21 @@ class SlipWall(Boundary):
     type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
 
-class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
-    """Freestream boundary"""
+if Flags.beta_features():
 
-    type: Literal["Freestream"] = pd.Field("Freestream", const=True)
-    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+    class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
+        """Freestream boundary"""
+
+        type: Literal["Freestream"] = pd.Field("Freestream", const=True)
+        velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+else:
+
+    class FreestreamBoundary(Boundary):
+        """Freestream boundary"""
+
+        type: Literal["Freestream"] = pd.Field("Freestream", const=True)
+        velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class IsothermalWall(Boundary):
@@ -64,98 +80,141 @@ class IsothermalWall(Boundary):
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
-class HeatFluxWall(Boundary):
-    """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
+if Flags.beta_features():
 
-    Parameters
-    ----------
-    heatFlux : float
-        Heat flux at the wall.
+    class HeatFluxWall(Boundary):
+        """:class:`HeatFluxWall` class for specifying heat flux wall boundaries
 
-    velocity: BoundaryVelocityType
-        (Optional) Velocity of the wall. If not specified, the boundary is stationary.
+        Parameters
+        ----------
+        heatFlux : float
+            Heat flux at the wall.
 
-    Returns
-    -------
-    :class:`HeatFluxWall`
-        An instance of the component class HeatFluxWall.
+        velocity: BoundaryVelocityType
+            (Optional) Velocity of the wall. If not specified, the boundary is stationary.
 
-    Example
-    -------
-    >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
-    """
+        Returns
+        -------
+        :class:`HeatFluxWall`
+            An instance of the component class HeatFluxWall.
 
-    type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
-    heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
-    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
+        Example
+        -------
+        >>> heatFluxWall = HeatFluxWall(heatFlux=-0.01, velocity=(0, 0, 0))
+        """
 
-
-class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
-    """SubsonicOutflowPressure boundary"""
-
-    type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
-    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
+        type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
+        heat_flux: Union[float, StrictStr] = pd.Field(
+            alias="heatFlux", options=["Value", "Expression"]
+        )
+        velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
 
 
-class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
-    """SubsonicOutflowMach boundary"""
+if Flags.beta_features():
 
-    type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
-    Mach: PositiveFloat = pd.Field(alias="MachNumber")
+    class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
+        """SubsonicOutflowPressure boundary"""
+
+        type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
+        static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
+
+else:
+
+    class SubsonicOutflowPressure(Boundary):
+        """SubsonicOutflowPressure boundary"""
+
+        type: Literal["SubsonicOutflowPressure"] = pd.Field("SubsonicOutflowPressure", const=True)
+        static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
 
 
-class SubsonicInflow(BoundaryWithTurbulenceQuantities):
-    """SubsonicInflow boundary"""
+if Flags.beta_features():
 
-    type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
-    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
-    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
-    velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
+    class SubsonicOutflowMach(BoundaryWithTurbulenceQuantities):
+        """SubsonicOutflowMach boundary"""
+
+        type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
+        Mach: PositiveFloat = pd.Field(alias="MachNumber")
+
+else:
+
+    class SubsonicOutflowMach(Boundary):
+        """SubsonicOutflowMach boundary"""
+
+        type: Literal["SubsonicOutflowMach"] = pd.Field("SubsonicOutflowMach", const=True)
+        Mach: PositiveFloat = pd.Field(alias="MachNumber")
 
 
-class SupersonicInflow(Boundary):
-    """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
+if Flags.beta_features():
 
-    Parameters
-    ----------
-    total_temperature_ratio : PositiveFloat
-        Ratio of total temperature to static temperature at the inlet.
+    class SubsonicInflow(BoundaryWithTurbulenceQuantities):
+        """SubsonicInflow boundary"""
 
-    total_pressure_ratio: PositiveFloat
-        Ratio of the total pressure to static pressure at the inlet.
+        type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
+        total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+        total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
+        ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+        velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
-    static_pressure_ratio: PositiveFloat
-        Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
-        Flow360 = 1.0/gamma.
+else:
 
-    velocity_direction: BoundaryAxisType
-        (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
-        of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
+    class SubsonicInflow(Boundary):
+        """SubsonicInflow boundary"""
 
-    Returns
-    -------
-    :class:`SupersonicInflow`
-        An instance of the component class SupersonicInflow.
+        type: Literal["SubsonicInflow"] = pd.Field("SubsonicInflow", const=True)
+        total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+        total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
+        ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+        velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
 
-    Example
-    -------
-    >>> supersonicInflow = SupersonicInflow(totalTemperatureRatio=2.1, totalPressureRatio=3.0, staticPressureRatio=1.2)
-    """
 
-    type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
-    total_temperature_ratio: PositiveFloat = pd.Field(
-        alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    total_pressure_ratio: PositiveFloat = pd.Field(
-        alias="totalPressureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    static_pressure_ratio: PositiveFloat = pd.Field(
-        alias="staticPressureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    velocity_direction: Optional[BoundaryAxisType] = pd.Field(
-        alias="velocityDirection", supported_solver_version="release-23.3.2.0gt"
-    )
+if Flags.beta_features():
+
+    class SupersonicInflow(Boundary):
+        """:class:`SupersonicInflow` class for specifying the full fluid state at supersonic inflow boundaries
+
+        Parameters
+        ----------
+        total_temperature_ratio : PositiveFloat
+            Ratio of total temperature to static temperature at the inlet.
+
+        total_pressure_ratio: PositiveFloat
+            Ratio of the total pressure to static pressure at the inlet.
+
+        static_pressure_ratio: PositiveFloat
+            Ratio of the inlet static pressure to the freestream static pressure. Default freestream static pressure in
+            Flow360 = 1.0/gamma.
+
+        velocity_direction: BoundaryAxisType
+            (Optional) 3-array of either float values or string expressions. Unit vector which specifies the direction
+            of the incoming flow. If not specified, the boundary patch normal is used to specify direction.
+
+        Returns
+        -------
+        :class:`SupersonicInflow`
+            An instance of the component class SupersonicInflow.
+
+        Example
+        -------
+        >>> supersonicInflow = SupersonicInflow(
+            totalTemperatureRatio=2.1,
+            totalPressureRatio=3.0,
+            staticPressureRatio=1.2
+        )
+        """
+
+        type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
+        total_temperature_ratio: PositiveFloat = pd.Field(
+            alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
+        )
+        total_pressure_ratio: PositiveFloat = pd.Field(
+            alias="totalPressureRatio", supported_solver_version="release-23.3.2.0gt"
+        )
+        static_pressure_ratio: PositiveFloat = pd.Field(
+            alias="staticPressureRatio", supported_solver_version="release-23.3.2.0gt"
+        )
+        velocity_direction: Optional[BoundaryAxisType] = pd.Field(
+            alias="velocityDirection", supported_solver_version="release-23.3.2.0gt"
+        )
 
 
 class SlidingInterfaceBoundary(Boundary):
@@ -170,20 +229,40 @@ class WallFunction(Boundary):
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
 
-class MassInflow(BoundaryWithTurbulenceQuantities):
-    """:class: `MassInflow` boundary"""
+if Flags.beta_features():
 
-    type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
-    mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+    class MassInflow(BoundaryWithTurbulenceQuantities):
+        """:class: `MassInflow` boundary"""
+
+        type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
+        mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
+        ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+
+else:
+
+    class MassInflow(Boundary):
+        """:class: `MassInflow` boundary"""
+
+        type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
+        mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
-class MassOutflow(BoundaryWithTurbulenceQuantities):
-    """:class: `MassOutflow` boundary"""
+if Flags.beta_features():
 
-    type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
-    mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
-    ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+    class MassOutflow(BoundaryWithTurbulenceQuantities):
+        """:class: `MassOutflow` boundary"""
+
+        type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
+        mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
+        ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
+
+else:
+
+    class MassOutflow(Boundary):
+        """:class: `MassOutflow` boundary"""
+
+        type: Literal["MassOutflow"] = pd.Field("MassOutflow", const=True)
+        mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
 
 
 class SolidIsothermalWall(Boundary):
@@ -218,22 +297,41 @@ class RotationallyPeriodic(Boundary):
     theta_radians: Optional[float] = pd.Field(alias="thetaRadians")
 
 
-BoundaryType = Union[
-    NoSlipWall,
-    SlipWall,
-    FreestreamBoundary,
-    IsothermalWall,
-    HeatFluxWall,
-    SubsonicOutflowPressure,
-    SubsonicOutflowMach,
-    SubsonicInflow,
-    SupersonicInflow,
-    SlidingInterfaceBoundary,
-    WallFunction,
-    MassInflow,
-    MassOutflow,
-    SolidIsothermalWall,
-    SolidAdiabaticWall,
-    TranslationallyPeriodic,
-    RotationallyPeriodic,
-]
+if Flags.beta_features():
+    BoundaryType = Union[
+        NoSlipWall,
+        SlipWall,
+        FreestreamBoundary,
+        IsothermalWall,
+        HeatFluxWall,
+        SubsonicOutflowPressure,
+        SubsonicOutflowMach,
+        SubsonicInflow,
+        SupersonicInflow,
+        SlidingInterfaceBoundary,
+        WallFunction,
+        MassInflow,
+        MassOutflow,
+        SolidIsothermalWall,
+        SolidAdiabaticWall,
+        TranslationallyPeriodic,
+        RotationallyPeriodic,
+    ]
+else:
+    BoundaryType = Union[
+        NoSlipWall,
+        SlipWall,
+        FreestreamBoundary,
+        IsothermalWall,
+        SubsonicOutflowPressure,
+        SubsonicOutflowMach,
+        SubsonicInflow,
+        SlidingInterfaceBoundary,
+        WallFunction,
+        MassInflow,
+        MassOutflow,
+        SolidIsothermalWall,
+        SolidAdiabaticWall,
+        TranslationallyPeriodic,
+        RotationallyPeriodic,
+    ]

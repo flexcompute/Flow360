@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from abc import ABCMeta, abstractmethod
 from typing import (
     Callable,
@@ -23,6 +24,8 @@ from typing import (
 import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
+
+from flow360.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
@@ -101,7 +104,6 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import (
     AngularVelocityType,
     AreaType,
@@ -144,6 +146,9 @@ from .validations import (
     _check_tri_quad_boundaries,
 )
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
+
+if Flags.beta_features():
+    from .turbulence_quantities import TurbulenceQuantitiesType
 
 
 # pylint: disable=invalid-name
@@ -512,9 +517,10 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ##  should be oneOf{turbulent_viscosity_ratio, turbulence_quantities}, legacy update also pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
-    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-        alias="turbulenceQuantities"
-    )
+    if Flags.beta_features():
+        turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+            alias="turbulenceQuantities"
+        )
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):

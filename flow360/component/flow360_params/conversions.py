@@ -226,6 +226,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
+
     else:
         raise ValueError(f"Not recognised dimension: {dimension}")
 
