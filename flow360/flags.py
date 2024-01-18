@@ -2,6 +2,7 @@
 Feature flags
 """
 
+import ast
 import os
 
 import toml
@@ -25,6 +26,8 @@ class _FeatureFlags:
             self._beta_features = (
                 self.config.get("user", {}).get("config", {}).get("beta_features", False)
             )
+        else:
+            self._beta_features = ast.literal_eval(self._beta_features)
 
     def beta_features(self):
         """Does flow360 support beta features?"""
