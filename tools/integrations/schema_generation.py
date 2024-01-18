@@ -79,13 +79,13 @@ class _Freestream(Flow360BaseModel):
 
 class _TurbulenceModelSolver(Flow360BaseModel):
     solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver] = pd.Field(
-        options=["Spalart-Allmaras", "kOmegaSST", "None"]
+        options=["Spalart Allmaras", "kOmegaSST", "None"]
     )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["modelType", "*", "linearSolver"]
-        optional_objects = ["anyOf/properties/linearSolver"]
-        exclude_fields = ["anyOf/properties/linearSolver/default"]
+        field_order = ["modelType", "*", "linearSolverConfig"]
+        optional_objects = ["anyOf/properties/linearSolverConfig"]
+        exclude_fields = ["anyOf/properties/linearSolverConfig/default"]
         root_property = "properties/solver/anyOf"
 
 
@@ -167,23 +167,23 @@ class _Geometry(fl.Geometry):
 
 class _NavierStokesSolver(fl.NavierStokesSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["properties/linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
+        field_order = ["*", "linearSolverConfig"]
+        optional_objects = ["properties/linearSolverConfig"]
+        exclude_fields = ["properties/linearSolverConfig/default"]
 
 
 class _TransitionModelSolver(fl.TransitionModelSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["modelType", "*", "linearSolver"]
-        optional_objects = ["properties/linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
+        field_order = ["modelType", "*", "linearSolverConfig"]
+        optional_objects = ["properties/linearSolverConfig"]
+        exclude_fields = ["properties/linearSolverConfig/default"]
 
 
 class _HeatEquationSolver(fl.HeatEquationSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolver"]
-        optional_objects = ["properties/linearSolver"]
-        exclude_fields = ["properties/linearSolver/default"]
+        field_order = ["*", "linearSolverConfig"]
+        optional_objects = ["properties/linearSolverConfig"]
+        exclude_fields = ["properties/linearSolverConfig/default"]
 
 
 class _SlidingInterface(fl.SlidingInterface):

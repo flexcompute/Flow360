@@ -19,15 +19,25 @@ from .params_base import DeprecatedAlias, Flow360BaseModel
 class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericFlowSolverSettings` class"""
 
-    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(1.0e-10, alias="absoluteTolerance")
     relative_tolerance: Optional[float] = pd.Field(0, alias="relativeTolerance")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        deprecated_aliases = [
-            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
-            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-        ]
+    if Flags.beta_features():
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(Flow360BaseModel.Config):
+            deprecated_aliases = [
+                DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+            ]
+
+    else:
+
+        class Config(
+            Flow360BaseModel.Config
+        ):  # pylint: disable=missing-class-docstring,too-few-public-methods
+            deprecated_aliases = [
+                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+            ]
 
 
 class LinearSolver(Flow360BaseModel):
@@ -173,11 +183,20 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
         1, alias="numericalDissipationFactor"
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver config"
-    )
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
+
+    if Flags.beta_features():
+        linear_solver: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver config"
+        )
+
+    else:
+        linear_solver_config: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=30),
+            alias="linearSolverConfig",
+            displayed="Linear solver config",
+        )
 
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
@@ -313,9 +332,6 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
 
     model_type: str = pd.Field(alias="modelType")
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-8, alias="absoluteTolerance")
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=20), alias="linearSolver"
-    )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(4, alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(4, alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
@@ -335,6 +351,18 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     model_constants: Optional[TurbulenceModelConstants] = pd.Field(
         alias="modelConstants", discriminator="model_type"
     )
+
+    if Flags.beta_features():
+        linear_solver: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
+        )
+
+    else:
+        linear_solver_config: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=20),
+            alias="linearSolverConfig",
+            displayed="Linear solver config",
+        )
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -400,7 +428,7 @@ class HeatEquationSolver(Flow360BaseModel):
         )
     """
 
-    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-9, alias="absoluteTolerance")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
 
     if Flags.beta_features():
@@ -446,7 +474,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     model_type: Optional[Literal["AmplificationFactorTransport"]] = pd.Field(
         "AmplificationFactorTransport", alias="modelType", const=True
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(1e-7, alias="absoluteTolerance")
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(alias="updateJacobianFrequency")
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
@@ -457,6 +485,18 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         alias="turbulenceIntensityPercent"
     )
     N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
+
+    if Flags.beta_features():
+        linear_solver: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
+        )
+
+    else:
+        linear_solver_config: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=20),
+            alias="linearSolverConfig",
+            displayed="Linear solver config",
+        )
 
 
 # Legacy models for Flow360 updater, do not expose
