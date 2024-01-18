@@ -582,6 +582,10 @@ class Flow360BaseModel(BaseModel):
             cls._schema_generate_optional(schema, item.split("/"))
         if cls.SchemaConfig.swap_fields is not None:
             for key, value in cls.SchemaConfig.swap_fields.items():
+                value["title"] = schema["properties"][key]["title"]
+                displayed = schema["properties"][key].get("displayed")
+                if displayed is not None:
+                    value["displayed"] = displayed
                 schema["properties"][key] = value
         cls._schema_swap_key(schema, "title", "displayed")
         cls._schema_clean(schema)
