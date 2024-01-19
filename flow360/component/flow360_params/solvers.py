@@ -188,7 +188,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     if Flags.beta_features():
         linear_solver: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver config"
+            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
         )
 
     else:
@@ -229,13 +229,22 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
         alias="pressureCorrectionSolver"
     )
-    linear_solver: Optional[LinearSolver] = pd.Field(
-        LinearSolver(max_iterations=30), alias="linearSolver"
-    )
     update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
         4, alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
     )
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
+
+    if Flags.beta_features():
+        linear_solver: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
+        )
+
+    else:
+        linear_solver_config: Optional[LinearSolver] = pd.Field(
+            LinearSolver(max_iterations=30),
+            alias="linearSolverConfig",
+            displayed="Linear solver config",
+        )
 
 
 NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
