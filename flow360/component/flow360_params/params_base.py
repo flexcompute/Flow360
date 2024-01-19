@@ -569,19 +569,23 @@ class Flow360BaseModel(BaseModel):
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
         schema = cls.schema()
-        cls._schema_apply_option_names(schema)
-        cls._schema_apply_root_property(schema)
         if cls.SchemaConfig.displayed is not None:
             schema["displayed"] = cls.SchemaConfig.displayed
+        cls._schema_format_titles(schema)
+        cls._schema_apply_option_names(schema)
+        cls._schema_apply_root_property(schema)
         for item in cls.SchemaConfig.exclude_fields:
             cls._schema_remove(schema, item.split("/"))
-        cls._schema_format_titles(schema)
         cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
         for item in cls.SchemaConfig.optional_objects:
             cls._schema_generate_optional(schema, item.split("/"))
         if cls.SchemaConfig.swap_fields is not None:
             for key, value in cls.SchemaConfig.swap_fields.items():
+                value["title"] = schema["properties"][key]["title"]
+                displayed = schema["properties"][key].get("displayed")
+                if displayed is not None:
+                    value["displayed"] = displayed
                 schema["properties"][key] = value
         cls._schema_swap_key(schema, "title", "displayed")
         cls._schema_clean(schema)

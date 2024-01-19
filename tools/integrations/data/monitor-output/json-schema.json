@@ -122,7 +122,8 @@
           }
         ]
       },
-      "definitions": {}
+      "definitions": {},
+      "title": "Monitors"
     },
     "outputFields": {
       "title": "Output fields",
