@@ -102,7 +102,8 @@
         },
         "additionalProperties": false
       },
-      "definitions": {}
+      "definitions": {},
+      "title": "Iso surfaces"
     }
   },
   "additionalProperties": false
