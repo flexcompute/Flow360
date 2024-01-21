@@ -1,6 +1,6 @@
 {
   "absoluteTolerance": 1e-09,
-  "linearSolver": {
+  "linearSolverConfig": {
     "absoluteTolerance": 1e-10,
     "maxIterations": 50
   },

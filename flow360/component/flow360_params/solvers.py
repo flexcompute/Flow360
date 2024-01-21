@@ -548,8 +548,8 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
         alias="pressureCorrectionSolver"
     )
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver", default=LinearSolverLegacy()
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolverLegacy()
     )
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
 
@@ -558,7 +558,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "CFLMultiplier": self.CFL_multiplier,
-            "linearSolver": try_update(self.linear_solver),
+            "linearSolverConfig": try_update(self.linear_solver_config),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -569,8 +569,8 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "numericalDissipationFactor": self.numerical_dissipation_factor,
         }
 
-        if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["maxIterations"] = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
+            model["linearSolverConfig"]["maxIterations"] = self.linear_iterations
 
         return model
 
@@ -581,8 +581,8 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(alias="kappaMUSCL")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver", default=LinearSolverLegacy()
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolverLegacy()
     )
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
@@ -591,7 +591,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolver": try_update(self.linear_solver),
+            "linearSolverConfig": try_update(self.linear_solver_config),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -605,8 +605,8 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
 
         try_set(model, "rotationCorrection", self.rotation_correction)
 
-        if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["maxIterations"] = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
+            model["linearSolverConfig"]["maxIterations"] = self.linear_iterations
 
         return model
 
@@ -621,14 +621,14 @@ class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         alias="maxForceJacUpdatePhysicalSteps"
     )
-    linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver", default=LinearSolverLegacy()
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
         model = {
             "absoluteTolerance": self.absolute_tolerance,
-            "linearSolver": try_update(self.linear_solver),
+            "linearSolverConfig": try_update(self.linear_solver_config),
             "equationEvalFrequency": self.equation_eval_frequency,
         }
 
@@ -644,8 +644,8 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
     randomizer: Optional[LinearIterationsRandomizer] = pd.Field()
-    linear_solver: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolver", default=LinearSolverLegacy()
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
+        alias="linearSolverConfig", default=LinearSolverLegacy()
     )
 
     def update_model(self) -> Flow360BaseModel:
@@ -653,7 +653,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolver": try_update(self.linear_solver),
+            "linearSolverConfig": try_update(self.linear_solver_config),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -662,7 +662,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "Ncrit": self.N_crit,
         }
 
-        if self.linear_iterations is not None and model["linearSolver"] is not None:
-            model["linearSolver"]["maxIterations"] = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
+            model["linearSolverConfig"]["maxIterations"] = self.linear_iterations
 
         return TransitionModelSolver.parse_obj(model)
