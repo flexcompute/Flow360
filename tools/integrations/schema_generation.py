@@ -79,7 +79,7 @@ class _Freestream(Flow360BaseModel):
 
 class _TurbulenceModelSolver(Flow360BaseModel):
     solver: Union[fl.SpalartAllmaras, fl.KOmegaSST, fl.NoneSolver] = pd.Field(
-        options=["Spalart Allmaras", "kOmegaSST", "None"]
+        options=["Spalart-Allmaras", "kOmegaSST", "None"]
     )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
