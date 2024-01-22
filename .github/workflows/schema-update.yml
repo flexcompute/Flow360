@@ -1,0 +1,44 @@
+# Used to automatically create a pull request with updated schemas
+name: Automatic schema update
+
+on:
+  pull-request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  schema-update:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checkout the Flow360 project
+    - name: Checkout python client repo
+      uses: actions/checkout@v3
+      with:
+        ref: develop
+        fetch-depth: 0
+
+    # Check if python client schema directory has changed
+    - name: Check if JSON schema files have changed
+      id: schema-changed
+      uses: tj-actions/changed-files@v42
+      with:
+        files: 'tools/integrations/data/'
+
+    # Copy directory to destination and create a PR
+    - name: Create pull request in web client
+      if: steps.schema-changed.any_changed == 'true'
+      uses: paygoc6/action-pull-request-another-repo@v1.0.1
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.AUTOMATION_TEST_TOKEN }}
+      with:
+        source_folder: 'tools/integrations/data/'
+        destination_repo: 'flexcompute/Flow360WebClient'
+        destination_folder: 'src/components/FormGenerator/schemas/case/'
+        destination_base_branch: 'develop'
+        destination_head_branch: 'schema-auto-update'
+        user_email: 'andrzej@flexcompute.com'
+        user_name: 'andrzej-krupka'

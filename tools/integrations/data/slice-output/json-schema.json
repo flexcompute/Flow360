@@ -12,7 +12,7 @@
         },
         {
           "type": "integer",
-          "title": "Static",
+          "title": "Not animated",
           "const": -1
         }
       ]
