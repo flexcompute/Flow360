@@ -1,7 +1,7 @@
 {
   "ui:order": [
     "*",
-    "linearSolver"
+    "linearSolverConfig"
   ],
   "ui:submitButtonOptions": {
     "norender": true
