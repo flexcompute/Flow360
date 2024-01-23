@@ -101,6 +101,7 @@
         },
         "additionalProperties": false
       },
+      "type": "object",
       "title": "Iso surfaces"
     }
   },

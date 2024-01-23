@@ -139,6 +139,7 @@
         ],
         "additionalProperties": false
       },
+      "type": "object",
       "title": "Slices"
     }
   },

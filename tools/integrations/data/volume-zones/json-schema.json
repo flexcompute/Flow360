@@ -316,5 +316,6 @@
         "additionalProperties": false
       }
     ]
-  }
+  },
+  "type": "object"
 }

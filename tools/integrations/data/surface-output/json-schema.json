@@ -150,6 +150,7 @@
         },
         "additionalProperties": false
       },
+      "type": "object",
       "title": "Surfaces"
     }
   },

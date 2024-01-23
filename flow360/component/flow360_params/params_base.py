@@ -1179,6 +1179,8 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         if definitions:
             root_schema["definitions"] = definitions
 
+        root_schema["type"] = "object"
+
         return root_schema
 
     # pylint: disable=missing-class-docstring,too-few-public-methods

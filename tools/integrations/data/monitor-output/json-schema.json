@@ -122,6 +122,7 @@
           }
         ]
       },
+      "type": "object",
       "title": "Monitors"
     },
     "outputFields": {

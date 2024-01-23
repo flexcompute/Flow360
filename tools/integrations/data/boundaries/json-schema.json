@@ -572,5 +572,6 @@
         "additionalProperties": false
       }
     ]
-  }
+  },
+  "type": "object"
 }
