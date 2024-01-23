@@ -317,5 +317,5 @@
       }
     ]
   },
-  "definitions": {}
+  "type": "object"
 }

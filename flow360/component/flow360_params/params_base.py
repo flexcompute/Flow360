@@ -574,8 +574,6 @@ class Flow360BaseModel(BaseModel):
         cls._schema_format_titles(schema)
         cls._schema_apply_option_names(schema)
         cls._schema_apply_root_property(schema)
-        for item in cls.SchemaConfig.exclude_fields:
-            cls._schema_remove(schema, item.split("/"))
         cls._schema_fix_single_allof(schema)
         cls._schema_fix_single_value_enum(schema)
         for item in cls.SchemaConfig.optional_objects:
@@ -587,6 +585,8 @@ class Flow360BaseModel(BaseModel):
                 if displayed is not None:
                     value["displayed"] = displayed
                 schema["properties"][key] = value
+        for item in cls.SchemaConfig.exclude_fields:
+            cls._schema_remove(schema, item.split("/"))
         cls._schema_swap_key(schema, "title", "displayed")
         cls._schema_clean(schema)
         return schema
@@ -1176,7 +1176,10 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         cls._collect_all_definitions(root_schema, definitions)
 
-        root_schema["definitions"] = definitions
+        if definitions:
+            root_schema["definitions"] = definitions
+
+        root_schema["type"] = "object"
 
         return root_schema
 

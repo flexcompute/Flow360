@@ -573,5 +573,5 @@
       }
     ]
   },
-  "definitions": {}
+  "type": "object"
 }

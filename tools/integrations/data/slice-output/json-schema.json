@@ -65,7 +65,6 @@
     },
     "slices": {
       "additionalProperties": {
-        "title": "Slice",
         "type": "object",
         "properties": {
           "sliceNormal": {
@@ -140,7 +139,7 @@
         ],
         "additionalProperties": false
       },
-      "definitions": {},
+      "type": "object",
       "title": "Slices"
     }
   },
