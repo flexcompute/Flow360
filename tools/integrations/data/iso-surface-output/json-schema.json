@@ -32,7 +32,6 @@
     },
     "isoSurfaces": {
       "additionalProperties": {
-        "title": "Iso surface",
         "type": "object",
         "properties": {
           "surfaceField": {
@@ -102,7 +101,6 @@
         },
         "additionalProperties": false
       },
-      "definitions": {},
       "title": "Iso surfaces"
     }
   },

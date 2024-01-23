@@ -33,6 +33,11 @@
             },
             "linearSolverConfig": {
               "title": "Linear solver config",
+              "default": {
+                "max_iterations": 50,
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": null
+              },
               "type": "object",
               "properties": {
                 "maxIterations": {

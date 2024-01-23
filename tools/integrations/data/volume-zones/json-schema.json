@@ -316,6 +316,5 @@
         "additionalProperties": false
       }
     ]
-  },
-  "definitions": {}
+  }
 }

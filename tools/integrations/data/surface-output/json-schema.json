@@ -104,7 +104,6 @@
     },
     "surfaces": {
       "additionalProperties": {
-        "title": "Surface",
         "type": "object",
         "properties": {
           "outputFields": {
@@ -151,7 +150,6 @@
         },
         "additionalProperties": false
       },
-      "definitions": {},
       "title": "Surfaces"
     }
   },

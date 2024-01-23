@@ -267,6 +267,7 @@ class _SliceOutput(fl.SliceOutput):
             "slices/additionalProperties/sliceOrigin": ("widget", "vector3"),
         }
         swap_fields = {"slices": fl.Slices.flow360_schema()}
+        exclude_fields = ["properties/slices/additionalProperties/title"]
 
 
 class _MonitorOutput(fl.MonitorOutput):
@@ -276,18 +277,21 @@ class _MonitorOutput(fl.MonitorOutput):
             "monitors/additionalProperties/monitorLocations/items": ("widget", "vector3")
         }
         swap_fields = {"monitors": fl.Monitors.flow360_schema()}
+        exclude_fields = ["properties/monitors/additionalProperties/title"]
 
 
 class _SurfaceOutput(fl.SurfaceOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "outputFields", "*", "surfaces"]
         swap_fields = {"surfaces": fl.Surfaces.flow360_schema()}
+        exclude_fields = ["properties/surfaces/additionalProperties/title"]
 
 
 class _IsoSurfaceOutput(fl.IsoSurfaceOutput):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "*", "isoSurfaces"]
         swap_fields = {"isoSurfaces": fl.IsoSurfaces.flow360_schema()}
+        exclude_fields = ["properties/isoSurfaces/additionalProperties/title"]
 
 
 class _Boundaries(fl.Boundaries):

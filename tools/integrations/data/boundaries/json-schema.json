@@ -572,6 +572,5 @@
         "additionalProperties": false
       }
     ]
-  },
-  "definitions": {}
+  }
 }
