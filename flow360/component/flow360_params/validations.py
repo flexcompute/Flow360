@@ -238,7 +238,11 @@ def _check_equation_eval_frequency_for_unsteady_simulations(values):
 def _check_aero_acoustics(values):
     aeroacoustic_output = values.get("aeroacoustic_output")
     boundaries = values.get("boundaries")
-    if aeroacoustic_output is not None and len(aeroacoustic_output.observers) > 0:
+    if (
+        boundaries is not None
+        and aeroacoustic_output is not None
+        and len(aeroacoustic_output.observers) > 0
+    ):
         for boundary_name in boundaries.names():
             boundary_prop = boundaries[boundary_name]
             if isinstance(boundary_prop, (TranslationallyPeriodic, RotationallyPeriodic, SlipWall)):
