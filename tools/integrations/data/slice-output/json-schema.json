@@ -12,7 +12,7 @@
         },
         {
           "type": "integer",
-          "title": "Not animated",
+          "title": "Test2",
           "const": -1
         }
       ]
