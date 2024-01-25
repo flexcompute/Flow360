@@ -83,7 +83,7 @@ def _check_consistency_ddes_volume_output(values):
     run_ddes = False
     if turbulence_model_solver is not None:
         model_type = turbulence_model_solver.model_type
-        if model_type is not "None":
+        if model_type != "None":
             run_ddes = turbulence_model_solver.DDES
 
     volume_output = values.get("volumeOutput")
@@ -208,7 +208,7 @@ def _check_eval_frequency_max_pseudo_steps_in_one_solver(
 ) -> NoReturn:
     solver = values.get(solver_name)
     solver_eq_eval_freq = None
-    if solver is not None and solver.model_type is not "None":
+    if solver is not None and solver.model_type != "None":
         solver_eq_eval_freq = solver.equation_eval_frequency
     if (
         max_pseudo_steps is not None
@@ -422,7 +422,7 @@ def _check_consistency_ddes_unsteady(values):
     time_stepping = values.get("time_stepping")
     turbulence_model_solver = values.get("turbulence_model_solver")
     run_ddes = False
-    if turbulence_model_solver is not None and turbulence_model_solver.model_type is not "None":
+    if turbulence_model_solver is not None and turbulence_model_solver.model_type != "None":
         run_ddes = turbulence_model_solver.DDES
     if run_ddes and (time_stepping is None or isinstance(time_stepping, SteadyTimeStepping)):
         raise ValueError("Running DDES with steady simulation is invalid.")
