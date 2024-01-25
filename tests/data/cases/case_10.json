@@ -60,16 +60,7 @@
       "equationEvalFrequency": 1
    },
    "turbulenceModelSolver": {
-      "modelType": "SpalartAllmaras",
-      "absoluteTolerance": 1e-8,
-      "relativeTolerance": 0.01,
-      "linearIterations": 25,
-      "kappaMUSCL": -1,
-      "DDES": true,
-      "orderOfAccuracy": 2,
-      "updateJacobianFrequency": 1,
-      "equationEvalFrequency": 1,
-      "rotationCorrection": true
+      "modelType": "None"
    },
    "freestream": {
       "muRef": 0.0000017020069150311915,

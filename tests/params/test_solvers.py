@@ -116,3 +116,14 @@ def test_heat_equation():
         compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
     else:
         compare_to_ref(he, "../ref/case_params/heat_equation/ref_old.json", content_only=True)
+
+
+def test_turbulence_none_solver():
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 300, "mu_ref": 1},
+            boundaries={},
+            turbulence_model_solver=NoneSolver(),
+        )
+
+    to_file_from_file_test(params)

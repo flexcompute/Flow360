@@ -22,7 +22,7 @@ params_old_version = {
 }
 
 params_current_version = {
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "unitSystem": {"name": "SI"},
     "boundaries": {},
     "geometry": {
@@ -47,7 +47,7 @@ params_no_version = {
 }
 
 params_no_unit_system = {
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "boundaries": {},
     "geometry": {
         "refArea": {"units": "m**2", "value": 1.15315084119231},
@@ -60,7 +60,7 @@ params_no_unit_system = {
 }
 
 params_no_hash = {
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "unitSystem": {"name": "SI"},
     "boundaries": {},
     "geometry": {
@@ -73,7 +73,7 @@ params_no_hash = {
 }
 
 params_wrong_hash = {
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "unitSystem": {"name": "SI"},
     "boundaries": {},
     "geometry": {

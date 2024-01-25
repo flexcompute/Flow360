@@ -403,7 +403,7 @@ class NoneSolver(Flow360BaseModel):
     model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
 
 
-TurbulenceModelSolverTypes = Union[SpalartAllmaras, KOmegaSST, NoneSolver]
+TurbulenceModelSolverTypes = Union[NoneSolver, SpalartAllmaras, KOmegaSST]
 
 
 class HeatEquationSolver(Flow360BaseModel):
