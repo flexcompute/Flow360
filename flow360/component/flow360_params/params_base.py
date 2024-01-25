@@ -630,7 +630,7 @@ class Flow360BaseModel(BaseModel):
         extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
-        self_dict = self.__dict__
+        self_dict = self.__dict__.copy()
 
         if exclude is None:
             exclude = []

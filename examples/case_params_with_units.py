@@ -53,9 +53,8 @@ params_as_dict = params_copy.dict()
 
 del params_as_dict["fluid_properties"]
 
-with fl.SI_unit_system:
-    errors, warnings = validate_flow360_params_model(params_as_dict)
-    pprint(errors)
+errors, warnings = validate_flow360_params_model(params_as_dict, "SI")
+pprint(errors)
 
 params_as_json = params.json(indent=4)
 print(params_as_json)
@@ -72,7 +71,6 @@ params_as_json = params_solver.flow360_json()
 print(params_as_json)
 
 # Class name removal from loc
-with fl.SI_unit_system:
-    params_as_dict["freestream"]["foo"] = "bar"
-    errors, warnings = validate_flow360_params_model(params_as_dict)
-    pprint(errors)
+params_as_dict["freestream"]["foo"] = "bar"
+errors, warnings = validate_flow360_params_model(params_as_dict, "SI")
+pprint(errors)

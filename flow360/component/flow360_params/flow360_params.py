@@ -1540,6 +1540,10 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
 
         return FluidDynamicsVolumeZone.parse_obj(model)
 
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        require_one_of = SlidingInterface.Config.require_one_of + ["omega"]
+
 
 class BoundariesLegacy(Boundaries):
     """Legacy Boundaries class"""
@@ -1564,7 +1568,7 @@ class Flow360ParamsLegacy(LegacyModel):
     freestream: Optional[FreestreamLegacy] = pd.Field()
     time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
     navier_stokes_solver: Optional[NavierStokesSolverLegacy] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[TurbulenceModelSolverLegacy] = pd.Field(
+    turbulence_model_solver: Optional[Union[NoneSolver, TurbulenceModelSolverLegacy]] = pd.Field(
         alias="turbulenceModelSolver"
     )
     transition_model_solver: Optional[TransitionModelSolverLegacy] = pd.Field(
@@ -1629,7 +1633,12 @@ class Flow360ParamsLegacy(LegacyModel):
             volume_zones = {}
             for interface in self.sliding_interfaces:
                 volume_zone = try_update(interface)
-                volume_zones[interface.volume_name] = volume_zone
+                print(interface)
+                volume_name = interface.volume_name
+                if isinstance(interface.volume_name, list):
+                    volume_name = interface.volume_name[0]
+
+                volume_zones[volume_name] = volume_zone
             params["volume_zones"] = VolumeZones(**volume_zones)
 
         if self._is_web_ui_generated(params.get("fluid_properties"), params.get("freestream")):
