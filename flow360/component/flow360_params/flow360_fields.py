@@ -47,7 +47,7 @@ CommonFieldNames = Literal[
     "T",
     "vorticity",
     "wallDistance",
-    "lowNumericalDissipationSensor",
+    "numericalDissipationFactor",
     "residualHeatSolver",
 ]
 
