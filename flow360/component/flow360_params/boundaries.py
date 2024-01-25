@@ -153,7 +153,7 @@ if Flags.beta_features():
         total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
         total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
         ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
-        velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
+        velocity_direction: Optional[BoundaryAxisType] = pd.Field(alias="velocityDirection")
 
 else:
 
@@ -164,7 +164,7 @@ else:
         total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
         total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
         ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
-        velocity_direction: Optional[BoundaryVelocityType] = pd.Field(alias="velocityDirection")
+        velocity_direction: Optional[BoundaryAxisType] = pd.Field(alias="velocityDirection")
 
 
 if Flags.beta_features():
