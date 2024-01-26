@@ -1,6 +1,7 @@
 """
 Output field definitions
 """
+
 from typing import List, Literal, get_args, get_origin
 
 CommonFieldNamesFull = Literal[

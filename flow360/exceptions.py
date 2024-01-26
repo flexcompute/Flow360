@@ -1,4 +1,5 @@
 """Custom Flow360 exceptions"""
+
 from typing import List
 
 from .log import log

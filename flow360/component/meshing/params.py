@@ -1,6 +1,7 @@
 """
 Flow360 meshing parameters
 """
+
 from typing import List, Optional, Union, get_args
 
 import pydantic as pd

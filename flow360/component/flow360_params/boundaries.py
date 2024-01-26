@@ -1,6 +1,7 @@
 """
 Boundaries parameters
 """
+
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union
 

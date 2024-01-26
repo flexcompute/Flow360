@@ -2,7 +2,6 @@
 base component for examples
 """
 
-
 import glob
 import os
 from abc import ABCMeta, abstractmethod, abstractstaticmethod

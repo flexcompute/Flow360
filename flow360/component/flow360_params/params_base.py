@@ -1,6 +1,7 @@
 """
 Flow360 solver parameters
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 

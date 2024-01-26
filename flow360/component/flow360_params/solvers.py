@@ -1,6 +1,7 @@
 """
 Flow360 solvers parameters
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta

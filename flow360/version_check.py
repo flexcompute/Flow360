@@ -16,6 +16,7 @@ Constants:
 - CAN_UPGRADE: VersionSupported enum value indicating that an upgrade is available.
 
 """
+
 import re
 from enum import Enum
 from typing import List, Tuple, Union
