@@ -52,6 +52,10 @@ class SlipWall(Boundary):
 
     type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
 
+class SymmetryPlane(Boundary):
+    """Symmetry plane boundary"""
+
+    type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", const=True)
 
 if Flags.beta_features():
 
@@ -301,6 +305,7 @@ if Flags.beta_features():
     BoundaryType = Union[
         NoSlipWall,
         SlipWall,
+        SymmetryPlane,
         FreestreamBoundary,
         IsothermalWall,
         HeatFluxWall,
@@ -321,6 +326,7 @@ else:
     BoundaryType = Union[
         NoSlipWall,
         SlipWall,
+        SymmetryPlane,
         FreestreamBoundary,
         IsothermalWall,
         SubsonicOutflowPressure,
