@@ -16,7 +16,9 @@ with fl.SI_unit_system:
         ),
         freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
         fluid_properties=fl.air,
-        time_stepping=fl.SteadyTimeStepping(max_pseudo_steps=500),
+        time_stepping=fl.UnsteadyTimeStepping(
+            max_pseudo_steps=50, CFL=fl.AdaptiveCFL(), physical_steps=123, time_step_size=1e-3
+        ),
         boundaries={
             "1": fl.NoSlipWall(name="wing"),
             "2": fl.SlipWall(name="symmetry"),
@@ -25,4 +27,7 @@ with fl.SI_unit_system:
     )
 
 case = volume_mesh.create_case("OM6wing", params)
-case = case.submit()
+cases = case.submit_multiple_phases(phase_steps=3)
+
+for item in cases:
+    print(item)

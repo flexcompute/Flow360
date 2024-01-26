@@ -319,7 +319,6 @@ class CaseDraft(CaseBase, ResourceDraft):
         log.info(f"Case successfully submitted: {self._submitted_case.short_description()}")
         return self._submitted_case
 
-    @before_submit_only
     def submit_multiple_phases(
         self, phase_steps: pd.conint(ge=1), force_submit: bool = False
     ) -> List[Case]:
@@ -344,13 +343,15 @@ class CaseDraft(CaseBase, ResourceDraft):
             case_draft_to_submit.name = self.name + f"_{index}"
             case = case_draft_to_submit.submit(force_submit=force_submit)
 
-            case_draft_to_submit = case.continuation(
-                params=copy.deepcopy(self.params), tags=copy.deepcopy(self.tags)
-            )
-
             cases_submitted.append(case)
             total_physical_steps -= phase_steps
             index += 1
+
+            if total_physical_steps > 0:
+                case_draft_to_submit = case.continuation(
+                    params=copy.deepcopy(self.params), tags=copy.deepcopy(self.tags)
+                )
+
         return cases_submitted
 
     def validate_case_inputs(self, pre_submit_checks=False):
