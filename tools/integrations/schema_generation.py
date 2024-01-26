@@ -12,7 +12,6 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from flow360.component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
-    FreestreamInitialCondition,
 )
 from flow360.component.flow360_params.params_base import (
     Flow360BaseModel,
@@ -114,12 +113,7 @@ class _FluidProperties(Flow360BaseModel):
 
 
 class _InitialConditions(Flow360BaseModel):
-    initial_conditions: Union[FreestreamInitialCondition, ExpressionInitialCondition] = pd.Field(
-        alias="initialConditions", options=["Freestream", "Expression"]
-    )
-
-    class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        root_property = "properties/initialConditions/anyOf"
+    initial_conditions: ExpressionInitialCondition = pd.Field(alias="initialConditions")
 
 
 class _FluidDynamicsVolumeZone(VolumeZoneBase):

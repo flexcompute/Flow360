@@ -963,9 +963,7 @@ class Flow360Params(Flow360BaseModel):
         alias="fluidProperties", discriminator="model_type"
     )
     boundaries: Boundaries = pd.Field()
-    initial_condition: Optional[InitialConditions] = pd.Field(
-        alias="initialCondition", discriminator="type"
-    )
+    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition")
     time_stepping: Optional[TimeStepping] = pd.Field(
         alias="timeStepping", default=SteadyTimeStepping(), discriminator="model_type"
     )
@@ -1623,9 +1621,7 @@ class Flow360ParamsLegacy(LegacyModel):
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
     boundaries: Optional[BoundariesLegacy] = pd.Field()
     # Needs decoupling from current model
-    initial_condition: Optional[InitialConditions] = pd.Field(
-        alias="initialCondition", discriminator="type"
-    )
+    initial_condition: Optional[InitialConditions] = pd.Field(alias="initialCondition")
     # Needs decoupling from current model
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
     # Needs decoupling from current model

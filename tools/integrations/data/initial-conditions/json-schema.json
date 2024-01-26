@@ -1,30 +1,17 @@
 {
   "title": "Initial conditions",
   "type": "object",
-  "additionalProperties": false,
-  "anyOf": [
-    {
-      "title": "Freestream",
+  "properties": {
+    "initialConditions": {
+      "title": "Initial conditions",
       "type": "object",
       "properties": {
-        "type": {
-          "title": "Type",
-          "default": "freestream",
-          "const": "freestream",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "title": "Expression",
-      "type": "object",
-      "properties": {
-        "type": {
-          "title": "Type",
-          "default": "expression",
-          "const": "expression",
-          "type": "string"
+        "constants": {
+          "title": "Constants",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "rho": {
           "title": "rho [non-dim]",
@@ -47,14 +34,11 @@
           "type": "string"
         }
       },
-      "required": [
-        "rho",
-        "u",
-        "v",
-        "w",
-        "p"
-      ],
       "additionalProperties": false
     }
-  ]
+  },
+  "required": [
+    "initialConditions"
+  ],
+  "additionalProperties": false
 }
