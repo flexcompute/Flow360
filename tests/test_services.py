@@ -219,3 +219,12 @@ def test_init_fork_with_update_2():
     assert params_as_dict["timeStepping"]["_addCFL"] == True
     assert "fluid/body" in params_as_dict["boundaries"]
     assert not "_addFluid/body" in params_as_dict["boundaries"]
+
+
+
+def test_init_retry():
+    with open("data/cases/params_units.json", "r") as fh:
+        params = json.load(fh)
+
+    data = services.get_default_retry(params)
+    assert data
