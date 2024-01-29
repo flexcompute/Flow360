@@ -223,8 +223,11 @@ def test_init_fork_with_update_2():
 
 
 def test_init_retry():
-    with open("data/cases/params_units.json", "r") as fh:
-        params = json.load(fh)
+    files = ["params_units.json", "case_15.json"]
 
-    data = services.get_default_retry(params)
-    assert data
+    for file in files:
+        with open(f"data/cases/{file}", "r") as fh:
+            params = json.load(fh)
+
+        data = services.get_default_retry(params)
+        assert data
