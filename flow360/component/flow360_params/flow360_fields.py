@@ -1,6 +1,7 @@
 """
 Output field definitions
 """
+
 from typing import List, Literal, get_args, get_origin
 
 CommonFieldNamesFull = Literal[
@@ -49,6 +50,7 @@ CommonFieldNames = Literal[
     "wallDistance",
     "numericalDissipationFactor",
     "residualHeatSolver",
+    "VelocityRelative",
 ]
 
 SurfaceFieldNamesFull = Literal[
