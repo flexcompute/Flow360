@@ -29,6 +29,8 @@ class ReferenceFrameBase(Flow360BaseModel):
     """Base reference frame class"""
 
     model_type: str = pd.Field(alias="modelType")
+    center: LengthType.Point = pd.Field(alias="centerOfRotation")
+    axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -40,7 +42,7 @@ class ReferenceFrameDynamic(ReferenceFrameBase):
 
     Parameters
     ----------
-    center : LengthType.Point
+    center : Coordinate
         Coordinate representing the origin of rotation, eg. (0, 0, 0)
 
     axis : Axis
@@ -60,9 +62,6 @@ class ReferenceFrameDynamic(ReferenceFrameBase):
     """
 
     model_type: Literal["Dynamic"] = pd.Field("Dynamic", alias="modelType", const=True)
-    center: LengthType.Point = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
-    is_dynamic: bool = pd.Field(True, alias="isDynamic", const=True)
 
 
 class ReferenceFrameExpression(ReferenceFrameBase):
@@ -105,8 +104,6 @@ class ReferenceFrameExpression(ReferenceFrameBase):
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
-    center: LengthType.Point = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(ReferenceFrameBase.Config):
@@ -140,8 +137,6 @@ class ReferenceFrameOmegaRadians(ReferenceFrameBase):
 
     model_type: Literal["OmegaRadians"] = pd.Field("OmegaRadians", alias="modelType", const=True)
     omega_radians: float = pd.Field(alias="omegaRadians")
-    center: LengthType.Point = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:
@@ -175,8 +170,6 @@ class ReferenceFrameOmegaDegrees(ReferenceFrameBase):
 
     model_type: Literal["OmegaDegrees"] = pd.Field("OmegaDegrees", alias="modelType", const=True)
     omega_degrees: float = pd.Field(alias="omegaDegrees")
-    center: LengthType.Point = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaDegrees:
@@ -219,8 +212,6 @@ class ReferenceFrame(ReferenceFrameBase):
         "ReferenceFrame", alias="modelType", const=True
     )
     omega: AngularVelocityType = pd.Field()
-    center: LengthType.Point = pd.Field(alias="centerOfRotation")
-    axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:

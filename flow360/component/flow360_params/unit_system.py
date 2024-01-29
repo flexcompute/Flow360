@@ -431,7 +431,6 @@ class TemperatureType(DimensionedType):
 
     @classmethod
     def validate(cls, value):
-
         value = super(cls, cls).validate(value)
 
         if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
