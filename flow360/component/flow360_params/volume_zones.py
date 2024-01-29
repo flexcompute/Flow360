@@ -22,7 +22,7 @@ from ..types import (
     Vector,
 )
 from .params_base import Flow360BaseModel
-from .unit_system import AngularVelocityType, LengthType
+from .unit_system import AngularVelocityType, LengthType, TemperatureType
 
 
 class ReferenceFrameDynamic(Flow360BaseModel):

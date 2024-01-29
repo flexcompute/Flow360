@@ -12,7 +12,7 @@ from flow360.flags import Flags
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
-from .unit_system import VelocityType
+from .unit_system import HeatFluxType, TemperatureType, VelocityType
 
 if Flags.beta_features():
     from .turbulence_quantities import TurbulenceQuantitiesType
