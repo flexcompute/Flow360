@@ -1046,7 +1046,7 @@ class Flow360Params(Flow360BaseModel):
             )
 
         if legacy_fallback:
-            model_dict = kwargs
+            model_dict = self._init_handle_dict(**kwargs)
         else:
             model_dict = self._init_handle_file(filename=filename, **kwargs)
 
