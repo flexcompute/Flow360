@@ -203,7 +203,7 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
+    start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields")
     surfaces: Optional[Surfaces] = pd.Field()
 

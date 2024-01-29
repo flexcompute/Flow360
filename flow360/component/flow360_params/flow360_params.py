@@ -1499,7 +1499,7 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
-            try_add_unit(model["time_stepping"], "timeStepSize", step_unit)
+            try_add_unit(model["field"], "timeStepSize", step_unit)
 
         if model["field"]["timeStepSize"] == "inf" and model["field"]["physicalSteps"] == 1:
             model["field"]["modelType"] = "Steady"
