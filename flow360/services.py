@@ -188,21 +188,21 @@ def remove_dimensioned_type_none_leaves(data):
 
 def remove_empty_entries(data, exclude):
     """
-        Recursively removes empty dictionaries apart from excluded keys
+    Recursively removes empty dictionaries apart from excluded keys
 
-        Parameters
-        ----------
-        data : dict
-            The input dictionary.
+    Parameters
+    ----------
+    data : dict
+        The input dictionary.
 
-        exclude : list[str]
-            List of excluded keys to keep when traversing the data
+    exclude : list[str]
+        List of excluded keys to keep when traversing the data
 
-        Returns
-        -------
-        dict
-            Processed data with empty dictionary entries removed.
-        """
+    Returns
+    -------
+    dict
+        Processed data with empty dictionary entries removed.
+    """
     if not isinstance(data, dict):
         raise ValueError("Input must be a dictionary")
 
