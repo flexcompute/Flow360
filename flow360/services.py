@@ -278,7 +278,9 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
         for error in validation_errors:
             current = params_as_dict
             for field in error["loc"][:-1]:
-                if current.get(field):
+                if isinstance(field, int) and isinstance(current, list) and field in range(0, len(current)):
+                    current = current[field]
+                elif isinstance(field, str) and isinstance(current, dict) and current.get(field):
                     current = current.get(field)
                 else:
                     errors_as_list = list(error["loc"])

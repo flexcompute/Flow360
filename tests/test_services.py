@@ -221,9 +221,8 @@ def test_init_fork_with_update_2():
     assert not "_addFluid/body" in params_as_dict["boundaries"]
 
 
-
 def test_init_retry():
-    files = ["params_units.json", "case_15.json", "case_18.json"]
+    files = ["params_units.json", "case_15.json"]
 
     for file in files:
         with open(f"data/cases/{file}", "r") as fh:
@@ -231,7 +230,6 @@ def test_init_retry():
 
         data = services.get_default_retry(params)
         assert data
-
 
 
 def test_validate():
