@@ -17,19 +17,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'poetry'
       - name: Install black
-        run: pipx install black
+        run: poetry install --only=dev
       - name: Run black
-        run: black . --check
+        run: poetry run black . --check
 
   isort:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'poetry'
       - name: Install isort
-        run: pipx install isort
+        run: poetry install --only=dev
       - name: Run isort
-        run: isort . --check-only
+        run: poetry run isort . --check-only
 
   lint:
     runs-on: ubuntu-latest
