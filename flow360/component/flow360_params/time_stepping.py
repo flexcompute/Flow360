@@ -57,9 +57,9 @@ class AdaptiveCFL(Flow360BaseModel):
     type: Literal["adaptive"] = pd.Field("adaptive", const=True)
     min: Optional[PositiveFloat] = pd.Field(default=0.1)
     max: Optional[PositiveFloat] = pd.Field(default=10000)
-    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=50.0)
+    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange", default=1)
     convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
-        alias="convergenceLimitingFactor", default=1.0
+        alias="convergenceLimitingFactor", default=0.25
     )
 
 

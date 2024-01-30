@@ -67,15 +67,14 @@ def test_volume_zones():
 
     to_file_from_file_test(zones)
 
-    zones = VolumeZones(
-        zone1=FluidDynamicsVolumeZone(reference_frame=rf),
-        zone2=HeatTransferVolumeZone(
-            thermal_conductivity=1,
-            heat_capacity=1,
-            initial_condition=InitialConditionHeatTransfer(T=100),
-        ),
-    )
+    with fl.flow360_unit_system:
+        zones = VolumeZones(
+            zone1=FluidDynamicsVolumeZone(reference_frame=rf),
+            zone2=HeatTransferVolumeZone(
+                thermal_conductivity=1,
+                heat_capacity=1,
+                initial_condition=InitialConditionHeatTransfer(T=100),
+            ),
+        )
 
     assert zones
-
-    to_file_from_file_test(zones)

@@ -179,7 +179,8 @@ def test_case_boundary():
     to_file_from_file_test(param.boundaries)
 
     SolidAdiabaticWall()
-    SolidIsothermalWall(Temperature=10)
+    with fl.flow360_unit_system:
+        SolidIsothermalWall(Temperature=10)
 
     with pytest.raises(pd.ValidationError):
         SolidIsothermalWall(Temperature=-1)
@@ -211,7 +212,8 @@ def test_boundary_types():
     assert FreestreamBoundary().type == "Freestream"
     assert FreestreamBoundary(name="freestream")
 
-    assert IsothermalWall(Temperature=1).type == "IsothermalWall"
+    with fl.flow360_unit_system:
+        assert IsothermalWall(Temperature=1).type == "IsothermalWall"
     assert IsothermalWall(Temperature="exp(x)")
 
     if Flags.beta_features():
