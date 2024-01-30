@@ -1408,9 +1408,11 @@ class FreestreamLegacy(LegacyModel):
                 try_set(model["field"], "velocity", velocity)
 
             # Set velocity_ref
-            if model["field"].get("velocity"):
-                if model["field"].get("velocity") == 0:
+            velocity = model["field"].get("velocity")
+            if velocity is not None:
+                if velocity == 0:
                     model["field"]["modelType"] = "ZeroVelocity"
+                    model["field"]["velocity"] = 0
                 else:
                     model["field"]["modelType"] = "FromVelocity"
 
