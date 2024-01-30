@@ -24,7 +24,7 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install black
-        run: poetry install --only==dev
+        run: poetry install --only=dev
       - name: Run black
         run: poetry run black . --check
 
@@ -39,7 +39,7 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install isort
-        run: poetry install --only==dev
+        run: poetry install --only=dev
       - name: Run isort
         run: poetry run isort . --check-only
 
@@ -54,6 +54,6 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install dependencies
-        run: poetry install --only==dev
+        run: poetry install --only=dev
       - name: Run pylint
         run: poetry run pylint flow360 --rcfile .pylintrc
