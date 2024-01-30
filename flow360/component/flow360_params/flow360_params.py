@@ -89,8 +89,8 @@ from .solvers import (
     HeatEquationSolverLegacy,
     KOmegaSST,
     LinearSolver,
+    NavierStokesSolver,
     NavierStokesSolverLegacy,
-    NavierStokesSolverTypes,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
@@ -148,6 +148,7 @@ from .validations import (
 from .volume_zones import FluidDynamicsVolumeZone, VolumeZoneType
 
 if Flags.beta_features():
+    from .solvers import NavierStokesSolverTypes
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 
@@ -964,7 +965,6 @@ class Flow360Params(Flow360BaseModel):
     time_stepping: Optional[TimeStepping] = pd.Field(
         alias="timeStepping", default=SteadyTimeStepping(), discriminator="model_type"
     )
-    navier_stokes_solver: Optional[NavierStokesSolverTypes] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[TurbulenceModelSolverTypes] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
@@ -986,6 +986,13 @@ class Flow360Params(Flow360BaseModel):
     monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+
+    if Flags.beta_features():
+        navier_stokes_solver: Optional[NavierStokesSolverTypes] = pd.Field(
+            alias="navierStokesSolver"
+        )
+    else:
+        navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
 
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:

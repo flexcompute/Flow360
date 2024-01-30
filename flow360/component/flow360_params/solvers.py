@@ -199,55 +199,56 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         )
 
 
-class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
-    """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
+if Flags.beta_features():
 
-    Parameters
-    ----------
-    pressure_correction_solver :
-        Pressure correction solver settings
+    class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
+        """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
 
-    linear_solver:
-        Linear solver settings
+        Parameters
+        ----------
+        pressure_correction_solver :
+            Pressure correction solver settings
 
-    update_jacobian_frequency :
-        Frequency at which the jacobian is updated.
+        linear_solver:
+            Linear solver settings
 
-    equation_eval_frequency :
-        Frequency at which to update the incompressible NS equation in loosely-coupled simulations
+        update_jacobian_frequency :
+            Frequency at which the jacobian is updated.
 
-    Returns
-    -------
-    :class:`IncompressibleNavierStokesSolver`
-        An instance of the component class IncompressibleNavierStokesSolver.
+        equation_eval_frequency :
+            Frequency at which to update the incompressible NS equation in loosely-coupled simulations
 
-    Example
-    -------
-    >>> ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)
-    """
+        Returns
+        -------
+        :class:`IncompressibleNavierStokesSolver`
+            An instance of the component class IncompressibleNavierStokesSolver.
 
-    pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
-        alias="pressureCorrectionSolver"
-    )
-    update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
-        4, alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
-    )
-    equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
+        Example
+        -------
+        >>> ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)
+        """
 
-    if Flags.beta_features():
-        linear_solver: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
+        pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
+            alias="pressureCorrectionSolver"
         )
-
-    else:
-        linear_solver_config: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=30),
-            alias="linearSolverConfig",
-            displayed="Linear solver config",
+        update_jacobian_frequency: Optional[PositiveInt] = pd.Field(
+            4, alias="updateJacobianFrequency", displayed="Update Jacobian frequency"
         )
+        equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
 
+        if Flags.beta_features():
+            linear_solver: Optional[LinearSolver] = pd.Field(
+                LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
+            )
 
-NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
+        else:
+            linear_solver_config: Optional[LinearSolver] = pd.Field(
+                LinearSolver(max_iterations=30),
+                alias="linearSolverConfig",
+                displayed="Linear solver config",
+            )
+
+    NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
 
 class TurbulenceModelConstantsSA(Flow360BaseModel):

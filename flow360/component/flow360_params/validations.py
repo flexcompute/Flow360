@@ -4,6 +4,8 @@ validation logic
 
 from typing import NoReturn, Optional, Tuple
 
+from flow360.flags import Flags
+
 from ...log import log
 from .boundaries import (
     RotationallyPeriodic,
@@ -15,9 +17,11 @@ from .boundaries import (
 )
 from .flow360_fields import get_aliases
 from .initial_condition import ExpressionInitialCondition
-from .solvers import IncompressibleNavierStokesSolver
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
+
+if Flags.beta_features():
+    from .solvers import IncompressibleNavierStokesSolver
 
 
 def _check_tri_quad_boundaries(values):
