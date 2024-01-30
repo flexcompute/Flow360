@@ -222,7 +222,7 @@ def test_init_fork_with_update_2():
 
 
 def test_init_retry():
-    files = ["params_units.json", "case_15.json"]
+    files = ["params_units.json", "case_15.json", "case_18.json"]
 
     for file in files:
         with open(f"data/cases/{file}", "r") as fh:
