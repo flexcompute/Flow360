@@ -54,6 +54,6 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install dependencies
-        run: poetry install --only=dev
+        run: poetry install
       - name: Run pylint
         run: poetry run pylint flow360 --rcfile .pylintrc
