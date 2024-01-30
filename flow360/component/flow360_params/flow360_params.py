@@ -1,6 +1,7 @@
 """
 Flow360 solver parameters
 """
+
 # pylint: disable=too-many-lines
 # pylint: disable=unused-import
 from __future__ import annotations
@@ -128,6 +129,7 @@ from .unit_system import (
     u,
     unit_system_manager,
 )
+from .updater import updater
 from .validations import (
     _check_aero_acoustics,
     _check_bet_disks_3d_coefficients_in_polars,
@@ -1048,12 +1050,12 @@ class Flow360Params(Flow360BaseModel):
         else:
             model_dict = self._init_handle_file(filename=filename, **kwargs)
 
-        version = model_dict.get("version")
+        version = model_dict.pop("version", None)
         unit_system = model_dict.get("unitSystem")
         if version is not None and unit_system is not None:
             if version != __version__:
-                raise Flow360NotImplementedError(
-                    "No updater flow between versioned cases exists as of now."
+                model_dict = updater(
+                    version_from=version, version_to=__version__, params_as_dict=model_dict
                 )
             with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)

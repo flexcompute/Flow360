@@ -1,6 +1,7 @@
 """
 Module: custom_exception_wrapper for ValidationError
 """
+
 import sys
 import traceback
 

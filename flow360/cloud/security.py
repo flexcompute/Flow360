@@ -1,6 +1,7 @@
 """
 Security related functions.
 """
+
 from ..environment import Env
 from ..user_config import UserConfig
 

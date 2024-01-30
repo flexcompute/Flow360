@@ -1,6 +1,7 @@
 """
 Unit system definitions and utilities
 """
+
 # pylint: disable=too-many-lines
 from __future__ import annotations
 

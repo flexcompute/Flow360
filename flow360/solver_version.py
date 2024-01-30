@@ -1,6 +1,7 @@
 """
 Version control module
 """
+
 __version__ = "22.2.3.0"
 
 import re

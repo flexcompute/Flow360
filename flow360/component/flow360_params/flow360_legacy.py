@@ -4,6 +4,7 @@ specified in the documentation but can be used internally
 during validation, most legacy classes can be updated to
 the current standard via the update_model method)
 """
+
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
 

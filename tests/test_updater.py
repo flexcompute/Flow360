@@ -87,3 +87,11 @@ def test_updater_from_files():
     for file in files:
         params = fl.Flow360Params(f"data/cases/{file}")
         assert params
+
+
+def test_version_update():
+    files = ["test_version_b16.json"]
+
+    for file in files:
+        params = fl.Flow360Params(f"data/cases/{file}")
+        assert params

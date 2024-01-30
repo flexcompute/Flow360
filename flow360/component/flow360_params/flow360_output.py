@@ -1,6 +1,7 @@
 """
 Flow360 output parameters models
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta
