@@ -211,8 +211,12 @@ def test_update_from_multiple_files():
 
     to_file_from_file_test(params)
 
-    compare_to_ref(params, "ref/case_params/params.yaml")
-    compare_to_ref(params, "ref/case_params/params.json", content_only=True)
+    if Flags.beta_features():
+        compare_to_ref(params, "ref/case_params/params_beta.yaml")
+        compare_to_ref(params, "ref/case_params/params_beta.json", content_only=True)
+    else:
+        compare_to_ref(params, "ref/case_params/params.yaml")
+        compare_to_ref(params, "ref/case_params/params.json", content_only=True)
 
 
 def test_update_from_multiple_files_dont_overwrite():

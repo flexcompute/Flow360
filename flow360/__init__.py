@@ -70,11 +70,7 @@ from .component.flow360_params.flow360_params import (
     ZeroFreestreamFromVelocity,
     air,
 )
-from .component.flow360_params.solvers import (
-    IncompressibleNavierStokesSolver,
-    LinearSolver,
-    NavierStokesSolver,
-)
+from .component.flow360_params.solvers import LinearSolver, NavierStokesSolver
 from .component.flow360_params.time_stepping import (
     AdaptiveCFL,
     RampCFL,
@@ -107,4 +103,5 @@ from .version import __version__
 
 if Flags.beta_features():
     from .component.flow360_params.boundaries import HeatFluxWall, SupersonicInflow
+    from .component.flow360_params.solvers import IncompressibleNavierStokesSolver
     from .component.flow360_params.turbulence_quantities import TurbulenceQuantities

@@ -113,9 +113,9 @@ def test_heat_equation():
     assert he
 
     if Flags.beta_features():
-        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
     else:
-        compare_to_ref(he, "../ref/case_params/heat_equation/ref_old.json", content_only=True)
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
 
 
 def test_turbulence_none_solver():
