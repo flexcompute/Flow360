@@ -338,7 +338,7 @@ class DimensionedType(ValidatedType):
                 value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
-                if not isinstance(value, Collection) and len(value) != 3:
+                if len(value) != 3:
                     raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
@@ -431,7 +431,6 @@ class TemperatureType(DimensionedType):
 
     @classmethod
     def validate(cls, value):
-
         value = super(cls, cls).validate(value)
 
         if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
