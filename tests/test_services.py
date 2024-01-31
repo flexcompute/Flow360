@@ -219,3 +219,27 @@ def test_init_fork_with_update_2():
     assert params_as_dict["timeStepping"]["_addCFL"] == True
     assert "fluid/body" in params_as_dict["boundaries"]
     assert not "_addFluid/body" in params_as_dict["boundaries"]
+
+
+def test_init_retry():
+    files = ["params_units.json", "case_15.json", "case_18.json"]
+
+    for file in files:
+        with open(f"data/cases/{file}", "r") as fh:
+            params = json.load(fh)
+
+        data = services.get_default_retry(params)
+        assert data
+
+
+def test_validate():
+    files = ["case_16.json"]
+
+    for file in files:
+        with open(f"data/cases/{file}", "r") as fh:
+            params = json.load(fh)
+
+        errors, warning = services.validate_flow360_params_model(
+            params_as_dict=params, unit_system_name="SI"
+        )
+        print(errors)

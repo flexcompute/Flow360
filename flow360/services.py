@@ -186,6 +186,40 @@ def remove_dimensioned_type_none_leaves(data):
     return data
 
 
+def remove_empty_entries(data, exclude):
+    """
+    Recursively removes empty dictionaries apart from excluded keys
+
+    Parameters
+    ----------
+    data : dict
+        The input dictionary.
+
+    exclude : list[str]
+        List of excluded keys to keep when traversing the data
+
+    Returns
+    -------
+    dict
+        Processed data with empty dictionary entries removed.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("Input must be a dictionary")
+
+    for key, value in list(data.items()):
+        if isinstance(value, dict):
+            if value:
+                remove_empty_entries(value, exclude)
+            elif key not in exclude:
+                del data[key]
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    remove_empty_entries(item, exclude)
+
+    return data
+
+
 def get_default_params(unit_system_name):
     """
     Returns default parameters in a given unit system. The defaults are not correct Flow360Params object as they may
@@ -226,6 +260,8 @@ def get_default_retry(params_as_dict):
     Returns Flow360Params object for a retry request. It will perform update if neccessary.
     """
 
+    remove_empty_entries(params_as_dict, exclude=["boundaries"])
+
     params = Flow360Params(legacy_fallback=True, **params_as_dict)
     return params
 
@@ -234,6 +270,8 @@ def get_default_fork(params_as_dict):
     """
     Returns Flow360Params object for a retry request. It will perform update if neccessary.
     """
+
+    remove_empty_entries(params_as_dict, exclude=["boundaries"])
 
     params = Flow360Params(legacy_fallback=True, **params_as_dict)
     return params
@@ -251,6 +289,9 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
     params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
 
     params_as_dict["unitSystem"] = unit_system.dict()
+
+    remove_empty_entries(params_as_dict, exclude=["boundaries"])
+
     values, fields_set, validation_errors = pd.validate_model(Flow360Params, params_as_dict)
     print(f"{values=}")
     print(f"{fields_set=}")
@@ -278,7 +319,13 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
         for error in validation_errors:
             current = params_as_dict
             for field in error["loc"][:-1]:
-                if current.get(field):
+                if (
+                    isinstance(field, int)
+                    and isinstance(current, list)
+                    and field in range(0, len(current))
+                ):
+                    current = current[field]
+                elif isinstance(field, str) and isinstance(current, dict) and current.get(field):
                     current = current.get(field)
                 else:
                     errors_as_list = list(error["loc"])

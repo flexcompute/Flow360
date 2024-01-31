@@ -185,6 +185,12 @@ class Flow360BaseModel(BaseModel):
         super().__init__(**model_dict)
 
     @classmethod
+    def _init_handle_dict(cls, **kwargs):
+        model_dict = kwargs
+        model_dict = cls._init_handle_hash(model_dict)
+        return model_dict
+
+    @classmethod
     def _init_handle_file(cls, filename: str = None, **kwargs):
         if filename is not None:
             return cls.dict_from_file(filename=filename)
