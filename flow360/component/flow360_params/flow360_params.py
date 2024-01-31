@@ -1495,15 +1495,19 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
             }
         }
 
+        time_step = model["field"]["timeStepSize"]
+
+        steady_state = isinstance(time_step, str) and time_step == "inf"
+
         if (
-            model["field"]["timeStepSize"] != "inf"
+            steady_state
             and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             try_add_unit(model["field"], "timeStepSize", step_unit)
 
-        if model["field"]["timeStepSize"] == "inf" and model["field"]["physicalSteps"] == 1:
+        if steady_state and model["field"]["physicalSteps"] == 1:
             model["field"]["modelType"] = "Steady"
         else:
             model["field"]["modelType"] = "Unsteady"
