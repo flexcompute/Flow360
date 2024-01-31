@@ -32,6 +32,7 @@
     },
     "isoSurfaces": {
       "additionalProperties": {
+        "title": "Iso surface",
         "type": "object",
         "properties": {
           "surfaceField": {
