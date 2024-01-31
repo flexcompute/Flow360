@@ -1544,10 +1544,27 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
+        if model["referenceFrame"].get("omegaRadians") is not None:
+            model["referenceFrame"]["modelType"] = "OmegaRadians"
+
+        if model["referenceFrame"].get("omegaDegrees") is not None:
+            model["referenceFrame"]["modelType"] = "OmegaDegrees"
+
+        if (
+            model["referenceFrame"].get("thetaRadians") is not None
+            or model["referenceFrame"].get("thetaDegrees") is not None
+        ):
+            model["referenceFrame"]["modelType"] = "Expression"
+
+        if model["referenceFrame"].get("isDynamic") is not None:
+            model["referenceFrame"]["modelType"] = "Dynamic"
+
         if self.comments is not None and self.comments.get("rpm") is not None:
             # pylint: disable=no-member
             omega = self.comments["rpm"] * u.rpm
             try_set(model["referenceFrame"], "omega", omega)
+            model["referenceFrame"]["modelType"] = "ReferenceFrame"
+
             if model["referenceFrame"].get("omegaRadians") is not None:
                 del model["referenceFrame"]["omegaRadians"]
             if model["referenceFrame"].get("omegaDegrees") is not None:
