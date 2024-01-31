@@ -70,8 +70,6 @@ SurfaceFieldNames = Literal[
     CommonFieldNames,
     "CfVec",
     "Cf",
-    "CfNormal",
-    "CfTangent",
     "heatFlux",
     "nodeNormals",
     "nodeForcesPerUnitArea",
