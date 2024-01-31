@@ -92,6 +92,7 @@ class ReferenceFrameExpression(Flow360BaseModel):
 
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
+    parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
 
