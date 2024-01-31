@@ -201,7 +201,10 @@ class DimensionedType(ValidatedType):
         value = _unit_inference_validator(value, cls.dim_name)
         value = _has_dimensions_validator(value, cls.dim)
 
-        return 1.0 * value
+        if isinstance(value, u.Unit):
+            return 1.0 * value
+
+        return value
 
     # pylint: disable=unused-argument
     @classmethod
@@ -425,6 +428,18 @@ class TemperatureType(DimensionedType):
 
     dim = u.dimensions.temperature
     dim_name = "temperature"
+
+    @classmethod
+    def validate(cls, value):
+
+        value = super(cls, cls).validate(value)
+
+        if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
+            raise ValueError(
+                f"Temperature cannot be lower or equal to absolute zero {value} == {value.to('K')}"
+            )
+
+        return value
 
 
 class VelocityType(DimensionedType):
