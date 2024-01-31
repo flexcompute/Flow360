@@ -54,10 +54,8 @@ CommonFieldNames = Literal[
 
 SurfaceFieldNamesFull = Literal[
     CommonFieldNamesFull,
-    "Viscous stress coefficient vector",
+    "Skin friction coefficient vector",
     "Magnitude of CfVec",
-    "Magnitude of CfVec normal to the wall",
-    "Magnitude of CfVec tangent to the wall",
     "Non-dimensional heat flux",
     "Wall normals",
     "Spalart-Allmaras variable",
