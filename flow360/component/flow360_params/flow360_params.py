@@ -97,6 +97,7 @@ from .solvers import (
     SpalartAllmaras,
     TransitionModelSolver,
     TransitionModelSolverLegacy,
+    TransitionModelSolverTypes,
     TurbulenceModelSolverLegacy,
     TurbulenceModelSolverType,
 )
@@ -393,8 +394,8 @@ class Boundaries(Flow360SortableBaseModel):
         Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall, HeatFluxWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
                                         SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
-                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall,
-                                        SymmetryPlane]
+                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall, 
+                                        RiemannInvariant, VelocityInflow, PressureOutflow, SymmetryPlane]
 
     Returns
     -------
@@ -972,7 +973,7 @@ class Flow360Params(Flow360BaseModel):
     turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
-    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
+    transition_model_solver: Optional[TransitionModelSolverTypes] = pd.Field(
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")

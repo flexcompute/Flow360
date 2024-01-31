@@ -20,6 +20,7 @@ from .component.flow360_params.boundaries import (
     MassInflow,
     MassOutflow,
     NoSlipWall,
+    RiemannInvariant,
     SlidingInterfaceBoundary,
     SlipWall,
     SolidAdiabaticWall,
@@ -104,8 +105,10 @@ from .version import __version__
 if Flags.beta_features():
     from .component.flow360_params.boundaries import (
         HeatFluxWall,
-        SupersonicInflow,
         SymmetryPlane,
+        PressureOutflow,
+        SupersonicInflow,
+        VelocityInflow,
     )
     from .component.flow360_params.solvers import IncompressibleNavierStokesSolver
     from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
