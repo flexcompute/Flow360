@@ -486,3 +486,18 @@ def test_params_temperature_consistency():
                     temperature=300.15 * u.K, density=1.225 * u.kg / u.m**3
                 ),
             )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirDensityTemperature(temperature=-2 * u.K, density=1.225 * u.kg / u.m**3),
+        )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirDensityTemperature(temperature=-288.15 * u.degC, density=1.225 * u.kg / u.m**3),
+        )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),
+        )

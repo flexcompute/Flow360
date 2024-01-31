@@ -706,9 +706,9 @@ class _FluidProperties(Flow360BaseModel):
     """
 
     temperature: TemperatureType = pd.Field()
-    pressure: PressureType = pd.Field()
-    density: DensityType = pd.Field()
-    viscosity: ViscosityType = pd.Field()
+    pressure: PressureType.Positive = pd.Field()
+    density: DensityType.Positive = pd.Field()
+    viscosity: ViscosityType.Positive = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
         """returns an instance of _FluidProperties"""
@@ -730,7 +730,7 @@ class AirPressureTemperature(Flow360BaseModel):
     """
 
     model_type: Literal["AirPressure"] = pd.Field("AirPressure", alias="modelType", const=True)
-    pressure: PressureType = pd.Field()
+    pressure: PressureType.Positive = pd.Field()
     temperature: TemperatureType = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
@@ -763,8 +763,8 @@ class AirDensityTemperature(Flow360BaseModel):
     """
 
     model_type: Literal["AirDensity"] = pd.Field("AirDensity", alias="modelType", const=True)
+    density: DensityType.Positive = pd.Field()
     temperature: TemperatureType = pd.Field()
-    density: DensityType = pd.Field()
 
     def to_fluid_properties(self) -> _FluidProperties:
         """Converts the instance to _FluidProperties, incorporating temperature, pressure, density, and viscosity."""
