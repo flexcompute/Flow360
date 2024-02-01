@@ -59,7 +59,7 @@
     },
     "startAverageIntegrationStep": {
       "title": "Start average integration step",
-      "type": "boolean"
+      "type": "integer"
     },
     "outputFields": {
       "title": "Output fields",
