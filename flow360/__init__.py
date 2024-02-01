@@ -110,9 +110,9 @@ from .version import __version__
 if Flags.beta_features():
     from .component.flow360_params.boundaries import (
         HeatFluxWall,
-        SymmetryPlane,
         PressureOutflow,
         SupersonicInflow,
+        SymmetryPlane,
         VelocityInflow,
     )
     from .component.flow360_params.solvers import IncompressibleNavierStokesSolver

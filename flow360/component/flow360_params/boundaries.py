@@ -11,7 +11,7 @@ from pydantic import StrictStr
 from flow360.component.flow360_params.unit_system import PressureType
 from flow360.flags import Flags
 
-from ..types import Axis, NonNegativeFloat, PositiveFloat, PositiveInt, Vector
+from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from .params_base import Flow360BaseModel
 from .unit_system import VelocityType
 
@@ -321,7 +321,9 @@ if Flags.beta_features():
 
         type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", const=True)
 
+
 if Flags.beta_features():
+
     class VelocityInflow(BoundaryWithTurbulenceQuantities):
         """Inflow velocity for incompressible solver"""
 
