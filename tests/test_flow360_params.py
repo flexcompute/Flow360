@@ -499,7 +499,5 @@ def test_params_temperature_consistency():
 
     with pytest.raises(pd.ValidationError):
         fluid_properties = (
-            fl.AirPressureTemperature(
-                temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2
-            ),
+            fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),
         )
