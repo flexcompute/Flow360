@@ -547,7 +547,7 @@ class FreestreamFromMach(FreestreamBase):
         """
         returns configuration object in flow360 units system
         """
-        return self
+        return self.copy()
 
 
 class FreestreamFromMachReynolds(FreestreamBase):
@@ -568,7 +568,7 @@ class FreestreamFromMachReynolds(FreestreamBase):
         """
         returns configuration object in flow360 units system
         """
-        return self
+        return self.copy()
 
 
 class ZeroFreestream(FreestreamBase):
@@ -587,7 +587,7 @@ class ZeroFreestream(FreestreamBase):
         """
         returns configuration object in flow360 units system
         """
-        return self
+        return self.copy()
 
 
 class FreestreamFromVelocity(FreestreamBase):
