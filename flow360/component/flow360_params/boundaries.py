@@ -8,6 +8,7 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic as pd
 from pydantic import StrictStr
 
+from flow360.component.flow360_params.unit_system import PressureType
 from flow360.flags import Flags
 
 from ..types import Axis, NonNegativeFloat, PositiveFloat, PositiveInt, Vector
@@ -334,7 +335,7 @@ if Flags.beta_features():
         """Outflow pressure for incompressible solver"""
 
         type: Literal["PressureOutflow"] = pd.Field("PressureOutflow", const=True)
-        static_pressure: Optional[NonNegativeFloat] = pd.Field(alias="staticPressure")
+        static_pressure: Optional[PressureType] = pd.Field(alias="staticPressure")
         length_scale_factor: Optional[PositiveFloat] = pd.Field(alias="lengthScaleFactor")
 
 
