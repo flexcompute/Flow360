@@ -9,6 +9,7 @@ import hashlib
 import json
 import re
 from abc import ABCMeta, abstractmethod
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
@@ -637,7 +638,7 @@ class Flow360BaseModel(BaseModel):
         extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
-        self_dict = self.__dict__.copy()
+        self_dict = deepcopy(self.__dict__)
 
         if exclude is None:
             exclude = []
