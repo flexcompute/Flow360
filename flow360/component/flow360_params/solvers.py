@@ -249,7 +249,7 @@ if Flags.beta_features():
                 displayed="Linear solver config",
             )
 
-    NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
+    NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
 
 class TurbulenceModelConstantsSA(Flow360BaseModel):
@@ -405,7 +405,7 @@ class NoneSolver(Flow360BaseModel):
     model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
 
 
-TurbulenceModelSolverTypes = Union[NoneSolver, SpalartAllmaras, KOmegaSST]
+TurbulenceModelSolverType = Union[NoneSolver, SpalartAllmaras, KOmegaSST]
 
 
 class HeatEquationSolver(Flow360BaseModel):

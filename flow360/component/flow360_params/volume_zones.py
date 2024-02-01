@@ -245,10 +245,19 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
     T_solid: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
 
+ReferenceFrameType = Union[
+    ReferenceFrame,
+    ReferenceFrameOmegaRadians,
+    ReferenceFrameOmegaDegrees,
+    ReferenceFrameExpression,
+    ReferenceFrameDynamic,
+]
+
+
 class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
-    model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
+    model_type: Literal["HeatTransfer"] = pd.Field("HeatTransfer", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource", options=["Value", "Expression"]
@@ -261,14 +270,9 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
-    reference_frame: Optional[
-        Union[
-            ReferenceFrame,
-            ReferenceFrameOmegaRadians,
-            ReferenceFrameExpression,
-            ReferenceFrameDynamic,
-        ]
-    ] = pd.Field(alias="referenceFrame", discriminator="model_type")
+    reference_frame: Optional[ReferenceFrameType] = pd.Field(
+        alias="referenceFrame", discriminator="model_type"
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> FluidDynamicsVolumeZone:
