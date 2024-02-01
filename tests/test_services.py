@@ -1,4 +1,5 @@
 import json
+import tempfile
 
 import pytest
 
@@ -243,3 +244,37 @@ def test_validate():
             params_as_dict=params, unit_system_name="SI"
         )
         print(errors)
+
+
+def test_submit_and_retry():
+    params_data = {
+        "geometry": {
+            "refArea": {"units": "m**2", "value": None},
+            "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "meshUnit": {"units": "m", "value": 1.0},
+        },
+        "boundaries": {},
+        "freestream": {
+            "modelType": "FromMach",
+            "muRef": 0.00000168,
+            "Mach": 0.182,
+            "MachRef": 0.54,
+            "Temperature": 288.15,
+            "alphaAngle": -90,
+            "betaAngle": 0,
+        },
+        "fluidProperties": {
+            "modelType": "AirDensity",
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 1.225, "units": "kg/m**3"},
+        },
+    }
+
+    params, solver_dict = services.handle_case_submit(params_data, "SI")
+
+    temp_file_user = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+    params.to_json(temp_file_user.name)
+
+    with open(temp_file_user.name, "r") as fh:
+        params = json.load(fh)
+    data = services.get_default_retry(params)
