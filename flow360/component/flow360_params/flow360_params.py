@@ -393,7 +393,8 @@ class Boundaries(Flow360SortableBaseModel):
         Supported boundary types: Union[NoSlipWall, SlipWall, FreestreamBoundary, IsothermalWall, HeatFluxWall,
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
                                         SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
-                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall]
+                                        MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall,
+                                        SymmetryPlane]
 
     Returns
     -------

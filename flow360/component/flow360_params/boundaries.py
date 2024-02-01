@@ -299,6 +299,14 @@ class RotationallyPeriodic(Boundary):
 
 
 if Flags.beta_features():
+
+    class SymmetryPlane(Boundary):
+        """Symmetry plane boundary - normal gradients forced to be zero"""
+
+        type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", const=True)
+
+
+if Flags.beta_features():
     BoundaryType = Union[
         NoSlipWall,
         SlipWall,
@@ -317,6 +325,7 @@ if Flags.beta_features():
         SolidAdiabaticWall,
         TranslationallyPeriodic,
         RotationallyPeriodic,
+        SymmetryPlane,
     ]
 else:
     BoundaryType = Union[
