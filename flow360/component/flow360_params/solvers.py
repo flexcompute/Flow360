@@ -254,7 +254,7 @@ if Flags.beta_features():
 
         model_type: Literal["Incompressible"] = pd.Field("Incompressible", alias="modelType")
 
-    NavierStokesSolverTypes = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
+    NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
 
 class TurbulenceModelConstantsSA(Flow360BaseModel):
@@ -515,7 +515,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         )
 
 
-TransitionModelSolverTypes = Union[NoneSolver, TransitionModelSolver]
+TransitionModelSolverType = Union[NoneSolver, TransitionModelSolver]
 
 # Legacy models for Flow360 updater, do not expose
 

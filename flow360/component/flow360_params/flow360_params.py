@@ -97,7 +97,7 @@ from .solvers import (
     SpalartAllmaras,
     TransitionModelSolver,
     TransitionModelSolverLegacy,
-    TransitionModelSolverTypes,
+    TransitionModelSolverType,
     TurbulenceModelSolverLegacy,
     TurbulenceModelSolverType,
 )
@@ -152,7 +152,7 @@ from .validations import (
 from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
 
 if Flags.beta_features():
-    from .solvers import NavierStokesSolverTypes
+    from .solvers import NavierStokesSolverType
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 
@@ -973,7 +973,7 @@ class Flow360Params(Flow360BaseModel):
     turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
-    transition_model_solver: Optional[TransitionModelSolverTypes] = pd.Field(
+    transition_model_solver: Optional[TransitionModelSolverType] = pd.Field(
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")
@@ -993,7 +993,7 @@ class Flow360Params(Flow360BaseModel):
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     if Flags.beta_features():
-        navier_stokes_solver: Optional[NavierStokesSolverTypes] = pd.Field(
+        navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(
             alias="navierStokesSolver"
         )
     else:
