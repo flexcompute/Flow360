@@ -296,26 +296,13 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
     print(f"{values=}")
     print(f"{fields_set=}")
 
-    # Gather dependency errors stemming from solver conversion if no validation errors exist
-    if validation_errors is None:
-        try:
-            with unit_system:
-                params = Flow360Params.parse_obj(params_as_dict)
-            params.to_solver()
-        except Flow360ConfigurationError as exc:
-            validation_errors = [
-                {"loc": exc.field, "msg": exc.msg, "type": "configuration_error"},
-                {"loc": exc.dependency, "msg": exc.msg, "type": "configuration_error"},
-            ]
-    else:
-        validation_errors = validation_errors.errors()
-
     print(f"{validation_errors=}")
 
     validation_warnings = None
 
     # Check if all validation loc paths are valid params dict paths that can be traversed
     if validation_errors is not None:
+        validation_errors = validation_errors.errors()
         for error in validation_errors:
             current = params_as_dict
             for field in error["loc"][:-1]:
@@ -331,10 +318,19 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
                     errors_as_list = list(error["loc"])
                     errors_as_list.remove(field)
                     error["loc"] = tuple(errors_as_list)
+    else:
+        # Gather dependency errors stemming from solver conversion if no validation errors exist
+        try:
+            with unit_system:
+                params = Flow360Params.parse_obj(params_as_dict)
+            params.to_solver()
+        except Flow360ConfigurationError as exc:
+            validation_errors = [
+                {"loc": exc.field, "msg": exc.msg, "type": "configuration_error"},
+                {"loc": exc.dependency, "msg": exc.msg, "type": "configuration_error"},
+            ]
 
-        return validation_errors, validation_warnings
-
-    return None, validation_warnings
+    return validation_errors, validation_warnings
 
 
 def handle_case_submit(params_as_dict, unit_system_name):
