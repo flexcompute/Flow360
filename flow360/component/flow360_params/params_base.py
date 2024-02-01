@@ -654,12 +654,16 @@ class Flow360BaseModel(BaseModel):
         for property_name, value in self_dict.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
+            loc_name = property_name
+            field = self.__fields__.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
             if need_conversion(value):
                 log.debug(f"   -> need conversion for: {property_name} = {value}")
                 flow360_conv_system = unit_converter(
                     value.units.dimensions,
                     params=params,
-                    required_by=[*required_by, property_name],
+                    required_by=[*required_by, loc_name],
                 )
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
@@ -704,9 +708,13 @@ class Flow360BaseModel(BaseModel):
         for property_name, value in self.__dict__.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
+            loc_name = property_name
+            field = self.__fields__.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.to_solver(
-                    params, required_by=[*required_by, property_name]
+                    params, required_by=[*required_by, loc_name]
                 )
         return self.__class__(**solver_values)
 
