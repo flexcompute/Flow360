@@ -152,7 +152,7 @@ from .validations import (
 from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
 
 if Flags.beta_features():
-    from .solvers import NavierStokesSolverType
+    from .solvers import NavierStokesSolverTypes
     from .turbulence_quantities import TurbulenceQuantitiesType
 
 
@@ -993,7 +993,7 @@ class Flow360Params(Flow360BaseModel):
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     if Flags.beta_features():
-        navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(
+        navier_stokes_solver: Optional[NavierStokesSolverTypes] = pd.Field(
             alias="navierStokesSolver"
         )
     else:

@@ -199,7 +199,8 @@ class NavierStokesSolver(GenericFlowSolverSettings):
             displayed="Linear solver config",
         )
 
-    model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType")
+    if Flags.beta_features():
+        model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType")
 
 
 if Flags.beta_features():

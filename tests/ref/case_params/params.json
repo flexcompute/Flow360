@@ -51,7 +51,6 @@
         "updateJacobianFrequency": 4,
         "equationEvalFrequency": 1,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
         "orderOfAccuracy": 2,
         "numericalDissipationFactor": 1.0,
         "linearSolverConfig": {
@@ -133,5 +132,5 @@
             }
         }
     },
-    "hash": "27bb91b666ede1b6749fe358c7f5cdb859f2bfa816084b9d913e00dca86bdc45"
+    "hash": "2a4b16682810295896194c98bfab5b6430fe578939f4591af8b171e357e671bf"
 }
