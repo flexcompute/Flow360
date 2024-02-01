@@ -91,6 +91,7 @@
     "zone2": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 1.0471975511965976,
           "units": "rad/s"
@@ -113,6 +114,7 @@
     "zone3": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 60.0,
           "units": "degree/s"
@@ -135,6 +137,7 @@
     "zone1": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 10.0,
           "units": "rpm"
@@ -155,5 +158,5 @@
       }
     }
   },
-  "hash": "2d7dd69275cc7663c45be9fdd5aea83347eb98727f26edf7698ec9633efe610a"
+  "hash": "86a14eb5ad092edaf67b8a99a3331e7554faae5d55eda23b4e66cd27a46cf283"
 }

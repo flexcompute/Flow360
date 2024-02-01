@@ -25,7 +25,17 @@ from .params_base import Flow360BaseModel
 from .unit_system import AngularVelocityType, LengthType
 
 
-class ReferenceFrameDynamic(Flow360BaseModel):
+class ReferenceFrameBase(Flow360BaseModel):
+    """Base reference frame class"""
+
+    model_type: str = pd.Field(alias="modelType")
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        exclude_on_flow360_export = ["model_type"]
+
+
+class ReferenceFrameDynamic(ReferenceFrameBase):
     """:class:`ReferenceFrameDynamic` class for setting up dynamic reference frame
 
     Parameters
@@ -49,12 +59,13 @@ class ReferenceFrameDynamic(Flow360BaseModel):
         )
     """
 
+    model_type: Literal["Dynamic"] = pd.Field("Dynamic", alias="modelType", const=True)
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
     is_dynamic: bool = pd.Field(True, alias="isDynamic", const=True)
 
 
-class ReferenceFrameExpression(Flow360BaseModel):
+class ReferenceFrameExpression(ReferenceFrameBase):
     """:class:`ReferenceFrameExpression` class for setting up reference frame using expression
 
     Parameters
@@ -90,6 +101,7 @@ class ReferenceFrameExpression(Flow360BaseModel):
         )
     """
 
+    model_type: Literal["Expression"] = pd.Field("Expression", alias="modelType", const=True)
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
@@ -97,14 +109,14 @@ class ReferenceFrameExpression(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
+    class Config(ReferenceFrameBase.Config):
         require_one_of = [
             "theta_radians",
             "theta_degrees",
         ]
 
 
-class ReferenceFrameOmegaRadians(Flow360BaseModel):
+class ReferenceFrameOmegaRadians(ReferenceFrameBase):
     """:class:`ReferenceFrameOmegaRadians` class for setting up reference frame
 
     Parameters
@@ -126,6 +138,7 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
 
     """
 
+    model_type: Literal["OmegaRadians"] = pd.Field("OmegaRadians", alias="modelType", const=True)
     omega_radians: float = pd.Field(alias="omegaRadians")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
@@ -138,7 +151,7 @@ class ReferenceFrameOmegaRadians(Flow360BaseModel):
         return super().to_solver(params, **kwargs)
 
 
-class ReferenceFrameOmegaDegrees(Flow360BaseModel):
+class ReferenceFrameOmegaDegrees(ReferenceFrameBase):
     """:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame
 
     Parameters
@@ -160,6 +173,7 @@ class ReferenceFrameOmegaDegrees(Flow360BaseModel):
 
     """
 
+    model_type: Literal["OmegaDegrees"] = pd.Field("OmegaDegrees", alias="modelType", const=True)
     omega_degrees: float = pd.Field(alias="omegaDegrees")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
@@ -172,7 +186,7 @@ class ReferenceFrameOmegaDegrees(Flow360BaseModel):
         return super().to_solver(params, **kwargs)
 
 
-class ReferenceFrame(Flow360BaseModel):
+class ReferenceFrame(ReferenceFrameBase):
     """:class:`ReferenceFrame` class for setting up reference frame
 
     Parameters
@@ -201,6 +215,9 @@ class ReferenceFrame(Flow360BaseModel):
         )
     """
 
+    model_type: Literal["ReferenceFrame"] = pd.Field(
+        "ReferenceFrame", alias="modelType", const=True
+    )
     omega: AngularVelocityType = pd.Field()
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
@@ -213,6 +230,7 @@ class ReferenceFrame(Flow360BaseModel):
 
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         omega_radians = solver_values.pop("omega").value
+        solver_values.pop("model_type", None)
         return ReferenceFrameOmegaRadians(omega_radians=omega_radians, **solver_values)
 
 
@@ -228,10 +246,19 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
     T_solid: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
 
+ReferenceFrameType = Union[
+    ReferenceFrame,
+    ReferenceFrameOmegaRadians,
+    ReferenceFrameOmegaDegrees,
+    ReferenceFrameExpression,
+    ReferenceFrameDynamic,
+]
+
+
 class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
-    model_type = pd.Field("HeatTransfer", alias="modelType", const=True)
+    model_type: Literal["HeatTransfer"] = pd.Field("HeatTransfer", alias="modelType", const=True)
     thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
     volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource", options=["Value", "Expression"]
@@ -244,14 +271,9 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
     """FluidDynamicsVolumeZone type"""
 
     model_type = pd.Field("FluidDynamics", alias="modelType", const=True)
-    reference_frame: Optional[
-        Union[
-            ReferenceFrame,
-            ReferenceFrameOmegaRadians,
-            ReferenceFrameExpression,
-            ReferenceFrameDynamic,
-        ]
-    ] = pd.Field(alias="referenceFrame")
+    reference_frame: Optional[ReferenceFrameType] = pd.Field(
+        alias="referenceFrame", discriminator="model_type"
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> FluidDynamicsVolumeZone:
