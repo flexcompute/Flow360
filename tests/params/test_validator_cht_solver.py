@@ -209,7 +209,7 @@ def test_cht_solver_has_heat_transfer_zone():
                 "blk-1": HeatTransferVolumeZone(
                     thermal_conductivity=0.1,
                     heat_capacity=0.1,
-                    initial_condition=InitialConditionHeatTransfer(T_solid=1.2),
+                    initial_condition=InitialConditionHeatTransfer(T=1.2),
                 ),
                 "blk-2": FluidDynamicsVolumeZone(),
             },
@@ -251,7 +251,7 @@ def test_cht_solver_has_heat_transfer_zone():
             volume_zones={
                 "blk-1": HeatTransferVolumeZone(
                     thermal_conductivity=0.1,
-                    initial_condition=InitialConditionHeatTransfer(T_solid=1.1),
+                    initial_condition=InitialConditionHeatTransfer(T=1.1),
                 ),
                 "blk-2": FluidDynamicsVolumeZone(),
             },

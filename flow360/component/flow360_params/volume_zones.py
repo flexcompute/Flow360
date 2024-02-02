@@ -22,7 +22,7 @@ from ..types import (
     Vector,
 )
 from .params_base import Flow360BaseModel
-from .unit_system import AngularVelocityType, LengthType
+from .unit_system import AngularVelocityType, LengthType, TemperatureType
 
 
 class ReferenceFrameBase(Flow360BaseModel):
@@ -243,7 +243,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
+    T: Union[TemperatureType, StrictStr] = pd.Field(options=["Value", "Expression"])
 
 
 ReferenceFrameType = Union[
