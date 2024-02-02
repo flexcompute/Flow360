@@ -54,6 +54,8 @@ def test_bet_disks_good():
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
+        param.to_flow360_json("tmp.json")
+
         param = Flow360Params(
             bet_disks=[
                 BETDisk(
