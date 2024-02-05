@@ -40,6 +40,9 @@ from .component.flow360_params.flow360_params import (
     AnimationSettings,
     AnimationSettingsExtended,
     BETDisk,
+    BETDiskChord,
+    BETDiskSectionalPolar,
+    BETDiskTwist,
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
@@ -101,7 +104,17 @@ from .component.flow360_params.volume_zones import (
     ReferenceFrameOmegaRadians,
 )
 from .component.folder import Folder
-from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
+from .component.meshing.params import (
+    Aniso,
+    Edges,
+    Face,
+    Faces,
+    ProjectAniso,
+    SurfaceMeshingParams,
+    UseAdjacent,
+    Volume,
+    VolumeMeshingParams,
+)
 from .component.surface_mesh import SurfaceMesh
 from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
