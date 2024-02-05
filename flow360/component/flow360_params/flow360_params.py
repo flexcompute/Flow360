@@ -940,11 +940,10 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     name: str = pd.Field(alias="dynamicsName")
     input_vars: List[str] = pd.Field(alias="inputVars")
-    constants: Optional[Dict] = pd.Field()
-    output_vars: Union[Dict] = pd.Field(alias="outputVars")
+    constants: Optional[Dict[str, float]] = pd.Field()
+    output_vars: Optional[Dict[str, str]] = pd.Field(alias="outputVars")
     state_vars_initial_value: List[str] = pd.Field(alias="stateVarsInitialValue")
     update_law: List[str] = pd.Field(alias="updateLaw")
-    output_law: List[str] = pd.Field(alias="outputLaw")
     input_boundary_patches: List[str] = pd.Field(alias="inputBoundaryPatches")
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
