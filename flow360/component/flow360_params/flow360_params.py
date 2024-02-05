@@ -541,7 +541,9 @@ class FreestreamFromMach(FreestreamBase):
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -562,7 +564,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     Reynolds: PositiveFloat = pd.Field(displayed="Reynolds number")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -581,7 +585,9 @@ class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True, displayed="Mach number")
     Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
