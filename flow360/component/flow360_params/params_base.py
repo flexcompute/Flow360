@@ -716,6 +716,13 @@ class Flow360BaseModel(BaseModel):
                 solver_values[property_name] = value.to_solver(
                     params, required_by=[*required_by, loc_name]
                 )
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, Flow360BaseModel):
+                        solver_values[property_name][i] = item.to_solver(
+                            params, required_by=[*required_by, loc_name, f"{i}"]
+                        )
+
         return self.__class__(**solver_values)
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
