@@ -75,6 +75,7 @@
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -94,6 +95,7 @@
         "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.077331758193797e-06,
                 "centerOfRotation": {
                     "value": [
@@ -113,6 +115,7 @@
         "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -130,5 +133,5 @@
             }
         }
     },
-    "hash": "04cc771d432476ced6a1c6dbb9f2bb9a441f21a82d0f4681da52f198eec8d15c"
+    "hash": "66b47811c1861aac5f79d19c3f1280cc91e3a6a2b3d0214edde3c025438fc782"
 }

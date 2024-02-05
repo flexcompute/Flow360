@@ -31,6 +31,8 @@ polars = [BETDiskSectionalPolar(lift_coeffs=lift_coeffs, drag_coeffs=drag_coeffs
 def test_bet_disks_good():
     with fl.SI_unit_system:
         param = Flow360Params(
+            geometry=fl.Geometry(mesh_unit=1),
+            fluid_properties=fl.air,
             bet_disks=[
                 BETDisk(
                     alphas=[-2, 5],
@@ -51,8 +53,9 @@ def test_bet_disks_good():
                 ),
             ],
             boundaries={},
-            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
         )
+        param.flow360_json()
 
         param = Flow360Params(
             bet_disks=[

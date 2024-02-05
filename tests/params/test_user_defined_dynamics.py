@@ -25,10 +25,6 @@ def test_user_defined_dynamics():
             "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];",
         ],
         output_target_name="target",
-        output_law=[
-            "if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
-            "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];",
-        ],
         inputBoundaryPatches=["fluid/wall"],
     )
 

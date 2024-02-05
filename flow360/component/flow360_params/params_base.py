@@ -9,6 +9,7 @@ import hashlib
 import json
 import re
 from abc import ABCMeta, abstractmethod
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
@@ -637,7 +638,7 @@ class Flow360BaseModel(BaseModel):
         extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
-        self_dict = self.__dict__.copy()
+        self_dict = deepcopy(self.__dict__)
 
         if exclude is None:
             exclude = []
@@ -653,12 +654,16 @@ class Flow360BaseModel(BaseModel):
         for property_name, value in self_dict.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
+            loc_name = property_name
+            field = self.__fields__.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
             if need_conversion(value):
                 log.debug(f"   -> need conversion for: {property_name} = {value}")
                 flow360_conv_system = unit_converter(
                     value.units.dimensions,
                     params=params,
-                    required_by=[*required_by, property_name],
+                    required_by=[*required_by, loc_name],
                 )
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
@@ -703,10 +708,21 @@ class Flow360BaseModel(BaseModel):
         for property_name, value in self.__dict__.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
+            loc_name = property_name
+            field = self.__fields__.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.to_solver(
-                    params, required_by=[*required_by, property_name]
+                    params, required_by=[*required_by, loc_name]
                 )
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, Flow360BaseModel):
+                        solver_values[property_name][i] = item.to_solver(
+                            params, required_by=[*required_by, loc_name, f"{i}"]
+                        )
+
         return self.__class__(**solver_values)
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:

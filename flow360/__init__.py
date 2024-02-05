@@ -89,6 +89,10 @@ from .component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     ReferenceFrame,
+    ReferenceFrameDynamic,
+    ReferenceFrameExpression,
+    ReferenceFrameOmegaDegrees,
+    ReferenceFrameOmegaRadians,
 )
 from .component.folder import Folder
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams
@@ -102,6 +106,10 @@ from .user_config import UserConfig
 from .version import __version__
 
 if Flags.beta_features():
-    from .component.flow360_params.boundaries import HeatFluxWall, SupersonicInflow
+    from .component.flow360_params.boundaries import (
+        HeatFluxWall,
+        SupersonicInflow,
+        SymmetryPlane,
+    )
     from .component.flow360_params.solvers import IncompressibleNavierStokesSolver
     from .component.flow360_params.turbulence_quantities import TurbulenceQuantities

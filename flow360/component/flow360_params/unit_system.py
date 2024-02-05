@@ -855,7 +855,7 @@ class UnitSystem(pd.BaseModel):
         """Construct a unit system from the provided dictionary"""
 
         class _TemporaryModel(pd.BaseModel):
-            unit_system: UnitSystemTypes = pd.Field(discriminator="name")
+            unit_system: UnitSystemType = pd.Field(discriminator="name")
 
         params = {"unit_system": kwargs}
         model = _TemporaryModel(**params)
@@ -1108,7 +1108,7 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
         yield cls.validate
 
 
-UnitSystemTypes = Union[
+UnitSystemType = Union[
     SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
 ]
 
