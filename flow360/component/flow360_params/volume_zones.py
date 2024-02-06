@@ -234,7 +234,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T_solid: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
+    T: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
 
 ReferenceFrameType = Union[
