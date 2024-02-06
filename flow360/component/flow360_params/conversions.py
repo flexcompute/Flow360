@@ -105,9 +105,9 @@ def require(required_parameter, required_by, params):
 
     if hasattr(value, "units") and str(value.units).startswith("flow360"):
         raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameter)} must be in physical units ({required_msg}).',
+            f'{" -> ".join(required_parameter + ["units"])} must be in physical units ({required_msg}).',
             field=required_by,
-            dependency=required_parameter,
+            dependency=required_parameter + ["units"],
         )
 
 

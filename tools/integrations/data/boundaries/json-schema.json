@@ -307,29 +307,20 @@
             "title": "Velocity direction",
             "anyOf": [
               {
-                "properties": {
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "strictType": {
-                      "type": "vector3"
-                    }
+                "type": "array",
+                "items": [
+                  {
+                    "type": "number"
                   },
-                  "units": {
-                    "type": "string",
-                    "dimension": "velocity",
-                    "enum": [
-                      "m/s",
-                      "cm/s",
-                      "ft/s",
-                      "flow360_velocity_unit"
-                    ]
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
                   }
-                }
+                ],
+                "minItems": 3,
+                "maxItems": 3
               },
               {
                 "type": "array",

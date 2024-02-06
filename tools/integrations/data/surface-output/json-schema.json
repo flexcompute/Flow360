@@ -59,7 +59,7 @@
     },
     "startAverageIntegrationStep": {
       "title": "Start average integration step",
-      "type": "boolean"
+      "type": "integer"
     },
     "outputFields": {
       "title": "Output fields",
@@ -104,6 +104,7 @@
     },
     "surfaces": {
       "additionalProperties": {
+        "title": "Surface",
         "type": "object",
         "properties": {
           "outputFields": {

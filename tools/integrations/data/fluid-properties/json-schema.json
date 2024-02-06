@@ -13,32 +13,18 @@
           "const": "AirDensity",
           "type": "string"
         },
-        "temperature": {
-          "title": "Temperature",
-          "properties": {
-            "value": {
-              "type": "number"
-            },
-            "units": {
-              "type": "string",
-              "dimension": "temperature",
-              "enum": [
-                "K",
-                "R",
-                "flow360_temperature_unit"
-              ]
-            }
-          }
-        },
         "density": {
           "title": "Density",
           "properties": {
             "value": {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "default": 1.225
             },
             "units": {
               "type": "string",
               "dimension": "density",
+              "default": "kg/m**3",
               "enum": [
                 "kg/m**3",
                 "g/cm**3",
@@ -47,11 +33,30 @@
               ]
             }
           }
+        },
+        "temperature": {
+          "title": "Temperature",
+          "properties": {
+            "value": {
+              "type": "number",
+              "default": 288.15
+            },
+            "units": {
+              "type": "string",
+              "dimension": "temperature",
+              "default": "K",
+              "enum": [
+                "K",
+                "R",
+                "flow360_temperature_unit"
+              ]
+            }
+          }
         }
       },
       "required": [
-        "temperature",
-        "density"
+        "density",
+        "temperature"
       ],
       "additionalProperties": false
     },
@@ -69,11 +74,14 @@
           "title": "Pressure",
           "properties": {
             "value": {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "default": 101325
             },
             "units": {
               "type": "string",
               "dimension": "pressure",
+              "default": "Pa",
               "enum": [
                 "Pa",
                 "dyn/cm**2",
@@ -87,11 +95,13 @@
           "title": "Temperature",
           "properties": {
             "value": {
-              "type": "number"
+              "type": "number",
+              "default": 288.15
             },
             "units": {
               "type": "string",
               "dimension": "temperature",
+              "default": "K",
               "enum": [
                 "K",
                 "R",

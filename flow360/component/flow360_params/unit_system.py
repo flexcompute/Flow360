@@ -201,7 +201,10 @@ class DimensionedType(ValidatedType):
         value = _unit_inference_validator(value, cls.dim_name)
         value = _has_dimensions_validator(value, cls.dim)
 
-        return 1.0 * value
+        if isinstance(value, u.Unit):
+            return 1.0 * value
+
+        return value
 
     # pylint: disable=unused-argument
     @classmethod
@@ -335,7 +338,11 @@ class DimensionedType(ValidatedType):
                 value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
-                if not isinstance(value, Collection) and len(value) != 3:
+                is_collection = isinstance(value, Collection) or (
+                    isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                )
+
+                if not is_collection or len(value) != 3:
                     raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
@@ -425,6 +432,17 @@ class TemperatureType(DimensionedType):
 
     dim = u.dimensions.temperature
     dim_name = "temperature"
+
+    @classmethod
+    def validate(cls, value):
+        value = super(cls, cls).validate(value)
+
+        if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
+            raise ValueError(
+                f"Temperature cannot be lower or equal to absolute zero {value} == {value.to('K')}"
+            )
+
+        return value
 
 
 class VelocityType(DimensionedType):
@@ -837,7 +855,7 @@ class UnitSystem(pd.BaseModel):
         """Construct a unit system from the provided dictionary"""
 
         class _TemporaryModel(pd.BaseModel):
-            unit_system: UnitSystemTypes = pd.Field(discriminator="name")
+            unit_system: UnitSystemType = pd.Field(discriminator="name")
 
         params = {"unit_system": kwargs}
         model = _TemporaryModel(**params)
@@ -1090,7 +1108,7 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
         yield cls.validate
 
 
-UnitSystemTypes = Union[
+UnitSystemType = Union[
     SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
 ]
 

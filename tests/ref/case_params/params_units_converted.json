@@ -28,7 +28,8 @@
     "boundaries": {
         "3": {
             "type": "Freestream",
-            "name": "freestream"
+            "name": "freestream",
+            "velocityType": "relative"
         },
         "1": {
             "type": "NoSlipWall",
@@ -40,7 +41,8 @@
                     0.0024488628042510802
                 ],
                 "units": "flow360_velocity_unit"
-            }
+            },
+            "velocityType": "relative"
         },
         "2": {
             "type": "SlipWall",
@@ -75,6 +77,7 @@
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -94,6 +97,7 @@
         "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.077331758193797e-06,
                 "centerOfRotation": {
                     "value": [
@@ -113,6 +117,7 @@
         "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -130,5 +135,5 @@
             }
         }
     },
-    "hash": "04cc771d432476ced6a1c6dbb9f2bb9a441f21a82d0f4681da52f198eec8d15c"
+    "hash": "88a2627e287e3b2b4ec5e491edb9e9621d294bde29a288e3f7e6cef75c9b2ef7"
 }

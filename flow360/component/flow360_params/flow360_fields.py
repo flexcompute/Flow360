@@ -26,6 +26,7 @@ CommonFieldNamesFull = Literal[
     "Wall distance",
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
+    "Velocity with respect to non-inertial frame",
 ]
 
 CommonFieldNames = Literal[
@@ -50,6 +51,7 @@ CommonFieldNames = Literal[
     "wallDistance",
     "numericalDissipationFactor",
     "residualHeatSolver",
+    "VelocityRelative",
 ]
 
 SurfaceFieldNamesFull = Literal[
@@ -61,7 +63,6 @@ SurfaceFieldNamesFull = Literal[
     "Non-dimensional heat flux",
     "Wall normals",
     "Spalart-Allmaras variable",
-    "Velocity in rotating frame",
     "Non-dimensional wall distance",
     "Wall function metrics",
 ]
@@ -75,7 +76,6 @@ SurfaceFieldNames = Literal[
     "heatFlux",
     "nodeNormals",
     "nodeForcesPerUnitArea",
-    "VelocityRelative",
     "yPlus",
     "wallFunctionMetric",
 ]

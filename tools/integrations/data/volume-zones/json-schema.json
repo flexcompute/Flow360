@@ -36,6 +36,12 @@
                         "title": "Reference frame",
                         "type": "object",
                         "properties": {
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "ReferenceFrame",
+                            "const": "ReferenceFrame",
+                            "type": "string"
+                          },
                           "omega": {
                             "title": "Omega",
                             "properties": {
@@ -109,12 +115,22 @@
                         "title": "Reference frame expression",
                         "type": "object",
                         "properties": {
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "Expression",
+                            "const": "Expression",
+                            "type": "string"
+                          },
                           "thetaRadians": {
                             "title": "Theta radians",
                             "type": "string"
                           },
                           "thetaDegrees": {
                             "title": "Theta degrees",
+                            "type": "string"
+                          },
+                          "parentVolumeName": {
+                            "title": "Parent volume name",
                             "type": "string"
                           },
                           "centerOfRotation": {
@@ -173,6 +189,12 @@
                         "title": "Reference frame dynamic",
                         "type": "object",
                         "properties": {
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "Dynamic",
+                            "const": "Dynamic",
+                            "type": "string"
+                          },
                           "centerOfRotation": {
                             "title": "Center of rotation",
                             "properties": {
