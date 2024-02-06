@@ -351,14 +351,16 @@ def test_unit_system():
     assert all(coord == 1 * u.m for coord in data.ax)
     assert all(coord == 1 * u.rad / u.s for coord in data.omega)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="arg '\[1 1 1 1\] m' needs to be a collection of 3 values",
+    ):
         data = VectorDataWithUnits(
             pt=(1, 1, 1, 1) * u.m,
-            vec=(0, 0, 0) * u.m / u.s,
+            vec=(1, 0, 0) * u.m / u.s,
             ax=(1, 1, 1) * u.m,
             omega=(1, 1, 1) * u.rad / u.s,
         )
-
     with pytest.raises(ValueError):
         data = VectorDataWithUnits(
             pt=(1, 1, 1) * u.m,

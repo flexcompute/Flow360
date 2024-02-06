@@ -95,6 +95,10 @@ from .component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     ReferenceFrame,
+    ReferenceFrameDynamic,
+    ReferenceFrameExpression,
+    ReferenceFrameOmegaDegrees,
+    ReferenceFrameOmegaRadians,
 )
 from .component.folder import Folder
 from .component.meshing.params import SurfaceMeshingParams, VolumeMeshingParams

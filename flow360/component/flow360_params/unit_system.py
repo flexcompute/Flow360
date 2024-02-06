@@ -338,7 +338,11 @@ class DimensionedType(ValidatedType):
                 value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
-                if not isinstance(value, Collection) and len(value) != 3:
+                is_collection = isinstance(value, Collection) or (
+                    isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                )
+
+                if not is_collection or len(value) != 3:
                     raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")

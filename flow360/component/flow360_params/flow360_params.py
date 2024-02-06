@@ -541,7 +541,9 @@ class FreestreamFromMach(FreestreamBase):
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -562,7 +564,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     Reynolds: PositiveFloat = pd.Field(displayed="Reynolds number")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -581,7 +585,9 @@ class ZeroFreestream(FreestreamBase):
     Mach: Literal[0] = pd.Field(0, const=True, displayed="Mach number")
     Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: PositiveFloat = pd.Field(alias="Temperature", displayed="Temperature [K]")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
+        alias="Temperature", displayed="Temperature [K]"
+    )
 
     # pylint: disable=arguments-differ, unused-argument
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
@@ -940,11 +946,10 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     name: str = pd.Field(alias="dynamicsName")
     input_vars: List[str] = pd.Field(alias="inputVars")
-    constants: Optional[Dict] = pd.Field()
-    output_vars: Union[Dict] = pd.Field(alias="outputVars")
+    constants: Optional[Dict[str, float]] = pd.Field()
+    output_vars: Optional[Dict[str, str]] = pd.Field(alias="outputVars")
     state_vars_initial_value: List[str] = pd.Field(alias="stateVarsInitialValue")
     update_law: List[str] = pd.Field(alias="updateLaw")
-    output_law: List[str] = pd.Field(alias="outputLaw")
     input_boundary_patches: List[str] = pd.Field(alias="inputBoundaryPatches")
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
