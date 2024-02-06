@@ -20,6 +20,7 @@ from .component.flow360_params.boundaries import (
     MassInflow,
     MassOutflow,
     NoSlipWall,
+    RiemannInvariant,
     SlidingInterfaceBoundary,
     SlipWall,
     SolidAdiabaticWall,
@@ -27,6 +28,7 @@ from .component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
+    TranslationallyPeriodic,
     WallFunction,
 )
 from .component.flow360_params.flow360_output import Slice, Slices
@@ -70,6 +72,10 @@ from .component.flow360_params.flow360_params import (
     ZeroFreestreamFromVelocity,
     air,
 )
+from .component.flow360_params.initial_condition import (
+    ExpressionInitialCondition,
+    FreestreamInitialCondition,
+)
 from .component.flow360_params.solvers import LinearSolver, NavierStokesSolver
 from .component.flow360_params.time_stepping import (
     AdaptiveCFL,
@@ -108,8 +114,10 @@ from .version import __version__
 if Flags.beta_features():
     from .component.flow360_params.boundaries import (
         HeatFluxWall,
+        PressureOutflow,
         SupersonicInflow,
         SymmetryPlane,
+        VelocityInflow,
     )
     from .component.flow360_params.solvers import IncompressibleNavierStokesSolver
     from .component.flow360_params.turbulence_quantities import TurbulenceQuantities

@@ -47,7 +47,8 @@
     },
     "3": {
       "type": "Freestream",
-      "name": "freestream"
+      "name": "freestream",
+      "velocityType": "relative"
     },
     "1": {
       "type": "NoSlipWall",
@@ -59,7 +60,8 @@
           3
         ],
         "units": "km/hr"
-      }
+      },
+      "velocityType": "relative"
     }
   },
   "timeStepping": {
@@ -158,5 +160,5 @@
       }
     }
   },
-  "hash": "86a14eb5ad092edaf67b8a99a3331e7554faae5d55eda23b4e66cd27a46cf283"
+  "hash": "89859b9fe51a0ee4ad8d7d03f3990211001b3e80cb6ecefb33f9b4df71e43686"
 }

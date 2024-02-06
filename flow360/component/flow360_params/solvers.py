@@ -199,6 +199,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
             displayed="Linear solver config",
         )
 
+    if Flags.beta_features():
+        model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType")
+
 
 if Flags.beta_features():
 
@@ -248,6 +251,8 @@ if Flags.beta_features():
                 alias="linearSolverConfig",
                 displayed="Linear solver config",
             )
+
+        model_type: Literal["Incompressible"] = pd.Field("Incompressible", alias="modelType")
 
     NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
@@ -495,7 +500,7 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         alias="turbulenceIntensityPercent"
     )
-    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(8.15, alias="Ncrit")
+    N_crit: Optional[pd.confloat(ge=1, le=11)] = pd.Field(alias="Ncrit")
 
     if Flags.beta_features():
         linear_solver: Optional[LinearSolver] = pd.Field(

@@ -8,6 +8,7 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic as pd
 from pydantic import StrictStr
 
+from flow360.component.flow360_params.unit_system import PressureType
 from flow360.flags import Flags
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
@@ -46,12 +47,21 @@ class NoSlipWall(Boundary):
 
     type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
+        default="relative", alias="velocityType"
+    )
 
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
 
     type: Literal["SlipWall"] = pd.Field("SlipWall", const=True)
+
+
+class RiemannInvariant(Boundary):
+    """Riemann Invariant boundary"""
+
+    type: Literal["RiemannInvariant"] = pd.Field("RiemannInvariant", const=True)
 
 
 if Flags.beta_features():
@@ -61,6 +71,9 @@ if Flags.beta_features():
 
         type: Literal["Freestream"] = pd.Field("Freestream", const=True)
         velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+        velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
+            default="relative", alias="velocityType"
+        )
 
 else:
 
@@ -69,6 +82,9 @@ else:
 
         type: Literal["Freestream"] = pd.Field("Freestream", const=True)
         velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+        velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
+            default="relative", alias="velocityType"
+        )
 
 
 class IsothermalWall(Boundary):
@@ -307,6 +323,25 @@ if Flags.beta_features():
 
 
 if Flags.beta_features():
+
+    class VelocityInflow(BoundaryWithTurbulenceQuantities):
+        """Inflow velocity for incompressible solver"""
+
+        type: Literal["VelocityInflow"] = pd.Field("VelocityInflow", const=True)
+        velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+
+if Flags.beta_features():
+
+    class PressureOutflow(BoundaryWithTurbulenceQuantities):
+        """Outflow pressure for incompressible solver"""
+
+        type: Literal["PressureOutflow"] = pd.Field("PressureOutflow", const=True)
+        static_pressure: Optional[PressureType] = pd.Field(alias="staticPressure")
+        length_scale_factor: Optional[PositiveFloat] = pd.Field(alias="lengthScaleFactor")
+
+
+if Flags.beta_features():
     BoundaryType = Union[
         NoSlipWall,
         SlipWall,
@@ -326,6 +361,9 @@ if Flags.beta_features():
         TranslationallyPeriodic,
         RotationallyPeriodic,
         SymmetryPlane,
+        RiemannInvariant,
+        VelocityInflow,
+        PressureOutflow,
     ]
 else:
     BoundaryType = Union[
@@ -344,4 +382,5 @@ else:
         SolidAdiabaticWall,
         TranslationallyPeriodic,
         RotationallyPeriodic,
+        RiemannInvariant,
     ]

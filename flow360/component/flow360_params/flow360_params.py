@@ -394,7 +394,7 @@ class Boundaries(Flow360SortableBaseModel):
                                         SubsonicOutflowPressure, SubsonicOutflowMach, SubsonicInflow,
                                         SupersonicInflow, SlidingInterfaceBoundary, WallFunction,
                                         MassInflow, MassOutflow, SolidIsothermalWall, SolidAdiabaticWall,
-                                        SymmetryPlane]
+                                        RiemannInvariant, VelocityInflow, PressureOutflow, SymmetryPlane]
 
     Returns
     -------
