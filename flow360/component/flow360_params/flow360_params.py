@@ -97,7 +97,6 @@ from .solvers import (
     SpalartAllmaras,
     TransitionModelSolver,
     TransitionModelSolverLegacy,
-    TransitionModelSolverType,
     TurbulenceModelSolverLegacy,
     TurbulenceModelSolverType,
 )
@@ -973,7 +972,7 @@ class Flow360Params(Flow360BaseModel):
     turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(
         alias="turbulenceModelSolver", discriminator="model_type"
     )
-    transition_model_solver: Optional[TransitionModelSolverType] = pd.Field(
+    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
         alias="transitionModelSolver"
     )
     heat_equation_solver: Optional[HeatEquationSolver] = pd.Field(alias="heatEquationSolver")

@@ -515,8 +515,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         )
 
 
-TransitionModelSolverType = Union[NoneSolver, TransitionModelSolver]
-
 # Legacy models for Flow360 updater, do not expose
 
 
