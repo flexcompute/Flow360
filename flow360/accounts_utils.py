@@ -110,6 +110,8 @@ class AccountsUtils:
         """
         shared_accounts = self._get_company_users() + self._get_supported_users()
 
+        shared_accounts.sort(key=lambda user: user["userEmail"])
+
         if len(shared_accounts) == 0:
             log.info("There are no accounts shared with the current user")
             return
