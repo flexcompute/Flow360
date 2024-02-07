@@ -34,11 +34,10 @@ class RampCFL(Flow360BaseModel):
     final: Optional[PositiveFloat] = pd.Field(default=200)
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps", default=40)
 
-    askedForDefault = True
+    askedForDefault = True  # User wants to use default
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # If kwargs is not empty, set __noArgInConst to False
         self.askedForDefault = not bool(kwargs)
 
     class Config(Flow360BaseModel.Config):
@@ -65,11 +64,11 @@ class AdaptiveCFL(Flow360BaseModel):
         alias="convergenceLimitingFactor", default=0.25
     )
 
-    askedForDefault = True
+    askedForDefault = True  # User wants to use default
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # If kwargs is not empty, set __noArgInConst to False
+
         self.askedForDefault = not bool(kwargs)
 
     class Config(Flow360BaseModel.Config):
