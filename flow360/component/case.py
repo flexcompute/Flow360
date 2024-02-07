@@ -745,11 +745,39 @@ class TotalForcesResultCSVModel(ResultCSVModel):
     csv_file_name: str = pd.Field("total_forces_v2.csv", const=True)
 
 
-from .flow360_params.unit_system import ForceType, flow360_unit_system
+from .flow360_params.unit_system import ForceType, PowerType, MomentType, flow360_unit_system
 from .flow360_params.conversions import unit_converter
 
-class _ActuatorDiskResults(pd.BaseModel):
+
+
+class _DimensionedCSVResultModel(pd.BaseModel):
+    _name: str
+
+    def _in_base_component(self, base, component, component_name, params):
+        log.debug(f"   -> need conversion for: {component_name} = {component}")
+
+        flow360_conv_system = unit_converter(
+            component.units.dimensions,
+            params=params,
+            required_by=[self._name, component_name],
+        )
+
+        converted = component.in_base(base, flow360_conv_system)
+        log.debug(f"      converted to: {converted}")
+        return converted
+
+
+class _ActuatorDiskResults(_DimensionedCSVResultModel):
+    power: PowerType.Array = pd.Field()
     force: ForceType.Array = pd.Field()
+    moment: MomentType.Array = pd.Field()
+    _name = 'actuator_disks'
+
+    def to_base(self, base, params):
+        self.power = self._in_base_component(base, self.power, "power", params)
+        self.force = self._in_base_component(base, self.force, "force", params)
+        self.moment = self._in_base_component(base, self.moment, "moment", params)
+
 
 
 class ActuatorDiskResultCSVModel(ResultCSVModel):
@@ -757,23 +785,71 @@ class ActuatorDiskResultCSVModel(ResultCSVModel):
 
     def in_base(self, base, params):
         '''values in base system'''
-        discs = []
         disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
         print(disk_names)
         with flow360_unit_system:
-            ad = _ActuatorDiskResults(force=self.values['Disk0_Force'])
+            for disk_name in disk_names:
+                ad = _ActuatorDiskResults(power=self.values[f'{disk_name}_Power'], force=self.values[f'{disk_name}_Force'], moment=self.values[f'{disk_name}_Moment'])
+                ad.to_base(base, params)
+                self.values[f'{disk_name}_Power'] = ad.power
+                self.values[f'{disk_name}_Force'] = ad.force
+                self.values[f'{disk_name}_Moment'] = ad.power
 
-        log.debug(f"   -> need conversion for: force = {ad.force}")
-        flow360_conv_system = unit_converter(
-            ad.force.units.dimensions,
-            params=params,
-            required_by=['force'],
-        )
-        converted = ad.force.in_base(base, flow360_conv_system)
-        self.values['Disk0_Force'] = converted
-        self.values['ForceUnits'] = converted
+                self.values[f'PowerUnits'] = ad.power.units
+                self.values[f'ForceUnits'] = ad.force.units
+                self.values[f'MomentUnits'] = ad.moment.units
 
-        log.debug(f"      converted to: {converted}")
+
+ 
+class _BETDiskResults(_DimensionedCSVResultModel):
+    force_x: ForceType.Array = pd.Field()
+    force_y: ForceType.Array = pd.Field()
+    force_z: ForceType.Array = pd.Field()
+    moment_x: MomentType.Array = pd.Field()
+    moment_y: MomentType.Array = pd.Field()
+    moment_z: MomentType.Array = pd.Field()
+
+    _name = 'bet_forces'
+
+    def to_base(self, base, params):
+        self.force_x = self._in_base_component(base, self.force_x, "force_x", params)
+        self.force_y = self._in_base_component(base, self.force_y, "force_y", params)
+        self.force_z = self._in_base_component(base, self.force_z, "force_z", params)
+        self.moment_x = self._in_base_component(base, self.moment_x, "moment_x", params)
+        self.moment_y = self._in_base_component(base, self.moment_y, "moment_y", params)
+        self.moment_z = self._in_base_component(base, self.moment_z, "moment_z", params)
+
+
+class BETForcesResultCSVModel(ResultCSVModel):
+    csv_file_name: str = pd.Field("bet_forces_v2.csv", const=True)
+
+    def in_base(self, base, params):
+        '''values in base system'''
+        disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
+        print(disk_names)
+        with flow360_unit_system:
+            for disk_name in disk_names:
+                bet = _BETDiskResults(force_x=self.values[f'{disk_name}_Force_x'], 
+                                     force_y=self.values[f'{disk_name}_Force_y'],
+                                     force_z=self.values[f'{disk_name}_Force_z'],
+                                     moment_x=self.values[f'{disk_name}_Moment_x'],
+                                     moment_y=self.values[f'{disk_name}_Moment_y'],
+                                     moment_z=self.values[f'{disk_name}_Moment_z'])
+                bet.to_base(base, params)
+
+                self.values[f'{disk_name}_Force_x'] = bet.force_x
+                # self.values[f'{disk_name}_Force'] = ad.force
+                # self.values[f'{disk_name}_Moment'] = ad.power
+
+                # self.values[f'PowerUnits'] = ad.power.units
+                # self.values[f'ForceUnits'] = ad.force.units
+                # self.values[f'MomentUnits'] = ad.moment.units
+
+
+ 
+
+
+
 
 
 class ResultsDownloaderSettings(pd.BaseModel):
@@ -796,7 +872,8 @@ class ResultsDownloaderSettings(pd.BaseModel):
 class CaseResultsModel(pd.BaseModel):
     residuals: ResidualsResultCSVModel = pd.Field(ResidualsResultCSVModel(), const=True)
     total_forces: TotalForcesResultCSVModel = pd.Field(TotalForcesResultCSVModel(), const=True)
-    actuator_disk: ActuatorDiskResultCSVModel = pd.Field(ActuatorDiskResultCSVModel(), const=True)
+    actuator_disks: ActuatorDiskResultCSVModel = pd.Field(ActuatorDiskResultCSVModel(), const=True)
+    bet_forces: BETForcesResultCSVModel = pd.Field(BETForcesResultCSVModel(), const=True)
 
     case: Any = pd.Field()
 

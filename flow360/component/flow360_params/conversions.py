@@ -9,7 +9,7 @@ from typing import Callable, List
 import pydantic as pd
 
 from ...exceptions import Flow360ConfigurationError
-from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u, ForceType, ViscosityType
+from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u, ForceType, PowerType, ViscosityType, MomentType
 
 
 class ExtraDimensionedProperty(pd.BaseModel):
@@ -194,6 +194,23 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_force.v.item()
 
+    def get_base_moment():
+        base_length = get_base_length() * u.m
+        base_force = get_base_force() * u.N
+        base_moment = base_force * base_length
+        MomentType.validate(base_moment)
+
+        return base_moment.v.item()
+
+    def get_base_power():
+        base_length = get_base_length() * u.m
+        base_density = get_base_density() * u.kg / u.m**3
+        base_velocity = get_base_velocity() * u.m / u.s
+        base_power = base_velocity**3 * base_density * base_length**2
+        PowerType.validate(base_power)
+
+        return base_power.v.item()
+
     def get_base_heat_flux():
         base_density = get_base_density() * u.kg / u.m**3
         base_velocity = get_base_velocity()
@@ -236,6 +253,14 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     elif dimension == u.dimensions.force:
         base_force = get_base_force()
         flow360_conversion_unit_system.base_force = base_force
+
+    elif dimension == u.dimensions.moment:
+        base_moment = get_base_moment()
+        flow360_conversion_unit_system.base_moment = base_moment
+
+    elif dimension == u.dimensions.power:
+        base_power = get_base_power()
+        flow360_conversion_unit_system.base_power = base_power
 
     elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()

@@ -20,6 +20,7 @@ from ...utils import classproperty
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
 u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
+u.dimensions.moment = u.dimensions.force * u.dimensions.length
 
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
@@ -27,6 +28,8 @@ u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
@@ -34,6 +37,8 @@ u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
@@ -41,6 +46,8 @@ u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 
 
 class UnitSystemManager:
@@ -466,6 +473,20 @@ class ViscosityType(DimensionedType):
     dim_name = "viscosity"
 
 
+class PowerType(DimensionedType):
+    """:class: PowerType"""
+
+    dim = u.dimensions.power
+    dim_name = "power"
+
+
+class MomentType(DimensionedType):
+    """:class: MomentType"""
+
+    dim = u.dimensions.moment
+    dim_name = "moment"
+
+
 class AngularVelocityType(DimensionedType):
     """:class: AngularVelocityType"""
 
@@ -710,6 +731,20 @@ class Flow360ViscosityUnit(_Flow360BaseUnit):
     unit_name = "flow360_viscosity_unit"
 
 
+class Flow360PowerUnit(_Flow360BaseUnit):
+    """:class: Flow360PowerUnit"""
+
+    dimension_type = PowerType
+    unit_name = "flow360_power_unit"
+
+
+class Flow360MomentUnit(_Flow360BaseUnit):
+    """:class: Flow360MomentUnit"""
+
+    dimension_type = MomentType
+    unit_name = "flow360_moment_unit"
+
+
 class Flow360AngularVelocityUnit(_Flow360BaseUnit):
     """:class: Flow360AngularVelocityUnit"""
 
@@ -774,6 +809,8 @@ class UnitSystem(pd.BaseModel):
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
+    power: PowerType = pd.Field()
+    moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
     _verbose: bool = pd.PrivateAttr(True)
@@ -789,6 +826,8 @@ class UnitSystem(pd.BaseModel):
         "pressure",
         "density",
         "viscosity",
+        "power",
+        "moment",
         "angular_velocity",
         "heat_flux",
     ]
@@ -844,7 +883,7 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
+        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
         """
 
         defaults = {}
@@ -892,6 +931,8 @@ flow360_force_unit = Flow360ForceUnit()
 flow360_pressure_unit = Flow360PressureUnit()
 flow360_density_unit = Flow360DensityUnit()
 flow360_viscosity_unit = Flow360ViscosityUnit()
+flow360_power_unit = Flow360PowerUnit()
+flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
 
@@ -909,6 +950,8 @@ _flow360_system = {
         flow360_pressure_unit,
         flow360_density_unit,
         flow360_viscosity_unit,
+        flow360_power_unit,
+        flow360_moment_unit,
         flow360_angular_velocity_unit,
         flow360_heat_flux_unit,
     ]
@@ -932,6 +975,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_density: float = pd.Field(np.inf, target_dimension=Flow360DensityUnit)
     base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
     base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
+    base_power: float = pd.Field(np.inf, target_dimension=Flow360PowerUnit)
+    base_moment: float = pd.Field(np.inf, target_dimension=Flow360MomentUnit)
     base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
     base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
     registry: Any = pd.Field(allow_mutation=False)
@@ -969,6 +1014,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["density"] = "flow360_density_unit"
         conversion_system["pressure"] = "flow360_pressure_unit"
         conversion_system["viscosity"] = "flow360_viscosity_unit"
+        conversion_system["power"] = "flow360_power_unit"
+        conversion_system["moment"] = "flow360_moment_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
         conversion_system["heat_flux"] = "flow360_heat_flux_unit"
         super().__init__(registry=registry, conversion_system=conversion_system)
