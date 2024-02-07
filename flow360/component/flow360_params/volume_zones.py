@@ -31,6 +31,7 @@ class ReferenceFrameBase(Flow360BaseModel):
     model_type: str = pd.Field(alias="modelType")
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
+    parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -103,7 +104,6 @@ class ReferenceFrameExpression(ReferenceFrameBase):
     model_type: Literal["Expression"] = pd.Field("Expression", alias="modelType", const=True)
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
-    parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(ReferenceFrameBase.Config):
