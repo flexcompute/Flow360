@@ -38,13 +38,13 @@ from ...exceptions import (
 from ...log import log
 from ...user_config import UserConfig
 from ...version import __version__
-from ..constants import constants
 from ..types import (
     Axis,
     Coordinate,
     NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
+    Size,
     Vector,
 )
 from ..utils import _get_value_or_none
@@ -155,6 +155,7 @@ from .validations import (
 from .volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
+    PorousMediumVolumeZone,
     ReferenceFrameType,
     VolumeZoneType,
 )
@@ -943,8 +944,22 @@ class BETDisk(Flow360BaseModel):
         return _check_bet_disks_3d_coefficients_in_polars(values)
 
 
-class PorousMediumVolumeZone(Flow360BaseModel):
-    """:class:`PorousMediumVolumeZone` class"""
+# pylint: disable=too-few-public-methods
+class PorousMedium(PorousMediumVolumeZone):
+    """:class:`PorousMedium` class"""
+
+    zone_type: Literal["box"] = pd.Field("box", alias="zoneType", const=True)
+    center: LengthType.Point = pd.Field()
+    lengths: LengthType.Moment = pd.Field()
+    windowing_lengths: Optional[Size] = pd.Field(alias="windowingLengths")
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        exclude_on_flow360_export = ["model_type"]
+
+
+class PorousMediumVolumeZoneLegacy(Flow360BaseModel):
+    """:class:`PorousMediumVolumeZoneLegacy` class"""
 
     zone_type: Literal["box"] = pd.Field(alias="zoneType")
     center: Coordinate = pd.Field()
@@ -953,12 +968,23 @@ class PorousMediumVolumeZone(Flow360BaseModel):
     windowing_lengths: Optional[Coordinate] = pd.Field(alias="windowingLengths")
 
 
-class PorousMedium(Flow360BaseModel):
-    """:class:`PorousMedium` class"""
+class PorousMediumLegacy(LegacyModel):
+    """:class:`PorousMediumLegacy` class"""
 
     darcy_coefficient: Vector = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: Vector = pd.Field(alias="ForchheimerCoefficient")
-    volume_zone: PorousMediumVolumeZone = pd.Field(alias="volumeZone")
+    volume_zone: PorousMediumVolumeZoneLegacy = pd.Field(alias="volumeZone")
+
+    def update_model(self) -> Flow360BaseModel:
+        model = {
+            "darcy_coefficient": self.darcy_coefficient,
+            "forchheimer_coefficient": self.forchheimer_coefficient,
+            "center": self.volume_zone.center,
+            "lengths": self.volume_zone.lengths,
+            "axes": self.volume_zone.axes,
+            "windowing_lengths": self.volume_zone.windowing_lengths,
+        }
+        return PorousMedium.parse_obj(model)
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -1667,8 +1693,7 @@ class Flow360ParamsLegacy(LegacyModel):
     )
     # Needs decoupling from current model
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
-    # Needs decoupling from current model
-    porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    porous_media: Optional[List[PorousMediumLegacy]] = pd.Field(alias="porousMedia")
     # Needs decoupling from current model
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
         alias="userDefinedDynamics"
@@ -1740,7 +1765,7 @@ class Flow360ParamsLegacy(LegacyModel):
                     "transition_model_solver": try_update(self.transition_model_solver),
                     "heat_equation_solver": try_update(self.heat_equation_solver),
                     "actuator_disks": self.actuator_disks,
-                    "porous_media": self.porous_media,
+                    "porous_media": try_update(self.porous_media),
                     "user_defined_dynamics": self.user_defined_dynamics,
                     "surface_output": try_update(self.surface_output),
                     "volume_output": try_update(self.volume_output),

@@ -509,14 +509,6 @@ def test_params_temperature_consistency():
 
 
 def test_flow360_will_export():
-    pmvz = PorousMediumVolumeZone(
-        zone_type="box",
-        center=[1, 2, 3],
-        lengths=[3, 4, 5],
-        axes=[[0, 1, 0], [1, 0, 0]],
-        windowing_lengths=[0.5, 0.5, 0.5],
-    )
-
     with fl.SI_unit_system:
         params = fl.Flow360Params(
             freestream=fl.FreestreamFromMach(Mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
@@ -526,7 +518,14 @@ def test_flow360_will_export():
             boundaries={},
             porous_media=[
                 PorousMedium(
-                    darcy_coefficient=[1, 1, 1], forchheimer_coefficient=[1, 1, 1], volume_zone=pmvz
+                    darcy_coefficient=[1, 1, 1],
+                    forchheimer_coefficient=[1, 1, 1],
+                    volumetric_heat_source=0,
+                    zone_type="box",
+                    center=[1, 2, 3],
+                    lengths=[3, 4, 5],
+                    axes=[[0, 1, 0], [1, 0, 0]],
+                    windowing_lengths=[0.5, 0.5, 0.5],
                 )
             ],
         )

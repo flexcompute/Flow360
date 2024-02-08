@@ -66,6 +66,7 @@ from .component.flow360_params.flow360_params import (
     Monitors,
     NoneSolver,
     PorousMedium,
+    PorousMediumVolumeZone,
     ProbeMonitor,
     SliceOutput,
     SlidingInterface,
