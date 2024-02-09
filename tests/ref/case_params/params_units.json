@@ -67,7 +67,6 @@
   "timeStepping": {
     "maxPseudoSteps": 500,
     "CFL": {
-      "asked_for_default": false,
       "type": "adaptive",
       "min": 0.1,
       "max": 1000000.0,
@@ -161,5 +160,5 @@
       }
     }
   },
-  "hash": "5cc75f8dc0d0bc53d46d725ce8eb5bb332a5d1cb7239b3ec98eba745447ccf1d"
+  "hash": "63318ef1db1bfe8168cc97287a762e7bb0fb24f1fd4308cad55085ee039ade62"
 }

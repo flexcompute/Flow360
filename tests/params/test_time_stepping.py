@@ -120,6 +120,8 @@ def test_time_stepping():
     ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL())
     assert_unsteady_Adaptive(ts)
 
+    ts.to_json("tmp.json")
+
 
 def test_time_stepping_cfl():
     cfl = fl.RampCFL(rampSteps=20, initial=10, final=100)

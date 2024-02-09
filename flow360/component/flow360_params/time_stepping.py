@@ -12,31 +12,28 @@ from typing import Dict, Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
-from ..types import (
-    Axis,
-    Coordinate,
-    NonNegativeFloat,
-    PositiveFloat,
-    PositiveInt,
-    Vector,
-)
+from ..types import PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
 from .unit_system import TimeType
 
 
 class CFLBase(Flow360BaseModel):
+    """
+    CFL base class for shared operations
+    """
+
     # User wants to use default
-    asked_for_default: Optional[bool] = pd.Field(default=True)
+    __asked_for_default = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if "asked_for_default" in kwargs:
-            self.asked_for_default = kwargs["asked_for_default"]
-        else:
-            self.asked_for_default = not bool(kwargs)
+        self.__asked_for_default = not bool(kwargs)
 
-    class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["asked_for_default"]
+    def asked_for_default(self):
+        """
+        return whether the user specified anything
+        """
+        return self.__asked_for_default
 
 
 class RampCFL(CFLBase):
@@ -127,11 +124,12 @@ class UnsteadyTimeStepping(BaseTimeStepping):
         displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
     )
 
+    # pylint: disable=C0103
     def __init__(self, **data):
         super().__init__(**data)
-        if self.CFL is None or (isinstance(self.CFL, RampCFL) and self.CFL.asked_for_default):
+        if self.CFL is None or (isinstance(self.CFL, RampCFL) and self.CFL.asked_for_default()):
             self.CFL = RampCFL.default_unsteady()
-        elif isinstance(self.CFL, AdaptiveCFL) and self.CFL.asked_for_default:
+        elif isinstance(self.CFL, AdaptiveCFL) and self.CFL.asked_for_default():
             self.CFL = AdaptiveCFL.default_unsteady()
 
 

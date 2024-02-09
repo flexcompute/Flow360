@@ -125,7 +125,6 @@ class _TimeStepping(Flow360BaseModel):
         root_property = "properties/timeStepping/anyOf"
         exclude_fields = [
             root_property + "/properties/CFL/default",
-            root_property + "/properties/CFL/anyOf/properties/asked_for_default",
         ]
 
 
