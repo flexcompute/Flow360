@@ -108,7 +108,7 @@ class SteadyTimeStepping(BaseTimeStepping):
     physical_steps: Literal[1] = pd.Field(1, alias="physicalSteps", const=True)
     time_step_size: Literal["inf"] = pd.Field("inf", alias="timeStepSize", const=True)
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
-        displayed="CFL", options=["Ramp CFL", "Adaptive CFL"], default=RampCFL()
+        displayed="CFL", options=["Ramp CFL", "Adaptive CFL"], default=AdaptiveCFL()
     )
 
 
@@ -127,10 +127,10 @@ class UnsteadyTimeStepping(BaseTimeStepping):
     # pylint: disable=C0103
     def __init__(self, **data):
         super().__init__(**data)
-        if self.CFL is None or (isinstance(self.CFL, RampCFL) and self.CFL.asked_for_default()):
-            self.CFL = RampCFL.default_unsteady()
-        elif isinstance(self.CFL, AdaptiveCFL) and self.CFL.asked_for_default():
+        if self.CFL is None or (isinstance(self.CFL, AdaptiveCFL) and self.CFL.asked_for_default()):
             self.CFL = AdaptiveCFL.default_unsteady()
+        elif isinstance(self.CFL, RampCFL) and self.CFL.asked_for_default():
+            self.CFL = RampCFL.default_unsteady()
 
 
 TimeStepping = Union[SteadyTimeStepping, UnsteadyTimeStepping]

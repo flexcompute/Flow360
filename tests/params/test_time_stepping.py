@@ -107,14 +107,14 @@ def test_time_stepping():
         )
 
     ts = SteadyTimeStepping()
-    assert_steady_Ramp(ts)
+    assert_steady_Adaptive(ts)
     ts = SteadyTimeStepping(CFL=fl.RampCFL())
     assert_steady_Ramp(ts)
     ts = SteadyTimeStepping(CFL=fl.AdaptiveCFL())
     assert_steady_Adaptive(ts)
 
     ts = UnsteadyTimeStepping()
-    assert_unsteady_Ramp(ts)
+    assert_unsteady_Adaptive(ts)
     ts = UnsteadyTimeStepping(CFL=fl.RampCFL())
     assert_unsteady_Ramp(ts)
     ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL())

@@ -43,10 +43,11 @@
         "physicalSteps": 1,
         "timeStepSize": "inf",
         "CFL": {
-            "type": "ramp",
-            "initial": 5.0,
-            "final": 200.0,
-            "rampSteps": 40
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
         }
     },
     "navierStokesSolver": {
@@ -138,5 +139,5 @@
             }
         }
     },
-    "hash": "b058f88852ed6a4c1d7f76fb597c123f38c4f33d960d42d83130c2e71e6039c4"
+    "hash": "b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b"
 }
