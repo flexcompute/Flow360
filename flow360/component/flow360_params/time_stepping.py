@@ -31,7 +31,7 @@ class CFLBase(Flow360BaseModel):
 
     def asked_for_default(self):
         """
-        return whether the user specified anything
+        return whether the user is asking to use default CFL
         """
         return self.__asked_for_default
 
