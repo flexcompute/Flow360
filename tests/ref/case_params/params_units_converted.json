@@ -52,11 +52,12 @@
     "timeStepping": {
         "maxPseudoSteps": 500,
         "CFL": {
-            "type": "adaptive",
+            "asked_for_default": false,
+            "convergenceLimitingFactor": 1.0,
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
             "min": 0.1,
-            "max": 10000.0,
-            "maxRelativeChange": 1.0,
-            "convergenceLimitingFactor": 0.25
+            "type": "adaptive"
         },
         "modelType": "Unsteady",
         "physicalSteps": 20,
@@ -135,5 +136,5 @@
             }
         }
     },
-    "hash": "88a2627e287e3b2b4ec5e491edb9e9621d294bde29a288e3f7e6cef75c9b2ef7"
+    "hash": "1c0ad88167d8d95680a56d1d6dfe3edf52f9bafdc0a09bf85e45c6250482e648"
 }

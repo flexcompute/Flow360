@@ -85,6 +85,9 @@ class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     max_pseudo_steps: Optional[pd.conint(gt=0, le=100000)] = pd.Field(2000, alias="maxPseudoSteps")
+    CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
+        displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BaseTimeStepping:

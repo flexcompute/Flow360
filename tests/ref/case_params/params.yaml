@@ -30,7 +30,7 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 2a4b16682810295896194c98bfab5b6430fe578939f4591af8b171e357e671bf
+hash: c7a6d872e471bc181c50620c53facc04d48c1e076d9e4c77407f047295c2c1f4
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
@@ -91,6 +91,12 @@ surfaceOutput:
             outputFields:
             - CfVec
 timeStepping:
+    CFL:
+        asked_for_default: true
+        final: 200.0
+        initial: 5.0
+        rampSteps: 40
+        type: ramp
     maxPseudoSteps: 2000
     modelType: Steady
     physicalSteps: 1
