@@ -576,7 +576,7 @@ class Flow360BaseModel(BaseModel):
     @classmethod
     def flow360_schema(cls):
         """Generate a schema json string for the flow360 model"""
-        schema = cls.schema()
+        schema = cls.schema(by_alias=True)
         if cls.SchemaConfig.displayed is not None:
             schema["displayed"] = cls.SchemaConfig.displayed
         for item in cls.SchemaConfig.exclude_fields:

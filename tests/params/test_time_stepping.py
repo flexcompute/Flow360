@@ -80,6 +80,46 @@ def test_time_stepping():
     with pytest.raises(ValueError):
         ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
+    ## Tests for default values
+    def assert_steady_Ramp(ts):
+        assert ts.CFL.initial == fl.RampCFL().initial
+        assert ts.CFL.final == fl.RampCFL().final
+        assert ts.CFL.ramp_steps == fl.RampCFL().ramp_steps
+
+    def assert_unsteady_Ramp(ts):
+        assert ts.CFL.initial == fl.RampCFL.default_unsteady().initial
+        assert ts.CFL.final == fl.RampCFL.default_unsteady().final
+        assert ts.CFL.ramp_steps == fl.RampCFL.default_unsteady().ramp_steps
+
+    def assert_steady_Adaptive(ts):
+        assert ts.CFL.min == fl.AdaptiveCFL().min
+        assert ts.CFL.max == fl.AdaptiveCFL().max
+        assert ts.CFL.max_relative_change == fl.AdaptiveCFL().max_relative_change
+        assert ts.CFL.convergence_limiting_factor == fl.AdaptiveCFL().convergence_limiting_factor
+
+    def assert_unsteady_Adaptive(ts):
+        assert ts.CFL.min == fl.AdaptiveCFL.default_unsteady().min
+        assert ts.CFL.max == fl.AdaptiveCFL.default_unsteady().max
+        assert ts.CFL.max_relative_change == fl.AdaptiveCFL.default_unsteady().max_relative_change
+        assert (
+            ts.CFL.convergence_limiting_factor
+            == fl.AdaptiveCFL.default_unsteady().convergence_limiting_factor
+        )
+
+    ts = SteadyTimeStepping()
+    assert_steady_Ramp(ts)
+    ts = SteadyTimeStepping(CFL=fl.RampCFL())
+    assert_steady_Ramp(ts)
+    ts = SteadyTimeStepping(CFL=fl.AdaptiveCFL())
+    assert_steady_Adaptive(ts)
+
+    ts = UnsteadyTimeStepping()
+    assert_unsteady_Ramp(ts)
+    ts = UnsteadyTimeStepping(CFL=fl.RampCFL())
+    assert_unsteady_Ramp(ts)
+    ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL())
+    assert_unsteady_Adaptive(ts)
+
 
 def test_time_stepping_cfl():
     cfl = fl.RampCFL(rampSteps=20, initial=10, final=100)

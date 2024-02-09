@@ -24,7 +24,22 @@ from .params_base import DeprecatedAlias, Flow360BaseModel
 from .unit_system import TimeType
 
 
-class RampCFL(Flow360BaseModel):
+class CFLBase(Flow360BaseModel):
+    # User wants to use default
+    asked_for_default: Optional[bool] = pd.Field(default=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if "asked_for_default" in kwargs:
+            self.asked_for_default = kwargs["asked_for_default"]
+        else:
+            self.asked_for_default = not bool(kwargs)
+
+    class Config(Flow360BaseModel.Config):
+        exclude_on_flow360_export = ["asked_for_default"]
+
+
+class RampCFL(CFLBase):
     """
     Ramp CFL for time stepping component
     """
@@ -34,15 +49,6 @@ class RampCFL(Flow360BaseModel):
     final: Optional[PositiveFloat] = pd.Field(default=200)
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps", default=40)
 
-    askedForDefault = True  # User wants to use default
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.askedForDefault = not bool(kwargs)
-
-    class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["askedForDefault"]
-
     @classmethod
     def default_unsteady(cls):
         """
@@ -51,7 +57,7 @@ class RampCFL(Flow360BaseModel):
         return cls(initial=1, final=1e6, ramp_steps=30)  ## Unknown souce of the values
 
 
-class AdaptiveCFL(Flow360BaseModel):
+class AdaptiveCFL(CFLBase):
     """
     Adaptive CFL for time stepping component
     """
@@ -63,16 +69,6 @@ class AdaptiveCFL(Flow360BaseModel):
     convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
         alias="convergenceLimitingFactor", default=0.25
     )
-
-    askedForDefault = True  # User wants to use default
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.askedForDefault = not bool(kwargs)
-
-    class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["askedForDefault"]
 
     @classmethod
     def default_unsteady(cls):
@@ -130,10 +126,9 @@ class UnsteadyTimeStepping(BaseTimeStepping):
 
     def __init__(self, **data):
         super().__init__(**data)
-        if self.CFL is None or (isinstance(self.CFL, RampCFL) and self.CFL.askedForDefault):
-            print("Setting default unsteady RAMP CFL")
+        if self.CFL is None or (isinstance(self.CFL, RampCFL) and self.CFL.asked_for_default):
             self.CFL = RampCFL.default_unsteady()
-        elif isinstance(self.CFL, AdaptiveCFL) and self.CFL.askedForDefault:
+        elif isinstance(self.CFL, AdaptiveCFL) and self.CFL.asked_for_default:
             self.CFL = AdaptiveCFL.default_unsteady()
 
 

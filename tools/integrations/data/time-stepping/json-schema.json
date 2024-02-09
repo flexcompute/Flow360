@@ -14,75 +14,6 @@
           "maximum": 100000,
           "type": "integer"
         },
-        "CFL": {
-          "title": "CFL",
-          "anyOf": [
-            {
-              "title": "Ramp CFL",
-              "type": "object",
-              "properties": {
-                "type": {
-                  "title": "Type",
-                  "default": "ramp",
-                  "const": "ramp",
-                  "type": "string"
-                },
-                "initial": {
-                  "title": "Initial",
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                },
-                "final": {
-                  "title": "Final",
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                },
-                "rampSteps": {
-                  "title": "Ramp steps",
-                  "type": "integer"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "title": "Adaptive CFL",
-              "type": "object",
-              "properties": {
-                "type": {
-                  "title": "Type",
-                  "default": "adaptive",
-                  "const": "adaptive",
-                  "type": "string"
-                },
-                "min": {
-                  "title": "Min",
-                  "default": 0.1,
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                },
-                "max": {
-                  "title": "Max",
-                  "default": 10000,
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                },
-                "maxRelativeChange": {
-                  "title": "Max relative change",
-                  "default": 1,
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                },
-                "convergenceLimitingFactor": {
-                  "title": "Convergence limiting factor",
-                  "default": 0.25,
-                  "exclusiveMinimum": 0,
-                  "type": "number"
-                }
-              },
-              "additionalProperties": false
-            }
-          ]
-        },
         "modelType": {
           "title": "Model type",
           "default": "Steady",
@@ -100,20 +31,6 @@
           "default": "inf",
           "const": "inf",
           "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "title": "Unsteady",
-      "type": "object",
-      "properties": {
-        "maxPseudoSteps": {
-          "title": "Max pseudo steps",
-          "default": 2000,
-          "exclusiveMinimum": 0,
-          "maximum": 100000,
-          "type": "integer"
         },
         "CFL": {
           "title": "CFL",
@@ -130,16 +47,19 @@
                 },
                 "initial": {
                   "title": "Initial",
+                  "default": 5,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "final": {
                   "title": "Final",
+                  "default": 200,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "rampSteps": {
                   "title": "Ramp steps",
+                  "default": 40,
                   "type": "integer"
                 }
               },
@@ -163,7 +83,7 @@
                 },
                 "max": {
                   "title": "Max",
-                  "default": 10000,
+                  "default": 10000.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
@@ -183,6 +103,20 @@
               "additionalProperties": false
             }
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "Unsteady",
+      "type": "object",
+      "properties": {
+        "maxPseudoSteps": {
+          "title": "Max pseudo steps",
+          "default": 2000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "type": "integer"
         },
         "modelType": {
           "title": "Model type",
@@ -211,6 +145,78 @@
               ]
             }
           }
+        },
+        "CFL": {
+          "title": "CFL",
+          "anyOf": [
+            {
+              "title": "Ramp CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "ramp",
+                  "const": "ramp",
+                  "type": "string"
+                },
+                "initial": {
+                  "title": "Initial",
+                  "default": 1.0,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "final": {
+                  "title": "Final",
+                  "default": 1000000.0,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "rampSteps": {
+                  "title": "Ramp steps",
+                  "default": 30,
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "title": "Adaptive CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "adaptive",
+                  "const": "adaptive",
+                  "type": "string"
+                },
+                "min": {
+                  "title": "Min",
+                  "default": 0.1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "max": {
+                  "title": "Max",
+                  "default": 1000000.0,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "maxRelativeChange": {
+                  "title": "Max relative change",
+                  "default": 50.0,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "convergenceLimitingFactor": {
+                  "title": "Convergence limiting factor",
+                  "default": 1.0,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "additionalProperties": false

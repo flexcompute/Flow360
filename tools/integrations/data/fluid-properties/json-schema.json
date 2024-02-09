@@ -18,13 +18,11 @@
           "properties": {
             "value": {
               "type": "number",
-              "exclusiveMinimum": 0,
-              "default": 1.225
+              "exclusiveMinimum": 0
             },
             "units": {
               "type": "string",
               "dimension": "density",
-              "default": "kg/m**3",
               "enum": [
                 "kg/m**3",
                 "g/cm**3",
@@ -38,13 +36,11 @@
           "title": "Temperature",
           "properties": {
             "value": {
-              "type": "number",
-              "default": 288.15
+              "type": "number"
             },
             "units": {
               "type": "string",
               "dimension": "temperature",
-              "default": "K",
               "enum": [
                 "K",
                 "R",
@@ -75,13 +71,11 @@
           "properties": {
             "value": {
               "type": "number",
-              "exclusiveMinimum": 0,
-              "default": 101325
+              "exclusiveMinimum": 0
             },
             "units": {
               "type": "string",
               "dimension": "pressure",
-              "default": "Pa",
               "enum": [
                 "Pa",
                 "dyn/cm**2",
@@ -95,13 +89,11 @@
           "title": "Temperature",
           "properties": {
             "value": {
-              "type": "number",
-              "default": 288.15
+              "type": "number"
             },
             "units": {
               "type": "string",
               "dimension": "temperature",
-              "default": "K",
               "enum": [
                 "K",
                 "R",

@@ -24,6 +24,7 @@ from flow360.component.flow360_params.volume_zones import (
     ReferenceFrameExpression,
     VolumeZoneBase,
 )
+from flow360.component.types import PositiveFloat
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -90,11 +91,42 @@ class _TurbulenceModelSolver(Flow360BaseModel):
 
 
 class _TimeStepping(Flow360BaseModel):
-    time_stepping: fl.TimeStepping = pd.Field(alias="timeStepping", options=["Steady", "Unsteady"])
+    class _UnsteadyTimeStepping(fl.UnsteadyTimeStepping):
+        class RampCFLUnsteady(fl.RampCFL):
+            initial: Optional[PositiveFloat] = pd.Field(
+                default=fl.RampCFL.default_unsteady().initial
+            )
+            final: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_unsteady().final)
+            ramp_steps: Optional[int] = pd.Field(
+                alias="rampSteps", default=fl.RampCFL.default_unsteady().ramp_steps
+            )
+
+        class AdaptiveCFLUnsteady(fl.AdaptiveCFL):
+            max: Optional[PositiveFloat] = pd.Field(default=fl.AdaptiveCFL.default_unsteady().max)
+            convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+                alias="convergenceLimitingFactor",
+                default=fl.AdaptiveCFL.default_unsteady().convergence_limiting_factor,
+            )
+            max_relative_change: Optional[PositiveFloat] = pd.Field(
+                alias="maxRelativeChange",
+                default=fl.AdaptiveCFL.default_unsteady().max_relative_change,
+            )
+
+        CFL: Optional[Union[RampCFLUnsteady, AdaptiveCFLUnsteady]] = pd.Field(
+            displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
+        )
+
+    time_stepping: Union[fl.SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
+        alias="timeStepping", options=["Steady", "Unsteady"]
+    )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "CFL"]
         root_property = "properties/timeStepping/anyOf"
+        exclude_fields = [
+            root_property + "/properties/CFL/default",
+            root_property + "/properties/CFL/anyOf/properties/asked_for_default",
+        ]
 
 
 class _FluidProperties(Flow360BaseModel):
