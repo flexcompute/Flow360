@@ -49,10 +49,6 @@
 		"animationFrequency": -1,
 		"nodeForcesPerUnitArea": true
 	},
-	"sliceOutput": {
-		"outputFormat": "paraview",
-		"animationFrequency": -1
-	},
 	"navierStokesSolver": {
 		"absoluteTolerance": 1e-11,
 		"relativeTolerance": 0,

@@ -66,6 +66,7 @@
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
+    "orderOfAccuracy": 2,
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
@@ -88,6 +89,17 @@
       "value": 286.0,
       "units": "m/s"
     }
+  },
+  "surfaceOutput": {
+    "outputFormat": "paraview",
+    "animationFrequency": -1,
+    "animationFrequencyOffset": 0,
+    "computeTimeAverages": false,
+    "animationFrequencyTimeAverage": -1,
+    "animationFrequencyTimeAverageOffset": 0,
+    "startAverageIntegrationStep": -1,
+    "writeSingleFile": false,
+    "outputFields": [ ]
   },
   "volumeZones": {
     "zone2": {
@@ -160,5 +172,5 @@
       }
     }
   },
-  "hash": "63318ef1db1bfe8168cc97287a762e7bb0fb24f1fd4308cad55085ee039ade62"
+  "hash": "ec9370fec15292d144313b6b4fe27f4ab3e15d426efc1c9d607aaf9ddf6f194e"
 }

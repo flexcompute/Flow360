@@ -89,6 +89,19 @@ def test_case_boundary():
             param = Flow360Params.parse_raw(
                 """
                 {
+                    "geometry": {
+                        "momentCenter": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "momentLength": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "refArea": 0.5325
+                    },                    
                     "boundaries": {
                         "fluid/fuselage": {
                             "type": "UnsupportedBC"
@@ -114,6 +127,19 @@ def test_case_boundary():
         param = Flow360Params.parse_raw(
             """
             {
+                "geometry": {
+                    "momentCenter": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "momentLength": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "refArea": 0.5325
+                },    
                 "boundaries": {
                     "fluid/fuselage": {
                         "type": "SlipWall"

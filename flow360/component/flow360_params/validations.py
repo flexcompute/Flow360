@@ -155,10 +155,13 @@ def _validate_cht_no_heat_transfer_zone(values):
 
 def _validate_cht_has_heat_transfer_zone(values):
     navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None and isinstance(
-        navier_stokes_solver, IncompressibleNavierStokesSolver
-    ):
-        raise ValueError("Conjugate heat transfer can not be used with incompressible flow solver.")
+    if Flags.beta_features():
+        if navier_stokes_solver is not None and isinstance(
+            navier_stokes_solver, IncompressibleNavierStokesSolver
+        ):
+            raise ValueError(
+                "Conjugate heat transfer can not be used with incompressible flow solver."
+            )
 
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")

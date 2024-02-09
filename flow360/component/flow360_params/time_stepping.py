@@ -85,6 +85,7 @@ class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     max_pseudo_steps: Optional[pd.conint(gt=0, le=100000)] = pd.Field(2000, alias="maxPseudoSteps")
+    order_of_accuracy: Optional[Literal[1, 2]] = pd.Field(2, alias="orderOfAccuracy")
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
         displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
     )
