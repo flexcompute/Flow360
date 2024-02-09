@@ -9,6 +9,7 @@ import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
     FreestreamFromMach,
+    FreestreamFromMachReynolds,
     FreestreamFromVelocity,
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
@@ -73,3 +74,6 @@ def test_freesteam():
         to_file_from_file_test(fs)
         fs_solver = fs.to_solver(params)
         assertions.assertAlmostEqual(fs_solver.Mach_ref, ref_mach)
+
+        fs = FreestreamFromMachReynolds(Mach=0.1, Reynolds="inf", temperature=288.15)
+        to_file_from_file_test(fs)
