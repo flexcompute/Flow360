@@ -21,6 +21,7 @@ from .component.flow360_params.boundaries import (
     MassOutflow,
     NoSlipWall,
     RiemannInvariant,
+    RotationallyPeriodic,
     SlidingInterfaceBoundary,
     SlipWall,
     SolidAdiabaticWall,
