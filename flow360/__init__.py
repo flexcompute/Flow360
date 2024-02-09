@@ -47,6 +47,7 @@ from .component.flow360_params.flow360_params import (
     Boundaries,
     Flow360MeshParams,
     Flow360Params,
+    ForcePerArea,
     FreestreamFromMach,
     FreestreamFromMachReynolds,
     FreestreamFromVelocity,
