@@ -14,24 +14,6 @@
           "maximum": 100000,
           "type": "integer"
         },
-        "modelType": {
-          "title": "Model type",
-          "default": "Steady",
-          "const": "Steady",
-          "type": "string"
-        },
-        "physicalSteps": {
-          "title": "Physical steps",
-          "default": 1,
-          "const": 1,
-          "type": "integer"
-        },
-        "timeStepSize": {
-          "title": "Time step size",
-          "default": "inf",
-          "const": "inf",
-          "type": "string"
-        },
         "CFL": {
           "title": "CFL",
           "anyOf": [
@@ -47,13 +29,13 @@
                 },
                 "initial": {
                   "title": "Initial",
-                  "default": 5,
+                  "default": 5.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "final": {
                   "title": "Final",
-                  "default": 200,
+                  "default": 200.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
@@ -89,7 +71,7 @@
                 },
                 "maxRelativeChange": {
                   "title": "Max relative change",
-                  "default": 1,
+                  "default": 1.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
@@ -103,6 +85,24 @@
               "additionalProperties": false
             }
           ]
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "Steady",
+          "const": "Steady",
+          "type": "string"
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
+          "default": 1,
+          "const": 1,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "default": "inf",
+          "const": "inf",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -117,34 +117,6 @@
           "exclusiveMinimum": 0,
           "maximum": 100000,
           "type": "integer"
-        },
-        "modelType": {
-          "title": "Model type",
-          "default": "Unsteady",
-          "const": "Unsteady",
-          "type": "string"
-        },
-        "physicalSteps": {
-          "title": "Physical steps",
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "timeStepSize": {
-          "title": "Time step size",
-          "properties": {
-            "value": {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            "units": {
-              "type": "string",
-              "dimension": "time",
-              "enum": [
-                "s",
-                "flow360_time_unit"
-              ]
-            }
-          }
         },
         "CFL": {
           "title": "CFL",
@@ -217,6 +189,34 @@
               "additionalProperties": false
             }
           ]
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "Unsteady",
+          "const": "Unsteady",
+          "type": "string"
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "time",
+              "enum": [
+                "s",
+                "flow360_time_unit"
+              ]
+            }
+          }
         }
       },
       "additionalProperties": false

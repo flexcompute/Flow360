@@ -114,16 +114,8 @@
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "anyOf": [
-            {
-              "type": "integer",
-              "const": -1
-            },
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            }
-          ]
+          "exclusiveMinimum": 0,
+          "type": "number"
         }
       },
       "required": [
@@ -175,16 +167,8 @@
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "anyOf": [
-            {
-              "type": "integer",
-              "const": -1
-            },
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            }
-          ]
+          "exclusiveMinimum": 0,
+          "type": "number"
         }
       },
       "required": [
@@ -237,16 +221,8 @@
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "anyOf": [
-            {
-              "type": "integer",
-              "const": -1
-            },
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            }
-          ]
+          "exclusiveMinimum": 0,
+          "type": "number"
         }
       },
       "required": [

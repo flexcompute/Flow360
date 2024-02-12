@@ -1,5 +1,5 @@
 {
-  "refArea": {
+  "meshUnit": {
     "ui:field": "unitInput"
   },
   "momentCenter": {
@@ -8,15 +8,15 @@
   "momentLength": {
     "ui:field": "unitInput"
   },
-  "meshUnit": {
+  "refArea": {
     "ui:field": "unitInput"
+  },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
   },
   "ui:submitButtonOptions": {
     "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }

@@ -43,7 +43,7 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
     if not os.path.exists(os.path.join(here, "data", folder_name)):
         os.mkdir(os.path.join(here, "data", folder_name))
     write_to_file(os.path.join(here, "data", folder_name, "json-schema.json"), schema)
-    ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2)
+    ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2, sort_keys=True)
     if ui_schema is not None:
         write_to_file(os.path.join(here, "data", folder_name, "ui-schema.json"), ui_schema)
 
@@ -116,7 +116,30 @@ class _TimeStepping(Flow360BaseModel):
             displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
         )
 
-    time_stepping: Union[fl.SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
+    class _SteadyTimeStepping(fl.SteadyTimeStepping):
+        class RampCFLSteady(fl.RampCFL):
+            initial: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_steady().initial)
+            final: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_steady().final)
+            ramp_steps: Optional[int] = pd.Field(
+                alias="rampSteps", default=fl.RampCFL.default_steady().ramp_steps
+            )
+
+        class AdaptiveCFLSteady(fl.AdaptiveCFL):
+            max: Optional[PositiveFloat] = pd.Field(default=fl.AdaptiveCFL.default_steady().max)
+            convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+                alias="convergenceLimitingFactor",
+                default=fl.AdaptiveCFL.default_steady().convergence_limiting_factor,
+            )
+            max_relative_change: Optional[PositiveFloat] = pd.Field(
+                alias="maxRelativeChange",
+                default=fl.AdaptiveCFL.default_steady().max_relative_change,
+            )
+
+        CFL: Optional[Union[RampCFLSteady, AdaptiveCFLSteady]] = pd.Field(
+            displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
+        )
+
+    time_stepping: Union[_SteadyTimeStepping, _UnsteadyTimeStepping] = pd.Field(
         alias="timeStepping", options=["Steady", "Unsteady"]
     )
 

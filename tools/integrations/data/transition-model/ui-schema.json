@@ -1,4 +1,9 @@
 {
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
   "ui:order": [
     "modelType",
     "*",
@@ -6,10 +11,5 @@
   ],
   "ui:submitButtonOptions": {
     "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }
