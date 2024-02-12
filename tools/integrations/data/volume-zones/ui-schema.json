@@ -1,23 +1,23 @@
 {
   "additionalProperties": {
     "referenceFrame": {
+      "axisOfRotation": {
+        "ui:widget": "vector3"
+      },
       "centerOfRotation": {
         "ui:field": "unitInput"
       },
       "omega": {
         "ui:field": "unitInput"
-      },
-      "axisOfRotation": {
-        "ui:widget": "vector3"
       }
     }
   },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
   "ui:submitButtonOptions": {
     "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }

@@ -41,7 +41,14 @@
         "maxPseudoSteps": 2000,
         "modelType": "Steady",
         "physicalSteps": 1,
-        "timeStepSize": "inf"
+        "timeStepSize": "inf",
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        }
     },
     "navierStokesSolver": {
         "absoluteTolerance": 1.0e-10,
@@ -77,13 +84,13 @@
         ],
         "surfaces": {
             "symmetry": {
-                "outputFields": ["T", "heatFlux"]
-            }, 
+                "outputFields": [ "T", "heatFlux" ]
+            },
             "freestream": {
-                "outputFields": ["Cp", "Mach"]
-            }, 
+                "outputFields": [ "Cp", "Mach" ]
+            },
             "wing": {
-                "outputFields": ["CfVec"]
+                "outputFields": [ "CfVec" ]
             }
         }
     },
@@ -132,5 +139,5 @@
             }
         }
     },
-    "hash": "2a4b16682810295896194c98bfab5b6430fe578939f4591af8b171e357e671bf"
+    "hash": "b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b"
 }

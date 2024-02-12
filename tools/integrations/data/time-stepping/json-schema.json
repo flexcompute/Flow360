@@ -29,16 +29,19 @@
                 },
                 "initial": {
                   "title": "Initial",
+                  "default": 5.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "final": {
                   "title": "Final",
+                  "default": 200.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "rampSteps": {
                   "title": "Ramp steps",
+                  "default": 40,
                   "type": "integer"
                 }
               },
@@ -62,13 +65,13 @@
                 },
                 "max": {
                   "title": "Max",
-                  "default": 10000,
+                  "default": 10000.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "maxRelativeChange": {
                   "title": "Max relative change",
-                  "default": 1,
+                  "default": 1.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
@@ -130,16 +133,19 @@
                 },
                 "initial": {
                   "title": "Initial",
+                  "default": 1.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "final": {
                   "title": "Final",
+                  "default": 1000000.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "rampSteps": {
                   "title": "Ramp steps",
+                  "default": 30,
                   "type": "integer"
                 }
               },
@@ -163,19 +169,19 @@
                 },
                 "max": {
                   "title": "Max",
-                  "default": 10000,
+                  "default": 1000000.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "maxRelativeChange": {
                   "title": "Max relative change",
-                  "default": 1,
+                  "default": 50.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "convergenceLimitingFactor": {
                   "title": "Convergence limiting factor",
-                  "default": 0.25,
+                  "default": 1.0,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 }

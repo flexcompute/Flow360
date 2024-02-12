@@ -48,7 +48,8 @@
                     "Vorticity",
                     "Wall distance",
                     "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
+                    "Heat equation residual",
+                    "Velocity with respect to non-inertial frame"
                   ],
                   "type": "string"
                 }
@@ -112,7 +113,8 @@
                     "Vorticity",
                     "Wall distance",
                     "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
+                    "Heat equation residual",
+                    "Velocity with respect to non-inertial frame"
                   ],
                   "type": "string"
                 }
@@ -151,7 +153,8 @@
           "Vorticity",
           "Wall distance",
           "NumericalDissipationFactor sensor",
-          "Heat equation residual"
+          "Heat equation residual",
+          "Velocity with respect to non-inertial frame"
         ],
         "type": "string"
       }

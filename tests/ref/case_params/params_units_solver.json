@@ -38,9 +38,9 @@
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
-      "max": 10000.0,
-      "maxRelativeChange": 1.0,
-      "convergenceLimitingFactor": 0.25
+      "max": 1000000.0,
+      "maxRelativeChange": 50.0,
+      "convergenceLimitingFactor": 1.0
     },
     "physicalSteps": 20,
     "timeStepSize": 408352.8069698554

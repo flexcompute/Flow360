@@ -84,6 +84,7 @@
           "Wall distance",
           "NumericalDissipationFactor sensor",
           "Heat equation residual",
+          "Velocity with respect to non-inertial frame",
           "BET Metrics",
           "BET Metrics per Disk"
         ],

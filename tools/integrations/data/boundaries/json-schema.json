@@ -60,6 +60,15 @@
                 ]
               }
             ]
+          },
+          "velocityType": {
+            "title": "Velocity type",
+            "default": "relative",
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -140,6 +149,15 @@
                 ]
               }
             ]
+          },
+          "velocityType": {
+            "title": "Velocity type",
+            "default": "relative",
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -558,6 +576,23 @@
           "thetaRadians": {
             "title": "Theta radians",
             "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "title": "Riemann invariant",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "RiemannInvariant",
+            "const": "RiemannInvariant",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
           }
         },
         "additionalProperties": false
