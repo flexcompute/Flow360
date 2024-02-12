@@ -563,7 +563,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
     )
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
-    Reynolds: PositiveFloat = pd.Field(displayed="Reynolds number")
+    Reynolds: Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]] = pd.Field(
+        displayed="Reynolds number"
+    )
     temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
         alias="Temperature", displayed="Temperature [K]"
     )
