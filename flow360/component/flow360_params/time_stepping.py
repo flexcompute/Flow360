@@ -25,26 +25,7 @@ def _apply_default_to_none(original, default):
     return original
 
 
-class CFLBase(Flow360BaseModel):
-    """
-    CFL base class for shared operations
-    """
-
-    # User wants to use default
-    __asked_for_default = False
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.__asked_for_default = not bool(kwargs)
-
-    def asked_for_default(self):
-        """
-        return whether the user is asking to use default CFL
-        """
-        return self.__asked_for_default
-
-
-class RampCFL(CFLBase):
+class RampCFL(Flow360BaseModel):
     """
     Ramp CFL for time stepping component
     """
@@ -69,7 +50,7 @@ class RampCFL(CFLBase):
         return cls(initial=5, final=200, ramp_steps=40)
 
 
-class AdaptiveCFL(CFLBase):
+class AdaptiveCFL(Flow360BaseModel):
     """
     Adaptive CFL for time stepping component
     """
