@@ -579,6 +579,7 @@ class Case(CaseBase, Flow360Resource):
         return new_case
 
 
+
 class CaseResultType(Enum):
     """
     Case results types
@@ -591,22 +592,7 @@ class CaseResultType(Enum):
     CFL = "cfl_v2"
 
 
-class CaseDownloadable(Enum):
-    """
-    Case results filenames
-    """
-
-    VOLUME = "volumes.tar.gz"
-    SURFACE = "surfaces.tar.gz"
-    NONLINEAR_RESIDUALS = "nonlinear_residual_v2.csv"
-    LINEAR_RESIDUALS = "linear_residual_v2.csv"
-    CFL = "cfl_v2.csv"
-    MINMAX_STATE = "minmax_state_v2.csv"
-    SURFACE_FORCES = "surface_forces_v2.csv"
-    TOTAL_FORCES = "total_forces_v2.csv"
-    BET_FORCES = "bet_forces_v2.csv"
-    ACTUATOR_DISK_OUTPUT = "actuatorDisk_output_v2.csv"
-
+from .results.case_results import CaseDownloadable
 
 class CacheableData:
     """
@@ -686,202 +672,51 @@ class ResultsPloter:
         raise NotImplementedError("Plotting residuals not supported yet.")
 
 
-from .flow360_params.unit_system import DimensionedType
-import tempfile
-import pandas
-
-class ResultCSVModel(pd.BaseModel):
-    csv_file_name: str = pd.Field()
-    save: bool = pd.Field(False)
-    save_as: Optional[str] = pd.Field()
-    download_method: Optional[Callable] = pd.Field()
-    temp_file: str = pd.Field(const=True, default_factory=lambda: tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
-    _values: Optional[Dict] = pd.PrivateAttr(None)
-    _raw_values: Optional[Dict] = pd.PrivateAttr(None)
 
 
-    def _read_csv_file(self):
-        df = pandas.read_csv(self.temp_file, skipinitialspace=True)
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-        return df.to_dict('list')
-
-    @property
-    def raw_values(self):
-        if self._raw_values is None:
-            self._download_file()
-            self._raw_values = self._read_csv_file()
-        return self._raw_values
-
-    def _download_file(self):
-        self.download_method(f"results/{self.csv_file_name}", to_file=self.temp_file)
-
-    @property
-    def values(self):
-        if self._values is None:
-            self._values = self.raw_values
-        return self._values
-    
-    def in_base(self, base):
-        '''values in base system'''
-        pass
-
-    def to_file(self, filename: str=None):
-        pass
-
-    def as_dict(self):
-        return self.values
-
-    def as_numpy(self):
-        return self.as_dataframe().to_numpy()
-
-    def as_dataframe(self):
-        return pandas.DataFrame(self.values)
-
-
-class ResidualsResultCSVModel(ResultCSVModel):
-    csv_file_name: str = pd.Field("nonlinear_residual_v2.csv", const=True)
-
-class TotalForcesResultCSVModel(ResultCSVModel):
-    csv_file_name: str = pd.Field("total_forces_v2.csv", const=True)
-
-
-from .flow360_params.unit_system import ForceType, PowerType, MomentType, flow360_unit_system
-from .flow360_params.conversions import unit_converter
-
-
-
-class _DimensionedCSVResultModel(pd.BaseModel):
-    _name: str
-
-    def _in_base_component(self, base, component, component_name, params):
-        log.debug(f"   -> need conversion for: {component_name} = {component}")
-
-        flow360_conv_system = unit_converter(
-            component.units.dimensions,
-            params=params,
-            required_by=[self._name, component_name],
-        )
-
-        converted = component.in_base(base, flow360_conv_system)
-        log.debug(f"      converted to: {converted}")
-        return converted
-
-
-class _ActuatorDiskResults(_DimensionedCSVResultModel):
-    power: PowerType.Array = pd.Field()
-    force: ForceType.Array = pd.Field()
-    moment: MomentType.Array = pd.Field()
-    _name = 'actuator_disks'
-
-    def to_base(self, base, params):
-        self.power = self._in_base_component(base, self.power, "power", params)
-        self.force = self._in_base_component(base, self.force, "force", params)
-        self.moment = self._in_base_component(base, self.moment, "moment", params)
-
-
-
-class ActuatorDiskResultCSVModel(ResultCSVModel):
-    csv_file_name: str = pd.Field("actuatorDisk_output_v2.csv", const=True)
-
-    def in_base(self, base, params):
-        '''values in base system'''
-        disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
-        print(disk_names)
-        with flow360_unit_system:
-            for disk_name in disk_names:
-                ad = _ActuatorDiskResults(power=self.values[f'{disk_name}_Power'], force=self.values[f'{disk_name}_Force'], moment=self.values[f'{disk_name}_Moment'])
-                ad.to_base(base, params)
-                self.values[f'{disk_name}_Power'] = ad.power
-                self.values[f'{disk_name}_Force'] = ad.force
-                self.values[f'{disk_name}_Moment'] = ad.power
-
-                self.values[f'PowerUnits'] = ad.power.units
-                self.values[f'ForceUnits'] = ad.force.units
-                self.values[f'MomentUnits'] = ad.moment.units
-
-
- 
-class _BETDiskResults(_DimensionedCSVResultModel):
-    force_x: ForceType.Array = pd.Field()
-    force_y: ForceType.Array = pd.Field()
-    force_z: ForceType.Array = pd.Field()
-    moment_x: MomentType.Array = pd.Field()
-    moment_y: MomentType.Array = pd.Field()
-    moment_z: MomentType.Array = pd.Field()
-
-    _name = 'bet_forces'
-
-    def to_base(self, base, params):
-        self.force_x = self._in_base_component(base, self.force_x, "force_x", params)
-        self.force_y = self._in_base_component(base, self.force_y, "force_y", params)
-        self.force_z = self._in_base_component(base, self.force_z, "force_z", params)
-        self.moment_x = self._in_base_component(base, self.moment_x, "moment_x", params)
-        self.moment_y = self._in_base_component(base, self.moment_y, "moment_y", params)
-        self.moment_z = self._in_base_component(base, self.moment_z, "moment_z", params)
-
-
-class BETForcesResultCSVModel(ResultCSVModel):
-    csv_file_name: str = pd.Field("bet_forces_v2.csv", const=True)
-
-    def in_base(self, base, params):
-        '''values in base system'''
-        disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
-        print(disk_names)
-        with flow360_unit_system:
-            for disk_name in disk_names:
-                bet = _BETDiskResults(force_x=self.values[f'{disk_name}_Force_x'], 
-                                     force_y=self.values[f'{disk_name}_Force_y'],
-                                     force_z=self.values[f'{disk_name}_Force_z'],
-                                     moment_x=self.values[f'{disk_name}_Moment_x'],
-                                     moment_y=self.values[f'{disk_name}_Moment_y'],
-                                     moment_z=self.values[f'{disk_name}_Moment_z'])
-                bet.to_base(base, params)
-
-                self.values[f'{disk_name}_Force_x'] = bet.force_x
-                # self.values[f'{disk_name}_Force'] = ad.force
-                # self.values[f'{disk_name}_Moment'] = ad.power
-
-                # self.values[f'PowerUnits'] = ad.power.units
-                # self.values[f'ForceUnits'] = ad.force.units
-                # self.values[f'MomentUnits'] = ad.moment.units
-
-
- 
-
-
-
-
-
-class ResultsDownloaderSettings(pd.BaseModel):
-    surface: bool = pd.Field(False),
-    volume: bool = pd.Field(False),
-    nonlinear_residuals: bool = pd.Field(False),
-    linear_residuals: bool = pd.Field(False),
-    cfl: bool = pd.Field(False),
-    minmax_state: bool = pd.Field(False),
-    surface_forces: bool = pd.Field(False),
-    total_forces: bool = pd.Field(False),
-    bet_forces: bool = pd.Field(False),
-    actuator_disk_output: bool = pd.Field(False),
-    all: bool = pd.Field(False),
-    overwrite: bool = False,
-    destination: str = ".",
+from .results.case_results import NonlinearResidualsResultCSVModel, LinearResidualsResultCSVModel, UserDefinedDynamicsResultModel, MonitorsResultModel, CFLResultCSVModel, TotalForcesResultCSVModel, AeroacousticsResultCSVModel, SurfaceForcesResultCSVModel, SurfaceHeatTrasferResultCSVModel, ForceDistributionResultCSVModel, MaxResidualLocationResultCSVModel, ActuatorDiskResultCSVModel, MinMaxStateResultCSVModel, BETForcesResultCSVModel, ResultBaseModel, ResultTarGZModel, ResultsDownloaderSettings
 
 
 
 class CaseResultsModel(pd.BaseModel):
-    residuals: ResidualsResultCSVModel = pd.Field(ResidualsResultCSVModel(), const=True)
+    case: Any = pd.Field()
+
+    # tar.gz results:
+    surfaces: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value), const=True)
+    volumes: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value), const=True)
+    slices: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value), const=True)
+    isosurfaces: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value), const=True)
+    monitors: MonitorsResultModel = pd.Field(MonitorsResultModel(), const=True)
+
+    # convergence:
+    nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(NonlinearResidualsResultCSVModel(), const=True)
+    linear_residuals: LinearResidualsResultCSVModel = pd.Field(LinearResidualsResultCSVModel(), const=True)
+    cfl: CFLResultCSVModel = pd.Field(CFLResultCSVModel(), const=True)
+    minmax_state: MinMaxStateResultCSVModel = pd.Field(MinMaxStateResultCSVModel(), const=True)
+    max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(MaxResidualLocationResultCSVModel(), const=True)
+
+    # forces
     total_forces: TotalForcesResultCSVModel = pd.Field(TotalForcesResultCSVModel(), const=True)
+    surface_forces: SurfaceForcesResultCSVModel = pd.Field(SurfaceForcesResultCSVModel(), const=True)
     actuator_disks: ActuatorDiskResultCSVModel = pd.Field(ActuatorDiskResultCSVModel(), const=True)
     bet_forces: BETForcesResultCSVModel = pd.Field(BETForcesResultCSVModel(), const=True)
+    force_distribution: ForceDistributionResultCSVModel = pd.Field(ForceDistributionResultCSVModel(), const=True)
 
-    case: Any = pd.Field()
+    # user defined:
+    user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(UserDefinedDynamicsResultModel(), const=True)
+
+    # others
+    surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(SurfaceHeatTrasferResultCSVModel(), const=True)
+    aeroacoustics: AeroacousticsResultCSVModel = pd.Field(AeroacousticsResultCSVModel(), const=True)
+
+    _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
+
 
 
     @pd.root_validator(pre=True)
     def pass_download_function(cls, values):
         if 'case' not in values:
-            raise ValueError('case is required attribute')
+            raise ValueError('case (type Case) is required')
         
         if not isinstance(values['case'], Case):
             raise TypeError('case must be of type Case')
@@ -889,73 +724,43 @@ class CaseResultsModel(pd.BaseModel):
         for field in cls.__fields__.values():
             if field.name not in values.keys():
                 value = field.default
-                if isinstance(value, ResultCSVModel):
+                if isinstance(value, ResultBaseModel):
                     value.download_method = values['case']._download_file
                     values[field.name] = value
 
         return values
+    
 
-    # pylint: disable=protected-access
-    def _download_file(
-        self,
-        downloadable: str,
-        to_file=".",
-        to_folder=".",
-        overwrite: bool = True,
-        **kwargs,
-    ):
-        """
-        Download a specific file associated with the case.
-
-        Parameters
-        ----------
-        downloadable : str
-            Name of the file to download
-
-        to_file : str, optional
-            File path to save the downloaded file. If None, the file will be saved in the current directory.
-            If provided without an extension, the extension will be automatically added based on the file type.
-
-        to_folder : str, optional
-            Folder name to save the downloaded file. If None, the file will be saved in the current directory.
-
-        overwrite : bool, optional
-            If True, overwrite existing files with the same name in the destination.
-
-        **kwargs : dict, optional
-            Additional arguments to be passed to the download process.
-
-        Returns
-        -------
-        str
-            File path of the downloaded file.
-        """
-
-        return self.case._download_file(
-            f"results/{downloadable}",
-            to_file=to_file,
-            to_folder=to_folder,
-            overwrite=overwrite,
-            **kwargs,
-        )
+    @pd.validator('monitors', 'user_defined_dynamics')
+    def pass_get_files_function(cls, value, values):
+        value.get_download_file_list_method = values['case'].get_download_file_list
+        return value
 
 
-    def set_destination():
-        pass
 
+    def set_destination(self, folder_name: str):
+        self._downloader_settings.destination = folder_name
 
     def set_downloader(
         self,
         surface: bool = False,
         volume: bool = False,
+        slices: bool = False,
+        isosurfaces: bool = False,
+        monitors: bool = False,
         nonlinear_residuals: bool = False,
         linear_residuals: bool = False,
         cfl: bool = False,
         minmax_state: bool = False,
+        max_residual_location: bool = False,
         surface_forces: bool = False,
         total_forces: bool = False,
         bet_forces: bool = False,
-        actuator_disk_output: bool = False,
+        actuator_disks: bool = False,
+        force_distribution: bool = False,
+        user_defined_dynamics: bool = False,
+        aeroacoustics: bool = False,
+        surface_heat_transfer: bool = False,
         all: bool = False,
         overwrite: bool = False,
         destination: str = ".",
@@ -998,9 +803,36 @@ class CaseResultsModel(pd.BaseModel):
             File paths of the downloaded files.
         """
 
+        self._downloader_settings.surface = surface
+        self._downloader_settings.volume = volume
+        self._downloader_settings.slices = slices
+        self._downloader_settings.isosurfaces = isosurfaces
+        self._downloader_settings.monitors = monitors
+
+        self._downloader_settings.nonlinear_residuals = nonlinear_residuals
+        self._downloader_settings.linear_residuals = linear_residuals
+        self._downloader_settings.cfl = cfl
+        self._downloader_settings.minmax_state = minmax_state
+        self._downloader_settings.max_residual_location = max_residual_location
+
+        self._downloader_settings.surface_forces = surface_forces
+        self._downloader_settings.total_forces = total_forces
+        self._downloader_settings.bet_forces = bet_forces
+        self._downloader_settings.actuator_disks = actuator_disks
+        self._downloader_settings.force_distribution = force_distribution
+
+        self._downloader_settings.user_defined_dynamics = user_defined_dynamics
+        self._downloader_settings.aeroacoustics = aeroacoustics
+        self._downloader_settings.surface_heat_transfer = surface_heat_transfer
+
+        self._downloader_settings.all = all
+        self._downloader_settings.overwrite = overwrite
+        self._downloader_settings.destination = destination
+
+
         download_map = [
-            (surface, CaseDownloadable.SURFACE),
-            (volume, CaseDownloadable.VOLUME),
+            (surface, CaseDownloadable.SURFACES),
+            (volume, CaseDownloadable.VOLUMES),
             (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
             (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
             (cfl, CaseDownloadable.CFL),
@@ -1035,11 +867,11 @@ class CaseResultsModel(pd.BaseModel):
                     )
                     raise err
 
-        if actuator_disk_output or all:
+        if actuator_disks or all:
             try:
                 downloaded_files.append(
                     self._download_file(
-                        CaseDownloadable.ACTUATOR_DISK_OUTPUT,
+                        CaseDownloadable.ACTUATOR_DISKS,
                         to_folder=destination,
                         overwrite=overwrite,
                         log_error=False,
@@ -1047,13 +879,13 @@ class CaseResultsModel(pd.BaseModel):
                 )
             except CloudFileNotFoundError as err:
                 if not self._case.has_actuator_disks():
-                    if actuator_disk_output:
+                    if actuator_disks:
                         log.warning("Case does not have any actuator disks.")
                 else:
                     log.error(
                         (
                             "A problem occured when trying to download actuator disk results:"
-                            f"{CaseDownloadable.ACTUATOR_DISK_OUTPUT}"
+                            f"{CaseDownloadable.ACTUATOR_DISKS}"
                         )
                     )
                     raise err

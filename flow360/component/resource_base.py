@@ -16,6 +16,7 @@ import pydantic as pd
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
+from ..cloud.webbrowser import open_browser
 from ..component.interfaces import BaseInterface
 from ..exceptions import RuntimeError as FlRuntimeError
 from ..log import LogLevel, log
@@ -382,6 +383,10 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method.complete_multipart_upload(
             self.id, remote_file_name, upload_id, uploaded_parts
         )
+
+
+    def open_in_browser(self):
+        open_browser(f"{self._interface().endpoint}/{self.id}")
 
 
 def is_object_cloud_resource(resource: Flow360Resource):
