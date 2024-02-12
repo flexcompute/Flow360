@@ -540,7 +540,7 @@ class FreestreamFromMach(FreestreamBase):
     model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    mu_ref: ViscosityType.NonNegative = pd.Field(alias="muRef", displayed="Dynamic viscosity")
     temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
         alias="Temperature", displayed="Temperature [K]"
     )
@@ -586,7 +586,7 @@ class ZeroFreestream(FreestreamBase):
     model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
     Mach: Literal[0] = pd.Field(0, const=True, displayed="Mach number")
     Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    mu_ref: ViscosityType.NonNegative = pd.Field(alias="muRef", displayed="Dynamic viscosity")
     temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
         alias="Temperature", displayed="Temperature [K]"
     )
