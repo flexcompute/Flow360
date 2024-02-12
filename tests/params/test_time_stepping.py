@@ -24,61 +24,61 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_time_stepping():
-    # ts = SteadyTimeStepping()
-    # assert ts.json()
-    # to_file_from_file_test(ts)
+    ts = SteadyTimeStepping()
+    assert ts.json()
+    to_file_from_file_test(ts)
 
-    # with pytest.raises(pd.ValidationError):
-    #     ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=-0.01)
+    with pytest.raises(pd.ValidationError):
+        ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=-0.01)
 
-    # with pytest.raises(pd.ValidationError):
-    #     ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
+    with pytest.raises(pd.ValidationError):
+        ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=(-0.01, "s"))
 
-    # ts = SteadyTimeStepping(time_step_size="inf")
-    # to_file_from_file_test(ts)
+    ts = SteadyTimeStepping(time_step_size="inf")
+    to_file_from_file_test(ts)
 
-    # ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=0.001 * u.s)
+    ts = UnsteadyTimeStepping(physical_steps=10, time_step_size=0.001 * u.s)
 
-    # to_file_from_file_test(ts)
+    to_file_from_file_test(ts)
 
-    # assert ts.json()
+    assert ts.json()
 
-    # with fl.SI_unit_system:
-    #     params = Flow360Params(
-    #         geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
-    #         fluid_properties=fl.air,
-    #         boundaries={},
-    #         freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
-    #         time_stepping=ts,
-    #     )
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            geometry=Geometry(mesh_unit="mm", ref_area=1 * u.m**2),
+            fluid_properties=fl.air,
+            boundaries={},
+            freestream=FreestreamFromVelocity(velocity=100 * u.m / u.s),
+            time_stepping=ts,
+        )
 
-    #     assertions.assertAlmostEqual(
-    #         json.loads(params.flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
-    #     )
-    #     to_file_from_file_test(ts)
+        assertions.assertAlmostEqual(
+            json.loads(params.flow360_json())["timeStepping"]["timeStepSize"], 340.29400580821286
+        )
+        to_file_from_file_test(ts)
 
-    #     params = Flow360Params(
-    #         geometry={"meshUnit": "mm", "refArea": "m**2"},
-    #         boundaries={},
-    #         fluid_properties=fl.air,
-    #         freestream={"modelType": "FromMach", "temperature": 288.15, "Mach": 1, "mu_ref": 1},
-    #         time_stepping=ts,
-    #     )
+        params = Flow360Params(
+            geometry={"meshUnit": "mm", "refArea": "m**2"},
+            boundaries={},
+            fluid_properties=fl.air,
+            freestream={"modelType": "FromMach", "temperature": 288.15, "Mach": 1, "mu_ref": 1},
+            time_stepping=ts,
+        )
 
-    # exported_json = json.loads(params.flow360_json())
-    # assert "meshUnit" not in exported_json["geometry"]
+    exported_json = json.loads(params.flow360_json())
+    assert "meshUnit" not in exported_json["geometry"]
 
-    # ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3})
-    # assert ts.physical_steps == 3
+    ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3})
+    assert ts.physical_steps == 3
 
-    # ts = UnsteadyTimeStepping.parse_obj({"physicalSteps": 2})
-    # assert ts.physical_steps == 2
+    ts = UnsteadyTimeStepping.parse_obj({"physicalSteps": 2})
+    assert ts.physical_steps == 2
 
-    # with pytest.raises(ValueError):
-    #     ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
+    with pytest.raises(ValueError):
+        ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physical_steps": 2})
 
-    # with pytest.raises(ValueError):
-    #     ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
+    with pytest.raises(ValueError):
+        ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "physicalSteps": 2})
 
     ## Tests for default values
     def assert_CFL(ts, trueValue):

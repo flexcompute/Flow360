@@ -40,7 +40,7 @@ class RampCFL(Flow360BaseModel):
         """
         returns default unsteady Ramp CFL settings
         """
-        return cls(initial=1, final=1e6, ramp_steps=30)  ## Unknown value source
+        return cls(initial=1, final=1e6, ramp_steps=30)
 
     @classmethod
     def default_steady(cls):
@@ -113,7 +113,7 @@ class SteadyTimeStepping(BaseTimeStepping):
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
         displayed="CFL",
         options=["Ramp CFL", "Adaptive CFL"],
-        default=AdaptiveCFL().default_steady(),
+        default=AdaptiveCFL.default_steady(),
     )
 
     @pd.root_validator(pre=True)
