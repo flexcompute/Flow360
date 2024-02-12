@@ -118,6 +118,9 @@ class SteadyTimeStepping(BaseTimeStepping):
 
     @pd.root_validator(pre=True)
     def set_default_cfl(cls, values):
+        """
+        Populate CFL's None fields with default
+        """
         if "CFL" not in values:
             return values  # will be handeled by default
         cfl_input = values["CFL"]
@@ -144,6 +147,9 @@ class UnsteadyTimeStepping(BaseTimeStepping):
 
     @pd.root_validator(pre=True)
     def set_default_cfl(cls, values):
+        """
+        Populate CFL's None fields with default
+        """
         if "CFL" not in values:
             return values  # will be handeled by default
         cfl_input = values["CFL"]
