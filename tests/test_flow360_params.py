@@ -35,6 +35,8 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     MeshBoundary,
     MeshSlidingInterface,
+    PorousMedium,
+    PorousMediumVolumeZone,
     SlidingInterface,
     UnsteadyTimeStepping,
     VolumeZones,
@@ -501,3 +503,31 @@ def test_params_temperature_consistency():
         fluid_properties = (
             fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),
         )
+
+
+def test_flow360_will_export():
+    pmvz = PorousMediumVolumeZone(
+        zone_type="box",
+        center=[1, 2, 3],
+        lengths=[3, 4, 5],
+        axes=[[0, 1, 0], [1, 0, 0]],
+        windowing_lengths=[0.5, 0.5, 0.5],
+    )
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            freestream=fl.FreestreamFromMach(Mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+            fluid_properties=fl.AirDensityTemperature(
+                temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3
+            ),
+            boundaries={},
+            porous_media=[
+                PorousMedium(
+                    darcy_coefficient=[1, 1, 1], forchheimer_coefficient=[1, 1, 1], volume_zone=pmvz
+                )
+            ],
+        )
+
+    params.set_will_export_to_flow360(True)
+    assert params.freestream._will_export_to_flow360 == True
+    assert params.porous_media[0]._will_export_to_flow360 == True
