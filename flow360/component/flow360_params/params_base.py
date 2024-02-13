@@ -971,6 +971,12 @@ class Flow360BaseModel(BaseModel):
         for value in self.__dict__.values():
             if isinstance(value, Flow360BaseModel):
                 value.set_will_export_to_flow360(flag)
+            elif isinstance(value, list):
+                [
+                    item.set_will_export_to_flow360(flag)
+                    for item in value
+                    if isinstance(item, Flow360BaseModel)
+                ]
 
     def dict(self, *args, exclude=None, **kwargs) -> dict:
         """Returns dict representation of the model.
