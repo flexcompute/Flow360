@@ -737,9 +737,43 @@ class CaseResultsModel(pd.BaseModel):
         return value
 
 
+    def download(self):
+        for property_name, value in self.__dict__.items():
+            if isinstance(value, ResultBaseModel):
+                print(f"will download: {property_name}")
+                if value.do_download is True:
+                    pass
 
-    def set_destination(self, folder_name: str):
-        self._downloader_settings.destination = folder_name
+    def set_destination(self, folder_name: str = None, use_case_name: bool = None, use_case_id: bool = None):
+        """
+        Set the destination for downloading files.
+
+        Parameters
+        ----------
+        folder_name : str, optional
+            The name of the folder where files will be downloaded.
+        use_case_name : bool, optional
+            Whether to use the use case name for the destination.
+        use_case_id : bool, optional
+            Whether to use the use case ID for the destination.
+
+        Raises
+        ------
+        ValueError
+            If more than one argument is provided or if no arguments are provided.
+
+        """
+        # Check if only one argument is provided
+        if sum(arg is not None for arg in [folder_name, use_case_name, use_case_id]) != 1:
+            raise ValueError("Exactly one argument should be provided.")
+        
+        if folder_name is not None:
+            self._downloader_settings.destination = folder_name
+        if use_case_name is True:
+            self._downloader_settings.destination = self.case.name
+        if use_case_id is True:
+            self._downloader_settings.destination = self.case.id
+
 
     def set_downloader(
         self,
@@ -803,94 +837,94 @@ class CaseResultsModel(pd.BaseModel):
             File paths of the downloaded files.
         """
 
-        self._downloader_settings.surface = surface
-        self._downloader_settings.volume = volume
-        self._downloader_settings.slices = slices
-        self._downloader_settings.isosurfaces = isosurfaces
-        self._downloader_settings.monitors = monitors
+        self.surfaces.do_download = surface
+        self.volumes.do_download = volume
+        self.slices.do_download = slices
+        self.isosurfaces.do_download = isosurfaces
+        self.monitors.do_download = monitors
 
-        self._downloader_settings.nonlinear_residuals = nonlinear_residuals
-        self._downloader_settings.linear_residuals = linear_residuals
-        self._downloader_settings.cfl = cfl
-        self._downloader_settings.minmax_state = minmax_state
-        self._downloader_settings.max_residual_location = max_residual_location
+        self.nonlinear_residuals.do_download = nonlinear_residuals
+        self.linear_residuals.do_download = linear_residuals
+        self.cfl.do_download = cfl
+        self.minmax_state.do_download = minmax_state
+        self.max_residual_location.do_download = max_residual_location
 
-        self._downloader_settings.surface_forces = surface_forces
-        self._downloader_settings.total_forces = total_forces
-        self._downloader_settings.bet_forces = bet_forces
-        self._downloader_settings.actuator_disks = actuator_disks
-        self._downloader_settings.force_distribution = force_distribution
+        self.surface_forces.do_download = surface_forces
+        self.total_forces.do_download = total_forces
+        self.bet_forces.do_download = bet_forces
+        self.actuator_disks.do_download = actuator_disks
+        self.force_distribution.do_download = force_distribution
 
-        self._downloader_settings.user_defined_dynamics = user_defined_dynamics
-        self._downloader_settings.aeroacoustics = aeroacoustics
-        self._downloader_settings.surface_heat_transfer = surface_heat_transfer
+        self.user_defined_dynamics.do_download = user_defined_dynamics
+        self.aeroacoustics.do_download = aeroacoustics
+        self.surface_heat_transfer.do_download = surface_heat_transfer
 
         self._downloader_settings.all = all
         self._downloader_settings.overwrite = overwrite
         self._downloader_settings.destination = destination
 
 
-        download_map = [
-            (surface, CaseDownloadable.SURFACES),
-            (volume, CaseDownloadable.VOLUMES),
-            (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
-            (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
-            (cfl, CaseDownloadable.CFL),
-            (minmax_state, CaseDownloadable.MINMAX_STATE),
-            (surface_forces, CaseDownloadable.SURFACE_FORCES),
-            (total_forces, CaseDownloadable.TOTAL_FORCES),
-        ]
-        downloaded_files = []
-        for do_download, filename in download_map:
-            if do_download or all:
-                downloaded_files.append(
-                    self._download_file(filename, to_folder=destination, overwrite=overwrite)
-                )
+        # download_map = [
+        #     (surface, CaseDownloadable.SURFACES),
+        #     (volume, CaseDownloadable.VOLUMES),
+        #     (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
+        #     (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
+        #     (cfl, CaseDownloadable.CFL),
+        #     (minmax_state, CaseDownloadable.MINMAX_STATE),
+        #     (surface_forces, CaseDownloadable.SURFACE_FORCES),
+        #     (total_forces, CaseDownloadable.TOTAL_FORCES),
+        # ]
+        # downloaded_files = []
+        # for do_download, filename in download_map:
+        #     if do_download or all:
+        #         downloaded_files.append(
+        #             self._download_file(filename, to_folder=destination, overwrite=overwrite)
+        #         )
 
-        if bet_forces or all:
-            try:
-                downloaded_files.append(
-                    self._download_file(
-                        CaseDownloadable.BET_FORCES,
-                        to_folder=destination,
-                        overwrite=overwrite,
-                        log_error=False,
-                    )
-                )
-            except CloudFileNotFoundError as err:
-                if not self._case.has_bet_disks():
-                    if bet_forces:
-                        log.warning("Case does not have any BET disks.")
-                else:
-                    log.error(
-                        f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
-                    )
-                    raise err
+        # if bet_forces or all:
+        #     try:
+        #         downloaded_files.append(
+        #             self._download_file(
+        #                 CaseDownloadable.BET_FORCES,
+        #                 to_folder=destination,
+        #                 overwrite=overwrite,
+        #                 log_error=False,
+        #             )
+        #         )
+        #     except CloudFileNotFoundError as err:
+        #         if not self._case.has_bet_disks():
+        #             if bet_forces:
+        #                 log.warning("Case does not have any BET disks.")
+        #         else:
+        #             log.error(
+        #                 f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
+        #             )
+        #             raise err
 
-        if actuator_disks or all:
-            try:
-                downloaded_files.append(
-                    self._download_file(
-                        CaseDownloadable.ACTUATOR_DISKS,
-                        to_folder=destination,
-                        overwrite=overwrite,
-                        log_error=False,
-                    )
-                )
-            except CloudFileNotFoundError as err:
-                if not self._case.has_actuator_disks():
-                    if actuator_disks:
-                        log.warning("Case does not have any actuator disks.")
-                else:
-                    log.error(
-                        (
-                            "A problem occured when trying to download actuator disk results:"
-                            f"{CaseDownloadable.ACTUATOR_DISKS}"
-                        )
-                    )
-                    raise err
+        # if actuator_disks or all:
+        #     try:
+        #         downloaded_files.append(
+        #             self._download_file(
+        #                 CaseDownloadable.ACTUATOR_DISKS,
+        #                 to_folder=destination,
+        #                 overwrite=overwrite,
+        #                 log_error=False,
+        #             )
+        #         )
+        #     except CloudFileNotFoundError as err:
+        #         if not self._case.has_actuator_disks():
+        #             if actuator_disks:
+        #                 log.warning("Case does not have any actuator disks.")
+        #         else:
+        #             log.error(
+        #                 (
+        #                     "A problem occured when trying to download actuator disk results:"
+        #                     f"{CaseDownloadable.ACTUATOR_DISKS}"
+        #                 )
+        #             )
+        #             raise err
 
-        return downloaded_files
+        # return downloaded_files
     
 
 

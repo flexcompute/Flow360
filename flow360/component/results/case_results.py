@@ -9,6 +9,8 @@ import re
 from ..flow360_params.conversions import unit_converter
 from ..flow360_params.unit_system import ForceType, PowerType, MomentType, flow360_unit_system
 import numpy as np
+import shutil
+import os
 
 from ...exceptions import ValueError
 
@@ -50,24 +52,6 @@ class CaseDownloadable(Enum):
 
 
 class ResultsDownloaderSettings(pd.BaseModel):
-    surface: bool = pd.Field(False)
-    volume: bool = pd.Field(False)
-    slices: bool = pd.Field(False)
-    isosurfaces: bool = pd.Field(False)
-    monitors: bool = pd.Field(False)
-    nonlinear_residuals: bool = pd.Field(False)
-    linear_residuals: bool = pd.Field(False)
-    cfl: bool = pd.Field(False)
-    minmax_state: bool = pd.Field(False)
-    max_residual_location: bool = pd.Field(False)
-    surface_forces: bool = pd.Field(False)
-    total_forces: bool = pd.Field(False)
-    bet_forces: bool = pd.Field(False)
-    actuator_disks: bool = pd.Field(False)
-    force_distribution: bool = pd.Field(False)
-    surface_heat_transfer: bool = False,
-    aeroacoustics: bool = pd.Field(False)
-    user_defined_dynamics: bool = pd.Field(False)
 
     all: bool = pd.Field(False)
     overwrite: bool = pd.Field(False)
@@ -76,30 +60,53 @@ class ResultsDownloaderSettings(pd.BaseModel):
 
 class ResultBaseModel(pd.BaseModel):
     remote_file_name: str = pd.Field()
+    local_file_name: str = pd.Field(None)
     download_method: Optional[Callable] = pd.Field()
+    do_download: Optional[bool] = pd.Field(None)
+
+    def download(self, filename, overwrite: bool=False):
+        self.download_method(f"results/{self.remote_file_name}", to_file=filename)
+
 
 
 class ResultCSVModel(ResultBaseModel):
-    save: bool = pd.Field(False)
-    save_as: Optional[str] = pd.Field()
     temp_file: str = pd.Field(const=True, default_factory=lambda: tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
 
-    def _read_csv_file(self):
-        df = pandas.read_csv(self.temp_file, skipinitialspace=True)
+    def _read_csv_file(self, filename: str):
+        df = pandas.read_csv(filename, skipinitialspace=True)
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         return df.to_dict('list')
 
     @property
     def raw_values(self):
         if self._raw_values is None:
-            self._download_file()
-            self._raw_values = self._read_csv_file()
+            self.load_from_remote()
         return self._raw_values
 
-    def _download_file(self):
+
+    def load_from_local(self, filename: str):
+        self._raw_values = self._read_csv_file(filename)
+        self.local_file_name = filename
+
+
+    def load_from_remote(self):
         self.download_method(f"results/{self.remote_file_name}", to_file=self.temp_file)
+        self._raw_values = self._read_csv_file(self.temp_file)
+        self.local_file_name = self.temp_file
+
+
+    def download(self, filename, overwrite: bool=False):
+        if os.path.exists(filename) and not overwrite:
+            log.info(f"Skipping {filename}, file exists.")
+        else:
+            if overwrite is True or self.local_file_name is None:
+                self.download_method(f"results/{self.remote_file_name}", to_file=filename)
+            else:
+                shutil.copy(self.temp_file, filename)
+                log.info(f"Saved to {filename}")
+
 
     @property
     def values(self):
@@ -112,7 +119,8 @@ class ResultCSVModel(ResultBaseModel):
         pass
 
     def to_file(self, filename: str=None):
-        pass
+        self.as_dataframe().to_csv(filename)
+        log.info(f"Saved to {filename}")
 
     def as_dict(self):
         return self.values
@@ -127,7 +135,6 @@ class ResultCSVModel(ResultBaseModel):
 
 class ResultTarGZModel(ResultBaseModel):
     def to_file(self, filename: str=None):
-        print(f"results/{self.remote_file_name}")
         self.download_method(f"results/{self.remote_file_name}", to_file=filename)
 
 
