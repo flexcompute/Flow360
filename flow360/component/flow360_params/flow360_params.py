@@ -1689,9 +1689,9 @@ class Flow360ParamsLegacy(LegacyModel):
             params["volume_zones"] = VolumeZones(**volume_zones)
 
         if self._is_web_ui_generated(params.get("fluid_properties"), params.get("freestream")):
-            context = SI_unit_system
+            context = SIUnitSystem(verbose=False)
         else:
-            context = flow360_unit_system
+            context = Flow360UnitSystem(verbose=False)
 
         with context:
             params.update(
