@@ -337,8 +337,8 @@ class DimensionedType(ValidatedType):
                 field_schema["properties"]["value"]["type"] = "array"
                 field_schema["properties"]["value"]["items"] = {"type": "number"}
                 if length is not None:
-                    field_schema["properties"]["value"]["items"]["minItems"] = length
-                    field_schema["properties"]["value"]["items"]["maxItems"] = length
+                    field_schema["properties"]["value"]["minItems"] = length
+                    field_schema["properties"]["value"]["maxItems"] = length
                 if length == 3:
                     field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
@@ -1108,8 +1108,8 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["SI"] = pd.Field("SI", const=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.SI)
+    def __init__(self,  verbose: bool = True):
+        super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
 
     @classmethod
     def validate(cls, _):
