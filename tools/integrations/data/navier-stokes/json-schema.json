@@ -1,0 +1,131 @@
+{
+  "title": "Navier stokes solver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolute tolerance",
+      "default": 1e-10,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relative tolerance",
+      "default": 0,
+      "type": "number"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 1.0,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "kappaMUSCL": {
+      "title": "Kappa MUSCL",
+      "default": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update Jacobian frequency",
+      "default": 4,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation eval frequency",
+      "default": 1,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "numericalDissipationFactor": {
+      "title": "Numerical dissipation factor",
+      "default": 1,
+      "minimum": 0.01,
+      "maximum": 1,
+      "type": "number"
+    },
+    "limitVelocity": {
+      "title": "Limit velocity",
+      "default": false,
+      "type": "boolean"
+    },
+    "limitPressureDensity": {
+      "title": "Limit pressure density",
+      "default": false,
+      "type": "boolean"
+    },
+    "_addLinearSolverConfig": {
+      "title": "Linear solver config",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "dependencies": {
+    "_addLinearSolverConfig": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolverConfig": {
+              "default": true,
+              "const": true,
+              "type": "boolean"
+            },
+            "linearSolverConfig": {
+              "title": "Linear solver config",
+              "type": "object",
+              "properties": {
+                "maxIterations": {
+                  "title": "Max iterations",
+                  "default": 50,
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                "absoluteTolerance": {
+                  "title": "Absolute tolerance",
+                  "default": 1e-10,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "relativeTolerance": {
+                  "title": "Relative tolerance",
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolverConfig": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

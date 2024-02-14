@@ -8,71 +8,40 @@ boundaries:
     '3':
         name: freestream
         type: Freestream
+fluidProperties:
+    density:
+        units: kg/m**3
+        value: 1.225
+    modelType: AirDensity
+    temperature:
+        units: K
+        value: 288.15
 freestream:
-    speed:
-        v: 286
-        unit: m/s
-    Temperature: 288.15
-    density: 1.225
     alphaAngle: 3.06
+    betaAngle: 0.0
+    modelType: FromVelocity
+    velocity:
+        units: m/s
+        value: 286.0
 geometry:
+    meshUnit:
+        units: m
+        value: 1.0
     momentLength:
-    - 1.47602
-    - 0.801672958512342
-    - 1.47602
-    refArea: 1.15315084119231
-    meshUnit: m
-sliceOutput:
-    outputFormat: tecplot
-    outputFields:
-    - Cp
-    slices:
-        x0:
-            outputFields:
-            - Mach
-            sliceNormal:
-            - 1
-            - 0
-            - 0
-            sliceOrigin:
-            - 0
-            - 0
-            - 0
-        y1:
-            outputFields:
-            - T
-            sliceNormal:
-            - 0
-            - 1
-            - 0
-            sliceOrigin:
-            - 2
-            - 1
-            - 0
-surfaceOutput:
-    outputFormat: tecplot
-    outputFields: 
-    - yPlus
-    - primitiveVars
-    surfaces:
-        freestream:
-            outputFields:
-            - Cp
-            - Mach
-            # Will output Cp, Mach, yPlus, primitiveVars
-        symmetry:
-            outputFields:
-            - T
-            - heatFlux
-            # Will output T, heatFlux, yPlus, primitiveVars
-        wing:
-            outputFields: 
-            - CfVec
-            # Will output CfVec, yPlus, primitiveVars
-
-volumeOutput:
-    outputFormat: tecplot
-    outputFields:
-    - Mach
-    - primitiveVars
-
+        units: m
+        value:
+        - 1.47602
+        - 0.801672958512342
+        - 1.47602
+    refArea:
+        units: m**2
+        value: 1.15315084119231
+hash: a544649dbfdac16b0f892704a63f11cc51ca6e572af526433165090a7fb87670
+timeStepping:
+    maxPseudoSteps: 500
+    modelType: Steady
+    physicalSteps: 1
+    timeStepSize: inf
+unitSystem:
+    name: SI
+version: 0.2.0b18

@@ -1,9 +1,12 @@
 """
 Version control module
 """
+
 __version__ = "22.2.3.0"
 
 import re
+
+from flow360.exceptions import Flow360RuntimeError
 
 
 class Flow360Version:
@@ -17,7 +20,7 @@ class Flow360Version:
         ret = re.findall("^([a-zA-Z0-9\-]+)-([0-9\.]+)$", version)
         if len(ret) != 1:
             print("matched version = " + str(ret))
-            raise RuntimeError("solver version is not valid: {}".format(version))
+            raise Flow360RuntimeError("solver version is not valid: {}".format(version))
         self.head = ret[0][0]
         self.tail = [int(i) for i in ret[0][1].strip().split(".")]
         if self.head == "master":

@@ -1,6 +1,7 @@
 """
 Flow360 meshing parameters
 """
+
 from typing import List, Optional, Union, get_args
 
 import pydantic as pd
@@ -147,7 +148,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
     )
     growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
 
-    def to_flow360_json(self) -> dict:
+    def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
 
         Returns
@@ -157,7 +158,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
 
         Example
         -------
-        >>> params.to_flow360_json() # doctest: +SKIP
+        >>> params.flow360_json() # doctest: +SKIP
         """
 
         return self.json(encoder=flow360_json_encoder)
@@ -250,7 +251,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
 
-    def to_flow360_json(self) -> dict:
+    def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
 
         Returns
@@ -260,7 +261,7 @@ class VolumeMeshingParams(Flow360BaseModel):
 
         Example
         -------
-        >>> params.to_flow360_json() # doctest: +SKIP
+        >>> params.flow360_json() # doctest: +SKIP
         """
 
         return self.json(encoder=flow360_json_encoder)

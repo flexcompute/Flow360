@@ -1,38 +1,36 @@
 {
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "0.2.0b18",
     "geometry": {
         "refArea": {
-            "units": "m**2",
-            "value": 1.15315084119231
-        },
-        "momentCenter": {
-            "units": "m",
-            "value": [
-                0.0,
-                0.0,
-                0.0
-            ]
+            "value": 1.15315084119231,
+            "units": "m**2"
         },
         "momentLength": {
-            "units": "m",
             "value": [
                 1.47602,
                 0.801672958512342,
                 1.47602
-            ]
+            ],
+            "units": "m"
         },
         "meshUnit": {
-            "units": "m",
-            "value": 1.0
+            "value": 1.0,
+            "units": "m"
         }
     },
     "boundaries": {
-        "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
-        },
         "3": {
             "type": "Freestream",
-            "name": "freestream"
+            "name": "freestream",
+            "velocityType": "relative"
+        },
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing",
+            "velocityType": "relative"
         },
         "2": {
             "type": "SlipWall",
@@ -40,32 +38,43 @@
         }
     },
     "timeStepping": {
-        "timeStepSize": "inf"
+        "maxPseudoSteps": 2000,
+        "modelType": "Steady",
+        "physicalSteps": 1,
+        "timeStepSize": "inf",
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        }
     },
     "navierStokesSolver": {
-        "CFLMultiplier": 1.0,
-        "equationEvalFrequency": 1,
-        "kappaMUSCL": -1.0,
-        "limitPressureDensity": false,
-        "limitVelocity": false,
-        "linearIterations": 10,
-        "linearSolver": {
-            "absoluteTolerance": 1.0e-10,
-            "maxIterations": 30
-        },
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "numericalDissipationFactor": 1.0,
-        "orderOfAccuracy": 2,
+        "absoluteTolerance": 1.0e-10,
         "relativeTolerance": 0.0,
-        "updateJacobianFrequency": 4
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "updateJacobianFrequency": 4,
+        "equationEvalFrequency": 1,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "numericalDissipationFactor": 1.0,
+        "linearSolverConfig": {
+            "maxIterations": 30,
+            "absoluteTolerance": 1e-10
+        },
+        "limitVelocity": false,
+        "limitPressureDensity": false
     },
     "freestream": {
+        "modelType": "FromVelocity",
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
         "velocity": {
             "value": 286.0,
             "units": "m/s"
-        },
-        "alphaAngle": 3.06,
-        "betaAngle": 0.0
+        }
     },
     "surfaceOutput": {
         "outputFormat": "tecplot",
@@ -74,22 +83,14 @@
             "primitiveVars"
         ],
         "surfaces": {
-            "freestream": {
-                "outputFields": [
-                    "Cp",
-                    "Mach"
-                ]
-            },
             "symmetry": {
-                "outputFields": [
-                    "T",
-                    "heatFlux"
-                ]
+                "outputFields": [ "T", "heatFlux" ]
+            },
+            "freestream": {
+                "outputFields": [ "Cp", "Mach" ]
             },
             "wing": {
-                "outputFields": [
-                    "CfVec"
-                ]
+                "outputFields": [ "CfVec" ]
             }
         }
     },
@@ -107,35 +108,36 @@
         ],
         "slices": {
             "x0": {
-                "outputFields": [
-                    "Mach"
-                ],
                 "sliceNormal": [
                     1,
                     0,
                     0
                 ],
                 "sliceOrigin": [
-                    0,
-                    0,
-                    0
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "outputFields": [
+                    "Mach"
                 ]
             },
             "y1": {
-                "outputFields": [
-                    "T"
-                ],
                 "sliceNormal": [
                     0,
                     1,
                     0
                 ],
                 "sliceOrigin": [
-                    2,
-                    1,
-                    0
+                    2.0,
+                    1.0,
+                    0.0
+                ],
+                "outputFields": [
+                    "T"
                 ]
             }
         }
-    }
+    },
+    "hash": "b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b"
 }

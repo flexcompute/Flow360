@@ -3,6 +3,7 @@ import unittest
 import pydantic as pd
 import pytest
 
+import flow360
 from flow360.component.flow360_params.flow360_output import (
     AnimationSettings,
     AnimationSettingsExtended,
@@ -15,7 +16,11 @@ from flow360.component.flow360_params.flow360_output import (
     SurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.flow360_params.flow360_params import AeroacousticOutput
+from flow360.component.flow360_params.flow360_params import (
+    AeroacousticOutput,
+    Flow360Params,
+    FreestreamFromMach,
+)
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -103,13 +108,13 @@ def test_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation_settings=AnimationSettings(frequency=-1),
+            animation_frequency=-2,
             output_fields=["Cp", "qcriterion"],
         )
 
     with pytest.raises(pd.ValidationError):
         output = SurfaceOutput(
-            animation_settings=AnimationSettings(frequency_time_average=-1),
+            animation_frequency_time_average=-2,
             output_fields=["Cp", "qcriterion"],
         )
 
@@ -126,6 +131,20 @@ def test_surface_output():
 
     to_file_from_file_test(output)
 
+    output = SurfaceOutput(
+        output_fields=["Coefficient of pressure", "qcriterion"],
+    )
+
+    with flow360.SI_unit_system:
+        params = Flow360Params(
+            surface_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
+        solver_params = params.to_solver()
+
+        assert solver_params.surface_output.output_fields == ["Cp", "qcriterion"]
+
 
 def test_slice_output():
     output = SliceOutput()
@@ -133,13 +152,11 @@ def test_slice_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = SliceOutput(
-            animation_settings=AnimationSettings(frequency=-2), output_fields=["Cp", "qcriterion"]
-        )
+        output = SliceOutput(animation_frequency=-2, output_fields=["Cp", "qcriterion"])
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            animation_settings=AnimationSettings(frequency_offset=0),
+            animation_frequency_offset=0,
             output_fields=["invalid_field", "qcriterion"],
         )
 
@@ -147,13 +164,25 @@ def test_slice_output():
 
     assert output
 
-    output = SliceOutput(
-        animation_settings=AnimationSettings(frequency_offset=1), output_fields=["Cp", "qcriterion"]
-    )
+    output = SliceOutput(animation_frequency_offset=1, output_fields=["Cp", "qcriterion"])
 
     assert output
 
     to_file_from_file_test(output)
+
+    output = SliceOutput(
+        output_fields=["Coefficient of pressure", "qcriterion"],
+    )
+
+    with flow360.SI_unit_system:
+        params = Flow360Params(
+            slice_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
+        solver_params = params.to_solver()
+
+        assert solver_params.slice_output.output_fields == ["Cp", "qcriterion"]
 
 
 def test_volume_output():
@@ -162,18 +191,14 @@ def test_volume_output():
     assert output
 
     with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(
-            animation_settings=AnimationSettings(frequency=-1), output_fields=["Cp", "qcriterion"]
-        )
+        output = VolumeOutput(animation_frequency=-2, output_fields=["Cp", "qcriterion"])
+
+    with pytest.raises(pd.ValidationError):
+        output = VolumeOutput(animation_frequency=0, output_fields=["Cp", "qcriterion"])
 
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(
-            animation_settings=AnimationSettings(frequency=0), output_fields=["Cp", "qcriterion"]
-        )
-
-    with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(
-            animation_settings=AnimationSettings(frequency=1),
+            animation_frequency=1,
             output_fields=["invalid_field", "qcriterion"],
         )
 
@@ -182,13 +207,27 @@ def test_volume_output():
     assert output
 
     output = VolumeOutput(
-        animation_settings=AnimationSettingsExtended(frequency_time_average=1),
+        animation_frequency_time_average=1,
         output_fields=["Cp", "qcriterion"],
     )
 
     assert output
 
     to_file_from_file_test(output)
+
+    output = VolumeOutput(
+        output_fields=["Coefficient of pressure", "qcriterion"],
+    )
+
+    with flow360.SI_unit_system:
+        params = Flow360Params(
+            volume_output=output,
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
+        solver_params = params.to_solver()
+
+        assert solver_params.volume_output.output_fields == ["Cp", "qcriterion"]
 
 
 def test_iso_surface_output():
@@ -206,7 +245,7 @@ def test_iso_surface_output():
 
     with pytest.raises(pd.ValidationError):
         output = IsoSurfaceOutput(
-            animation_settings=AnimationSettings(frequency=0),
+            animation_frequency=0,
             iso_surfaces={"s1": iso_surface},
         )
 

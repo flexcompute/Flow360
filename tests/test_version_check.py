@@ -5,7 +5,7 @@ import pytest
 import requests
 
 import flow360.version_check as vc
-from flow360.exceptions import WebError
+from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 
 from .mock_server import mock_response
 from .utils import (
@@ -25,13 +25,13 @@ def test_get_supported_server_versions(mock_response):
         mock_get.side_effect = requests.exceptions.HTTPError()
 
         # Check if the expected error message is raised
-        with pytest.raises(WebError) as exc_info:
+        with pytest.raises(Flow360WebError) as exc_info:
             vc.get_supported_server_versions()
         assert str(exc_info.value) == "failed to retrieve the versions for flow360-python-client-v2"
 
     # Test with no version
     empty_mock_webapi_data_version_check()
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(Flow360RuntimeError) as exc_info:
         vc.get_supported_server_versions()
     info = str(exc_info.value)
     assert (

@@ -1,6 +1,7 @@
 """
 Utility functions
 """
+
 import os
 import uuid
 from functools import wraps
@@ -11,8 +12,7 @@ import zstandard as zstd
 from ..accounts_utils import Accounts
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
-from ..exceptions import TypeError as FlTypeError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
 
 
@@ -28,7 +28,7 @@ def is_valid_uuid(id, allow_none=False):
             id = id[len("folder-") :]
         uuid.UUID(str(id))
     except ValueError as exc:
-        raise FlValueError(f"{id} is not a valid UUID.") from exc
+        raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 
 
 def beta_feature(feature_name: str):
@@ -103,7 +103,7 @@ def validate_type(value, parameter_name: str, expected_type):
         when value is not expected_type
     """
     if not isinstance(value, expected_type):
-        raise FlTypeError(
+        raise Flow360TypeError(
             f"Expected type={expected_type} for {parameter_name}, but got value={value} (type={type(value)})"
         )
 

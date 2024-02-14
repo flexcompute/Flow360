@@ -1,6 +1,7 @@
 """
 Parallel Compress and Multiupload Flow360Resource to S3
 """
+
 import bz2
 import concurrent.futures
 import os

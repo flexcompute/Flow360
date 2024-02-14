@@ -1,7 +1,8 @@
 """
 Output field definitions
 """
-from typing import Literal, get_args, get_origin
+
+from typing import List, Literal, get_args, get_origin
 
 CommonFieldNamesFull = Literal[
     "Coefficient of pressure",
@@ -25,6 +26,7 @@ CommonFieldNamesFull = Literal[
     "Wall distance",
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
+    "Velocity with respect to non-inertial frame",
 ]
 
 CommonFieldNames = Literal[
@@ -47,8 +49,9 @@ CommonFieldNames = Literal[
     "T",
     "vorticity",
     "wallDistance",
-    "lowNumericalDissipationSensor",
+    "numericalDissipationFactor",
     "residualHeatSolver",
+    "VelocityRelative",
 ]
 
 SurfaceFieldNamesFull = Literal[
@@ -59,9 +62,9 @@ SurfaceFieldNamesFull = Literal[
     "Magnitude of CfVec tangent to the wall",
     "Non-dimensional heat flux",
     "Wall normals",
-    "Spalart-Almaras variable",
-    "Velocity in rotating frame",
+    "Spalart-Allmaras variable",
     "Non-dimensional wall distance",
+    "Wall function metrics",
 ]
 
 SurfaceFieldNames = Literal[
@@ -73,12 +76,11 @@ SurfaceFieldNames = Literal[
     "heatFlux",
     "nodeNormals",
     "nodeForcesPerUnitArea",
-    "VelocityRelative",
     "yPlus",
     "wallFunctionMetric",
 ]
 
-VolumeFieldNamesFull = CommonFieldNamesFull
+VolumeFieldNamesFull = Literal[CommonFieldNamesFull, "BET Metrics", "BET Metrics per Disk"]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
 
@@ -112,6 +114,12 @@ IsoSurfaceFieldNames = Literal[
     "nuHat",
 ]
 
+AllFieldNamesFull = Literal[
+    CommonFieldNamesFull, SurfaceFieldNamesFull, VolumeFieldNamesFull, IsoSurfaceFieldNamesFull
+]
+
+AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
+
 
 def _get_field_values(field_type, names):
     for arg in get_args(field_type):
@@ -121,8 +129,58 @@ def _get_field_values(field_type, names):
             names += [arg]
 
 
-def get_field_values(field_type):
+def get_field_values(field_type) -> List[str]:
     """Retrieve field names from a nested literal type as list of strings"""
     values = []
     _get_field_values(field_type, values)
     return values
+
+
+def get_aliases(name) -> List[str]:
+    """Retrieve all aliases for the given field full name or shorthand"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in short:
+        i = short.index(name)
+        return [name, full[i]]
+
+    if name in full:
+        i = full.index(name)
+        return [name, short[i]]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+def to_short(name) -> str:
+    """Retrieve shorthand equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in short:
+        return name
+    if name in full:
+        i = full.index(name)
+        return short[i]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+def to_full(name) -> str:
+    """Retrieve full name equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in full:
+        return name
+    if name in short:
+        i = short.index(name)
+        return full[i]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFull)):
+    raise ImportError(
+        "Full names and shorthands for output fields have mismatched lengths, which is not allowed"
+    )

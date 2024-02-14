@@ -1,18 +1,21 @@
+import os
 import unittest
 
 import pydantic as pd
 import pytest
 
+import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
     KOmegaSST,
     LinearSolver,
-    NavierStokesSolver,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
 )
+from flow360.component.flow360_params.solvers import NavierStokesSolver
+from flow360.flags import Flags
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -45,7 +48,6 @@ def test_navier_stokes():
         kappa_MUSCL=-1,
         relative_tolerance=0,
         CFL_multiplier=1,
-        linear_iterations=30,
         update_jacobian_frequency=4,
         equation_eval_frequency=1,
         max_force_jac_update_physical_steps=1,
@@ -53,10 +55,12 @@ def test_navier_stokes():
         limit_velocity=True,
         limit_pressure_density=False,
     )
-    p = Flow360Params(
-        navier_stokes_solver=ns,
-        freestream={"Mach": 1, "Temperature": 1, "muRef": 1},
-    )
+    with fl.SI_unit_system:
+        p = Flow360Params(
+            navier_stokes_solver=ns,
+            boundaries={},
+            freestream={"modelType": "FromMach", "Mach": 1, "Temperature": 1, "muRef": 1},
+        )
     to_file_from_file_test(p)
 
 
@@ -100,11 +104,26 @@ def test_transition():
 def test_heat_equation():
     he = HeatEquationSolver(
         equation_eval_frequency=10,
-        linear_solver=LinearSolver(
+        linearSolverConfig=LinearSolver(
             absoluteTolerance=1e-10,
             max_iterations=50,
         ),
     )
+
     assert he
 
-    compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+    if Flags.beta_features():
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
+    else:
+        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+
+
+def test_turbulence_none_solver():
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 300, "mu_ref": 1},
+            boundaries={},
+            turbulence_model_solver=NoneSolver(),
+        )
+
+    to_file_from_file_test(params)

@@ -6,7 +6,7 @@ my_cases = MyCases()
 
 for case in my_cases:
     print(case)
-    if case.is_finished():
+    if case.is_finished() and case.status.value != "error":
         break
     else:
         print(f"Skipping case {case.name} because status={case.status}")

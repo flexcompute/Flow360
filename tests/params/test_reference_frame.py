@@ -11,9 +11,8 @@ from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    TimeStepping,
 )
-from flow360.exceptions import ConfigError, ValidationError
+from flow360.exceptions import Flow360ConfigError, Flow360ValidationError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -37,6 +36,7 @@ def test_reference_frames():
                 mesh_unit=u.mm,
             ),
             fluid_properties=fl.air,
+            boundaries={},
             volume_zones={
                 "zone1": fl.FluidDynamicsVolumeZone(
                     reference_frame=fl.ReferenceFrame(
@@ -54,6 +54,7 @@ def test_reference_frames():
                     )
                 ),
             },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
         )
 
     params_solver = params.to_solver()

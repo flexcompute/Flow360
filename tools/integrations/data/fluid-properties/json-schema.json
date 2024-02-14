@@ -1,0 +1,113 @@
+{
+  "title": "Fluid properties",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "From density and temperature",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "AirDensity",
+          "const": "AirDensity",
+          "type": "string"
+        },
+        "density": {
+          "title": "Density",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "density",
+              "enum": [
+                "kg/m**3",
+                "g/cm**3",
+                "lb/ft**3",
+                "flow360_density_unit"
+              ]
+            }
+          }
+        },
+        "temperature": {
+          "title": "Temperature",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "type": "string",
+              "dimension": "temperature",
+              "enum": [
+                "K",
+                "R",
+                "flow360_temperature_unit"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "density",
+        "temperature"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "From pressure and temperature",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "AirPressure",
+          "const": "AirPressure",
+          "type": "string"
+        },
+        "pressure": {
+          "title": "Pressure",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "pressure",
+              "enum": [
+                "Pa",
+                "dyn/cm**2",
+                "lbf/ft**2",
+                "flow360_pressure_unit"
+              ]
+            }
+          }
+        },
+        "temperature": {
+          "title": "Temperature",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "type": "string",
+              "dimension": "temperature",
+              "enum": [
+                "K",
+                "R",
+                "flow360_temperature_unit"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "pressure",
+        "temperature"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

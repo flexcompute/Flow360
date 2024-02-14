@@ -1,0 +1,15 @@
+{
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "outputFormat",
+    "*",
+    "isoSurfaces"
+  ],
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}

@@ -1,6 +1,8 @@
 """
 Unit system definitions and utilities
 """
+
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -8,7 +10,7 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List
+from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
 import pydantic as pd
@@ -67,6 +69,7 @@ class UnitSystemManager:
         Get the current UnitSystem.
         :return: UnitSystem
         """
+
         return self._current
 
     def copy_current(self):
@@ -75,7 +78,8 @@ class UnitSystemManager:
         :return: UnitSystem
         """
         if self._current:
-            return self._current.copy(deep=True)
+            copy = self._current.copy(deep=True)
+            return copy
         return None
 
     def set_current(self, unit_system: UnitSystem):
@@ -107,12 +111,17 @@ def _unit_object_parser(value, unyt_types: List[type]):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
-    if isinstance(value, dict) and "value" in value and "units" in value:
-        for unyt_type in unyt_types:
-            try:
-                return unyt_type(value["value"], value["units"])
-            except u.exceptions.UnitParseError:
-                pass
+    if isinstance(value, dict) and "units" in value:
+        if "value" in value:
+            for unyt_type in unyt_types:
+                try:
+                    return unyt_type(value["value"], value["units"])
+                except u.exceptions.UnitParseError:
+                    pass
+        else:
+            raise TypeError(
+                f"Dimensioned type instance {value} expects a 'value' field which was not given"
+            )
     return value
 
 
@@ -121,7 +130,10 @@ def _is_unit_validator(value):
     Parses str (eg: "m", "cm"), into unyt.Unit object
     """
     if isinstance(value, str):
-        value = u.Unit(value)
+        try:
+            value = u.Unit(value)
+        except u.exceptions.UnitParseError as err:
+            raise TypeError(str(err)) from err
     return value
 
 
@@ -196,7 +208,10 @@ class DimensionedType(ValidatedType):
         value = _unit_inference_validator(value, cls.dim_name)
         value = _has_dimensions_validator(value, cls.dim)
 
-        return 1.0 * value
+        if isinstance(value, u.Unit):
+            return 1.0 * value
+
+        return value
 
     # pylint: disable=unused-argument
     @classmethod
@@ -219,7 +234,8 @@ class DimensionedType(ValidatedType):
                 str(_flow360_system[cls.dim_name]),
             ]
             units += [str(unit) for unit in extra_units[cls.dim_name]]
-            field_schema["properties"]["units"]["enum"] = list(dict.fromkeys(units))
+            units = list(dict.fromkeys(units))
+            field_schema["properties"]["units"]["enum"] = units
 
     class _Constrained:
         """
@@ -245,7 +261,7 @@ class DimensionedType(ValidatedType):
                 return dimensioned_value
 
             def __modify_schema__(con_cls, field_schema, field):
-                DimensionedType.__modify_schema__(field_schema, field)
+                dim_type.__modify_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
                 if constraints.ge is not None:
                     field_schema["properties"]["value"]["minimum"] = constraints.ge
@@ -317,20 +333,25 @@ class DimensionedType(ValidatedType):
             """Get a dynamically created metaclass representing the vector"""
 
             def __modify_schema__(field_schema, field):
-                DimensionedType.__modify_schema__(field_schema, field)
+                dim_type.__modify_schema__(field_schema, field)
                 field_schema["properties"]["value"]["type"] = "array"
-                field_schema["properties"]["value"]["items"] = {}
-                field_schema["properties"]["value"]["items"]["type"] = "number"
+                field_schema["properties"]["value"]["items"] = {"type": "number"}
                 if length is not None:
                     field_schema["properties"]["value"]["items"]["minItems"] = length
                     field_schema["properties"]["value"]["items"]["maxItems"] = length
+                if length == 3:
+                    field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
             def validate(vec_cls, value):
                 """additional validator for value"""
                 value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                 value = _is_unit_validator(value)
 
-                if not isinstance(value, Collection) and length is not None and len(value) != length:
+                is_collection = isinstance(value, Collection) or (
+                    isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                )
+
+                if not is_collection or (length is not None and len(value) != length):
                     raise TypeError(f"arg '{value}' needs to be a collection of {length} values")
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
@@ -429,6 +450,17 @@ class TemperatureType(DimensionedType):
 
     dim = u.dimensions.temperature
     dim_name = "temperature"
+
+    @classmethod
+    def validate(cls, value):
+        value = super(cls, cls).validate(value)
+
+        if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
+            raise ValueError(
+                f"Temperature cannot be lower or equal to absolute zero {value} == {value.to('K')}"
+            )
+
+        return value
 
 
 class VelocityType(DimensionedType):
@@ -813,6 +845,9 @@ class UnitSystem(pd.BaseModel):
     moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
+
+    name: Literal["Custom"] = pd.Field("Custom")
+
     _verbose: bool = pd.PrivateAttr(True)
 
     _dim_names = [
@@ -866,6 +901,22 @@ class UnitSystem(pd.BaseModel):
             )
 
         self._verbose = verbose
+
+    def __eq__(self, other):
+        equal = [getattr(self, name) == getattr(other, name) for name in self._dim_names]
+        return all(equal)
+
+    @classmethod
+    def from_dict(cls, **kwargs):
+        """Construct a unit system from the provided dictionary"""
+
+        class _TemporaryModel(pd.BaseModel):
+            unit_system: UnitSystemType = pd.Field(discriminator="name")
+
+        params = {"unit_system": kwargs}
+        model = _TemporaryModel(**params)
+
+        return model.unit_system
 
     def defaults(self):
         """
@@ -936,26 +987,22 @@ flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
 
+dimensions = [
+    flow360_length_unit,
+    flow360_mass_unit,
+    flow360_time_unit,
+    flow360_temperature_unit,
+    flow360_velocity_unit,
+    flow360_area_unit,
+    flow360_force_unit,
+    flow360_pressure_unit,
+    flow360_density_unit,
+    flow360_viscosity_unit,
+    flow360_angular_velocity_unit,
+    flow360_heat_flux_unit,
+]
 
-_flow360_system = {
-    u.dimension_type.dim_name: u
-    for u in [
-        flow360_length_unit,
-        flow360_mass_unit,
-        flow360_time_unit,
-        flow360_temperature_unit,
-        flow360_velocity_unit,
-        flow360_area_unit,
-        flow360_force_unit,
-        flow360_pressure_unit,
-        flow360_density_unit,
-        flow360_viscosity_unit,
-        flow360_power_unit,
-        flow360_moment_unit,
-        flow360_angular_velocity_unit,
-        flow360_heat_flux_unit,
-    ]
-}
+_flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
 
 
 # pylint: disable=too-many-instance-attributes
@@ -1036,11 +1083,101 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
 flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
-SI_unit_system = UnitSystem(base_system=BaseSystemType.SI)
-CGS_unit_system = UnitSystem(base_system=BaseSystemType.CGS)
-imperial_unit_system = UnitSystem(base_system=BaseSystemType.IMPERIAL)
-flow360_unit_system = UnitSystem(base_system=BaseSystemType.FLOW360)
 
-# register SI unit system
-u.UnitSystem("SI", "m", "kg", "s")
+class _PredefinedUnitSystem(UnitSystem):
+    mass: MassType = pd.Field(exclude=True)
+    length: LengthType = pd.Field(exclude=True)
+    time: TimeType = pd.Field(exclude=True)
+    temperature: TemperatureType = pd.Field(exclude=True)
+    velocity: VelocityType = pd.Field(exclude=True)
+    area: AreaType = pd.Field(exclude=True)
+    force: ForceType = pd.Field(exclude=True)
+    pressure: PressureType = pd.Field(exclude=True)
+    density: DensityType = pd.Field(exclude=True)
+    viscosity: ViscosityType = pd.Field(exclude=True)
+    angular_velocity: AngularVelocityType = pd.Field(exclude=True)
+    heat_flux: HeatFluxType = pd.Field(exclude=True)
 
+    def system_repr(self):
+        return self.name
+
+
+class SIUnitSystem(_PredefinedUnitSystem):
+    """:class: `SIUnitSystem` predefined SI system wrapper"""
+
+    name: Literal["SI"] = pd.Field("SI", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.SI)
+
+    @classmethod
+    def validate(cls, _):
+        return SIUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class CGSUnitSystem(_PredefinedUnitSystem):
+    """:class: `CGSUnitSystem` predefined CGS system wrapper"""
+
+    name: Literal["CGS"] = pd.Field("CGS", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.CGS)
+
+    @classmethod
+    def validate(cls, _):
+        return CGSUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class ImperialUnitSystem(_PredefinedUnitSystem):
+    """:class: `ImperialUnitSystem` predefined imperial system wrapper"""
+
+    name: Literal["Imperial"] = pd.Field("Imperial", const=True)
+
+    def __init__(self):
+        super().__init__(base_system=BaseSystemType.IMPERIAL)
+
+    @classmethod
+    def validate(cls, _):
+        return ImperialUnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+class Flow360UnitSystem(_PredefinedUnitSystem):
+    """:class: `Flow360UnitSystem` predefined flow360 system wrapper"""
+
+    name: Literal["Flow360"] = pd.Field("Flow360", const=True)
+
+    def __init__(self, verbose: bool = True):
+        super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
+
+    @classmethod
+    def validate(cls, _):
+        return Flow360UnitSystem()
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+
+UnitSystemType = Union[
+    SIUnitSystem, CGSUnitSystem, ImperialUnitSystem, Flow360UnitSystem, UnitSystem
+]
+
+SI_unit_system = SIUnitSystem()
+CGS_unit_system = CGSUnitSystem()
+imperial_unit_system = ImperialUnitSystem()
+flow360_unit_system = Flow360UnitSystem()
+
+# # register SI unit system
+# u.UnitSystem("SI", "m", "kg", "s")

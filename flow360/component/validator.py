@@ -1,12 +1,12 @@
 """
 Validator API
 """
+
 from enum import Enum
 from typing import Union
 
 from ..cloud.rest_api import RestApi
-from ..exceptions import ValidationError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
@@ -66,7 +66,7 @@ class Validator(Enum):
             and not isinstance(params, VolumeMeshingParams)
             and not isinstance(params, UnvalidatedFlow360Params)
         ):
-            raise FlValueError(
+            raise Flow360ValueError(
                 f"""
                 params must be instance of [Flow360Params, SurfaceMeshingParams, VolumeMeshingParams,
                 but {params}, type={type(params)} got.
@@ -74,7 +74,7 @@ class Validator(Enum):
             )
 
         api = RestApi(self._get_url())
-        body = {"jsonConfig": params.to_flow360_json(), "version": solver_version}
+        body = {"jsonConfig": params.flow360_json(), "version": solver_version}
 
         if mesh_id is not None:
             body["meshId"] = mesh_id
@@ -96,8 +96,8 @@ class Validator(Enum):
             if "validationError" in res and res["validationError"] is not None:
                 res_str = str(res).replace("[", "\[")
                 if raise_on_error:
-                    raise ValidationError(f"Error when validating: {res_str}")
+                    raise Flow360ValidationError(f"Error when validating: {res_str}")
                 # pylint: disable=pointless-exception-statement
-                ValidationError(f"Error when validating: {res_str}")
+                Flow360ValidationError(f"Error when validating: {res_str}")
 
         return None

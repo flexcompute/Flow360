@@ -1,0 +1,292 @@
+{
+  "title": "Freestream",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "Freestream from velocity",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromVelocity",
+          "const": "FromVelocity",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        },
+        "velocityRef": {
+          "title": "Reference velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "velocity"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "Freestream from Mach number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMach",
+          "const": "FromMach",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Dynamic viscosity [non-dim]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "Mach",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "Freestream from Mach number and Reynolds number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMachReynolds",
+          "const": "FromMachReynolds",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Reynolds": {
+          "title": "Reynolds number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "Mach",
+        "Reynolds",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "Zero freestream with reference Mach number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroMach",
+          "const": "ZeroMach",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "default": 0,
+          "const": 0,
+          "type": "integer"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 1e-12,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Dynamic viscosity [non-dim]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "MachRef",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "title": "Zero freestream with reference velocity",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroVelocity",
+          "const": "ZeroVelocity",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "default": 0,
+          "const": 0,
+          "type": "integer"
+        },
+        "velocityRef": {
+          "title": "Reference velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "velocityRef"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

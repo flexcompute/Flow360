@@ -2,7 +2,7 @@ import pytest
 
 from flow360.component.case import Case, CaseMeta
 from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
-from flow360.exceptions import RuntimeError
+from flow360.exceptions import Flow360RuntimeError
 
 from .utils import mock_id
 
@@ -238,5 +238,5 @@ def test_set_meta():
     case = Case(mock_id)
     case._set_meta(meta)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Flow360RuntimeError):
         case._set_meta(meta)

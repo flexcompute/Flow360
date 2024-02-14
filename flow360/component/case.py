@@ -1,9 +1,11 @@
 """
 Case component
 """
+
 from __future__ import annotations
 
 import json
+import tempfile
 from enum import Enum
 from typing import Any, Iterator, List, Union, Optional, Callable, Dict
 
@@ -15,9 +17,7 @@ from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
-from ..exceptions import RuntimeError as FlRuntimeError
-from ..exceptions import ValidationError
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .folder import Folder
@@ -183,7 +183,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         sets case params (before submit only)
         """
         if not isinstance(value, Flow360Params) and not isinstance(value, UnvalidatedFlow360Params):
-            raise FlValueError("params are not of type Flow360Params.")
+            raise Flow360ValueError("params are not of type Flow360Params.")
         self._params = value
 
     @property
@@ -228,7 +228,7 @@ class CaseDraft(CaseBase, ResourceDraft):
             Raises error when case is before submission, i.e., is in draft state
         """
         if not self.is_cloud_resource():
-            raise FlRuntimeError(
+            raise Flow360RuntimeError(
                 f"Case name={self.name} is in draft state. Run .submit() before calling this function."
             )
         return Case(self.id)
@@ -245,7 +245,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         self.validate_case_inputs(pre_submit_checks=True)
 
         if not shared_account_confirm_proceed():
-            raise FlValueError("User aborted resource submit.")
+            raise Flow360ValueError("User aborted resource submit.")
 
         volume_mesh_id = self.volume_mesh_id
         parent_id = self.parent_id
@@ -269,7 +269,7 @@ class CaseDraft(CaseBase, ResourceDraft):
                 self.solver_version is not None
                 and self.parent_case.solver_version != self.solver_version
             ):
-                raise FlRuntimeError(
+                raise Flow360RuntimeError(
                     error_messages.change_solver_version_error(
                         self.parent_case.solver_version, self.solver_version
                     )
@@ -295,7 +295,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         data = {
             "name": self.name,
             "meshId": volume_mesh_id,
-            "runtimeParams": self.params.to_flow360_json(),
+            "runtimeParams": self.params.flow360_json(),
             "tags": self.tags,
             "parentId": parent_id,
         }
@@ -319,14 +319,14 @@ class CaseDraft(CaseBase, ResourceDraft):
         validates case inputs (before submit only)
         """
         if self.volume_mesh_id is not None and self.other_case is not None:
-            raise FlValueError("You cannot specify both volume_mesh_id AND other_case.")
+            raise Flow360ValueError("You cannot specify both volume_mesh_id AND other_case.")
 
         if self.parent_id is not None and self.parent_case is not None:
-            raise FlValueError("You cannot specify both parent_id AND parent_case.")
+            raise Flow360ValueError("You cannot specify both parent_id AND parent_case.")
 
         if self.parent_id is not None or self.parent_case is not None:
             if self.volume_mesh_id is not None or self.other_case is not None:
-                raise FlValueError(
+                raise Flow360ValueError(
                     "You cannot specify volume_mesh_id OR other_case when parent case provided."
                 )
 
@@ -388,9 +388,14 @@ class Case(CaseBase, Flow360Resource):
         if self._params is None:
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
             try:
-                self._params = Flow360Params(**self._raw_params)
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=False
+                ) as temp_file:
+                    json.dump(self._raw_params, temp_file)
+
+                self._params = Flow360Params(temp_file.name)
             except pd.ValidationError as err:
-                raise ValidationError(error_messages.params_fetching_error(err)) from err
+                raise Flow360ValidationError(error_messages.params_fetching_error(err)) from err
 
         return self._params
 
@@ -429,7 +434,7 @@ class Case(CaseBase, Flow360Resource):
         """
         if self.has_parent():
             return Case(self.info.parent_id)
-        raise FlRuntimeError("Case does not have parent case.")
+        raise Flow360RuntimeError("Case does not have parent case.")
 
     @property
     def info(self) -> CaseMeta:
@@ -564,7 +569,7 @@ class Case(CaseBase, Flow360Resource):
         if not isinstance(params, Flow360Params) and not isinstance(
             params, UnvalidatedFlow360Params
         ):
-            raise FlValueError("params are not of type Flow360Params.")
+            raise Flow360ValueError("params are not of type Flow360Params.")
 
         new_case = CaseDraft(
             name=name,

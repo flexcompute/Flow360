@@ -1,6 +1,7 @@
 """
 s3 util file for material uploading and downloading.
 """
+
 import os
 import urllib
 from abc import ABCMeta, abstractmethod
@@ -15,7 +16,7 @@ from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic import BaseModel, Field
 
 from ..environment import Env
-from ..exceptions import ValueError as FlValueError
+from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
 from .utils import _get_progress, _S3Action

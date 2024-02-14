@@ -14,7 +14,7 @@ from flow360.cloud.http_util import http
 from flow360.environment import Env
 from flow360.log import log
 
-from .exceptions import WebError
+from .exceptions import Flow360WebError
 
 
 class AccountsUtils:
@@ -65,7 +65,7 @@ class AccountsUtils:
                 return supported_users
             return []
         except HTTPError as error:
-            raise WebError("Failed to retrieve supported user data from server") from error
+            raise Flow360WebError("Failed to retrieve supported user data from server") from error
 
     @staticmethod
     def _get_company_users():
@@ -76,7 +76,7 @@ class AccountsUtils:
                 return company_users
             return []
         except HTTPError as error:
-            raise WebError("Failed to retrieve company user data from server") from error
+            raise Flow360WebError("Failed to retrieve company user data from server") from error
 
     def _check_state_consistency(self):
         if Env.impersonate != self._current_user_identity:
@@ -109,6 +109,8 @@ class AccountsUtils:
            if email is not provided user can select the account interactively
         """
         shared_accounts = self._get_company_users() + self._get_supported_users()
+
+        shared_accounts.sort(key=lambda user: user["userEmail"])
 
         if len(shared_accounts) == 0:
             log.info("There are no accounts shared with the current user")

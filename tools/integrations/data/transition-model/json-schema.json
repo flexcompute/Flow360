@@ -1,0 +1,115 @@
+{
+  "title": "Transition model solver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolute tolerance",
+      "default": 1e-07,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relative tolerance",
+      "default": 0,
+      "type": "number"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "AmplificationFactorTransport",
+      "const": "AmplificationFactorTransport",
+      "type": "string"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation eval frequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force jac update physical steps",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "turbulenceIntensityPercent": {
+      "title": "Turbulence intensity percent",
+      "minimum": 0.03,
+      "maximum": 2.5,
+      "type": "number"
+    },
+    "Ncrit": {
+      "title": "Ncrit",
+      "minimum": 1,
+      "maximum": 11,
+      "type": "number"
+    },
+    "_addLinearSolverConfig": {
+      "title": "Linear solver config",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "dependencies": {
+    "_addLinearSolverConfig": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolverConfig": {
+              "default": true,
+              "const": true,
+              "type": "boolean"
+            },
+            "linearSolverConfig": {
+              "title": "Linear solver config",
+              "type": "object",
+              "properties": {
+                "maxIterations": {
+                  "title": "Max iterations",
+                  "default": 50,
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                "absoluteTolerance": {
+                  "title": "Absolute tolerance",
+                  "default": 1e-10,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "relativeTolerance": {
+                  "title": "Relative tolerance",
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolverConfig": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
