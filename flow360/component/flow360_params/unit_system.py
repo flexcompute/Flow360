@@ -998,6 +998,8 @@ dimensions = [
     flow360_pressure_unit,
     flow360_density_unit,
     flow360_viscosity_unit,
+    flow360_power_unit,
+    flow360_moment_unit,
     flow360_angular_velocity_unit,
     flow360_heat_flux_unit,
 ]
@@ -1179,5 +1181,5 @@ CGS_unit_system = CGSUnitSystem()
 imperial_unit_system = ImperialUnitSystem()
 flow360_unit_system = Flow360UnitSystem()
 
-# # register SI unit system
-# u.UnitSystem("SI", "m", "kg", "s")
+# register SI unit system
+u.UnitSystem("SI", "m", "kg", "s")

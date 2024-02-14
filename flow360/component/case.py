@@ -819,7 +819,7 @@ class CaseResultsModel(pd.BaseModel):
         surface_heat_transfer: bool = None,
         all: bool = None,
         overwrite: bool = False,
-        destination: str = ".",
+        destination: str = None,
     ):
         """
         Download result files associated with the case.
@@ -883,7 +883,8 @@ class CaseResultsModel(pd.BaseModel):
 
         self._downloader_settings.all = all
         self._downloader_settings.overwrite = overwrite
-        self._downloader_settings.destination = destination
+        if destination is not None:
+            self.set_destination(folder_name=destination)
 
 
         # download_map = [

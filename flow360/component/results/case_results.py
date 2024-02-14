@@ -13,7 +13,7 @@ import shutil
 import os
 from ...cloud.s3_utils import get_local_filename_and_create_folders, CloudFileNotFoundError
 
-from ...exceptions import ValueError
+from ...exceptions import Flow360ValueError
 
 
 class CaseDownloadable(Enum):
@@ -205,7 +205,7 @@ class MonitorsResultModel(ResultTarGZModel):
 
     def get_monitor_by_name(self, name: str) -> MonitorCSVModel:
         if name not in self.monitor_names:
-            raise ValueError(f'Cannot find monitor with provided name={name}, available monitors: {self.monitor_names}')
+            raise Flow360ValueError(f'Cannot find monitor with provided name={name}, available monitors: {self.monitor_names}')
         return self._monitors[name]   
 
 
@@ -246,7 +246,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
 
     def get_udd_by_name(self, name: str) -> MonitorCSVModel:
         if name not in self.udd_names:
-            raise ValueError(f'Cannot find user defined dynamics with provided name={name}, available user defined dynamics: {self.udd_names}')
+            raise Flow360ValueError(f'Cannot find user defined dynamics with provided name={name}, available user defined dynamics: {self.udd_names}')
         return self._udds[name]   
 
 
