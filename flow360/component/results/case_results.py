@@ -11,6 +11,7 @@ from ..flow360_params.unit_system import ForceType, PowerType, MomentType, flow3
 import numpy as np
 import shutil
 import os
+from ...cloud.s3_utils import get_local_filename_and_create_folders, CloudFileNotFoundError
 
 from ...exceptions import ValueError
 
@@ -63,11 +64,14 @@ class ResultBaseModel(pd.BaseModel):
     local_file_name: str = pd.Field(None)
     download_method: Optional[Callable] = pd.Field()
     do_download: Optional[bool] = pd.Field(None)
+    _is_downloadable: Callable = pd.PrivateAttr(lambda: True)
 
-    def download(self, filename, overwrite: bool=False):
-        self.download_method(f"results/{self.remote_file_name}", to_file=filename)
+    def download(self, to_file:str=None,  to_folder:str='.', overwrite: bool=False):
+        self.download_method(self._remote_path(), to_file=to_file, to_folder=to_folder, overwrite=overwrite)
 
-
+    def _remote_path(self):
+        return f"results/{self.remote_file_name}"
+    
 
 class ResultCSVModel(ResultBaseModel):
     temp_file: str = pd.Field(const=True, default_factory=lambda: tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
@@ -90,22 +94,22 @@ class ResultCSVModel(ResultBaseModel):
         self._raw_values = self._read_csv_file(filename)
         self.local_file_name = filename
 
-
     def load_from_remote(self):
-        self.download_method(f"results/{self.remote_file_name}", to_file=self.temp_file)
+        self.download(to_file=self.temp_file, overwrite=True)
         self._raw_values = self._read_csv_file(self.temp_file)
         self.local_file_name = self.temp_file
 
+    def download(self, to_file: str=None, to_folder: str=".", overwrite: bool=False, **kwargs):
+        local_file_path = get_local_filename_and_create_folders(self._remote_path(), to_file, to_folder)
+        if os.path.exists(local_file_path) and not overwrite:
+            log.info(f"Skipping downloading {self.remote_file_name}, local file {local_file_path} exists.")
 
-    def download(self, filename, overwrite: bool=False):
-        if os.path.exists(filename) and not overwrite:
-            log.info(f"Skipping {filename}, file exists.")
         else:
             if overwrite is True or self.local_file_name is None:
-                self.download_method(f"results/{self.remote_file_name}", to_file=filename)
+                self.download_method(self._remote_path(), to_file=to_file, to_folder=to_folder, overwrite=overwrite, **kwargs)
             else:
-                shutil.copy(self.temp_file, filename)
-                log.info(f"Saved to {filename}")
+                shutil.copy(self.temp_file, local_file_path)
+                log.info(f"Saved to {local_file_path}")
 
 
     @property
@@ -134,8 +138,8 @@ class ResultCSVModel(ResultBaseModel):
 
 
 class ResultTarGZModel(ResultBaseModel):
-    def to_file(self, filename: str=None):
-        self.download_method(f"results/{self.remote_file_name}", to_file=filename)
+    def to_file(self, filename, overwrite: bool=False):
+        self.download(to_file=filename, overwrite=overwrite)
 
 
 
@@ -273,7 +277,6 @@ class _DimensionedCSVResultModel(pd.BaseModel):
 
 
 
-
 class _ActuatorDiskResults(_DimensionedCSVResultModel):
     power: PowerType.Array = pd.Field()
     force: ForceType.Array = pd.Field()
@@ -286,14 +289,35 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
         self.moment = self._in_base_component(base, self.moment, "moment", params)
 
 
+class OptionallyDownloadableResultCSVModel(ResultCSVModel):
+    _err_msg = 'Case does not produced these results.'
 
-class ActuatorDiskResultCSVModel(ResultCSVModel):
+
+    def download(self, to_file: str=None, to_folder: str=".", overwrite: bool=False):
+        try:
+            super().download(to_file=to_file, to_folder=to_folder, overwrite=overwrite, log_error=False)
+        except CloudFileNotFoundError as err:
+            if self._is_downloadable() is False:
+                log.warning(self._err_msg)
+            else:
+                log.error(
+                    (
+                        "A problem occured when trying to download results:"
+                        f"{self.remote_file_name}"
+                    )
+                )
+                raise err
+
+
+
+class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, const=True)
+    _err_msg = 'Case does not have any actuator disks.'
+
 
     def to_base(self, base, params):
         '''values in base system'''
         disk_names = np.unique([v.split('_')[0] for v in self.values.keys() if v.startswith('Disk')])
-        print(disk_names)
         with flow360_unit_system:
             for disk_name in disk_names:
                 ad = _ActuatorDiskResults(power=self.values[f'{disk_name}_Power'], force=self.values[f'{disk_name}_Force'], moment=self.values[f'{disk_name}_Moment'])
@@ -305,6 +329,7 @@ class ActuatorDiskResultCSVModel(ResultCSVModel):
                 self.values[f'PowerUnits'] = ad.power.units
                 self.values[f'ForceUnits'] = ad.force.units
                 self.values[f'MomentUnits'] = ad.moment.units
+
 
 
  
@@ -327,8 +352,9 @@ class _BETDiskResults(_DimensionedCSVResultModel):
         self.moment_z = self._in_base_component(base, self.moment_z, "moment_z", params)
 
 
-class BETForcesResultCSVModel(ResultCSVModel):
+class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, const=True)
+    _err_msg = "Case does not have any BET disks."
 
     def to_base(self, base, params):
         '''values in base system'''
@@ -353,8 +379,3 @@ class BETForcesResultCSVModel(ResultCSVModel):
                 self.values[f'ForceUnits'] = bet.force_x.units
                 self.values[f'MomentUnits'] = bet.moment_x.units
  
-
-
-
-
-

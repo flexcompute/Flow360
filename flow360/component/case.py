@@ -674,7 +674,7 @@ class ResultsPloter:
 
 
 
-from .results.case_results import NonlinearResidualsResultCSVModel, LinearResidualsResultCSVModel, UserDefinedDynamicsResultModel, MonitorsResultModel, CFLResultCSVModel, TotalForcesResultCSVModel, AeroacousticsResultCSVModel, SurfaceForcesResultCSVModel, SurfaceHeatTrasferResultCSVModel, ForceDistributionResultCSVModel, MaxResidualLocationResultCSVModel, ActuatorDiskResultCSVModel, MinMaxStateResultCSVModel, BETForcesResultCSVModel, ResultBaseModel, ResultTarGZModel, ResultsDownloaderSettings
+from .results.case_results import NonlinearResidualsResultCSVModel, LinearResidualsResultCSVModel, UserDefinedDynamicsResultModel, MonitorsResultModel, CFLResultCSVModel, TotalForcesResultCSVModel, AeroacousticsResultCSVModel, SurfaceForcesResultCSVModel, SurfaceHeatTrasferResultCSVModel, ForceDistributionResultCSVModel, MaxResidualLocationResultCSVModel, ActuatorDiskResultCSVModel, MinMaxStateResultCSVModel, BETForcesResultCSVModel, ResultBaseModel, ResultTarGZModel, ResultsDownloaderSettings, OptionallyDownloadableResultCSVModel
 
 
 
@@ -736,13 +736,30 @@ class CaseResultsModel(pd.BaseModel):
         value.get_download_file_list_method = values['case'].get_download_file_list
         return value
 
+    @pd.validator('actuator_disks')
+    def pass_has_actuator_disks_function(cls, value, values):
+        value._is_downloadable = values['case'].has_actuator_disks
+        return value
+
+    @pd.validator('bet_forces')
+    def pass_has_bet_disks_function(cls, value, values):
+        value._is_downloadable = values['case'].has_bet_disks
+        return value
+
 
     def download(self):
         for property_name, value in self.__dict__.items():
             if isinstance(value, ResultBaseModel):
-                print(f"will download: {property_name}")
-                if value.do_download is True:
-                    pass
+                print(f"will download: {property_name}, {value.do_download}, all={self._downloader_settings.all}")
+                # we download if explicitly set set_downloader(<result_name>=True), or all=True but only when is not result=False
+                try_download = value.do_download is True
+                if self._downloader_settings.all is True and value.do_download is not False:
+                    try_download = value._is_downloadable() is True
+                
+                print(f"    try_download: {try_download}")
+                if try_download is True:
+                    value.download(to_folder=self._downloader_settings.destination)
+
 
     def set_destination(self, folder_name: str = None, use_case_name: bool = None, use_case_id: bool = None):
         """
@@ -777,25 +794,25 @@ class CaseResultsModel(pd.BaseModel):
 
     def set_downloader(
         self,
-        surface: bool = False,
-        volume: bool = False,
-        slices: bool = False,
-        isosurfaces: bool = False,
-        monitors: bool = False,
-        nonlinear_residuals: bool = False,
-        linear_residuals: bool = False,
-        cfl: bool = False,
-        minmax_state: bool = False,
-        max_residual_location: bool = False,
-        surface_forces: bool = False,
-        total_forces: bool = False,
-        bet_forces: bool = False,
-        actuator_disks: bool = False,
-        force_distribution: bool = False,
-        user_defined_dynamics: bool = False,
-        aeroacoustics: bool = False,
-        surface_heat_transfer: bool = False,
-        all: bool = False,
+        surface: bool = None,
+        volume: bool = None,
+        slices: bool = None,
+        isosurfaces: bool = None,
+        monitors: bool = None,
+        nonlinear_residuals: bool = None,
+        linear_residuals: bool = None,
+        cfl: bool = None,
+        minmax_state: bool = None,
+        max_residual_location: bool = None,
+        surface_forces: bool = None,
+        total_forces: bool = None,
+        bet_forces: bool = None,
+        actuator_disks: bool = None,
+        force_distribution: bool = None,
+        user_defined_dynamics: bool = None,
+        aeroacoustics: bool = None,
+        surface_heat_transfer: bool = None,
+        all: bool = None,
         overwrite: bool = False,
         destination: str = ".",
     ):
@@ -1035,7 +1052,7 @@ class CaseResults:
     def _download_file(
         self,
         downloadable: CaseDownloadable,
-        to_file=".",
+        to_file=None,
         to_folder=".",
         overwrite: bool = True,
         **kwargs,
