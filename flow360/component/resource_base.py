@@ -377,7 +377,6 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, upload_id, uploaded_parts
         )
 
-
     def open_in_browser(self):
         open_browser(f"{self._interface().endpoint}/{self.id}")
 

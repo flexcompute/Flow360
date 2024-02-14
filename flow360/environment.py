@@ -40,7 +40,6 @@ class EnvironmentConfig(BaseModel):
         """
         return "/".join([self.portal_web_api_endpoint, path])
 
-
     def get_web_real_url(self, path: str):
         """
         Get the web real url for the particular environment.

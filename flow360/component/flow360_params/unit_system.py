@@ -380,7 +380,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self, length=None)
 
-
     # pylint: disable=invalid-name
     @classproperty
     def Point(self):

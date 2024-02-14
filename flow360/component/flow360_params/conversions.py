@@ -9,7 +9,15 @@ from typing import Callable, List
 import pydantic as pd
 
 from ...exceptions import Flow360ConfigurationError
-from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u, ForceType, PowerType, ViscosityType, MomentType
+from .unit_system import (
+    ForceType,
+    MomentType,
+    PowerType,
+    ViscosityType,
+    flow360_conversion_unit_system,
+    is_flow360_unit,
+    u,
+)
 
 
 class ExtraDimensionedProperty(pd.BaseModel):
@@ -267,6 +275,8 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
 
     else:
-        raise ValueError(f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented.")
+        raise ValueError(
+            f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented."
+        )
 
     return flow360_conversion_unit_system.conversion_system

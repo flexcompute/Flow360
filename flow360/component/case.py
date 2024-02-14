@@ -7,16 +7,14 @@ from __future__ import annotations
 import json
 import tempfile
 from enum import Enum
-from typing import Any, Iterator, List, Union, Optional, Callable, Dict
+from time import sleep
+from typing import Any, Dict, Iterator, List, Union
 
 import pydantic as pd
-import numpy as np
-from pylab import show, subplots
 
 from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
@@ -30,6 +28,26 @@ from .resource_base import (
     ResourceDraft,
     before_submit_only,
     is_object_cloud_resource,
+)
+from .results.case_results import (
+    ActuatorDiskResultCSVModel,
+    AeroacousticsResultCSVModel,
+    BETForcesResultCSVModel,
+    CaseDownloadable,
+    CFLResultCSVModel,
+    ForceDistributionResultCSVModel,
+    LinearResidualsResultCSVModel,
+    MaxResidualLocationResultCSVModel,
+    MinMaxStateResultCSVModel,
+    MonitorsResultModel,
+    NonlinearResidualsResultCSVModel,
+    ResultBaseModel,
+    ResultsDownloaderSettings,
+    ResultTarGZModel,
+    SurfaceForcesResultCSVModel,
+    SurfaceHeatTrasferResultCSVModel,
+    TotalForcesResultCSVModel,
+    UserDefinedDynamicsResultModel,
 )
 from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
 from .validator import Validator
@@ -371,7 +389,7 @@ class Case(CaseBase, Flow360Resource):
 
         self._params = None
         self._raw_params = None
-        self._results = CaseResults(self)
+        self._results = CaseResultsModel(case=self)
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -451,7 +469,7 @@ class Case(CaseBase, Flow360Resource):
         return self.info.case_mesh_id
 
     @property
-    def results(self) -> CaseResults:
+    def results(self) -> CaseResultsModel:
         """
         returns results object to managing case results
         """
@@ -583,190 +601,113 @@ class Case(CaseBase, Flow360Resource):
         )
         return new_case
 
-
-
-class CaseResultType(Enum):
-    """
-    Case results types
-    """
-
-    NONLINEAR_RESIDUALS = "nonlinear_residual_v2"
-    TOTAL_FORCES = "total_forces_v2"
-    LINEAR_RESIDUALS = "linear_residual_v2"
-    MINMAX_STATE = "minmax_state_v2"
-    CFL = "cfl_v2"
-
-
-from .results.case_results import CaseDownloadable
-
-class CacheableData:
-    """
-    Cacheable data class, fetches data from server only once and stores in memory unless "force" is used
-    """
-
-    def __init__(self, get_method, path):
-        self.get_method = get_method
-        self.path = path
-        self.data = None
-
-    def get(self, force=False) -> CacheableData:
-        """fetch data from server
-
-        Parameters
-        ----------
-        force : bool, optional
-            whether to ignore cached data and force fetching data from server, by default False
-
-        Returns
-        -------
-        CacheableData
-            self
-        """
-        if self.data is None or force:
-            self.data = self.get_method(method=self.path)["csvOutput"]
-        return self
-
-    @property
-    def raw(self):
-        """
-        returns data in raw format: dictionary of lists
-        """
-        return self.data
-
-    def plot(self):
-        """
-        plotting not implemented yet
-        """
-        raise NotImplementedError("Plotting is not implemented yet.")
-
-    def to_csv(self):
-        """
-        saving to csv not implemented yet
-        """
-        raise NotImplementedError("Saving to CSV is not implemented yet.")
-
-
-class ResultsPloter:
-    """
-    Collection of plotting functions for case results
-    """
-
-    def __init__(self, results: CaseResults):
-        self.results = results
-
-    # pylint: disable=protected-access
-    def total_forces(self):
-        """plot total forces"""
-        steady = self.results._case.is_steady()
-        forces = self.results.total_forces.raw
-        if steady:
-            _, ax1 = subplots()
-
-            ax2 = ax1.twinx()
-            ax1.plot(forces["pseudo_step"], forces["CL"], "-g")
-            ax2.plot(forces["pseudo_step"], forces["CD"], "-b")
-            ax1.set_xlabel("pseudo step")
-            ax1.set_ylabel("CL", color="g")
-            ax2.set_ylabel("CD", color="b")
-            show()
-        else:
-            raise NotImplementedError("Plotting unsteady not supported yet.")
-
-    def residuals(self):
-        """plot residuals"""
-        raise NotImplementedError("Plotting residuals not supported yet.")
-
-
-
-
-from .results.case_results import NonlinearResidualsResultCSVModel, LinearResidualsResultCSVModel, UserDefinedDynamicsResultModel, MonitorsResultModel, CFLResultCSVModel, TotalForcesResultCSVModel, AeroacousticsResultCSVModel, SurfaceForcesResultCSVModel, SurfaceHeatTrasferResultCSVModel, ForceDistributionResultCSVModel, MaxResidualLocationResultCSVModel, ActuatorDiskResultCSVModel, MinMaxStateResultCSVModel, BETForcesResultCSVModel, ResultBaseModel, ResultTarGZModel, ResultsDownloaderSettings, OptionallyDownloadableResultCSVModel
-
+    def wait(self, refresh_rate=2):
+        while self.is_finished() is False:
+            sleep(refresh_rate)
 
 
 class CaseResultsModel(pd.BaseModel):
     case: Any = pd.Field()
 
     # tar.gz results:
-    surfaces: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value), const=True)
-    volumes: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value), const=True)
-    slices: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value), const=True)
-    isosurfaces: ResultTarGZModel = pd.Field(ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value), const=True)
+    surfaces: ResultTarGZModel = pd.Field(
+        ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value), const=True
+    )
+    volumes: ResultTarGZModel = pd.Field(
+        ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value), const=True
+    )
+    slices: ResultTarGZModel = pd.Field(
+        ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value), const=True
+    )
+    isosurfaces: ResultTarGZModel = pd.Field(
+        ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value), const=True
+    )
     monitors: MonitorsResultModel = pd.Field(MonitorsResultModel(), const=True)
 
     # convergence:
-    nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(NonlinearResidualsResultCSVModel(), const=True)
-    linear_residuals: LinearResidualsResultCSVModel = pd.Field(LinearResidualsResultCSVModel(), const=True)
+    nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(
+        NonlinearResidualsResultCSVModel(), const=True
+    )
+    linear_residuals: LinearResidualsResultCSVModel = pd.Field(
+        LinearResidualsResultCSVModel(), const=True
+    )
     cfl: CFLResultCSVModel = pd.Field(CFLResultCSVModel(), const=True)
     minmax_state: MinMaxStateResultCSVModel = pd.Field(MinMaxStateResultCSVModel(), const=True)
-    max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(MaxResidualLocationResultCSVModel(), const=True)
+    max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(
+        MaxResidualLocationResultCSVModel(), const=True
+    )
 
     # forces
     total_forces: TotalForcesResultCSVModel = pd.Field(TotalForcesResultCSVModel(), const=True)
-    surface_forces: SurfaceForcesResultCSVModel = pd.Field(SurfaceForcesResultCSVModel(), const=True)
+    surface_forces: SurfaceForcesResultCSVModel = pd.Field(
+        SurfaceForcesResultCSVModel(), const=True
+    )
     actuator_disks: ActuatorDiskResultCSVModel = pd.Field(ActuatorDiskResultCSVModel(), const=True)
     bet_forces: BETForcesResultCSVModel = pd.Field(BETForcesResultCSVModel(), const=True)
-    force_distribution: ForceDistributionResultCSVModel = pd.Field(ForceDistributionResultCSVModel(), const=True)
+    force_distribution: ForceDistributionResultCSVModel = pd.Field(
+        ForceDistributionResultCSVModel(), const=True
+    )
 
     # user defined:
-    user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(UserDefinedDynamicsResultModel(), const=True)
+    user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(
+        UserDefinedDynamicsResultModel(), const=True
+    )
 
     # others
-    surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(SurfaceHeatTrasferResultCSVModel(), const=True)
+    surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(
+        SurfaceHeatTrasferResultCSVModel(), const=True
+    )
     aeroacoustics: AeroacousticsResultCSVModel = pd.Field(AeroacousticsResultCSVModel(), const=True)
 
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
-
-
     @pd.root_validator(pre=True)
     def pass_download_function(cls, values):
-        if 'case' not in values:
-            raise ValueError('case (type Case) is required')
-        
-        if not isinstance(values['case'], Case):
-            raise TypeError('case must be of type Case')
+        if "case" not in values:
+            raise ValueError("case (type Case) is required")
+
+        if not isinstance(values["case"], Case):
+            raise TypeError("case must be of type Case")
 
         for field in cls.__fields__.values():
             if field.name not in values.keys():
                 value = field.default
                 if isinstance(value, ResultBaseModel):
-                    value.download_method = values['case']._download_file
+                    value._download_method = values["case"]._download_file
+                    value._get_params_method = lambda: values["case"].params
+
                     values[field.name] = value
 
         return values
-    
 
-    @pd.validator('monitors', 'user_defined_dynamics')
+    @pd.validator("monitors", "user_defined_dynamics")
     def pass_get_files_function(cls, value, values):
-        value.get_download_file_list_method = values['case'].get_download_file_list
+        value.get_download_file_list_method = values["case"].get_download_file_list
         return value
 
-    @pd.validator('actuator_disks')
+    @pd.validator("actuator_disks")
     def pass_has_actuator_disks_function(cls, value, values):
-        value._is_downloadable = values['case'].has_actuator_disks
+        value._is_downloadable = values["case"].has_actuator_disks
         return value
 
-    @pd.validator('bet_forces')
+    @pd.validator("bet_forces")
     def pass_has_bet_disks_function(cls, value, values):
-        value._is_downloadable = values['case'].has_bet_disks
+        value._is_downloadable = values["case"].has_bet_disks
         return value
 
-
-    def download(self):
-        for property_name, value in self.__dict__.items():
+    def download(self, overwrite=False):
+        for _, value in self.__dict__.items():
             if isinstance(value, ResultBaseModel):
-                print(f"will download: {property_name}, {value.do_download}, all={self._downloader_settings.all}")
                 # we download if explicitly set set_downloader(<result_name>=True), or all=True but only when is not result=False
                 try_download = value.do_download is True
                 if self._downloader_settings.all is True and value.do_download is not False:
                     try_download = value._is_downloadable() is True
-                
-                print(f"    try_download: {try_download}")
                 if try_download is True:
-                    value.download(to_folder=self._downloader_settings.destination)
+                    value.download(to_folder=self._downloader_settings.destination, overwrite=overwrite)
 
-
-    def set_destination(self, folder_name: str = None, use_case_name: bool = None, use_case_id: bool = None):
+    def set_destination(
+        self, folder_name: str = None, use_case_name: bool = None, use_case_id: bool = None
+    ):
         """
         Set the destination for downloading files.
 
@@ -788,14 +729,13 @@ class CaseResultsModel(pd.BaseModel):
         # Check if only one argument is provided
         if sum(arg is not None for arg in [folder_name, use_case_name, use_case_id]) != 1:
             raise ValueError("Exactly one argument should be provided.")
-        
+
         if folder_name is not None:
             self._downloader_settings.destination = folder_name
         if use_case_name is True:
             self._downloader_settings.destination = self.case.name
         if use_case_id is True:
             self._downloader_settings.destination = self.case.id
-
 
     def set_downloader(
         self,
@@ -886,334 +826,10 @@ class CaseResultsModel(pd.BaseModel):
         if destination is not None:
             self.set_destination(folder_name=destination)
 
-
-        # download_map = [
-        #     (surface, CaseDownloadable.SURFACES),
-        #     (volume, CaseDownloadable.VOLUMES),
-        #     (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
-        #     (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
-        #     (cfl, CaseDownloadable.CFL),
-        #     (minmax_state, CaseDownloadable.MINMAX_STATE),
-        #     (surface_forces, CaseDownloadable.SURFACE_FORCES),
-        #     (total_forces, CaseDownloadable.TOTAL_FORCES),
-        # ]
-        # downloaded_files = []
-        # for do_download, filename in download_map:
-        #     if do_download or all:
-        #         downloaded_files.append(
-        #             self._download_file(filename, to_folder=destination, overwrite=overwrite)
-        #         )
-
-        # if bet_forces or all:
-        #     try:
-        #         downloaded_files.append(
-        #             self._download_file(
-        #                 CaseDownloadable.BET_FORCES,
-        #                 to_folder=destination,
-        #                 overwrite=overwrite,
-        #                 log_error=False,
-        #             )
-        #         )
-        #     except CloudFileNotFoundError as err:
-        #         if not self._case.has_bet_disks():
-        #             if bet_forces:
-        #                 log.warning("Case does not have any BET disks.")
-        #         else:
-        #             log.error(
-        #                 f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
-        #             )
-        #             raise err
-
-        # if actuator_disks or all:
-        #     try:
-        #         downloaded_files.append(
-        #             self._download_file(
-        #                 CaseDownloadable.ACTUATOR_DISKS,
-        #                 to_folder=destination,
-        #                 overwrite=overwrite,
-        #                 log_error=False,
-        #             )
-        #         )
-        #     except CloudFileNotFoundError as err:
-        #         if not self._case.has_actuator_disks():
-        #             if actuator_disks:
-        #                 log.warning("Case does not have any actuator disks.")
-        #         else:
-        #             log.error(
-        #                 (
-        #                     "A problem occured when trying to download actuator disk results:"
-        #                     f"{CaseDownloadable.ACTUATOR_DISKS}"
-        #                 )
-        #             )
-        #             raise err
-
-        # return downloaded_files
-    
-
-
-
-class CaseResults:
-    """
-    Case results class for managing results: viewing, downloading, postprocessing
-    """
-
-    def __init__(self, case: Case):
-        self._case = case
-        self._residuals = CacheableData(
-            self._case.get, self._get_result_path(CaseResultType.NONLINEAR_RESIDUALS)
+    def download_file_by_name(self, file_name, to_file=None, to_folder=".", overwrite: bool = True):
+        return self.case._download_file(
+            file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
-        self._total_forces = CacheableData(
-            self._case.get, self._get_result_path(CaseResultType.TOTAL_FORCES)
-        )
-        self._linear_residuals = CacheableData(
-            self._case.get, self._get_result_path(CaseResultType.LINEAR_RESIDUALS)
-        )
-        self._minmax_state = CacheableData(
-            self._case.get, self._get_result_path(CaseResultType.MINMAX_STATE)
-        )
-        self._cfl = CacheableData(self._case.get, self._get_result_path(CaseResultType.CFL))
-        self._plotter = ResultsPloter(self)
-
-    def _get_result_path(self, result_type: CaseResultType):
-        return f"results/v2/{result_type.value}.csv"
-
-    def get_residuals(self, force: bool = False):
-        """
-        Returns residuals
-        :param force: when True, fetches data from server, otherwise uses cached data if exist
-        """
-        return self._residuals.get(force=force)
-
-    @property
-    def residuals(self):
-        """
-        Returns residuals
-        """
-        return self.get_residuals()
-
-    def get_total_forces(self, force: bool = False):
-        """
-        Returns total forces
-        :param force: when True, fetches data from server, otherwise uses cached data if exist
-        """
-        return self._total_forces.get(force=force)
-
-    @property
-    def total_forces(self):
-        """
-        Returns total forces
-        """
-        return self.get_total_forces()
-
-    def get_linear_residuals(self, force: bool = False):
-        """
-        Returns linear residuals
-        :param force: when True, fetches data from server, otherwise uses cached data if exist
-        """
-        return self._linear_residuals.get(force=force)
-
-    @property
-    def linear_residuals(self):
-        """
-        Returns linear residuals
-        """
-        return self.get_linear_residuals()
-
-    def get_minmax_state(self, force: bool = False):
-        """
-        Returns min/max state: min pressure, min density and max velocity magnitude
-        :param force: when True, fetches data from server, otherwise uses cached data if exist
-        """
-        return self._minmax_state.get(force=force)
-
-    @property
-    def minmax_state(self):
-        """
-        Returns min/max state: min pressure, min density and max velocity magnitude
-        """
-        return self.get_minmax_state()
-
-    def get_cfl(self, force: bool = False):
-        """
-        Returns cfl
-        :param force: when True, fetches data from server, otherwise uses cached data if exist
-        """
-        return self._cfl.get(force=force)
-
-    @property
-    def cfl(self):
-        """
-        Returns cfl
-        """
-        return self.get_cfl()
-
-    @property
-    def plot(self):
-        """
-        plotter which manages plotting functions
-        """
-        return self._plotter
-
-    # pylint: disable=protected-access
-    def _download_file(
-        self,
-        downloadable: CaseDownloadable,
-        to_file=None,
-        to_folder=".",
-        overwrite: bool = True,
-        **kwargs,
-    ):
-        """
-        Download a specific file associated with the case.
-
-        Parameters
-        ----------
-        downloadable : flow360.CaseDownloadable
-            The type of file to be downloaded (e.g., surface, volume, forces, etc.).
-
-        to_file : str, optional
-            File path to save the downloaded file. If None, the file will be saved in the current directory.
-            If provided without an extension, the extension will be automatically added based on the file type.
-
-        to_folder : str, optional
-            Folder name to save the downloaded file. If None, the file will be saved in the current directory.
-
-        overwrite : bool, optional
-            If True, overwrite existing files with the same name in the destination.
-
-        **kwargs : dict, optional
-            Additional arguments to be passed to the download process.
-
-        Returns
-        -------
-        str
-            File path of the downloaded file.
-        """
-
-        return self._case._download_file(
-            f"results/{downloadable.value}",
-            to_file=to_file,
-            to_folder=to_folder,
-            overwrite=overwrite,
-            **kwargs,
-        )
-
-    # pylint: disable=redefined-builtin,too-many-locals,too-many-arguments
-    def download(
-        self,
-        surface: bool = False,
-        volume: bool = False,
-        nonlinear_residuals: bool = False,
-        linear_residuals: bool = False,
-        cfl: bool = False,
-        minmax_state: bool = False,
-        surface_forces: bool = False,
-        total_forces: bool = False,
-        bet_forces: bool = False,
-        actuator_disk_output: bool = False,
-        all: bool = False,
-        overwrite: bool = False,
-        destination: str = ".",
-    ):
-        """
-        Download result files associated with the case.
-
-        Parameters
-        ----------
-        surface : bool, optional
-            Download surface result file if True.
-        volume : bool, optional
-            Download volume result file if True.
-        nonlinear_residuals : bool, optional
-            Download nonlinear residuals file if True.
-        linear_residuals : bool, optional
-            Download linear residuals file if True.
-        cfl : bool, optional
-            Download CFL file if True.
-        minmax_state : bool, optional
-            Download minmax state file if True.
-        surface_forces : bool, optional
-            Download surface forces file if True.
-        total_forces : bool, optional
-            Download total forces file if True.
-        bet_forces : bool, optional
-            Download BET (Blade Element Theory) forces file if True.
-        actuator_disk_output : bool, optional
-            Download actuator disk output file if True.
-        all : bool, optional
-            Download all result files if True (ignores other parameters).
-        overwrite : bool, optional
-            If True, overwrite existing files with the same name in the destination.
-        destination : str, optional
-            Location to save downloaded files. If None, files will be saved in the current directory under ID folder.
-
-        Returns
-        -------
-        List of str
-            File paths of the downloaded files.
-        """
-
-        download_map = [
-            (surface, CaseDownloadable.SURFACE),
-            (volume, CaseDownloadable.VOLUME),
-            (nonlinear_residuals, CaseDownloadable.NONLINEAR_RESIDUALS),
-            (linear_residuals, CaseDownloadable.LINEAR_RESIDUALS),
-            (cfl, CaseDownloadable.CFL),
-            (minmax_state, CaseDownloadable.MINMAX_STATE),
-            (surface_forces, CaseDownloadable.SURFACE_FORCES),
-            (total_forces, CaseDownloadable.TOTAL_FORCES),
-        ]
-        downloaded_files = []
-        for do_download, filename in download_map:
-            if do_download or all:
-                downloaded_files.append(
-                    self._download_file(filename, to_folder=destination, overwrite=overwrite)
-                )
-
-        if bet_forces or all:
-            try:
-                downloaded_files.append(
-                    self._download_file(
-                        CaseDownloadable.BET_FORCES,
-                        to_folder=destination,
-                        overwrite=overwrite,
-                        log_error=False,
-                    )
-                )
-            except CloudFileNotFoundError as err:
-                if not self._case.has_bet_disks():
-                    if bet_forces:
-                        log.warning("Case does not have any BET disks.")
-                else:
-                    log.error(
-                        f"A problem occured when trying to download bet disk forces: {CaseDownloadable.BET_FORCES}"
-                    )
-                    raise err
-
-        if actuator_disk_output or all:
-            try:
-                downloaded_files.append(
-                    self._download_file(
-                        CaseDownloadable.ACTUATOR_DISK_OUTPUT,
-                        to_folder=destination,
-                        overwrite=overwrite,
-                        log_error=False,
-                    )
-                )
-            except CloudFileNotFoundError as err:
-                if not self._case.has_actuator_disks():
-                    if actuator_disk_output:
-                        log.warning("Case does not have any actuator disks.")
-                else:
-                    log.error(
-                        (
-                            "A problem occured when trying to download actuator disk results:"
-                            f"{CaseDownloadable.ACTUATOR_DISK_OUTPUT}"
-                        )
-                    )
-                    raise err
-
-        return downloaded_files
 
 
 class CaseList(Flow360ResourceListBase):

@@ -609,9 +609,7 @@ class VolumeMesh(Flow360Resource):
         )
 
     # pylint: disable=R0801
-    def download(
-        self, to_file=None, to_folder=".", overwrite: bool = True
-    ):
+    def download(self, to_file=None, to_folder=".", overwrite: bool = True):
         """
         Download volume mesh file
         :param to_file:

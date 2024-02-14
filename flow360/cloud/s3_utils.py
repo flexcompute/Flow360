@@ -47,7 +47,8 @@ _s3_config = TransferConfig(
 
 
 def get_local_filename_and_create_folders(
-    target_name: str, to_file: str = None, to_folder: str = "."):
+    target_name: str, to_file: str = None, to_folder: str = "."
+):
     """
     Create a base folder and return the target file path for downloading cloud data.
 
@@ -75,7 +76,7 @@ def get_local_filename_and_create_folders(
         raise FlValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
 
     if to_file is not None and os.path.isdir(to_file):
-        raise FlValueError('to_file should be a file name, not directory, use to_folder instead')
+        raise FlValueError("to_file should be a file name, not directory, use to_folder instead")
 
     if to_file is None:
         to_file = os.path.basename(target_name)
@@ -87,7 +88,6 @@ def get_local_filename_and_create_folders(
     _, to_file_ext = os.path.splitext(to_file)
     if to_file_ext != file_ext:
         to_file = to_file + file_ext
-
 
     dirname = os.path.dirname(to_file)
     if dirname:
