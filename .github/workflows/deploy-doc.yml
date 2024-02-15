@@ -1,5 +1,4 @@
-name: Build and Deploy New Documentation
-
+name: build-docs
 on:
   workflow_dispatch:
 
@@ -28,12 +27,9 @@ jobs:
       working-directory: ./docs
       run:  make html
 
-    - uses: cpina/github-action-push-to-another-repository@main
-      env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_DOC_REPO }}
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        source-directory: './docs/_build/html/'
-        destination-github-username: 'jinlin-flex'
-        destination-repository-name: 'jinlinflex.github.io'
-        user-email: lin@flexcompute.com
-        target-branch: main
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/_build/html/
+
