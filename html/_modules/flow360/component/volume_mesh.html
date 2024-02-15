@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.component.volume_mesh &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.component.volume_mesh</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Volume mesh component</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">Extra</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">validator</span>
+
+<span class="kn">from</span> <span class="nn">flow360.component.compress_upload</span> <span class="kn">import</span> <span class="n">compress_and_upload_chunks</span>
+
+<span class="kn">from</span> <span class="nn">..cloud.requests</span> <span class="kn">import</span> <span class="n">NewVolumeMeshRequest</span>
+<span class="kn">from</span> <span class="nn">..cloud.rest_api</span> <span class="kn">import</span> <span class="n">RestApi</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Flow360CloudFileError</span><span class="p">,</span>
+    <span class="n">Flow360FileError</span><span class="p">,</span>
+    <span class="n">Flow360NotImplementedError</span><span class="p">,</span>
+    <span class="n">Flow360RuntimeError</span><span class="p">,</span>
+    <span class="n">Flow360ValueError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..log</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span> <span class="nn">..solver_version</span> <span class="kn">import</span> <span class="n">Flow360Version</span>
+<span class="kn">from</span> <span class="nn">.case</span> <span class="kn">import</span> <span class="n">Case</span><span class="p">,</span> <span class="n">CaseDraft</span>
+<span class="kn">from</span> <span class="nn">.flow360_params.boundaries</span> <span class="kn">import</span> <span class="n">NoSlipWall</span>
+<span class="kn">from</span> <span class="nn">.flow360_params.flow360_params</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Flow360MeshParams</span><span class="p">,</span>
+    <span class="n">Flow360Params</span><span class="p">,</span>
+    <span class="n">_GenericBoundaryWrapper</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.flow360_params.params_base</span> <span class="kn">import</span> <span class="n">params_generic_validator</span>
+<span class="kn">from</span> <span class="nn">.interfaces</span> <span class="kn">import</span> <span class="n">VolumeMeshInterface</span>
+<span class="kn">from</span> <span class="nn">.meshing.params</span> <span class="kn">import</span> <span class="n">VolumeMeshingParams</span>
+<span class="kn">from</span> <span class="nn">.resource_base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Flow360Resource</span><span class="p">,</span>
+    <span class="n">Flow360ResourceBaseModel</span><span class="p">,</span>
+    <span class="n">Flow360ResourceListBase</span><span class="p">,</span>
+    <span class="n">ResourceDraft</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.types</span> <span class="kn">import</span> <span class="n">COMMENTS</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">shared_account_confirm_proceed</span><span class="p">,</span> <span class="n">validate_type</span><span class="p">,</span> <span class="n">zstd_compress</span>
+<span class="kn">from</span> <span class="nn">.validator</span> <span class="kn">import</span> <span class="n">Validator</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">h5py</span>
+
+    <span class="n">_H5PY_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_H5PY_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="get_datatype">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.get_datatype">[docs]</a>
+<span class="k">def</span> <span class="nf">get_datatype</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get datatype of dataset</span>
+<span class="sd">    :param dataset:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">read_direct</span><span class="p">(</span><span class="n">data_raw</span><span class="p">)</span>
+    <span class="n">data_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">chr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">data_str</span></div>
+
+
+
+<div class="viewcode-block" id="get_no_slip_walls">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.get_no_slip_walls">[docs]</a>
+<span class="k">def</span> <span class="nf">get_no_slip_walls</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360Params</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get wall boundary names</span>
+<span class="sd">    :param params:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">params</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">boundaries</span>
+        <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">no_slip_walls</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">no_slip_walls</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Flow360Params</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">boundaries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">wall_name</span>
+            <span class="k">for</span> <span class="n">wall_name</span><span class="p">,</span> <span class="n">wall</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">wall_name</span> <span class="o">!=</span> <span class="n">COMMENTS</span> <span class="ow">and</span> <span class="n">_GenericBoundaryWrapper</span><span class="p">(</span><span class="n">v</span><span class="o">=</span><span class="n">wall</span><span class="p">)</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NoSlipWall</span><span class="p">()</span><span class="o">.</span><span class="n">type</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="get_boundaries_from_sliding_interfaces">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.get_boundaries_from_sliding_interfaces">[docs]</a>
+<span class="k">def</span> <span class="nf">get_boundaries_from_sliding_interfaces</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360Params</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get wall boundary names</span>
+<span class="sd">    :param params:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">params</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Sliding interfaces are deprecated - we need to handle this somehow</span>
+    <span class="c1"># if params.sliding_interfaces and params.sliding_interfaces.rotating_patches:</span>
+    <span class="c1">#    res += params.sliding_interfaces.rotating_patches[:]</span>
+    <span class="c1"># if params.sliding_interfaces and params.sliding_interfaces.stationary_patches:</span>
+    <span class="c1">#    res += params.sliding_interfaces.stationary_patches[:]</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+
+
+
+<span class="c1"># pylint: disable=too-many-branches</span>
+<div class="viewcode-block" id="get_boundaries_from_file">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.get_boundaries_from_file">[docs]</a>
+<span class="k">def</span> <span class="nf">get_boundaries_from_file</span><span class="p">(</span><span class="n">cgns_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">solver_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get boundary names from CGNS file</span>
+<span class="sd">    :param cgns_file:</span>
+<span class="sd">    :param solver_version:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">cgns_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5_file</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">h5_file</span><span class="p">[</span><span class="s2">&quot;Base&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">zone_name</span><span class="p">,</span> <span class="n">zone</span> <span class="ow">in</span> <span class="n">base</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">zone_name</span> <span class="o">==</span> <span class="s2">&quot; data&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">zone</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;Zone_t&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">zone_type</span> <span class="o">=</span> <span class="n">get_datatype</span><span class="p">(</span><span class="n">base</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">zone_name</span><span class="si">}</span><span class="s2">/ZoneType/ data&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">zone_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Structured&quot;</span><span class="p">,</span> <span class="s2">&quot;Unstructured&quot;</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">section_name</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">zone</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">section_name</span> <span class="o">==</span> <span class="s2">&quot; data&quot;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="s2">&quot;label&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">solver_version</span> <span class="ow">and</span> <span class="n">Flow360Version</span><span class="p">(</span><span class="n">solver_version</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Flow360Version</span><span class="p">(</span>
+                    <span class="s2">&quot;release-22.2.1.0&quot;</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;Elements_t&quot;</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">element_type_tag</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zone</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">section_name</span><span class="si">}</span><span class="s2">/ data&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">element_type_tag</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">]:</span>
+                        <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">zone_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">section_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">element_type_tag</span> <span class="o">==</span> <span class="mi">20</span><span class="p">:</span>
+                        <span class="n">first_element_type_tag</span> <span class="o">=</span> <span class="n">zone</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">section_name</span><span class="si">}</span><span class="s2">/ElementConnectivity/ data&quot;</span><span class="p">][</span>
+                            <span class="mi">0</span>
+                        <span class="p">]</span>
+                        <span class="k">if</span> <span class="n">first_element_type_tag</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">]:</span>
+                            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">zone_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">section_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;ZoneBC_t&quot;</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">for</span> <span class="n">bc_name</span><span class="p">,</span> <span class="n">bc_zone</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">bc_zone</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;BC_t&quot;</span><span class="p">:</span>
+                            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">zone_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">bc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">names</span></div>
+
+
+
+<div class="viewcode-block" id="validate_cgns">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.validate_cgns">[docs]</a>
+<span class="k">def</span> <span class="nf">validate_cgns</span><span class="p">(</span>
+    <span class="n">cgns_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360Params</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">],</span> <span class="n">solver_version</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validate CGNS file</span>
+<span class="sd">    :param cgns_file:</span>
+<span class="sd">    :param params:</span>
+<span class="sd">    :param solver_version:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">cgns_file</span>
+    <span class="k">assert</span> <span class="n">params</span>
+    <span class="n">boundaries_in_file</span> <span class="o">=</span> <span class="n">get_boundaries_from_file</span><span class="p">(</span><span class="n">cgns_file</span><span class="p">,</span> <span class="n">solver_version</span><span class="p">)</span>
+    <span class="n">boundaries_in_params</span> <span class="o">=</span> <span class="n">get_no_slip_walls</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">+</span> <span class="n">get_boundaries_from_sliding_interfaces</span><span class="p">(</span>
+        <span class="n">params</span>
+    <span class="p">)</span>
+    <span class="n">boundaries_in_file</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">boundaries_in_file</span><span class="p">)</span>
+    <span class="n">boundaries_in_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">boundaries_in_params</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">boundaries_in_file</span><span class="o">.</span><span class="n">issuperset</span><span class="p">(</span><span class="n">boundaries_in_params</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">Flow360ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The following input boundary names from mesh json are not found in mesh:&quot;</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">boundaries_in_params</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">boundaries_in_file</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; Boundary names in cgns: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">boundaries_in_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; Boundary names in params: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">boundaries_in_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s1">&#39;Notice: </span><span class="si">{</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">boundaries_in_file</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">boundaries_in_params</span><span class="p">)</span><span class="si">}</span><span class="s1"> is &#39;</span>
+        <span class="o">+</span> <span class="s2">&quot;tagged as wall in cgns file, but not in input params&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshLog">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshLog">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshLog</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh log</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">USER_LOG</span> <span class="o">=</span> <span class="s2">&quot;user.log&quot;</span>
+    <span class="n">PY_LOG</span> <span class="o">=</span> <span class="s2">&quot;validateFlow360Mesh.py.log&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshDownloadable">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshDownloadable">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshDownloadable</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh downloadable files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CONFIG_JSON</span> <span class="o">=</span> <span class="s2">&quot;config.json&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshFileFormat">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshFileFormat">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshFileFormat</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh file format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">UGRID</span> <span class="o">=</span> <span class="s2">&quot;aflr3&quot;</span>
+    <span class="n">CGNS</span> <span class="o">=</span> <span class="s2">&quot;cgns&quot;</span>
+
+<div class="viewcode-block" id="VolumeMeshFileFormat.ext">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshFileFormat.ext">[docs]</a>
+    <span class="k">def</span> <span class="nf">ext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the extention for a file name.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">UGRID</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.ugrid&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">CGNS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.cgns&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="VolumeMeshFileFormat.detect">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshFileFormat.detect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        detects mesh format from filename</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">UGRID</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">UGRID</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">CGNS</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">CGNS</span>
+        <span class="k">raise</span> <span class="n">Flow360RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported file format </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="UGRIDEndianness">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.UGRIDEndianness">[docs]</a>
+<span class="k">class</span> <span class="nc">UGRIDEndianness</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    UGRID endianness</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">LITTLE</span> <span class="o">=</span> <span class="s2">&quot;little&quot;</span>
+    <span class="n">BIG</span> <span class="o">=</span> <span class="s2">&quot;big&quot;</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="UGRIDEndianness.ext">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.UGRIDEndianness.ext">[docs]</a>
+    <span class="k">def</span> <span class="nf">ext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the extention for a file name.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">LITTLE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.lb8&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">BIG</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.b8&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="UGRIDEndianness.detect">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.UGRIDEndianness.detect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        detects endianess UGRID mesh from filename</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">UGRID</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">NONE</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">basename</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">LITTLE</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">LITTLE</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">BIG</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">BIG</span>
+        <span class="k">raise</span> <span class="n">Flow360RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown endianness for file </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CompressionFormat">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.CompressionFormat">[docs]</a>
+<span class="k">class</span> <span class="nc">CompressionFormat</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh file format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">GZ</span> <span class="o">=</span> <span class="s2">&quot;gz&quot;</span>
+    <span class="n">BZ2</span> <span class="o">=</span> <span class="s2">&quot;bz2&quot;</span>
+    <span class="n">ZST</span> <span class="o">=</span> <span class="s2">&quot;zst&quot;</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="CompressionFormat.ext">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.CompressionFormat.ext">[docs]</a>
+    <span class="k">def</span> <span class="nf">ext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the extention for a file name.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">GZ</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.gz&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">BZ2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.bz2&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">ZST</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;.zst&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="CompressionFormat.detect">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.CompressionFormat.detect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        detects compression from filename</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">GZ</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">GZ</span><span class="p">,</span> <span class="n">file_name</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">BZ2</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">BZ2</span><span class="p">,</span> <span class="n">file_name</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">ZST</span><span class="o">.</span><span class="n">ext</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">ZST</span><span class="p">,</span> <span class="n">file_name</span>
+        <span class="k">return</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span> <span class="n">file</span></div>
+</div>
+
+
+
+<span class="c1"># pylint: disable=E0213</span>
+<div class="viewcode-block" id="VolumeMeshMeta">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshMeta">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshMeta</span><span class="p">(</span><span class="n">Flow360ResourceBaseModel</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">Extra</span><span class="o">.</span><span class="n">allow</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    VolumeMeshMeta component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshId&quot;</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshName&quot;</span><span class="p">)</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshAddTime&quot;</span><span class="p">)</span>
+    <span class="n">surface_mesh_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;surfaceMeshId&quot;</span><span class="p">)</span>
+    <span class="n">mesh_params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360MeshParams</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshParams&quot;</span><span class="p">)</span>
+    <span class="n">mesh_format</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">VolumeMeshFileFormat</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshFormat&quot;</span><span class="p">)</span>
+    <span class="n">file_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;fileName&quot;</span><span class="p">)</span>
+    <span class="n">endianness</span><span class="p">:</span> <span class="n">UGRIDEndianness</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshEndianness&quot;</span><span class="p">)</span>
+    <span class="n">compression</span><span class="p">:</span> <span class="n">CompressionFormat</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshCompression&quot;</span><span class="p">)</span>
+    <span class="n">boundaries</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+<div class="viewcode-block" id="VolumeMeshMeta.init_mesh_params">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshMeta.init_mesh_params">[docs]</a>
+    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;mesh_params&quot;</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">init_mesh_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        validator for mesh_params</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">params_generic_validator</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VolumeMeshMeta.init_endianness">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshMeta.init_endianness">[docs]</a>
+    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;endianness&quot;</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">init_endianness</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        validator for endianess</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">UGRIDEndianness</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">NONE</span></div>
+
+
+<div class="viewcode-block" id="VolumeMeshMeta.init_compression">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshMeta.init_compression">[docs]</a>
+    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;compression&quot;</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">init_compression</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        validator for compression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">CompressionFormat</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">NONE</span></div>
+
+
+<div class="viewcode-block" id="VolumeMeshMeta.to_volume_mesh">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshMeta.to_volume_mesh">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_volume_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns VolumeMesh object from volume mesh meta info</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">VolumeMesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshDraft">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshDraft">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshDraft</span><span class="p">(</span><span class="n">ResourceDraft</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh draft component (before submit)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># pylint: disable=too-many-arguments, too-many-instance-attributes</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360MeshParams</span><span class="p">,</span> <span class="n">VolumeMeshingParams</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">surface_mesh_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">solver_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">endianess</span><span class="p">:</span> <span class="n">UGRIDEndianness</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isascii</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">file_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">Flow360FileError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File &#39;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">endianess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Flow360NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;endianess selections not supported, it is inferred from filename&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">isascii</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Flow360NotImplementedError</span><span class="p">(</span><span class="s2">&quot;isascii not supported&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Flow360MeshParams</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">params</span><span class="p">,</span> <span class="n">VolumeMeshingParams</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;params=</span><span class="si">{</span><span class="n">params</span><span class="si">}</span><span class="s2"> are not of type Flow360MeshParams OR VolumeMeshingParams&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">file_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_name</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">surface_mesh_id</span> <span class="o">=</span> <span class="n">surface_mesh_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver_version</span> <span class="o">=</span> <span class="n">solver_version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compress_method</span> <span class="o">=</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">ZST</span>
+        <span class="n">ResourceDraft</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_submit_from_surface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validator_api</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">solver_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solver_version</span><span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="s2">&quot;surfaceMeshId&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_mesh_id</span><span class="p">,</span>
+            <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">flow360_json</span><span class="p">(),</span>
+            <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;cgns&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver_version</span><span class="p">:</span>
+            <span class="n">body</span><span class="p">[</span><span class="s2">&quot;solverVersion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver_version</span>
+
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">RestApi</span><span class="p">(</span><span class="n">VolumeMeshInterface</span><span class="o">.</span><span class="n">endpoint</span><span class="p">)</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">VolumeMeshMeta</span><span class="p">(</span><span class="o">**</span><span class="n">resp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">VolumeMesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;VolumeMesh successfully submitted: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">short_description</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mesh</span>
+
+    <span class="c1"># pylint: disable=protected-access, too-many-locals</span>
+    <span class="k">def</span> <span class="nf">_submit_upload_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress_callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+
+        <span class="n">original_compression</span><span class="p">,</span> <span class="n">file_name_no_compression</span> <span class="o">=</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="n">mesh_format</span> <span class="o">=</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">file_name_no_compression</span><span class="p">)</span>
+        <span class="n">endianness</span> <span class="o">=</span> <span class="n">UGRIDEndianness</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">file_name_no_compression</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mesh_format</span> <span class="ow">is</span> <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">CGNS</span><span class="p">:</span>
+            <span class="n">remote_file_name</span> <span class="o">=</span> <span class="s2">&quot;volumeMesh&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">remote_file_name</span> <span class="o">=</span> <span class="s2">&quot;mesh&quot;</span>
+        <span class="n">compression</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">original_compression</span>
+            <span class="k">if</span> <span class="n">original_compression</span> <span class="o">!=</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">NONE</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">compress_method</span>
+        <span class="p">)</span>
+        <span class="n">remote_file_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">remote_file_name</span><span class="si">}{</span><span class="n">endianness</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}{</span><span class="n">mesh_format</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}{</span><span class="n">compression</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">req</span> <span class="o">=</span> <span class="n">NewVolumeMeshRequest</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="n">remote_file_name</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="n">mesh_format</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">endianness</span><span class="o">=</span><span class="n">endianness</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">solver_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solver_version</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">RestApi</span><span class="p">(</span><span class="n">VolumeMeshInterface</span><span class="o">.</span><span class="n">endpoint</span><span class="p">)</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">VolumeMeshMeta</span><span class="p">(</span><span class="o">**</span><span class="n">resp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">VolumeMesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="c1"># parallel compress and upload</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">original_compression</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">NONE</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">compress_method</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">BZ2</span>
+        <span class="p">):</span>
+            <span class="n">upload_id</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">create_multipart_upload</span><span class="p">(</span><span class="n">remote_file_name</span><span class="p">)</span>
+            <span class="n">compress_and_upload_chunks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="n">upload_id</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">remote_file_name</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">original_compression</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">NONE</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">compress_method</span> <span class="o">==</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">ZST</span>
+        <span class="p">):</span>
+            <span class="n">compressed_file_name</span> <span class="o">=</span> <span class="n">zstd_compress</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+            <span class="n">mesh</span><span class="o">.</span><span class="n">_upload_file</span><span class="p">(</span>
+                <span class="n">remote_file_name</span><span class="p">,</span> <span class="n">compressed_file_name</span><span class="p">,</span> <span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_callback</span>
+            <span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">compressed_file_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mesh</span><span class="o">.</span><span class="n">_upload_file</span><span class="p">(</span><span class="n">remote_file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_callback</span><span class="p">)</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">_complete_upload</span><span class="p">(</span><span class="n">remote_file_name</span><span class="p">)</span>
+
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;VolumeMesh successfully uploaded: </span><span class="si">{</span><span class="n">mesh</span><span class="o">.</span><span class="n">short_description</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mesh</span>
+
+<div class="viewcode-block" id="VolumeMeshDraft.submit">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshDraft.submit">[docs]</a>
+    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress_callback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;submit mesh to cloud</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        progress_callback : callback, optional</span>
+<span class="sd">            Use for custom progress bar, by default None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        VolumeMesh</span>
+<span class="sd">            VolumeMesh object with id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">shared_account_confirm_proceed</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">Flow360ValueError</span><span class="p">(</span><span class="s2">&quot;User aborted resource submit.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_submit_upload_mesh</span><span class="p">(</span><span class="n">progress_callback</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_mesh_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_submit_from_surface</span><span class="p">()</span>
+
+        <span class="k">raise</span> <span class="n">Flow360ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;You must provide volume mesh file for upload or surface mesh Id with meshing parameters.&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VolumeMeshDraft.validator_api">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshDraft.validator_api">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">validator_api</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">VolumeMeshingParams</span><span class="p">,</span> <span class="n">solver_version</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        validation api: validates surface meshing parameters before submitting</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Validator</span><span class="o">.</span><span class="n">VOLUME_MESH</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">solver_version</span><span class="o">=</span><span class="n">solver_version</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VolumeMesh">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMesh</span><span class="p">(</span><span class="n">Flow360Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Volume mesh component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># pylint: disable=redefined-builtin</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">interface</span><span class="o">=</span><span class="n">VolumeMeshInterface</span><span class="p">,</span>
+            <span class="n">info_type_class</span><span class="o">=</span><span class="n">VolumeMeshMeta</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__mesh_params</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_from_meta</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">VolumeMeshMeta</span><span class="p">):</span>
+        <span class="n">validate_type</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="s2">&quot;meta&quot;</span><span class="p">,</span> <span class="n">VolumeMeshMeta</span><span class="p">)</span>
+        <span class="n">volume_mesh</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">volume_mesh</span><span class="o">.</span><span class="n">_set_meta</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">volume_mesh</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMeshMeta</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">info</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_mesh_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Flow360MeshParams</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns mesh params</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__mesh_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__mesh_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">mesh_params</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__mesh_params</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">no_slip_walls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns mesh no_slip_walls</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh_params</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">no_slip_walls</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns mesh no_slip_walls</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">boundaries</span>
+
+    <span class="c1"># pylint: disable=too-many-arguments,R0801</span>
+<div class="viewcode-block" id="VolumeMesh.download_file">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.download_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">download_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VolumeMeshDownloadable</span><span class="p">],</span>
+        <span class="n">to_file</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">to_folder</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">keep_folder</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">progress_callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Download file from surface mesh</span>
+<span class="sd">        :param file_name:</span>
+<span class="sd">        :param to_file:</span>
+<span class="sd">        :param keep_folder:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">VolumeMeshDownloadable</span><span class="p">):</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_download_file</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span>
+            <span class="n">to_file</span><span class="o">=</span><span class="n">to_file</span><span class="p">,</span>
+            <span class="n">to_folder</span><span class="o">=</span><span class="n">to_folder</span><span class="p">,</span>
+            <span class="n">keep_folder</span><span class="o">=</span><span class="n">keep_folder</span><span class="p">,</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span>
+            <span class="n">progress_callback</span><span class="o">=</span><span class="n">progress_callback</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># pylint: disable=R0801</span>
+<div class="viewcode-block" id="VolumeMesh.download">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.download">[docs]</a>
+    <span class="k">def</span> <span class="nf">download</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">to_file</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">to_folder</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">keep_folder</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Download volume mesh file</span>
+<span class="sd">        :param to_file:</span>
+<span class="sd">        :param keep_folder:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="o">.</span><span class="n">is_final</span><span class="p">():</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot download file because status=</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">remote_file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">file_name</span>
+            <span class="k">if</span> <span class="n">remote_file_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">remote_file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_file_name</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">to_file</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">file_ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">remote_file_name</span><span class="p">)</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">to_file_ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">to_file</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">to_file_ext</span> <span class="o">!=</span> <span class="n">file_ext</span><span class="p">:</span>
+                    <span class="n">to_file</span> <span class="o">=</span> <span class="n">to_file</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_file_extention</span><span class="p">()</span>
+
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_download_file</span><span class="p">(</span>
+                <span class="n">remote_file_name</span><span class="p">,</span>
+                <span class="n">to_file</span><span class="o">=</span><span class="n">to_file</span><span class="p">,</span>
+                <span class="n">to_folder</span><span class="o">=</span><span class="n">to_folder</span><span class="p">,</span>
+                <span class="n">keep_folder</span><span class="o">=</span><span class="n">keep_folder</span><span class="p">,</span>
+                <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_complete_upload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_file_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Complete volume mesh upload</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">({},</span> <span class="n">method</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;completeUpload?fileName=</span><span class="si">{</span><span class="n">remote_file_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info</span> <span class="o">=</span> <span class="n">VolumeMeshMeta</span><span class="p">(</span><span class="o">**</span><span class="n">resp</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_interface</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">VolumeMeshInterface</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_meta_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns volume mesh meta info class: VolumeMeshMeta</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">VolumeMeshMeta</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_params_ancestor_id_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns surfaceMeshId name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;surfaceMeshId&quot;</span>
+
+<div class="viewcode-block" id="VolumeMesh.from_cloud">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.from_cloud">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_cloud</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">mesh_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get volume mesh info from cloud</span>
+<span class="sd">        :param mesh_id:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">mesh_id</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_file_extention</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">compression</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">compression</span>
+        <span class="n">mesh_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">mesh_format</span>
+        <span class="n">endianness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">endianness</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endianness</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}{</span><span class="n">mesh_format</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}{</span><span class="n">compression</span><span class="o">.</span><span class="n">ext</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_remote_file_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        mesh filename on cloud</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">remote_file_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_download_file_list</span><span class="p">():</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">file_name_no_compression</span> <span class="o">=</span> <span class="n">CompressionFormat</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">file</span><span class="p">[</span><span class="s2">&quot;fileName&quot;</span><span class="p">])</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">VolumeMeshFileFormat</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">file_name_no_compression</span><span class="p">)</span>
+                <span class="n">remote_file_name</span> <span class="o">=</span> <span class="n">file</span><span class="p">[</span><span class="s2">&quot;fileName&quot;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="n">Flow360RuntimeError</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">remote_file_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Flow360CloudFileError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No volume mesh file found for id=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">remote_file_name</span>
+
+<div class="viewcode-block" id="VolumeMesh.from_file">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.from_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360MeshParams</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">solver_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">endianess</span><span class="p">:</span> <span class="n">UGRIDEndianness</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isascii</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMeshDraft</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upload volume mesh from file</span>
+<span class="sd">        :param volume_mesh_name:</span>
+<span class="sd">        :param file_name:</span>
+<span class="sd">        :param params:</span>
+<span class="sd">        :param tags:</span>
+<span class="sd">        :param solver_version:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">VolumeMeshDraft</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="o">=</span><span class="n">file_name</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">solver_version</span><span class="o">=</span><span class="n">solver_version</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">endianess</span><span class="o">=</span><span class="n">endianess</span><span class="p">,</span>
+            <span class="n">isascii</span><span class="o">=</span><span class="n">isascii</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VolumeMesh.create">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.create">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">VolumeMeshingParams</span><span class="p">,</span>
+        <span class="n">surface_mesh_id</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">solver_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMeshDraft</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create volume mesh from surface mesh</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">VolumeMeshDraft</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">surface_mesh_id</span><span class="o">=</span><span class="n">surface_mesh_id</span><span class="p">,</span>
+            <span class="n">solver_version</span><span class="o">=</span><span class="n">solver_version</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VolumeMesh.create_case">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMesh.create_case">[docs]</a>
+    <span class="k">def</span> <span class="nf">create_case</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Flow360Params</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">solver_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CaseDraft</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create new case</span>
+<span class="sd">        :param name:</span>
+<span class="sd">        :param params:</span>
+<span class="sd">        :param tags:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">Case</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">volume_mesh_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">solver_version</span><span class="o">=</span><span class="n">solver_version</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshList">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshList">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshList</span><span class="p">(</span><span class="n">Flow360ResourceListBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    VolumeMesh List component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">surface_mesh_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">from_cloud</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">include_deleted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">ancestor_id</span><span class="o">=</span><span class="n">surface_mesh_id</span><span class="p">,</span>
+            <span class="n">from_cloud</span><span class="o">=</span><span class="n">from_cloud</span><span class="p">,</span>
+            <span class="n">include_deleted</span><span class="o">=</span><span class="n">include_deleted</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="n">resourceClass</span><span class="o">=</span><span class="n">VolumeMesh</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="VolumeMeshList.filter">
+<a class="viewcode-back" href="../../../flow360doc/components.html#flow360.component.volume_mesh.VolumeMeshList.filter">[docs]</a>
+    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        flitering list, not implemented yet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Filters are not implemented yet&quot;</span><span class="p">)</span></div>
+
+
+        <span class="c1"># resp = list(filter(lambda i: i[&#39;caseStatus&#39;] != &#39;deleted&#39;, resp))</span>
+
+    <span class="c1"># pylint: disable=useless-parent-delegation</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VolumeMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns VolumeMeshMeta item of the list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=useless-parent-delegation</span>
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">VolumeMesh</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

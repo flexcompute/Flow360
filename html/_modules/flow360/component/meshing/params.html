@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.component.meshing.params &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.component.meshing.params</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Flow360 meshing parameters</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">get_args</span>
+
+<span class="kn">import</span> <span class="nn">pydantic</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">..flow360_params.params_base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Flow360BaseModel</span><span class="p">,</span>
+    <span class="n">Flow360SortableBaseModel</span><span class="p">,</span>
+    <span class="n">_self_named_property_validator</span><span class="p">,</span>
+    <span class="n">flow360_json_encoder</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="n">Axis</span><span class="p">,</span> <span class="n">Coordinate</span><span class="p">,</span> <span class="n">NonNegativeFloat</span><span class="p">,</span> <span class="n">PositiveFloat</span><span class="p">,</span> <span class="n">Size</span>
+
+
+<div class="viewcode-block" id="Aniso">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.Aniso">[docs]</a>
+<span class="k">class</span> <span class="nc">Aniso</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aniso edge&quot;&quot;&quot;</span>
+
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;aniso&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;angle&quot;</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="s2">&quot;aspectRatio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">adapt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="ProjectAniso">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.ProjectAniso">[docs]</a>
+<span class="k">class</span> <span class="nc">ProjectAniso</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ProjectAniso edge&quot;&quot;&quot;</span>
+
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;projectAnisoSpacing&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">adapt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="UseAdjacent">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.UseAdjacent">[docs]</a>
+<span class="k">class</span> <span class="nc">UseAdjacent</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ProjectAniso edge&quot;&quot;&quot;</span>
+
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;useAdjacent&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">adapt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<span class="n">EdgeType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Aniso</span><span class="p">,</span> <span class="n">ProjectAniso</span><span class="p">,</span> <span class="n">UseAdjacent</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">_GenericEdgeWrapper</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+    <span class="n">v</span><span class="p">:</span> <span class="n">EdgeType</span>
+
+
+<span class="k">class</span> <span class="nc">Edges</span><span class="p">(</span><span class="n">Flow360SortableBaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`Edges` class for setting up Edges meshing constrains</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &lt;edge_name&gt; : EdgeType</span>
+<span class="sd">        Supported edge types: Union[Aniso, ProjectAniso, UseAdjacent]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`Edges`</span>
+<span class="sd">        An instance of the component class Edges.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_subtypes</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_args</span><span class="p">(</span><span class="n">_GenericEdgeWrapper</span><span class="o">.</span><span class="n">__fields__</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">type_</span><span class="p">))</span>
+
+    <span class="c1"># pylint: disable=no-self-argument</span>
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">validate_edge</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validator for edge list section</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValidationError</span>
+<span class="sd">            When edge is incorrect</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_self_named_property_validator</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">_GenericEdgeWrapper</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;is not any of supported edge types.&quot;</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="Face">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.Face">[docs]</a>
+<span class="k">class</span> <span class="nc">Face</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Face&quot;&quot;&quot;</span>
+
+    <span class="n">max_edge_length</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxEdgeLength&quot;</span><span class="p">)</span>
+    <span class="n">adapt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<span class="n">FaceType</span> <span class="o">=</span> <span class="n">Face</span>
+
+
+<span class="k">class</span> <span class="nc">_GenericFaceWrapper</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+    <span class="n">v</span><span class="p">:</span> <span class="n">FaceType</span>
+
+
+<span class="k">class</span> <span class="nc">Faces</span><span class="p">(</span><span class="n">Flow360SortableBaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`Faces` class for setting up Faces meshing constrains</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &lt;face_name&gt; : Face</span>
+<span class="sd">        Supported face types: Face(max_edge_lengt=)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`Faces`</span>
+<span class="sd">        An instance of the component class Faces.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_subtypes</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">_GenericFaceWrapper</span><span class="o">.</span><span class="n">__fields__</span><span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">type_</span><span class="p">]</span>
+
+    <span class="c1"># pylint: disable=no-self-argument</span>
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">validate_face</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validator for face list section</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValidationError</span>
+<span class="sd">            When face is incorrect</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">_self_named_property_validator</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">_GenericFaceWrapper</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;is not any of supported face types.&quot;</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="SurfaceMeshingParams">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.SurfaceMeshingParams">[docs]</a>
+<span class="k">class</span> <span class="nc">SurfaceMeshingParams</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Flow360 Surface Meshing parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_edge_length</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxEdgeLength&quot;</span><span class="p">)</span>
+    <span class="n">edges</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Edges</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">faces</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Faces</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">curvature_resolution_angle</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;curvatureResolutionAngle&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">15</span>
+    <span class="p">)</span>
+    <span class="n">growth_rate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;growthRate&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SurfaceMeshingParams.flow360_json">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.SurfaceMeshingParams.flow360_json">[docs]</a>
+    <span class="k">def</span> <span class="nf">flow360_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a JSON representation of the model, as required by Flow360</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        json</span>
+<span class="sd">            Returns JSON representation of the model.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; params.flow360_json() # doctest: +SKIP</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">flow360_json_encoder</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Refinement">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.Refinement">[docs]</a>
+<span class="k">class</span> <span class="nc">Refinement</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for refinement zones&quot;&quot;&quot;</span>
+
+    <span class="n">center</span><span class="p">:</span> <span class="n">Coordinate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">spacing</span><span class="p">:</span> <span class="n">PositiveFloat</span></div>
+
+
+
+<div class="viewcode-block" id="BoxRefinement">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.BoxRefinement">[docs]</a>
+<span class="k">class</span> <span class="nc">BoxRefinement</span><span class="p">(</span><span class="n">Refinement</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Box refinement zone</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;box&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">size</span><span class="p">:</span> <span class="n">Size</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">axis_of_rotation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axis</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;axisOfRotation&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">angle_of_rotation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;angleOfRotation&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="CylinderRefinement">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.CylinderRefinement">[docs]</a>
+<span class="k">class</span> <span class="nc">CylinderRefinement</span><span class="p">(</span><span class="n">Refinement</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Box refinement zone</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;cylinder&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">radius</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">length</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Farfield">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.Farfield">[docs]</a>
+<span class="k">class</span> <span class="nc">Farfield</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Farfield type for meshing</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="s2">&quot;quasi-3d&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Volume">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.Volume">[docs]</a>
+<span class="k">class</span> <span class="nc">Volume</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Core volume meshing parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">first_layer_thickness</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;firstLayerThickness&quot;</span><span class="p">)</span>
+    <span class="n">growth_rate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;growthRate&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+    <span class="n">gap_treatment_strength</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;gapTreatmentStrength&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RotationalModelBase">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.RotationalModelBase">[docs]</a>
+<span class="k">class</span> <span class="nc">RotationalModelBase</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class: RotorDisk&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">inner_radius</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;innerRadius&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">outer_radius</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;outerRadius&quot;</span><span class="p">)</span>
+    <span class="n">thickness</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">center</span><span class="p">:</span> <span class="n">Coordinate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">spacing_axial</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;spacingAxial&quot;</span><span class="p">)</span>
+    <span class="n">spacing_radial</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;spacingRadial&quot;</span><span class="p">)</span>
+    <span class="n">spacing_circumferential</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;spacingCircumferential&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RotorDisk">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.RotorDisk">[docs]</a>
+<span class="k">class</span> <span class="nc">RotorDisk</span><span class="p">(</span><span class="n">RotationalModelBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class: RotorDisk&quot;&quot;&quot;</span>
+
+    <span class="n">axis_thrust</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;axisThrust&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SlidingInterface">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.SlidingInterface">[docs]</a>
+<span class="k">class</span> <span class="nc">SlidingInterface</span><span class="p">(</span><span class="n">RotationalModelBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class: SlidingInterface for meshing&quot;&quot;&quot;</span>
+
+    <span class="n">axis_of_rotation</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;axisOfRotation&quot;</span><span class="p">)</span>
+    <span class="n">enclosed_objects</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;enclosedObjects&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span></div>
+
+
+
+<div class="viewcode-block" id="VolumeMeshingParams">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.VolumeMeshingParams">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeMeshingParams</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Flow360 Volume Meshing parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">volume</span><span class="p">:</span> <span class="n">Volume</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">refinement_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;refinementFactor&quot;</span><span class="p">)</span>
+    <span class="n">farfield</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Farfield</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">refinement</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BoxRefinement</span><span class="p">,</span> <span class="n">CylinderRefinement</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">rotor_disks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">RotorDisk</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;rotorDisks&quot;</span><span class="p">)</span>
+    <span class="n">sliding_interfaces</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">SlidingInterface</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;slidingInterfaces&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VolumeMeshingParams.flow360_json">
+<a class="viewcode-back" href="../../../../flow360doc/component/meshing.html#flow360.component.meshing.params.VolumeMeshingParams.flow360_json">[docs]</a>
+    <span class="k">def</span> <span class="nf">flow360_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a JSON representation of the model, as required by Flow360</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        json</span>
+<span class="sd">            Returns JSON representation of the model.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; params.flow360_json() # doctest: +SKIP</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">flow360_json_encoder</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

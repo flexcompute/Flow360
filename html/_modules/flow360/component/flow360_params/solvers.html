@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.component.flow360_params.solvers &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.component.flow360_params.solvers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Flow360 solvers parameters</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pydantic</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">flow360.flags</span> <span class="kn">import</span> <span class="n">Flags</span>
+
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="n">NonNegativeFloat</span><span class="p">,</span> <span class="n">NonNegativeInt</span><span class="p">,</span> <span class="n">PositiveFloat</span><span class="p">,</span> <span class="n">PositiveInt</span>
+<span class="kn">from</span> <span class="nn">.flow360_legacy</span> <span class="kn">import</span> <span class="n">LegacyModel</span><span class="p">,</span> <span class="n">try_set</span><span class="p">,</span> <span class="n">try_update</span>
+<span class="kn">from</span> <span class="nn">.params_base</span> <span class="kn">import</span> <span class="n">DeprecatedAlias</span><span class="p">,</span> <span class="n">Flow360BaseModel</span>
+
+
+<div class="viewcode-block" id="GenericFlowSolverSettings">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.GenericFlowSolverSettings">[docs]</a>
+<span class="k">class</span> <span class="nc">GenericFlowSolverSettings</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`GenericFlowSolverSettings` class&quot;&quot;&quot;</span>
+
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">1.0e-10</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">)</span>
+    <span class="n">relative_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;relativeTolerance&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+        <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+            <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;linear_solver&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">),</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;absolute_tolerance&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;tolerance&quot;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span>
+            <span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span>
+        <span class="p">):</span>  <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+            <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;absolute_tolerance&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;tolerance&quot;</span><span class="p">),</span>
+            <span class="p">]</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">LinearSolver</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`LinearSolver` class for setting up linear solver for heat equation</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    max_iterations : PositiveInt, optional</span>
+<span class="sd">        Maximum number of linear solver iterations, by default 50</span>
+
+<span class="sd">    absolute_tolerance : PositiveFloat, optional</span>
+<span class="sd">        The linear solver converges when the final residual of the pseudo steps below this value. Either absolute</span>
+<span class="sd">        tolerance or relative tolerance can be used to determine convergence, by default 1e-10</span>
+
+<span class="sd">    relative_tolerance :</span>
+<span class="sd">        The linear solver converges when the ratio of the final residual and the initial</span>
+<span class="sd">        residual of the pseudo step is below this value.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`LinearSolver`</span>
+<span class="sd">        An instance of the component class LinearSolver.</span>
+
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; ls = LinearSolver(</span>
+<span class="sd">                max_iterations=50,</span>
+<span class="sd">                absoluteTolerance=1e-10</span>
+<span class="sd">        )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_iterations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxIterations&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+    <span class="n">relative_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;relativeTolerance&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span><span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;absolute_tolerance&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;tolerance&quot;</span><span class="p">)]</span>
+
+
+<div class="viewcode-block" id="RandomizerParameter">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.RandomizerParameter">[docs]</a>
+<span class="k">class</span> <span class="nc">RandomizerParameter</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`RandomizerParameter` class&quot;&quot;&quot;</span>
+
+    <span class="n">standard_deviation</span><span class="p">:</span> <span class="n">NonNegativeFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;standardDeviation&quot;</span><span class="p">)</span>
+    <span class="n">update_frequency</span><span class="p">:</span> <span class="n">PositiveInt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateFrequency&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LinearIterationsRandomizer">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.LinearIterationsRandomizer">[docs]</a>
+<span class="k">class</span> <span class="nc">LinearIterationsRandomizer</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`LinearIterationsRandomizer` class&quot;&quot;&quot;</span>
+
+    <span class="n">linear_iterations</span><span class="p">:</span> <span class="n">RandomizerParameter</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearIterations&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="PressureCorrectionSolver">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.PressureCorrectionSolver">[docs]</a>
+<span class="k">class</span> <span class="nc">PressureCorrectionSolver</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`PressureCorrectionSolver` class&quot;&quot;&quot;</span>
+
+    <span class="n">randomizer</span><span class="p">:</span> <span class="n">LinearIterationsRandomizer</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">linear_solver</span><span class="p">:</span> <span class="n">LinearSolver</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">LinearSolver</span><span class="p">(),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;linear_solver&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">)</span>
+        <span class="p">]</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">NavierStokesSolver</span><span class="p">(</span><span class="n">GenericFlowSolverSettings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`NavierStokesSolver` class for setting up compressible Navier-Stokes solver</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    absolute_tolerance :</span>
+<span class="sd">        Tolerance for the NS residual, below which the solver goes to the next physical step</span>
+
+<span class="sd">    relative_tolerance :</span>
+<span class="sd">        Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is</span>
+<span class="sd">        defined as the ratio of the current pseudoStep’s residual to the maximum residual present in the first</span>
+<span class="sd">        10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and</span>
+<span class="sd">        only absoluteTolerance is used as the convergence criterion</span>
+
+<span class="sd">    CFL_multiplier :</span>
+<span class="sd">        Factor to the CFL definitions defined in “timeStepping” section</span>
+
+<span class="sd">    kappa_MUSCL :</span>
+<span class="sd">        Kappa for the MUSCL scheme, range from [-1, 1], with 1 being unstable. The default value of -1 leads to a 2nd</span>
+<span class="sd">        order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is</span>
+<span class="sd">        recommended for low subsonic flows leading to reduced dissipation</span>
+
+<span class="sd">    update_jacobian_frequency :</span>
+<span class="sd">        Frequency at which the jacobian is updated.</span>
+
+<span class="sd">    equation_eval_frequency :</span>
+<span class="sd">        Frequency at which to update the compressible NS equation in loosely-coupled simulations</span>
+
+<span class="sd">    max_force_jac_update_physical_steps :</span>
+<span class="sd">        When which physical steps, the jacobian matrix is updated every pseudo step</span>
+
+<span class="sd">    order_of_accuracy :</span>
+<span class="sd">        Order of accuracy in space</span>
+
+<span class="sd">    limit_velocity :</span>
+<span class="sd">        Limiter for velocity</span>
+
+<span class="sd">    limit_pressure_density :</span>
+<span class="sd">        Limiter for pressure and density</span>
+
+<span class="sd">    numerical_dissipation_factor :</span>
+<span class="sd">        A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.</span>
+<span class="sd">        The recommended starting value for most low-dissipation runs is 0.2</span>
+
+<span class="sd">    linear_solver:</span>
+<span class="sd">        Linear solver settings</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`NavierStokesSolver`</span>
+<span class="sd">        An instance of the component class NavierStokesSolver.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; ns = NavierStokesSolver(absolute_tolerance=1e-10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CFL_multiplier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mf">1.0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;CFLMultiplier&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;CFL Multiplier&quot;</span>
+    <span class="p">)</span>
+    <span class="n">kappa_MUSCL</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;kappaMUSCL&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Kappa MUSCL&quot;</span>
+    <span class="p">)</span>
+    <span class="n">update_jacobian_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mi">4</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Update Jacobian frequency&quot;</span>
+    <span class="p">)</span>
+    <span class="n">equation_eval_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">)</span>
+    <span class="n">max_force_jac_update_physical_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Max force JAC update physical steps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">order_of_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">)</span>
+    <span class="n">numerical_dissipation_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mi">1</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;numericalDissipationFactor&quot;</span>
+    <span class="p">)</span>
+    <span class="n">limit_velocity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;limitVelocity&quot;</span><span class="p">)</span>
+    <span class="n">limit_pressure_density</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;limitPressureDensity&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+            <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span>
+            <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Compressible&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Compressible&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+
+    <span class="k">class</span> <span class="nc">IncompressibleNavierStokesSolver</span><span class="p">(</span><span class="n">GenericFlowSolverSettings</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pressure_correction_solver :</span>
+<span class="sd">            Pressure correction solver settings</span>
+
+<span class="sd">        linear_solver:</span>
+<span class="sd">            Linear solver settings</span>
+
+<span class="sd">        update_jacobian_frequency :</span>
+<span class="sd">            Frequency at which the jacobian is updated.</span>
+
+<span class="sd">        equation_eval_frequency :</span>
+<span class="sd">            Frequency at which to update the incompressible NS equation in loosely-coupled simulations</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`IncompressibleNavierStokesSolver`</span>
+<span class="sd">            An instance of the component class IncompressibleNavierStokesSolver.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">pressure_correction_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PressureCorrectionSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;pressureCorrectionSolver&quot;</span>
+        <span class="p">)</span>
+        <span class="n">update_jacobian_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="mi">4</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Update Jacobian frequency&quot;</span>
+        <span class="p">)</span>
+        <span class="n">equation_eval_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+            <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+                <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+                <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+                <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span>
+                <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Incompressible&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Incompressible&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span>
+
+    <span class="n">NavierStokesSolverType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">NavierStokesSolver</span><span class="p">,</span> <span class="n">IncompressibleNavierStokesSolver</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="TurbulenceModelConstantsSA">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.TurbulenceModelConstantsSA">[docs]</a>
+<span class="k">class</span> <span class="nc">TurbulenceModelConstantsSA</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TurbulenceModelConstantsSA` class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;SpalartAllmarasConsts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;SpalartAllmarasConsts&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">C_DES</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">0.72</span><span class="p">)</span>
+    <span class="n">C_d</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">8.0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TurbulenceModelConstantsSST">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.TurbulenceModelConstantsSST">[docs]</a>
+<span class="k">class</span> <span class="nc">TurbulenceModelConstantsSST</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TurbulenceModelConstantsSST` class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot; kOmegaSSTConsts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;kOmegaSSTConsts&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">C_DES1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">0.78</span><span class="p">)</span>
+    <span class="n">C_DES2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">0.61</span><span class="p">)</span>
+    <span class="n">C_d1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">20.0</span><span class="p">)</span>
+    <span class="n">C_d2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span></div>
+
+
+
+<span class="n">TurbulenceModelConstants</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">TurbulenceModelConstantsSA</span><span class="p">,</span> <span class="n">TurbulenceModelConstantsSST</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">TurbulenceModelSolver</span><span class="p">(</span><span class="n">GenericFlowSolverSettings</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TurbulenceModelSolver` class for setting up turbulence model solver</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    absoluteTolerance :</span>
+<span class="sd">        Tolerance for the NS residual, below which the solver goes to the next physical step</span>
+
+<span class="sd">    relativeTolerance :</span>
+<span class="sd">        Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is</span>
+<span class="sd">        defined as the ratio of the current pseudoStep’s residual to the maximum residual present in the first</span>
+<span class="sd">        10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and</span>
+<span class="sd">        only absoluteTolerance is used as the convergence criterion</span>
+
+<span class="sd">    linearIterations :</span>
+<span class="sd">        Number of linear solver iterations</span>
+
+<span class="sd">    updateJacobianFrequency :</span>
+<span class="sd">        Frequency at which the jacobian is updated.</span>
+
+<span class="sd">    equationEvalFrequency :</span>
+<span class="sd">        Frequency at which to update the NS equation in loosely-coupled simulations</span>
+
+<span class="sd">    maxForceJacUpdatePhysicalSteps :</span>
+<span class="sd">        When which physical steps, the jacobian matrix is updated every pseudo step</span>
+
+<span class="sd">    orderOfAccuracy :</span>
+<span class="sd">        Order of accuracy in space</span>
+
+<span class="sd">    reconstruction_gradient_limiter :</span>
+<span class="sd">        The strength of gradient limiter used in reconstruction of solution variables at the faces (specified in the</span>
+<span class="sd">        range [0.0, 2.0]). 0.0 corresponds to setting the gradient equal to zero, and 2.0 means no limiting.</span>
+
+<span class="sd">    rotation_correction : bool, optional</span>
+<span class="sd">        Rotation correction for the turbulence model. Only support for SpalartAllmaras</span>
+
+<span class="sd">    quadratic_constitutive_relation : bool, optional</span>
+<span class="sd">        Use quadratic constitutive relation for turbulence shear stress tensor instead of Boussinesq Approximation</span>
+
+<span class="sd">    DDES : bool, optional</span>
+<span class="sd">        Enables Delayed Detached Eddy Simulation. Supported for both SpalartAllmaras and kOmegaSST turbulence models,</span>
+<span class="sd">        with and without AmplificationFactorTransport transition model enabled.</span>
+
+<span class="sd">    grid_size_for_LES : Literal[&#39;maxEdgeLength&#39;, &#39;meanEdgeLength&#39;], optional</span>
+<span class="sd">        Specifes the length used for the computation of LES length scale. The allowed inputs are &quot;maxEdgeLength&quot;</span>
+<span class="sd">        (default) and &quot;meanEdgeLength&quot;</span>
+
+<span class="sd">    model_constants :</span>
+<span class="sd">        Here, user can change the default values used for DDES coefficients in the solver:</span>
+<span class="sd">        SpalartAllmaras: &quot;C_DES&quot; (= 0.72), &quot;C_d&quot; (= 8.0)</span>
+<span class="sd">        kOmegaSST: &quot;C_DES1&quot; (= 0.78), &quot;C_DES2&quot; (= 0.61), &quot;C_d1&quot; (= 20.0), &quot;C_d2&quot; (= 3.0)</span>
+<span class="sd">        (values shown in the parentheses are the default values used in Flow360)</span>
+<span class="sd">        An example with kOmegaSST mode would be: {&quot;C_DES1&quot;: 0.85, &quot;C_d1&quot;: 8.0}</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`TurbulenceModelSolver`</span>
+<span class="sd">        An instance of the component class TurbulenceModelSolver.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; ts = TurbulenceModelSolver(absolute_tolerance=1e-10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span>
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">)</span>
+    <span class="n">update_jacobian_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">)</span>
+    <span class="n">equation_eval_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">)</span>
+    <span class="n">max_force_jac_update_physical_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mi">0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">order_of_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">)</span>
+    <span class="n">DDES</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;DDES&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;DDES&quot;</span><span class="p">)</span>
+    <span class="n">grid_size_for_LES</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;maxEdgeLength&quot;</span><span class="p">,</span> <span class="s2">&quot;meanEdgeLength&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;maxEdgeLength&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;gridSizeForLES&quot;</span>
+    <span class="p">)</span>
+    <span class="n">quadratic_constitutive_relation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="kc">False</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;quadraticConstitutiveRelation&quot;</span>
+    <span class="p">)</span>
+    <span class="n">reconstruction_gradient_limiter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;reconstructionGradientLimiter&quot;</span>
+    <span class="p">)</span>
+    <span class="n">model_constants</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TurbulenceModelConstants</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelConstants&quot;</span><span class="p">,</span> <span class="n">discriminator</span><span class="o">=</span><span class="s2">&quot;model_type&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+            <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span>
+            <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="KOmegaSST">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.KOmegaSST">[docs]</a>
+<span class="k">class</span> <span class="nc">KOmegaSST</span><span class="p">(</span><span class="n">TurbulenceModelSolver</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`KOmegaSST` class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;kOmegaSST&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;kOmegaSST&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">model_constants</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TurbulenceModelConstantsSST</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelConstants&quot;</span><span class="p">)</span>
+    <span class="n">reconstruction_gradient_limiter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mf">1.0</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;reconstructionGradientLimiter&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SpalartAllmaras">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.SpalartAllmaras">[docs]</a>
+<span class="k">class</span> <span class="nc">SpalartAllmaras</span><span class="p">(</span><span class="n">TurbulenceModelSolver</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`SpalartAllmaras` class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;SpalartAllmaras&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;SpalartAllmaras&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">rotation_correction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;rotationCorrection&quot;</span><span class="p">)</span>
+    <span class="n">model_constants</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TurbulenceModelConstantsSA</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelConstants&quot;</span><span class="p">)</span>
+    <span class="n">reconstruction_gradient_limiter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="mf">0.5</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;reconstructionGradientLimiter&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NoneSolver">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.NoneSolver">[docs]</a>
+<span class="k">class</span> <span class="nc">NoneSolver</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`SolverNone` class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;None&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<span class="n">TurbulenceModelSolverType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">NoneSolver</span><span class="p">,</span> <span class="n">SpalartAllmaras</span><span class="p">,</span> <span class="n">KOmegaSST</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">HeatEquationSolver</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`HeatEquationSolver` class for setting up heat equation solver.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    equation_eval_frequency : PositiveInt, optional</span>
+<span class="sd">        Frequency at which to solve the heat equation in conjugate heat transfer simulations</span>
+
+
+<span class="sd">    linear_solver_config : LinearSolver, optional</span>
+<span class="sd">        Linear solver settings, see LinearSolver documentation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`HeatEquationSolver`</span>
+<span class="sd">        An instance of the component class HeatEquationSolver.</span>
+
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; he = HeatEquationSolver(</span>
+<span class="sd">                equation_eval_frequency=10,</span>
+<span class="sd">                linear_solver_config=LinearSolver(</span>
+<span class="sd">                    max_iterations=50,</span>
+<span class="sd">                    absoluteTolerance=1e-10</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">)</span>
+    <span class="n">equation_eval_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">LinearSolver</span><span class="p">(),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">)</span>
+
+        <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+        <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+            <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;linear_solver&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">),</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;absolute_tolerance&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;tolerance&quot;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+        <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+            <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;absolute_tolerance&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;tolerance&quot;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">TransitionModelSolver</span><span class="p">(</span><span class="n">GenericFlowSolverSettings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TransitionModelSolver` class for setting up transition model solver</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    (...)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`TransitionModelSolver`</span>
+<span class="sd">        An instance of the component class TransitionModelSolver.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; ts = TransitionModelSolver(absolute_tolerance=1e-10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AmplificationFactorTransport&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;AmplificationFactorTransport&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">absolute_tolerance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mf">1e-7</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">)</span>
+    <span class="n">update_jacobian_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">)</span>
+    <span class="n">equation_eval_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">)</span>
+    <span class="n">max_force_jac_update_physical_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">order_of_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">)</span>
+    <span class="n">turbulence_intensity_percent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;turbulenceIntensityPercent&quot;</span>
+    <span class="p">)</span>
+    <span class="n">N_crit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">11</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;Ncrit&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">Flags</span><span class="o">.</span><span class="n">beta_features</span><span class="p">():</span>
+        <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">,</span> <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+            <span class="n">LinearSolver</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+            <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span>
+            <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;Linear solver config&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># Legacy models for Flow360 updater, do not expose</span>
+
+
+<div class="viewcode-block" id="LinearSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.LinearSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">LinearSolverLegacy</span><span class="p">(</span><span class="n">LinearSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`LinearSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">max_level_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxLevelLimit&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;relativeTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;maxIterations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+
+<div class="viewcode-block" id="PressureCorrectionSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.PressureCorrectionSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">PressureCorrectionSolverLegacy</span><span class="p">(</span><span class="n">PressureCorrectionSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`PressureCorrectionSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">linear_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolverLegacy</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolver&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LinearSolverLegacy</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;randomizer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomizer</span><span class="p">,</span> <span class="s2">&quot;linear_solver&quot;</span><span class="p">:</span> <span class="n">try_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_solver</span><span class="p">)}</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+
+<div class="viewcode-block" id="NavierStokesSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.NavierStokesSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">NavierStokesSolverLegacy</span><span class="p">(</span><span class="n">NavierStokesSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`NavierStokesModelSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">viscous_wave_speed_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;viscousWaveSpeedScale&quot;</span><span class="p">)</span>
+    <span class="n">extra_dissipation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;extraDissipation&quot;</span><span class="p">)</span>
+    <span class="n">pressure_correction_solver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PressureCorrectionSolver</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;pressureCorrectionSolver&quot;</span>
+    <span class="p">)</span>
+    <span class="n">randomizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearIterationsRandomizer</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolverLegacy</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LinearSolverLegacy</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">linear_iterations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearIterations&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;relativeTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;CFLMultiplier&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">CFL_multiplier</span><span class="p">,</span>
+            <span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">:</span> <span class="n">try_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_solver_config</span><span class="p">),</span>
+            <span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_jacobian_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">equation_eval_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_force_jac_update_physical_steps</span><span class="p">,</span>
+            <span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">order_of_accuracy</span><span class="p">,</span>
+            <span class="s2">&quot;kappaMUSCL&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kappa_MUSCL</span><span class="p">,</span>
+            <span class="s2">&quot;limitVelocity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_velocity</span><span class="p">,</span>
+            <span class="s2">&quot;limitPressureDensity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_pressure_density</span><span class="p">,</span>
+            <span class="s2">&quot;numericalDissipationFactor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">numerical_dissipation_factor</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">][</span><span class="s2">&quot;maxIterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+
+<div class="viewcode-block" id="TurbulenceModelSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.TurbulenceModelSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">TurbulenceModelSolverLegacy</span><span class="p">(</span><span class="n">TurbulenceModelSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TurbulenceModelSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">randomizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearIterationsRandomizer</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">kappa_MUSCL</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;kappaMUSCL&quot;</span><span class="p">)</span>
+    <span class="n">linear_iterations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearIterations&quot;</span><span class="p">)</span>
+    <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolverLegacy</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LinearSolverLegacy</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">rotation_correction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;rotationCorrection&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;relativeTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;modelType&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">,</span>
+            <span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">:</span> <span class="n">try_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_solver_config</span><span class="p">),</span>
+            <span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_jacobian_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">equation_eval_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_force_jac_update_physical_steps</span><span class="p">,</span>
+            <span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">order_of_accuracy</span><span class="p">,</span>
+            <span class="s2">&quot;DDES&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DDES</span><span class="p">,</span>
+            <span class="s2">&quot;gridSizeForLES&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_size_for_LES</span><span class="p">,</span>
+            <span class="s2">&quot;quadraticConstitutiveRelation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">quadratic_constitutive_relation</span><span class="p">,</span>
+            <span class="s2">&quot;reconstructionGradientLimiter&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_gradient_limiter</span><span class="p">,</span>
+            <span class="s2">&quot;modelConstants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_constants</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">try_set</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;rotationCorrection&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotation_correction</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">][</span><span class="s2">&quot;maxIterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+
+<div class="viewcode-block" id="HeatEquationSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.HeatEquationSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">HeatEquationSolverLegacy</span><span class="p">(</span><span class="n">HeatEquationSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`HeatEquationSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">order_of_accuracy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">)</span>
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;HeatEquation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;HeatEquation&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span>
+    <span class="n">CFL_multiplier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;CFLMultiplier&quot;</span><span class="p">)</span>
+    <span class="n">update_jacobian_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">)</span>
+    <span class="n">max_force_jac_update_physical_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NonNegativeInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolverLegacy</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LinearSolverLegacy</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Flow360BaseModel</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">:</span> <span class="n">try_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_solver_config</span><span class="p">),</span>
+            <span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">equation_eval_frequency</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">HeatEquationSolver</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TransitionModelSolverLegacy">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.solvers.TransitionModelSolverLegacy">[docs]</a>
+<span class="k">class</span> <span class="nc">TransitionModelSolverLegacy</span><span class="p">(</span><span class="n">TransitionModelSolver</span><span class="p">,</span> <span class="n">LegacyModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`TransitionModelSolverLegacy` class&quot;&quot;&quot;</span>
+
+    <span class="n">reconstruction_gradient_limiter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">confloat</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;reconstructionGradientLimiter&quot;</span>
+    <span class="p">)</span>
+    <span class="n">CFL_multiplier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;CFLMultiplier&quot;</span><span class="p">)</span>
+    <span class="n">linear_iterations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearIterations&quot;</span><span class="p">)</span>
+    <span class="n">randomizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearIterationsRandomizer</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">linear_solver_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LinearSolverLegacy</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LinearSolverLegacy</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Flow360BaseModel</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;absoluteTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;relativeTolerance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">relative_tolerance</span><span class="p">,</span>
+            <span class="s2">&quot;modelType&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">,</span>
+            <span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">:</span> <span class="n">try_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_solver_config</span><span class="p">),</span>
+            <span class="s2">&quot;updateJacobianFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_jacobian_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;equationEvalFrequency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">equation_eval_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;maxForceJacUpdatePhysicalSteps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_force_jac_update_physical_steps</span><span class="p">,</span>
+            <span class="s2">&quot;orderOfAccuracy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">order_of_accuracy</span><span class="p">,</span>
+            <span class="s2">&quot;turbulenceIntensityPercent&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbulence_intensity_percent</span><span class="p">,</span>
+            <span class="s2">&quot;Ncrit&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_crit</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span><span class="p">[</span><span class="s2">&quot;linearSolverConfig&quot;</span><span class="p">][</span><span class="s2">&quot;maxIterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_iterations</span>
+
+        <span class="k">return</span> <span class="n">TransitionModelSolver</span><span class="o">.</span><span class="n">parse_obj</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

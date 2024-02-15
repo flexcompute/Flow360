@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>flow360 python client package &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="commandline" href="flow360doc/cli.html" />
+    <link rel="prev" title="Welcome to flow360 python client’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="flow360-python-client-package">
+<h1>flow360 python client package<a class="headerlink" href="#flow360-python-client-package" title="Link to this heading">¶</a></h1>
+<section id="module-flow360">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-flow360" title="Link to this heading">¶</a></h2>
+<p>This module is flow360.</p>
+</section>
+<section id="module-flow360.environment">
+<span id="flow360-environment-module"></span><h2>flow360.environment module<a class="headerlink" href="#module-flow360.environment" title="Link to this heading">¶</a></h2>
+<p>Environment Setup</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.environment.Environment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.environment.</span></span><span class="sig-name descname"><span class="pre">Environment</span></span><a class="reference internal" href="_modules/flow360/environment.html#Environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.Environment" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Environment decorator for user interactive.
+For example:</p>
+<blockquote>
+<div><p>Env.dev.active()
+Env.current.name == “dev”</p>
+</div></blockquote>
+<dl class="py property">
+<dt class="sig sig-object py" id="flow360.environment.Environment.current">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">current</span></span><a class="headerlink" href="#flow360.environment.Environment.current" title="Link to this definition">¶</a></dt>
+<dd><p>Get the current environment.
+:return: EnvironmentConfig</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flow360.environment.Environment.dev">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dev</span></span><a class="headerlink" href="#flow360.environment.Environment.dev" title="Link to this definition">¶</a></dt>
+<dd><p>Get the dev environment.
+:return:</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flow360.environment.Environment.impersonate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">impersonate</span></span><a class="headerlink" href="#flow360.environment.Environment.impersonate" title="Link to this definition">¶</a></dt>
+<dd><p>Get the impersonate environment.
+:return:</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flow360.environment.Environment.prod">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prod</span></span><a class="headerlink" href="#flow360.environment.Environment.prod" title="Link to this definition">¶</a></dt>
+<dd><p>Get the prod environment.
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.environment.Environment.set_current">
+<span class="sig-name descname"><span class="pre">set_current</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flow360.environment.EnvironmentConfig" title="flow360.environment.EnvironmentConfig"><span class="pre">EnvironmentConfig</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/environment.html#Environment.set_current"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.Environment.set_current" title="Link to this definition">¶</a></dt>
+<dd><p>Set the current environment.
+:param config:
+:return:</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flow360.environment.Environment.uat">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uat</span></span><a class="headerlink" href="#flow360.environment.Environment.uat" title="Link to this definition">¶</a></dt>
+<dd><p>Get the uat environment.
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.environment.EnvironmentConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.environment.</span></span><span class="sig-name descname"><span class="pre">EnvironmentConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">web_api_endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aws_region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apikey_profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">portal_web_api_endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/environment.html#EnvironmentConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.EnvironmentConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Basic Configuration for definition environment.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.environment.EnvironmentConfig.active">
+<span class="sig-name descname"><span class="pre">active</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/environment.html#EnvironmentConfig.active"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.EnvironmentConfig.active" title="Link to this definition">¶</a></dt>
+<dd><p>Activate the particular environment.
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.environment.EnvironmentConfig.get_portal_real_url">
+<span class="sig-name descname"><span class="pre">get_portal_real_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/environment.html#EnvironmentConfig.get_portal_real_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.EnvironmentConfig.get_portal_real_url" title="Link to this definition">¶</a></dt>
+<dd><p>Get the portal real url for the particular environment.
+:param path:
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.environment.EnvironmentConfig.get_real_url">
+<span class="sig-name descname"><span class="pre">get_real_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/environment.html#EnvironmentConfig.get_real_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.environment.EnvironmentConfig.get_real_url" title="Link to this definition">¶</a></dt>
+<dd><p>Get the real url for the particular environment.
+:param path:
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-flow360.error_messages">
+<span id="flow360-error-messages-module"></span><h2>flow360.error_messages module<a class="headerlink" href="#module-flow360.error_messages" title="Link to this heading">¶</a></h2>
+<p>error messages</p>
+</section>
+<section id="module-flow360.exceptions">
+<span id="flow360-exceptions-module"></span><h2>flow360.exceptions module<a class="headerlink" href="#module-flow360.exceptions" title="Link to this heading">¶</a></h2>
+<p>Custom Flow360 exceptions</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360AuthenticationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360AuthenticationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360AuthenticationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360AuthenticationError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error authenticating a user through webapi webAPI.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360AuthorisationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360AuthorisationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360AuthorisationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360AuthorisationError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error authenticating a user through webapi webAPI.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360CloudFileError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360CloudFileError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360CloudFileError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360CloudFileError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error when getting file from cloud.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360ConfigError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360ConfigError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360ConfigError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360ConfigError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error when configuring Flow360.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360ConfigurationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360ConfigurationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360ConfigurationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360ConfigurationError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error with flow360 unit conversion.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360DataError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360DataError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360DataError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360DataError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error accessing data.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360Error">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360Error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360Error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360Error" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Any error in flow360</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360FileError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360FileError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360FileError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360FileError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error reading or writing to file.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360ImportError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360ImportError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360ImportError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360ImportError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error importing a package needed for Flow360.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360KeyError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360KeyError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360KeyError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360KeyError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Could not find a key in a Flow360 dictionary.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360NotImplementedError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360NotImplementedError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360NotImplementedError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360NotImplementedError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error when a functionality is not (yet) supported.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360RuntimeError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360RuntimeError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360RuntimeError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360RuntimeError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error when runtime.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360TypeError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360TypeError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360TypeError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360TypeError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error with type.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360ValidationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360ValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360ValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360ValidationError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error when constructing FLow360 components.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360ValueError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360ValueError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360ValueError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360ValueError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error with value.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360WebError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360WebError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360WebError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360WebError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error with the webAPI.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="flow360.exceptions.Flow360WebNotFoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.exceptions.</span></span><span class="sig-name descname"><span class="pre">Flow360WebNotFoundError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flow360/exceptions.html#Flow360WebNotFoundError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.exceptions.Flow360WebNotFoundError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.exceptions.Flow360Error" title="flow360.exceptions.Flow360Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></p>
+<p>Error with the webAPI.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">flow360 python client package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360.environment">flow360.environment module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.environment.Environment"><code class="docutils literal notranslate"><span class="pre">Environment</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.current"><code class="docutils literal notranslate"><span class="pre">Environment.current</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.dev"><code class="docutils literal notranslate"><span class="pre">Environment.dev</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.impersonate"><code class="docutils literal notranslate"><span class="pre">Environment.impersonate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.prod"><code class="docutils literal notranslate"><span class="pre">Environment.prod</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.set_current"><code class="docutils literal notranslate"><span class="pre">Environment.set_current()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.Environment.uat"><code class="docutils literal notranslate"><span class="pre">Environment.uat</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.environment.EnvironmentConfig"><code class="docutils literal notranslate"><span class="pre">EnvironmentConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.EnvironmentConfig.active"><code class="docutils literal notranslate"><span class="pre">EnvironmentConfig.active()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.EnvironmentConfig.get_portal_real_url"><code class="docutils literal notranslate"><span class="pre">EnvironmentConfig.get_portal_real_url()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.environment.EnvironmentConfig.get_real_url"><code class="docutils literal notranslate"><span class="pre">EnvironmentConfig.get_real_url()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360.error_messages">flow360.error_messages module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360.exceptions">flow360.exceptions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360AuthenticationError"><code class="docutils literal notranslate"><span class="pre">Flow360AuthenticationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360AuthorisationError"><code class="docutils literal notranslate"><span class="pre">Flow360AuthorisationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360CloudFileError"><code class="docutils literal notranslate"><span class="pre">Flow360CloudFileError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360ConfigError"><code class="docutils literal notranslate"><span class="pre">Flow360ConfigError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360ConfigurationError"><code class="docutils literal notranslate"><span class="pre">Flow360ConfigurationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360DataError"><code class="docutils literal notranslate"><span class="pre">Flow360DataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360Error"><code class="docutils literal notranslate"><span class="pre">Flow360Error</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360FileError"><code class="docutils literal notranslate"><span class="pre">Flow360FileError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360ImportError"><code class="docutils literal notranslate"><span class="pre">Flow360ImportError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360KeyError"><code class="docutils literal notranslate"><span class="pre">Flow360KeyError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360NotImplementedError"><code class="docutils literal notranslate"><span class="pre">Flow360NotImplementedError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360RuntimeError"><code class="docutils literal notranslate"><span class="pre">Flow360RuntimeError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360TypeError"><code class="docutils literal notranslate"><span class="pre">Flow360TypeError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360ValidationError"><code class="docutils literal notranslate"><span class="pre">Flow360ValidationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360ValueError"><code class="docutils literal notranslate"><span class="pre">Flow360ValueError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360WebError"><code class="docutils literal notranslate"><span class="pre">Flow360WebError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.exceptions.Flow360WebNotFoundError"><code class="docutils literal notranslate"><span class="pre">Flow360WebNotFoundError</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to flow360 python client’s documentation!</a></li>
+      <li>Next: <a href="flow360doc/cli.html" title="next chapter">commandline</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/flow360.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

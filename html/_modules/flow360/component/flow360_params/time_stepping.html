@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.component.flow360_params.time_stepping &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.component.flow360_params.time_stepping</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Time stepping parameters</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># pylint: disable=too-many-lines</span>
+<span class="c1"># pylint: disable=unused-import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pydantic</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="n">PositiveFloat</span><span class="p">,</span> <span class="n">PositiveInt</span>
+<span class="kn">from</span> <span class="nn">.params_base</span> <span class="kn">import</span> <span class="n">DeprecatedAlias</span><span class="p">,</span> <span class="n">Flow360BaseModel</span>
+<span class="kn">from</span> <span class="nn">.unit_system</span> <span class="kn">import</span> <span class="n">TimeType</span>
+
+
+<span class="k">def</span> <span class="nf">_apply_default_to_none</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">original</span><span class="o">.</span><span class="n">__fields__</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">dict</span><span class="p">()[</span><span class="n">field_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">original</span>
+
+
+<div class="viewcode-block" id="RampCFL">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.RampCFL">[docs]</a>
+<span class="k">class</span> <span class="nc">RampCFL</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ramp CFL for time stepping component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;ramp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;ramp&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">initial</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">final</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">ramp_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;rampSteps&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RampCFL.default_unsteady">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.RampCFL.default_unsteady">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">default_unsteady</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns default unsteady Ramp CFL settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mf">1e6</span><span class="p">,</span> <span class="n">ramp_steps</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RampCFL.default_steady">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.RampCFL.default_steady">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">default_steady</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns default steady Ramp CFL settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">initial</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">final</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">ramp_steps</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AdaptiveCFL">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.AdaptiveCFL">[docs]</a>
+<span class="k">class</span> <span class="nc">AdaptiveCFL</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adaptive CFL for time stepping component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;adaptive&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;adaptive&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">min</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="nb">max</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">max_relative_change</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxRelativeChange&quot;</span><span class="p">)</span>
+    <span class="n">convergence_limiting_factor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;convergenceLimitingFactor&quot;</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="AdaptiveCFL.default_unsteady">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.AdaptiveCFL.default_unsteady">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">default_unsteady</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns default unsteady Adaptive CFL settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">max</span><span class="o">=</span><span class="mf">1e6</span><span class="p">,</span> <span class="n">convergence_limiting_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">max_relative_change</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AdaptiveCFL.default_steady">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.AdaptiveCFL.default_steady">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">default_steady</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns default steady Adaptive CFL settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">max</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span> <span class="n">convergence_limiting_factor</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">max_relative_change</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># pylint: disable=E0213</span>
+<div class="viewcode-block" id="BaseTimeStepping">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.BaseTimeStepping">[docs]</a>
+<span class="k">class</span> <span class="nc">BaseTimeStepping</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for time stepping component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_pseudo_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">conint</span><span class="p">(</span><span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">100000</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;maxPseudoSteps&quot;</span><span class="p">)</span>
+    <span class="n">CFL</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">RampCFL</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;CFL&quot;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ramp CFL&quot;</span><span class="p">,</span> <span class="s2">&quot;Adaptive CFL&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># pylint: disable=arguments-differ</span>
+<div class="viewcode-block" id="BaseTimeStepping.to_solver">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.BaseTimeStepping.to_solver">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseTimeStepping</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns configuration object in flow360 units system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_solver</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">deprecated_aliases</span> <span class="o">=</span> <span class="p">[</span><span class="n">DeprecatedAlias</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;physical_steps&quot;</span><span class="p">,</span> <span class="n">deprecated</span><span class="o">=</span><span class="s2">&quot;maxPhysicalSteps&quot;</span><span class="p">)]</span>
+        <span class="n">exclude_on_flow360_export</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;model_type&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="SteadyTimeStepping">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.SteadyTimeStepping">[docs]</a>
+<span class="k">class</span> <span class="nc">SteadyTimeStepping</span><span class="p">(</span><span class="n">BaseTimeStepping</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Steady time stepping component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Steady&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Steady&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">physical_steps</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;physicalSteps&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">time_step_size</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;inf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;timeStepSize&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">CFL</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">RampCFL</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;CFL&quot;</span><span class="p">,</span>
+        <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ramp CFL&quot;</span><span class="p">,</span> <span class="s2">&quot;Adaptive CFL&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">AdaptiveCFL</span><span class="o">.</span><span class="n">default_steady</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="SteadyTimeStepping.set_default_cfl">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.SteadyTimeStepping.set_default_cfl">[docs]</a>
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">set_default_cfl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate CFL&#39;s None fields with default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;CFL&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">values</span>  <span class="c1"># will be handeled by default</span>
+        <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s2">&quot;CFL&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="p">):</span>
+            <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">_apply_default_to_none</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="o">.</span><span class="n">default_steady</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">RampCFL</span><span class="p">):</span>
+            <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">_apply_default_to_none</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">RampCFL</span><span class="o">.</span><span class="n">default_steady</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="UnsteadyTimeStepping">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.UnsteadyTimeStepping">[docs]</a>
+<span class="k">class</span> <span class="nc">UnsteadyTimeStepping</span><span class="p">(</span><span class="n">BaseTimeStepping</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Unsteady time stepping component</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Unsteady&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Unsteady&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">physical_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveInt</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;physicalSteps&quot;</span><span class="p">)</span>
+    <span class="n">time_step_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeType</span><span class="o">.</span><span class="n">Positive</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;timeStepSize&quot;</span><span class="p">)</span>
+    <span class="n">CFL</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">RampCFL</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">displayed</span><span class="o">=</span><span class="s2">&quot;CFL&quot;</span><span class="p">,</span>
+        <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ramp CFL&quot;</span><span class="p">,</span> <span class="s2">&quot;Adaptive CFL&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">AdaptiveCFL</span><span class="o">.</span><span class="n">default_unsteady</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="UnsteadyTimeStepping.set_default_cfl">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.time_stepping.UnsteadyTimeStepping.set_default_cfl">[docs]</a>
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">root_validator</span><span class="p">(</span><span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">set_default_cfl</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate CFL&#39;s None fields with default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;CFL&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">values</span>  <span class="c1"># will be handeled by default</span>
+        <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s2">&quot;CFL&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="p">):</span>
+            <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">_apply_default_to_none</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">AdaptiveCFL</span><span class="o">.</span><span class="n">default_unsteady</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">RampCFL</span><span class="p">):</span>
+            <span class="n">cfl_input</span> <span class="o">=</span> <span class="n">_apply_default_to_none</span><span class="p">(</span><span class="n">cfl_input</span><span class="p">,</span> <span class="n">RampCFL</span><span class="o">.</span><span class="n">default_unsteady</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+</div>
+
+
+
+<span class="n">TimeStepping</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">SteadyTimeStepping</span><span class="p">,</span> <span class="n">UnsteadyTimeStepping</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

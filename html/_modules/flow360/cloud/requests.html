@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.cloud.requests &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.cloud.requests</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Requests module&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pydantic</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">..component.flow360_params.flow360_params</span> <span class="kn">import</span> <span class="n">Flow360MeshParams</span>
+
+
+<div class="viewcode-block" id="Flow360Requests">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.Flow360Requests">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360Requests</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a request for Flow360 WEBAPI.</span>
+
+<span class="sd">    This class extends `pd.BaseModel` and provides a method for converting the request</span>
+<span class="sd">    object into a dictionary representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Flow360Requests.dict">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.Flow360Requests.dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;returns dict representation of request&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Flow360Requests.Config">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.Flow360Requests.Config">[docs]</a>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-few-public-methods</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;config&quot;&quot;&quot;</span>
+
+        <span class="n">allow_population_by_field_name</span> <span class="o">=</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NewVolumeMeshRequest">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.NewVolumeMeshRequest">[docs]</a>
+<span class="k">class</span> <span class="nc">NewVolumeMeshRequest</span><span class="p">(</span><span class="n">Flow360Requests</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;request for new volume mesh&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshName&quot;</span><span class="p">)</span>
+    <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;fileName&quot;</span><span class="p">)</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshTags&quot;</span><span class="p">)</span>
+    <span class="nb">format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;aflr3&quot;</span><span class="p">,</span> <span class="s2">&quot;cgns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshFormat&quot;</span><span class="p">)</span>
+    <span class="n">endianness</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;little&quot;</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshEndianness&quot;</span><span class="p">)</span>
+    <span class="n">compression</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;gz&quot;</span><span class="p">,</span> <span class="s2">&quot;bz2&quot;</span><span class="p">,</span> <span class="s2">&quot;zst&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshCompression&quot;</span><span class="p">)</span>
+    <span class="n">mesh_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Flow360MeshParams</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;meshParams&quot;</span><span class="p">)</span>
+    <span class="n">solver_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;solverVersion&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=no-self-argument</span>
+<div class="viewcode-block" id="NewVolumeMeshRequest.set_mesh_params">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.NewVolumeMeshRequest.set_mesh_params">[docs]</a>
+    <span class="nd">@pd</span><span class="o">.</span><span class="n">validator</span><span class="p">(</span><span class="s2">&quot;mesh_params&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">set_mesh_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Flow360MeshParams</span><span class="p">,</span> <span class="kc">None</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;validate mesh params&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">flow360_json</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NewFolderRequest">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.NewFolderRequest">[docs]</a>
+<span class="k">class</span> <span class="nc">NewFolderRequest</span><span class="p">(</span><span class="n">Flow360Requests</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;request for new folder&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;tags&quot;</span><span class="p">)</span>
+    <span class="n">parent_folder_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;parentFolderId&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;ROOT.FLOW360&quot;</span><span class="p">)</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;folder&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MoveCaseItem">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.MoveCaseItem">[docs]</a>
+<span class="k">class</span> <span class="nc">MoveCaseItem</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;move case item&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;case&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;case&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MoveFolderItem">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.MoveFolderItem">[docs]</a>
+<span class="k">class</span> <span class="nc">MoveFolderItem</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;move folder item&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;folder&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MoveToFolderRequest">
+<a class="viewcode-back" href="../../../flow360doc/cloud.html#flow360.cloud.requests.MoveToFolderRequest">[docs]</a>
+<span class="k">class</span> <span class="nc">MoveToFolderRequest</span><span class="p">(</span><span class="n">Flow360Requests</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;request for move to folder&quot;&quot;&quot;</span>
+
+    <span class="n">dest_folder_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;destFolderId&quot;</span><span class="p">)</span>
+    <span class="n">items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">MoveCaseItem</span><span class="p">,</span> <span class="n">MoveFolderItem</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

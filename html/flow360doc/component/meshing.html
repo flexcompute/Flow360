@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>flow360 meshing parameters &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="flow360 solvers parameters" href="flow360_params.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="flow360-meshing-parameters">
+<h1>flow360 meshing parameters<a class="headerlink" href="#flow360-meshing-parameters" title="Link to this heading">¶</a></h1>
+<section id="module-flow360.component.meshing">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-flow360.component.meshing" title="Link to this heading">¶</a></h2>
+<p>meshing parameters</p>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-flow360.component.meshing.params">
+<span id="flow360-meshing-parameters-module"></span><h2>flow360 meshing parameters module<a class="headerlink" href="#module-flow360.component.meshing.params" title="Link to this heading">¶</a></h2>
+<p>Flow360 meshing parameters</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Aniso">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">Aniso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">angle</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">height</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">aspectRatio</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'aniso'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.Aniso" title="flow360.component.meshing.params.Aniso"><span class="pre">Aniso</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Aniso'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#Aniso"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.Aniso" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Aniso edge</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method</strong> (<em>typing_extensions.Literal</em><em>[</em><em>'angle'</em><em>, </em><em>'height'</em><em>, </em><em>'aspectRatio'</em><em>]</em>) – value : PositiveFloat
+adapt : Optional[bool] = None
+type : str = aniso</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Aniso.adapt">
+<span class="sig-name descname"><span class="pre">adapt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.Aniso.adapt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Aniso.method">
+<span class="sig-name descname"><span class="pre">method</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">angle</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">height</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">aspectRatio</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#flow360.component.meshing.params.Aniso.method" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Aniso.value">
+<span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.Aniso.value" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.BoxRefinement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">BoxRefinement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement" title="flow360.component.meshing.params.BoxRefinement"><span class="pre">BoxRefinement</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'BoxRefinement'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axisOfRotation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angleOfRotation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'box'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#BoxRefinement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.BoxRefinement" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.component.meshing.params.Refinement" title="flow360.component.meshing.params.Refinement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Refinement</span></code></a></p>
+<p>Box refinement zone</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>center</strong> (<em>Tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>, </em><em>float</em><em>]</em>) – spacing : PositiveFloat
+size : Tuple[PositiveFloat, PositiveFloat, PositiveFloat]
+axis_of_rotation : Optional[Vector] = (0, 0, 1)
+angle_of_rotation : Optional[float] = 0
+type : str = box</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.BoxRefinement.angle_of_rotation">
+<span class="sig-name descname"><span class="pre">angle_of_rotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.BoxRefinement.angle_of_rotation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.BoxRefinement.axis_of_rotation">
+<span class="sig-name descname"><span class="pre">axis_of_rotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.BoxRefinement.axis_of_rotation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.BoxRefinement.size">
+<span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#flow360.component.meshing.params.BoxRefinement.size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.CylinderRefinement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">CylinderRefinement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement" title="flow360.component.meshing.params.CylinderRefinement"><span class="pre">CylinderRefinement</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'CylinderRefinement'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cylinder'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#CylinderRefinement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.CylinderRefinement" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.component.meshing.params.Refinement" title="flow360.component.meshing.params.Refinement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Refinement</span></code></a></p>
+<p>Box refinement zone</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>center</strong> (<em>Tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>, </em><em>float</em><em>]</em>) – spacing : PositiveFloat
+radius : PositiveFloat
+length : PositiveFloat
+axis : Vector
+type : str = cylinder</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.CylinderRefinement.axis">
+<span class="sig-name descname"><span class="pre">axis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></em><a class="headerlink" href="#flow360.component.meshing.params.CylinderRefinement.axis" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.CylinderRefinement.length">
+<span class="sig-name descname"><span class="pre">length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.CylinderRefinement.length" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.CylinderRefinement.radius">
+<span class="sig-name descname"><span class="pre">radius</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.CylinderRefinement.radius" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Face">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">Face</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxEdgeLength</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.Face" title="flow360.component.meshing.params.Face"><span class="pre">Face</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Face'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#Face"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.Face" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_edge_length</strong> (<em>PositiveFloat</em>) – adapt : Optional[bool] = None</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Face.adapt">
+<span class="sig-name descname"><span class="pre">adapt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.Face.adapt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Face.max_edge_length">
+<span class="sig-name descname"><span class="pre">max_edge_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.Face.max_edge_length" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.FaceType">
+<span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">FaceType</span></span><a class="headerlink" href="#flow360.component.meshing.params.FaceType" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#flow360.component.meshing.params.Face" title="flow360.component.meshing.params.Face"><code class="xref py py-class docutils literal notranslate"><span class="pre">Face</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Farfield">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">Farfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">filename:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">*,</span> <span class="pre">type:</span> <span class="pre">typing_extensions.Literal[auto,</span> <span class="pre">quasi-3d],</span> <span class="pre">_type:</span> <span class="pre">typing_extensions.Literal[Farfield]</span> <span class="pre">=</span> <span class="pre">'Farfield'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#Farfield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.Farfield" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Farfield type for meshing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>type</strong> (<em>typing_extensions.Literal</em><em>[</em><em>'auto'</em><em>, </em><em>'quasi-3d'</em><em>]</em>) – </p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Farfield.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">typing_extensions.Literal[auto,</span> <span class="pre">quasi-3d]</span></em><a class="headerlink" href="#flow360.component.meshing.params.Farfield.type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.ProjectAniso">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">ProjectAniso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'projectAnisoSpacing'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.ProjectAniso" title="flow360.component.meshing.params.ProjectAniso"><span class="pre">ProjectAniso</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ProjectAniso'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#ProjectAniso"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.ProjectAniso" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>ProjectAniso edge</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>adapt</strong> (<em>Optional</em><em>[</em><em>bool</em><em>] </em><em>= None</em>) – type : str = projectAnisoSpacing</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.ProjectAniso.adapt">
+<span class="sig-name descname"><span class="pre">adapt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.ProjectAniso.adapt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Refinement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">Refinement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.Refinement" title="flow360.component.meshing.params.Refinement"><span class="pre">Refinement</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Refinement'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#Refinement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.Refinement" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Base class for refinement zones</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>center</strong> (<em>Tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>, </em><em>float</em><em>]</em>) – spacing : PositiveFloat</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Refinement.center">
+<span class="sig-name descname"><span class="pre">center</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#flow360.component.meshing.params.Refinement.center" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Refinement.spacing">
+<span class="sig-name descname"><span class="pre">spacing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.Refinement.spacing" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">RotationalModelBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">innerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NonNegativeFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingAxial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingRadial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingCircumferential</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase" title="flow360.component.meshing.params.RotationalModelBase"><span class="pre">RotationalModelBase</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'RotationalModelBase'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#RotationalModelBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Class<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RotorDisk</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>name</strong> (<em>Optional</em><em>[</em><em>str</em><em>] </em><em>= None</em>) – inner_radius : Optional[NonNegativeFloat] = 0
+outer_radius : PositiveFloat
+thickness : PositiveFloat
+center : Tuple[float, float, float]
+spacing_axial : PositiveFloat
+spacing_radial : PositiveFloat
+spacing_circumferential : PositiveFloat</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.center">
+<span class="sig-name descname"><span class="pre">center</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.center" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.inner_radius">
+<span class="sig-name descname"><span class="pre">inner_radius</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">NonNegativeFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.inner_radius" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.outer_radius">
+<span class="sig-name descname"><span class="pre">outer_radius</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.outer_radius" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.spacing_axial">
+<span class="sig-name descname"><span class="pre">spacing_axial</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.spacing_axial" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.spacing_circumferential">
+<span class="sig-name descname"><span class="pre">spacing_circumferential</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.spacing_circumferential" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.spacing_radial">
+<span class="sig-name descname"><span class="pre">spacing_radial</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.spacing_radial" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotationalModelBase.thickness">
+<span class="sig-name descname"><span class="pre">thickness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.RotationalModelBase.thickness" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotorDisk">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">RotorDisk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">innerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NonNegativeFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingAxial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingRadial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingCircumferential</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.RotorDisk" title="flow360.component.meshing.params.RotorDisk"><span class="pre">RotorDisk</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'RotorDisk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axisThrust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#RotorDisk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.RotorDisk" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase" title="flow360.component.meshing.params.RotationalModelBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationalModelBase</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Class<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RotorDisk</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>name</strong> (<em>Optional</em><em>[</em><em>str</em><em>] </em><em>= None</em>) – inner_radius : Optional[NonNegativeFloat] = 0
+outer_radius : PositiveFloat
+thickness : PositiveFloat
+center : Tuple[float, float, float]
+spacing_axial : PositiveFloat
+spacing_radial : PositiveFloat
+spacing_circumferential : PositiveFloat
+axis_thrust : Vector</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.RotorDisk.axis_thrust">
+<span class="sig-name descname"><span class="pre">axis_thrust</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></em><a class="headerlink" href="#flow360.component.meshing.params.RotorDisk.axis_thrust" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SlidingInterface">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">SlidingInterface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">innerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NonNegativeFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerRadius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingAxial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingRadial</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacingCircumferential</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface" title="flow360.component.meshing.params.SlidingInterface"><span class="pre">SlidingInterface</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SlidingInterface'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axisOfRotation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">enclosedObjects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#SlidingInterface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.SlidingInterface" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase" title="flow360.component.meshing.params.RotationalModelBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationalModelBase</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Class<span class="colon">:</span></dt>
+<dd class="field-odd"><p>SlidingInterface for meshing</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>name</strong> (<em>Optional</em><em>[</em><em>str</em><em>] </em><em>= None</em>) – inner_radius : Optional[NonNegativeFloat] = 0
+outer_radius : PositiveFloat
+thickness : PositiveFloat
+center : Tuple[float, float, float]
+spacing_axial : PositiveFloat
+spacing_radial : PositiveFloat
+spacing_circumferential : PositiveFloat
+axis_of_rotation : Vector
+enclosed_objects : Optional[List[str]] = []</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SlidingInterface.axis_of_rotation">
+<span class="sig-name descname"><span class="pre">axis_of_rotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../components.html#flow360.component.types.Vector" title="flow360.component.types.Vector"><span class="pre">Vector</span></a></em><a class="headerlink" href="#flow360.component.meshing.params.SlidingInterface.axis_of_rotation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SlidingInterface.enclosed_objects">
+<span class="sig-name descname"><span class="pre">enclosed_objects</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.SlidingInterface.enclosed_objects" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">SurfaceMeshingParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxEdgeLength</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Edges</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">faces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Faces</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">curvatureResolutionAngle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">growthRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams" title="flow360.component.meshing.params.SurfaceMeshingParams"><span class="pre">SurfaceMeshingParams</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SurfaceMeshingParams'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#SurfaceMeshingParams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Flow360 Surface Meshing parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_edge_length</strong> (<em>PositiveFloat</em>) – edges : Optional[Edges] = None
+faces : Optional[Faces] = None
+curvature_resolution_angle : Optional[PositiveFloat] = 15
+growth_rate : Optional[PositiveFloat] = 1.2</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.curvature_resolution_angle">
+<span class="sig-name descname"><span class="pre">curvature_resolution_angle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.curvature_resolution_angle" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.edges">
+<span class="sig-name descname"><span class="pre">edges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Edges</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.edges" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.faces">
+<span class="sig-name descname"><span class="pre">faces</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Faces</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.faces" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.flow360_json">
+<span class="sig-name descname"><span class="pre">flow360_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#SurfaceMeshingParams.flow360_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.flow360_json" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a JSON representation of the model, as required by Flow360</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Returns JSON representation of the model.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>json</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">flow360_json</span><span class="p">()</span> 
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.growth_rate">
+<span class="sig-name descname"><span class="pre">growth_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.growth_rate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.SurfaceMeshingParams.max_edge_length">
+<span class="sig-name descname"><span class="pre">max_edge_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.SurfaceMeshingParams.max_edge_length" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.UseAdjacent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">UseAdjacent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'useAdjacent'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.UseAdjacent" title="flow360.component.meshing.params.UseAdjacent"><span class="pre">UseAdjacent</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'UseAdjacent'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#UseAdjacent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.UseAdjacent" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>ProjectAniso edge</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>adapt</strong> (<em>Optional</em><em>[</em><em>bool</em><em>] </em><em>= None</em>) – type : str = useAdjacent</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.UseAdjacent.adapt">
+<span class="sig-name descname"><span class="pre">adapt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.UseAdjacent.adapt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Volume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">Volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">firstLayerThickness</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">growthRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gapTreatmentStrength</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedFloatValue</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.Volume" title="flow360.component.meshing.params.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Volume'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#Volume"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.Volume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Core volume meshing parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>first_layer_thickness</strong> (<em>PositiveFloat</em>) – growth_rate : Optional[PositiveFloat] = 1.2
+gap_treatment_strength : Optional[ConstrainedFloatValue] = None</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Volume.first_layer_thickness">
+<span class="sig-name descname"><span class="pre">first_layer_thickness</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span></em><a class="headerlink" href="#flow360.component.meshing.params.Volume.first_layer_thickness" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Volume.gap_treatment_strength">
+<span class="sig-name descname"><span class="pre">gap_treatment_strength</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ConstrainedFloatValue</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.Volume.gap_treatment_strength" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.Volume.growth_rate">
+<span class="sig-name descname"><span class="pre">growth_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.Volume.growth_rate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">flow360.component.meshing.params.</span></span><span class="sig-name descname"><span class="pre">VolumeMeshingParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flow360.component.meshing.params.Volume" title="flow360.component.meshing.params.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">refinementFactor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">farfield</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flow360.component.meshing.params.Farfield" title="flow360.component.meshing.params.Farfield"><span class="pre">Farfield</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refinement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement" title="flow360.component.meshing.params.BoxRefinement"><span class="pre">BoxRefinement</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement" title="flow360.component.meshing.params.CylinderRefinement"><span class="pre">CylinderRefinement</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotorDisks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.RotorDisk" title="flow360.component.meshing.params.RotorDisk"><span class="pre">RotorDisk</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slidingInterfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface" title="flow360.component.meshing.params.SlidingInterface"><span class="pre">SlidingInterface</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">typing_extensions.Literal</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams" title="flow360.component.meshing.params.VolumeMeshingParams"><span class="pre">VolumeMeshingParams</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'VolumeMeshingParams'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#VolumeMeshingParams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="flow360_params.html#flow360.component.flow360_params.params_base.Flow360BaseModel" title="flow360.component.flow360_params.params_base.Flow360BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flow360BaseModel</span></code></a></p>
+<p>Flow360 Volume Meshing parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>volume</strong> (<a class="reference internal" href="#flow360.component.meshing.params.Volume" title="flow360.component.meshing.params.Volume"><em>Volume</em></a>) – refinement_factor : Optional[PositiveFloat] = None
+farfield : Optional[Farfield] = None
+refinement : Optional[List[Union[BoxRefinement, CylinderRefinement]]] = None
+rotor_disks : Optional[List[RotorDisk]] = None
+sliding_interfaces : Optional[List[SlidingInterface]] = None</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.farfield">
+<span class="sig-name descname"><span class="pre">farfield</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#flow360.component.meshing.params.Farfield" title="flow360.component.meshing.params.Farfield"><span class="pre">Farfield</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.farfield" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.flow360_json">
+<span class="sig-name descname"><span class="pre">flow360_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/flow360/component/meshing/params.html#VolumeMeshingParams.flow360_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.flow360_json" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a JSON representation of the model, as required by Flow360</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Returns JSON representation of the model.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>json</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">flow360_json</span><span class="p">()</span> 
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.refinement">
+<span class="sig-name descname"><span class="pre">refinement</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement" title="flow360.component.meshing.params.BoxRefinement"><span class="pre">BoxRefinement</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement" title="flow360.component.meshing.params.CylinderRefinement"><span class="pre">CylinderRefinement</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.refinement" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.refinement_factor">
+<span class="sig-name descname"><span class="pre">refinement_factor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveFloat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.refinement_factor" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.rotor_disks">
+<span class="sig-name descname"><span class="pre">rotor_disks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.RotorDisk" title="flow360.component.meshing.params.RotorDisk"><span class="pre">RotorDisk</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.rotor_disks" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.sliding_interfaces">
+<span class="sig-name descname"><span class="pre">sliding_interfaces</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface" title="flow360.component.meshing.params.SlidingInterface"><span class="pre">SlidingInterface</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.sliding_interfaces" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flow360.component.meshing.params.VolumeMeshingParams.volume">
+<span class="sig-name descname"><span class="pre">volume</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#flow360.component.meshing.params.Volume" title="flow360.component.meshing.params.Volume"><span class="pre">Volume</span></a></em><a class="headerlink" href="#flow360.component.meshing.params.VolumeMeshingParams.volume" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">flow360 meshing parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360.component.meshing">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-flow360.component.meshing.params">flow360 meshing parameters module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.Aniso"><code class="docutils literal notranslate"><span class="pre">Aniso</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Aniso.adapt"><code class="docutils literal notranslate"><span class="pre">Aniso.adapt</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Aniso.method"><code class="docutils literal notranslate"><span class="pre">Aniso.method</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Aniso.value"><code class="docutils literal notranslate"><span class="pre">Aniso.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement"><code class="docutils literal notranslate"><span class="pre">BoxRefinement</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement.angle_of_rotation"><code class="docutils literal notranslate"><span class="pre">BoxRefinement.angle_of_rotation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement.axis_of_rotation"><code class="docutils literal notranslate"><span class="pre">BoxRefinement.axis_of_rotation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.BoxRefinement.size"><code class="docutils literal notranslate"><span class="pre">BoxRefinement.size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement"><code class="docutils literal notranslate"><span class="pre">CylinderRefinement</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement.axis"><code class="docutils literal notranslate"><span class="pre">CylinderRefinement.axis</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement.length"><code class="docutils literal notranslate"><span class="pre">CylinderRefinement.length</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.CylinderRefinement.radius"><code class="docutils literal notranslate"><span class="pre">CylinderRefinement.radius</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.Face"><code class="docutils literal notranslate"><span class="pre">Face</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Face.adapt"><code class="docutils literal notranslate"><span class="pre">Face.adapt</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Face.max_edge_length"><code class="docutils literal notranslate"><span class="pre">Face.max_edge_length</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.FaceType"><code class="docutils literal notranslate"><span class="pre">FaceType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.Farfield"><code class="docutils literal notranslate"><span class="pre">Farfield</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Farfield.type"><code class="docutils literal notranslate"><span class="pre">Farfield.type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.ProjectAniso"><code class="docutils literal notranslate"><span class="pre">ProjectAniso</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.ProjectAniso.adapt"><code class="docutils literal notranslate"><span class="pre">ProjectAniso.adapt</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.Refinement"><code class="docutils literal notranslate"><span class="pre">Refinement</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Refinement.center"><code class="docutils literal notranslate"><span class="pre">Refinement.center</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Refinement.spacing"><code class="docutils literal notranslate"><span class="pre">Refinement.spacing</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.center"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.center</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.inner_radius"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.inner_radius</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.name"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.outer_radius"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.outer_radius</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.spacing_axial"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.spacing_axial</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.spacing_circumferential"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.spacing_circumferential</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.spacing_radial"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.spacing_radial</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotationalModelBase.thickness"><code class="docutils literal notranslate"><span class="pre">RotationalModelBase.thickness</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.RotorDisk"><code class="docutils literal notranslate"><span class="pre">RotorDisk</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.RotorDisk.axis_thrust"><code class="docutils literal notranslate"><span class="pre">RotorDisk.axis_thrust</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface"><code class="docutils literal notranslate"><span class="pre">SlidingInterface</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface.axis_of_rotation"><code class="docutils literal notranslate"><span class="pre">SlidingInterface.axis_of_rotation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SlidingInterface.enclosed_objects"><code class="docutils literal notranslate"><span class="pre">SlidingInterface.enclosed_objects</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.curvature_resolution_angle"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.curvature_resolution_angle</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.edges"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.edges</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.faces"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.faces</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.flow360_json"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.flow360_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.growth_rate"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.growth_rate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.SurfaceMeshingParams.max_edge_length"><code class="docutils literal notranslate"><span class="pre">SurfaceMeshingParams.max_edge_length</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.UseAdjacent"><code class="docutils literal notranslate"><span class="pre">UseAdjacent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.UseAdjacent.adapt"><code class="docutils literal notranslate"><span class="pre">UseAdjacent.adapt</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.Volume"><code class="docutils literal notranslate"><span class="pre">Volume</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Volume.first_layer_thickness"><code class="docutils literal notranslate"><span class="pre">Volume.first_layer_thickness</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Volume.gap_treatment_strength"><code class="docutils literal notranslate"><span class="pre">Volume.gap_treatment_strength</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.Volume.growth_rate"><code class="docutils literal notranslate"><span class="pre">Volume.growth_rate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.farfield"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.farfield</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.flow360_json"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.flow360_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.refinement"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.refinement</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.refinement_factor"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.refinement_factor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.rotor_disks"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.rotor_disks</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.sliding_interfaces"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.sliding_interfaces</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flow360.component.meshing.params.VolumeMeshingParams.volume"><code class="docutils literal notranslate"><span class="pre">VolumeMeshingParams.volume</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../components.html">component</a><ul>
+      <li>Previous: <a href="flow360_params.html" title="previous chapter">flow360 solvers parameters</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="../../_sources/flow360doc/component/meshing.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

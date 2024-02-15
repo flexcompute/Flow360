@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.exceptions &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.exceptions</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Custom Flow360 exceptions&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">log</span>
+
+
+<div class="viewcode-block" id="Flow360Error">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360Error">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Any error in flow360&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log just the error message and then raise the Exception.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># pylint: disable=redefined-builtin</span>
+<div class="viewcode-block" id="Flow360ValueError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360ValueError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360ValueError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error with value.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360TypeError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360TypeError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360TypeError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error with type.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360ConfigError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360ConfigError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360ConfigError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when configuring Flow360.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360RuntimeError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360RuntimeError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360RuntimeError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when runtime.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360KeyError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360KeyError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360KeyError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Could not find a key in a Flow360 dictionary.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360ValidationError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360ValidationError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360ValidationError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when constructing FLow360 components.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360ConfigurationError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360ConfigurationError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360ConfigurationError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error with flow360 unit conversion.&quot;&quot;&quot;</span>
+
+    <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">field</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">dependency</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">field</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dependency</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependency</span> <span class="o">=</span> <span class="n">dependency</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360FileError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360FileError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360FileError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error reading or writing to file.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360CloudFileError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360CloudFileError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360CloudFileError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when getting file from cloud.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360WebError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360WebError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360WebError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error with the webAPI.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360WebNotFoundError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360WebNotFoundError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360WebNotFoundError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error with the webAPI.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360AuthenticationError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360AuthenticationError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360AuthenticationError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error authenticating a user through webapi webAPI.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360AuthorisationError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360AuthorisationError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360AuthorisationError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error authenticating a user through webapi webAPI.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360DataError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360DataError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360DataError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error accessing data.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360ImportError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360ImportError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360ImportError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error importing a package needed for Flow360.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Flow360NotImplementedError">
+<a class="viewcode-back" href="../../flow360.html#flow360.exceptions.Flow360NotImplementedError">[docs]</a>
+<span class="k">class</span> <span class="nc">Flow360NotImplementedError</span><span class="p">(</span><span class="n">Flow360Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error when a functionality is not (yet) supported.&quot;&quot;&quot;</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

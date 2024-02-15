@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>flow360.component.flow360_params.volume_zones &#8212; flow360 python client  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for flow360.component.flow360_params.volume_zones</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Volume zones parameters</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># pylint: disable=too-many-lines</span>
+<span class="c1"># pylint: disable=unused-import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pydantic</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">StrictStr</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Axis</span><span class="p">,</span>
+    <span class="n">Coordinate</span><span class="p">,</span>
+    <span class="n">NonNegativeFloat</span><span class="p">,</span>
+    <span class="n">PositiveFloat</span><span class="p">,</span>
+    <span class="n">PositiveInt</span><span class="p">,</span>
+    <span class="n">Vector</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.params_base</span> <span class="kn">import</span> <span class="n">Flow360BaseModel</span>
+<span class="kn">from</span> <span class="nn">.unit_system</span> <span class="kn">import</span> <span class="n">AngularVelocityType</span><span class="p">,</span> <span class="n">LengthType</span>
+
+
+<div class="viewcode-block" id="ReferenceFrameBase">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.ReferenceFrameBase">[docs]</a>
+<span class="k">class</span> <span class="nc">ReferenceFrameBase</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base reference frame class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span>
+    <span class="n">center</span><span class="p">:</span> <span class="n">LengthType</span><span class="o">.</span><span class="n">Point</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;centerOfRotation&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">Axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;axisOfRotation&quot;</span><span class="p">)</span>
+    <span class="n">parent_volume_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;parentVolumeName&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">exclude_on_flow360_export</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;model_type&quot;</span><span class="p">]</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">ReferenceFrameDynamic</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`ReferenceFrameDynamic` class for setting up dynamic reference frame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    center : Coordinate</span>
+<span class="sd">        Coordinate representing the origin of rotation, eg. (0, 0, 0)</span>
+
+<span class="sd">    axis : Axis</span>
+<span class="sd">        Axis of rotation, eg. (0, 0, 1)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`ReferenceFrameDynamic`</span>
+<span class="sd">        An instance of the component class ReferenceFrameDynamic.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; rf = ReferenceFrameDynamic(</span>
+<span class="sd">            center=(0, 0, 0),</span>
+<span class="sd">            axis=(0, 0, 1),</span>
+<span class="sd">        )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Dynamic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Dynamic&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ReferenceFrameExpression</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`ReferenceFrameExpression` class for setting up reference frame using expression</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    center : Coordinate</span>
+<span class="sd">        Coordinate representing the origin of rotation, eg. (0, 0, 0)</span>
+
+<span class="sd">    axis : Axis</span>
+<span class="sd">        Axis of rotation, eg. (0, 0, 1)</span>
+
+<span class="sd">    parent_volume_name : str, optional</span>
+<span class="sd">        Name of the volume zone that the rotating reference frame is contained in, used to compute the acceleration in</span>
+<span class="sd">        the nested rotating reference frame</span>
+
+<span class="sd">    theta_radians : str, optional</span>
+<span class="sd">        Expression for rotation angle (in radians) as a function of time</span>
+
+<span class="sd">    theta_degrees : str, optional</span>
+<span class="sd">        Expression for rotation angle (in degrees) as a function of time</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`ReferenceFrameExpression`</span>
+<span class="sd">        An instance of the component class ReferenceFrame.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; rf = ReferenceFrameExpression(</span>
+<span class="sd">            center=(0, 0, 0),</span>
+<span class="sd">            axis=(0, 0, 1),</span>
+<span class="sd">            theta_radians=&quot;1 * t&quot;</span>
+<span class="sd">        )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Expression&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Expression&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">theta_radians</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;thetaRadians&quot;</span><span class="p">)</span>
+    <span class="n">theta_degrees</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;thetaDegrees&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=missing-class-docstring,too-few-public-methods</span>
+    <span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="o">.</span><span class="n">Config</span><span class="p">):</span>
+        <span class="n">require_one_of</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;theta_radians&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;theta_degrees&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">ReferenceFrameOmegaRadians</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`ReferenceFrameOmegaRadians` class for setting up reference frame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    center : Coordinate</span>
+<span class="sd">        Coordinate representing the origin of rotation, eg. (0, 0, 0)</span>
+
+<span class="sd">    axis : Axis</span>
+<span class="sd">        Axis of rotation, eg. (0, 0, 1)</span>
+
+<span class="sd">    omega_radians: float</span>
+<span class="sd">        Nondimensional rotating speed, radians/nondim-unit-time</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`ReferenceFrameOmegaRadians`</span>
+<span class="sd">        An instance of the component class ReferenceFrameOmegaRadians.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;OmegaRadians&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;OmegaRadians&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">omega_radians</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;omegaRadians&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=arguments-differ</span>
+    <span class="k">def</span> <span class="nf">to_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReferenceFrameOmegaRadians</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns configuration object in flow360 units system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_solver</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ReferenceFrameOmegaDegrees</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`ReferenceFrameOmegaDegrees` class for setting up reference frame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    center : Coordinate</span>
+<span class="sd">        Coordinate representing the origin of rotation, eg. (0, 0, 0)</span>
+
+<span class="sd">    axis : Axis</span>
+<span class="sd">        Axis of rotation, eg. (0, 0, 1)</span>
+
+<span class="sd">    omega_degrees: AngularVelocityType</span>
+<span class="sd">        Nondimensional rotating speed, radians/nondim-unit-time</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`ReferenceFrameOmegaDegrees`</span>
+<span class="sd">        An instance of the component class ReferenceFrameOmegaDegrees.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;OmegaDegrees&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;OmegaDegrees&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">omega_degrees</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;omegaDegrees&quot;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=arguments-differ</span>
+    <span class="k">def</span> <span class="nf">to_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReferenceFrameOmegaDegrees</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns configuration object in flow360 units system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_solver</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ReferenceFrame</span><span class="p">(</span><span class="n">ReferenceFrameBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;:class:`ReferenceFrame` class for setting up reference frame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    center : Coordinate</span>
+<span class="sd">        Coordinate representing the origin of rotation, eg. (0, 0, 0)</span>
+
+<span class="sd">    axis : Axis</span>
+<span class="sd">        Axis of rotation, eg. (0, 0, 1)</span>
+
+<span class="sd">    omega: AngularVelocityType</span>
+<span class="sd">        Rotating speed, for example radians / s</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`ReferenceFrame`</span>
+<span class="sd">        An instance of the component class ReferenceFrame.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; rf = ReferenceFrame(</span>
+<span class="sd">            center=(0, 0, 0),</span>
+<span class="sd">            axis=(0, 0, 1),</span>
+<span class="sd">            omega=1 * u.rad / u.s</span>
+<span class="sd">        )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;ReferenceFrame&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="s2">&quot;ReferenceFrame&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">omega</span><span class="p">:</span> <span class="n">AngularVelocityType</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
+
+    <span class="c1"># pylint: disable=arguments-differ</span>
+    <span class="k">def</span> <span class="nf">to_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReferenceFrameOmegaRadians</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns configuration object in flow360 units system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">solver_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_dimensions_to_solver</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">omega_radians</span> <span class="o">=</span> <span class="n">solver_values</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;omega&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">solver_values</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model_type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ReferenceFrameOmegaRadians</span><span class="p">(</span><span class="n">omega_radians</span><span class="o">=</span><span class="n">omega_radians</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_values</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="VolumeZoneBase">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.VolumeZoneBase">[docs]</a>
+<span class="k">class</span> <span class="nc">VolumeZoneBase</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Basic Boundary class&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="InitialConditionHeatTransfer">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.InitialConditionHeatTransfer">[docs]</a>
+<span class="k">class</span> <span class="nc">InitialConditionHeatTransfer</span><span class="p">(</span><span class="n">Flow360BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;InitialConditionHeatTransfer&quot;&quot;&quot;</span>
+
+    <span class="n">T</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">,</span> <span class="n">StrictStr</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span> <span class="s2">&quot;Expression&quot;</span><span class="p">])</span></div>
+
+
+
+<span class="n">ReferenceFrameType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">ReferenceFrame</span><span class="p">,</span>
+    <span class="n">ReferenceFrameOmegaRadians</span><span class="p">,</span>
+    <span class="n">ReferenceFrameOmegaDegrees</span><span class="p">,</span>
+    <span class="n">ReferenceFrameExpression</span><span class="p">,</span>
+    <span class="n">ReferenceFrameDynamic</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="HeatTransferVolumeZone">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.HeatTransferVolumeZone">[docs]</a>
+<span class="k">class</span> <span class="nc">HeatTransferVolumeZone</span><span class="p">(</span><span class="n">VolumeZoneBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;HeatTransferVolumeZone type&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;HeatTransfer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;HeatTransfer&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">thermal_conductivity</span><span class="p">:</span> <span class="n">PositiveFloat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;thermalConductivity&quot;</span><span class="p">)</span>
+    <span class="n">volumetric_heat_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">NonNegativeFloat</span><span class="p">,</span> <span class="n">StrictStr</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;volumetricHeatSource&quot;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span> <span class="s2">&quot;Expression&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">heat_capacity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PositiveFloat</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;heatCapacity&quot;</span><span class="p">)</span>
+    <span class="n">initial_condition</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditionHeatTransfer</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">&quot;initialCondition&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="FluidDynamicsVolumeZone">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.FluidDynamicsVolumeZone">[docs]</a>
+<span class="k">class</span> <span class="nc">FluidDynamicsVolumeZone</span><span class="p">(</span><span class="n">VolumeZoneBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FluidDynamicsVolumeZone type&quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="s2">&quot;FluidDynamics&quot;</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;modelType&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">reference_frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ReferenceFrameType</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span>
+        <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;referenceFrame&quot;</span><span class="p">,</span> <span class="n">discriminator</span><span class="o">=</span><span class="s2">&quot;model_type&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># pylint: disable=arguments-differ</span>
+<div class="viewcode-block" id="FluidDynamicsVolumeZone.to_solver">
+<a class="viewcode-back" href="../../../../flow360doc/component/flow360_params.html#flow360.component.flow360_params.volume_zones.FluidDynamicsVolumeZone.to_solver">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FluidDynamicsVolumeZone</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        returns configuration object in flow360 units system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_solver</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">VolumeZoneType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">FluidDynamicsVolumeZone</span><span class="p">,</span> <span class="n">HeatTransferVolumeZone</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">flow360 python client</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360.html">flow360 python client package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cli.html">commandline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/cloud.html">cloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/flow360_params.html">flow360 solvers parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/component/meshing.html">flow360 meshing parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../flow360doc/components.html">component</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2023, Author.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
