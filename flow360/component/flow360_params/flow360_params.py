@@ -1676,11 +1676,11 @@ class Flow360ParamsLegacy(LegacyModel):
                 disks.append(try_update(disk))
             params["bet_disks"] = disks
 
+        params["volume_zones"] = self.volume_zones
         if self.sliding_interfaces is not None:
             volume_zones = {}
             for interface in self.sliding_interfaces:
                 volume_zone = try_update(interface)
-                print(interface)
                 volume_name = interface.volume_name
                 if isinstance(interface.volume_name, list):
                     volume_name = interface.volume_name[0]
@@ -1713,8 +1713,8 @@ class Flow360ParamsLegacy(LegacyModel):
                     "iso_surface_output": try_update(self.iso_surface_output),
                     "monitor_output": self.monitor_output,
                     "aeroacoustic_output": self.aeroacoustic_output,
-                    "fluid_properties": None,
-                    "volume_zones": self.volume_zones,
+                    "fluid_properties": params.get("fluid_properties"),
+                    "volume_zones": params.get("volume_zones"),
                     "bet_disks": try_update(self.bet_disks),
                 }
             )
