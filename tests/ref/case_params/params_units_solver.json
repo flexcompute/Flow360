@@ -24,11 +24,13 @@
         0.0008162876014170267,
         0.0016325752028340534,
         0.0024488628042510802
-      ]
+      ],
+      "velocityType": "relative"
     },
     "3": {
       "type": "Freestream",
-      "name": "freestream"
+      "name": "freestream",
+      "velocityType": "relative"
     }
   },
   "timeStepping": {
@@ -36,16 +38,14 @@
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
-      "max": 10000.0,
-      "maxRelativeChange": 1.0,
-      "convergenceLimitingFactor": 0.25
+      "max": 1000000.0,
+      "maxRelativeChange": 50.0,
+      "convergenceLimitingFactor": 1.0
     },
-    "modelType": "Unsteady",
     "physicalSteps": 20,
     "timeStepSize": 408352.8069698554
   },
   "freestream": {
-    "modelType": "FromMach",
     "alphaAngle": 3.06,
     "betaAngle": 0.0,
     "Mach": 0.8404497144189705,

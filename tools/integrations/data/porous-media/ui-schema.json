@@ -5,28 +5,33 @@
   "ForchheimerCoefficient": {
     "ui:widget": "vector3"
   },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:submitButtonOptions": {
+    "norender": true
+  },
   "volumeZone": {
+    "axes": {
+      "items": {
+        "ui:widget": "vector3"
+      },
+      "ui:options": {
+        "addable": false,
+        "orderable": false,
+        "removable": false
+      }
+    },
     "center": {
       "ui:widget": "vector3"
     },
     "lengths": {
       "ui:widget": "vector3"
     },
-    "axes": {
-      "items": {
-        "ui:widget": "vector3"
-      }
-    },
     "windowingLengths": {
       "ui:widget": "vector3"
     }
-  },
-  "ui:submitButtonOptions": {
-    "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }

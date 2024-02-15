@@ -13,6 +13,25 @@
           "const": "AirDensity",
           "type": "string"
         },
+        "density": {
+          "title": "Density",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "density",
+              "enum": [
+                "kg/m**3",
+                "g/cm**3",
+                "lb/ft**3",
+                "flow360_density_unit"
+              ]
+            }
+          }
+        },
         "temperature": {
           "title": "Temperature",
           "properties": {
@@ -29,29 +48,11 @@
               ]
             }
           }
-        },
-        "density": {
-          "title": "Density",
-          "properties": {
-            "value": {
-              "type": "number"
-            },
-            "units": {
-              "type": "string",
-              "dimension": "density",
-              "enum": [
-                "kg/m**3",
-                "g/cm**3",
-                "lb/ft**3",
-                "flow360_density_unit"
-              ]
-            }
-          }
         }
       },
       "required": [
-        "temperature",
-        "density"
+        "density",
+        "temperature"
       ],
       "additionalProperties": false
     },
@@ -69,7 +70,8 @@
           "title": "Pressure",
           "properties": {
             "value": {
-              "type": "number"
+              "type": "number",
+              "exclusiveMinimum": 0
             },
             "units": {
               "type": "string",

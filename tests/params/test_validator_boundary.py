@@ -1,34 +1,11 @@
+import os
 import unittest
 
-import pydantic as pd
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.boundaries import (
-    FreestreamBoundary,
-    HeatFluxWall,
-    IsothermalWall,
-    MassInflow,
-    MassOutflow,
-    NoSlipWall,
-    SlidingInterfaceBoundary,
-    SlipWall,
-    SolidAdiabaticWall,
-    SolidIsothermalWall,
-    SubsonicInflow,
-    SubsonicOutflowMach,
-    SubsonicOutflowPressure,
-    SupersonicInflow,
-    WallFunction,
-)
-from flow360.component.flow360_params.flow360_params import (
-    Flow360Params,
-    MeshBoundary,
-    SteadyTimeStepping,
-)
-from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
-from flow360.exceptions import Flow360ValidationError
-from tests.utils import compare_to_ref, to_file_from_file_test
+from flow360.component.flow360_params.boundaries import NoSlipWall
+from flow360.component.flow360_params.flow360_params import Flow360Params
 
 assertions = unittest.TestCase("__init__")
 
@@ -49,7 +26,8 @@ def test_duplidated_boundary_names():
                     "fluid/fuselage": NoSlipWall(name="fuselage"),
                     "fluid/leftWing": NoSlipWall(name="wing"),
                     "fluid/rightWing": NoSlipWall(name="wing"),
-                }
+                },
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 
@@ -64,5 +42,6 @@ def test_tri_quad_boundaries():
                 "fluid/quad_fuselage": NoSlipWall(),
                 "fluid/tri_wing": NoSlipWall(),
                 "fluid/quad_wing": NoSlipWall(),
-            }
+            },
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )

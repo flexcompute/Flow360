@@ -2,7 +2,7 @@
   "unitSystem": {
     "name": "SI"
   },
-  "version": "0.2.0b16",
+  "version": "0.2.0b18",
   "geometry": {
     "refArea": {
       "value": 1.0,
@@ -47,7 +47,8 @@
     },
     "3": {
       "type": "Freestream",
-      "name": "freestream"
+      "name": "freestream",
+      "velocityType": "relative"
     },
     "1": {
       "type": "NoSlipWall",
@@ -59,7 +60,8 @@
           3
         ],
         "units": "km/hr"
-      }
+      },
+      "velocityType": "relative"
     }
   },
   "timeStepping": {
@@ -67,9 +69,9 @@
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
-      "max": 10000.0,
-      "maxRelativeChange": 1.0,
-      "convergenceLimitingFactor": 0.25
+      "max": 1000000.0,
+      "maxRelativeChange": 50.0,
+      "convergenceLimitingFactor": 1.0
     },
     "modelType": "Unsteady",
     "physicalSteps": 20,
@@ -91,6 +93,7 @@
     "zone2": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 1.0471975511965976,
           "units": "rad/s"
@@ -113,6 +116,7 @@
     "zone3": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 60.0,
           "units": "degree/s"
@@ -135,6 +139,7 @@
     "zone1": {
       "modelType": "FluidDynamics",
       "referenceFrame": {
+        "modelType": "ReferenceFrame",
         "omega": {
           "value": 10.0,
           "units": "rpm"
@@ -155,5 +160,5 @@
       }
     }
   },
-  "hash": "81d8ccc2062ae8f7199c7c22a2755cb011f046bfa1aa93a1e138f7c3f7a354bf"
+  "hash": "63318ef1db1bfe8168cc97287a762e7bb0fb24f1fd4308cad55085ee039ade62"
 }

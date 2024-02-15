@@ -2,12 +2,14 @@ boundaries:
     '1':
         name: wing
         type: NoSlipWall
+        velocityType: relative
     '2':
         name: symmetry
         type: SlipWall
     '3':
         name: freestream
         type: Freestream
+        velocityType: relative
 freestream:
     alphaAngle: 3.06
     betaAngle: 0.0
@@ -28,15 +30,15 @@ geometry:
     refArea:
         units: m**2
         value: 1.15315084119231
-hash: 4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead
+hash: b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b
 navierStokesSolver:
     CFLMultiplier: 1.0
+    absoluteTolerance: 1.0e-10
     equationEvalFrequency: 1
     kappaMUSCL: -1.0
     limitPressureDensity: false
     limitVelocity: false
-    linearIterations: 10
-    linearSolver:
+    linearSolverConfig:
         absoluteTolerance: 1.0e-10
         maxIterations: 30
     maxForceJacUpdatePhysicalSteps: 0
@@ -76,14 +78,32 @@ surfaceOutput:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
+    surfaces:
+        freestream:
+            outputFields:
+            - Cp
+            - Mach
+        symmetry:
+            outputFields:
+            - T
+            - heatFlux
+        wing:
+            outputFields:
+            - CfVec
 timeStepping:
+    CFL:
+        convergenceLimitingFactor: 0.25
+        max: 10000.0
+        maxRelativeChange: 1.0
+        min: 0.1
+        type: adaptive
     maxPseudoSteps: 2000
     modelType: Steady
     physicalSteps: 1
     timeStepSize: inf
 unitSystem:
     name: SI
-version: 0.2.0b16
+version: 0.2.0b18
 volumeOutput:
     outputFields:
     - Mach

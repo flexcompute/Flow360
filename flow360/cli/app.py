@@ -1,6 +1,7 @@
 """
 Commandline interface for flow360.
 """
+
 import os.path
 from os.path import expanduser
 
@@ -38,16 +39,14 @@ def flow360():
 @click.option(
     "--suppress-submit-warning",
     type=bool,
-    is_flag=True,
     help='Whether to suppress warnings for "submit()" when creating new Case, new VolumeMesh etc.',
 )
 @click.option(
-    "--show-submit-warning",
+    "--beta-features",
     type=bool,
-    is_flag=True,
-    help='Whether to show warnings for "submit()" when creating new Case, new VolumeMesh etc.',
+    help="Toggle beta features support",
 )
-def configure(apikey, profile, dev, suppress_submit_warning, show_submit_warning):
+def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
@@ -65,17 +64,14 @@ def configure(apikey, profile, dev, suppress_submit_warning, show_submit_warning
         dict_utils.merge_overwrite(config, entry)
         changed = True
 
-    if suppress_submit_warning and show_submit_warning:
-        raise click.ClickException(
-            "You cannot use both --suppress-submit-warning AND --show-submit-warning"
+    if suppress_submit_warning is not None:
+        dict_utils.merge_overwrite(
+            config, {"user": {"config": {"suppress_submit_warning": suppress_submit_warning}}}
         )
-
-    if suppress_submit_warning:
-        config.update({"user": {"config": {"suppress_submit_warning": True}}})
         changed = True
 
-    if show_submit_warning:
-        config.update({"user": {"config": {"suppress_submit_warning": False}}})
+    if beta_features is not None:
+        dict_utils.merge_overwrite(config, {"user": {"config": {"beta_features": beta_features}}})
         changed = True
 
     with open(config_file, "w", encoding="utf-8") as file_handler:

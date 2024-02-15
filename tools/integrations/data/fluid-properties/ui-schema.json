@@ -1,10 +1,24 @@
 {
-  "ui:submitButtonOptions": {
-    "norender": true
+  "density": {
+    "ui:field": "unitInput"
+  },
+  "pressure": {
+    "ui:field": "unitInput"
+  },
+  "temperature": {
+    "ui:field": "unitInput"
   },
   "ui:options": {
-    "orderable": false,
     "addable": false,
+    "orderable": false,
     "removable": false
+  },
+  "ui:order": [
+    "modelType",
+    "temperature",
+    "*"
+  ],
+  "ui:submitButtonOptions": {
+    "norender": true
   }
 }

@@ -1,6 +1,7 @@
 """
 Output field definitions
 """
+
 from typing import List, Literal, get_args, get_origin
 
 CommonFieldNamesFull = Literal[
@@ -25,6 +26,7 @@ CommonFieldNamesFull = Literal[
     "Wall distance",
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
+    "Velocity with respect to non-inertial frame",
 ]
 
 CommonFieldNames = Literal[
@@ -47,8 +49,9 @@ CommonFieldNames = Literal[
     "T",
     "vorticity",
     "wallDistance",
-    "lowNumericalDissipationSensor",
+    "numericalDissipationFactor",
     "residualHeatSolver",
+    "VelocityRelative",
 ]
 
 SurfaceFieldNamesFull = Literal[
@@ -60,7 +63,6 @@ SurfaceFieldNamesFull = Literal[
     "Non-dimensional heat flux",
     "Wall normals",
     "Spalart-Allmaras variable",
-    "Velocity in rotating frame",
     "Non-dimensional wall distance",
     "Wall function metrics",
 ]
@@ -74,7 +76,6 @@ SurfaceFieldNames = Literal[
     "heatFlux",
     "nodeNormals",
     "nodeForcesPerUnitArea",
-    "VelocityRelative",
     "yPlus",
     "wallFunctionMetric",
 ]
@@ -147,6 +148,34 @@ def get_aliases(name) -> List[str]:
     if name in full:
         i = full.index(name)
         return [name, short[i]]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+def to_short(name) -> str:
+    """Retrieve shorthand equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in short:
+        return name
+    if name in full:
+        i = full.index(name)
+        return short[i]
+
+    raise ValueError(f"{name} is not a valid output field name.")
+
+
+def to_full(name) -> str:
+    """Retrieve full name equivalent of output field"""
+    short = get_field_values(AllFieldNames)
+    full = get_field_values(AllFieldNamesFull)
+
+    if name in full:
+        return name
+    if name in short:
+        i = short.index(name)
+        return full[i]
 
     raise ValueError(f"{name} is not a valid output field name.")
 

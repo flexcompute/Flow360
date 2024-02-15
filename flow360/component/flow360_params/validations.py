@@ -4,6 +4,8 @@ validation logic
 
 from typing import NoReturn, Optional, Tuple
 
+from flow360.flags import Flags
+
 from ...log import log
 from .boundaries import (
     RotationallyPeriodic,
@@ -15,9 +17,11 @@ from .boundaries import (
 )
 from .flow360_fields import get_aliases
 from .initial_condition import ExpressionInitialCondition
-from .solvers import IncompressibleNavierStokesSolver
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
+
+if Flags.beta_features():
+    from .solvers import IncompressibleNavierStokesSolver
 
 
 def _check_tri_quad_boundaries(values):
@@ -83,7 +87,8 @@ def _check_consistency_ddes_volume_output(values):
     run_ddes = False
     if turbulence_model_solver is not None:
         model_type = turbulence_model_solver.model_type
-        run_ddes = turbulence_model_solver.DDES
+        if model_type != "None":
+            run_ddes = turbulence_model_solver.DDES
 
     volume_output = values.get("volumeOutput")
     if volume_output is not None and volume_output.output_fields is not None:
@@ -207,7 +212,7 @@ def _check_eval_frequency_max_pseudo_steps_in_one_solver(
 ) -> NoReturn:
     solver = values.get(solver_name)
     solver_eq_eval_freq = None
-    if solver is not None:
+    if solver is not None and solver.model_type != "None":
         solver_eq_eval_freq = solver.equation_eval_frequency
     if (
         max_pseudo_steps is not None
@@ -238,7 +243,11 @@ def _check_equation_eval_frequency_for_unsteady_simulations(values):
 def _check_aero_acoustics(values):
     aeroacoustic_output = values.get("aeroacoustic_output")
     boundaries = values.get("boundaries")
-    if aeroacoustic_output is not None and len(aeroacoustic_output.observers) > 0:
+    if (
+        boundaries is not None
+        and aeroacoustic_output is not None
+        and len(aeroacoustic_output.observers) > 0
+    ):
         for boundary_name in boundaries.names():
             boundary_prop = boundaries[boundary_name]
             if isinstance(boundary_prop, (TranslationallyPeriodic, RotationallyPeriodic, SlipWall)):
@@ -417,8 +426,28 @@ def _check_consistency_ddes_unsteady(values):
     time_stepping = values.get("time_stepping")
     turbulence_model_solver = values.get("turbulence_model_solver")
     run_ddes = False
-    if turbulence_model_solver is not None:
+    if turbulence_model_solver is not None and turbulence_model_solver.model_type != "None":
         run_ddes = turbulence_model_solver.DDES
     if run_ddes and (time_stepping is None or isinstance(time_stepping, SteadyTimeStepping)):
         raise ValueError("Running DDES with steady simulation is invalid.")
+    return values
+
+
+def _check_consistency_temperature(values):
+    freestream = values.get("freestream")
+    fluid_properties = values.get("fluid_properties")
+
+    if (
+        freestream is not None
+        and fluid_properties is not None
+        and hasattr(freestream, "temperature")
+    ):
+        freestream_temp = freestream.temperature
+        fluid_temp = fluid_properties.temperature
+        if freestream_temp is not None and fluid_temp is not None and freestream_temp != fluid_temp:
+            raise ValueError(
+                f"Freestream and fluid property temperature values do not match: "
+                f"{freestream_temp} != {fluid_temp}"
+            )
+
     return values

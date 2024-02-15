@@ -1,6 +1,7 @@
 """
 Flow360 output parameters models
 """
+
 from __future__ import annotations
 
 from abc import ABCMeta
@@ -8,6 +9,8 @@ from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 from pydantic import conlist
+
+from flow360.flags import Flags
 
 from ..types import Axis, Coordinate, PositiveInt
 from .flow360_fields import (
@@ -22,6 +25,7 @@ from .flow360_fields import (
     VolumeFieldNames,
     VolumeFieldNamesFull,
     get_field_values,
+    to_short,
 )
 from .flow360_legacy import LegacyModel, get_output_fields
 from .params_base import (
@@ -46,7 +50,7 @@ IsoSurfaceOutputField = IsoSurfaceFields
 
 
 def _filter_fields(fields, literal_filter):
-    """Take two literals, filter"""
+    """Take two literals, keep only arguments present in the filter"""
     values = get_field_values(literal_filter)
     fields[:] = [field for field in fields if field in values]
 
@@ -199,7 +203,7 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    start_average_integration_step: Optional[bool] = pd.Field(alias="startAverageIntegrationStep")
+    start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
     output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields")
     surfaces: Optional[Surfaces] = pd.Field()
 
@@ -214,6 +218,13 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SurfaceOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SurfaceOutput(**solver_values, output_fields=fields)
 
 
 class Slice(Flow360BaseModel):
@@ -234,6 +245,13 @@ class Slice(Flow360BaseModel):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> Slice:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return Slice(**solver_values, output_fields=fields)
 
 
 class Slices(Flow360SortableBaseModel):
@@ -279,12 +297,12 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {
-            "slices/additionalProperties/sliceNormal": "vector3",
-            "slices/additionalProperties/sliceOrigin": "vector3",
-        }
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SliceOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SliceOutput(**solver_values, output_fields=fields)
 
 
 class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
@@ -306,6 +324,13 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> VolumeOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return VolumeOutput(**solver_values, output_fields=fields)
 
 
 class MonitorBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -333,6 +358,13 @@ class SurfaceIntegralMonitor(MonitorBase):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return SurfaceIntegralMonitor(**solver_values, output_fields=fields)
+
 
 class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
@@ -352,6 +384,13 @@ class ProbeMonitor(MonitorBase):
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ProbeMonitor:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return ProbeMonitor(**solver_values, output_fields=fields)
 
 
 MonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor]
@@ -399,9 +438,12 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"monitors/additionalProperties/monitorLocations/items": "vector3"}
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> MonitorOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return MonitorOutput(**solver_values, output_fields=fields)
 
 
 class IsoSurface(Flow360BaseModel):
@@ -423,6 +465,13 @@ class IsoSurface(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
             _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsoSurface:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return IsoSurface(**solver_values, output_fields=fields)
 
 
 class _GenericIsoSurfaceWrapper(Flow360BaseModel):
@@ -482,11 +531,8 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
 
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
-    write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
-
-    # pylint: disable=protected-access, too-few-public-methods
-    class _SchemaConfig(Flow360BaseModel._SchemaConfig):
-        widgets = {"observers/items": "vector3"}
+    if Flags.beta_features():
+        write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
@@ -659,10 +705,8 @@ class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
 
     def update_model(self):
         model = {
-            "animationSettings": {
-                "frequency": self.animation_frequency,
-                "frequencyOffset": self.animation_frequency_offset,
-            },
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
             "outputFormat": self.output_format,
             "isoSurfaces": self.iso_surfaces,
         }

@@ -1,7 +1,8 @@
 {
-  "linearSolver": {
-    "absoluteTolerance": 1e-10,
-    "maxIterations": 50
+  "absoluteTolerance": 1e-09,
+  "linearSolverConfig": {
+    "maxIterations": 50,
+    "absoluteTolerance": 1e-10
   },
   "equationEvalFrequency": 10
 }

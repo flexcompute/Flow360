@@ -1,4 +1,5 @@
 """Logging for Flow360."""
+
 import os
 import platform
 import time

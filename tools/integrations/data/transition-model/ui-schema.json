@@ -1,15 +1,15 @@
 {
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
   "ui:order": [
+    "modelType",
     "*",
-    "_addLinearSolver",
-    "linearSolver"
+    "linearSolverConfig"
   ],
   "ui:submitButtonOptions": {
     "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }

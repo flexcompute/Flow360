@@ -4,6 +4,7 @@
   "properties": {
     "absoluteTolerance": {
       "title": "Absolute tolerance",
+      "default": 1e-10,
       "exclusiveMinimum": 0,
       "type": "number"
     },
@@ -17,11 +18,6 @@
       "default": 1.0,
       "exclusiveMinimum": 0,
       "type": "number"
-    },
-    "linearIterations": {
-      "title": "Linear iterations",
-      "exclusiveMinimum": 0,
-      "type": "integer"
     },
     "kappaMUSCL": {
       "title": "Kappa MUSCL",
@@ -74,26 +70,26 @@
       "default": false,
       "type": "boolean"
     },
-    "_addLinearSolver": {
-      "title": "Linear solver",
+    "_addLinearSolverConfig": {
+      "title": "Linear solver config",
       "type": "boolean",
       "default": false
     }
   },
   "additionalProperties": false,
   "dependencies": {
-    "_addLinearSolver": {
+    "_addLinearSolverConfig": {
       "oneOf": [
         {
           "type": "object",
           "properties": {
-            "_addLinearSolver": {
+            "_addLinearSolverConfig": {
               "default": true,
               "const": true,
               "type": "boolean"
             },
-            "linearSolver": {
-              "title": "Linear solver",
+            "linearSolverConfig": {
+              "title": "Linear solver config",
               "type": "object",
               "properties": {
                 "maxIterations": {
@@ -119,6 +115,14 @@
           "additionalProperties": false
         },
         {
+          "type": "object",
+          "properties": {
+            "_addLinearSolverConfig": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
           "additionalProperties": false
         }
       ]

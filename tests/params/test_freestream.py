@@ -9,6 +9,7 @@ import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
     FreestreamFromMach,
+    FreestreamFromMachReynolds,
     FreestreamFromVelocity,
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
@@ -26,7 +27,12 @@ def change_test_dir(request, monkeypatch):
 
 def test_freesteam():
     with fl.SI_unit_system:
-        params = fl.Flow360Params(fluid_properties=fl.air, geometry=fl.Geometry(mesh_unit=u.m))
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
+        )
 
         fs = FreestreamFromMach(Mach=1, temperature=300, mu_ref=1)
         assert fs
@@ -34,7 +40,8 @@ def test_freesteam():
         to_file_from_file_test(fs)
 
         p = fl.Flow360Params(
-            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 300, "mu_ref": 1}
+            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 300, "mu_ref": 1},
+            boundaries={},
         )
         p = fl.Flow360Params(
             freestream={
@@ -43,9 +50,10 @@ def test_freesteam():
                 "Mach_ref": 1,
                 "temperature": 300,
                 "mu_ref": 1,
-            }
+            },
+            boundaries={},
         )
-        p = fl.Flow360Params(freestream={"modelType": "FromVelocity", "velocity": 1})
+        p = fl.Flow360Params(freestream={"modelType": "FromVelocity", "velocity": 1}, boundaries={})
 
         with pytest.raises(pd.ValidationError):
             fs = FreestreamFromMach(Mach=-1, Temperature=100)
@@ -66,3 +74,6 @@ def test_freesteam():
         to_file_from_file_test(fs)
         fs_solver = fs.to_solver(params)
         assertions.assertAlmostEqual(fs_solver.Mach_ref, ref_mach)
+
+        fs = FreestreamFromMachReynolds(Mach=0.1, Reynolds="inf", temperature=288.15)
+        to_file_from_file_test(fs)

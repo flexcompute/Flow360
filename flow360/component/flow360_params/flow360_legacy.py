@@ -4,6 +4,7 @@ specified in the documentation but can be used internally
 during validation, most legacy classes can be updated to
 the current standard via the update_model method)
 """
+
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Optional
 
@@ -35,10 +36,35 @@ def try_set(model, key, value):
         model[key] = value
 
 
+def try_add_discriminator(model, path, discriminators, parsed_cls):
+    """Try finding the first valid discriminator for the object, throw if not found"""
+    path = path.split("/")
+
+    target = model
+
+    for item in path[:-1]:
+        target = model[item]
+
+    key = path[-1]
+
+    for discriminator in discriminators:
+        target[key] = discriminator
+        try:
+            parsed_cls.parse_obj(model)
+            return model
+        except pd.ValidationError:
+            pass
+
+    raise ValueError(f"Cannot infer discriminator for {model}, tried: {discriminators}")
+
+
 def try_update(field: Optional[LegacyModel]):
     """Try running updater on the field if it exists"""
     if field is not None:
-        return field.update_model()
+        if isinstance(field, LegacyModel):
+            return field.update_model()
+        if isinstance(field, list):
+            return [try_update(item) for item in field]
     return None
 
 

@@ -26,11 +26,13 @@ def test_consistency_wall_function_and_surface_output():
         param = Flow360Params(
             boundaries={"fluid/wing": NoSlipWall(), "fluid/farfield": FreestreamBoundary()},
             surface_output=SurfaceOutput(output_fields=["Cp"]),
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
         param = Flow360Params(
             boundaries={"fluid/wing": WallFunction(), "fluid/farfield": FreestreamBoundary()},
             surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     with pytest.raises(
@@ -41,6 +43,7 @@ def test_consistency_wall_function_and_surface_output():
             param = Flow360Params(
                 boundaries={"fluid/wing": NoSlipWall(), "fluid/farfield": FreestreamBoundary()},
                 surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
 

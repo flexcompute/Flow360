@@ -46,11 +46,6 @@
           }
         ]
       }
-    },
-    "writePerSurfaceOutput": {
-      "title": "Write per surface output",
-      "default": false,
-      "type": "boolean"
     }
   },
   "required": [

@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "geometry": {
         "refArea": {
             "value": 1.15315084119231,
@@ -24,11 +24,13 @@
     "boundaries": {
         "3": {
             "type": "Freestream",
-            "name": "freestream"
+            "name": "freestream",
+            "velocityType": "relative"
         },
         "1": {
             "type": "NoSlipWall",
-            "name": "wing"
+            "name": "wing",
+            "velocityType": "relative"
         },
         "2": {
             "type": "SlipWall",
@@ -39,19 +41,26 @@
         "maxPseudoSteps": 2000,
         "modelType": "Steady",
         "physicalSteps": 1,
-        "timeStepSize": "inf"
+        "timeStepSize": "inf",
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        }
     },
     "navierStokesSolver": {
+        "absoluteTolerance": 1.0e-10,
         "relativeTolerance": 0.0,
         "CFLMultiplier": 1.0,
-        "linearIterations": 10,
         "kappaMUSCL": -1.0,
         "updateJacobianFrequency": 4,
         "equationEvalFrequency": 1,
         "maxForceJacUpdatePhysicalSteps": 0,
         "orderOfAccuracy": 2,
         "numericalDissipationFactor": 1.0,
-        "linearSolver": {
+        "linearSolverConfig": {
             "maxIterations": 30,
             "absoluteTolerance": 1e-10
         },
@@ -72,7 +81,18 @@
         "outputFields": [
             "yPlus",
             "primitiveVars"
-        ]
+        ],
+        "surfaces": {
+            "symmetry": {
+                "outputFields": [ "T", "heatFlux" ]
+            },
+            "freestream": {
+                "outputFields": [ "Cp", "Mach" ]
+            },
+            "wing": {
+                "outputFields": [ "CfVec" ]
+            }
+        }
     },
     "volumeOutput": {
         "outputFormat": "tecplot",
@@ -119,5 +139,5 @@
             }
         }
     },
-    "hash": "4601999f6544546e82008331fff0b83bcb6f194e0e21018ae1bf283d98eaaead"
+    "hash": "b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b"
 }

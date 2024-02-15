@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "0.2.0b16",
+    "version": "0.2.0b18",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -28,7 +28,8 @@
     "boundaries": {
         "3": {
             "type": "Freestream",
-            "name": "freestream"
+            "name": "freestream",
+            "velocityType": "relative"
         },
         "1": {
             "type": "NoSlipWall",
@@ -40,7 +41,8 @@
                     0.0024488628042510802
                 ],
                 "units": "flow360_velocity_unit"
-            }
+            },
+            "velocityType": "relative"
         },
         "2": {
             "type": "SlipWall",
@@ -50,11 +52,11 @@
     "timeStepping": {
         "maxPseudoSteps": 500,
         "CFL": {
-            "type": "adaptive",
+            "convergenceLimitingFactor": 1.0,
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
             "min": 0.1,
-            "max": 10000.0,
-            "maxRelativeChange": 1.0,
-            "convergenceLimitingFactor": 0.25
+            "type": "adaptive"
         },
         "modelType": "Unsteady",
         "physicalSteps": 20,
@@ -75,6 +77,7 @@
         "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -94,6 +97,7 @@
         "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.077331758193797e-06,
                 "centerOfRotation": {
                     "value": [
@@ -113,6 +117,7 @@
         "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
+                "modelType": "OmegaRadians",
                 "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
@@ -130,5 +135,5 @@
             }
         }
     },
-    "hash": "1937007c6496df1f2a57197cba17f9ae7ba65cd34351cb95b6cbc9fe310af508"
+    "hash": "4702a81d4d2bd06b63a15aa205d4cebb2005c47639d0eeca043edb3f3aac2b11"
 }

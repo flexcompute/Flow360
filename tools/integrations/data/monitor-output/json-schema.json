@@ -3,7 +3,6 @@
   "type": "object",
   "properties": {
     "monitors": {
-      "title": "Monitors",
       "additionalProperties": {
         "oneOf": [
           {
@@ -49,7 +48,8 @@
                     "Vorticity",
                     "Wall distance",
                     "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
+                    "Heat equation residual",
+                    "Velocity with respect to non-inertial frame"
                   ],
                   "type": "string"
                 }
@@ -113,7 +113,8 @@
                     "Vorticity",
                     "Wall distance",
                     "NumericalDissipationFactor sensor",
-                    "Heat equation residual"
+                    "Heat equation residual",
+                    "Velocity with respect to non-inertial frame"
                   ],
                   "type": "string"
                 }
@@ -123,7 +124,8 @@
           }
         ]
       },
-      "definitions": {}
+      "type": "object",
+      "title": "Monitors"
     },
     "outputFields": {
       "title": "Output fields",
@@ -151,7 +153,8 @@
           "Vorticity",
           "Wall distance",
           "NumericalDissipationFactor sensor",
-          "Heat equation residual"
+          "Heat equation residual",
+          "Velocity with respect to non-inertial frame"
         ],
         "type": "string"
       }

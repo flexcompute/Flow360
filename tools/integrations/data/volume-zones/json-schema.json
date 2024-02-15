@@ -1,5 +1,4 @@
 {
-  "title": "Volume zones",
   "additionalProperties": {
     "oneOf": [
       {
@@ -37,6 +36,61 @@
                         "title": "Reference frame",
                         "type": "object",
                         "properties": {
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "ReferenceFrame",
+                            "const": "ReferenceFrame",
+                            "type": "string"
+                          },
+                          "centerOfRotation": {
+                            "title": "Center of rotation",
+                            "properties": {
+                              "value": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 3,
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
+                              },
+                              "units": {
+                                "type": "string",
+                                "dimension": "length",
+                                "enum": [
+                                  "m",
+                                  "cm",
+                                  "ft",
+                                  "flow360_length_unit",
+                                  "mm",
+                                  "inch"
+                                ]
+                              }
+                            }
+                          },
+                          "axisOfRotation": {
+                            "title": "Axis of rotation",
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          },
+                          "parentVolumeName": {
+                            "title": "Parent volume name",
+                            "type": "string"
+                          },
                           "omega": {
                             "title": "Omega",
                             "properties": {
@@ -52,112 +106,12 @@
                                 ]
                               }
                             }
-                          },
-                          "centerOfRotation": {
-                            "title": "Center of rotation",
-                            "properties": {
-                              "value": {
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                },
-                                "minItems": 3,
-                                "maxItems": 3
-                              },
-                              "units": {
-                                "type": "string",
-                                "dimension": "length",
-                                "enum": [
-                                  "m",
-                                  "cm",
-                                  "ft",
-                                  "flow360_length_unit",
-                                  "mm",
-                                  "inch"
-                                ]
-                              }
-                            }
-                          },
-                          "axisOfRotation": {
-                            "title": "Axis of rotation",
-                            "type": "array",
-                            "minItems": 3,
-                            "maxItems": 3,
-                            "items": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              }
-                            ]
                           }
                         },
                         "required": [
-                          "omega",
                           "centerOfRotation",
-                          "axisOfRotation"
-                        ],
-                        "additionalProperties": false
-                      },
-                      {
-                        "title": "Reference frame omega radians",
-                        "type": "object",
-                        "properties": {
-                          "omegaRadians": {
-                            "title": "Omega radians",
-                            "type": "number"
-                          },
-                          "centerOfRotation": {
-                            "title": "Center of rotation",
-                            "properties": {
-                              "value": {
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                },
-                                "minItems": 3,
-                                "maxItems": 3
-                              },
-                              "units": {
-                                "type": "string",
-                                "dimension": "length",
-                                "enum": [
-                                  "m",
-                                  "cm",
-                                  "ft",
-                                  "flow360_length_unit",
-                                  "mm",
-                                  "inch"
-                                ]
-                              }
-                            }
-                          },
-                          "axisOfRotation": {
-                            "title": "Axis of rotation",
-                            "type": "array",
-                            "minItems": 3,
-                            "maxItems": 3,
-                            "items": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "number"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "omegaRadians",
-                          "centerOfRotation",
-                          "axisOfRotation"
+                          "axisOfRotation",
+                          "omega"
                         ],
                         "additionalProperties": false
                       },
@@ -165,12 +119,10 @@
                         "title": "Reference frame expression",
                         "type": "object",
                         "properties": {
-                          "thetaRadians": {
-                            "title": "Theta radians",
-                            "type": "string"
-                          },
-                          "thetaDegrees": {
-                            "title": "Theta degrees",
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "Expression",
+                            "const": "Expression",
                             "type": "string"
                           },
                           "centerOfRotation": {
@@ -182,7 +134,10 @@
                                   "type": "number"
                                 },
                                 "minItems": 3,
-                                "maxItems": 3
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
                               },
                               "units": {
                                 "type": "string",
@@ -214,6 +169,18 @@
                                 "type": "number"
                               }
                             ]
+                          },
+                          "parentVolumeName": {
+                            "title": "Parent volume name",
+                            "type": "string"
+                          },
+                          "thetaRadians": {
+                            "title": "Theta radians",
+                            "type": "string"
+                          },
+                          "thetaDegrees": {
+                            "title": "Theta degrees",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -226,6 +193,12 @@
                         "title": "Reference frame dynamic",
                         "type": "object",
                         "properties": {
+                          "modelType": {
+                            "title": "Model type",
+                            "default": "Dynamic",
+                            "const": "Dynamic",
+                            "type": "string"
+                          },
                           "centerOfRotation": {
                             "title": "Center of rotation",
                             "properties": {
@@ -235,7 +208,10 @@
                                   "type": "number"
                                 },
                                 "minItems": 3,
-                                "maxItems": 3
+                                "maxItems": 3,
+                                "strictType": {
+                                  "type": "vector3"
+                                }
                               },
                               "units": {
                                 "type": "string",
@@ -268,11 +244,9 @@
                               }
                             ]
                           },
-                          "isDynamic": {
-                            "title": "Is dynamic",
-                            "default": true,
-                            "const": true,
-                            "type": "boolean"
+                          "parentVolumeName": {
+                            "title": "Parent volume name",
+                            "type": "string"
                           }
                         },
                         "required": [
@@ -287,6 +261,14 @@
                 "additionalProperties": false
               },
               {
+                "type": "object",
+                "properties": {
+                  "_addReferenceFrame": {
+                    "default": false,
+                    "const": false,
+                    "type": "boolean"
+                  }
+                },
                 "additionalProperties": false
               }
             ]
@@ -313,10 +295,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           },
@@ -329,21 +313,23 @@
             "title": "Initial condition",
             "type": "object",
             "properties": {
-              "T_solid": {
-                "title": "T_solid",
+              "T": {
+                "title": "T",
                 "anyOf": [
                   {
                     "type": "number",
-                    "exclusiveMinimum": 0
+                    "exclusiveMinimum": 0,
+                    "title": "Value"
                   },
                   {
-                    "type": "string"
+                    "type": "string",
+                    "title": "Expression"
                   }
                 ]
               }
             },
             "required": [
-              "T_solid"
+              "T"
             ],
             "additionalProperties": false
           }
@@ -355,5 +341,5 @@
       }
     ]
   },
-  "definitions": {}
+  "type": "object"
 }

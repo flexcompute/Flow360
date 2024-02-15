@@ -1,0 +1,908 @@
+{
+	"sliceOutput": {
+		"outputFormat": "tecplot",
+		"outputFields": [
+			"Cp",
+			"primitiveVars"
+		],
+		"slices": {
+			"x0": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					0,
+					0,
+					0
+				]
+			},
+			"xp": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					0.4,
+					0,
+					0
+				]
+			},
+			"xpp": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					0.8,
+					0,
+					0
+				]
+			},
+			"xm": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					-0.4,
+					0,
+					0
+				]
+			},
+			"xmm": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					-0.8,
+					0,
+					0
+				]
+			}
+		}
+	},
+	"monitorOutput": {
+		"monitors": {
+			"lipx0Center": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0,
+						0.1,
+						55.2
+					],
+					[
+						0,
+						0.2,
+						55.1
+					],
+					[
+						0,
+						0.3,
+						55
+					],
+					[
+						0,
+						0.4,
+						54.9
+					],
+					[
+						0,
+						0.5,
+						54.8
+					],
+					[
+						0,
+						0.6,
+						54.7
+					],
+					[
+						0,
+						0.7,
+						54.6
+					],
+					[
+						0,
+						0.8,
+						54.5
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipx0Up": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0,
+						0.2,
+						55.3
+					],
+					[
+						0,
+						0.3,
+						55.2
+					],
+					[
+						0,
+						0.4,
+						55.1
+					],
+					[
+						0,
+						0.5,
+						55
+					],
+					[
+						0,
+						0.6,
+						54.9
+					],
+					[
+						0,
+						0.7,
+						54.8
+					],
+					[
+						0,
+						0.8,
+						54.7
+					],
+					[
+						0,
+						0.9,
+						54.6
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipx0Down": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0,
+						0,
+						55.1
+					],
+					[
+						0,
+						0.1,
+						55
+					],
+					[
+						0,
+						0.2,
+						54.9
+					],
+					[
+						0,
+						0.3,
+						54.8
+					],
+					[
+						0,
+						0.4,
+						54.7
+					],
+					[
+						0,
+						0.5,
+						54.6
+					],
+					[
+						0,
+						0.6,
+						54.5
+					],
+					[
+						0,
+						0.7,
+						54.4
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxpCenter": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0.4,
+						0.1,
+						55.2
+					],
+					[
+						0.4,
+						0.2,
+						55.1
+					],
+					[
+						0.4,
+						0.3,
+						55
+					],
+					[
+						0.4,
+						0.4,
+						54.9
+					],
+					[
+						0.4,
+						0.5,
+						54.8
+					],
+					[
+						0.4,
+						0.6,
+						54.7
+					],
+					[
+						0.4,
+						0.7,
+						54.6
+					],
+					[
+						0.4,
+						0.8,
+						54.5
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxpUp": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0.4,
+						0.2,
+						55.3
+					],
+					[
+						0.4,
+						0.3,
+						55.2
+					],
+					[
+						0.4,
+						0.4,
+						55.1
+					],
+					[
+						0.4,
+						0.5,
+						55
+					],
+					[
+						0.4,
+						0.6,
+						54.9
+					],
+					[
+						0.4,
+						0.7,
+						54.8
+					],
+					[
+						0.4,
+						0.8,
+						54.7
+					],
+					[
+						0.4,
+						0.9,
+						54.6
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxpDown": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0.4,
+						0,
+						55.1
+					],
+					[
+						0.4,
+						0.1,
+						55
+					],
+					[
+						0.4,
+						0.2,
+						54.9
+					],
+					[
+						0.4,
+						0.3,
+						54.8
+					],
+					[
+						0.4,
+						0.4,
+						54.7
+					],
+					[
+						0.4,
+						0.5,
+						54.6
+					],
+					[
+						0.4,
+						0.6,
+						54.5
+					],
+					[
+						0.4,
+						0.7,
+						54.4
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxmCenter": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						-0.4,
+						0.1,
+						55.2
+					],
+					[
+						-0.4,
+						0.2,
+						55.1
+					],
+					[
+						-0.4,
+						0.3,
+						55
+					],
+					[
+						-0.4,
+						0.4,
+						54.9
+					],
+					[
+						-0.4,
+						0.5,
+						54.8
+					],
+					[
+						-0.4,
+						0.6,
+						54.7
+					],
+					[
+						-0.4,
+						0.7,
+						54.6
+					],
+					[
+						-0.4,
+						0.8,
+						54.5
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxmUp": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						-0.4,
+						0.2,
+						55.3
+					],
+					[
+						-0.4,
+						0.3,
+						55.2
+					],
+					[
+						-0.4,
+						0.4,
+						55.1
+					],
+					[
+						-0.4,
+						0.5,
+						55
+					],
+					[
+						-0.4,
+						0.6,
+						54.9
+					],
+					[
+						-0.4,
+						0.7,
+						54.8
+					],
+					[
+						-0.4,
+						0.8,
+						54.7
+					],
+					[
+						-0.4,
+						0.9,
+						54.6
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"lipxmDown": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						-0.4,
+						0,
+						55.1
+					],
+					[
+						-0.4,
+						0.1,
+						55
+					],
+					[
+						-0.4,
+						0.2,
+						54.9
+					],
+					[
+						-0.4,
+						0.3,
+						54.8
+					],
+					[
+						-0.4,
+						0.4,
+						54.7
+					],
+					[
+						-0.4,
+						0.5,
+						54.6
+					],
+					[
+						-0.4,
+						0.6,
+						54.5
+					],
+					[
+						-0.4,
+						0.7,
+						54.4
+					]
+				],
+				"outputFields": [
+					"primitiveVars"
+				]
+			},
+			"inside": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0,
+						30,
+						0
+					],
+					[
+						0,
+						0,
+						0
+					],
+					[
+						0,
+						0,
+						2
+					],
+					[
+						0,
+						0,
+						4
+					],
+					[
+						0,
+						0,
+						6
+					],
+					[
+						0,
+						0,
+						8
+					],
+					[
+						0,
+						0,
+						10
+					],
+					[
+						0,
+						0,
+						12
+					],
+					[
+						0,
+						0,
+						14
+					],
+					[
+						0,
+						0,
+						16
+					],
+					[
+						0,
+						0,
+						18
+					],
+					[
+						0,
+						0,
+						20
+					],
+					[
+						0,
+						0,
+						22
+					],
+					[
+						0,
+						0,
+						24
+					],
+					[
+						0,
+						0,
+						26
+					],
+					[
+						0,
+						0,
+						28
+					],
+					[
+						0,
+						0,
+						30
+					],
+					[
+						0,
+						0,
+						32
+					],
+					[
+						0,
+						0,
+						34
+					],
+					[
+						0,
+						0,
+						36
+					],
+					[
+						0,
+						0,
+						38
+					],
+					[
+						0,
+						0,
+						40
+					],
+					[
+						0,
+						0,
+						42
+					],
+					[
+						0,
+						0,
+						44
+					],
+					[
+						0,
+						0,
+						46
+					],
+					[
+						0,
+						0,
+						48
+					],
+					[
+						0,
+						0,
+						50
+					],
+					[
+						0,
+						0,
+						52
+					],
+					[
+						0,
+						0,
+						54
+					]
+				],
+				"outputFields": [
+					"primitiveVars",
+					"Cp"
+				]
+			}
+		}
+	},
+	"geometry": {
+		"comments": {
+			"meshUnit": "inch"
+		},
+		"refArea": 1,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"freestream": {
+		"muRef": 0.0000016899682361477025,
+		"Mach": 0,
+		"Temperature": 288.15,
+		"alphaAngle": 0,
+		"betaAngle": 0,
+		"comments": {
+			"pressure": 101325.009090375,
+			"densityKgPerCubicMeter": 1.225,
+			"speedOfSoundMeterPerSecond": 340.29400580821283,
+			"freestreamMeterPerSecond": 0,
+			"meshUnitInMeter": 0.01
+		},
+		"MachRef": 0.1
+	},
+	"volumeZones": {
+		"stationaryBlock": {
+			"modelType": "FluidDynamics"
+		}
+	},
+	"boundaries": {
+		"stationaryBlock/farfield": {
+			"type": "Freestream"
+		},
+		"stationaryBlock/xiao": {
+			"type": "NoSlipWall"
+		},
+		"stationaryBlock/lipTop": {
+			"type": "NoSlipWall"
+		}
+	},
+	"actuatorDisks": [
+		{
+			"center": [
+				0,
+				-0.5,
+				55.5
+			],
+			"axisThrust": [
+				0,
+				-1,
+				1
+			],
+			"thickness": 0.3,
+			"forcePerArea": {
+				"radius": [
+					0,
+					1.2,
+					1.4
+				],
+				"thrust": [
+					0.0005,
+					0.0005,
+					0
+				],
+				"circumferential": [
+					0,
+					0,
+					0
+				]
+			}
+		}
+	],
+	"BETDisks": [],
+	"timeStepping": {
+		"maxPseudoSteps": 25,
+		"CFL": {
+			"type": "ramp",
+			"initial": 10,
+			"final": 10000,
+			"rampSteps": 25
+		},
+		"physicalSteps": 1024,
+		"timeStepSize": 0.4296875,
+		"comments": {
+			"timeStepSizeSeconds": 0.00002527573
+		}
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-9,
+		"relativeTolerance": 0.01,
+		"linearIterations": 30,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 2,
+		"numericalDissipationFactor": 0.2
+	},
+	"turbulenceModelSolver": {
+		"modelType": "None"
+	},
+	"heatEquationSolver": {},
+	"porousMedia": [
+		{
+			"DarcyCoefficient": [
+				1000000,
+				1000000,
+				1000000
+			],
+			"ForchheimerCoefficient": [
+				5,
+				5,
+				5
+			],
+			"volumeZone": {
+				"zoneType": "box",
+				"center": [
+					0,
+					-1,
+					55
+				],
+				"lengths": [
+					1,
+					1.3,
+					3
+				],
+				"axes": [
+					[
+						0,
+						1,
+						-1
+					],
+					[
+						0,
+						1,
+						1
+					]
+				]
+			}
+		},
+		{
+			"DarcyCoefficient": [
+				1000000,
+				1000000,
+				1000000
+			],
+			"ForchheimerCoefficient": [
+				5,
+				5,
+				5
+			],
+			"volumeZone": {
+				"zoneType": "box",
+				"center": [
+					0,
+					-0.6,
+					55.3
+				],
+				"lengths": [
+					1,
+					1.3,
+					3
+				],
+				"axes": [
+					[
+						0,
+						1,
+						-1
+					],
+					[
+						0,
+						1,
+						1
+					]
+				]
+			}
+		},
+		{
+			"DarcyCoefficient": [
+				1000000,
+				1000000,
+				1000000
+			],
+			"ForchheimerCoefficient": [
+				5,
+				5,
+				5
+			],
+			"volumeZone": {
+				"zoneType": "box",
+				"center": [
+					0,
+					0.4,
+					56.3
+				],
+				"lengths": [
+					1,
+					1,
+					3
+				],
+				"axes": [
+					[
+						0,
+						1,
+						-1
+					],
+					[
+						0,
+						1,
+						1
+					]
+				]
+			}
+		}
+	],
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"primitiveVars": false,
+		"vorticity": false,
+		"Cp": true,
+		"Mach": true,
+		"qcriterion": false
+	},
+	"surfaceOutput": {
+		"outputFormat": "tecplot",
+		"Cp": true,
+		"Cf": false,
+		"CfVec": true
+	},
+	"aeroacousticOutput": {
+		"observers": [
+			[
+				0,
+				55,
+				0
+			],
+			[
+				0,
+				0,
+				0
+			]
+		]
+	}
+}

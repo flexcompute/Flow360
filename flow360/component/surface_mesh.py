@@ -1,6 +1,7 @@
 """
 Surface mesh component
 """
+
 from __future__ import annotations
 
 import os
@@ -126,7 +127,7 @@ class SurfaceMeshDraft(ResourceDraft):
         data = {
             "name": self.name,
             "tags": self.tags,
-            "config": self.params.to_flow360_json(),
+            "config": self.params.flow360_json(),
         }
         if self.solver_version:
             data["solverVersion"] = self.solver_version

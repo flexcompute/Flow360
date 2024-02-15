@@ -105,9 +105,9 @@ def require(required_parameter, required_by, params):
 
     if hasattr(value, "units") and str(value.units).startswith("flow360"):
         raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameter)} must be in physical units ({required_msg}).',
+            f'{" -> ".join(required_parameter + ["units"])} must be in physical units ({required_msg}).',
             field=required_by,
-            dependency=required_parameter,
+            dependency=required_parameter + ["units"],
         )
 
 
@@ -226,6 +226,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
+
     else:
         raise ValueError(f"Not recognised dimension: {dimension}")
 

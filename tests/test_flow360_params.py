@@ -1,17 +1,16 @@
 import json
 import math
+import os
 import re
 import unittest
 
 import pydantic as pd
 import pytest
 
-import flow360
 import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
-    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -23,7 +22,6 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
-    SupersonicInflow,
     WallFunction,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -37,6 +35,8 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     MeshBoundary,
     MeshSlidingInterface,
+    PorousMedium,
+    PorousMediumVolumeZone,
     SlidingInterface,
     UnsteadyTimeStepping,
     VolumeZones,
@@ -54,8 +54,15 @@ from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360ValidationError,
 )
+from flow360.flags import Flags
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
+
+if Flags.beta_features():
+    from flow360.component.flow360_params.boundaries import (
+        HeatFluxWall,
+        SupersonicInflow,
+    )
 
 assertions = unittest.TestCase("__init__")
 
@@ -110,7 +117,7 @@ def test_flow360meshparam():
 
 
 def test_flow360param():
-    with flow360.SI_unit_system:
+    with fl.SI_unit_system:
         mesh = Flow360Params.parse_raw(
             """
             {
@@ -175,8 +182,10 @@ def test_flow360param():
 
 
 def test_flow360param1():
-    with flow360.SI_unit_system:
-        params = Flow360Params(freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s))
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
+        )
         assert params.time_stepping.max_pseudo_steps == 2000
         params.time_stepping = UnsteadyTimeStepping(physical_steps=100, time_step_size=2 * u.s)
         assert params
@@ -194,18 +203,22 @@ def test_update_from_multiple_files():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     params.append(outputs)
 
     assert params
 
     to_file_from_file_test(params)
 
-    compare_to_ref(params, "ref/case_params/params.yaml")
-    compare_to_ref(params, "ref/case_params/params.json", content_only=True)
+    if Flags.beta_features():
+        compare_to_ref(params, "ref/case_params/params_beta.yaml")
+        compare_to_ref(params, "ref/case_params/params_beta.json", content_only=True)
+    else:
+        compare_to_ref(params, "ref/case_params/params.yaml")
+        compare_to_ref(params, "ref/case_params/params.json", content_only=True)
 
 
 def test_update_from_multiple_files_dont_overwrite():
@@ -214,11 +227,10 @@ def test_update_from_multiple_files_dont_overwrite():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     params.append(outputs)
 
     assert params.geometry.ref_area == 1.15315084119231
@@ -230,17 +242,13 @@ def test_update_from_multiple_files_overwrite():
             geometry=fl.Geometry("data/case_params/geometry.yaml"),
             boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
-            navier_stokes_solver=fl.NavierStokesSolver(linear_iterations=10),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
-    outputs = fl.Flow360Params("data/case_params/outputs.yaml")
-    outputs.geometry = fl.Geometry(ref_area=2 * u.flow360_area_unit)
-
-    # We cannot overwrite immutable fields, so we make sure those are removed beforehand
-
+    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
     params.append(outputs, overwrite=True)
 
-    assert params.geometry.ref_area == 2 * u.flow360_area_unit
+    assert params.geometry.ref_area == 2 * u.m**2
 
 
 def clear_formatting(message):
@@ -314,7 +322,7 @@ def test_params_with_units():
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)
 
-    params_as_json = params_solver.to_flow360_json()
+    params_as_json = params_solver.flow360_json()
 
     with open("ref/case_params/params_units_solver.json") as fh:
         a = json.load(fh)
@@ -336,6 +344,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.UnsteadyTimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
         with pytest.raises(ValueError):
@@ -354,6 +363,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.UnsteadyTimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
     params_as_json = params.json()
@@ -387,6 +397,7 @@ def test_params_with_units_consistency():
             time_stepping=fl.UnsteadyTimeStepping(
                 max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
             ),
+            boundaries={},
         )
 
     # should raise RuntimeError error from using context on file import
@@ -410,14 +421,14 @@ def test_params_with_units_consistency():
 
     with fl.SI_unit_system:
         with pytest.raises(Flow360RuntimeError):
-            params_copy.to_flow360_json()
+            params_copy.flow360_json()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems are consistent
     with fl.CGS_unit_system:
-        params_copy.to_flow360_json()
+        params_copy.flow360_json()
 
     # should NOT raise RuntimeError error from inconsistent unit systems because systems NO system
-    params_copy.to_flow360_json()
+    params_copy.flow360_json()
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -429,7 +440,9 @@ def test_params_with_units_conversion():
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
                 moment_center=(1, 2, 3) * u.flow360_length_unit,
                 mesh_unit=u.mm,
-            )
+            ),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     to_file_from_file_test(params)
@@ -445,9 +458,76 @@ def test_params_with_solver_units():
                 ref_area=1.0,
                 moment_length=(1.47602, 0.801672958512342, 1.47602),
                 moment_center=[1, 2, 3],
-            )
+            ),
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
     to_file_from_file_test(params)
     params = params.to_solver()
     to_file_from_file_test(params)
+
+
+def test_params_temperature_consistency():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            freestream=fl.FreestreamFromMach(Mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+            fluid_properties=fl.AirDensityTemperature(
+                temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3
+            ),
+            boundaries={},
+        )
+
+    assert params
+
+    with pytest.raises(pd.ValidationError):
+        with fl.SI_unit_system:
+            params = fl.Flow360Params(
+                freestream=fl.FreestreamFromMach(mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+                fluid_properties=fl.AirDensityTemperature(
+                    temperature=300.15 * u.K, density=1.225 * u.kg / u.m**3
+                ),
+            )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirDensityTemperature(temperature=-2 * u.K, density=1.225 * u.kg / u.m**3),
+        )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirDensityTemperature(temperature=-288.15 * u.degC, density=1.225 * u.kg / u.m**3),
+        )
+
+    with pytest.raises(pd.ValidationError):
+        fluid_properties = (
+            fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),
+        )
+
+
+def test_flow360_will_export():
+    pmvz = PorousMediumVolumeZone(
+        zone_type="box",
+        center=[1, 2, 3],
+        lengths=[3, 4, 5],
+        axes=[[0, 1, 0], [1, 0, 0]],
+        windowing_lengths=[0.5, 0.5, 0.5],
+    )
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            freestream=fl.FreestreamFromMach(Mach=0.95, mu_ref=0.2, temperature=288.15 * u.K),
+            fluid_properties=fl.AirDensityTemperature(
+                temperature=288.15 * u.K, density=1.225 * u.kg / u.m**3
+            ),
+            boundaries={},
+            porous_media=[
+                PorousMedium(
+                    darcy_coefficient=[1, 1, 1], forchheimer_coefficient=[1, 1, 1], volume_zone=pmvz
+                )
+            ],
+        )
+
+    params.set_will_export_to_flow360(True)
+    assert params.freestream._will_export_to_flow360 == True
+    assert params.porous_media[0]._will_export_to_flow360 == True

@@ -1,19 +1,34 @@
 {
+  "axisOfRotation": {
+    "ui:widget": "vector3"
+  },
+  "bladeLineChord": {
+    "ui:field": "unitInput"
+  },
   "centerOfRotation": {
     "ui:widget": "vector3"
   },
-  "axisOfRotation": {
-    "ui:widget": "vector3"
+  "chordRef": {
+    "ui:field": "unitInput"
   },
   "initialBladeDirection": {
     "ui:widget": "vector3"
   },
-  "ui:submitButtonOptions": {
-    "norender": true
+  "omega": {
+    "ui:field": "unitInput"
+  },
+  "radius": {
+    "ui:field": "unitInput"
+  },
+  "thickness": {
+    "ui:field": "unitInput"
   },
   "ui:options": {
-    "orderable": false,
     "addable": false,
+    "orderable": false,
     "removable": false
+  },
+  "ui:submitButtonOptions": {
+    "norender": true
   }
 }

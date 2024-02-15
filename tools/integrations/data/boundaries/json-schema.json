@@ -1,5 +1,4 @@
 {
-  "title": "Boundaries",
   "additionalProperties": {
     "oneOf": [
       {
@@ -27,7 +26,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -58,6 +60,15 @@
                 ]
               }
             ]
+          },
+          "velocityType": {
+            "title": "Velocity type",
+            "default": "relative",
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -104,7 +115,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -135,6 +149,15 @@
                 ]
               }
             ]
+          },
+          "velocityType": {
+            "title": "Velocity type",
+            "default": "relative",
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -158,10 +181,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           },
@@ -176,7 +201,10 @@
                       "type": "number"
                     },
                     "minItems": 3,
-                    "maxItems": 3
+                    "maxItems": 3,
+                    "strictType": {
+                      "type": "vector3"
+                    }
                   },
                   "units": {
                     "type": "string",
@@ -211,80 +239,6 @@
         },
         "required": [
           "Temperature"
-        ],
-        "additionalProperties": false
-      },
-      {
-        "title": "Heat flux wall",
-        "type": "object",
-        "properties": {
-          "type": {
-            "title": "Type",
-            "default": "HeatFluxWall",
-            "const": "HeatFluxWall",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "heatFlux": {
-            "title": "Heat flux",
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "velocity": {
-            "title": "Velocity",
-            "anyOf": [
-              {
-                "properties": {
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3
-                  },
-                  "units": {
-                    "type": "string",
-                    "dimension": "velocity",
-                    "enum": [
-                      "m/s",
-                      "cm/s",
-                      "ft/s",
-                      "flow360_velocity_unit"
-                    ]
-                  }
-                }
-              },
-              {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "items": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          }
-        },
-        "required": [
-          "heatFlux"
         ],
         "additionalProperties": false
       },
@@ -371,89 +325,6 @@
             "title": "Velocity direction",
             "anyOf": [
               {
-                "properties": {
-                  "value": {
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    },
-                    "minItems": 3,
-                    "maxItems": 3
-                  },
-                  "units": {
-                    "type": "string",
-                    "dimension": "velocity",
-                    "enum": [
-                      "m/s",
-                      "cm/s",
-                      "ft/s",
-                      "flow360_velocity_unit"
-                    ]
-                  }
-                }
-              },
-              {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "items": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          }
-        },
-        "required": [
-          "totalPressureRatio",
-          "totalTemperatureRatio"
-        ],
-        "additionalProperties": false
-      },
-      {
-        "title": "Supersonic inflow",
-        "type": "object",
-        "properties": {
-          "type": {
-            "title": "Type",
-            "default": "SupersonicInflow",
-            "const": "SupersonicInflow",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "totalTemperatureRatio": {
-            "title": "Total temperature ratio",
-            "supported_solver_version": "release-23.3.2.0gt",
-            "exclusiveMinimum": 0,
-            "type": "number"
-          },
-          "totalPressureRatio": {
-            "title": "Total pressure ratio",
-            "supported_solver_version": "release-23.3.2.0gt",
-            "exclusiveMinimum": 0,
-            "type": "number"
-          },
-          "staticPressureRatio": {
-            "title": "Static pressure ratio",
-            "supported_solver_version": "release-23.3.2.0gt",
-            "exclusiveMinimum": 0,
-            "type": "number"
-          },
-          "velocityDirection": {
-            "title": "Velocity direction",
-            "supported_solver_version": "release-23.3.2.0gt",
-            "anyOf": [
-              {
                 "type": "array",
                 "items": [
                   {
@@ -489,9 +360,8 @@
           }
         },
         "required": [
-          "totalTemperatureRatio",
           "totalPressureRatio",
-          "staticPressureRatio"
+          "totalTemperatureRatio"
         ],
         "additionalProperties": false
       },
@@ -547,11 +417,6 @@
             "title": "Mass flow rate",
             "exclusiveMinimum": 0,
             "type": "number"
-          },
-          "rampSteps": {
-            "title": "Ramp steps",
-            "exclusiveMinimum": 0,
-            "type": "integer"
           }
         },
         "required": [
@@ -577,11 +442,6 @@
             "title": "Mass flow rate",
             "exclusiveMinimum": 0,
             "type": "number"
-          },
-          "rampSteps": {
-            "title": "Ramp steps",
-            "exclusiveMinimum": 0,
-            "type": "integer"
           }
         },
         "required": [
@@ -608,10 +468,12 @@
             "anyOf": [
               {
                 "type": "number",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0,
+                "title": "Value"
               },
               {
-                "type": "string"
+                "type": "string",
+                "title": "Expression"
               }
             ]
           }
@@ -717,8 +579,25 @@
           }
         },
         "additionalProperties": false
+      },
+      {
+        "title": "Riemann invariant",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "default": "RiemannInvariant",
+            "const": "RiemannInvariant",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     ]
   },
-  "definitions": {}
+  "type": "object"
 }

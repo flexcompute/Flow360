@@ -1,10 +1,20 @@
 {
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "*",
+    "turbulentViscosityRatio"
+  ],
   "ui:submitButtonOptions": {
     "norender": true
   },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
+  "velocity": {
+    "ui:field": "unitInput"
+  },
+  "velocityRef": {
+    "ui:field": "unitInput"
   }
 }

@@ -9,12 +9,18 @@
       }
     }
   },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "outputFormat",
+    "outputFields",
+    "*",
+    "slices"
+  ],
   "ui:submitButtonOptions": {
     "norender": true
-  },
-  "ui:options": {
-    "orderable": false,
-    "addable": false,
-    "removable": false
   }
 }

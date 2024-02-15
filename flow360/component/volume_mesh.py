@@ -1,6 +1,7 @@
 """
 Volume mesh component
 """
+
 from __future__ import annotations
 
 import os.path
@@ -412,7 +413,7 @@ class VolumeMeshDraft(ResourceDraft):
             "name": self.name,
             "tags": self.tags,
             "surfaceMeshId": self.surface_mesh_id,
-            "config": self.params.to_flow360_json(),
+            "config": self.params.flow360_json(),
             "format": "cgns",
         }
 

@@ -72,7 +72,7 @@ def test_volume_zones():
         zone2=HeatTransferVolumeZone(
             thermal_conductivity=1,
             heat_capacity=1,
-            initial_condition=InitialConditionHeatTransfer(T_solid=100),
+            initial_condition=InitialConditionHeatTransfer(T=100),
         ),
     )
 

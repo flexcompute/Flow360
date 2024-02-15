@@ -1,6 +1,7 @@
 """
 Initial condition parameters
 """
+
 from __future__ import annotations
 
 from typing import Union
@@ -27,11 +28,11 @@ class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
 
     type: Literal["expression"] = pd.Field("expression", const=True)
-    rho: str = pd.Field()
-    u: str = pd.Field()
-    v: str = pd.Field()
-    w: str = pd.Field()
-    p: str = pd.Field()
+    rho: str = pd.Field(displayed="rho [non-dim]")
+    u: str = pd.Field(displayed="u [non-dim]")
+    v: str = pd.Field(displayed="v [non-dim]")
+    w: str = pd.Field(displayed="w [non-dim]")
+    p: str = pd.Field(displayed="p [non-dim]")
 
 
 InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
