@@ -34,6 +34,15 @@ Constants module module
    :show-inheritance:
 
 
+Folder module
+-------------
+
+.. automodule:: flow360.component.folder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Interface module
 -------------------------
 
