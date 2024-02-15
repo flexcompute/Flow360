@@ -18,10 +18,11 @@ from ...log import log
 from ..flow360_params.conversions import unit_converter
 from ..flow360_params.flow360_params import Flow360Params
 from ..flow360_params.unit_system import (
+    Flow360UnitSystem,
     ForceType,
     MomentType,
     PowerType,
-    Flow360UnitSystem,
+    is_flow360_unit
 )
 
 
@@ -300,7 +301,11 @@ class _DimensionedCSVResultModel(pd.BaseModel):
             required_by=[self._name, component_name],
         )
 
-        converted = component.in_base(base, flow360_conv_system)
+        if is_flow360_unit(component):
+            converted = component.in_base(base, flow360_conv_system)
+        else:
+            component.units.registry = flow360_conv_system.registry
+            converted = component.in_base(unit_system=base)
         log.debug(f"      converted to: {converted}")
         return converted
 
@@ -359,7 +364,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
                 ad.to_base(base, params)
                 self.values[f"{disk_name}_Power"] = ad.power
                 self.values[f"{disk_name}_Force"] = ad.force
-                self.values[f"{disk_name}_Moment"] = ad.power
+                self.values[f"{disk_name}_Moment"] = ad.moment
 
                 self.values[f"PowerUnits"] = ad.power.units
                 self.values[f"ForceUnits"] = ad.force.units

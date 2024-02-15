@@ -316,8 +316,12 @@ $RECYCLE.BIN/
 # mesh files
 *.cgns
 *.ugrid
+
+#results files
 *.csv
+!tests/data/**/*.csv
 *.tar.gz
+!tests/data/**/*.tar.gz
 
 tmp/
 

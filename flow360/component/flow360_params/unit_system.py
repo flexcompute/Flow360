@@ -351,8 +351,16 @@ class DimensionedType(ValidatedType):
                     isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
                 )
 
-                if not is_collection or (length is not None and len(value) != length):
-                    raise TypeError(f"arg '{value}' needs to be a collection of {length} values")
+                if length is None:
+                    if not is_collection:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a collection of values of any length"
+                        )
+                else:
+                    if not is_collection or len(value) != length:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a collection of {length} values"
+                        )
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
                 if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
@@ -1096,6 +1104,8 @@ class _PredefinedUnitSystem(UnitSystem):
     pressure: PressureType = pd.Field(exclude=True)
     density: DensityType = pd.Field(exclude=True)
     viscosity: ViscosityType = pd.Field(exclude=True)
+    power: PowerType = pd.Field(exclude=True)
+    moment: MomentType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)
     heat_flux: HeatFluxType = pd.Field(exclude=True)
 
@@ -1108,7 +1118,7 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["SI"] = pd.Field("SI", const=True)
 
-    def __init__(self,  verbose: bool = True):
+    def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
 
     @classmethod
@@ -1180,5 +1190,7 @@ CGS_unit_system = CGSUnitSystem()
 imperial_unit_system = ImperialUnitSystem()
 flow360_unit_system = Flow360UnitSystem()
 
-# register SI unit system
+# register SI, CGS unit system
 u.UnitSystem("SI", "m", "kg", "s")
+u.UnitSystem("CGS", "cm", "g", "s")
+u.UnitSystem("Imperial", "ft", "lb", "s", temperature_unit="R")

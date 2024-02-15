@@ -38,7 +38,6 @@ print(results.actuator_disks.as_dataframe())
 # 7               0           70    40.024032   751.563715  10537.291912
 
 
-
 # convert results to SI system:
 results.actuator_disks.to_base("SI")
 print(results.actuator_disks.as_dataframe())
@@ -52,8 +51,6 @@ print(results.actuator_disks.as_dataframe())
 # 5               0           50  1.708671e+09  1.066131e+08  1.708671e+09  kg*m**2/s**3  kg*m/s**2  kg*m**2/s**2
 # 6               0           60  1.787372e+09  1.066131e+08  1.787372e+09  kg*m**2/s**3  kg*m/s**2  kg*m**2/s**2
 # 7               0           70  1.932056e+09  1.066131e+08  1.932056e+09  kg*m**2/s**3  kg*m/s**2  kg*m**2/s**2
-
-
 
 
 # download resuts:

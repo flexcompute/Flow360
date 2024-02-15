@@ -73,10 +73,10 @@ def get_local_filename_and_create_folders(
     """
 
     if to_file != None and to_folder != ".":
-        raise FlValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
+        raise Flow360ValueError("Only one of 'to_file' or 'to_folder' should be provided, not both.")
 
     if to_file is not None and os.path.isdir(to_file):
-        raise FlValueError("to_file should be a file name, not directory, use to_folder instead")
+        raise Flow360ValueError("to_file should be a file name, not directory, use to_folder instead")
 
     if to_file is None:
         to_file = os.path.basename(target_name)
