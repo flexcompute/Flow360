@@ -82,7 +82,7 @@ def test_updater():
 
 
 def test_updater_from_files():
-    files = ["case_10.json", "case_13.json", "case_14_bet.json"]
+    files = ["case_10.json", "case_13.json", "case_14_bet.json", "case_udd.json"]
 
     for file in files:
         params = fl.Flow360Params(f"data/cases/{file}")
