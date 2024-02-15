@@ -7,12 +7,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
+
+    - name: Install poetry
+      run: pipx install poetry
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
+    - name: Install dependencies
+      run: poetry install
 
     - name: Install Sphinx
       run: |
@@ -25,7 +35,7 @@ jobs:
 
     - name: creates output
       working-directory: ./docs
-      run:  make html
+      run:  poetry run make html
 
 
     - name: Deploy to GitHub Pages
