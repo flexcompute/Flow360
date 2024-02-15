@@ -22,7 +22,6 @@ jobs:
     - name: Install numpydoc
       run: |
         pip install numpydoc
-        pip install 
 
     - name: Install dependencies
       run: |
