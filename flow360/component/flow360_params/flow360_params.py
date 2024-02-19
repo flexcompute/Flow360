@@ -1687,6 +1687,8 @@ class Flow360ParamsLegacy(LegacyModel):
 
                 volume_zones[volume_name] = volume_zone
             params["volume_zones"] = VolumeZones(**volume_zones)
+        elif self.volume_zones is not None:
+            params["volume_zones"] = self.volume_zones
 
         if self._is_web_ui_generated(params.get("fluid_properties"), params.get("freestream")):
             context = SI_unit_system
@@ -1694,6 +1696,7 @@ class Flow360ParamsLegacy(LegacyModel):
             context = flow360_unit_system
 
         with context:
+            # Freestream, fluid properties, BET disks and volume zones filled beforehand.
             params.update(
                 {
                     "geometry": try_update(self.geometry),
@@ -1713,9 +1716,6 @@ class Flow360ParamsLegacy(LegacyModel):
                     "iso_surface_output": try_update(self.iso_surface_output),
                     "monitor_output": self.monitor_output,
                     "aeroacoustic_output": self.aeroacoustic_output,
-                    "fluid_properties": params.get("fluid_properties"),
-                    "volume_zones": params.get("volume_zones"),
-                    "bet_disks": try_update(self.bet_disks),
                 }
             )
 
