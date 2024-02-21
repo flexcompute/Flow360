@@ -439,3 +439,104 @@ def test_boundary_types():
             mass_flow_rate=0.2,
             turbulence_quantities=TurbulenceQuantities(specific_dissipation_rate=0.88),
         )
+
+        assert bc.turbulence_quantities.turbulent_intensity == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
+
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
+            ),
+        )
+
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.specific_dissipation_rate == 10
+
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, specific_dissipation_rate=10
+            ),
+        )
+
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.specific_dissipation_rate == 10
+
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                turbulent_kinetic_energy=0.88, turbulent_length_scale=10
+            ),
+        )
+
+        assert bc.turbulence_quantities.turbulent_kinetic_energy == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
+
+        bc = MassOutflow(
+            name="SomeBC",
+            mass_flow_rate=0.2,
+            turbulence_quantities=TurbulenceQuantities(
+                specific_dissipation_rate=0.88, turbulent_length_scale=10
+            ),
+        )
+
+        assert bc.turbulence_quantities.specific_dissipation_rate == 0.88
+        assert bc.turbulence_quantities.turbulent_length_scale == 10
+
+        with pytest.raises(ValueError):
+            MassOutflow(
+                name="SomeBC",
+                mass_flow_rate=0.2,
+                turbulence_quantities=TurbulenceQuantities(
+                    specific_dissipation_rate=0.88, modified_viscosity=10
+                ),
+            )
+
+        with pytest.raises(ValueError):
+            MassOutflow(
+                name="SomeBC",
+                mass_flow_rate=0.2,
+                turbulence_quantities=TurbulenceQuantities(specific_dissipation_rate=0.88),
+            )
+
+        with fl.SI_unit_system:
+            params = fl.Flow360Params(
+                fluid_properties=fl.air,
+                geometry=fl.Geometry(),
+                boundaries={
+                    "FreestreamBC": fl.FreestreamBoundary(),
+                    "PressureOutflowBC": fl.PressureOutflow(
+                        turbulence_quantities=fl.TurbulenceQuantities(modified_viscosity_ratio=0.5)
+                    ),
+                },
+                freestream=fl.FreestreamFromVelocity(
+                    velocity=286,
+                    alpha=3.06,
+                    turbulence_quantities=fl.TurbulenceQuantities(viscosity_ratio=0.2),
+                ),
+                navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
+                turbulence_model_solver=fl.SpalartAllmaras(),
+            )
+
+            params.to_solver()
+            assert (
+                params.boundaries["FreestreamBC"].turbulence_quantities.turbulent_viscosity_ratio
+                == 0.2
+            )
+            assert (
+                params.boundaries[
+                    "PressureOutflowBC"
+                ].turbulence_quantities.modified_turbulent_viscosity_ratio
+                == 0.5
+            )
+            assert (
+                hasattr(
+                    params.boundaries["PressureOutflowBC"].turbulence_quantities,
+                    "turbulent_viscosity_ratio",
+                )
+                == False
+            )

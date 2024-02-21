@@ -2,6 +2,8 @@
 Boundaries parameters
 """
 
+from __future__ import annotations
+
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union
 
@@ -17,6 +19,19 @@ from .unit_system import VelocityType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]
+
+UpwindPhiBCTypeNames = set(
+    [
+        "Freestream",
+        "RiemannInvariant",
+        "SubsonicOutflowPressure",
+        "PressureOutflow",
+        "SubsonicOutflowMach",
+        "SubsonicInflow",
+        "MassOutflow",
+        "MassInflow",
+    ]
+)
 
 
 # pylint: enable=too-many-arguments, too-many-return-statements, too-many-branches
@@ -35,6 +50,17 @@ class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
         alias="turbulenceQuantities", discriminator="model_type"
     )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> BoundaryWithTurbulenceQuantities:
+        """
+        Apply freestream turbulence quantities to applicable boudnaries
+        """
+
+        if params.freestream.turbulence_quantities is not None:
+            if self.type in UpwindPhiBCTypeNames and self.turbulence_quantities is None:
+                self.turbulence_quantities = params.freestream.turbulence_quantities
+        return super().to_solver(params, **kwargs)
 
 
 class NoSlipWall(Boundary):

@@ -50,8 +50,16 @@ def test_bet_disk():
 
     assert chord1 and chord2 and chord3
 
-    cl = np.random.rand(4, 4, 4).tolist()
-    cd = (np.random.rand(4, 4, 4) * 0.1).tolist()
+    cl = np.random.rand(4, 4, 6).tolist()
+    cd = (np.random.rand(4, 4, 6) * 0.1).tolist()
+
+    for i in range(0, 4):
+        for j in range(0, 4):
+            cl[i][j][0] = 1.23
+            cd[i][j][0] = 0.123
+            cl[i][j][-1] = 1.23 * 1.1
+            cd[i][j][-1] = 0.123 * 1.1
+
     polar1 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
     polar2 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
     polar3 = BETDiskSectionalPolar(lift_coeffs=cl, drag_coeffs=cd)
@@ -71,13 +79,31 @@ def test_bet_disk():
             n_loading_nodes=6,
             mach_numbers=[0.1, 0.2, 0.3, 0.4],
             reynolds_numbers=[1e4, 1e5, 1e6, 1e7],
-            alphas=[15, 20, 25, 30],
+            alphas=[-180 + 1e-10, 15, 20, 25, 30, 180 - 1e-10],
             twists=[twist1, twist2, twist3],
             chords=[chord1, chord2, chord3],
             sectional_polars=[polar1, polar2, polar3],
             sectional_radiuses=[0, 0.5, 1],
         )
-
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(meshUnit=1),
+            boundaries={
+                "MyBC": fl.FreestreamBoundary(),
+            },
+            bet_disks=[bet],
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(),
+        )
+        solver_params = params.to_solver()
         assert bet
+        bet_disk = solver_params.bet_disks[0]
+        for polarItem in bet_disk.sectional_polars:
+            for coeff2D in polarItem.lift_coeffs:
+                for coeff1D in coeff2D:
+                    assert coeff1D[0] == coeff1D[-1]
+            for coeff2D in polarItem.drag_coeffs:
+                for coeff1D in coeff2D:
+                    assert coeff1D[0] == coeff1D[-1]
 
     to_file_from_file_test(bet)

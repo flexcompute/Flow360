@@ -33,7 +33,7 @@ from .params_base import (
 )
 from .unit_system import Flow360UnitSystem, LengthType
 
-OutputFormat = Literal["paraview", "tecplot", "both"]
+OutputFormat = Literal["paraview", "tecplot", "both", "paraview,tecplot"]
 
 CommonFields = Literal[CommonFieldNames, CommonFieldNamesFull]
 SurfaceFields = Literal[SurfaceFieldNames, SurfaceFieldNamesFull]
@@ -252,6 +252,8 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
                 boundary_names.append(boundary_name)
         if solver_values["surfaces"] is None:
             solver_values["surfaces"] = Surfaces()
+        if solver_values["output_format"] == "both":
+            solver_values["output_format"] = "paraview,tecplot"
         for boundary_name in boundary_names:
             if boundary_name not in solver_values["surfaces"].names():
                 solver_values["surfaces"][boundary_name] = Surface()
@@ -334,6 +336,8 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
     def to_solver(self, params, **kwargs) -> SliceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        if solver_values["output_format"] == "both":
+            solver_values["output_format"] = "paraview,tecplot"
         _distribute_shared_output_fields(solver_values, "slices")
         return SliceOutput(**solver_values)
 
@@ -363,6 +367,22 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
         solver_values = solver_model.__dict__
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
+        if solver_values["output_format"] == "both":
+            solver_values["output_format"] = "paraview,tecplot"
+        """
+        Add betMetrics and betMetricsPerDisk if used in slices but not in volume.
+        """
+        if params.slice_output is not None and params.slice_output.slices is not None:
+            slice_output_dict = params.slice_output.__dict__
+            _distribute_shared_output_fields(slice_output_dict, "slices")
+            for slice_name in slice_output_dict["slices"].names():
+                for item_to_add in ["betMetrics", "betMetricsPerDisk"]:
+                    if (
+                        item_to_add in slice_output_dict["slices"][slice_name].output_fields
+                        and item_to_add not in fields
+                    ):
+                        fields.append(item_to_add)
+
         return VolumeOutput(**solver_values, output_fields=fields)
 
 
@@ -481,6 +501,83 @@ class MonitorOutput(Flow360BaseModel):
         return MonitorOutput(**solver_values)
 
 
+##############################
+
+
+class NoTypeMonitor(MonitorBase):
+    """:class:`ProbeMonitor` class"""
+
+    monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+
+    # pylint: disable=too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        """:class: Model config to cull output field shorthands"""
+
+        # pylint: disable=unused-argument
+        @staticmethod
+        def schema_extra(schema, model):
+            """Remove output field shorthands from schema"""
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ProbeMonitor:
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return ProbeMonitor(**solver_values, output_fields=fields)
+
+
+LegacyMonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor, NoTypeMonitor]
+
+
+class _GenericLegacyMonitorWrapper(Flow360BaseModel):
+    """:class:`_GenericMonitorWrapper` class"""
+
+    v: LegacyMonitorType
+
+
+class LegacyMonitors(Flow360SortableBaseModel):
+    """:class:`LegacyMonitors` class"""
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericLegacyMonitorWrapper.__fields__["v"].type_))
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        """
+        root validator
+        """
+        return _self_named_property_validator(
+            values, _GenericLegacyMonitorWrapper, msg="is not any of supported monitor types."
+        )
+
+
+class MonitorOutputLegacy(LegacyModel):
+    """:class:`MonitorOutputLegacy` class"""
+
+    monitors: LegacyMonitors = pd.Field()
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+
+    def update_model(self):
+        new_monitors = {}
+        for monitor_name in self.monitors.names():
+            if isinstance(self.monitors[monitor_name], NoTypeMonitor):
+                self.monitors[monitor_name].type = "probe"
+            else:
+                new_monitors[monitor_name] = self.monitors[monitor_name]
+        model = {
+            "monitors": new_monitors,
+            "output_fields": self.output_fields,
+        }
+        return MonitorOutput.parse_obj(model)
+
+
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
 
@@ -537,7 +634,6 @@ class IsoSurfaces(Flow360SortableBaseModel):
 class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`IsoSurfaceOutput` class"""
 
-    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     iso_surfaces: IsoSurfaces = pd.Field(alias="isoSurfaces")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
@@ -545,6 +641,8 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        if solver_values["output_format"] == "both":
+            solver_values["output_format"] = "paraview,tecplot"
         _distribute_shared_output_fields(solver_values, "iso_surfaces")
         return IsoSurfaceOutput(**solver_values)
 

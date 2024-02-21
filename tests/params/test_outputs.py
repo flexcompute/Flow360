@@ -107,7 +107,9 @@ def test_surface_output():
     with flow360.SI_unit_system:
         params = Flow360Params(
             surface_output=SurfaceOutput(
-                output_fields=["Cp"], surfaces={"symmetry": Surface(output_fields=["Mach"])}
+                output_fields=["Cp"],
+                surfaces={"symmetry": Surface(output_fields=["Mach"])},
+                output_format="both",
             ),
             boundaries={
                 "1": flow360.NoSlipWall(name="wing"),
@@ -117,6 +119,8 @@ def test_surface_output():
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
         solver_params = params.to_solver()
+
+        assert solver_params.surface_output.output_format == "paraview,tecplot"
         assert "wing" in solver_params.surface_output.surfaces.names()
         assert "symmetry" in solver_params.surface_output.surfaces.names()
         assert "freestream" in solver_params.surface_output.surfaces.names()
@@ -212,6 +216,7 @@ def test_slice_output():
 
     to_file_from_file_test(output)
 
+    output.output_format = "both"
     with flow360.SI_unit_system:
         params = Flow360Params(
             slice_output=output,
@@ -220,6 +225,9 @@ def test_slice_output():
             geometry=Geometry(mesh_unit=1),
         )
         solver_params = params.to_solver()
+
+        assert solver_params.slice_output.output_format == "paraview,tecplot"
+
         for slice_name, slice_item in solver_params.slice_output.slices.dict().items():
             if slice_name == "sliceName_2":
                 assert set(["Cp", "Mach", "qcriterion"]) == set(slice_item["output_fields"])
@@ -261,6 +269,8 @@ def test_volume_output():
         output_fields=["Coefficient of pressure", "qcriterion"],
     )
 
+    output.output_format = "both"
+
     with flow360.SI_unit_system:
         params = Flow360Params(
             volume_output=output,
@@ -269,7 +279,39 @@ def test_volume_output():
         )
         solver_params = params.to_solver()
 
-        assert solver_params.volume_output.output_fields == ["Cp", "qcriterion"]
+        assert set(solver_params.volume_output.output_fields) == set(["Cp", "qcriterion"])
+
+    with flow360.SI_unit_system:
+        """
+        Test addition of betMetrics/betMetricsPerDisk from slice output field
+        """
+        params = Flow360Params(
+            volume_output=output,
+            slice_output=SliceOutput(
+                output_fields=["betMetrics"],
+                slices={
+                    "sliceName_1": flow360.Slice(
+                        slice_normal=(0, 1, 0),
+                        slice_origin=(0, 0.56413, 0) * u.m,
+                    ),
+                    "sliceName_2": flow360.Slice(
+                        slice_normal=(0, 1, 0),
+                        slice_origin=(50, 0.56413, 0) * u.m,
+                        output_fields=["betMetricsPerDisk"],
+                    ),
+                },
+            ),
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            geometry=Geometry(mesh_unit=1),
+        )
+        solver_params = params.to_solver()
+
+        assert solver_params.volume_output.output_format == "paraview,tecplot"
+
+    assert set(solver_params.volume_output.output_fields) == set(
+        ["qcriterion", "Cp", "betMetrics", "betMetricsPerDisk"]
+    )
 
 
 def test_iso_surface_output():
@@ -300,6 +342,8 @@ def test_iso_surface_output():
 
     to_file_from_file_test(output)
 
+    output.output_format = "both"
+
     with flow360.SI_unit_system:
         params = Flow360Params(
             iso_surface_output=output,
@@ -307,6 +351,9 @@ def test_iso_surface_output():
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
         solver_params = params.to_solver()
+
+        assert solver_params.iso_surface_output.output_format == "paraview,tecplot"
+
         for (
             iso_surface_name,
             iso_surface_item,

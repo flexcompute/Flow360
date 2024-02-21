@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Optional, Type, Union, get_args
+from typing import List, Literal, Optional, Type, Union, get_args
 
 import pydantic as pd
 
@@ -326,6 +326,8 @@ class _BETDisk(fl.BETDisk):
 
 
 class _VolumeOutput(fl.VolumeOutput):
+    output_format: List[Literal["paraview", "tecplot", "both"]]
+
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "outputFields", "*"]
 
@@ -337,6 +339,8 @@ class _AeroacousticOutput(fl.AeroacousticOutput):
 
 class _SliceOutput(fl.SliceOutput):
     # pylint: disable=protected-access, too-few-public-methods
+    output_format: List[Literal["paraview", "tecplot", "both"]]
+
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "outputFields", "*", "slices"]
         field_properties = {
@@ -358,6 +362,8 @@ class _MonitorOutput(fl.MonitorOutput):
 
 
 class _SurfaceOutput(fl.SurfaceOutput):
+    output_format: List[Literal["paraview", "tecplot", "both"]]
+
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "outputFields", "*", "surfaces"]
         swap_fields = {"surfaces": fl.Surfaces.flow360_schema()}
@@ -365,6 +371,8 @@ class _SurfaceOutput(fl.SurfaceOutput):
 
 
 class _IsoSurfaceOutput(fl.IsoSurfaceOutput):
+    output_format: List[Literal["paraview", "tecplot", "both"]]
+
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["outputFormat", "*", "isoSurfaces"]
         swap_fields = {"isoSurfaces": fl.IsoSurfaces.flow360_schema()}

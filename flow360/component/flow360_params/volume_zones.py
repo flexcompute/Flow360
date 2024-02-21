@@ -122,6 +122,14 @@ class ReferenceFrameExpression(ReferenceFrameBase):
             "theta_degrees",
         ]
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ReferenceFrameExpression:
+        """
+        computes the derivatives
+        """
+        #TODO: Pending
+        return super().to_solver(params, **kwargs)
+
 
 class ReferenceFrameOmegaRadians(ReferenceFrameBase):
     """:class:`ReferenceFrameOmegaRadians` class for setting up reference frame
