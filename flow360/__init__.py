@@ -108,10 +108,14 @@ from .component.flow360_params.volume_zones import (
 from .component.folder import Folder
 from .component.meshing.params import (
     Aniso,
+    BoxRefinement,
+    CylinderRefinement,
     Edges,
     Face,
     Faces,
+    Farfield,
     ProjectAniso,
+    RotorDisk,
     SurfaceMeshingParams,
     UseAdjacent,
     Volume,
