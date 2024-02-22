@@ -377,7 +377,11 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, upload_id, uploaded_parts
         )
 
+    # pylint: disable=no-member
     def open_in_browser(self):
+        """
+        Open resource in browser
+        """
         open_browser(f"{self._interface().endpoint}/{self.id}")
 
 

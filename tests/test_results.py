@@ -1,17 +1,18 @@
-import pytest
-import tempfile
 import os
+import tempfile
+from copy import deepcopy
+
+import numpy as np
+import pandas
+import pytest
+
 import flow360 as fl
 import flow360.units as u
 from flow360 import log
 from flow360.component.results.case_results import ActuatorDiskResultCSVModel
-import pandas
-import numpy as np
-from copy import deepcopy
 
 from .mock_server import mock_response
 from .utils import mock_id, s3_download_override
-
 
 log.set_logging_level("DEBUG")
 
@@ -19,7 +20,6 @@ log.set_logging_level("DEBUG")
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
-
 
 
 # def test_actuator_disk_results(mock_response):
@@ -42,7 +42,7 @@ def change_test_dir(request, monkeypatch):
 #     assert results.actuator_disks.values['Disk0_Power'][0] == 30.0625485898572
 
 #     results.actuator_disks.to_base("SI", params=params)
-    
+
 #     assert isinstance(results.actuator_disks.as_dataframe(), pandas.DataFrame)
 #     assert isinstance(results.actuator_disks.as_dict(), dict)
 #     assert isinstance(results.actuator_disks.as_numpy(), np.ndarray)
@@ -90,7 +90,7 @@ def change_test_dir(request, monkeypatch):
 #     assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
 
 #     results.bet_forces.to_base("SI", params=params)
-    
+
 #     assert isinstance(results.bet_forces.as_dataframe(), pandas.DataFrame)
 #     assert isinstance(results.bet_forces.as_dict(), dict)
 #     assert isinstance(results.bet_forces.as_numpy(), np.ndarray)
@@ -110,19 +110,19 @@ def test_downloading(mock_response):
     with tempfile.NamedTemporaryFile(suffix=".csv") as temp_file:
         results.bet_forces.download(temp_file.name, overwrite=True)
         results.bet_forces.load_from_local(temp_file.name)
-        assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
+        assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
-    assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
+    assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        results.bet_forces.download(os.path.join(temp_dir, 'bet'))
-        results.bet_forces.load_from_local(os.path.join(temp_dir, 'bet.csv'))
-        assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
+        results.bet_forces.download(os.path.join(temp_dir, "bet"))
+        results.bet_forces.load_from_local(os.path.join(temp_dir, "bet.csv"))
+        assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
 
 
 @pytest.mark.usefixtures("s3_download_override")
@@ -131,19 +131,19 @@ def test_set_downloader(mock_response):
     results = case.results
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        results.set_downloader(all=True, destination=temp_dir)
-        results.download(os.path.join(temp_dir, 'case'))
+        results.set_downloader(all_results=True, destination=temp_dir)
+        results.download(os.path.join(temp_dir, "case"))
         files = os.listdir(temp_dir)
         assert len(files) == 12
-        results.total_forces.load_from_local(os.path.join(temp_dir, 'total_forces_v2.csv'))
+        results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        results.set_downloader(all=True, total_forces=False, destination=temp_dir)
-        results.download(os.path.join(temp_dir, 'case'))
+        results.set_downloader(all_results=True, total_forces=False, destination=temp_dir)
+        results.download(os.path.join(temp_dir, "case"))
         files = os.listdir(temp_dir)
         assert len(files) == 11
 
@@ -152,8 +152,8 @@ def test_set_downloader(mock_response):
 
     with tempfile.TemporaryDirectory() as temp_dir:
         results.set_downloader(total_forces=True, destination=temp_dir)
-        results.download(os.path.join(temp_dir, 'case'))
+        results.download(os.path.join(temp_dir, "case"))
         files = os.listdir(temp_dir)
         assert len(files) == 1
-        results.total_forces.load_from_local(os.path.join(temp_dir, 'total_forces_v2.csv'))
+        results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246

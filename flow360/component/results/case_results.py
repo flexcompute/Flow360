@@ -22,7 +22,7 @@ from ..flow360_params.unit_system import (
     ForceType,
     MomentType,
     PowerType,
-    is_flow360_unit
+    is_flow360_unit,
 )
 
 

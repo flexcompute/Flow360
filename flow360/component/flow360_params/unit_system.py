@@ -694,6 +694,9 @@ class _Flow360BaseUnit(DimensionedType):
         raise TypeError(f"Operation not defined on {self} and {other}")
 
     def in_base(self, base, flow360_conv_system):
+        """
+        Convert unit to a specific base system
+        """
         value = self.value * flow360_conv_system[self.dimension_type.dim_name]
         value.units.registry = flow360_conv_system.registry
         converted = value.in_base(unit_system=base)

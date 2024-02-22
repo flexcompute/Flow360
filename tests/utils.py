@@ -2,11 +2,11 @@ import difflib
 import importlib
 import json
 import os
+import shutil
 import tempfile
 import types
 from numbers import Number
 from typing import Collection
-import shutil
 
 import numpy as np
 import pytest
@@ -15,7 +15,6 @@ import unyt
 import flow360
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import S3TransferType, get_local_filename_and_create_folders
-
 from flow360.component.flow360_params import unit_system
 
 mock_id = "00000000-0000-0000-0000-000000000000"
@@ -132,6 +131,7 @@ def array_equality_override():
     unit_system._Flow360BaseUnit.__eq__ = flow360_unit_array_eq
     unit_system._Flow360BaseUnit.__ne__ = flow360_unit_array_ne
 
+
 @pytest.fixture()
 def s3_download_override():
     def s3_mock_download(
@@ -143,13 +143,13 @@ def s3_download_override():
         progress_callback=None,
         log_error=True,
     ):
-        to_file = get_local_filename_and_create_folders(remote_file_name, to_file=to_file, to_folder=to_folder)
-        shutil.copy(os.path.join('data', remote_file_name), to_file)
+        to_file = get_local_filename_and_create_folders(
+            remote_file_name, to_file=to_file, to_folder=to_folder
+        )
+        shutil.copy(os.path.join("data", remote_file_name), to_file)
         print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
-
     S3TransferType.CASE.download_file = s3_mock_download
-
 
 
 # for generating MOCK WEBAPI data:

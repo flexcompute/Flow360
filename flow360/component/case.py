@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import json
 import tempfile
-from enum import Enum
 from time import sleep
-from typing import Any, Dict, Iterator, List, Union
+from typing import Any, Iterator, List, Union
 
 import pydantic as pd
 
@@ -626,67 +625,89 @@ class Case(CaseBase, Flow360Resource):
         return new_case
 
     def wait(self, refresh_rate=2):
+        """Wait until the Case finishes processing, refresh periodically"""
         while self.is_finished() is False:
             sleep(refresh_rate)
 
 
+# pylint: disable=unnecessary-lambda
 class CaseResultsModel(pd.BaseModel):
+    """
+    Pydantic models for case results
+    """
+
     case: Any = pd.Field()
 
     # tar.gz results:
     surfaces: ResultTarGZModel = pd.Field(
         default_factory=lambda: ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value)
     )
-    volumes: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value)
+    volumes: ResultTarGZModel = pd.Field(
+        default_factory=lambda: ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value)
     )
-    slices: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value)
+    slices: ResultTarGZModel = pd.Field(
+        default_factory=lambda: ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value)
     )
-    isosurfaces: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value)
+    isosurfaces: ResultTarGZModel = pd.Field(
+        default_factory=lambda: ResultTarGZModel(
+            remote_file_name=CaseDownloadable.ISOSURFACES.value
+        )
     )
     monitors: MonitorsResultModel = pd.Field(MonitorsResultModel())
 
     # convergence:
-    nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(default_factory=lambda: 
-        NonlinearResidualsResultCSVModel()
+    nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(
+        default_factory=lambda: NonlinearResidualsResultCSVModel()
     )
-    linear_residuals: LinearResidualsResultCSVModel = pd.Field(default_factory=lambda: 
-        LinearResidualsResultCSVModel()
+    linear_residuals: LinearResidualsResultCSVModel = pd.Field(
+        default_factory=lambda: LinearResidualsResultCSVModel()
     )
     cfl: CFLResultCSVModel = pd.Field(default_factory=lambda: CFLResultCSVModel())
-    minmax_state: MinMaxStateResultCSVModel = pd.Field(default_factory=lambda: MinMaxStateResultCSVModel())
-    max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(default_factory=lambda: 
-        MaxResidualLocationResultCSVModel()
+    minmax_state: MinMaxStateResultCSVModel = pd.Field(
+        default_factory=lambda: MinMaxStateResultCSVModel()
+    )
+    max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(
+        default_factory=lambda: MaxResidualLocationResultCSVModel()
     )
 
     # forces
-    total_forces: TotalForcesResultCSVModel = pd.Field(default_factory=lambda: TotalForcesResultCSVModel())
-    surface_forces: SurfaceForcesResultCSVModel = pd.Field(default_factory=lambda: 
-        SurfaceForcesResultCSVModel()
+    total_forces: TotalForcesResultCSVModel = pd.Field(
+        default_factory=lambda: TotalForcesResultCSVModel()
     )
-    actuator_disks: ActuatorDiskResultCSVModel = pd.Field(default_factory=lambda: ActuatorDiskResultCSVModel())
-    bet_forces: BETForcesResultCSVModel = pd.Field(default_factory=lambda: BETForcesResultCSVModel())
+    surface_forces: SurfaceForcesResultCSVModel = pd.Field(
+        default_factory=lambda: SurfaceForcesResultCSVModel()
+    )
+    actuator_disks: ActuatorDiskResultCSVModel = pd.Field(
+        default_factory=lambda: ActuatorDiskResultCSVModel()
+    )
+    bet_forces: BETForcesResultCSVModel = pd.Field(
+        default_factory=lambda: BETForcesResultCSVModel()
+    )
     force_distribution: ForceDistributionResultCSVModel = pd.Field(
         default_factory=lambda: ForceDistributionResultCSVModel()
     )
 
     # user defined:
     user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(
-       default_factory=lambda:  UserDefinedDynamicsResultModel()
+        default_factory=lambda: UserDefinedDynamicsResultModel()
     )
 
     # others
     surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(
         default_factory=lambda: SurfaceHeatTrasferResultCSVModel()
     )
-    aeroacoustics: AeroacousticsResultCSVModel = pd.Field(default_factory=lambda: AeroacousticsResultCSVModel())
+    aeroacoustics: AeroacousticsResultCSVModel = pd.Field(
+        default_factory=lambda: AeroacousticsResultCSVModel()
+    )
 
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.root_validator(pre=False)
     def pass_download_function(cls, values):
+        """
+        Pass download methods into fields of the case results
+        """
         if "case" not in values:
             raise ValueError("case (type Case) is required")
 
@@ -704,45 +725,77 @@ class CaseResultsModel(pd.BaseModel):
 
         return values
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("monitors", "user_defined_dynamics", always=True)
     def pass_get_files_function(cls, value, values):
+        """
+        Pass file getters into fields of the case results
+        """
         value.get_download_file_list_method = values["case"].get_download_file_list
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("bet_forces", always=True)
     def pass_has_bet_forces_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_bet_disks
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("actuator_disks", always=True)
     def pass_has_actuator_disks_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_actuator_disks
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("isosurfaces", always=True)
     def pass_has_isosurfaces_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_isosurfaces
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("monitors", always=True)
     def pass_has_monitors_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_monitors
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("aeroacoustics", always=True)
     def pass_has_aeroacoustics_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_aeroacoustics
         return value
 
+    # pylint: disable=no-self-argument, protected-access
     @pd.validator("user_defined_dynamics", always=True)
     def pass_has_user_defined_dynamics_function(cls, value, values):
+        """
+        Pass check to see if result is downloadable based on params
+        """
         value._is_downloadable = values["case"].has_user_defined_dynamics
         return value
 
     def download(self, overwrite=False):
+        """
+        Download all specified and available results for the case
+        """
         for _, value in self.__dict__.items():
             if isinstance(value, ResultBaseModel):
-                # we download if explicitly set set_downloader(<result_name>=True), or all=True but only when is not result=False
+                # we download if explicitly set set_downloader(<result_name>=True),
+                # or all=True but only when is not result=False
                 try_download = value.do_download is True
                 if self._downloader_settings.all is True and value.do_download is not False:
                     try_download = value._is_downloadable() is True
@@ -783,6 +836,7 @@ class CaseResultsModel(pd.BaseModel):
         if use_case_id is True:
             self._downloader_settings.destination = self.case.id
 
+    # pylint: disable=too-many-arguments, too-many-locals
     def set_downloader(
         self,
         surface: bool = None,
@@ -803,7 +857,7 @@ class CaseResultsModel(pd.BaseModel):
         user_defined_dynamics: bool = None,
         aeroacoustics: bool = None,
         surface_heat_transfer: bool = None,
-        all: bool = None,
+        all_results: bool = None,
         overwrite: bool = False,
         destination: str = None,
     ):
@@ -832,7 +886,7 @@ class CaseResultsModel(pd.BaseModel):
             Download BET (Blade Element Theory) forces file if True.
         actuator_disk_output : bool, optional
             Download actuator disk output file if True.
-        all : bool, optional
+        all_results : bool, optional
             Download all result files if True (ignores other parameters).
         overwrite : bool, optional
             If True, overwrite existing files with the same name in the destination.
@@ -862,12 +916,15 @@ class CaseResultsModel(pd.BaseModel):
         self.aeroacoustics.do_download = aeroacoustics
         self.surface_heat_transfer.do_download = surface_heat_transfer
 
-        self._downloader_settings.all = all
+        self._downloader_settings.all = all_results
         self._downloader_settings.overwrite = overwrite
         if destination is not None:
             self.set_destination(folder_name=destination)
 
     def download_file_by_name(self, file_name, to_file=None, to_folder=".", overwrite: bool = True):
+        """
+        Download file by name
+        """
         return self.case._download_file(
             file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
