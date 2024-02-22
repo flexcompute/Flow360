@@ -499,6 +499,30 @@ class Case(CaseBase, Flow360Resource):
                 return True
         return False
 
+    def has_isosurfaces(self):
+        """
+        returns True when case has isosurfaces
+        """
+        return self.params.iso_surface_output is not None
+
+    def has_monitors(self):
+        """
+        returns True when case has monitors
+        """
+        return self.params.monitor_output is not None
+
+    def has_aeroacoustics(self):
+        """
+        returns True when case has aeroacoustics
+        """
+        return self.params.aeroacoustic_output is not None
+
+    def has_user_defined_dynamics(self):
+        """
+        returns True when case has user defined dynamics
+        """
+        return self.params.user_defined_dynamics is not None
+
     def is_finished(self):
         """
         returns False when case is in running or preprocessing state
@@ -611,57 +635,57 @@ class CaseResultsModel(pd.BaseModel):
 
     # tar.gz results:
     surfaces: ResultTarGZModel = pd.Field(
-        default_factory=lambda: ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value), const=True
+        default_factory=lambda: ResultTarGZModel(remote_file_name=CaseDownloadable.SURFACES.value)
     )
     volumes: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value), const=True
+        ResultTarGZModel(remote_file_name=CaseDownloadable.VOLUMES.value)
     )
     slices: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value), const=True
+        ResultTarGZModel(remote_file_name=CaseDownloadable.SLICES.value)
     )
     isosurfaces: ResultTarGZModel = pd.Field(default_factory=lambda: 
-        ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value), const=True
+        ResultTarGZModel(remote_file_name=CaseDownloadable.ISOSURFACES.value)
     )
     monitors: MonitorsResultModel = pd.Field(MonitorsResultModel())
 
     # convergence:
     nonlinear_residuals: NonlinearResidualsResultCSVModel = pd.Field(default_factory=lambda: 
-        NonlinearResidualsResultCSVModel(), const=True
+        NonlinearResidualsResultCSVModel()
     )
     linear_residuals: LinearResidualsResultCSVModel = pd.Field(default_factory=lambda: 
-        LinearResidualsResultCSVModel(), const=True
+        LinearResidualsResultCSVModel()
     )
-    cfl: CFLResultCSVModel = pd.Field(default_factory=lambda: CFLResultCSVModel(), const=True)
-    minmax_state: MinMaxStateResultCSVModel = pd.Field(default_factory=lambda: MinMaxStateResultCSVModel(), const=True)
+    cfl: CFLResultCSVModel = pd.Field(default_factory=lambda: CFLResultCSVModel())
+    minmax_state: MinMaxStateResultCSVModel = pd.Field(default_factory=lambda: MinMaxStateResultCSVModel())
     max_residual_location: MaxResidualLocationResultCSVModel = pd.Field(default_factory=lambda: 
-        MaxResidualLocationResultCSVModel(), const=True
+        MaxResidualLocationResultCSVModel()
     )
 
     # forces
-    total_forces: TotalForcesResultCSVModel = pd.Field(default_factory=lambda: TotalForcesResultCSVModel(), const=True)
+    total_forces: TotalForcesResultCSVModel = pd.Field(default_factory=lambda: TotalForcesResultCSVModel())
     surface_forces: SurfaceForcesResultCSVModel = pd.Field(default_factory=lambda: 
-        SurfaceForcesResultCSVModel(), const=True
+        SurfaceForcesResultCSVModel()
     )
-    actuator_disks: ActuatorDiskResultCSVModel = pd.Field(default_factory=lambda: ActuatorDiskResultCSVModel(), const=True)
-    bet_forces: BETForcesResultCSVModel = pd.Field(default_factory=lambda: BETForcesResultCSVModel(), const=True)
+    actuator_disks: ActuatorDiskResultCSVModel = pd.Field(default_factory=lambda: ActuatorDiskResultCSVModel())
+    bet_forces: BETForcesResultCSVModel = pd.Field(default_factory=lambda: BETForcesResultCSVModel())
     force_distribution: ForceDistributionResultCSVModel = pd.Field(
-        default_factory=lambda: ForceDistributionResultCSVModel(), const=True
+        default_factory=lambda: ForceDistributionResultCSVModel()
     )
 
     # user defined:
     user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(
-       default_factory=lambda:  UserDefinedDynamicsResultModel(), const=True
+       default_factory=lambda:  UserDefinedDynamicsResultModel()
     )
 
     # others
     surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(
-        default_factory=lambda: SurfaceHeatTrasferResultCSVModel(), const=True
+        default_factory=lambda: SurfaceHeatTrasferResultCSVModel()
     )
-    aeroacoustics: AeroacousticsResultCSVModel = pd.Field(default_factory=lambda: AeroacousticsResultCSVModel(), const=True)
+    aeroacoustics: AeroacousticsResultCSVModel = pd.Field(default_factory=lambda: AeroacousticsResultCSVModel())
 
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
-    @pd.root_validator(pre=True)
+    @pd.root_validator(pre=False)
     def pass_download_function(cls, values):
         if "case" not in values:
             raise ValueError("case (type Case) is required")
@@ -680,20 +704,39 @@ class CaseResultsModel(pd.BaseModel):
 
         return values
 
-    @pd.validator("monitors", "user_defined_dynamics")
+    @pd.validator("monitors", "user_defined_dynamics", always=True)
     def pass_get_files_function(cls, value, values):
-        print(f'MONITOR VALIDATOR!!!! {value}')
         value.get_download_file_list_method = values["case"].get_download_file_list
         return value
 
-    @pd.validator("actuator_disks")
+    @pd.validator("bet_forces", always=True)
+    def pass_has_bet_forces_function(cls, value, values):
+        value._is_downloadable = values["case"].has_bet_disks
+        return value
+
+    @pd.validator("actuator_disks", always=True)
     def pass_has_actuator_disks_function(cls, value, values):
         value._is_downloadable = values["case"].has_actuator_disks
         return value
 
-    @pd.validator("bet_forces")
-    def pass_has_bet_disks_function(cls, value, values):
-        value._is_downloadable = values["case"].has_bet_disks
+    @pd.validator("isosurfaces", always=True)
+    def pass_has_isosurfaces_function(cls, value, values):
+        value._is_downloadable = values["case"].has_isosurfaces
+        return value
+
+    @pd.validator("monitors", always=True)
+    def pass_has_monitors_function(cls, value, values):
+        value._is_downloadable = values["case"].has_monitors
+        return value
+
+    @pd.validator("aeroacoustics", always=True)
+    def pass_has_aeroacoustics_function(cls, value, values):
+        value._is_downloadable = values["case"].has_aeroacoustics
+        return value
+
+    @pd.validator("user_defined_dynamics", always=True)
+    def pass_has_user_defined_dynamics_function(cls, value, values):
+        value._is_downloadable = values["case"].has_user_defined_dynamics
         return value
 
     def download(self, overwrite=False):
@@ -795,11 +838,6 @@ class CaseResultsModel(pd.BaseModel):
             If True, overwrite existing files with the same name in the destination.
         destination : str, optional
             Location to save downloaded files. If None, files will be saved in the current directory under ID folder.
-
-        Returns
-        -------
-        List of str
-            File paths of the downloaded files.
         """
 
         self.surfaces.do_download = surface

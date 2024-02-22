@@ -102,7 +102,6 @@ def change_test_dir(request, monkeypatch):
 #     assert str(results.bet_forces.values['Disk0_Moment_x'][0].units) == 'kg*m**2/s**2'
 
 
-
 @pytest.mark.usefixtures("s3_download_override")
 def test_downloading(mock_response):
     case = fl.Case(id=mock_id)
@@ -112,7 +111,6 @@ def test_downloading(mock_response):
         results.bet_forces.download(temp_file.name, overwrite=True)
         results.bet_forces.load_from_local(temp_file.name)
         assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
-
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
@@ -125,3 +123,37 @@ def test_downloading(mock_response):
         results.bet_forces.download(os.path.join(temp_dir, 'bet'))
         results.bet_forces.load_from_local(os.path.join(temp_dir, 'bet.csv'))
         assert results.bet_forces.values['Disk0_Force_x'][0] == -1397.09615312895
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_set_downloader(mock_response):
+    case = fl.Case(id=mock_id)
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.set_downloader(all=True, destination=temp_dir)
+        results.download(os.path.join(temp_dir, 'case'))
+        files = os.listdir(temp_dir)
+        assert len(files) == 12
+        results.total_forces.load_from_local(os.path.join(temp_dir, 'total_forces_v2.csv'))
+        assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+    case = deepcopy(fl.Case(id=mock_id))
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.set_downloader(all=True, total_forces=False, destination=temp_dir)
+        results.download(os.path.join(temp_dir, 'case'))
+        files = os.listdir(temp_dir)
+        assert len(files) == 11
+
+    case = deepcopy(fl.Case(id=mock_id))
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.set_downloader(total_forces=True, destination=temp_dir)
+        results.download(os.path.join(temp_dir, 'case'))
+        files = os.listdir(temp_dir)
+        assert len(files) == 1
+        results.total_forces.load_from_local(os.path.join(temp_dir, 'total_forces_v2.csv'))
+        assert results.total_forces.values["CL"][0] == 0.400770406499246
