@@ -223,7 +223,8 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
     def to_solver(self, params, **kwargs) -> SurfaceOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return SurfaceOutput(**solver_values, output_fields=fields)
 
 
@@ -250,7 +251,8 @@ class Slice(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> Slice:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return Slice(**solver_values, output_fields=fields)
 
 
@@ -329,7 +331,8 @@ class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
     def to_solver(self, params, **kwargs) -> VolumeOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return VolumeOutput(**solver_values, output_fields=fields)
 
 
@@ -362,7 +365,8 @@ class SurfaceIntegralMonitor(MonitorBase):
     def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return SurfaceIntegralMonitor(**solver_values, output_fields=fields)
 
 
@@ -389,7 +393,8 @@ class ProbeMonitor(MonitorBase):
     def to_solver(self, params, **kwargs) -> ProbeMonitor:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return ProbeMonitor(**solver_values, output_fields=fields)
 
 
@@ -442,7 +447,8 @@ class MonitorOutput(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> MonitorOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return MonitorOutput(**solver_values, output_fields=fields)
 
 
@@ -470,7 +476,8 @@ class IsoSurface(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> IsoSurface:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
+        if fields is not None:
+            fields = [to_short(field) for field in fields]
         return IsoSurface(**solver_values, output_fields=fields)
 
 

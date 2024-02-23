@@ -635,7 +635,7 @@ class VolumeMesh(Flow360Resource):
                 if to_file_ext != file_ext:
                     to_file = to_file + self._get_file_extention()
 
-            super()._download_file(
+            return super()._download_file(
                 remote_file_name,
                 to_file=to_file,
                 to_folder=to_folder,
