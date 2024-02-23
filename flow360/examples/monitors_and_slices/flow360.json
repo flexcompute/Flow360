@@ -1,0 +1,180 @@
+{
+  "geometry": {
+    "refArea": 1.15315084119231,
+    "momentCenter": [
+      0,
+      0,
+      0
+    ],
+    "momentLength": [
+      1.47602,
+      0.801672958512342,
+      1.47602
+    ]
+  },
+  "boundaries": {
+    "1": {
+      "type": "NoSlipWall",
+      "name": "wing"
+    },
+    "2": {
+      "type": "SlipWall",
+      "name": "symmetry"
+    },
+    "3": {
+      "type": "Freestream",
+      "name": "freestream"
+    }
+  },
+  "timeStepping": {
+    "maxPseudoSteps": 500,
+    "timeStepSize": "inf",
+    "CFL": {
+      "type": "ramp",
+      "initial": 5,
+      "final": 200,
+      "rampSteps": 100
+    }
+  },
+  "navierStokesSolver": {
+    "absoluteTolerance": 1e-10,
+    "kappaMUSCL": -1
+  },
+  "turbulenceModelSolver": {
+    "absoluteTolerance": 1e-8,
+    "kappaMUSCL": -1,
+    "modelType": "SpalartAllmaras"
+  },
+  "freestream": {
+    "Reynolds": 14600000,
+    "Mach": 0.84,
+    "Temperature": 288.15,
+    "alphaAngle": 3.06,
+    "betaAngle": 0
+  },
+  "surfaceOutput": {
+    "outputFormat": "tecplot",
+    "animationFrequency": -1,
+    "primitiveVars": true,
+    "Cp": true,
+    "Cf": true,
+    "CfVec": false,
+    "yPlus": false,
+    "wallDistance": false
+  },
+  "volumeOutput": {
+    "outputFormat": "tecplot",
+    "animationFrequency": -1,
+    "primitiveVars": true,
+    "vorticity": false,
+    "residualNavierStokes": false,
+    "residualTurbulence": false,
+    "T": false,
+    "s": false,
+    "Cp": false,
+    "mut": false,
+    "mutRatio": false,
+    "Mach": true
+  },
+  "sliceOutput": {
+    "animationFrequency": -1,
+    "animationFrequencyOffset": 0,
+    "coarsenIterations": 0,
+    "outputFormat": "tecplot",
+    "outputFields": [
+      "Cp"
+    ],
+    "slices": {
+      "x0": {
+        "sliceNormal": [
+          1,
+          0,
+          0
+        ],
+        "sliceOrigin": [
+          0,
+          0,
+          0
+        ],
+        "outputFields": [
+          "Mach"
+        ]
+      },
+      "y1": {
+        "sliceNormal": [
+          0,
+          1,
+          0
+        ],
+        "sliceOrigin": [
+          2,
+          1,
+          0
+        ],
+        "outputFields": [
+          "T"
+        ]
+      }
+    }
+  },
+  "monitorOutput": {
+    "monitors": {
+      "Group1": {
+        "type": "probe",
+        "monitorLocations": [
+          [
+            0.12,
+            0.34,
+            0.262
+          ],
+          [
+            2,
+            0.01,
+            0.03
+          ],
+          [
+            3,
+            0.01,
+            0.04
+          ],
+          [
+            4,
+            0.01,
+            0.04
+          ]
+        ],
+        "outputFields": [
+          "primitiveVars",
+          "vorticity",
+          "T",
+          "s",
+          "Cp",
+          "mut"
+        ]
+      },
+      "Group2": {
+        "type": "probe",
+        "monitorLocations": [
+          [
+            0.12,
+            0.34,
+            0.262
+          ],
+          [
+            2,
+            0.01,
+            0.03
+          ]
+        ],
+        "outputFields": [
+          "primitiveVars",
+          "vorticity",
+          "T",
+          "s",
+          "Cp",
+          "mut"
+        ]
+      }
+    }
+  }
+}

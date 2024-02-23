@@ -207,8 +207,7 @@ class AeroacousticsResultCSVModel(ResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, const=True)
 
 
-class MonitorCSVModel(ResultCSVModel):
-    pass
+MonitorCSVModel = ResultCSVModel
 
 
 class MonitorsResultModel(ResultTarGZModel):
@@ -230,9 +229,8 @@ class MonitorsResultModel(ResultTarGZModel):
                     if match:
                         name = match.group(1)
                         self._monitor_names.append(name)
-                        self._monitors[name] = MonitorCSVModel(
-                            remote_file_name=filename, _download_method=self._download_method
-                        )
+                        self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
+                        self._monitors[name]._download_method = self._download_method
 
         return self._monitor_names
 
