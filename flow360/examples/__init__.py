@@ -6,3 +6,4 @@ from .cylinder import Cylinder
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .rotating_spheres import RotatingSpheres
+from .user_defined_dynamics import UserDefinedDynamics

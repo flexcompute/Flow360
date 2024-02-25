@@ -246,8 +246,7 @@ class MonitorsResultModel(ResultTarGZModel):
         return self.get_monitor_by_name(name)
 
 
-class UserDefinedDynamicsCSVModel(ResultCSVModel):
-    pass
+UserDefinedDynamicsCSVModel = ResultCSVModel
 
 
 class UserDefinedDynamicsResultModel(ResultBaseModel):
@@ -269,20 +268,19 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                     if match:
                         name = match.group(1)
                         self._udd_names.append(name)
-                        self._udds[name] = UserDefinedDynamicsCSVModel(
-                            remote_file_name=filename, _download_method=self._download_method
-                        )
+                        self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
+                        self._udds[name]._download_method = self._download_method
 
         return self._udd_names
 
-    def get_udd_by_name(self, name: str) -> MonitorCSVModel:
+    def get_udd_by_name(self, name: str) -> UserDefinedDynamicsCSVModel:
         if name not in self.udd_names:
             raise Flow360ValueError(
                 f"Cannot find user defined dynamics with provided name={name}, available user defined dynamics: {self.udd_names}"
             )
         return self._udds[name]
 
-    def __getitem__(self, name: str) -> MonitorCSVModel:
+    def __getitem__(self, name: str) -> UserDefinedDynamicsCSVModel:
         """to support [] access"""
         return self.get_udd_by_name(name)
 

@@ -1,0 +1,133 @@
+{
+	"geometry": {
+		"refArea": 1.15315084119231,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1.47602,
+			0.801672958512342,
+			1.47602
+		]
+	},
+	"boundaries": {
+		"1": {
+			"type": "NoSlipWall",
+			"name": "wing"
+		},
+		"2": {
+			"type": "SlipWall",
+			"name": "symmetry"
+		},
+		"3": {
+			"type": "Freestream",
+			"name": "freestream"
+		}
+	},
+	"timeStepping": {
+		"maxPseudoSteps": 2000,
+		"timeStepSize": "inf",
+		"CFL": {
+			"type": "ramp",
+			"initial": 5,
+			"final": 200,
+			"rampSteps": 100
+		}
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-10,
+		"kappaMUSCL": -1
+	},
+	"turbulenceModelSolver": {
+		"absoluteTolerance": 1e-8,
+		"kappaMUSCL": -1,
+		"modelType": "SpalartAllmaras"
+	},
+	"freestream": {
+		"Reynolds": 14600000,
+		"Mach": 0.84,
+		"Temperature": 288.15,
+		"alphaAngle": 3.06,
+		"betaAngle": 0
+	},
+	"surfaceOutput": {
+		"outputFormat": "tecplot",
+		"animationFrequency": -1,
+		"primitiveVars": true,
+		"Cp": true,
+		"Cf": true,
+		"CfVec": false,
+		"yPlus": false,
+		"wallDistance": false
+	},
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"animationFrequency": -1,
+		"primitiveVars": true,
+		"vorticity": false,
+		"residualNavierStokes": false,
+		"residualTurbulence": false,
+		"T": false,
+		"s": false,
+		"Cp": false,
+		"mut": false,
+		"mutRatio": false,
+		"Mach": true
+	},
+	"monitorOutput": {
+		"monitors": {
+			"Group1": {
+				"type": "probe",
+				"monitorLocations": [
+					[
+						0.12,
+						0.34,
+						0.262
+					],
+					[
+						0.3124,
+						0.01,
+						0.03
+					]
+				],
+				"outputFields": [
+					"primitiveVars",
+					"vorticity",
+					"T",
+					"s",
+					"Cp",
+					"mut"
+				]
+			}
+		}
+	},
+	"userDefinedDynamics": [
+		{
+			"dynamicsName": "alphaController",
+			"inputVars": [
+				"CL"
+			],
+			"constants": {
+				"CLTarget": 0.4,
+				"Kp": 0.2,
+				"Ki": 0.002
+			},
+			"outputVars": {
+				"alphaAngle": "if (pseudoStep > 500) state[0]; else alphaAngle;"
+			},
+			"stateVarsInitialValue": [
+				"alphaAngle",
+				"0.0"
+			],
+			"updateLaw": [
+				"if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
+				"if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];"
+			],
+			"inputBoundaryPatches": [
+				"1"
+			]
+		}
+	]
+}
