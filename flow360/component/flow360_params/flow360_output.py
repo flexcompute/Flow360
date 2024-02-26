@@ -713,10 +713,8 @@ class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
 
     def update_model(self):
         model = {
-            "animationSettings": {
-                "frequency": self.animation_frequency,
-                "frequencyOffset": self.animation_frequency_offset,
-            },
+            "animationFrequency": self.animation_frequency,
+            "animationFrequencyOffset": self.animation_frequency_offset,
             "outputFormat": self.output_format,
             "isoSurfaces": self.iso_surfaces,
         }
