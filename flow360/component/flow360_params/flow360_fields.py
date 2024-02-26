@@ -27,6 +27,7 @@ CommonFieldNamesFull = Literal[
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
     "Velocity with respect to non-inertial frame",
+    "Linear residual of Navier-Stokes Equation"
 ]
 
 CommonFieldNames = Literal[
@@ -52,6 +53,7 @@ CommonFieldNames = Literal[
     "numericalDissipationFactor",
     "residualHeatSolver",
     "VelocityRelative",
+    "NavierStokes_linearResidual"
 ]
 
 SurfaceFieldNamesFull = Literal[
