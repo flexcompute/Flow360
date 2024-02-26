@@ -143,6 +143,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     linear_solver:
         Linear solver settings
+    
+    enforce_low_mach_preconditioner:
+        Uses preconditioning for accelerating low Mach number flows.
 
     Returns
     -------
@@ -173,6 +176,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     )
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
+
+    if Flags.beta_features():
+        enforce_low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="enforceLowMachPreconditioner")
 
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
