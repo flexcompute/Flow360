@@ -2,6 +2,7 @@ from .actuator_disk import ActuatorDisk
 from .airplane import Airplane
 from .bet_disk import BETDisk
 from .bet_line import BETLine
+from .convergence import Convergence
 from .cylinder import Cylinder
 from .forces import Forces
 from .monitors import MonitorsAndSlices

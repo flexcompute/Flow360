@@ -1713,7 +1713,6 @@ class Flow360ParamsLegacy(LegacyModel):
                     "iso_surface_output": try_update(self.iso_surface_output),
                     "monitor_output": self.monitor_output,
                     "aeroacoustic_output": self.aeroacoustic_output,
-                    "fluid_properties": None,
                     "volume_zones": self.volume_zones,
                     "bet_disks": try_update(self.bet_disks),
                 }
