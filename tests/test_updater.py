@@ -106,5 +106,3 @@ def test_updater_with_comments():
     assert params.fluid_properties.density == 1.225
     assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
     assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
-
-
