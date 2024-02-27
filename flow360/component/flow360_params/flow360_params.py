@@ -145,6 +145,7 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
+    _check_numericalDissipationFactor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
@@ -1264,6 +1265,14 @@ class Flow360Params(Flow360BaseModel):
         check incompressible Navier-Stokes solver
         """
         return _check_incompressible_navier_stokes_solver(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_numericalDissipationFactor_output(cls, values):
+        """
+        Detect output of numericalDissipationFactor if not enabled.
+        """
+        return _check_numericalDissipationFactor_output(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):

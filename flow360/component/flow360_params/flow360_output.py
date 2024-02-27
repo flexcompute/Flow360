@@ -503,6 +503,7 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
     iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 
 
 class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
