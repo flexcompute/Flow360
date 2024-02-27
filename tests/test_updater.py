@@ -87,6 +87,7 @@ def test_updater_from_files():
     for file in files:
         params = fl.Flow360Params(f"data/cases/{file}")
         assert params
+        params.flow360_json()
 
 
 def test_version_update():
@@ -105,3 +106,5 @@ def test_updater_with_comments():
     assert params.fluid_properties.density == 1.225
     assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
     assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
+
+

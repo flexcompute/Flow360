@@ -1542,7 +1542,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
             "referenceFrame": {
                 "axis": self.axis,
                 # pylint: disable=no-member
-                "center": self.center * u.m,
+                "center": self.center * flow360_unit_system.length,
             },
         }
 
