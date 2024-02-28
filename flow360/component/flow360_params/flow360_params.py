@@ -1268,7 +1268,7 @@ class Flow360Params(Flow360BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator
-    def check_numericalDissipationFactor_output(cls, values):
+    def check_numerical_dissipation_factor_output(cls, values):
         """
         Detect output of numericalDissipationFactor if not enabled.
         """
