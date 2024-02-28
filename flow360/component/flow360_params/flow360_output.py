@@ -232,7 +232,7 @@ class Slice(Flow360BaseModel):
 
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields")
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
