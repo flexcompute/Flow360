@@ -53,7 +53,10 @@ def test_freesteam():
             },
             boundaries={},
         )
-        p = fl.Flow360Params(freestream={"modelType": "FromVelocity", "velocity": 1}, boundaries={})
+        p = fl.Flow360Params(
+            freestream={"modelType": "FromVelocity", "velocity": 1},
+            boundaries={},
+        )
 
         with pytest.raises(pd.ValidationError):
             fs = FreestreamFromMach(Mach=-1, Temperature=100)

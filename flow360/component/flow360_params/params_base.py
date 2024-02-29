@@ -107,6 +107,15 @@ class DeprecatedAlias(BaseModel):
     deprecated: str
 
 
+class Conflicts(BaseModel):
+    """
+    Wrapper for handling fields that cannot be specified simultaneously
+    """
+
+    field1: str
+    field2: str
+
+
 def encode_ndarray(x):
     """
     encoder for ndarray
@@ -234,6 +243,7 @@ class Flow360BaseModel(BaseModel):
         require_one_of: Optional[List[str]] = []
         allow_but_remove: Optional[List[str]] = []
         deprecated_aliases: Optional[List[DeprecatedAlias]] = []
+        conflicting_fields: Optional[List[Conflicts]] = []
         include_hash: bool = False
         include_defaults_in_schema: bool = True
         exclude_on_flow360_export: Optional[Any] = None
@@ -287,6 +297,37 @@ class Flow360BaseModel(BaseModel):
         if cls.Config.deprecated_aliases:
             for deprecated_alias in cls.Config.deprecated_aliases:
                 values = cls._handle_depracated_alias(values, deprecated_alias)
+        return values
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def handle_conflicting_fields(cls, values):
+        """
+        root validator to handle deprecated aliases
+        """
+        if cls.Config.conflicting_fields:
+            for conflicting_field in cls.Config.conflicting_fields:
+                values = cls._handle_conflicting_fields(values, conflicting_field)
+        return values
+
+    @classmethod
+    def _handle_conflicting_fields(cls, values, conflicting_field: Conflicts = None):
+        conflicting_field1_value = values.get(conflicting_field.field1, None)
+        conflicting_field2_value = values.get(conflicting_field.field2, None)
+
+        if conflicting_field1_value is None:
+            field1_alias = cls._get_field_alias(field_name=conflicting_field.field1)
+            conflicting_field1_value = values.get(field1_alias, None)
+
+        if conflicting_field2_value is None:
+            field2_alias = cls._get_field_alias(field_name=conflicting_field.field2)
+            conflicting_field2_value = values.get(field2_alias, None)
+
+        if conflicting_field1_value is not None and conflicting_field2_value is not None:
+            raise ValueError(
+                f"{conflicting_field.field1} and {conflicting_field.field2} cannot be specified at the same time."
+            )
+
         return values
 
     @classmethod

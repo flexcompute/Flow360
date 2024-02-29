@@ -5,20 +5,8 @@
     "version": "0.2.0b18",
     "geometry": {
         "refArea": {
-            "value": 1.15315084119231,
-            "units": "m**2"
-        },
-        "momentLength": {
-            "value": [
-                1.47602,
-                0.801672958512342,
-                1.47602
-            ],
-            "units": "m"
-        },
-        "meshUnit": {
             "value": 1.0,
-            "units": "m"
+            "units": "2*m**2"
         }
     },
     "boundaries": {
@@ -39,6 +27,7 @@
     },
     "timeStepping": {
         "maxPseudoSteps": 2000,
+        "orderOfAccuracy": 2,
         "modelType": "Steady",
         "physicalSteps": 1,
         "timeStepSize": "inf",
@@ -51,21 +40,21 @@
         }
     },
     "navierStokesSolver": {
-        "absoluteTolerance": 1.0e-10,
+        "absoluteTolerance": 1e-10,
         "relativeTolerance": 0.0,
-        "CFLMultiplier": 1.0,
-        "kappaMUSCL": -1.0,
-        "updateJacobianFrequency": 4,
-        "equationEvalFrequency": 1,
-        "maxForceJacUpdatePhysicalSteps": 0,
         "orderOfAccuracy": 2,
+        "CFLMultiplier": 1.0,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "kappaMUSCL": -1.0,
+        "equationEvalFrequency": 1,
         "numericalDissipationFactor": 1.0,
-        "linearSolverConfig": {
-            "maxIterations": 30,
-            "absoluteTolerance": 1e-10
-        },
         "limitVelocity": false,
-        "limitPressureDensity": false
+        "limitPressureDensity": false,
+        "linearSolverConfig": {
+            "maxIterations": 30
+        },
+        "modelType": "Compressible"
     },
     "freestream": {
         "modelType": "FromVelocity",
@@ -78,6 +67,13 @@
     },
     "surfaceOutput": {
         "outputFormat": "tecplot",
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "computeTimeAverages": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1,
+        "writeSingleFile": false,
         "outputFields": [
             "yPlus",
             "primitiveVars"
@@ -96,6 +92,12 @@
     },
     "volumeOutput": {
         "outputFormat": "tecplot",
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "computeTimeAverages": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1,
         "outputFields": [
             "Mach",
             "primitiveVars"
@@ -103,6 +105,8 @@
     },
     "sliceOutput": {
         "outputFormat": "tecplot",
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
         "outputFields": [
             "Cp"
         ],
@@ -139,5 +143,5 @@
             }
         }
     },
-    "hash": "b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b"
+    "hash": "25b0e1c3eb9f24f368e3851b153e12b01c5d94cf370ff9869859b6fed1a963f6"
 }
