@@ -31,11 +31,11 @@ from ..flow360_params.unit_system import (
 
 TMP_DIR = tempfile.mkdtemp()
 
+
 def _temp_file_generator(suffix: str = ""):
     random_name = str(uuid.uuid4()) + suffix
     file_path = os.path.join(TMP_DIR, random_name)
     return file_path
-
 
 
 class CaseDownloadable(Enum):
@@ -183,8 +183,7 @@ class ResultCSVModel(ResultBaseModel):
     """
 
     temp_file: str = pd.Field(
-        const=True,
-        default_factory=lambda: _temp_file_generator(suffix=".csv")
+        const=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
     )
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
@@ -487,7 +486,10 @@ class MonitorsResultModel(ResultTarGZModel):
                         name = match.group(1)
                         self._monitor_names.append(name)
                         self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
-                        self._monitors[name]._download_method = self._download_method # pylint: disable=protected-access
+                        # pylint: disable=protected-access
+                        self._monitors[name]._download_method = (
+                            self._download_method
+                        )  # pylint: disable=protected-access
 
         return self._monitor_names
 
@@ -563,7 +565,10 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                         name = match.group(1)
                         self._udd_names.append(name)
                         self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                        self._udds[name]._download_method = self._download_method # pylint: disable=protected-access
+                         # pylint: disable=protected-access
+                        self._udds[name]._download_method = (
+                            self._download_method
+                        )
 
         return self._udd_names
 
