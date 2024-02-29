@@ -132,7 +132,10 @@ def test_cht_solver_no_heat_transfer_zone():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                slice_output=SliceOutput(output_fields=["residualHeatSolver"]),
+                slice_output=SliceOutput(
+                    output_fields=["residualHeatSolver"],
+                    slices={"s1": fl.Slice(slice_normal=(1, 0, 0), slice_origin=(1, 2, 3))},
+                ),
                 volume_zones={
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),
@@ -148,8 +151,16 @@ def test_cht_solver_no_heat_transfer_zone():
             param = Flow360Params(
                 iso_surface_output=IsoSurfaceOutput(
                     iso_surfaces={
-                        "iso_surface_0": IsoSurface(output_fields=["residualHeatSolver"]),
-                        "iso_surface_1": IsoSurface(output_fields=["residualHeatSolver"]),
+                        "iso_surface_0": IsoSurface(
+                            output_fields=["residualHeatSolver"],
+                            surface_field="p",
+                            surface_field_magnitude=0.1,
+                        ),
+                        "iso_surface_1": IsoSurface(
+                            output_fields=["residualHeatSolver"],
+                            surface_field="p",
+                            surface_field_magnitude=0.1,
+                        ),
                     }
                 ),
                 volume_zones={
@@ -165,7 +176,12 @@ def test_cht_solver_no_heat_transfer_zone():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                monitor_output=MonitorOutput(output_fields=["residualHeatSolver"]),
+                monitor_output=MonitorOutput(
+                    output_fields=["residualHeatSolver"],
+                    monitors={
+                        "probe_1": fl.ProbeMonitor(monitor_locations=[(1, 1, 2), (2, 2, 23)])
+                    },
+                ),
                 volume_zones={
                     "blk-1": FluidDynamicsVolumeZone(),
                     "blk-2": FluidDynamicsVolumeZone(),

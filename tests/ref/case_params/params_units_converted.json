@@ -51,6 +51,7 @@
     },
     "timeStepping": {
         "maxPseudoSteps": 500,
+        "orderOfAccuracy": 2,
         "CFL": {
             "convergenceLimitingFactor": 1.0,
             "max": 1000000.0,
@@ -72,6 +73,18 @@
         "Mach": 0.8404497144189705,
         "muRef": 4.292519319815164e-05,
         "Temperature": 288.15
+    },
+    "surfaceOutput": {
+        "outputFormat": "paraview",
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "computeTimeAverages": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1,
+        "writeSingleFile": false,
+        "outputFields": [ ],
+        "surfaces": { "freestream": { "outputFields": [ ] }, "symmetry": { "outputFields": [ ] }, "wing": { "outputFields": [ ] } }
     },
     "volumeZones": {
         "zone2": {
@@ -135,5 +148,5 @@
             }
         }
     },
-    "hash": "4702a81d4d2bd06b63a15aa205d4cebb2005c47639d0eeca043edb3f3aac2b11"
+    "hash": "b9b81f80723ba1a728afcffaa69255cd6dfa192ae94daf15cffbdc1b75382298"
 }

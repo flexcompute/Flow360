@@ -18,19 +18,10 @@ freestream:
         units: m/s
         value: 286.0
 geometry:
-    meshUnit:
-        units: m
-        value: 1.0
-    momentLength:
-        units: m
-        value:
-        - 1.47602
-        - 0.801672958512342
-        - 1.47602
     refArea:
-        units: m**2
-        value: 1.15315084119231
-hash: b57995f3a57aaef2632b13bd2c8fcfe53389ea9371f5de51ad6906437703f60b
+        units: 2*m**2
+        value: 1.0
+hash: 25b0e1c3eb9f24f368e3851b153e12b01c5d94cf370ff9869859b6fed1a963f6
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
@@ -39,14 +30,16 @@ navierStokesSolver:
     limitPressureDensity: false
     limitVelocity: false
     linearSolverConfig:
-        absoluteTolerance: 1.0e-10
         maxIterations: 30
     maxForceJacUpdatePhysicalSteps: 0
+    modelType: Compressible
     numericalDissipationFactor: 1.0
     orderOfAccuracy: 2
     relativeTolerance: 0.0
     updateJacobianFrequency: 4
 sliceOutput:
+    animationFrequency: -1
+    animationFrequencyOffset: 0
     outputFields:
     - Cp
     outputFormat: tecplot
@@ -74,10 +67,16 @@ sliceOutput:
             - 1.0
             - 0.0
 surfaceOutput:
+    animationFrequency: -1
+    animationFrequencyOffset: 0
+    animationFrequencyTimeAverage: -1
+    animationFrequencyTimeAverageOffset: 0
+    computeTimeAverages: false
     outputFields:
     - yPlus
     - primitiveVars
     outputFormat: tecplot
+    startAverageIntegrationStep: -1
     surfaces:
         freestream:
             outputFields:
@@ -90,6 +89,7 @@ surfaceOutput:
         wing:
             outputFields:
             - CfVec
+    writeSingleFile: false
 timeStepping:
     CFL:
         convergenceLimitingFactor: 0.25
@@ -99,13 +99,20 @@ timeStepping:
         type: adaptive
     maxPseudoSteps: 2000
     modelType: Steady
+    orderOfAccuracy: 2
     physicalSteps: 1
     timeStepSize: inf
 unitSystem:
     name: SI
 version: 0.2.0b18
 volumeOutput:
+    animationFrequency: -1
+    animationFrequencyOffset: 0
+    animationFrequencyTimeAverage: -1
+    animationFrequencyTimeAverageOffset: 0
+    computeTimeAverages: false
     outputFields:
     - Mach
     - primitiveVars
     outputFormat: tecplot
+    startAverageIntegrationStep: -1

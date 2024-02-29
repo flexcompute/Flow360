@@ -90,15 +90,65 @@ def test_transition():
     tr = TransitionModelSolver()
     assert tr
 
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            geometry=fl.Geometry(mesh_unit="m"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            fluid_properties=fl.air,
+            boundaries={},
+            transition_model_solver=tr,
+        )
+        assert params.transition_model_solver.N_crit is None
+        params = params.to_solver()
+        assert params.transition_model_solver.N_crit == 8.15
+
+    with pytest.raises(
+        pd.ValidationError,
+        match="N_crit and turbulence_intensity_percent cannot be specified at the same time.",
+    ):
+        tr = TransitionModelSolver(
+            update_jacobian_frequency=5,
+            equation_eval_frequency=10,
+            max_force_jac_update_physical_steps=10,
+            order_of_accuracy=1,
+            turbulence_intensity_percent=1.2,
+            Ncrit=2,
+        )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match="N_crit and turbulence_intensity_percent cannot be specified at the same time.",
+    ):
+        tr = TransitionModelSolver(
+            update_jacobian_frequency=5,
+            equation_eval_frequency=10,
+            max_force_jac_update_physical_steps=10,
+            order_of_accuracy=1,
+            turbulence_intensity_percent=1.2,
+            N_crit=2.3,
+        )
+
     tr = TransitionModelSolver(
         update_jacobian_frequency=5,
         equation_eval_frequency=10,
         max_force_jac_update_physical_steps=10,
         order_of_accuracy=1,
         turbulence_intensity_percent=1.2,
-        N_crit=2,
     )
     to_file_from_file_test(tr)
+
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            geometry=fl.Geometry(mesh_unit="m"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            fluid_properties=fl.air,
+            boundaries={},
+            transition_model_solver=tr,
+        )
+        assert params.transition_model_solver.N_crit is None
+        params = params.to_solver()
+        assert params.transition_model_solver.N_crit == 2.3598473252999543
+        assert params.transition_model_solver.turbulence_intensity_percent is None
 
 
 def test_heat_equation():
@@ -116,6 +166,19 @@ def test_heat_equation():
         compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
     else:
         compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+
+    with pytest.raises(
+        pd.ValidationError,
+        match="absolute_tolerance and relative_tolerance cannot be specified at the same time.",
+    ):
+        he = HeatEquationSolver(
+            equation_eval_frequency=10,
+            linearSolverConfig=LinearSolver(
+                absoluteTolerance=1e-10,
+                max_iterations=50,
+                relative_tolerance=0.01,
+            ),
+        )
 
 
 def test_turbulence_none_solver():

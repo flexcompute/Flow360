@@ -82,11 +82,18 @@ def test_updater():
 
 
 def test_updater_from_files():
-    files = ["case_10.json", "case_13.json", "case_14_bet.json", "case_udd.json"]
+    files = [
+        "case_10.json",
+        "case_13.json",
+        "case_14_bet.json",
+        "case_udd.json",
+        "case_unsteady.json",
+    ]
 
     for file in files:
         params = fl.Flow360Params(f"data/cases/{file}")
         assert params
+        params.flow360_json()
 
 
 def test_version_update():

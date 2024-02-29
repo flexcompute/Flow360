@@ -17,6 +17,7 @@ def test_validate_service():
         "geometry": {
             "refArea": {"units": "m**2", "value": 1.15315084119231},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
@@ -40,6 +41,7 @@ def test_validate_service_missing_fluid_properties():
     params_data = {
         "geometry": {
             "refArea": {"units": "m**2", "value": 1.15315084119231},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
@@ -58,6 +60,7 @@ def test_validate_service_missing_unit_system():
     params_data = {
         "geometry": {
             "refArea": {"units": "m**2", "value": 1.15315084119231},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
@@ -75,6 +78,7 @@ def test_validate_service_incorrect_unit():
     params_data = {
         "geometry": {
             "refArea": {"units": "m", "value": 1.15315084119231},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
@@ -94,6 +98,7 @@ def test_validate_service_incorrect_value():
         "geometry": {
             "refArea": {"units": "m**2", "value": -1.15315084119231},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
@@ -110,15 +115,16 @@ def test_validate_service_incorrect_value():
 def test_validate_service_no_value():
     params_data = {
         "geometry": {
-            "refArea": {"units": "m**2", "value": None},
+            "refArea": {"units": "m**2", "value": 1.234},
             "momentLength": {"units": "m", "value": [1.47602, 0.801672958512342, 1.47602]},
+            "momentCenter": {"units": "mm", "value": [1.2, 2.3, 3.4]},
             "meshUnit": {"units": "m", "value": 1.0},
         },
         "boundaries": {},
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": None, "units": "m/s"}},
         "fluidProperties": {
             "modelType": "AirDensity",
-            "temperature": {"value": 288.15, "units": "K"},
+            "temperature": {"value": None, "units": "K"},
             "density": {"value": 1.225, "units": "kg/m**3"},
         },
     }

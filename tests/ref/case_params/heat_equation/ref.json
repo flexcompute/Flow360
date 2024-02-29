@@ -4,5 +4,11 @@
     "maxIterations": 50,
     "absoluteTolerance": 1e-10
   },
-  "equationEvalFrequency": 10
+  "equationEvalFrequency": 10,
+  "CFLMultiplier": 1.0,
+  "maxForceJacUpdatePhysicalSteps": 0,
+  "modelType": "HeatEquation",
+  "orderOfAccuracy": 2,
+  "relativeTolerance": 0.001,
+  "updateJacobianFrequency": 1
 }
