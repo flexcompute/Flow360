@@ -42,6 +42,10 @@
         "outputFormat":"paraview",
         "animationFrequency": -1
     },
+    "isoSurfaceOutput" : {
+        "outputFormat":"paraview",
+        "animationFrequency": -1
+    },
     "navierStokesSolver" : {
         "absoluteTolerance" : 1e-9,
         "relativeTolerance" : 1e-2,

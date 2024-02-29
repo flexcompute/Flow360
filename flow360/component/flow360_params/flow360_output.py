@@ -57,6 +57,7 @@ def _filter_fields(fields, literal_filter):
 
 def _distribute_shared_output_fields(solver_values: dict, item_names: str):
     shared_fields = solver_values.pop("output_fields")
+    print("shared_fields = ", shared_fields)
     shared_fields = [to_short(field) for field in shared_fields]
     if solver_values[item_names] is not None:
         for name in solver_values[item_names].names():
@@ -528,7 +529,7 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`IsoSurfaceOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
+    iso_surfaces: IsoSurfaces = pd.Field(alias="isoSurfaces")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
 
     # pylint: disable=arguments-differ
@@ -651,7 +652,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     coarsen_iterations: Optional[int] = pd.Field(alias="coarsenIterations")
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
-    slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field()
+    slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field({})
 
     def update_model(self) -> Flow360BaseModel:
         fields = get_output_fields(
@@ -734,12 +735,20 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
 class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
     """:class:`IsoSurfaceOutputLegacy` class"""
 
+    iso_surfaces: Optional[IsoSurfaces] = pd.Field({}, alias="isoSurfaces")
+
     def update_model(self):
+        fields = get_output_fields(
+            self,
+            [],
+            allowed=get_field_values(CommonFieldNames),
+        )
         model = {
             "animationFrequency": self.animation_frequency,
             "animationFrequencyOffset": self.animation_frequency_offset,
             "outputFormat": self.output_format,
             "isoSurfaces": self.iso_surfaces,
+            "outputFields": fields,
         }
 
         return IsoSurfaceOutput.parse_obj(model)
