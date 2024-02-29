@@ -457,39 +457,34 @@ def _check_consistency_temperature(values):
     return values
 
 
-# def _get_all_output_fields_in_instance(values, output_name):
-#     output_class_name = output_name + "_output"
-#     sortable_item_name = output_name + "s"
-#     current_output = values.get(output_class_name)
-#     all_output_fields = set()
-#     if current_output is None:
-#         return all_output_fields
-#     shared_output = current_output.output_fields
-#     if shared_output is not None:
-#         all_output_fields.update(shared_output)
-#     sortable_items = getattr(current_output, sortable_item_name, None)
-#     if sortable_items is None:
-#         return all_output_fields
-#     for name in sortable_items.names():
-#         item_output = sortable_items[name].output_fields
-#         if item_output is None:
-#             continue
-#         all_output_fields.update(item_output)
-#     return all_output_fields
+def _get_all_output_fields_in_instance(values, output_name):
+    output_class_name = output_name + "_output"
+    sortable_item_name = output_name + "s"
+    current_output = values.get(output_class_name)
+    all_output_fields = set()
+    if current_output is None:
+        return all_output_fields
+    shared_output = current_output.output_fields
+    if shared_output is not None:
+        all_output_fields.update(shared_output)
+    sortable_items = getattr(current_output, sortable_item_name, None)
+    if sortable_items is None:
+        return all_output_fields
+    for name in sortable_items.names():
+        item_output = sortable_items[name].output_fields
+        if item_output is None:
+            continue
+        all_output_fields.update(item_output)
+    return all_output_fields
 
 
 def _get_all_output_fields(values):
     used_output_fields = set()
     used_output_fields.update(get_all_output_fields(values.get("volume_output")))
-    print("Post volume_output: ", used_output_fields)
     used_output_fields.update(get_all_output_fields(values.get("surface_output")))
-    print("Post surface_output: ", used_output_fields)
     used_output_fields.update(get_all_output_fields(values.get("slice_output")))
-    print("Post slice_output: ", used_output_fields)
     used_output_fields.update(get_all_output_fields(values.get("iso_surface_output")))
-    print("Post iso_surface_output: ", used_output_fields)
     used_output_fields.update(get_all_output_fields(values.get("monitor_output")))
-    print("Post monitor_output: ", used_output_fields)
     return used_output_fields
 
 
