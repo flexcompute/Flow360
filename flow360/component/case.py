@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import tempfile
-from time import sleep
+import time
 from typing import Any, Iterator, List, Union
 
 import pydantic as pd
@@ -624,10 +624,14 @@ class Case(CaseBase, Flow360Resource):
         )
         return new_case
 
-    def wait(self, refresh_rate=2):
+    def wait(self, refresh_rate_seconds=2, timeout_minutes=60):
         """Wait until the Case finishes processing, refresh periodically"""
+        
+        start_time = time.time()
         while self.is_finished() is False:
-            sleep(refresh_rate)
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError("Timeout: Process did not finish within the specified timeout period")            
+            time.sleep(refresh_rate_seconds)
 
 
 # pylint: disable=unnecessary-lambda

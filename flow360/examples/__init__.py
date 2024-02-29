@@ -4,8 +4,7 @@ from .bet_disk import BETDisk
 from .bet_line import BETLine
 from .convergence import Convergence
 from .cylinder import Cylinder
-from .forces import Forces
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .rotating_spheres import RotatingSpheres
-from .user_defined_dynamics import UserDefinedDynamics
+from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics

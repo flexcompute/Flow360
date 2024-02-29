@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 from enum import Enum
 from typing import Callable, Dict, List, Optional
 
@@ -108,8 +109,8 @@ class ResultCSVModel(ResultBaseModel):
         self._raw_values = self._read_csv_file(filename)
         self.local_file_name = filename
 
-    def load_from_remote(self):
-        self.download(to_file=self.temp_file, overwrite=True)
+    def load_from_remote(self, **kwargs_download):
+        self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
         self._raw_values = self._read_csv_file(self.temp_file)
         self.local_file_name = self.temp_file
 
@@ -197,6 +198,21 @@ class SurfaceForcesResultCSVModel(ResultCSVModel):
 
 class ForceDistributionResultCSVModel(ResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, const=True)
+
+    def wait(self, refresh_rate_seconds=2, timeout_minutes=60):
+        """Wait until the Case finishes processing, refresh periodically"""
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout_minutes * 60:
+            try:
+                self.load_from_remote(log_error=False)
+                return None
+            except CloudFileNotFoundError:
+                pass
+            time.sleep(refresh_rate_seconds)
+
+        raise TimeoutError("Timeout: post-processing did not finish within the specified timeout period.")            
+
 
 
 class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
