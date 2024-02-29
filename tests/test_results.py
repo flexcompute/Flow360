@@ -105,9 +105,10 @@ def test_downloading(mock_response):
     case = fl.Case(id=mock_id)
     results = case.results
 
-    with tempfile.NamedTemporaryFile(suffix=".csv") as temp_file:
-        results.bet_forces.download(temp_file.name, overwrite=True)
-        results.bet_forces.load_from_local(temp_file.name)
+    with tempfile.TemporaryDirectory() as dir:
+        temp_file_name = os.path.join(dir, "temp.csv")
+        results.bet_forces.download(temp_file_name, overwrite=True)
+        results.bet_forces.load_from_local(temp_file_name)
         assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
 
     case = deepcopy(fl.Case(id=mock_id))
