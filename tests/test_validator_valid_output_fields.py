@@ -95,7 +95,7 @@ def test_numerical_dissipation_output_criterion():
             monitor_output=None,
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
-
+        print("---")
         param.navier_stokes_solver = NavierStokesSolver(numerical_dissipation_factor=0.99)
         assert param
         for attr_name, attr_obj in output_database.items():
@@ -103,6 +103,7 @@ def test_numerical_dissipation_output_criterion():
                 ValueError,
                 match="Numerical dissipation factor output requested but low dissipation mode is not enabled",
             ):
+                print("---")
                 setattr(param, attr_name, attr_obj)
 
         param.navier_stokes_solver = NavierStokesSolver(numerical_dissipation_factor=0.2)
