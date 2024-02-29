@@ -29,7 +29,6 @@ print(results.total_forces.as_dataframe())
 # 6               0           60  0.240189  0.197541  0.184438 -0.072966  0.250392  0.114257 -0.240625  ...       -0.021926
 
 
-
 print(results.surface_forces.as_dataframe())
 # >>>
 #   physical_step  pseudo_step   wing_CL   wing_CD  wing_CFx  wing_CFy  wing_CFz  wing_CMx  ...

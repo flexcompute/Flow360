@@ -1,11 +1,14 @@
+from pylab import *
+
 import flow360 as fl
 from flow360.examples import OM6wingUserDefinedDynamics
-from pylab import *
 
 OM6wingUserDefinedDynamics.get_files()
 
 # submit mesh
-volume_mesh = fl.VolumeMesh.from_file(OM6wingUserDefinedDynamics.mesh_filename, name="OM6wing-UDD-mesh")
+volume_mesh = fl.VolumeMesh.from_file(
+    OM6wingUserDefinedDynamics.mesh_filename, name="OM6wing-UDD-mesh"
+)
 volume_mesh = volume_mesh.submit()
 
 # submit case using json file
@@ -30,5 +33,5 @@ for name in udd.udd_names:
     print(result.as_dataframe())
 
 
-udd["alphaController"].as_dataframe().plot(x="pseudo_step", y=['CL', 'state[0]', 'alphaAngle'])
+udd["alphaController"].as_dataframe().plot(x="pseudo_step", y=["CL", "state[0]", "alphaAngle"])
 show()

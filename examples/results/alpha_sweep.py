@@ -1,8 +1,10 @@
-import flow360 as fl
-from typing import List
-from flow360.examples import OM6wing
-from pylab import *
 import os
+from typing import List
+
+from pylab import *
+
+import flow360 as fl
+from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
@@ -24,16 +26,14 @@ case_list: List[fl.Case] = []
 alpha_range = range(-6, 15, 2)
 for alpha in alpha_range:
     params.freestream.alpha = alpha
-    case = fl.Case.create(f'alpha-sweep-OM6wing-alpha={alpha}', params, volume_mesh.id)
+    case = fl.Case.create(f"alpha-sweep-OM6wing-alpha={alpha}", params, volume_mesh.id)
     case = case.submit()
     case.move_to_folder(folder)
     case_list.append(case)
 
 
-
 # wait for all cases to finish processing
 [case.wait() for case in case_list]
-
 
 
 # calculate average using dataframe structure and pandas functions
@@ -49,27 +49,24 @@ CD_list = []
 for case in case_list:
     total_forces = case.results.total_forces
 
-    average_CL = average_last_10_percent(total_forces.as_dataframe(), 'CL')
+    average_CL = average_last_10_percent(total_forces.as_dataframe(), "CL")
     CL_list.append(average_CL)
 
-    average_CD = average_last_10_percent(total_forces.as_dataframe(), 'CD')
+    average_CD = average_last_10_percent(total_forces.as_dataframe(), "CD")
     CD_list.append(average_CD)
 
 
 # download all data:
-results_folder = 'alpha_sweep_example'
+results_folder = "alpha_sweep_example"
 for case in case_list:
     results = case.results
-    results.set_destination(os.path.join(results_folder, case.name)) 
+    results.set_destination(os.path.join(results_folder, case.name))
     results.set_downloader(total_forces=True, nonlinear_residuals=True)
     results.download()
 
 
-
 # plot CL / CD
 plot(CD_list, CL_list)
-xlabel('CD')
-ylabel('CL')
+xlabel("CD")
+ylabel("CL")
 show()
-
-

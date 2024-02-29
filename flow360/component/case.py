@@ -626,11 +626,13 @@ class Case(CaseBase, Flow360Resource):
 
     def wait(self, refresh_rate_seconds=2, timeout_minutes=60):
         """Wait until the Case finishes processing, refresh periodically"""
-        
+
         start_time = time.time()
         while self.is_finished() is False:
             if time.time() - start_time > timeout_minutes * 60:
-                raise TimeoutError("Timeout: Process did not finish within the specified timeout period")            
+                raise TimeoutError(
+                    "Timeout: Process did not finish within the specified timeout period"
+                )
             time.sleep(refresh_rate_seconds)
 
 

@@ -50,5 +50,11 @@ print(results.max_residual_location.as_dataframe())
 # 72              0          713           NaN       -7.039405  ...         4.598506         9.537323
 
 results.set_destination(use_case_name=True)
-results.set_downloader(nonlinear_residuals=True, linear_residuals=True, cfl=True, minmax_state=True, max_residual_location=True)
+results.set_downloader(
+    nonlinear_residuals=True,
+    linear_residuals=True,
+    cfl=True,
+    minmax_state=True,
+    max_residual_location=True,
+)
 results.download()

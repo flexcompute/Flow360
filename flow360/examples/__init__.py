@@ -6,5 +6,5 @@ from .convergence import Convergence
 from .cylinder import Cylinder
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
-from .rotating_spheres import RotatingSpheres
 from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
+from .rotating_spheres import RotatingSpheres
