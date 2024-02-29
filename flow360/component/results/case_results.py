@@ -565,10 +565,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                         name = match.group(1)
                         self._udd_names.append(name)
                         self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                         # pylint: disable=protected-access
-                        self._udds[name]._download_method = (
-                            self._download_method
-                        )
+                        # pylint: disable=protected-access
+                        self._udds[name]._download_method = self._download_method
 
         return self._udd_names
 
