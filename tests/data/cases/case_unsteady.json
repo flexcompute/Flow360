@@ -1,0 +1,103 @@
+{
+    "geometry" : {
+        "refArea" : 70685.83470577035,
+        "momentCenter" : [0, 0, 0],
+        "momentLength" : [150, 150, 150]
+    },
+    "volumeOutput" : {
+        "outputFormat" : "paraview",
+        "primitiveVars" : true,
+        "vorticity" : false,
+        "residualNavierStokes" : false,
+        "residualTurbulence" : false,
+        "wallDistanceDir" : false,
+        "T" : false,
+        "s" : false,
+        "Cp" : false,
+        "Mach" : true,
+        "qcriterion" : false,
+        "mut" : false,
+        "VelocityRelative" : false,
+        "nuHat" : false,
+        "mutRatio" : false,
+        "animationFrequency": -1,
+        "computeTimeAverages" : false,
+        "startAverageIntegrationStep" : -1
+    },
+    "surfaceOutput" : {
+        "outputFormat" : "both",
+        "primitiveVars" : true,
+        "Cp" : true,
+        "Cf" : true,
+        "CfTangent" : true,
+        "CfNormal" : true,
+        "CfVec" : false,
+        "yPlus" : true,
+        "wallDistance" : false,
+        "Mach" : false,
+        "animationFrequency": -1,
+        "nodeForcesPerUnitArea" : true
+    },
+    "sliceOutput" : {
+        "outputFormat":"paraview",
+        "animationFrequency": -1
+    },
+    "navierStokesSolver" : {
+        "absoluteTolerance" : 1e-9,
+        "relativeTolerance" : 1e-2,
+        "linearIterations" : 35,
+        "kappaMUSCL" : -1.0,
+        "orderOfAccuracy" : 1,
+        "updateJacobianFrequency" : 1,
+        "equationEvalFrequency" : 1
+    },
+    "turbulenceModelSolver" : {
+        "modelType" : "SpalartAllmaras",
+        "absoluteTolerance" : 1e-8,
+        "relativeTolerance" : 1e-2,
+        "linearIterations" : 35,
+        "kappaMUSCL" : -1.0,
+        "DDES" : true,
+        "orderOfAccuracy" : 1,
+        "updateJacobianFrequency" : 1,
+        "equationEvalFrequency" : 1,
+        "rotationCorrection" : true
+    },
+    "freestream" :
+    {
+        "muRef" : 0.00000168,
+        "Mach" : 0.182,
+        "MachRef" : 0.54,                                                         
+        "Temperature" : 288.15,
+        "alphaAngle" : -90.0,
+        "betaAngle" : 0.0
+    },
+    "boundaries" : {
+        "stationaryField/farfield" : { "type" : "Freestream" },
+        "stationaryField/rotationInterface_static" : { "type" : "SlidingInterface" },
+        "rotationField/rotBnd" :   { "type" : "SlidingInterface" },
+        "rotationField/blade" :   { "type" : "NoSlipWall" },
+        "rotationField/blade_2" :  { "type" : "NoSlipWall" },
+        "rotationField/blade_3" :  { "type" : "NoSlipWall" }
+    },
+    "slidingInterfaces" : [
+    {
+        "stationaryPatches" : ["stationaryField/rotationInterface_static"],
+        "rotatingPatches" : ["rotationField/rotBnd"],
+        "axisOfRotation" : [0,0,-1],
+        "centerOfRotation" : [0,0,0],
+        "omega" : 0.0036,
+        "volumeName" : ["rotationField"]
+    }
+    ],
+    "timeStepping" : {
+		"timeStepSize" : 29.08882086657216,
+		"maxPhysicalSteps" : 120,
+		"maxPseudoSteps" : 12,
+        "CFL" : {
+            "initial" : 1,
+            "final" : 1000,
+            "rampSteps" : 11
+        }
+    }
+}

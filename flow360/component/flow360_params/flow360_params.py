@@ -1366,9 +1366,9 @@ class GeometryLegacy(Geometry, LegacyModel):
 
     def update_model(self) -> Flow360BaseModel:
         model = {
-            "momentCenter": self.moment_center * flow360_unit_system.length,
-            "momentLength": self.moment_length * flow360_unit_system.length,
-            "refArea": self.ref_area * flow360_unit_system.area,
+            "momentCenter": self.moment_center,
+            "momentLength": self.moment_length,
+            "refArea": self.ref_area,
         }
         if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
@@ -1507,7 +1507,7 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
                 "CFL": self.CFL,
                 "physicalSteps": self.physical_steps,
                 "maxPseudoSteps": self.max_pseudo_steps,
-                "timeStepSize": self.time_step_size * flow360_unit_system.time,
+                "timeStepSize": self.time_step_size,
             }
         }
 
