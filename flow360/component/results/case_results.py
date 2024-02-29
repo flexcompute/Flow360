@@ -5,6 +5,7 @@ import re
 import shutil
 import tempfile
 import time
+import uuid
 from enum import Enum
 from typing import Callable, Dict, List, Optional
 
@@ -27,6 +28,14 @@ from ..flow360_params.unit_system import (
     PowerType,
     is_flow360_unit,
 )
+
+TMP_DIR = tempfile.mkdtemp()
+
+def _temp_file_generator(suffix: str = ""):
+    random_name = str(uuid.uuid4()) + suffix
+    file_path = os.path.join(TMP_DIR, random_name)
+    return file_path
+
 
 
 class CaseDownloadable(Enum):
@@ -175,9 +184,7 @@ class ResultCSVModel(ResultBaseModel):
 
     temp_file: str = pd.Field(
         const=True,
-        default_factory=lambda: tempfile.NamedTemporaryFile(
-            delete=False, suffix=".csv"
-        ).name,  # pylint: disable=consider-using-with
+        default_factory=lambda: _temp_file_generator(suffix=".csv")
     )
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
@@ -480,9 +487,7 @@ class MonitorsResultModel(ResultTarGZModel):
                         name = match.group(1)
                         self._monitor_names.append(name)
                         self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
-                        self._monitors[name]._download_method = (
-                            self._download_method
-                        )  # pylint: disable=protected-access
+                        self._monitors[name]._download_method = self._download_method # pylint: disable=protected-access
 
         return self._monitor_names
 
@@ -558,9 +563,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                         name = match.group(1)
                         self._udd_names.append(name)
                         self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                        self._udds[name]._download_method = (
-                            self._download_method
-                        )  # pylint: disable=protected-access
+                        self._udds[name]._download_method = self._download_method # pylint: disable=protected-access
 
         return self._udd_names
 
