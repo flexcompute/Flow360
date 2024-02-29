@@ -1,3 +1,8 @@
+"""
+Flow360 solver parameters' utility functions
+"""
+
+
 def get_all_output_fields(output_obj):
     """
     Presents all the output fields requested in this output type
