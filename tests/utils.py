@@ -36,10 +36,22 @@ def file_compare(file1, file2):
 
 
 def show_dict_diff(dict1, dict2):
-    dict1_lines = [f"{key}: {value}" for key, value in sorted(dict1.items())]
-    dict2_lines = [f"{key}: {value}" for key, value in sorted(dict2.items())]
+    def dict_to_sorted_lines(d):
+        sorted_lines = []
+        for key, value in sorted(d.items(), key=lambda item: item[0]):
+            if isinstance(value, dict):
+                # Recursively sort nested dictionaries
+                value = "{" + ", ".join(dict_to_sorted_lines(value)) + "}"
+            sorted_lines.append(f"{key}: {value}")
+        return sorted_lines
 
-    diff = difflib.unified_diff(dict1_lines, dict2_lines)
+    dict1_lines = dict_to_sorted_lines(dict1)
+    dict2_lines = dict_to_sorted_lines(dict2)
+
+    # Generate the diff
+    diff = difflib.unified_diff(dict1_lines, dict2_lines, fromfile="dict1", tofile="dict2")
+
+    # Printing the diff
     print("diff")
     print("\n".join(diff))
     print("end of diff")

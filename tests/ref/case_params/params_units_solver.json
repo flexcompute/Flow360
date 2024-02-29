@@ -35,6 +35,7 @@
   },
   "timeStepping": {
     "maxPseudoSteps": 500,
+    "orderOfAccuracy": 2,
     "CFL": {
       "type": "adaptive",
       "min": 0.1,
@@ -51,6 +52,20 @@
     "Mach": 0.8404497144189705,
     "muRef": 4.292519319815164e-05,
     "Temperature": 288.15
+  },
+  "surfaceOutput": {
+    "outputFormat": "paraview",
+    "animationFrequency": -1,
+    "animationFrequencyOffset": 0,
+    "computeTimeAverages": false,
+    "animationFrequencyTimeAverage": -1,
+    "animationFrequencyTimeAverageOffset": 0,
+    "startAverageIntegrationStep": -1,
+    "writeSingleFile": false,
+    "outputFields": [ ],
+    "surfaces": { "freestream": { "outputFields": [ ] },
+      "symmetry": { "outputFields": [ ] },
+      "wing": { "outputFields": [ ] } }
   },
   "volumeZones": {
     "zone3": {

@@ -26,6 +26,7 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
+from flow360 import units
 from flow360.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
@@ -79,6 +80,7 @@ from .flow360_output import (
 )
 from .initial_condition import InitialConditions
 from .params_base import (
+    Conflicts,
     DeprecatedAlias,
     Flow360BaseModel,
     Flow360SortableBaseModel,
@@ -145,6 +147,7 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
+    _check_numericalDissipationFactor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
@@ -493,14 +496,25 @@ class Geometry(Flow360BaseModel):
 
     ref_area: Optional[AreaType.Positive] = pd.Field(alias="refArea", displayed="Reference area")
     moment_center: Optional[LengthType.Point] = pd.Field(alias="momentCenter")
+    ##Note: moment_length does not allow negative components I failed to enforce that here after attempts
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
-    mesh_unit: Optional[LengthType] = pd.Field(alias="meshUnit")
+    mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
         """
         returns configuration object in flow360 units system
         """
+        # Adds defaults:
+        if self.moment_center is None:
+            self.moment_center = (0, 0, 0) * units.flow360_length_unit
+        if self.ref_area is None:
+            self.ref_area = 1 * units.flow360_area_unit
+        if self.moment_length is None:
+            self.moment_length = (1.0, 1.0, 1.0) * units.flow360_length_unit
+        if self.mesh_unit is None:
+            self.mesh_unit = 1 * units.flow360_length_unit
+
         return super().to_solver(params, exclude=["mesh_unit"], **kwargs)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
@@ -519,7 +533,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
-    ##  should be oneOf{turbulent_viscosity_ratio, turbulence_quantities}, legacy update also pending.
+    ## Legacy update pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
     if Flags.beta_features():
@@ -527,9 +541,18 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
             alias="turbulenceQuantities"
         )
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["model_type"]
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(Flow360BaseModel.Config):
+            conflicting_fields = [
+                Conflicts(field1="turbulent_viscosity_ratio", field2="turbulence_quantities")
+            ]
+            exclude_on_flow360_export = ["model_type"]
+
+    else:
+
+        class Config(Flow360BaseModel.Config):
+            # pylint: disable=missing-class-docstring,too-few-public-methods
+            exclude_on_flow360_export = ["model_type"]
 
 
 class FreestreamFromMach(FreestreamBase):
@@ -965,7 +988,7 @@ class Flow360Params(Flow360BaseModel):
     unit_system: UnitSystemType = pd.Field(alias="unitSystem", mutable=False, discriminator="name")
     version: str = pd.Field(__version__, mutable=False)
 
-    geometry: Optional[Geometry] = pd.Field()
+    geometry: Optional[Geometry] = pd.Field(Geometry())
     fluid_properties: Optional[FluidPropertyType] = pd.Field(
         alias="fluidProperties", discriminator="model_type"
     )
@@ -990,7 +1013,9 @@ class Flow360Params(Flow360BaseModel):
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
         alias="userDefinedDynamics"
     )
-    surface_output: Optional[SurfaceOutput] = pd.Field(alias="surfaceOutput")
+    surface_output: Optional[SurfaceOutput] = pd.Field(
+        alias="surfaceOutput", default=SurfaceOutput()
+    )
     volume_output: Optional[VolumeOutput] = pd.Field(alias="volumeOutput")
     slice_output: Optional[SliceOutput] = pd.Field(alias="sliceOutput")
     iso_surface_output: Optional[IsoSurfaceOutput] = pd.Field(alias="isoSurfaceOutput")
@@ -1143,7 +1168,7 @@ class Flow360Params(Flow360BaseModel):
 
         flow360_dict = self.flow360_dict()
         with open(filename, "w", encoding="utf-8") as fh:
-            json.dump(flow360_dict, fh, indent=4)
+            json.dump(flow360_dict, fh, indent=4, sort_keys=True)
 
     def append(self, params: Flow360Params, overwrite: bool = False):
         if not isinstance(params, Flow360Params):
@@ -1264,6 +1289,14 @@ class Flow360Params(Flow360BaseModel):
         check incompressible Navier-Stokes solver
         """
         return _check_incompressible_navier_stokes_solver(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_numerical_dissipation_factor_output(cls, values):
+        """
+        Detect output of numericalDissipationFactor if not enabled.
+        """
+        return _check_numericalDissipationFactor_output(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):

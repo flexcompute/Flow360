@@ -17,6 +17,7 @@ from .boundaries import (
 )
 from .flow360_fields import get_aliases
 from .initial_condition import ExpressionInitialCondition
+from .params_utils import get_all_output_fields
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
 
@@ -155,10 +156,13 @@ def _validate_cht_no_heat_transfer_zone(values):
 
 def _validate_cht_has_heat_transfer_zone(values):
     navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None and isinstance(
-        navier_stokes_solver, IncompressibleNavierStokesSolver
-    ):
-        raise ValueError("Conjugate heat transfer can not be used with incompressible flow solver.")
+    if Flags.beta_features():
+        if navier_stokes_solver is not None and isinstance(
+            navier_stokes_solver, IncompressibleNavierStokesSolver
+        ):
+            raise ValueError(
+                "Conjugate heat transfer can not be used with incompressible flow solver."
+            )
 
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")
@@ -450,4 +454,28 @@ def _check_consistency_temperature(values):
                 f"{freestream_temp} != {fluid_temp}"
             )
 
+    return values
+
+
+def _get_all_output_fields(values):
+    used_output_fields = set()
+    used_output_fields.update(get_all_output_fields(values.get("volume_output")))
+    used_output_fields.update(get_all_output_fields(values.get("surface_output")))
+    used_output_fields.update(get_all_output_fields(values.get("slice_output")))
+    used_output_fields.update(get_all_output_fields(values.get("iso_surface_output")))
+    used_output_fields.update(get_all_output_fields(values.get("monitor_output")))
+    return used_output_fields
+
+
+def _check_numericalDissipationFactor_output(values):
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if navier_stokes_solver is not None:
+        numerical_dissipation_factor = navier_stokes_solver.numerical_dissipation_factor
+        low_dissipation_flag = int(round(1.0 / numerical_dissipation_factor)) - 1
+        if low_dissipation_flag == 0 and "numericalDissipationFactor" in _get_all_output_fields(
+            values
+        ):
+            raise ValueError(
+                "Numerical dissipation factor output requested but low dissipation mode is not enabled"
+            )
     return values
