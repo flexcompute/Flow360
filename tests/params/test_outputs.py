@@ -151,6 +151,42 @@ def test_slice_output():
 
     assert output
 
+    output = SliceOutput(
+        output_fields=["Coefficient of pressure", "qcriterion"],
+        slices={
+            "sliceName_1": flow360.Slice(
+                ## passing in set results in wrong error message
+                slice_normal={0, 1, 0},
+                slice_origin=(0, 0.56413 * u.m, 0),
+            ),
+            "sliceName_2": flow360.Slice(
+                slice_normal=(0, 0, 1),
+                ## (0, 0.56413, 0) * u.inch somehow does not work
+                slice_origin=(0, 0.56413, 0) * u.inch,
+                output_fields=["Mach"],
+            ),
+        },
+    )
+
+    output = SliceOutput(
+        output_fields=["Coefficient of pressure", "qcriterion"],
+        slices={
+            "sliceName_1": flow360.Slice(
+                ## u.flow360_length_unit somehow does not work
+                ## passing in list does not trigger error but I guess it is fine.
+                slice_normal=[0, 1, 0],
+                slice_origin=(0, 0.56413 * u.flow360_length_unit, 0),
+            ),
+            "sliceName_2": flow360.Slice(
+                slice_normal=(0, 0, 1),
+                slice_origin=(0, 0.56413 * u.inch, 0),
+                output_fields=["Mach"],
+            ),
+        },
+    )
+
+    assert output
+
     to_file_from_file_test(output)
 
     with flow360.SI_unit_system:
