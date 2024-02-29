@@ -81,7 +81,11 @@ from .component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
     FreestreamInitialCondition,
 )
-from .component.flow360_params.solvers import LinearSolver, NavierStokesSolver
+from .component.flow360_params.solvers import (
+    LinearSolver,
+    NavierStokesSolver,
+    PressureCorrectionSolver,
+)
 from .component.flow360_params.time_stepping import (
     AdaptiveCFL,
     RampCFL,
@@ -99,6 +103,7 @@ from .component.flow360_params.unit_system import (
 from .component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
+    InitialConditionHeatTransfer,
     ReferenceFrame,
     ReferenceFrameDynamic,
     ReferenceFrameExpression,

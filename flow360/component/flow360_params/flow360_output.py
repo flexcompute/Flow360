@@ -12,7 +12,7 @@ from pydantic import conlist
 
 from flow360.flags import Flags
 
-from ..types import Axis, Coordinate, PositiveInt
+from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -55,10 +55,21 @@ def _filter_fields(fields, literal_filter):
     fields[:] = [field for field in fields if field in values]
 
 
+def _distribute_shared_output_fields(solver_values: dict, item_names: str):
+    shared_fields = solver_values.pop("output_fields")
+    shared_fields = [to_short(field) for field in shared_fields]
+    if solver_values[item_names] is not None:
+        for name in solver_values[item_names].names():
+            item = solver_values[item_names][name]
+            for field in shared_fields:
+                if field not in item.output_fields:
+                    item.output_fields.append(field)
+
+
 class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
-    frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+    frequency: Optional[PositiveAndNegOneInt] = pd.Field(
         alias="frequency", options=["Animated", "Static"]
     )
     frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
@@ -67,7 +78,7 @@ class AnimationSettings(Flow360BaseModel):
 class AnimationSettingsExtended(AnimationSettings):
     """:class:`AnimationSettingsExtended` class"""
 
-    frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
+    frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
         alias="frequencyTimeAverage", options=["Animated", "Static"]
     )
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
@@ -76,10 +87,13 @@ class AnimationSettingsExtended(AnimationSettings):
 class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """:class:`AnimatedOutput` class"""
 
-    animation_frequency: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequency", options=["Animated", "Static"]
+    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat", default="paraview")
+    animation_frequency: Optional[PositiveAndNegOneInt] = pd.Field(
+        alias="animationFrequency", options=["Animated", "Static"], default=-1
     )
-    animation_frequency_offset: Optional[int] = pd.Field(alias="animationFrequencyOffset")
+    animation_frequency_offset: Optional[int] = pd.Field(
+        alias="animationFrequencyOffset", default=0
+    )
 
     # Temporarily disabled until solver-side support for new animation format is introduced
     """
@@ -106,14 +120,19 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """
 
 
-class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
-    """:class:`AnimatedOutputExtended` class"""
+class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
+    """:class:`TimeAverageAnimatedOutput` class"""
 
-    animation_frequency_time_average: Optional[Union[PositiveInt, Literal[-1]]] = pd.Field(
-        alias="animationFrequencyTimeAverage", options=["Animated", "Static"]
+    compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages", default=False)
+
+    animation_frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
+        alias="animationFrequencyTimeAverage", options=["Animated", "Static"], default=-1
     )
     animation_frequency_time_average_offset: Optional[int] = pd.Field(
-        alias="animationFrequencyTimeAverageOffset"
+        alias="animationFrequencyTimeAverageOffset", default=0
+    )
+    start_average_integration_step: Optional[NonNegativeAndNegOneInt] = pd.Field(
+        alias="startAverageIntegrationStep", default=-1
     )
 
     # Temporarily disabled until solver-side support for new animation format is introduced
@@ -121,7 +140,7 @@ class AnimatedOutputExtended(AnimatedOutput, metaclass=ABCMeta):
     animation_settings: Optional[AnimationSettingsExtended] = pd.Field(alias="animationSettings")
 
     # pylint: disable=unused-argument
-    def to_solver(self, params, **kwargs) -> AnimatedOutputExtended:
+    def to_solver(self, params, **kwargs) -> TimeAverageAnimatedOutput:
         if self.animation_settings is not None:
             if self.animation_settings.frequency is not None:
                 self.animation_frequency = self.animation_settings.frequency
@@ -157,7 +176,7 @@ class Surface(Flow360BaseModel):
     """:class:`Surface` class"""
 
     output_fields: Optional[SurfaceOutputFields] = pd.Field(
-        alias="outputFields", displayed="Output fields"
+        alias="outputFields", displayed="Output fields", default=[]
     )
 
     # pylint: disable=too-few-public-methods
@@ -197,14 +216,11 @@ class Surfaces(Flow360SortableBaseModel):
         )
 
 
-class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
+class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     """:class:`SurfaceOutput` class"""
 
-    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
-    write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile")
-    start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
-    output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields")
+    write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile", default=False)
+    output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields", default=[])
     surfaces: Optional[Surfaces] = pd.Field()
 
     # pylint: disable=too-few-public-methods
@@ -222,9 +238,23 @@ class SurfaceOutput(Flow360BaseModel, AnimatedOutputExtended):
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SurfaceOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
-        return SurfaceOutput(**solver_values, output_fields=fields)
+        # Add boundaries that are not listed into `surfaces` and applying shared fields.
+        boundary_names = []
+        for boundary_name in params.boundaries.names():
+            boundary = params.boundaries[boundary_name]
+            if boundary.name is not None:
+                boundary_names.append(boundary.name)
+            else:
+                boundary_names.append(boundary_name)
+        if solver_values["surfaces"] is None:
+            solver_values["surfaces"] = Surfaces()
+        for boundary_name in boundary_names:
+            if boundary_name not in solver_values["surfaces"].names():
+                solver_values["surfaces"][boundary_name] = Surface()
+                solver_values["surfaces"][boundary_name].output_fields = []
+        _distribute_shared_output_fields(solver_values, "surfaces")
+
+        return SurfaceOutput(**solver_values)
 
 
 class Slice(Flow360BaseModel):
@@ -232,7 +262,7 @@ class Slice(Flow360BaseModel):
 
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields")
+    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -281,9 +311,8 @@ class _GenericSliceWrapper(Flow360BaseModel):
 class SliceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`SliceOutput` class"""
 
-    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields")
-    slices: Optional[Slices]
+    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
+    slices: Slices = pd.Field()
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -300,18 +329,16 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SliceOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
-        return SliceOutput(**solver_values, output_fields=fields)
+        _distribute_shared_output_fields(solver_values, "slices")
+        return SliceOutput(**solver_values)
 
 
-class VolumeOutput(Flow360BaseModel, AnimatedOutputExtended):
+class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     """:class:`VolumeOutput` class"""
 
-    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages")
-    start_average_integration_step: Optional[int] = pd.Field(alias="startAverageIntegrationStep")
-    output_fields: Optional[VolumeOutputFields] = pd.Field(alias="outputFields")
+    output_fields: Optional[VolumeOutputFields] = pd.Field(
+        alias="outputFields", default=["primitiveVars", "Cp", "mut", "Mach"]
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -343,8 +370,8 @@ class SurfaceIntegralMonitor(MonitorBase):
     """:class:`SurfaceIntegralMonitor` class"""
 
     type: Literal["surfaceIntegral"] = pd.Field("surfaceIntegral", const=True)
-    surfaces: Optional[List[str]] = pd.Field()
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+    surfaces: List[str] = pd.Field()
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -370,8 +397,8 @@ class ProbeMonitor(MonitorBase):
     """:class:`ProbeMonitor` class"""
 
     type: Literal["probe"] = pd.Field("probe", const=True)
-    monitor_locations: Optional[List[Coordinate]] = pd.Field(alias="monitorLocations")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+    monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -423,8 +450,8 @@ class Monitors(Flow360SortableBaseModel):
 class MonitorOutput(Flow360BaseModel):
     """:class:`MonitorOutput` class"""
 
-    monitors: Optional[Monitors] = pd.Field()
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+    monitors: Monitors = pd.Field()
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -441,17 +468,16 @@ class MonitorOutput(Flow360BaseModel):
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> MonitorOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
-        fields = solver_values.pop("output_fields")
-        fields = [to_short(field) for field in fields]
-        return MonitorOutput(**solver_values, output_fields=fields)
+        _distribute_shared_output_fields(solver_values, "monitors")
+        return MonitorOutput(**solver_values)
 
 
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
 
-    surface_field: Optional[IsoSurfaceOutputField] = pd.Field(alias="surfaceField")
-    surface_field_magnitude: Optional[float] = pd.Field(alias="surfaceFieldMagnitude")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields")
+    surface_field: IsoSurfaceOutputField = pd.Field(alias="surfaceField")
+    surface_field_magnitude: float = pd.Field(alias="surfaceFieldMagnitude")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -501,11 +527,17 @@ class IsoSurfaces(Flow360SortableBaseModel):
 class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`IsoSurfaceOutput` class"""
 
-    output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat")
-    iso_surfaces: Optional[IsoSurfaces] = pd.Field(alias="isoSurfaces")
+    iso_surfaces: IsoSurfaces = pd.Field(alias="isoSurfaces")
+    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
+        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        _distribute_shared_output_fields(solver_values, "iso_surfaces")
+        return IsoSurfaceOutput(**solver_values)
 
 
-class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
+class AeroacousticOutput(Flow360BaseModel):
     """:class:`AeroacousticOutput` class for configuring output data about acoustic pressure signals
 
     Parameters
@@ -514,10 +546,6 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
         List of observer locations at which time history of acoustic pressure signal is stored in aeroacoustic output
         file. The observer locations can be outside the simulation domain, but cannot be inside the solid surfaces of
         the simulation domain.
-    animation_frequency: Union[PositiveInt, Literal[-1]], optional
-        Frame frequency in the animation
-    animation_frequency_offset: int, optional
-        Animation frequency offset
 
     Returns
     -------
@@ -526,7 +554,7 @@ class AeroacousticOutput(Flow360BaseModel, AnimatedOutput):
 
     Example
     -------
-    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)], animation_frequency=1)
+    >>> aeroacoustics = AeroacousticOutput(observers=[(0, 0, 0), (1, 1, 1)])
     """
 
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
@@ -681,7 +709,9 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         )
 
         if self.output_fields is not None:
-            fields += self.output_fields
+            for item in self.output_fields:
+                if item not in fields:
+                    fields.append(item)
 
         model = {
             "animationFrequency": self.animation_frequency,

@@ -173,7 +173,18 @@ def test_flow360param():
                 }
             }
         ],
-        "freestream": {"modelType": "FromMach", "temperature": 1, "Mach": 0.5, "mu_ref": 1}
+        "freestream": {"modelType": "FromMach", "temperature": 1, "Mach": 0.5, "mu_ref": 1},
+        "geometry":{"momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "refArea": 0.1}
     }
             """
         )
@@ -184,7 +195,8 @@ def test_flow360param():
 def test_flow360param1():
     with fl.SI_unit_system:
         params = Flow360Params(
-            freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s), boundaries={}
+            freestream=FreestreamFromVelocity(velocity=10 * u.m / u.s),
+            boundaries={},
         )
         assert params.time_stepping.max_pseudo_steps == 2000
         params.time_stepping = UnsteadyTimeStepping(physical_steps=100, time_step_size=2 * u.s)
@@ -206,8 +218,8 @@ def test_update_from_multiple_files():
             navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
-    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
-    params.append(outputs)
+        outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
+        params.append(outputs, overwrite=True)
 
     assert params
 
@@ -245,8 +257,8 @@ def test_update_from_multiple_files_overwrite():
             navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
         )
 
-    outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
-    params.append(outputs, overwrite=True)
+        outputs = fl.Flow360Params.construct("data/case_params/outputs.yaml")
+        params.append(outputs, overwrite=True)
 
     assert params.geometry.ref_area == 2 * u.m**2
 
@@ -314,11 +326,11 @@ def test_params_with_units():
         )
 
     compare_to_ref(params, "ref/case_params/params_units.json", content_only=True)
-
     to_file_from_file_test(params)
 
     params_solver = params.to_solver()
 
+    to_file_from_file_test(params_solver)
     compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)
 
