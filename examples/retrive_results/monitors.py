@@ -18,7 +18,7 @@ case.wait()
 results = case.results
 
 for name in results.monitors.monitor_names:
-    result = results.monitors.get_monitor_by_name(name)
+    monitor = results.monitors.get_monitor_by_name(name)
     # >>>
     # physical_step  pseudo_step  ...  Group1_Point4_mut  Group1_Point4_Cp
     # 0               0            0  ...       1.210739e-08          0.000000
@@ -27,4 +27,6 @@ for name in results.monitors.monitor_names:
     # 3               0           30  ...       1.250081e-08          0.000615
     # 4               0           40  ...       1.366265e-08         -0.003011
     # etc.
-    print(result.as_dataframe())
+    print(monitor)
+
+    monitor.download(to_folder=case.name)

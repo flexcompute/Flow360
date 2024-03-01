@@ -51,11 +51,15 @@ class Vector(Coordinate):
     @classmethod
     def validate(cls, vector):
         """validator for vector"""
+        if isinstance(vector, set):
+            raise TypeError(
+                Flow360ValidationError(f"set provided {vector}, but tuple or array expected.")
+            )
         _ = _PydanticValidate(c=vector)
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise pd.ValidationError(
+            raise ValueError(
                 Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls
             )
         return vector

@@ -15,7 +15,6 @@ params = fl.Flow360Params(ActuatorDisk.case_json)
 case = volume_mesh.create_case("ActuatorDisk-example", params)
 case = case.submit()
 
-
 case.wait()
 
 
@@ -25,7 +24,7 @@ results = case.results
 case.params.geometry.mesh_unit = 1 * u.m
 case.params.fluid_properties = fl.air
 
-print(results.actuator_disks.as_dataframe())
+print(results.actuator_disks)
 # >>>
 #     physical_step  pseudo_step  Disk0_Power  Disk0_Force  Disk0_Moment
 # 0               0            0    30.062549   751.563715  10537.291912
@@ -40,7 +39,7 @@ print(results.actuator_disks.as_dataframe())
 
 # convert results to SI system:
 results.actuator_disks.to_base("SI")
-print(results.actuator_disks.as_dataframe())
+print(results.actuator_disks)
 # >>>
 #     physical_step  pseudo_step   Disk0_Power   Disk0_Force  Disk0_Moment    PowerUnits ForceUnits   MomentUnits
 # 0               0            0  1.451192e+09  1.066131e+08  1.451192e+09  kg*m**2/s**3  kg*m/s**2  kg*m**2/s**2
@@ -55,8 +54,7 @@ print(results.actuator_disks.as_dataframe())
 
 # download resuts:
 results.set_destination(use_case_name=True)
-results.set_downloader(actuator_disks=True)
-results.download(overwrite=True)
+results.download(actuator_disks=True, overwrite=True)
 
 # save converted results to a new CSV file:
 results.actuator_disks.to_file(os.path.join(case.name, "actuator_disk_in_SI.csv"))

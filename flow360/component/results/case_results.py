@@ -267,6 +267,18 @@ class ResultCSVModel(ResultBaseModel):
                 shutil.copy(self.temp_file, local_file_path)
                 log.info(f"Saved to {local_file_path}")
 
+    def __str__(self):
+        res_str = self.as_dataframe().__str__()
+        res_str += "\nif you want to get access to data, use one of the data format functions:"
+        res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
+        return res_str
+
+    def __repr__(self):
+        res_str = self.as_dataframe().__repr__()
+        res_str += "\nif you want to get access to data, use one of the data format functions:"
+        res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
+        return res_str
+
     @property
     def values(self):
         """
@@ -419,7 +431,7 @@ class ForceDistributionResultCSVModel(ResultCSVModel):
 
     remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, const=True)
 
-    def wait(self, refresh_rate_seconds=2, timeout_minutes=60):
+    def wait(self, timeout_minutes=60):
         """Wait until the Case finishes processing, refresh periodically"""
 
         start_time = time.time()
@@ -429,7 +441,7 @@ class ForceDistributionResultCSVModel(ResultCSVModel):
                 return None
             except CloudFileNotFoundError:
                 pass
-            time.sleep(refresh_rate_seconds)
+            time.sleep(2)
 
         raise TimeoutError(
             "Timeout: post-processing did not finish within the specified timeout period."

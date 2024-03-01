@@ -13,9 +13,11 @@ sliceOutput:
             - 0
             - 0
             sliceOrigin:
-            - 0
-            - 0
-            - 0
+                value:
+                - 0
+                - 0
+                - 0
+                units: flow360_length_unit    
         y1:
             outputFields:
             - T
@@ -24,9 +26,11 @@ sliceOutput:
             - 1
             - 0
             sliceOrigin:
-            - 2
-            - 1
-            - 0
+                value:
+                - 2
+                - 1
+                - 0
+                units: flow360_length_unit    
 surfaceOutput:
     outputFormat: tecplot
     outputFields: 

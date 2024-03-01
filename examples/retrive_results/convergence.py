@@ -3,14 +3,16 @@ from flow360.examples import Convergence
 
 Convergence.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(Convergence.mesh_filename, name="Diverging-mesh")
-volume_mesh = volume_mesh.submit()
+# # submit mesh
+# volume_mesh = fl.VolumeMesh.from_file(Convergence.mesh_filename, name="Diverging-mesh")
+# volume_mesh = volume_mesh.submit()
 
-# submit case using json file
-params = fl.Flow360Params(Convergence.case_json)
-case = volume_mesh.create_case("Diverging-example", params)
-case = case.submit()
+# # submit case using json file
+# params = fl.Flow360Params(Convergence.case_json)
+# case = volume_mesh.create_case("Diverging-example", params)
+# case = case.submit()
+
+case = fl.Case("979b76d8-4979-4316-9f7c-6cab44fb43c7")
 
 # wait until the case finishes execution
 case.wait()
@@ -18,7 +20,7 @@ case.wait()
 results = case.results
 
 # nonlinear residuals contain convergence information
-print(results.nonlinear_residuals.as_dataframe())
+print(results.nonlinear_residuals)
 # >>>
 #     physical_step  pseudo_step    0_cont  ...    3_momz   4_energ   5_nuHat
 # 0               0            0  0.003167  ...  0.003540  0.009037  0.002040
@@ -34,7 +36,7 @@ print(results.nonlinear_residuals.as_dataframe())
 # 73              0          725       NaN  ...       NaN       NaN  0.002658
 
 
-print(results.max_residual_location.as_dataframe())
+print(results.max_residual_location)
 # >>>
 #     physical_step  pseudo_step  max_cont_res  max_cont_res_x  ...  max_nuHat_res_y  max_nuHat_res_z
 # 0               0            0      0.727260        0.000000  ...         0.150167        -0.000000
@@ -50,11 +52,10 @@ print(results.max_residual_location.as_dataframe())
 # 72              0          713           NaN       -7.039405  ...         4.598506         9.537323
 
 results.set_destination(use_case_name=True)
-results.set_downloader(
+results.download(
     nonlinear_residuals=True,
     linear_residuals=True,
     cfl=True,
     minmax_state=True,
     max_residual_location=True,
 )
-results.download()

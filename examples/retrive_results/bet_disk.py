@@ -25,7 +25,7 @@ results = case.results
 case.params.geometry.mesh_unit = 1 * u.m
 case.params.fluid_properties = fl.air
 
-print(results.bet_forces.as_dataframe())
+print(results.bet_forces)
 # >>>
 #     physical_step  pseudo_step  Disk0_Force_x  Disk0_Force_y  Disk0_Force_z  Disk0_Moment_x  ...
 # 0               0            0   -1397.096153       0.010873      -0.000516   162623.186588  ...
@@ -40,7 +40,7 @@ print(results.bet_forces.as_dataframe())
 
 # convert results to SI system:
 results.bet_forces.to_base("SI")
-print(results.bet_forces.as_dataframe())
+print(results.bet_forces)
 # >>>
 #     physical_step  pseudo_step  Disk0_Force_x  Disk0_Force_y  Disk0_Force_z  Disk0_Moment_x  ...  ForceUnits   MomentUnits
 # 0               0            0  -1.981851e+08    1542.442287     -73.192214    2.306891e+10  ...   kg*m/s**2  kg*m**2/s**2
@@ -55,8 +55,7 @@ print(results.bet_forces.as_dataframe())
 
 # download resuts:
 results.set_destination(use_case_name=True)
-results.set_downloader(bet_forces=True)
-results.download(overwrite=True)
+results.download(bet_forces=True, overwrite=True)
 
 # save converted results to a new CSV file:
 results.bet_forces.to_file(os.path.join(case.name, "bet_forces_in_SI.csv"))

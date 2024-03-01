@@ -33,6 +33,7 @@ from .params_base import (
     Flow360SortableBaseModel,
     _self_named_property_validator,
 )
+from .unit_system import Flow360UnitSystem, LengthType
 
 OutputFormat = Literal["paraview", "tecplot", "both"]
 
@@ -263,7 +264,7 @@ class Slice(Flow360BaseModel):
     """:class:`NamedSlice` class"""
 
     slice_normal: Axis = pd.Field(alias="sliceNormal")
-    slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
+    slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
 
     # pylint: disable=too-few-public-methods
@@ -282,8 +283,7 @@ class Slice(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> Slice:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        if fields is not None:
-            fields = [to_short(field) for field in fields]
+        fields = [to_short(field) for field in fields]
         return Slice(**solver_values, output_fields=fields)
 
 
@@ -359,8 +359,7 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     def to_solver(self, params, **kwargs) -> VolumeOutput:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        if fields is not None:
-            fields = [to_short(field) for field in fields]
+        fields = [to_short(field) for field in fields]
         return VolumeOutput(**solver_values, output_fields=fields)
 
 
@@ -393,8 +392,7 @@ class SurfaceIntegralMonitor(MonitorBase):
     def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        if fields is not None:
-            fields = [to_short(field) for field in fields]
+        fields = [to_short(field) for field in fields]
         return SurfaceIntegralMonitor(**solver_values, output_fields=fields)
 
 
@@ -421,8 +419,7 @@ class ProbeMonitor(MonitorBase):
     def to_solver(self, params, **kwargs) -> ProbeMonitor:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        if fields is not None:
-            fields = [to_short(field) for field in fields]
+        fields = [to_short(field) for field in fields]
         return ProbeMonitor(**solver_values, output_fields=fields)
 
 
@@ -502,8 +499,7 @@ class IsoSurface(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> IsoSurface:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
-        if fields is not None:
-            fields = [to_short(field) for field in fields]
+        fields = [to_short(field) for field in fields]
         return IsoSurface(**solver_values, output_fields=fields)
 
 
@@ -659,6 +655,10 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
     bet_metrics: Optional[bool] = pd.Field(alias="betMetrics")
     bet_metrics_per_disk: Optional[bool] = pd.Field(alias="betMetricsPerDisk")
     slices: Optional[Union[Slices, List[SliceNamedLegacy]]] = pd.Field({})
+
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            super().__init__(*args, **kwargs)
 
     def update_model(self) -> Flow360BaseModel:
         fields = get_output_fields(

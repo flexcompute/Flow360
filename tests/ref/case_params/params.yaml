@@ -21,7 +21,7 @@ geometry:
     refArea:
         units: 2*m**2
         value: 1.0
-hash: 25b0e1c3eb9f24f368e3851b153e12b01c5d94cf370ff9869859b6fed1a963f6
+hash: 50f2961a91287259ea3bb9678212ed0749f12d73e8b1c3a7ffac79322f1f0dd6
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
@@ -52,9 +52,11 @@ sliceOutput:
             - 0
             - 0
             sliceOrigin:
-            - 0.0
-            - 0.0
-            - 0.0
+                units: flow360_length_unit
+                value:
+                - 0
+                - 0
+                - 0
         y1:
             outputFields:
             - T
@@ -63,9 +65,11 @@ sliceOutput:
             - 1
             - 0
             sliceOrigin:
-            - 2.0
-            - 1.0
-            - 0.0
+                units: flow360_length_unit
+                value:
+                - 2
+                - 1
+                - 0
 surfaceOutput:
     animationFrequency: -1
     animationFrequencyOffset: 0

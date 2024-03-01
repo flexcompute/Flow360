@@ -60,9 +60,11 @@ for case in case_list:
 results_folder = "alpha_sweep_example"
 for case in case_list:
     results = case.results
-    results.set_destination(os.path.join(results_folder, case.name))
-    results.set_downloader(total_forces=True, nonlinear_residuals=True)
-    results.download()
+    results.download(
+        total_forces=True,
+        nonlinear_residuals=True,
+        destination=os.path.join(results_folder, case.name),
+    )
 
 
 # plot CL / CD

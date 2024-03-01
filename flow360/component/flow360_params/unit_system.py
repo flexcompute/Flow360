@@ -164,6 +164,31 @@ def _unit_inference_validator(value, dim_name, is_array=False):
     return value
 
 
+def _unit_array_validator(value, dim):
+    """
+    Checks if units are provided for one component instead of entire object
+
+    Parameters
+    ----------
+    value :
+        value to check units for
+    dim : unyt.dimensions
+        dimension name, eg, unyt.dimensions.length
+
+    Returns
+    -------
+    unyt_quantity or value
+    """
+
+    if not _has_dimensions(value, dim):
+        if any(_has_dimensions(item, dim) for item in value):
+            raise TypeError(
+                f"arg '{value}' has unit provided per component, "
+                "instead provide dimension for entire array."
+            )
+    return value
+
+
 def _has_dimensions_validator(value, dim):
     """
     Checks if value has expected dimension and raises TypeError
@@ -367,6 +392,7 @@ class DimensionedType(ValidatedType):
                     raise ValueError(f"arg '{value}' cannot have zero norm")
 
                 value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
+                value = _unit_array_validator(value, vec_cls.type.dim)
                 value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                 return value

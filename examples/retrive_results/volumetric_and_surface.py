@@ -25,8 +25,8 @@ results = case.results
 
 with tempfile.TemporaryDirectory() as temp_dir:
     # download slice and volume output files as tar.gz archives
-    results.slices.to_file(os.path.join(temp_dir, "slices.tar.gz"), overwrite=True)
-    results.volumes.to_file(os.path.join(temp_dir, "volumes.tar.gz"), overwrite=True)
+    results.slices.download(os.path.join(temp_dir, "slices.tar.gz"), overwrite=True)
+    results.volumes.download(os.path.join(temp_dir, "volumes.tar.gz"), overwrite=True)
 
     # slices.tar.gz, volumes.tar.gz
     print(os.listdir(temp_dir))

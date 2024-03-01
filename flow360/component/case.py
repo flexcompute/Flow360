@@ -624,7 +624,7 @@ class Case(CaseBase, Flow360Resource):
         )
         return new_case
 
-    def wait(self, refresh_rate_seconds=2, timeout_minutes=60):
+    def wait(self, timeout_minutes=60):
         """Wait until the Case finishes processing, refresh periodically"""
 
         start_time = time.time()
@@ -633,7 +633,7 @@ class Case(CaseBase, Flow360Resource):
                 raise TimeoutError(
                     "Timeout: Process did not finish within the specified timeout period"
                 )
-            time.sleep(refresh_rate_seconds)
+            time.sleep(2)
 
 
 # pylint: disable=unnecessary-lambda
@@ -794,7 +794,7 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_user_defined_dynamics
         return value
 
-    def download(self, overwrite=False):
+    def _execute_downloading(self):
         """
         Download all specified and available results for the case
         """
@@ -807,7 +807,8 @@ class CaseResultsModel(pd.BaseModel):
                     try_download = value._is_downloadable() is True
                 if try_download is True:
                     value.download(
-                        to_folder=self._downloader_settings.destination, overwrite=overwrite
+                        to_folder=self._downloader_settings.destination,
+                        overwrite=self._downloader_settings.overwrite,
                     )
 
     def set_destination(
@@ -842,8 +843,8 @@ class CaseResultsModel(pd.BaseModel):
         if use_case_id is True:
             self._downloader_settings.destination = self.case.id
 
-    # pylint: disable=too-many-arguments, too-many-locals
-    def set_downloader(
+    # pylint: disable=too-many-arguments, too-many-locals, redefined-builtin
+    def download(
         self,
         surface: bool = None,
         volume: bool = None,
@@ -863,7 +864,7 @@ class CaseResultsModel(pd.BaseModel):
         user_defined_dynamics: bool = None,
         aeroacoustics: bool = None,
         surface_heat_transfer: bool = None,
-        all_results: bool = None,
+        all: bool = None,
         overwrite: bool = False,
         destination: str = None,
     ):
@@ -892,8 +893,8 @@ class CaseResultsModel(pd.BaseModel):
             Download BET (Blade Element Theory) forces file if True.
         actuator_disk_output : bool, optional
             Download actuator disk output file if True.
-        all_results : bool, optional
-            Download all result files if True (ignores other parameters).
+        all : bool, optional
+            Download all result files if True. Ignore file if explicitly set: <result_name>=False
         overwrite : bool, optional
             If True, overwrite existing files with the same name in the destination.
         destination : str, optional
@@ -922,10 +923,12 @@ class CaseResultsModel(pd.BaseModel):
         self.aeroacoustics.do_download = aeroacoustics
         self.surface_heat_transfer.do_download = surface_heat_transfer
 
-        self._downloader_settings.all = all_results
+        self._downloader_settings.all = all
         self._downloader_settings.overwrite = overwrite
         if destination is not None:
             self.set_destination(folder_name=destination)
+
+        self._execute_downloading()
 
     def download_file_by_name(self, file_name, to_file=None, to_folder=".", overwrite: bool = True):
         """

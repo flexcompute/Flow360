@@ -17,7 +17,7 @@ case.wait()
 
 results = case.results
 
-print(results.total_forces.as_dataframe())
+print(results.total_forces)
 # >>>
 #     physical_step  pseudo_step        CL        CD       CFx       CFy       CFz       CMx       CMy  ... CMzSkinFriction
 # 0               0            0  0.070379  0.044693  0.040872 -0.030555  0.072664  0.033416 -0.061036  ...        0.000000
@@ -29,7 +29,7 @@ print(results.total_forces.as_dataframe())
 # 6               0           60  0.240189  0.197541  0.184438 -0.072966  0.250392  0.114257 -0.240625  ...       -0.021926
 
 
-print(results.surface_forces.as_dataframe())
+print(results.surface_forces)
 # >>>
 #   physical_step  pseudo_step   wing_CL   wing_CD  wing_CFx  wing_CFy  wing_CFz  wing_CMx  ...
 # 0               0            0  0.070379  0.044693  0.040872 -0.030555  0.072664  0.033416  ...
@@ -39,7 +39,7 @@ print(results.surface_forces.as_dataframe())
 
 # force distribution is post-processing. We need to wait for results.
 results.force_distribution.wait()
-print(results.force_distribution.as_dataframe())
+print(results.force_distribution)
 # >>>
 #             Y  wing_CFx_per_span  wing_CFz_per_span  wing_CMy_per_span
 # 0    0.000000           0.000000           0.000000           0.000000
@@ -56,5 +56,4 @@ print(results.force_distribution.as_dataframe())
 
 
 results.set_destination(use_case_name=True)
-results.set_downloader(total_forces=True, surface_forces=True, force_distribution=True)
-results.download()
+results.download(total_forces=True, surface_forces=True, force_distribution=True)

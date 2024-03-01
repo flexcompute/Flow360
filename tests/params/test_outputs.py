@@ -2,6 +2,7 @@ import unittest
 
 import pydantic as pd
 import pytest
+import unyt
 
 import flow360
 import flow360.units as u
@@ -23,7 +24,7 @@ from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromMach,
 )
-from tests.utils import to_file_from_file_test
+from tests.utils import array_equality_override, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -125,6 +126,7 @@ def test_surface_output():
                 assert surface_item["output_fields"] == ["Cp"]
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_slice_output():
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(animation_frequency=-2, output_fields=["Cp", "qcriterion"])
@@ -135,15 +137,32 @@ def test_slice_output():
             output_fields=["invalid_field", "qcriterion"],
         )
 
+    with pytest.raises(pd.ValidationError):
+        output = SliceOutput(
+            output_fields=["Coefficient of pressure", "qcriterion"],
+            slices={
+                "sliceName_1": flow360.Slice(
+                    slice_normal=(0, 1, 0),
+                    slice_origin=(0, 0.56413, 0) * u.m,
+                ),
+                "sliceName_2": flow360.Slice(
+                    slice_normal=(0, 0, 1),
+                    slice_origin=(0, 0.56413 * u.inch, 0),
+                    output_fields=["Mach"],
+                ),
+            },
+        )
+
     output = SliceOutput(
         output_fields=["Coefficient of pressure", "qcriterion"],
         slices={
             "sliceName_1": flow360.Slice(
-                slice_normal=(0, 1, 0), slice_origin=(0, 0.56413 * u.m, 0)
+                slice_normal=(0, 1, 0),
+                slice_origin=(0, 0.56413, 0) * u.m,
             ),
             "sliceName_2": flow360.Slice(
                 slice_normal=(0, 0, 1),
-                slice_origin=(0, 0.56413 * u.inch, 0),
+                slice_origin=(0, 0.56413, 0) * u.inch,
                 output_fields=["Mach"],
             ),
         },
@@ -151,35 +170,38 @@ def test_slice_output():
 
     assert output
 
-    output = SliceOutput(
-        output_fields=["Coefficient of pressure", "qcriterion"],
-        slices={
-            "sliceName_1": flow360.Slice(
-                ## passing in set results in wrong error message
-                slice_normal={0, 1, 0},
-                slice_origin=(0, 0.56413 * u.m, 0),
-            ),
-            "sliceName_2": flow360.Slice(
-                slice_normal=(0, 0, 1),
-                ## (0, 0.56413, 0) * u.inch somehow does not work
-                slice_origin=(0, 0.56413, 0) * u.inch,
-                output_fields=["Mach"],
-            ),
-        },
-    )
+    with pytest.raises(pd.ValidationError):
+        output = SliceOutput(
+            output_fields=["Coefficient of pressure", "qcriterion"],
+            slices={
+                "sliceName_1": flow360.Slice(
+                    slice_normal={0, 1, 0},
+                    slice_origin=(0, 0.56413, 0) * u.m,
+                )
+            },
+        )
+
+    with pytest.raises(unyt.exceptions.InvalidUnitOperation):
+        output = SliceOutput(
+            output_fields=["Coefficient of pressure", "qcriterion"],
+            slices={
+                "sliceName_1": flow360.Slice(
+                    slice_normal=(0, 1, 0),
+                    slice_origin={0, 0.56413, 0} * u.m,
+                )
+            },
+        )
 
     output = SliceOutput(
         output_fields=["Coefficient of pressure", "qcriterion"],
         slices={
             "sliceName_1": flow360.Slice(
-                ## u.flow360_length_unit somehow does not work
-                ## passing in list does not trigger error but I guess it is fine.
                 slice_normal=[0, 1, 0],
-                slice_origin=(0, 0.56413 * u.flow360_length_unit, 0),
+                slice_origin=(0, 0.56413, 0) * u.flow360_length_unit,
             ),
             "sliceName_2": flow360.Slice(
                 slice_normal=(0, 0, 1),
-                slice_origin=(0, 0.56413 * u.inch, 0),
+                slice_origin=(0, 0.56413, 0) * u.inch,
                 output_fields=["Mach"],
             ),
         },
