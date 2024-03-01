@@ -59,9 +59,7 @@ class Vector(Coordinate):
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise ValueError(
-                Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls
-            )
+            raise ValueError(Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
         return vector
 
     # pylint: disable=unused-argument
