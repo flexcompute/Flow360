@@ -3,16 +3,14 @@ from flow360.examples import Convergence
 
 Convergence.get_files()
 
-# # submit mesh
-# volume_mesh = fl.VolumeMesh.from_file(Convergence.mesh_filename, name="Diverging-mesh")
-# volume_mesh = volume_mesh.submit()
+# submit mesh
+volume_mesh = fl.VolumeMesh.from_file(Convergence.mesh_filename, name="Diverging-mesh")
+volume_mesh = volume_mesh.submit()
 
-# # submit case using json file
-# params = fl.Flow360Params(Convergence.case_json)
-# case = volume_mesh.create_case("Diverging-example", params)
-# case = case.submit()
-
-case = fl.Case("979b76d8-4979-4316-9f7c-6cab44fb43c7")
+# submit case using json file
+params = fl.Flow360Params(Convergence.case_json)
+case = volume_mesh.create_case("Diverging-example", params)
+case = case.submit()
 
 # wait until the case finishes execution
 case.wait()
