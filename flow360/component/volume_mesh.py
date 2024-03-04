@@ -585,9 +585,8 @@ class VolumeMesh(Flow360Resource):
     def download_file(
         self,
         file_name: Union[str, VolumeMeshDownloadable],
-        to_file=".",
+        to_file=None,
         to_folder=".",
-        keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
         **kwargs,
@@ -596,7 +595,6 @@ class VolumeMesh(Flow360Resource):
         Download file from surface mesh
         :param file_name:
         :param to_file:
-        :param keep_folder:
         :return:
         """
         if isinstance(file_name, VolumeMeshDownloadable):
@@ -605,20 +603,16 @@ class VolumeMesh(Flow360Resource):
             file_name,
             to_file=to_file,
             to_folder=to_folder,
-            keep_folder=keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
             **kwargs,
         )
 
     # pylint: disable=R0801
-    def download(
-        self, to_file=".", to_folder=".", keep_folder: bool = True, overwrite: bool = True
-    ):
+    def download(self, to_file=None, to_folder=".", overwrite: bool = True):
         """
         Download volume mesh file
         :param to_file:
-        :param keep_folder:
         :return:
         """
         status = self.status
@@ -629,17 +623,10 @@ class VolumeMesh(Flow360Resource):
             if remote_file_name is None:
                 remote_file_name = self._remote_file_name()
 
-            if to_file != ".":
-                _, file_ext = os.path.splitext(remote_file_name)
-                _, to_file_ext = os.path.splitext(to_file)
-                if to_file_ext != file_ext:
-                    to_file = to_file + self._get_file_extention()
-
             super()._download_file(
                 remote_file_name,
                 to_file=to_file,
                 to_folder=to_folder,
-                keep_folder=keep_folder,
                 overwrite=overwrite,
             )
 

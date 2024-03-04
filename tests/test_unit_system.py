@@ -480,6 +480,8 @@ def test_unit_system_init():
         "pressure": {"value": 1.0, "units": "Pa"},
         "density": {"value": 1.0, "units": "kg/m**3"},
         "viscosity": {"value": 1.0, "units": "Pa*s"},
+        "power": {"value": 1.0, "units": "W"},
+        "moment": {"value": 1.0, "units": "N*m"},
         "angular_velocity": {"value": 1.0, "units": "rad/s"},
         "heat_flux": {"value": 1.0, "units": "kg/s**3"},
     }

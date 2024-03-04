@@ -12,6 +12,7 @@ class EnvironmentConfig(BaseModel):
 
     name: str
     web_api_endpoint: str
+    web_url: str
     aws_region: str
     apikey_profile: str
     portal_web_api_endpoint: str = None
@@ -39,10 +40,19 @@ class EnvironmentConfig(BaseModel):
         """
         return "/".join([self.portal_web_api_endpoint, path])
 
+    def get_web_real_url(self, path: str):
+        """
+        Get the web real url for the particular environment.
+        :param path:
+        :return:
+        """
+        return "/".join([self.web_url, path])
+
 
 dev = EnvironmentConfig(
     name="dev",
     web_api_endpoint="https://flow360-api.dev-simulation.cloud",
+    web_url="https://flow360.dev-simulation.cloud",
     portal_web_api_endpoint="https://portal-api.dev-simulation.cloud",
     aws_region="us-east-1",
     apikey_profile="dev",
@@ -51,6 +61,7 @@ dev = EnvironmentConfig(
 uat = EnvironmentConfig(
     name="uat",
     web_api_endpoint="https://uat-flow360-api.simulation.cloud",
+    web_url="https://uat-flow360.simulation.cloud",
     portal_web_api_endpoint="https://uat-portal-api.simulation.cloud",
     aws_region="us-gov-west-1",
     apikey_profile="default",
@@ -59,6 +70,7 @@ uat = EnvironmentConfig(
 prod = EnvironmentConfig(
     name="prod",
     web_api_endpoint="https://flow360-api.simulation.cloud",
+    web_url="https://flow360.simulation.cloud",
     portal_web_api_endpoint="https://portal-api.simulation.cloud",
     aws_region="us-gov-west-1",
     apikey_profile="default",

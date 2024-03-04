@@ -46,31 +46,24 @@ _s3_config = TransferConfig(
 )
 
 
-def create_base_folder(
-    path: str, target_name: str, to_file: str = ".", to_folder: str = ".", keep_folder: bool = True
+def get_local_filename_and_create_folders(
+    target_name: str, to_file: str = None, to_folder: str = "."
 ):
     """
     Create a base folder and return the target file path for downloading cloud data.
 
     Parameters
     ----------
-    path : str
-        Source ID or the path to the source file on the cloud.
 
     target_name : str
         The file path on the cloud, same value as the key for S3 client download.
 
     to_file : str, optional
-        The destination folder or file path where the downloaded file will be saved. If None, the current directory
-        will be used.
+        The destination file path where the downloaded file will be saved. If None, the current directory
+        will be used with target_name as file name.
 
     to_folder : str, optional
         The folder name to save the downloaded file. If provided, the downloaded file will be saved inside this folder.
-        If None, the value of `to_file` will be considered as a folder or file path.
-
-    keep_folder : bool, optional
-        If True, the downloaded file will be put in the same folder as the file on the cloud (only works when
-        `target_name` is a folder name).
 
     Returns
     -------
@@ -79,15 +72,27 @@ def create_base_folder(
 
     """
 
-    if to_folder != ".":
-        to_file = os.path.join(to_folder, os.path.basename(target_name))
-
-    elif os.path.isdir(to_file):
-        to_file = (
-            os.path.join(to_file, path, target_name)
-            if keep_folder
-            else os.path.join(to_file, os.path.basename(target_name))
+    if to_file is not None and to_folder != ".":
+        raise Flow360ValueError(
+            "Only one of 'to_file' or 'to_folder' should be provided, not both."
         )
+
+    if to_file is not None and os.path.isdir(to_file):
+        raise Flow360ValueError(
+            "to_file should be a file name, not directory, use to_folder instead"
+        )
+
+    if to_file is None:
+        to_file = os.path.basename(target_name)
+
+    if to_folder != ".":
+        to_file = os.path.join(to_folder, os.path.basename(to_file))
+
+    _, file_ext = os.path.splitext(target_name)
+    _, to_file_ext = os.path.splitext(to_file)
+    if to_file_ext != file_ext:
+        to_file = to_file + file_ext
+
     dirname = os.path.dirname(to_file)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
@@ -299,9 +304,8 @@ class S3TransferType(Enum):
         self,
         resource_id: str,
         remote_file_name: str,
-        to_file: str = ".",
+        to_file: str = None,
         to_folder: str = ".",
-        keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
         log_error=True,
@@ -311,18 +315,13 @@ class S3TransferType(Enum):
         :param resource_id:
         :param remote_file_name: file name with path in s3
         :param to_file: local file name or local folder name.
-        :param keep_folder: If true, the downloaded file will be put
         in the same folder as the file on cloud. Only works when to_file is a folder name.
         :param overwrite: if True overwrite if file exists, otherwise don't download
         :param progress_callback: provide custom callback for progress
         :return:
         """
-        if to_file != "." and to_folder != ".":
-            raise Flow360ValueError(
-                "Only one of 'to_file' or 'to_folder' should be provided, not both."
-            )
 
-        to_file = create_base_folder(resource_id, remote_file_name, to_file, to_folder, keep_folder)
+        to_file = get_local_filename_and_create_folders(remote_file_name, to_file, to_folder)
         if os.path.exists(to_file) and not overwrite:
             log.info(f"Skipping {remote_file_name}, file exists.")
             return to_file

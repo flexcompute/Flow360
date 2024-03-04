@@ -38,10 +38,6 @@
       "animationFrequency": -1,
       "nodeForcesPerUnitArea": true
     },
-    "sliceOutput": {
-      "outputFormat": "paraview",
-      "animationFrequency": -1
-    },
     "navierStokesSolver": {
       "absoluteTolerance": 1e-11,
       "relativeTolerance": 0.0,
@@ -75,7 +71,7 @@
     },
     "timeStepping": {
       "timeStepSize": "inf",
-      "maxPhysicalSteps": 1,
+      "physicalSteps": 1,
       "maxPseudoSteps": 200,
       "CFL": {
         "initial": 1,

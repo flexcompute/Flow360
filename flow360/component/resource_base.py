@@ -17,6 +17,7 @@ import pydantic as pd
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
+from ..cloud.webbrowser import open_browser
 from ..component.interfaces import BaseInterface
 from ..exceptions import Flow360RuntimeError
 from ..log import LogLevel, log
@@ -269,9 +270,8 @@ class Flow360Resource(RestApi):
     def _download_file(
         self,
         file_name,
-        to_file=".",
+        to_file=None,
         to_folder=".",
-        keep_folder: bool = True,
         overwrite: bool = True,
         progress_callback=None,
         **kwargs,
@@ -284,12 +284,10 @@ class Flow360Resource(RestApi):
         file_name : str
             Name of the file to be downloaded.
         to_file : str, optional
-            File name or path to save the downloaded file. If None, the file will be saved in the current directory.
+            File name to save the downloaded file. If None, the file will be saved in the current directory.
             If provided without an extension, the extension will be automatically added based on the file type.
         to_folder : str, optional
             Folder name to save the downloaded file. If None, the file will be saved in the current directory.
-        keep_folder : bool, optional
-            If True, preserve the original folder structure of the file in the destination. Does not work with to_folder
         overwrite : bool, optional
             If True, overwrite existing files with the same name in the destination.
         progress_callback : callable, optional
@@ -303,18 +301,11 @@ class Flow360Resource(RestApi):
             File path of the downloaded file.
         """
 
-        if to_file != ".":
-            _, file_ext = os.path.splitext(file_name)
-            _, to_file_ext = os.path.splitext(to_file)
-            if to_file_ext != file_ext:
-                to_file = to_file + file_ext
-
         return self.s3_transfer_method.download_file(
             self.id,
             file_name,
             to_file=to_file,
             to_folder=to_folder,
-            keep_folder=keep_folder,
             overwrite=overwrite,
             progress_callback=progress_callback,
             **kwargs,
@@ -385,6 +376,13 @@ class Flow360Resource(RestApi):
         self.s3_transfer_method.complete_multipart_upload(
             self.id, remote_file_name, upload_id, uploaded_parts
         )
+
+    # pylint: disable=no-member
+    def open_in_browser(self):
+        """
+        Open resource in browser
+        """
+        open_browser(f"{self._interface().endpoint}/{self.id}")
 
 
 def is_object_cloud_resource(resource: Flow360Resource):

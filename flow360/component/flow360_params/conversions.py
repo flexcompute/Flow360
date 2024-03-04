@@ -111,7 +111,7 @@ def require(required_parameter, required_by, params):
         )
 
 
-# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements
+# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
 def unit_converter(dimension, params, required_by: List[str] = None):
     """
 
@@ -184,6 +184,29 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_viscosity
 
+    def get_base_force():
+        base_length = get_base_length()
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_force = base_velocity**2 * base_density * base_length**2
+
+        return base_force
+
+    def get_base_moment():
+        base_length = get_base_length()
+        base_force = get_base_force()
+        base_moment = base_force * base_length
+
+        return base_moment
+
+    def get_base_power():
+        base_length = get_base_length()
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_power = base_velocity**3 * base_density * base_length**2
+
+        return base_power
+
     def get_base_heat_flux():
         base_density = get_base_density()
         base_velocity = get_base_velocity()
@@ -223,11 +246,25 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         base_viscosity = get_base_viscosity()
         flow360_conversion_unit_system.base_viscosity = base_viscosity
 
+    elif dimension == u.dimensions.force:
+        base_force = get_base_force()
+        flow360_conversion_unit_system.base_force = base_force
+
+    elif dimension == u.dimensions.moment:
+        base_moment = get_base_moment()
+        flow360_conversion_unit_system.base_moment = base_moment
+
+    elif dimension == u.dimensions.power:
+        base_power = get_base_power()
+        flow360_conversion_unit_system.base_power = base_power
+
     elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
 
     else:
-        raise ValueError(f"Not recognised dimension: {dimension}")
+        raise ValueError(
+            f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented."
+        )
 
     return flow360_conversion_unit_system.conversion_system

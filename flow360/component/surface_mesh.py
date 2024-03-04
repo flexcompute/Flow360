@@ -197,7 +197,6 @@ class SurfaceMesh(Flow360Resource):
     #     self,
     #     file_name: Union[str, SurfaceMeshDownloadable],
     #     to_file=".",
-    #     keep_folder: bool = True,
     #     overwrite: bool = True,
     #     progress_callback=None,
     # ):
@@ -205,7 +204,6 @@ class SurfaceMesh(Flow360Resource):
     #     Download file from surface mesh
     #     :param file_name:
     #     :param to_file:
-    #     :param keep_folder:
     #     :return:
     #     """
     #     if isinstance(file_name, SurfaceMeshDownloadable):
@@ -213,19 +211,17 @@ class SurfaceMesh(Flow360Resource):
     #     return super().download_file(
     #         file_name,
     #         to_file,
-    #         keep_folder=keep_folder,
     #         overwrite=overwrite,
     #         progress_callback=progress_callback,
     #     )
 
-    # def download(self, to_file=".", keep_folder: bool = True):
+    # def download(self, to_file="."):
     #     """
     #     Download surface mesh file
     #     :param to_file:
-    #     :param keep_folder:
     #     :return:
     #     """
-    #     super().download_file(, to_file, keep_folder)
+    #     super().download_file(, to_file)
 
     @classmethod
     def _interface(cls):

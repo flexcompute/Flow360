@@ -22,6 +22,7 @@ from ...utils import classproperty
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
 u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
+u.dimensions.moment = u.dimensions.force * u.dimensions.length
 
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
@@ -29,6 +30,8 @@ u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
@@ -36,6 +39,8 @@ u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
@@ -43,6 +48,8 @@ u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 
 
 class UnitSystemManager:
@@ -154,6 +161,31 @@ def _unit_inference_validator(value, dim_name, is_array=False):
                 return value * unit
         if isinstance(value, Number):
             return value * unit
+    return value
+
+
+def _unit_array_validator(value, dim):
+    """
+    Checks if units are provided for one component instead of entire object
+
+    Parameters
+    ----------
+    value :
+        value to check units for
+    dim : unyt.dimensions
+        dimension name, eg, unyt.dimensions.length
+
+    Returns
+    -------
+    unyt_quantity or value
+    """
+
+    if not _has_dimensions(value, dim):
+        if any(_has_dimensions(item, dim) for item in value):
+            raise TypeError(
+                f"arg '{value}' has unit provided per component, "
+                "instead provide dimension for entire array."
+            )
     return value
 
 
@@ -322,16 +354,18 @@ class DimensionedType(ValidatedType):
 
     class _VectorType:
         @classmethod
-        def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True):
+        def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
             """Get a dynamically created metaclass representing the vector"""
 
             def __modify_schema__(field_schema, field):
                 dim_type.__modify_schema__(field_schema, field)
                 field_schema["properties"]["value"]["type"] = "array"
                 field_schema["properties"]["value"]["items"] = {"type": "number"}
-                field_schema["properties"]["value"]["minItems"] = 3
-                field_schema["properties"]["value"]["maxItems"] = 3
-                field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
+                if length is not None:
+                    field_schema["properties"]["value"]["minItems"] = length
+                    field_schema["properties"]["value"]["maxItems"] = length
+                if length == 3:
+                    field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
             def validate(vec_cls, value):
                 """additional validator for value"""
@@ -342,14 +376,23 @@ class DimensionedType(ValidatedType):
                     isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
                 )
 
-                if not is_collection or len(value) != 3:
-                    raise TypeError(f"arg '{value}' needs to be a collection of 3 values")
+                if length is None:
+                    if not is_collection:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a collection of values of any length"
+                        )
+                else:
+                    if not is_collection or len(value) != length:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a collection of {length} values"
+                        )
                 if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero coordinate values")
                 if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                     raise ValueError(f"arg '{value}' cannot have zero norm")
 
                 value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
+                value = _unit_array_validator(value, vec_cls.type.dim)
                 value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                 return value
@@ -362,6 +405,14 @@ class DimensionedType(ValidatedType):
             setattr(cls_obj, "__modify_schema__", __modify_schema__)
             setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
             return cls_obj
+
+    # pylint: disable=invalid-name
+    @classproperty
+    def Array(self):
+        """
+        Array value which accepts any length
+        """
+        return self._VectorType.get_class_object(self, length=None)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -485,6 +536,20 @@ class ViscosityType(DimensionedType):
 
     dim = u.dimensions.viscosity
     dim_name = "viscosity"
+
+
+class PowerType(DimensionedType):
+    """:class: PowerType"""
+
+    dim = u.dimensions.power
+    dim_name = "power"
+
+
+class MomentType(DimensionedType):
+    """:class: MomentType"""
+
+    dim = u.dimensions.moment
+    dim_name = "moment"
 
 
 class AngularVelocityType(DimensionedType):
@@ -654,6 +719,15 @@ class _Flow360BaseUnit(DimensionedType):
             return self.__class__(other)
         raise TypeError(f"Operation not defined on {self} and {other}")
 
+    def in_base(self, base, flow360_conv_system):
+        """
+        Convert unit to a specific base system
+        """
+        value = self.value * flow360_conv_system[self.dimension_type.dim_name]
+        value.units.registry = flow360_conv_system.registry
+        converted = value.in_base(unit_system=base)
+        return converted
+
 
 class Flow360LengthUnit(_Flow360BaseUnit):
     """:class: Flow360LengthUnit"""
@@ -725,6 +799,20 @@ class Flow360ViscosityUnit(_Flow360BaseUnit):
     unit_name = "flow360_viscosity_unit"
 
 
+class Flow360PowerUnit(_Flow360BaseUnit):
+    """:class: Flow360PowerUnit"""
+
+    dimension_type = PowerType
+    unit_name = "flow360_power_unit"
+
+
+class Flow360MomentUnit(_Flow360BaseUnit):
+    """:class: Flow360MomentUnit"""
+
+    dimension_type = MomentType
+    unit_name = "flow360_moment_unit"
+
+
 class Flow360AngularVelocityUnit(_Flow360BaseUnit):
     """:class: Flow360AngularVelocityUnit"""
 
@@ -789,6 +877,8 @@ class UnitSystem(pd.BaseModel):
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
+    power: PowerType = pd.Field()
+    moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
 
@@ -807,6 +897,8 @@ class UnitSystem(pd.BaseModel):
         "pressure",
         "density",
         "viscosity",
+        "power",
+        "moment",
         "angular_velocity",
         "heat_flux",
     ]
@@ -878,7 +970,7 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
+        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
         """
 
         defaults = {}
@@ -926,6 +1018,8 @@ flow360_force_unit = Flow360ForceUnit()
 flow360_pressure_unit = Flow360PressureUnit()
 flow360_density_unit = Flow360DensityUnit()
 flow360_viscosity_unit = Flow360ViscosityUnit()
+flow360_power_unit = Flow360PowerUnit()
+flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
 
@@ -940,6 +1034,8 @@ dimensions = [
     flow360_pressure_unit,
     flow360_density_unit,
     flow360_viscosity_unit,
+    flow360_power_unit,
+    flow360_moment_unit,
     flow360_angular_velocity_unit,
     flow360_heat_flux_unit,
 ]
@@ -964,6 +1060,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_density: float = pd.Field(np.inf, target_dimension=Flow360DensityUnit)
     base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
     base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
+    base_power: float = pd.Field(np.inf, target_dimension=Flow360PowerUnit)
+    base_moment: float = pd.Field(np.inf, target_dimension=Flow360MomentUnit)
     base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
     base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
     registry: Any = pd.Field(allow_mutation=False)
@@ -1001,6 +1099,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["density"] = "flow360_density_unit"
         conversion_system["pressure"] = "flow360_pressure_unit"
         conversion_system["viscosity"] = "flow360_viscosity_unit"
+        conversion_system["power"] = "flow360_power_unit"
+        conversion_system["moment"] = "flow360_moment_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
         conversion_system["heat_flux"] = "flow360_heat_flux_unit"
         super().__init__(registry=registry, conversion_system=conversion_system)
@@ -1033,6 +1133,8 @@ class _PredefinedUnitSystem(UnitSystem):
     pressure: PressureType = pd.Field(exclude=True)
     density: DensityType = pd.Field(exclude=True)
     viscosity: ViscosityType = pd.Field(exclude=True)
+    power: PowerType = pd.Field(exclude=True)
+    moment: MomentType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)
     heat_flux: HeatFluxType = pd.Field(exclude=True)
 
@@ -1045,8 +1147,8 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["SI"] = pd.Field("SI", const=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.SI)
+    def __init__(self, verbose: bool = True):
+        super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
 
     @classmethod
     def validate(cls, _):
@@ -1116,3 +1218,8 @@ SI_unit_system = SIUnitSystem()
 CGS_unit_system = CGSUnitSystem()
 imperial_unit_system = ImperialUnitSystem()
 flow360_unit_system = Flow360UnitSystem()
+
+# register SI, CGS unit system
+u.UnitSystem("SI", "m", "kg", "s")
+u.UnitSystem("CGS", "cm", "g", "s")
+u.UnitSystem("Imperial", "ft", "lb", "s", temperature_unit="R")
