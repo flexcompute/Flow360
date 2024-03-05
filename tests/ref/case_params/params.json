@@ -51,7 +51,7 @@
         "numericalDissipationFactor": 1.0,
         "limitVelocity": false,
         "limitPressureDensity": false,
-        "linearSolverConfig": {
+        "linearSolver": {
             "maxIterations": 30
         },
         "modelType": "Compressible"
@@ -149,5 +149,5 @@
             }
         }
     },
-    "hash": "50f2961a91287259ea3bb9678212ed0749f12d73e8b1c3a7ffac79322f1f0dd6"
+    "hash": "1bcb9beab809128a2a13215b9e6fa9adcfa38b8e14a4908d2f3654d4e476243b"
 }

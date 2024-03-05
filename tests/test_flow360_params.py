@@ -11,6 +11,7 @@ import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
+    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -22,6 +23,7 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
+    SupersonicInflow,
     WallFunction,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -54,15 +56,8 @@ from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360ValidationError,
 )
-from flow360.flags import Flags
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
-
-if Flags.beta_features():
-    from flow360.component.flow360_params.boundaries import (
-        HeatFluxWall,
-        SupersonicInflow,
-    )
 
 assertions = unittest.TestCase("__init__")
 
@@ -225,12 +220,8 @@ def test_update_from_multiple_files():
 
     to_file_from_file_test(params)
 
-    if Flags.beta_features():
-        compare_to_ref(params, "ref/case_params/params_beta.yaml")
-        compare_to_ref(params, "ref/case_params/params_beta.json", content_only=True)
-    else:
-        compare_to_ref(params, "ref/case_params/params.yaml")
-        compare_to_ref(params, "ref/case_params/params.json", content_only=True)
+    compare_to_ref(params, "ref/case_params/params.yaml")
+    compare_to_ref(params, "ref/case_params/params.json", content_only=True)
 
 
 def test_update_from_multiple_files_dont_overwrite():

@@ -4,7 +4,6 @@ import unittest
 import pytest
 
 import flow360 as fl
-from flow360 import Flags
 from flow360.component.flow360_params.boundaries import (
     SolidAdiabaticWall,
     SolidIsothermalWall,
@@ -31,10 +30,7 @@ from flow360.component.flow360_params.volume_zones import (
 
 assertions = unittest.TestCase("__init__")
 
-if Flags.beta_features():
-    from flow360.component.flow360_params.solvers import (
-        IncompressibleNavierStokesSolver,
-    )
+from flow360.component.flow360_params.solvers import IncompressibleNavierStokesSolver
 
 
 @pytest.fixture(autouse=True)
@@ -202,21 +198,20 @@ def test_cht_solver_has_heat_transfer_zone():
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
-    if Flags.beta_features():
-        with pytest.raises(
-            ValueError,
-            match="Conjugate heat transfer can not be used with incompressible flow solver.",
-        ):
-            with fl.SI_unit_system:
-                param = Flow360Params(
-                    navier_stokes_solver=IncompressibleNavierStokesSolver(),
-                    volume_zones={
-                        "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
-                        "blk-2": FluidDynamicsVolumeZone(),
-                    },
-                    boundaries={},
-                    freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
-                )
+    with pytest.raises(
+        ValueError,
+        match="Conjugate heat transfer can not be used with incompressible flow solver.",
+    ):
+        with fl.SI_unit_system:
+            param = Flow360Params(
+                navier_stokes_solver=IncompressibleNavierStokesSolver(),
+                volume_zones={
+                    "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
+                    "blk-2": FluidDynamicsVolumeZone(),
+                },
+                boundaries={},
+                freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            )
 
     with fl.SI_unit_system:
         param = Flow360Params(

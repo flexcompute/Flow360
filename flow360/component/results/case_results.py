@@ -29,6 +29,7 @@ from ..flow360_params.unit_system import (
     is_flow360_unit,
 )
 
+# pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
 
 
