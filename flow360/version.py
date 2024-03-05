@@ -2,4 +2,4 @@
 version
 """
 
-__version__ = "0.2.0b18"
+__version__ = "24.2.0b1"
