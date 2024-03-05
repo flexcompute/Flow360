@@ -161,7 +161,7 @@ def test_heat_equation():
 
     assert he
 
-    compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
+    compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
 
     with pytest.raises(
         pd.ValidationError,
