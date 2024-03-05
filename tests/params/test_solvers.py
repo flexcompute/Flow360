@@ -15,7 +15,6 @@ from flow360.component.flow360_params.flow360_params import (
     TransitionModelSolver,
 )
 from flow360.component.flow360_params.solvers import NavierStokesSolver
-from flow360.flags import Flags
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -162,10 +161,7 @@ def test_heat_equation():
 
     assert he
 
-    if Flags.beta_features():
-        compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
-    else:
-        compare_to_ref(he, "../ref/case_params/heat_equation/ref.json", content_only=True)
+    compare_to_ref(he, "../ref/case_params/heat_equation/ref_beta.json", content_only=True)
 
     with pytest.raises(
         pd.ValidationError,

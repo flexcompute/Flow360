@@ -4,8 +4,6 @@ validation logic
 
 from typing import NoReturn, Optional, Tuple
 
-from flow360.flags import Flags
-
 from ...log import log
 from .boundaries import (
     RotationallyPeriodic,
@@ -21,8 +19,7 @@ from .params_utils import get_all_output_fields
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
 
-if Flags.beta_features():
-    from .solvers import IncompressibleNavierStokesSolver
+from .solvers import IncompressibleNavierStokesSolver
 
 
 def _check_tri_quad_boundaries(values):
@@ -156,13 +153,12 @@ def _validate_cht_no_heat_transfer_zone(values):
 
 def _validate_cht_has_heat_transfer_zone(values):
     navier_stokes_solver = values.get("navier_stokes_solver")
-    if Flags.beta_features():
-        if navier_stokes_solver is not None and isinstance(
-            navier_stokes_solver, IncompressibleNavierStokesSolver
-        ):
-            raise ValueError(
-                "Conjugate heat transfer can not be used with incompressible flow solver."
-            )
+    if navier_stokes_solver is not None and isinstance(
+        navier_stokes_solver, IncompressibleNavierStokesSolver
+    ):
+        raise ValueError(
+            "Conjugate heat transfer can not be used with incompressible flow solver."
+        )
 
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")

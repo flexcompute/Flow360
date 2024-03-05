@@ -10,8 +10,6 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic as pd
 from pydantic import conlist
 
-from flow360.flags import Flags
-
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (
     CommonFieldNames,
@@ -563,8 +561,7 @@ class AeroacousticOutput(Flow360BaseModel):
 
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
-    if Flags.beta_features():
-        write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
+    write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
