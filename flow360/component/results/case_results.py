@@ -29,12 +29,12 @@ from ..flow360_params.unit_system import (
     is_flow360_unit,
 )
 
-TMP_DIR = tempfile.mkdtemp()
+TMP_DIR = tempfile.TemporaryDirectory()
 
 
 def _temp_file_generator(suffix: str = ""):
     random_name = str(uuid.uuid4()) + suffix
-    file_path = os.path.join(TMP_DIR, random_name)
+    file_path = os.path.join(TMP_DIR.name, random_name)
     return file_path
 
 
