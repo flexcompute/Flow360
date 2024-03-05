@@ -11,6 +11,7 @@ import flow360 as fl
 from flow360 import units as u
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
+    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -22,6 +23,7 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
+    SupersonicInflow,
     WallFunction,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -56,11 +58,6 @@ from flow360.exceptions import (
 )
 
 from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
-
-from flow360.component.flow360_params.boundaries import (
-    HeatFluxWall,
-    SupersonicInflow,
-)
 
 assertions = unittest.TestCase("__init__")
 

@@ -94,6 +94,7 @@ from .solvers import (
     LinearSolver,
     NavierStokesSolver,
     NavierStokesSolverLegacy,
+    NavierStokesSolverType,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
@@ -107,6 +108,7 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
+from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import (
     AngularVelocityType,
     AreaType,
@@ -146,14 +148,11 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
-    _check_numericalDissipationFactor_output,
+    _check_numerical_dissipation_factor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
 from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
-
-from .solvers import NavierStokesSolverType
-from .turbulence_quantities import TurbulenceQuantitiesType
 
 
 # pylint: disable=invalid-name
@@ -544,7 +543,6 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
             Conflicts(field1="turbulent_viscosity_ratio", field2="turbulence_quantities")
         ]
         exclude_on_flow360_export = ["model_type"]
-
 
 
 class FreestreamFromMach(FreestreamBase):
@@ -1015,9 +1013,7 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
-    navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(
-        alias="navierStokesSolver"
-    )
+    navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(alias="navierStokesSolver")
 
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
@@ -1285,7 +1281,7 @@ class Flow360Params(Flow360BaseModel):
         """
         Detect output of numericalDissipationFactor if not enabled.
         """
-        return _check_numericalDissipationFactor_output(values)
+        return _check_numerical_dissipation_factor_output(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):

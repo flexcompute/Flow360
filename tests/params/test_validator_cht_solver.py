@@ -30,9 +30,7 @@ from flow360.component.flow360_params.volume_zones import (
 
 assertions = unittest.TestCase("__init__")
 
-from flow360.component.flow360_params.solvers import (
-    IncompressibleNavierStokesSolver,
-)
+from flow360.component.flow360_params.solvers import IncompressibleNavierStokesSolver
 
 
 @pytest.fixture(autouse=True)

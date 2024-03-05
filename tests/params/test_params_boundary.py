@@ -7,6 +7,7 @@ import pytest
 import flow360 as fl
 from flow360.component.flow360_params.boundaries import (
     FreestreamBoundary,
+    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
@@ -26,10 +27,7 @@ from flow360.component.flow360_params.flow360_params import (
     MeshBoundary,
     SteadyTimeStepping,
 )
-
-from flow360.component.flow360_params.boundaries import HeatFluxWall
 from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
-
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -314,9 +312,7 @@ def test_boundary_types():
         name="SomeBC",
         total_pressure_ratio=0.2,
         total_temperature_ratio=0.43,
-        turbulence_quantities=TurbulenceQuantities(
-            viscosity_ratio=124, turbulent_length_scale=1.2
-        ),
+        turbulence_quantities=TurbulenceQuantities(viscosity_ratio=124, turbulent_length_scale=1.2),
     )
 
     assert bc.turbulence_quantities.turbulent_viscosity_ratio == 124

@@ -29,13 +29,13 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         0, alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
+
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
             DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
-
 
 
 class LinearSolver(Flow360BaseModel):
@@ -175,7 +175,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
 
-
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
 
@@ -217,6 +216,7 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     model_type: Literal["Incompressible"] = pd.Field(
         "Incompressible", alias="modelType", const=True
     )
+
 
 NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
@@ -330,6 +330,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
     )
+
 
 class KOmegaSST(TurbulenceModelSolver):
     """:class:`KOmegaSST` class"""
@@ -446,7 +447,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
     linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
     )
-
 
     # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> TransitionModelSolver:

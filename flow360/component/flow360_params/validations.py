@@ -16,10 +16,9 @@ from .boundaries import (
 from .flow360_fields import get_aliases
 from .initial_condition import ExpressionInitialCondition
 from .params_utils import get_all_output_fields
+from .solvers import IncompressibleNavierStokesSolver
 from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
-
-from .solvers import IncompressibleNavierStokesSolver
 
 
 def _check_tri_quad_boundaries(values):
@@ -156,9 +155,7 @@ def _validate_cht_has_heat_transfer_zone(values):
     if navier_stokes_solver is not None and isinstance(
         navier_stokes_solver, IncompressibleNavierStokesSolver
     ):
-        raise ValueError(
-            "Conjugate heat transfer can not be used with incompressible flow solver."
-        )
+        raise ValueError("Conjugate heat transfer can not be used with incompressible flow solver.")
 
     time_stepping = values.get("time_stepping")
     volume_zones = values.get("volume_zones")
@@ -463,9 +460,11 @@ def _get_all_output_fields(values):
     return used_output_fields
 
 
-def _check_numericalDissipationFactor_output(values):
+def _check_numerical_dissipation_factor_output(values):
     navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None:
+    if navier_stokes_solver is not None and not isinstance(
+        navier_stokes_solver, IncompressibleNavierStokesSolver
+    ):
         numerical_dissipation_factor = navier_stokes_solver.numerical_dissipation_factor
         low_dissipation_flag = int(round(1.0 / numerical_dissipation_factor)) - 1
         if low_dissipation_flag == 0 and "numericalDissipationFactor" in _get_all_output_fields(

@@ -2,7 +2,6 @@
 Turbulence quantities parameters
 """
 
-
 # pylint: disable=unused-import
 from abc import ABCMeta
 from typing import Optional, Union
@@ -12,15 +11,15 @@ import pydantic as pd
 from ..types import NonNegativeFloat, PositiveFloat
 from .params_base import Flow360BaseModel
 
+
 class TurbulentKineticEnergy(Flow360BaseModel):
     """
     turbulentKineticEnergy : non-dimensional [`C_inf^2`]
         Turbulent kinetic energy. Applicable only when using SST model.
     """
 
-    turbulent_kinetic_energy: Optional[NonNegativeFloat] = pd.Field(
-        alias="turbulentKineticEnergy"
-    )
+    turbulent_kinetic_energy: Optional[NonNegativeFloat] = pd.Field(alias="turbulentKineticEnergy")
+
 
 class TurbulentIntensity(Flow360BaseModel):
     """
@@ -33,6 +32,7 @@ class TurbulentIntensity(Flow360BaseModel):
 
     turbulent_intensity: Optional[NonNegativeFloat] = pd.Field(alias="turbulentIntensity")
 
+
 class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
     """
     specificDissipationRate : non-dimensional [`C_inf/L_gridUnit`]
@@ -43,6 +43,7 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
         alias="specificDissipationRate"
     )
 
+
 class TurbulentViscosityRatio(Flow360BaseModel):
     """
     turbulentViscosityRatio : non-dimensional [`-`]
@@ -52,6 +53,7 @@ class TurbulentViscosityRatio(Flow360BaseModel):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
+
 
 class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
     """
@@ -65,6 +67,7 @@ class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
 
     turbulent_length_scale: Optional[PositiveFloat] = pd.Field(alias="turbulentLengthScale")
 
+
 class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
     """
     modifiedTurbulentViscosityRatio : non-dimensional [`-`]
@@ -76,6 +79,7 @@ class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
         alias="modifiedTurbulentViscosityRatio"
     )
 
+
 class ModifiedTurbulentViscosity(Flow360BaseModel):
     """
     modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]
@@ -86,47 +90,51 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
         alias="modifiedTurbulentViscosity"
     )
 
+
 # pylint: disable=missing-class-docstring
 class SpecificDissipationRateAndTurbulentKineticEnergy(
     _SpecificDissipationRate, TurbulentKineticEnergy
 ):
     pass
 
+
 class TurbulentViscosityRatioAndTurbulentKineticEnergy(
     TurbulentViscosityRatio, TurbulentKineticEnergy
 ):
     pass
 
-class TurbulentLengthScaleAndTurbulentKineticEnergy(
-    TurbulentLengthScale, TurbulentKineticEnergy
-):
+
+class TurbulentLengthScaleAndTurbulentKineticEnergy(TurbulentLengthScale, TurbulentKineticEnergy):
     pass
 
-class TurbulentIntensityAndSpecificDissipationRate(
-    TurbulentIntensity, _SpecificDissipationRate
-):
+
+class TurbulentIntensityAndSpecificDissipationRate(TurbulentIntensity, _SpecificDissipationRate):
     pass
+
 
 class TurbulentIntensityAndTurbulentViscosityRatio(TurbulentIntensity, TurbulentViscosityRatio):
     pass
 
+
 class TurbulentIntensityAndTurbulentLengthScale(TurbulentIntensity, TurbulentLengthScale):
     pass
+
 
 class SpecificDissipationRateAndTurbulentViscosityRatio(
     _SpecificDissipationRate, TurbulentViscosityRatio
 ):
     pass
 
+
 class SpecificDissipationRateAndTurbulentLengthScale(
     _SpecificDissipationRate, TurbulentLengthScale
 ):
     pass
 
-class TurbulentViscosityRatioAndTurbulentLengthScale(
-    TurbulentViscosityRatio, TurbulentLengthScale
-):
+
+class TurbulentViscosityRatioAndTurbulentLengthScale(TurbulentViscosityRatio, TurbulentLengthScale):
     pass
+
 
 # pylint: enable=missing-class-docstring
 
@@ -147,6 +155,7 @@ TurbulenceQuantitiesType = Union[
     SpecificDissipationRateAndTurbulentLengthScale,
     TurbulentViscosityRatioAndTurbulentLengthScale,
 ]
+
 
 # pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches, invalid-name
 # using class naming convetion here

@@ -16,10 +16,12 @@ from .component.case import CaseList as MyCases
 from .component.flow360_params import solvers
 from .component.flow360_params.boundaries import (
     FreestreamBoundary,
+    HeatFluxWall,
     IsothermalWall,
     MassInflow,
     MassOutflow,
     NoSlipWall,
+    PressureOutflow,
     RiemannInvariant,
     RotationallyPeriodic,
     SlidingInterfaceBoundary,
@@ -29,7 +31,10 @@ from .component.flow360_params.boundaries import (
     SubsonicInflow,
     SubsonicOutflowMach,
     SubsonicOutflowPressure,
+    SupersonicInflow,
+    SymmetryPlane,
     TranslationallyPeriodic,
+    VelocityInflow,
     WallFunction,
 )
 from .component.flow360_params.flow360_output import Slice, Slices
@@ -82,6 +87,7 @@ from .component.flow360_params.initial_condition import (
     FreestreamInitialCondition,
 )
 from .component.flow360_params.solvers import (
+    IncompressibleNavierStokesSolver,
     LinearSolver,
     NavierStokesSolver,
     PressureCorrectionSolver,
@@ -93,6 +99,7 @@ from .component.flow360_params.time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
+from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -134,13 +141,3 @@ from .environment import Env
 from .flags import Flags
 from .user_config import UserConfig
 from .version import __version__
-
-from .component.flow360_params.boundaries import (
-    HeatFluxWall,
-    PressureOutflow,
-    SupersonicInflow,
-    SymmetryPlane,
-    VelocityInflow,
-)
-from .component.flow360_params.solvers import IncompressibleNavierStokesSolver
-from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
