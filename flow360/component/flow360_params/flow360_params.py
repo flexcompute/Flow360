@@ -27,7 +27,6 @@ from pydantic import StrictStr
 from typing_extensions import Literal
 
 from flow360 import units
-from flow360.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
@@ -48,7 +47,7 @@ from ..types import (
     PositiveInt,
     Vector,
 )
-from ..utils import _get_value_or_none, beta_feature
+from ..utils import _get_value_or_none
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -95,6 +94,7 @@ from .solvers import (
     LinearSolver,
     NavierStokesSolver,
     NavierStokesSolverLegacy,
+    NavierStokesSolverType,
     NoneSolver,
     SpalartAllmaras,
     TransitionModelSolver,
@@ -108,6 +108,7 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
+from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import (
     AngularVelocityType,
     AreaType,
@@ -147,15 +148,11 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
-    _check_numericalDissipationFactor_output,
+    _check_numerical_dissipation_factor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
 from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
-
-if Flags.beta_features():
-    from .solvers import NavierStokesSolverType
-    from .turbulence_quantities import TurbulenceQuantitiesType
 
 
 # pylint: disable=invalid-name
@@ -536,23 +533,16 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ## Legacy update pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
-    if Flags.beta_features():
-        turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-            alias="turbulenceQuantities"
-        )
+    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+        alias="turbulenceQuantities"
+    )
 
-        # pylint: disable=missing-class-docstring,too-few-public-methods
-        class Config(Flow360BaseModel.Config):
-            conflicting_fields = [
-                Conflicts(field1="turbulent_viscosity_ratio", field2="turbulence_quantities")
-            ]
-            exclude_on_flow360_export = ["model_type"]
-
-    else:
-
-        class Config(Flow360BaseModel.Config):
-            # pylint: disable=missing-class-docstring,too-few-public-methods
-            exclude_on_flow360_export = ["model_type"]
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        conflicting_fields = [
+            Conflicts(field1="turbulent_viscosity_ratio", field2="turbulence_quantities")
+        ]
+        exclude_on_flow360_export = ["model_type"]
 
 
 class FreestreamFromMach(FreestreamBase):
@@ -1023,12 +1013,7 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
-    if Flags.beta_features():
-        navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(
-            alias="navierStokesSolver"
-        )
-    else:
-        navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(alias="navierStokesSolver")
+    navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(alias="navierStokesSolver")
 
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
@@ -1296,7 +1281,7 @@ class Flow360Params(Flow360BaseModel):
         """
         Detect output of numericalDissipationFactor if not enabled.
         """
-        return _check_numericalDissipationFactor_output(values)
+        return _check_numerical_dissipation_factor_output(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):

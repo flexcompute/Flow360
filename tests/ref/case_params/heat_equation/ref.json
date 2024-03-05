@@ -1,8 +1,8 @@
 {
   "absoluteTolerance": 1e-09,
-  "linearSolverConfig": {
-    "maxIterations": 50,
-    "absoluteTolerance": 1e-10
+  "linearSolver": {
+    "absoluteTolerance": 1e-10,
+    "maxIterations": 50
   },
   "equationEvalFrequency": 10,
   "CFLMultiplier": 1.0,

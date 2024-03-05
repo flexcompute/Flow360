@@ -11,8 +11,6 @@ import numpy as np
 import pydantic as pd
 from typing_extensions import Literal
 
-from flow360.flags import Flags
-
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
@@ -31,22 +29,13 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         0, alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
-    if Flags.beta_features():
-        # pylint: disable=missing-class-docstring,too-few-public-methods
-        class Config(Flow360BaseModel.Config):
-            deprecated_aliases = [
-                DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
-                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-            ]
 
-    else:
-
-        class Config(
-            Flow360BaseModel.Config
-        ):  # pylint: disable=missing-class-docstring,too-few-public-methods
-            deprecated_aliases = [
-                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-            ]
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [
+            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+        ]
 
 
 class LinearSolver(Flow360BaseModel):
@@ -179,74 +168,57 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     limit_velocity: Optional[bool] = pd.Field(False, alias="limitVelocity")
     limit_pressure_density: Optional[bool] = pd.Field(False, alias="limitPressureDensity")
 
-    if Flags.beta_features():
-        linear_solver: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
-        )
-
-    else:
-        linear_solver_config: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=30),
-            alias="linearSolverConfig",
-            displayed="Linear solver config",
-        )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
+    )
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
 
-if Flags.beta_features():
+class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
+    """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
 
-    class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
-        """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
+    Parameters
+    ----------
+    pressure_correction_solver :
+        Pressure correction solver settings
 
-        Parameters
-        ----------
-        pressure_correction_solver :
-            Pressure correction solver settings
+    linear_solver:
+        Linear solver settings
 
-        linear_solver:
-            Linear solver settings
+    update_jacobian_frequency :
+        Frequency at which the jacobian is updated.
 
-        update_jacobian_frequency :
-            Frequency at which the jacobian is updated.
+    equation_eval_frequency :
+        Frequency at which to update the incompressible NS equation in loosely-coupled simulations
 
-        equation_eval_frequency :
-            Frequency at which to update the incompressible NS equation in loosely-coupled simulations
+    Returns
+    -------
+    :class:`IncompressibleNavierStokesSolver`
+        An instance of the component class IncompressibleNavierStokesSolver.
 
-        Returns
-        -------
-        :class:`IncompressibleNavierStokesSolver`
-            An instance of the component class IncompressibleNavierStokesSolver.
+    Example
+    -------
+    >>> ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)
+    """
 
-        Example
-        -------
-        >>> ns = IncompressibleNavierStokesSolver(absolute_tolerance=1e-10)
-        """
+    pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
+        alias="pressureCorrectionSolver", default=PressureCorrectionSolver()
+    )
+    equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
+    kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
+        -1, alias="kappaMUSCL", displayed="Kappa MUSCL"
+    )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
+    )
 
-        pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
-            alias="pressureCorrectionSolver", default=PressureCorrectionSolver()
-        )
-        equation_eval_frequency: Optional[PositiveInt] = pd.Field(1, alias="equationEvalFrequency")
-        kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(
-            -1, alias="kappaMUSCL", displayed="Kappa MUSCL"
-        )
-        if Flags.beta_features():
-            linear_solver: Optional[LinearSolver] = pd.Field(
-                LinearSolver(max_iterations=30), alias="linearSolver", displayed="Linear solver"
-            )
+    model_type: Literal["Incompressible"] = pd.Field(
+        "Incompressible", alias="modelType", const=True
+    )
 
-        else:
-            linear_solver_config: Optional[LinearSolver] = pd.Field(
-                LinearSolver(max_iterations=30),
-                alias="linearSolverConfig",
-                displayed="Linear solver config",
-            )
 
-        model_type: Literal["Incompressible"] = pd.Field(
-            "Incompressible", alias="modelType", const=True
-        )
-
-    NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
+NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
 
 class TurbulenceModelConstantsSA(Flow360BaseModel):
@@ -355,17 +327,9 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         alias="modelConstants", discriminator="model_type"
     )
 
-    if Flags.beta_features():
-        linear_solver: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
-        )
-
-    else:
-        linear_solver_config: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=20),
-            alias="linearSolverConfig",
-            displayed="Linear solver config",
-        )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
+    )
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -439,26 +403,14 @@ class HeatEquationSolver(GenericFlowSolverSettings):
     equation_eval_frequency: Optional[PositiveInt] = pd.Field(alias="equationEvalFrequency")
     order_of_accuracy: Optional[Literal[2]] = pd.Field(2, alias="orderOfAccuracy", const=True)
 
-    if Flags.beta_features():
-        linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
+    linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
-        # pylint: disable=missing-class-docstring,too-few-public-methods
-        class Config(Flow360BaseModel.Config):
-            deprecated_aliases = [
-                DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
-                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-            ]
-
-    else:
-        linear_solver_config: Optional[LinearSolver] = pd.Field(
-            LinearSolver(), alias="linearSolverConfig"
-        )
-
-        # pylint: disable=missing-class-docstring,too-few-public-methods
-        class Config(Flow360BaseModel.Config):
-            deprecated_aliases = [
-                DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
-            ]
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [
+            DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
+            DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
+        ]
 
 
 class TransitionModelSolver(GenericFlowSolverSettings):
@@ -492,17 +444,9 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         1.0, alias="reconstructionGradientLimiter"
     )
 
-    if Flags.beta_features():
-        linear_solver: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
-        )
-
-    else:
-        linear_solver_config: Optional[LinearSolver] = pd.Field(
-            LinearSolver(max_iterations=20),
-            alias="linearSolverConfig",
-            displayed="Linear solver config",
-        )
+    linear_solver: Optional[LinearSolver] = pd.Field(
+        LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
+    )
 
     # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> TransitionModelSolver:
@@ -667,7 +611,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
             "modelType": self.model_type,
-            "linearSolverConfig": try_update(self.linear_solver_config),
+            "linearSolver": try_update(self.linear_solver_config),
             "updateJacobianFrequency": self.update_jacobian_frequency,
             "equationEvalFrequency": self.equation_eval_frequency,
             "maxForceJacUpdatePhysicalSteps": self.max_force_jac_update_physical_steps,
@@ -676,7 +620,7 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
             "Ncrit": self.N_crit,
         }
 
-        if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
-            model["linearSolverConfig"]["maxIterations"] = self.linear_iterations
+        if self.linear_iterations is not None and model["linearSolver"] is not None:
+            model["linearSolver"]["maxIterations"] = self.linear_iterations
 
         return TransitionModelSolver.parse_obj(model)
