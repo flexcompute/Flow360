@@ -13,7 +13,7 @@ from pydantic import Extra, Field, validator
 
 from flow360.component.compress_upload import compress_and_upload_chunks
 
-from ..cloud.requests import NewVolumeMeshRequest
+from ..cloud.requests import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import (
     Flow360CloudFileError,
@@ -719,6 +719,44 @@ class VolumeMesh(Flow360Resource):
             endianess=endianess,
             isascii=isascii,
         )
+
+    @classmethod
+    def copy_from_example(
+        cls,
+        example_id: str,
+        name: str = None,
+    ) -> VolumeMesh:
+        """
+        Create a new volume mesh by copying from an example mesh identified by `example_id`.
+
+        Parameters
+        ----------
+        example_id : str
+            The unique identifier of the example volume mesh to copy from.
+        name : str, optional
+            The name to assign to the new volume mesh. If not provided, the name
+            of the example volume mesh will be used.
+
+        Returns
+        -------
+        VolumeMesh
+            A new instance of VolumeMesh copied from the example mesh if successful.
+
+        Examples
+        --------
+        >>> new_mesh = VolumeMesh.copy_from_example('example_id_123', name='New Mesh')
+        """
+
+        if name is None:
+            eg_vm = cls(example_id)
+            name = eg_vm.name
+        req = CopyExampleVolumeMeshRequest(example_id=example_id, name=name)
+        resp = RestApi(f"{VolumeMeshInterface.endpoint}/examples/copy").post(req.dict())
+        if not resp:
+            raise RuntimeError("Something went wrong when accessing example mesh.")
+
+        info = VolumeMeshMeta(**resp)
+        return cls(info.id)
 
     @classmethod
     def create(

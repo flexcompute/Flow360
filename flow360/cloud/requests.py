@@ -47,6 +47,13 @@ class NewVolumeMeshRequest(Flow360Requests):
         return value
 
 
+class CopyExampleVolumeMeshRequest(Flow360Requests):
+    """request for new volume mesh"""
+
+    name: str = pd.Field()
+    example_id: str = pd.Field(alias="meshId")
+
+
 class NewFolderRequest(Flow360Requests):
     """request for new folder"""
 
