@@ -163,18 +163,10 @@ class SupersonicInflow(Boundary):
     """
 
     type: Literal["SupersonicInflow"] = pd.Field("SupersonicInflow", const=True)
-    total_temperature_ratio: PositiveFloat = pd.Field(
-        alias="totalTemperatureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    total_pressure_ratio: PositiveFloat = pd.Field(
-        alias="totalPressureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    static_pressure_ratio: PositiveFloat = pd.Field(
-        alias="staticPressureRatio", supported_solver_version="release-23.3.2.0gt"
-    )
-    velocity_direction: Optional[BoundaryAxisType] = pd.Field(
-        alias="velocityDirection", supported_solver_version="release-23.3.2.0gt"
-    )
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
+    total_pressure_ratio: PositiveFloat = pd.Field(alias="totalPressureRatio")
+    static_pressure_ratio: PositiveFloat = pd.Field(alias="staticPressureRatio")
+    velocity_direction: Optional[BoundaryAxisType] = pd.Field(alias="velocityDirection")
 
 
 class SlidingInterfaceBoundary(Boundary):
