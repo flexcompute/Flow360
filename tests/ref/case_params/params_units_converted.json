@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "23.3.1",
+    "version": "23.3.2",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -148,5 +148,5 @@
             }
         }
     },
-    "hash": "e8878f98ffe172dec8519d2298e370668ca9ef0d35387ec00b8a1633493552b7"
+    "hash": "fc37db5ab248bf66041b2ce9a1f21696b3f1d2e56befaa11104d9ef3657bc4be"
 }

@@ -12,7 +12,7 @@ def _no_update(params_as_dict):
 UPDATE_MAP = [
     ("0.2.0b16", "0.2.0b17", _no_update),
     ("0.2.0b17", "0.2.0b18", _no_update),
-    ("0.2.0b18", "23.3.1", _no_update),
+    ("0.2.0b18", "23.3.2", _no_update),
 ]
 
 
