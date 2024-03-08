@@ -318,7 +318,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         "maxEdgeLength", alias="gridSizeForLES"
     )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
-        1.0, alias="reconstructionGradientLimiter"
+        alias="reconstructionGradientLimiter"
     )
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
         False, alias="quadraticConstitutiveRelation"
@@ -337,6 +337,9 @@ class KOmegaSST(TurbulenceModelSolver):
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
     model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
+        1.0, alias="reconstructionGradientLimiter"
+    )
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
@@ -547,6 +550,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
     def update_model(self):
+
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
@@ -559,15 +563,21 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "DDES": self.DDES,
             "gridSizeForLES": self.grid_size_for_LES,
             "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
-            "reconstructionGradientLimiter": self.reconstruction_gradient_limiter,
             "modelConstants": self.model_constants,
         }
 
         try_set(model, "rotationCorrection", self.rotation_correction)
 
+        if self.reconstruction_gradient_limiter is not None:
+            model["reconstructionGradientLimiter"] = self.reconstruction_gradient_limiter
+
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
             model["linearSolverConfig"]["maxIterations"] = self.linear_iterations
 
+        if self.model_type == SpalartAllmaras.__fields__["model_type"].default:
+            return SpalartAllmaras(**model)
+        if self.model_type == KOmegaSST.__fields__["model_type"].default:
+            return KOmegaSST(**model)
         return model
 
 
