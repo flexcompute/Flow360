@@ -20,6 +20,8 @@ from flow360.component.flow360_params.flow360_output import (
 from flow360.component.flow360_params.flow360_params import Flow360Params
 from flow360.component.flow360_params.solvers import NavierStokesSolver
 
+import flow360.units as u
+
 assertions = unittest.TestCase("__init__")
 
 
@@ -49,7 +51,7 @@ def test_numerical_dissipation_output_criterion():
                     ),
                     "s3": Slice(
                         slice_normal=(0, 1, 0),
-                        slice_origin=(0, 1, 1),
+                        slice_origin=(0, 1, 1)*u.cm,
                     ),
                 },
             ),
@@ -107,3 +109,4 @@ def test_numerical_dissipation_output_criterion():
         param.navier_stokes_solver = NavierStokesSolver(numerical_dissipation_factor=0.2)
         for attr_name, attr_obj in output_database.items():
             setattr(param, attr_name, attr_obj)
+        param.flow360_json()
