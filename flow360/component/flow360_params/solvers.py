@@ -576,8 +576,9 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
 
         if self.model_type == SpalartAllmaras.__fields__["model_type"].default:
             return SpalartAllmaras(**model)
-        elif self.model_type == KOmegaSST.__fields__["model_type"].default:
+        if self.model_type == KOmegaSST.__fields__["model_type"].default:
             return KOmegaSST(**model)
+        return model
 
 
 class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
