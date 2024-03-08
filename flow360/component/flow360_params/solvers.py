@@ -567,7 +567,7 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         }
 
         try_set(model, "rotationCorrection", self.rotation_correction)
-        
+
         if self.reconstruction_gradient_limiter is not None:
             model["reconstructionGradientLimiter"] = self.reconstruction_gradient_limiter
 
