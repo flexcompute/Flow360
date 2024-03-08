@@ -548,9 +548,9 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
 
     def update_model(self):
         if self.reconstruction_gradient_limiter is None:
-            if self.model_type == "SpalartAllmaras":
+            if self.model_type == SpalartAllmaras.__fields__["model_type"].default:
                 self.reconstruction_gradient_limiter = 0.5
-            elif self.model_type == "kOmegaSST":
+            elif self.model_type == KOmegaSST.__fields__["model_type"].default:
                 self.reconstruction_gradient_limiter = 1.0
 
         model = {
