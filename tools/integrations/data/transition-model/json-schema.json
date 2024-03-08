@@ -11,7 +11,35 @@
     "relativeTolerance": {
       "title": "Relative tolerance",
       "default": 0,
+      "minimum": 0,
       "type": "number"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 2.0,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "default": 4,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
     },
     "modelType": {
       "title": "Model type",
@@ -19,27 +47,10 @@
       "const": "AmplificationFactorTransport",
       "type": "string"
     },
-    "updateJacobianFrequency": {
-      "title": "Update jacobian frequency",
-      "exclusiveMinimum": 0,
-      "type": "integer"
-    },
     "equationEvalFrequency": {
       "title": "Equation eval frequency",
+      "default": 4,
       "exclusiveMinimum": 0,
-      "type": "integer"
-    },
-    "maxForceJacUpdatePhysicalSteps": {
-      "title": "Max force jac update physical steps",
-      "minimum": 0,
-      "type": "integer"
-    },
-    "orderOfAccuracy": {
-      "title": "Order of accuracy",
-      "enum": [
-        1,
-        2
-      ],
       "type": "integer"
     },
     "turbulenceIntensityPercent": {
@@ -52,6 +63,13 @@
       "title": "Ncrit",
       "minimum": 1,
       "maximum": 11,
+      "type": "number"
+    },
+    "reconstructionGradientLimiter": {
+      "title": "Reconstruction gradient limiter",
+      "default": 1.0,
+      "minimum": 0,
+      "maximum": 2,
       "type": "number"
     },
     "_addLinearSolverConfig": {
@@ -84,12 +102,12 @@
                 },
                 "absoluteTolerance": {
                   "title": "Absolute tolerance",
-                  "default": 1e-10,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "relativeTolerance": {
                   "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
                   "type": "number"
                 }
               },

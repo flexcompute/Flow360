@@ -8,6 +8,42 @@
       "exclusiveMinimum": 0,
       "type": "number"
     },
+    "relativeTolerance": {
+      "title": "Relative tolerance",
+      "default": 0.001,
+      "minimum": 0,
+      "type": "number"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "const": 2,
+      "type": "integer"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 1.0,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "default": 1,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "HeatEquation",
+      "const": "HeatEquation",
+      "type": "string"
+    },
     "equationEvalFrequency": {
       "title": "Equation eval frequency",
       "exclusiveMinimum": 0,
@@ -43,12 +79,12 @@
                 },
                 "absoluteTolerance": {
                   "title": "Absolute tolerance",
-                  "default": 1e-10,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "relativeTolerance": {
                   "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
                   "type": "number"
                 }
               },

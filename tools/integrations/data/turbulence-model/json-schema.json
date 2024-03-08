@@ -16,31 +16,8 @@
         "relativeTolerance": {
           "title": "Relative tolerance",
           "default": 0,
-          "type": "number"
-        },
-        "modelType": {
-          "title": "Model type",
-          "default": "SpalartAllmaras",
-          "const": "SpalartAllmaras",
-          "type": "string"
-        },
-        "updateJacobianFrequency": {
-          "title": "Update jacobian frequency",
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "equationEvalFrequency": {
-          "title": "Equation eval frequency",
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "maxForceJacUpdatePhysicalSteps": {
-          "title": "Max force jac update physical steps",
-          "default": 0,
           "minimum": 0,
-          "type": "integer"
+          "type": "number"
         },
         "orderOfAccuracy": {
           "title": "Order of accuracy",
@@ -49,6 +26,36 @@
             1,
             2
           ],
+          "type": "integer"
+        },
+        "CFLMultiplier": {
+          "title": "CFL Multiplier",
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force JAC update physical steps",
+          "default": 0,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "SpalartAllmaras",
+          "const": "SpalartAllmaras",
+          "type": "string"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
           "type": "integer"
         },
         "DDES": {
@@ -65,17 +72,17 @@
           ],
           "type": "string"
         },
-        "quadraticConstitutiveRelation": {
-          "title": "Quadratic constitutive relation",
-          "default": false,
-          "type": "boolean"
-        },
         "reconstructionGradientLimiter": {
           "title": "Reconstruction gradient limiter",
           "default": 0.5,
           "minimum": 0,
           "maximum": 2,
           "type": "number"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "default": false,
+          "type": "boolean"
         },
         "modelConstants": {
           "title": "Model constants",
@@ -90,11 +97,13 @@
             "C_DES": {
               "title": "C_des",
               "default": 0.72,
+              "minimum": 0,
               "type": "number"
             },
             "C_d": {
               "title": "C_d",
               "default": 8.0,
+              "minimum": 0,
               "type": "number"
             }
           },
@@ -127,7 +136,7 @@
                   "title": "Linear solver config",
                   "default": {
                     "max_iterations": 20,
-                    "absolute_tolerance": 1e-10,
+                    "absolute_tolerance": null,
                     "relative_tolerance": null
                   },
                   "type": "object",
@@ -140,12 +149,12 @@
                     },
                     "absoluteTolerance": {
                       "title": "Absolute tolerance",
-                      "default": 1e-10,
                       "exclusiveMinimum": 0,
                       "type": "number"
                     },
                     "relativeTolerance": {
                       "title": "Relative tolerance",
+                      "exclusiveMinimum": 0,
                       "type": "number"
                     }
                   },
@@ -182,31 +191,8 @@
         "relativeTolerance": {
           "title": "Relative tolerance",
           "default": 0,
-          "type": "number"
-        },
-        "modelType": {
-          "title": "Model type",
-          "default": "kOmegaSST",
-          "const": "kOmegaSST",
-          "type": "string"
-        },
-        "updateJacobianFrequency": {
-          "title": "Update jacobian frequency",
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "equationEvalFrequency": {
-          "title": "Equation eval frequency",
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "type": "integer"
-        },
-        "maxForceJacUpdatePhysicalSteps": {
-          "title": "Max force jac update physical steps",
-          "default": 0,
           "minimum": 0,
-          "type": "integer"
+          "type": "number"
         },
         "orderOfAccuracy": {
           "title": "Order of accuracy",
@@ -215,6 +201,36 @@
             1,
             2
           ],
+          "type": "integer"
+        },
+        "CFLMultiplier": {
+          "title": "CFL Multiplier",
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "updateJacobianFrequency": {
+          "title": "Update jacobian frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "maxForceJacUpdatePhysicalSteps": {
+          "title": "Max force JAC update physical steps",
+          "default": 0,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "kOmegaSST",
+          "const": "kOmegaSST",
+          "type": "string"
+        },
+        "equationEvalFrequency": {
+          "title": "Equation eval frequency",
+          "default": 4,
+          "exclusiveMinimum": 0,
           "type": "integer"
         },
         "DDES": {
@@ -231,17 +247,17 @@
           ],
           "type": "string"
         },
-        "quadraticConstitutiveRelation": {
-          "title": "Quadratic constitutive relation",
-          "default": false,
-          "type": "boolean"
-        },
         "reconstructionGradientLimiter": {
           "title": "Reconstruction gradient limiter",
           "default": 1.0,
           "minimum": 0,
           "maximum": 2,
           "type": "number"
+        },
+        "quadraticConstitutiveRelation": {
+          "title": "Quadratic constitutive relation",
+          "default": false,
+          "type": "boolean"
         },
         "modelConstants": {
           "title": "Model constants",
@@ -256,21 +272,25 @@
             "C_DES1": {
               "title": "C_des1",
               "default": 0.78,
+              "minimum": 0,
               "type": "number"
             },
             "C_DES2": {
               "title": "C_des2",
               "default": 0.61,
+              "minimum": 0,
               "type": "number"
             },
             "C_d1": {
               "title": "C_d1",
               "default": 20.0,
+              "minimum": 0,
               "type": "number"
             },
             "C_d2": {
               "title": "C_d2",
               "default": 3.0,
+              "minimum": 0,
               "type": "number"
             }
           },
@@ -298,7 +318,7 @@
                   "title": "Linear solver config",
                   "default": {
                     "max_iterations": 20,
-                    "absolute_tolerance": 1e-10,
+                    "absolute_tolerance": null,
                     "relative_tolerance": null
                   },
                   "type": "object",
@@ -311,12 +331,12 @@
                     },
                     "absoluteTolerance": {
                       "title": "Absolute tolerance",
-                      "default": 1e-10,
                       "exclusiveMinimum": 0,
                       "type": "number"
                     },
                     "relativeTolerance": {
                       "title": "Relative tolerance",
+                      "exclusiveMinimum": 0,
                       "type": "number"
                     }
                   },

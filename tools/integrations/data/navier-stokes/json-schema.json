@@ -11,7 +11,17 @@
     "relativeTolerance": {
       "title": "Relative tolerance",
       "default": 0,
+      "minimum": 0,
       "type": "number"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
     },
     "CFLMultiplier": {
       "title": "CFL Multiplier",
@@ -19,22 +29,9 @@
       "exclusiveMinimum": 0,
       "type": "number"
     },
-    "kappaMUSCL": {
-      "title": "Kappa MUSCL",
-      "default": -1,
-      "minimum": -1,
-      "maximum": 1,
-      "type": "number"
-    },
     "updateJacobianFrequency": {
-      "title": "Update Jacobian frequency",
+      "title": "Update jacobian frequency",
       "default": 4,
-      "exclusiveMinimum": 0,
-      "type": "integer"
-    },
-    "equationEvalFrequency": {
-      "title": "Equation eval frequency",
-      "default": 1,
       "exclusiveMinimum": 0,
       "type": "integer"
     },
@@ -44,13 +41,17 @@
       "minimum": 0,
       "type": "integer"
     },
-    "orderOfAccuracy": {
-      "title": "Order of accuracy",
-      "default": 2,
-      "enum": [
-        1,
-        2
-      ],
+    "kappaMUSCL": {
+      "title": "Kappa MUSCL",
+      "default": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "type": "number"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation eval frequency",
+      "default": 1,
+      "exclusiveMinimum": 0,
       "type": "integer"
     },
     "numericalDissipationFactor": {
@@ -69,6 +70,12 @@
       "title": "Limit pressure density",
       "default": false,
       "type": "boolean"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "Compressible",
+      "const": "Compressible",
+      "type": "string"
     },
     "_addLinearSolverConfig": {
       "title": "Linear solver config",
@@ -100,12 +107,12 @@
                 },
                 "absoluteTolerance": {
                   "title": "Absolute tolerance",
-                  "default": 1e-10,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "relativeTolerance": {
                   "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
                   "type": "number"
                 }
               },

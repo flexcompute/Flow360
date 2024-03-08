@@ -24,6 +24,7 @@
               },
               "outputFields": {
                 "title": "Output fields",
+                "default": [],
                 "uniqueItems": true,
                 "type": "array",
                 "items": {
@@ -55,6 +56,9 @@
                 }
               }
             },
+            "required": [
+              "surfaces"
+            ],
             "additionalProperties": false
           },
           {
@@ -89,6 +93,7 @@
               },
               "outputFields": {
                 "title": "Output fields",
+                "default": [],
                 "uniqueItems": true,
                 "type": "array",
                 "items": {
@@ -120,6 +125,9 @@
                 }
               }
             },
+            "required": [
+              "monitorLocations"
+            ],
             "additionalProperties": false
           }
         ]
@@ -129,6 +137,7 @@
     },
     "outputFields": {
       "title": "Output fields",
+      "default": [],
       "uniqueItems": true,
       "type": "array",
       "items": {
@@ -160,5 +169,8 @@
       }
     }
   },
+  "required": [
+    "monitors"
+  ],
   "additionalProperties": false
 }

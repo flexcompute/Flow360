@@ -2,27 +2,9 @@
   "title": "Slice output",
   "type": "object",
   "properties": {
-    "animationFrequency": {
-      "title": "Animation frequency",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyOffset": {
-      "title": "Animation frequency offset",
-      "type": "integer"
-    },
     "outputFormat": {
       "title": "Output format",
+      "default": "paraview",
       "enum": [
         "paraview",
         "tecplot",
@@ -30,8 +12,30 @@
       ],
       "type": "string"
     },
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Animated",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Static"
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "default": 0,
+      "type": "integer"
+    },
     "outputFields": {
       "title": "Output fields",
+      "default": [],
       "uniqueItems": true,
       "type": "array",
       "items": {
@@ -88,23 +92,35 @@
           },
           "sliceOrigin": {
             "title": "Slice origin",
-            "type": "array",
-            "minItems": 3,
-            "maxItems": 3,
-            "items": [
-              {
-                "type": "number"
+            "properties": {
+              "value": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3,
+                "strictType": {
+                  "type": "vector3"
+                }
               },
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
+              "units": {
+                "type": "string",
+                "dimension": "length",
+                "enum": [
+                  "m",
+                  "cm",
+                  "ft",
+                  "flow360_length_unit",
+                  "mm",
+                  "inch"
+                ]
               }
-            ]
+            }
           },
           "outputFields": {
             "title": "Output fields",
+            "default": [],
             "uniqueItems": true,
             "type": "array",
             "items": {
@@ -130,7 +146,9 @@
                 "Wall distance",
                 "NumericalDissipationFactor sensor",
                 "Heat equation residual",
-                "Velocity with respect to non-inertial frame"
+                "Velocity with respect to non-inertial frame",
+                "BET Metrics",
+                "BET Metrics per Disk"
               ],
               "type": "string"
             }
@@ -146,5 +164,8 @@
       "title": "Slices"
     }
   },
+  "required": [
+    "slices"
+  ],
   "additionalProperties": false
 }
