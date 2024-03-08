@@ -17,13 +17,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "title": "Animated",
+          "title": "Static",
           "const": -1
         },
         {
           "type": "integer",
           "exclusiveMinimum": 0,
-          "title": "Static"
+          "title": "Animated"
         }
       ]
     },

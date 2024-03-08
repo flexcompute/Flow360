@@ -73,7 +73,7 @@ class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
     frequency: Optional[PositiveAndNegOneInt] = pd.Field(
-        alias="frequency", options=["Animated", "Static"]
+        alias="frequency", options=["Static", "Animated"]
     )
     frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
 
@@ -82,7 +82,7 @@ class AnimationSettingsExtended(AnimationSettings):
     """:class:`AnimationSettingsExtended` class"""
 
     frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
-        alias="frequencyTimeAverage", options=["Animated", "Static"]
+        alias="frequencyTimeAverage", options=["Static", "Animated"]
     )
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
 
@@ -92,7 +92,7 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat", default="paraview")
     animation_frequency: Optional[PositiveAndNegOneInt] = pd.Field(
-        alias="animationFrequency", options=["Animated", "Static"], default=-1
+        alias="animationFrequency", options=["Static", "Animated"], default=-1
     )
     animation_frequency_offset: Optional[int] = pd.Field(
         alias="animationFrequencyOffset", default=0
@@ -129,7 +129,7 @@ class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages", default=False)
 
     animation_frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
-        alias="animationFrequencyTimeAverage", options=["Animated", "Static"], default=-1
+        alias="animationFrequencyTimeAverage", options=["Static", "Animated"], default=-1
     )
     animation_frequency_time_average_offset: Optional[int] = pd.Field(
         alias="animationFrequencyTimeAverageOffset", default=0
