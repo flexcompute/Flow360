@@ -101,7 +101,7 @@
       "equationEvalFrequency": 1
    },
    "turbulenceModelSolver": {
-      "modelType": "SpalartAllmaras",
+      "modelType": "kOmegaSST",
       "absoluteTolerance": 1e-8,
       "relativeTolerance": 0.001,
       "linearIterations": 35,
@@ -109,8 +109,7 @@
       "DDES": true,
       "orderOfAccuracy": 2,
       "updateJacobianFrequency": 1,
-      "equationEvalFrequency": 1,
-      "rotationCorrection": true
+      "equationEvalFrequency": 1
    },
    "freestream": {
       "muRef": 0.00004291607,

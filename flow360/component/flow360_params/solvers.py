@@ -318,7 +318,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         "maxEdgeLength", alias="gridSizeForLES"
     )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
-        1.0, alias="reconstructionGradientLimiter"
+        alias="reconstructionGradientLimiter"
     )
     quadratic_constitutive_relation: Optional[bool] = pd.Field(
         False, alias="quadraticConstitutiveRelation"
@@ -547,6 +547,12 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
     def update_model(self):
+        if self.reconstruction_gradient_limiter is None:
+            if self.model_type == "SpalartAllmaras":
+                self.reconstruction_gradient_limiter = 0.5
+            elif self.model_type == "kOmegaSST":
+                self.reconstruction_gradient_limiter = 1.0
+
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
