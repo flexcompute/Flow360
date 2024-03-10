@@ -1,0 +1,10 @@
+{
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}

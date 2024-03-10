@@ -27,7 +27,7 @@ from flow360.component.flow360_params.volume_zones import (
 from flow360.component.types import PositiveFloat
 
 here = os.path.dirname(os.path.abspath(__file__))
-
+version_postfix = "release-24.2"
 
 def write_to_file(name, content):
     with open(name, "w") as outfile:
@@ -42,10 +42,10 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
         name = name[1:]
     if not os.path.exists(os.path.join(here, "data", folder_name)):
         os.mkdir(os.path.join(here, "data", folder_name))
-    write_to_file(os.path.join(here, "data", folder_name, "json-schema.json"), schema)
+    write_to_file(os.path.join(here, "data", folder_name, f"json-schema-{version_postfix}.json"), schema)
     ui_schema = json.dumps(type_obj.flow360_ui_schema(), indent=2, sort_keys=True)
     if ui_schema is not None:
-        write_to_file(os.path.join(here, "data", folder_name, "ui-schema.json"), ui_schema)
+        write_to_file(os.path.join(here, "data", folder_name, f"ui-schema-{version_postfix}.json"), ui_schema)
 
 
 if not os.path.exists(os.path.join(here, "data")):

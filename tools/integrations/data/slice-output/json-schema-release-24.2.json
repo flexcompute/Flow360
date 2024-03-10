@@ -1,0 +1,171 @@
+{
+  "title": "Slice output",
+  "type": "object",
+  "properties": {
+    "outputFormat": {
+      "title": "Output format",
+      "default": "paraview",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "type": "string"
+    },
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Static",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Animated"
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "default": 0,
+      "type": "integer"
+    },
+    "outputFields": {
+      "title": "Output fields",
+      "default": [],
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "enum": [
+          "Coefficient of pressure",
+          "Gradient of primitive solution",
+          "k and omega",
+          "Mach number",
+          "Turbulent viscosity",
+          "Turbulent viscosity and freestream dynamic viscosity ratio",
+          "Spalart-Almaras variable",
+          "rho, u, v, w, p (density, 3 velocities and pressure)",
+          "Q criterion",
+          "N-S residual",
+          "Transition residual",
+          "Turbulence residual",
+          "Entropy",
+          "N-S solution",
+          "Transition solution",
+          "Turbulence solution",
+          "Temperature",
+          "Vorticity",
+          "Wall distance",
+          "NumericalDissipationFactor sensor",
+          "Heat equation residual",
+          "Velocity with respect to non-inertial frame",
+          "BET Metrics",
+          "BET Metrics per Disk"
+        ],
+        "type": "string"
+      }
+    },
+    "slices": {
+      "additionalProperties": {
+        "title": "Slice",
+        "type": "object",
+        "properties": {
+          "sliceNormal": {
+            "title": "Slice normal",
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "sliceOrigin": {
+            "title": "Slice origin",
+            "properties": {
+              "value": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3,
+                "strictType": {
+                  "type": "vector3"
+                }
+              },
+              "units": {
+                "type": "string",
+                "dimension": "length",
+                "enum": [
+                  "m",
+                  "cm",
+                  "ft",
+                  "flow360_length_unit",
+                  "mm",
+                  "inch"
+                ]
+              }
+            }
+          },
+          "outputFields": {
+            "title": "Output fields",
+            "default": [],
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "enum": [
+                "Coefficient of pressure",
+                "Gradient of primitive solution",
+                "k and omega",
+                "Mach number",
+                "Turbulent viscosity",
+                "Turbulent viscosity and freestream dynamic viscosity ratio",
+                "Spalart-Almaras variable",
+                "rho, u, v, w, p (density, 3 velocities and pressure)",
+                "Q criterion",
+                "N-S residual",
+                "Transition residual",
+                "Turbulence residual",
+                "Entropy",
+                "N-S solution",
+                "Transition solution",
+                "Turbulence solution",
+                "Temperature",
+                "Vorticity",
+                "Wall distance",
+                "NumericalDissipationFactor sensor",
+                "Heat equation residual",
+                "Velocity with respect to non-inertial frame",
+                "BET Metrics",
+                "BET Metrics per Disk"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sliceNormal",
+          "sliceOrigin"
+        ],
+        "additionalProperties": false
+      },
+      "type": "object",
+      "title": "Slices"
+    }
+  },
+  "required": [
+    "slices"
+  ],
+  "additionalProperties": false
+}
