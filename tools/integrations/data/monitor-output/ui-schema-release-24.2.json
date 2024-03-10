@@ -1,0 +1,23 @@
+{
+  "monitors": {
+    "additionalProperties": {
+      "monitorLocations": {
+        "items": {
+          "ui:widget": "vector3"
+        }
+      }
+    }
+  },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "outputFields",
+    "*"
+  ],
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}

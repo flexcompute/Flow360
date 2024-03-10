@@ -1,0 +1,14 @@
+{
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "*",
+    "linearSolverConfig"
+  ],
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}

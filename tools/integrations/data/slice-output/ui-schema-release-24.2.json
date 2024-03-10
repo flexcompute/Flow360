@@ -1,0 +1,26 @@
+{
+  "slices": {
+    "additionalProperties": {
+      "sliceNormal": {
+        "ui:widget": "vector3"
+      },
+      "sliceOrigin": {
+        "ui:widget": "vector3"
+      }
+    }
+  },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:order": [
+    "outputFormat",
+    "outputFields",
+    "*",
+    "slices"
+  ],
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}
