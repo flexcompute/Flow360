@@ -44,4 +44,4 @@ timeStepping:
     timeStepSize: inf
 unitSystem:
     name: SI
-version: 0.2.0b18
+version: 24.2.0b1
