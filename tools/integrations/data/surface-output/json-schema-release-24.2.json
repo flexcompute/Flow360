@@ -2,46 +2,9 @@
   "title": "Surface output",
   "type": "object",
   "properties": {
-    "animationFrequency": {
-      "title": "Animation frequency",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyOffset": {
-      "title": "Animation frequency offset",
-      "type": "integer"
-    },
-    "animationFrequencyTimeAverage": {
-      "title": "Animation frequency time average",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyTimeAverageOffset": {
-      "title": "Animation frequency time average offset",
-      "type": "integer"
-    },
     "outputFormat": {
       "title": "Output format",
+      "default": "paraview",
       "enum": [
         "paraview",
         "tecplot",
@@ -49,20 +12,75 @@
       ],
       "type": "string"
     },
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Static",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Animated"
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "default": 0,
+      "type": "integer"
+    },
     "computeTimeAverages": {
       "title": "Compute time averages",
+      "default": false,
       "type": "boolean"
     },
-    "writeSingleFile": {
-      "title": "Write single file",
-      "type": "boolean"
+    "animationFrequencyTimeAverage": {
+      "title": "Animation frequency time average",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Static",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Animated"
+        }
+      ]
+    },
+    "animationFrequencyTimeAverageOffset": {
+      "title": "Animation frequency time average offset",
+      "default": 0,
+      "type": "integer"
     },
     "startAverageIntegrationStep": {
       "title": "Start average integration step",
-      "type": "integer"
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "minimum": 0
+        }
+      ]
+    },
+    "writeSingleFile": {
+      "title": "Write single file",
+      "default": false,
+      "type": "boolean"
     },
     "outputFields": {
       "title": "Output fields",
+      "default": [],
       "uniqueItems": true,
       "type": "array",
       "items": {
@@ -109,6 +127,7 @@
         "properties": {
           "outputFields": {
             "title": "Output fields",
+            "default": [],
             "uniqueItems": true,
             "type": "array",
             "items": {

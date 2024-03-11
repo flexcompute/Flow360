@@ -2,25 +2,6 @@
   "title": "Iso surface output",
   "type": "object",
   "properties": {
-    "animationFrequency": {
-      "title": "Animation frequency",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyOffset": {
-      "title": "Animation frequency offset",
-      "type": "integer"
-    },
     "outputFormat": {
       "title": "Output format",
       "enum": [
@@ -29,6 +10,27 @@
         "both"
       ],
       "type": "string"
+    },
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Static",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Animated"
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "default": 0,
+      "type": "integer"
     },
     "isoSurfaces": {
       "additionalProperties": {
@@ -71,6 +73,7 @@
           },
           "outputFields": {
             "title": "Output fields",
+            "default": [],
             "uniqueItems": true,
             "type": "array",
             "items": {
@@ -102,11 +105,73 @@
             }
           }
         },
+        "required": [
+          "surfaceField",
+          "surfaceFieldMagnitude"
+        ],
         "additionalProperties": false
       },
       "type": "object",
       "title": "Iso surfaces"
+    },
+    "outputFields": {
+      "title": "Output fields",
+      "default": [],
+      "uniqueItems": true,
+      "type": "array",
+      "items": {
+        "enum": [
+          "Cp",
+          "gradW",
+          "kOmega",
+          "Mach",
+          "mut",
+          "mutRatio",
+          "nuHat",
+          "primitiveVars",
+          "qcriterion",
+          "residualNavierStokes",
+          "residualTransition",
+          "residualTurbulence",
+          "s",
+          "solutionNavierStokes",
+          "solutionTransition",
+          "solutionTurbulence",
+          "T",
+          "vorticity",
+          "wallDistance",
+          "numericalDissipationFactor",
+          "residualHeatSolver",
+          "VelocityRelative",
+          "Coefficient of pressure",
+          "Gradient of primitive solution",
+          "k and omega",
+          "Mach number",
+          "Turbulent viscosity",
+          "Turbulent viscosity and freestream dynamic viscosity ratio",
+          "Spalart-Almaras variable",
+          "rho, u, v, w, p (density, 3 velocities and pressure)",
+          "Q criterion",
+          "N-S residual",
+          "Transition residual",
+          "Turbulence residual",
+          "Entropy",
+          "N-S solution",
+          "Transition solution",
+          "Turbulence solution",
+          "Temperature",
+          "Vorticity",
+          "Wall distance",
+          "NumericalDissipationFactor sensor",
+          "Heat equation residual",
+          "Velocity with respect to non-inertial frame"
+        ],
+        "type": "string"
+      }
     }
   },
+  "required": [
+    "isoSurfaces"
+  ],
   "additionalProperties": false
 }
