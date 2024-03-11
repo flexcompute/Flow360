@@ -1401,7 +1401,9 @@ class GeometryLegacy(Geometry, LegacyModel):
 class FreestreamLegacy(LegacyModel):
     """:class: `FreestreamLegacy` class"""
 
-    Reynolds: Optional[PositiveFloat] = pd.Field()
+    Reynolds: Optional[Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]]] = pd.Field(
+        displayed="Reynolds number"
+    )
     Mach: Optional[NonNegativeFloat] = pd.Field()
     Mach_Ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
