@@ -10,10 +10,12 @@ from typing import Optional, Union
 import numpy as np
 import pydantic as pd
 from typing_extensions import Literal
+from flow360.flags import Flags
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
+from ..utils import beta_feature
 
 
 class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -177,7 +179,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
-    enforce_low_mach_preconditioner: Optional[bool] = pd.Field(True, alias="enforceLowMachPreconditioner")
+    enforce_low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="enforceLowMachPreconditioner")
     preconditioner_alpha: Optional[NonNegativeFloat] = pd.Field(alias="preconditionerAlpha")
     preconditioner_ref_mach: Optional[PositiveFloat] = pd.Field(alias="preconditionerRefMach")
 
