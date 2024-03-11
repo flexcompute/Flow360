@@ -152,7 +152,12 @@ from .validations import (
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
-from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
+from .volume_zones import (
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    ReferenceFrameType,
+    VolumeZoneType,
+)
 
 
 # pylint: disable=invalid-name
@@ -1624,6 +1629,13 @@ class VolumeZonesLegacy(VolumeZones):
                         model, "field/modelType", options, _ReferenceFrameTempModel
                     )
                     value["referenceFrame"] = model["field"]
+
+                volume_zone_type = value.get("modelType")
+
+                if volume_zone_type == "HeatEquation":
+                    value["modelType"] = HeatTransferVolumeZone.__fields__["model_type"].default
+                if volume_zone_type == "NavierStokes":
+                    value["modelType"] = FluidDynamicsVolumeZone.__fields__["model_type"].default
 
             super().__init__(*args, **kwargs)
 

@@ -89,6 +89,7 @@ def test_updater_from_files():
         "case_udd.json",
         "case_unsteady.json",
         "case_customDynamics1.json",
+        "case_HeatTransfer.json",
     ]
 
     for file in files:
