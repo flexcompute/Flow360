@@ -178,8 +178,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
     if Flags.beta_features():
-        enforce_low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="enforceLowMachPreconditioner")
-
+        enforce_low_mach_preconditioner: Optional[bool] = pd.Field(True, alias="enforceLowMachPreconditioner")
+        preconditioner_alpha: Optional[NonNegativeFloat] = pd.Field(alias="preconditionerAlpha")
+        preconditioner_ref_mach: Optional[PositiveFloat] = pd.Field(alias="preconditionerRefMach")
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
