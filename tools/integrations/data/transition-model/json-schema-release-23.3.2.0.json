@@ -1,48 +1,18 @@
 {
-  "title": "Navier stokes solver",
+  "title": "Transition model solver",
   "type": "object",
   "properties": {
     "absoluteTolerance": {
       "title": "Absolute tolerance",
-      "default": 1e-10,
+      "default": 1e-07,
       "exclusiveMinimum": 0,
       "type": "number"
     },
     "relativeTolerance": {
       "title": "Relative tolerance",
       "default": 0,
-      "type": "number"
-    },
-    "CFLMultiplier": {
-      "title": "CFL Multiplier",
-      "default": 1.0,
-      "exclusiveMinimum": 0,
-      "type": "number"
-    },
-    "kappaMUSCL": {
-      "title": "Kappa MUSCL",
-      "default": -1,
-      "minimum": -1,
-      "maximum": 1,
-      "type": "number"
-    },
-    "updateJacobianFrequency": {
-      "title": "Update Jacobian frequency",
-      "default": 4,
-      "exclusiveMinimum": 0,
-      "type": "integer"
-    },
-    "equationEvalFrequency": {
-      "title": "Equation eval frequency",
-      "default": 1,
-      "exclusiveMinimum": 0,
-      "type": "integer"
-    },
-    "maxForceJacUpdatePhysicalSteps": {
-      "title": "Max force JAC update physical steps",
-      "default": 0,
       "minimum": 0,
-      "type": "integer"
+      "type": "number"
     },
     "orderOfAccuracy": {
       "title": "Order of accuracy",
@@ -53,22 +23,54 @@
       ],
       "type": "integer"
     },
-    "numericalDissipationFactor": {
-      "title": "Numerical dissipation factor",
-      "default": 1,
-      "minimum": 0.01,
-      "maximum": 1,
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 2.0,
+      "exclusiveMinimum": 0,
       "type": "number"
     },
-    "limitVelocity": {
-      "title": "Limit velocity",
-      "default": false,
-      "type": "boolean"
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "default": 4,
+      "exclusiveMinimum": 0,
+      "type": "integer"
     },
-    "limitPressureDensity": {
-      "title": "Limit pressure density",
-      "default": false,
-      "type": "boolean"
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "AmplificationFactorTransport",
+      "const": "AmplificationFactorTransport",
+      "type": "string"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation eval frequency",
+      "default": 4,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "turbulenceIntensityPercent": {
+      "title": "Turbulence intensity percent",
+      "minimum": 0.03,
+      "maximum": 2.5,
+      "type": "number"
+    },
+    "Ncrit": {
+      "title": "Ncrit",
+      "minimum": 1,
+      "maximum": 11,
+      "type": "number"
+    },
+    "reconstructionGradientLimiter": {
+      "title": "Reconstruction gradient limiter",
+      "default": 1.0,
+      "minimum": 0,
+      "maximum": 2,
+      "type": "number"
     },
     "_addLinearSolverConfig": {
       "title": "Linear solver config",
@@ -100,12 +102,12 @@
                 },
                 "absoluteTolerance": {
                   "title": "Absolute tolerance",
-                  "default": 1e-10,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "relativeTolerance": {
                   "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
                   "type": "number"
                 }
               },

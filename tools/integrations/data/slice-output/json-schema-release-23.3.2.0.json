@@ -1,47 +1,10 @@
 {
-  "title": "Surface output",
+  "title": "Slice output",
   "type": "object",
   "properties": {
-    "animationFrequency": {
-      "title": "Animation frequency",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyOffset": {
-      "title": "Animation frequency offset",
-      "type": "integer"
-    },
-    "animationFrequencyTimeAverage": {
-      "title": "Animation frequency time average",
-      "anyOf": [
-        {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
-        },
-        {
-          "type": "integer",
-          "title": "Static",
-          "const": -1
-        }
-      ]
-    },
-    "animationFrequencyTimeAverageOffset": {
-      "title": "Animation frequency time average offset",
-      "type": "integer"
-    },
     "outputFormat": {
       "title": "Output format",
+      "default": "paraview",
       "enum": [
         "paraview",
         "tecplot",
@@ -49,20 +12,30 @@
       ],
       "type": "string"
     },
-    "computeTimeAverages": {
-      "title": "Compute time averages",
-      "type": "boolean"
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "default": -1,
+      "anyOf": [
+        {
+          "type": "integer",
+          "title": "Animated",
+          "const": -1
+        },
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Static"
+        }
+      ]
     },
-    "writeSingleFile": {
-      "title": "Write single file",
-      "type": "boolean"
-    },
-    "startAverageIntegrationStep": {
-      "title": "Start average integration step",
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "default": 0,
       "type": "integer"
     },
     "outputFields": {
       "title": "Output fields",
+      "default": [],
       "uniqueItems": true,
       "type": "array",
       "items": {
@@ -89,26 +62,65 @@
           "NumericalDissipationFactor sensor",
           "Heat equation residual",
           "Velocity with respect to non-inertial frame",
-          "Viscous stress coefficient vector",
-          "Magnitude of CfVec",
-          "Magnitude of CfVec normal to the wall",
-          "Magnitude of CfVec tangent to the wall",
-          "Non-dimensional heat flux",
-          "Wall normals",
-          "Spalart-Allmaras variable",
-          "Non-dimensional wall distance",
-          "Wall function metrics"
+          "BET Metrics",
+          "BET Metrics per Disk"
         ],
         "type": "string"
       }
     },
-    "surfaces": {
+    "slices": {
       "additionalProperties": {
-        "title": "Surface",
+        "title": "Slice",
         "type": "object",
         "properties": {
+          "sliceNormal": {
+            "title": "Slice normal",
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "sliceOrigin": {
+            "title": "Slice origin",
+            "properties": {
+              "value": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3,
+                "strictType": {
+                  "type": "vector3"
+                }
+              },
+              "units": {
+                "type": "string",
+                "dimension": "length",
+                "enum": [
+                  "m",
+                  "cm",
+                  "ft",
+                  "flow360_length_unit",
+                  "mm",
+                  "inch"
+                ]
+              }
+            }
+          },
           "outputFields": {
             "title": "Output fields",
+            "default": [],
             "uniqueItems": true,
             "type": "array",
             "items": {
@@ -135,25 +147,25 @@
                 "NumericalDissipationFactor sensor",
                 "Heat equation residual",
                 "Velocity with respect to non-inertial frame",
-                "Viscous stress coefficient vector",
-                "Magnitude of CfVec",
-                "Magnitude of CfVec normal to the wall",
-                "Magnitude of CfVec tangent to the wall",
-                "Non-dimensional heat flux",
-                "Wall normals",
-                "Spalart-Allmaras variable",
-                "Non-dimensional wall distance",
-                "Wall function metrics"
+                "BET Metrics",
+                "BET Metrics per Disk"
               ],
               "type": "string"
             }
           }
         },
+        "required": [
+          "sliceNormal",
+          "sliceOrigin"
+        ],
         "additionalProperties": false
       },
       "type": "object",
-      "title": "Surfaces"
+      "title": "Slices"
     }
   },
+  "required": [
+    "slices"
+  ],
   "additionalProperties": false
 }

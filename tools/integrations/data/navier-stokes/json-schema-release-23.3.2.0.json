@@ -1,17 +1,81 @@
 {
-  "title": "Heat equation solver",
+  "title": "Navier stokes solver",
   "type": "object",
   "properties": {
     "absoluteTolerance": {
       "title": "Absolute tolerance",
-      "default": 1e-09,
+      "default": 1e-10,
       "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relative tolerance",
+      "default": 0,
+      "minimum": 0,
+      "type": "number"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "enum": [
+        1,
+        2
+      ],
+      "type": "integer"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 1.0,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "default": 4,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "kappaMUSCL": {
+      "title": "Kappa MUSCL",
+      "default": -1,
+      "minimum": -1,
+      "maximum": 1,
       "type": "number"
     },
     "equationEvalFrequency": {
       "title": "Equation eval frequency",
+      "default": 1,
       "exclusiveMinimum": 0,
       "type": "integer"
+    },
+    "numericalDissipationFactor": {
+      "title": "Numerical dissipation factor",
+      "default": 1,
+      "minimum": 0.01,
+      "maximum": 1,
+      "type": "number"
+    },
+    "limitVelocity": {
+      "title": "Limit velocity",
+      "default": false,
+      "type": "boolean"
+    },
+    "limitPressureDensity": {
+      "title": "Limit pressure density",
+      "default": false,
+      "type": "boolean"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "Compressible",
+      "const": "Compressible",
+      "type": "string"
     },
     "_addLinearSolverConfig": {
       "title": "Linear solver config",
@@ -43,12 +107,12 @@
                 },
                 "absoluteTolerance": {
                   "title": "Absolute tolerance",
-                  "default": 1e-10,
                   "exclusiveMinimum": 0,
                   "type": "number"
                 },
                 "relativeTolerance": {
                   "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
                   "type": "number"
                 }
               },

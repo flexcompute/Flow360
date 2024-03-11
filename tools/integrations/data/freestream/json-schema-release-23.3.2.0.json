@@ -114,8 +114,16 @@
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "exclusiveMinimum": 0,
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
         }
       },
       "required": [
@@ -162,13 +170,29 @@
         },
         "Reynolds": {
           "title": "Reynolds number",
-          "exclusiveMinimum": 0,
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "const": "inf"
+            }
+          ]
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "exclusiveMinimum": 0,
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
         }
       },
       "required": [
@@ -221,8 +245,16 @@
         },
         "Temperature": {
           "title": "Temperature [K]",
-          "exclusiveMinimum": 0,
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
         }
       },
       "required": [

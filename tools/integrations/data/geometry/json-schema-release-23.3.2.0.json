@@ -81,7 +81,8 @@
       "title": "Mesh unit",
       "properties": {
         "value": {
-          "type": "number"
+          "type": "number",
+          "exclusiveMinimum": 0
         },
         "units": {
           "type": "string",

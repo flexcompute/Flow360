@@ -14,6 +14,15 @@
           "maximum": 100000,
           "type": "integer"
         },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "default": 2,
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
+        },
         "CFL": {
           "title": "CFL",
           "anyOf": [
@@ -116,6 +125,15 @@
           "default": 2000,
           "exclusiveMinimum": 0,
           "maximum": 100000,
+          "type": "integer"
+        },
+        "orderOfAccuracy": {
+          "title": "Order of accuracy",
+          "default": 2,
+          "enum": [
+            1,
+            2
+          ],
           "type": "integer"
         },
         "CFL": {
