@@ -234,7 +234,7 @@ class TurbulenceModelConstantsSA(Flow360BaseModel):
 class TurbulenceModelConstantsSST(Flow360BaseModel):
     """:class:`TurbulenceModelConstantsSST` class"""
 
-    model_type: Literal[" kOmegaSSTConsts"] = pd.Field(
+    model_type: Literal["kOmegaSSTConsts"] = pd.Field(
         "kOmegaSSTConsts", alias="modelType", const=True
     )
     C_DES1: Optional[NonNegativeFloat] = pd.Field(0.78)
@@ -548,6 +548,30 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         alias="linearSolverConfig", default=LinearSolverLegacy()
     )
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def populate_model_constant_type(cls, values):
+        """
+        Add modelConstants->modelType before updater as it is required by discriminator
+        """
+        turbulence_model_type = values.get("modelType")
+        model_constants = values.get("modelConstants")
+        if (
+            turbulence_model_type is None
+            or model_constants is None
+            or "modelType" in model_constants
+        ):
+            return values
+        if turbulence_model_type == SpalartAllmaras.__fields__["model_type"].default:
+            values["modelConstants"]["modelType"] = TurbulenceModelConstantsSA.__fields__[
+                "model_type"
+            ].default
+        if turbulence_model_type == KOmegaSST.__fields__["model_type"].default:
+            values["modelConstants"]["modelType"] = TurbulenceModelConstantsSST.__fields__[
+                "model_type"
+            ].default
+        return values
 
     def update_model(self):
         model = {
