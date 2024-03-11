@@ -54,6 +54,10 @@
             "maxIterations": 20,
             "absoluteTolerance": 1e-10
         },
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_d": 8.0
+        },
         "rotationCorrection": false
     },
     "freestream": {
