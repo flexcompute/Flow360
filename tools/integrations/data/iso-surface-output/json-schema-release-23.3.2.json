@@ -1,0 +1,109 @@
+{
+  "title": "Iso surface output",
+  "type": "object",
+  "properties": {
+    "animationFrequency": {
+      "title": "Animation frequency",
+      "anyOf": [
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "title": "Animated"
+        },
+        {
+          "type": "integer",
+          "title": "Static",
+          "const": -1
+        }
+      ]
+    },
+    "animationFrequencyOffset": {
+      "title": "Animation frequency offset",
+      "type": "integer"
+    },
+    "outputFormat": {
+      "title": "Output format",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "type": "string"
+    },
+    "isoSurfaces": {
+      "additionalProperties": {
+        "title": "Iso surface",
+        "type": "object",
+        "properties": {
+          "surfaceField": {
+            "title": "Surface field",
+            "enum": [
+              "Coefficient of pressure",
+              "Gradient of primitive solution",
+              "k and omega",
+              "Mach number",
+              "Turbulent viscosity",
+              "Turbulent viscosity and freestream dynamic viscosity ratio",
+              "Spalart-Almaras variable",
+              "rho, u, v, w, p (density, 3 velocities and pressure)",
+              "Q criterion",
+              "N-S residual",
+              "Transition residual",
+              "Turbulence residual",
+              "Entropy",
+              "N-S solution",
+              "Transition solution",
+              "Turbulence solution",
+              "Temperature",
+              "Vorticity",
+              "Wall distance",
+              "NumericalDissipationFactor sensor",
+              "Heat equation residual",
+              "Pressure",
+              "Density"
+            ],
+            "type": "string"
+          },
+          "surfaceFieldMagnitude": {
+            "title": "Surface field magnitude",
+            "type": "number"
+          },
+          "outputFields": {
+            "title": "Output fields",
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "enum": [
+                "Coefficient of pressure",
+                "Gradient of primitive solution",
+                "k and omega",
+                "Mach number",
+                "Turbulent viscosity",
+                "Turbulent viscosity and freestream dynamic viscosity ratio",
+                "Spalart-Almaras variable",
+                "rho, u, v, w, p (density, 3 velocities and pressure)",
+                "Q criterion",
+                "N-S residual",
+                "Transition residual",
+                "Turbulence residual",
+                "Entropy",
+                "N-S solution",
+                "Transition solution",
+                "Turbulence solution",
+                "Temperature",
+                "Vorticity",
+                "Wall distance",
+                "NumericalDissipationFactor sensor",
+                "Heat equation residual"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "definitions": {}
+    }
+  },
+  "additionalProperties": false
+}

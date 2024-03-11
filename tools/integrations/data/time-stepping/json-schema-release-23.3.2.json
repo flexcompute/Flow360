@@ -1,0 +1,219 @@
+{
+  "title": "Time stepping",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "Steady time stepping",
+      "type": "object",
+      "properties": {
+        "maxPseudoSteps": {
+          "title": "Max pseudo steps",
+          "default": 2000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "type": "integer"
+        },
+        "CFL": {
+          "title": "CFL",
+          "anyOf": [
+            {
+              "title": "Ramp CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "ramp",
+                  "const": "ramp",
+                  "type": "string"
+                },
+                "initial": {
+                  "title": "Initial",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "final": {
+                  "title": "Final",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "rampSteps": {
+                  "title": "Ramp steps",
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "title": "Adaptive CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "adaptive",
+                  "const": "adaptive",
+                  "type": "string"
+                },
+                "min": {
+                  "title": "Min",
+                  "default": 0.1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "max": {
+                  "title": "Max",
+                  "default": 10000,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "maxRelativeChange": {
+                  "title": "Max relative change",
+                  "default": 1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "convergenceLimitingFactor": {
+                  "title": "Convergence limiting factor",
+                  "default": 0.25,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "Steady",
+          "const": "Steady",
+          "type": "string"
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
+          "default": 1,
+          "const": 1,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "default": "inf",
+          "const": "inf",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "Unsteady time stepping",
+      "type": "object",
+      "properties": {
+        "maxPseudoSteps": {
+          "title": "Max pseudo steps",
+          "default": 2000,
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "type": "integer"
+        },
+        "CFL": {
+          "title": "CFL",
+          "anyOf": [
+            {
+              "title": "Ramp CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "ramp",
+                  "const": "ramp",
+                  "type": "string"
+                },
+                "initial": {
+                  "title": "Initial",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "final": {
+                  "title": "Final",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "rampSteps": {
+                  "title": "Ramp steps",
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "title": "Adaptive CFL",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "Type",
+                  "default": "adaptive",
+                  "const": "adaptive",
+                  "type": "string"
+                },
+                "min": {
+                  "title": "Min",
+                  "default": 0.1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "max": {
+                  "title": "Max",
+                  "default": 10000,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "maxRelativeChange": {
+                  "title": "Max relative change",
+                  "default": 1,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "convergenceLimitingFactor": {
+                  "title": "Convergence limiting factor",
+                  "default": 0.25,
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "modelType": {
+          "title": "Model type",
+          "default": "Unsteady",
+          "const": "Unsteady",
+          "type": "string"
+        },
+        "physicalSteps": {
+          "title": "Physical steps",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "timeStepSize": {
+          "title": "Time step size",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "time",
+              "enum": [
+                "s",
+                "flow360_time_unit"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
