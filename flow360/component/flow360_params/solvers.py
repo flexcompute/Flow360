@@ -550,7 +550,6 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
 
     def update_model(self):
-
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,

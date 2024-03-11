@@ -4,6 +4,7 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+import flow360.units as u
 from flow360.component.flow360_params.boundaries import FreestreamBoundary, NoSlipWall
 from flow360.component.flow360_params.flow360_output import (
     IsoSurface,
@@ -19,8 +20,6 @@ from flow360.component.flow360_params.flow360_output import (
 )
 from flow360.component.flow360_params.flow360_params import Flow360Params
 from flow360.component.flow360_params.solvers import NavierStokesSolver
-
-import flow360.units as u
 
 assertions = unittest.TestCase("__init__")
 
@@ -51,7 +50,7 @@ def test_numerical_dissipation_output_criterion():
                     ),
                     "s3": Slice(
                         slice_normal=(0, 1, 0),
-                        slice_origin=(0, 1, 1)*u.cm,
+                        slice_origin=(0, 1, 1) * u.cm,
                     ),
                 },
             ),
@@ -96,6 +95,7 @@ def test_numerical_dissipation_output_criterion():
             iso_surface_output=None,
             monitor_output=None,
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            geometry=fl.Geometry(mesh_unit=1),
         )
         param.navier_stokes_solver = NavierStokesSolver(numerical_dissipation_factor=0.99)
         assert param
