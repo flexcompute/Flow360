@@ -88,6 +88,7 @@ def test_updater_from_files():
         "case_14_bet.json",
         "case_udd.json",
         "case_unsteady.json",
+        "case_customDynamics1.json",
     ]
 
     for file in files:
