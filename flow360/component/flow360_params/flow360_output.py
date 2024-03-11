@@ -652,7 +652,7 @@ class SliceNamedLegacy(Flow360BaseModel):
     slice_name: str = pd.Field(alias="sliceName")
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+    output_fields: Optional[List[str]] = pd.Field([], alias="outputFields")
 
 
 class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
