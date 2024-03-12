@@ -539,6 +539,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
+            "enforceLowMachPreconditioner": self.enforce_low_mach_preconditioner
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:

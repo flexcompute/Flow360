@@ -474,3 +474,28 @@ def _check_numerical_dissipation_factor_output(values):
                 "Numerical dissipation factor output requested but low dissipation mode is not enabled"
             )
     return values
+
+def _check_low_mach_preconditioner_output(values):
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if navier_stokes_solver is not None and not isinstance(
+        navier_stokes_solver, IncompressibleNavierStokesSolver
+    ):
+        enforce_low_mach_preconditioner = navier_stokes_solver.enforce_low_mach_preconditioner
+        if not enforce_low_mach_preconditioner and "lowMachPreconditionerSensor" in _get_all_output_fields(
+            values
+        ):
+            raise ValueError(
+                "Low-Mach preconditioner output requested but low-Mach preconditioner mode is not enabled."
+            )
+    return values
+
+def _check_low_mach_preconditioner_support(values):
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if navier_stokes_solver is not None and not isinstance(
+        navier_stokes_solver, IncompressibleNavierStokesSolver
+    ):
+        enforce_low_mach_preconditioner = navier_stokes_solver.enforce_low_mach_preconditioner
+        time_stepping = values.get("time_stepping")
+        if enforce_low_mach_preconditioner and time_stepping is not None and isinstance(time_stepping, UnsteadyTimeStepping):
+            raise ValueError("Low-Mach Preconditioning is not currently supported for unsteady simulations..")
+    return values

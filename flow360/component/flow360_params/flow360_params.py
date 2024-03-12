@@ -151,6 +151,8 @@ from .validations import (
     _check_numerical_dissipation_factor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
+    _check_low_mach_preconditioner_output,
+    _check_low_mach_preconditioner_support,
 )
 from .volume_zones import (
     FluidDynamicsVolumeZone,
@@ -1287,6 +1289,22 @@ class Flow360Params(Flow360BaseModel):
         Detect output of numericalDissipationFactor if not enabled.
         """
         return _check_numerical_dissipation_factor_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_low_mach_preconditioner_output(cls, values):
+        """
+        Detect output of lowMachPreconditioner if not enabled.
+        """
+        return _check_low_mach_preconditioner_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_low_mach_preconditioner_support(cls, values):
+        """
+        Detect scenarios under which low mach preconditioning is not yet supported.
+        """
+        return _check_low_mach_preconditioner_support(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):
