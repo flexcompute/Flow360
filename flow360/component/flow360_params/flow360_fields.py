@@ -27,7 +27,7 @@ CommonFieldNamesFull = Literal[
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
     "Velocity with respect to non-inertial frame",
-    "Low-Mach Preconditioner Epsilon"
+    "Low-Mach preconditioner factor",
 ]
 
 CommonFieldNames = Literal[

@@ -10,12 +10,13 @@ from typing import Optional, Union
 import numpy as np
 import pydantic as pd
 from typing_extensions import Literal
+
 from flow360.flags import Flags
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+from ..utils import beta_feature
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
-from ..utils import beta_feature
 
 
 class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -145,12 +146,12 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     linear_solver:
         Linear solver settings
-    
+
     low_mach_preconditioner:
         Uses preconditioning for accelerating low Mach number flows.
-    
+
     low_mach_preconditioner_threshold:
-        For flow regions with mach numbers smaller than threshold, the input Mach number to the preconditioner is 
+        For flow regions with mach numbers smaller than threshold, the input Mach number to the preconditioner is
         assumed to be the threshold value. The default value for the threshold is the freestream Mach number.
 
     Returns
@@ -184,7 +185,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
     low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="lowMachPreconditioner")
-    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(alias="lowMachPreconditionerThreshold")
+    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
+        alias="lowMachPreconditionerThreshold"
+    )
 
     # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> NavierStokesSolver:
@@ -196,6 +199,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
             self.low_mach_preconditioner_threshold = params.freestream.Mach
 
         return super().to_solver(self, **kwargs)
+
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
     """:class:`IncompressibleNavierStokesSolver` class for setting up incompressible Navier-Stokes solver
@@ -362,6 +366,7 @@ class KOmegaSST(TurbulenceModelSolver):
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
+
 
 class SpalartAllmaras(TurbulenceModelSolver):
     """:class:`SpalartAllmaras` class"""
@@ -552,7 +557,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
-            "lowMachPreconditioner": self.low_mach_preconditioner
+            "lowMachPreconditioner": self.low_mach_preconditioner,
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
