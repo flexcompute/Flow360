@@ -90,6 +90,7 @@ from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     HeatEquationSolverLegacy,
+    IncompressibleNavierStokesSolver,
     KOmegaSST,
     LinearSolver,
     NavierStokesSolver,
@@ -1634,7 +1635,9 @@ class Flow360ParamsLegacy(LegacyModel):
     geometry: Optional[GeometryLegacy] = pd.Field()
     freestream: Optional[FreestreamLegacy] = pd.Field()
     time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
-    navier_stokes_solver: Optional[NavierStokesSolverLegacy] = pd.Field(alias="navierStokesSolver")
+    navier_stokes_solver: Optional[
+        Union[NavierStokesSolverLegacy, IncompressibleNavierStokesSolver]
+    ] = pd.Field(alias="navierStokesSolver")
     turbulence_model_solver: Optional[Union[NoneSolver, TurbulenceModelSolverLegacy]] = pd.Field(
         alias="turbulenceModelSolver"
     )
