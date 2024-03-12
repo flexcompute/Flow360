@@ -1407,7 +1407,7 @@ class FreestreamLegacy(LegacyModel):
     Mach: Optional[NonNegativeFloat] = pd.Field()
     Mach_Ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(alias="Temperature")
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
