@@ -146,7 +146,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     linear_solver:
         Linear solver settings
     
-    enforce_low_mach_preconditioner:
+    low_mach_preconditioner:
         Uses preconditioning for accelerating low Mach number flows.
 
     Returns
@@ -179,7 +179,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
-    enforce_low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="enforceLowMachPreconditioner")
+    low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="lowMachPreconditioner")
     preconditioner_alpha: Optional[NonNegativeFloat] = pd.Field(alias="preconditionerAlpha")
     preconditioner_ref_mach: Optional[PositiveFloat] = pd.Field(alias="preconditionerRefMach")
 
@@ -348,7 +348,6 @@ class KOmegaSST(TurbulenceModelSolver):
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
-
 
 class SpalartAllmaras(TurbulenceModelSolver):
     """:class:`SpalartAllmaras` class"""
@@ -539,7 +538,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
-            "enforceLowMachPreconditioner": self.enforce_low_mach_preconditioner
+            "lowMachPreconditioner": self.low_mach_preconditioner
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
