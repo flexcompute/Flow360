@@ -11,10 +11,7 @@ import numpy as np
 import pydantic as pd
 from typing_extensions import Literal
 
-from flow360.flags import Flags
-
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
-from ..utils import beta_feature
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
 
