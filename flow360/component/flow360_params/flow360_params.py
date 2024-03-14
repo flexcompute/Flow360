@@ -976,7 +976,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,R0904
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
