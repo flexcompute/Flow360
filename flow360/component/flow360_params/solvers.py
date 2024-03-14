@@ -144,6 +144,14 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     linear_solver:
         Linear solver settings
 
+    low_mach_preconditioner:
+        Uses preconditioning for accelerating low Mach number flows.
+
+    low_mach_preconditioner_threshold:
+        For flow regions with Mach numbers smaller than threshold, the input Mach number to the preconditioner is
+        assumed to be the threshold value if it is smaller than the threshold.
+        The default value for the threshold is the freestream Mach number.
+
     Returns
     -------
     :class:`NavierStokesSolver`
@@ -173,6 +181,22 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     )
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
+
+    low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="lowMachPreconditioner")
+    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
+        alias="lowMachPreconditionerThreshold"
+    )
+
+    # pylint: disable=arguments-differ,invalid-name
+    def to_solver(self, params, **kwargs) -> NavierStokesSolver:
+        """
+        Set preconditioner threshold to freestream Mach number
+        """
+
+        if self.low_mach_preconditioner:
+            self.low_mach_preconditioner_threshold = params.freestream.Mach
+
+        return super().to_solver(self, **kwargs)
 
 
 class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
@@ -531,6 +555,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
+            "lowMachPreconditioner": self.low_mach_preconditioner,
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:

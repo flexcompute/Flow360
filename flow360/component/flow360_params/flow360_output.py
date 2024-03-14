@@ -600,6 +600,7 @@ class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
         alias="lowNumericalDissipationSensor"
     )
     residual_heat_solver: Optional[bool] = pd.Field(alias="residualHeatSolver")
+    low_mach_preconditioner_sensor: Optional[bool] = pd.Field(alias="lowMachPreconditionerSensor")
 
 
 # pylint: disable=too-many-ancestors

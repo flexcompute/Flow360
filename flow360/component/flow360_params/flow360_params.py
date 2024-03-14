@@ -148,6 +148,8 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
+    _check_low_mach_preconditioner_output,
+    _check_low_mach_preconditioner_support,
     _check_numerical_dissipation_factor_output,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
@@ -974,7 +976,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,R0904
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
@@ -1287,6 +1289,22 @@ class Flow360Params(Flow360BaseModel):
         Detect output of numericalDissipationFactor if not enabled.
         """
         return _check_numerical_dissipation_factor_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_low_mach_preconditioner_output(cls, values):
+        """
+        Detect output of lowMachPreconditioner if not enabled.
+        """
+        return _check_low_mach_preconditioner_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_low_mach_preconditioner_support(cls, values):
+        """
+        Detect scenarios under which low mach preconditioning is not yet supported.
+        """
+        return _check_low_mach_preconditioner_support(values)
 
 
 class Flow360MeshParams(Flow360BaseModel):

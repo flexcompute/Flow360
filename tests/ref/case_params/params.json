@@ -54,6 +54,7 @@
         "linearSolver": {
             "maxIterations": 30
         },
+        "lowMachPreconditioner": false,
         "modelType": "Compressible"
     },
     "freestream": {
@@ -149,5 +150,5 @@
             }
         }
     },
-    "hash": "641c0be8f4be4b621c49e6756e9693653538cd2ba06f68536a1aaeb5347dd8b3"
+    "hash": "06ca09dd8e38f78c5c6373867f1ef5ca7d1bf912340343360fa680ccc35ee29b"
 }
