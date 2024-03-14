@@ -155,6 +155,7 @@ from .validations import (
 from .volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
+    PorousMediumBase,
     PorousMediumVolumeZone,
     ReferenceFrameType,
     VolumeZoneType,
@@ -945,17 +946,13 @@ class BETDisk(Flow360BaseModel):
 
 
 # pylint: disable=too-few-public-methods
-class PorousMedium(PorousMediumVolumeZone):
-    """:class:`PorousMedium` class"""
+class PorousMediumBox(PorousMediumBase):
+    """:class:`PorousMediumBox` class"""
 
     zone_type: Literal["box"] = pd.Field("box", alias="zoneType", const=True)
     center: LengthType.Point = pd.Field()
     lengths: LengthType.Moment = pd.Field()
     windowing_lengths: Optional[Size] = pd.Field(alias="windowingLengths")
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        exclude_on_flow360_export = ["model_type"]
 
 
 class PorousMediumVolumeZoneLegacy(Flow360BaseModel):
@@ -984,7 +981,7 @@ class PorousMediumLegacy(LegacyModel):
             "axes": self.volume_zone.axes,
             "windowing_lengths": self.volume_zone.windowing_lengths,
         }
-        return PorousMedium.parse_obj(model)
+        return PorousMediumBox.parse_obj(model)
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -1030,7 +1027,7 @@ class Flow360Params(Flow360BaseModel):
     freestream: FreestreamType = pd.Field(discriminator="model_type")
     bet_disks: Optional[List[BETDisk]] = pd.Field(alias="BETDisks")
     actuator_disks: Optional[List[ActuatorDisk]] = pd.Field(alias="actuatorDisks")
-    porous_media: Optional[List[PorousMedium]] = pd.Field(alias="porousMedia")
+    porous_media: Optional[List[PorousMediumBox]] = pd.Field(alias="porousMedia")
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(
         alias="userDefinedDynamics"
     )

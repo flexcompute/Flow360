@@ -284,16 +284,11 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         return super().to_solver(params, **kwargs)
 
 
-class PorousMediumVolumeZone(VolumeZoneBase):
-    """PorousMediumVolumeZone type"""
+class PorousMediumBase(Flow360BaseModel):
+    """PorousMediumBase type"""
 
-    model_type: Literal["PorousMedium"] = pd.Field("PorousMedium", alias="modelType", const=True)
-    darcy_coefficient: Tuple[InverseAreaType, InverseAreaType, InverseAreaType] = pd.Field(
-        alias="DarcyCoefficient"
-    )
-    forchheimer_coefficient: Tuple[InverseLengthType, InverseLengthType, InverseLengthType] = (
-        pd.Field(alias="ForchheimerCoefficient")
-    )
+    darcy_coefficient: InverseAreaType.Point = pd.Field(alias="DarcyCoefficient")
+    forchheimer_coefficient: InverseLengthType.Point = pd.Field(alias="ForchheimerCoefficient")
     volumetric_heat_source: Optional[HeatSourceType] = pd.Field(alias="VolumetricHeatSource")
     axes: List[Axis] = pd.Field(min_items=2, max_items=3, default=[[1, 0, 0], [0, 1, 0]])
 
@@ -313,6 +308,12 @@ class PorousMediumVolumeZone(VolumeZoneBase):
             raise ValueError("Porous zone axes not orthogonal.")
 
         return values
+
+
+class PorousMediumVolumeZone(VolumeZoneBase, PorousMediumBase):
+    """PorousMediumVolumeZone type"""
+
+    model_type: Literal["PorousMedium"] = pd.Field("PorousMedium", alias="modelType", const=True)
 
 
 VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone, PorousMediumVolumeZone]
