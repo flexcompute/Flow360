@@ -148,8 +148,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         Uses preconditioning for accelerating low Mach number flows.
 
     low_mach_preconditioner_threshold:
-        For flow regions with mach numbers smaller than threshold, the input Mach number to the preconditioner is
-        assumed to be the threshold value. The default value for the threshold is the freestream Mach number.
+        For flow regions with Mach numbers smaller than threshold, the input Mach number to the preconditioner is
+        assumed to be the threshold value if it is smaller than the threshold.
+        The default value for the threshold is the freestream Mach number.
 
     Returns
     -------

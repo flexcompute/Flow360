@@ -471,7 +471,7 @@ def _check_numerical_dissipation_factor_output(values):
             values
         ):
             raise ValueError(
-                "Numerical dissipation factor output requested but low dissipation mode is not enabled"
+                "Numerical dissipation factor output requested, but low dissipation mode is not enabled"
             )
     return values
 
@@ -486,7 +486,7 @@ def _check_low_mach_preconditioner_output(values):
             values
         ):
             raise ValueError(
-                "Low-Mach preconditioner output requested but low-Mach preconditioner mode is not enabled."
+                "Low-Mach preconditioner output requested, but low-Mach preconditioner mode is not enabled."
             )
     return values
 
