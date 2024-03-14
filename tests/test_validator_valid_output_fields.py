@@ -102,7 +102,7 @@ def test_numerical_dissipation_output_criterion():
         for attr_name, attr_obj in output_database.items():
             with pytest.raises(
                 ValueError,
-                match="Numerical dissipation factor output requested but low dissipation mode is not enabled",
+                match="Numerical dissipation factor output requested, but low dissipation mode is not enabled",
             ):
                 setattr(param, attr_name, attr_obj)
 
