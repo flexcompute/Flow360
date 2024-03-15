@@ -13,7 +13,7 @@ def test_schema_generators():
         fl.TransitionModelSolver,
         fl.HeatEquationSolver,
         fl.NoneSolver,
-        fl.PorousMedium,
+        fl.PorousMediumBox,
         fl.ActuatorDisk,
         fl.BETDisk,
         fl.SurfaceOutput,

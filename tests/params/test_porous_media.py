@@ -3,8 +3,8 @@ import unittest
 import pytest
 
 from flow360 import SI_unit_system
-from flow360.component.flow360_params.flow360_params import PorousMedium
-from tests.utils import to_file_from_file_test
+from flow360.component.flow360_params.flow360_params import PorousMediumBox
+from tests.utils import array_equality_override, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -14,9 +14,10 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_porous_media():
     with SI_unit_system:
-        pm = PorousMedium(
+        pm = PorousMediumBox(
             darcy_coefficient=[1, 1, 1],
             forchheimer_coefficient=[1, 1, 1],
             center=[1, 2, 3],

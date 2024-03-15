@@ -37,7 +37,7 @@ from flow360.component.flow360_params.flow360_params import (
     HeatEquationSolver,
     MeshBoundary,
     MeshSlidingInterface,
-    PorousMedium,
+    PorousMediumBox,
     PorousMediumVolumeZone,
     SlidingInterface,
     UnsteadyTimeStepping,
@@ -517,7 +517,7 @@ def test_flow360_will_export():
             ),
             boundaries={},
             porous_media=[
-                PorousMedium(
+                PorousMediumBox(
                     darcy_coefficient=[1, 1, 1],
                     forchheimer_coefficient=[1, 1, 1],
                     volumetric_heat_source=0,
