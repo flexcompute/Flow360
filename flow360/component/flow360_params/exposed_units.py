@@ -19,4 +19,9 @@ extra_units = {
     "viscosity": [],
     "angular_velocity": [],
     "heat_flux": [],
+    "heat_source": [],
+    "heat_capacity": [],
+    "thermal_conductivity": [],
+    "inverse_area": [],
+    "inverse_length": [],
 }

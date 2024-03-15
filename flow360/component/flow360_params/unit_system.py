@@ -23,6 +23,15 @@ u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
 u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
 u.dimensions.moment = u.dimensions.force * u.dimensions.length
+u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time**3 / u.dimensions.length
+u.dimensions.heat_capacity = (
+    u.dimensions.mass / u.dimensions.time**2 / u.dimensions.length / u.dimensions.temperature
+)
+u.dimensions.thermal_conductivity = (
+    u.dimensions.mass / u.dimensions.time**3 * u.dimensions.length / u.dimensions.temperature
+)
+u.dimensions.inverse_area = 1 / u.dimensions.area
+u.dimensions.inverse_length = 1 / u.dimensions.length
 
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
@@ -32,6 +41,16 @@ u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
 u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["moment"] = u.N * u.m
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
+# pylint: disable=no-member
+u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
 
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
@@ -41,6 +60,16 @@ u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
 u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
+# pylint: disable=no-member
+u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
 
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
@@ -50,6 +79,16 @@ u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
 u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
+# pylint: disable=no-member
+u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
 
 
 class UnitSystemManager:
@@ -566,6 +605,41 @@ class HeatFluxType(DimensionedType):
     dim_name = "heat_flux"
 
 
+class HeatSourceType(DimensionedType):
+    """:class: HeatSourceType"""
+
+    dim = u.dimensions.heat_source
+    dim_name = "heat_source"
+
+
+class HeatCapacityType(DimensionedType):
+    """:class: HeatCapacityType"""
+
+    dim = u.dimensions.heat_capacity
+    dim_name = "heat_capacity"
+
+
+class ThermalConductivityType(DimensionedType):
+    """:class: ThermalConductivityType"""
+
+    dim = u.dimensions.thermal_conductivity
+    dim_name = "thermal_conductivity"
+
+
+class InverseAreaType(DimensionedType):
+    """:class: InverseAreaType"""
+
+    dim = u.dimensions.inverse_area
+    dim_name = "inverse_area"
+
+
+class InverseLengthType(DimensionedType):
+    """:class: InverseLengthType"""
+
+    dim = u.dimensions.inverse_length
+    dim_name = "inverse_length"
+
+
 def _iterable(obj):
     try:
         len(obj)
@@ -827,6 +901,41 @@ class Flow360HeatFluxUnit(_Flow360BaseUnit):
     unit_name = "flow360_heat_flux_unit"
 
 
+class Flow360HeatSourceUnit(_Flow360BaseUnit):
+    """:class: Flow360HeatSourceUnit"""
+
+    dimension_type = HeatSourceType
+    unit_name = "flow360_heat_source_unit"
+
+
+class Flow360HeatCapacityUnit(_Flow360BaseUnit):
+    """:class: Flow360HeatCapacityUnit"""
+
+    dimension_type = HeatCapacityType
+    unit_name = "flow360_heat_capacity_unit"
+
+
+class Flow360ThermalConductivityUnit(_Flow360BaseUnit):
+    """:class: Flow360ThermalConductivityUnit"""
+
+    dimension_type = ThermalConductivityType
+    unit_name = "flow360_thermal_conductivity_unit"
+
+
+class Flow360InverseAreaUnit(_Flow360BaseUnit):
+    """:class: Flow360InverseAreaUnit"""
+
+    dimension_type = InverseAreaType
+    unit_name = "flow360_inverse_area_unit"
+
+
+class Flow360InverseLengthUnit(_Flow360BaseUnit):
+    """:class: Flow360InverseLengthUnit"""
+
+    dimension_type = InverseLengthType
+    unit_name = "flow360_inverse_length_unit"
+
+
 def is_flow360_unit(value):
     """
     Check if the provided value represents a dimensioned quantity with units
@@ -881,6 +990,11 @@ class UnitSystem(pd.BaseModel):
     moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
+    heat_source: HeatSourceType = pd.Field()
+    heat_capacity: HeatCapacityType = pd.Field()
+    thermal_conductivity: ThermalConductivityType = pd.Field()
+    inverse_area: InverseAreaType = pd.Field()
+    inverse_length: InverseLengthType = pd.Field()
 
     name: Literal["Custom"] = pd.Field("Custom")
 
@@ -901,6 +1015,11 @@ class UnitSystem(pd.BaseModel):
         "moment",
         "angular_velocity",
         "heat_flux",
+        "heat_source",
+        "heat_capacity",
+        "thermal_conductivity",
+        "inverse_area",
+        "inverse_length",
     ]
 
     @staticmethod
@@ -970,7 +1089,9 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3'}
+        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3',
+        'heat_capacity': 'kg/(s**2*m*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
+        'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """
 
         defaults = {}
@@ -1022,6 +1143,11 @@ flow360_power_unit = Flow360PowerUnit()
 flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
+flow360_heat_source_unit = Flow360HeatSourceUnit()
+flow360_heat_capacity_unit = Flow360HeatCapacityUnit()
+flow360_thermal_conductivity_unit = Flow360ThermalConductivityUnit()
+flow360_inverse_area_unit = Flow360InverseAreaUnit()
+flow360_inverse_length_unit = Flow360InverseLengthUnit()
 
 dimensions = [
     flow360_length_unit,
@@ -1038,6 +1164,11 @@ dimensions = [
     flow360_moment_unit,
     flow360_angular_velocity_unit,
     flow360_heat_flux_unit,
+    flow360_heat_capacity_unit,
+    flow360_thermal_conductivity_unit,
+    flow360_inverse_area_unit,
+    flow360_inverse_length_unit,
+    flow360_heat_source_unit,
 ]
 
 _flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
@@ -1064,6 +1195,14 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_moment: float = pd.Field(np.inf, target_dimension=Flow360MomentUnit)
     base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
     base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
+    base_heat_source: float = pd.Field(np.inf, target_dimension=Flow360HeatSourceUnit)
+    base_heat_capacity: float = pd.Field(np.inf, target_dimension=Flow360HeatCapacityUnit)
+    base_thermal_conductivity: float = pd.Field(
+        np.inf, target_dimension=Flow360ThermalConductivityUnit
+    )
+    base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
+    base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
+
     registry: Any = pd.Field(allow_mutation=False)
     conversion_system: Any = pd.Field(allow_mutation=False)
 
@@ -1103,6 +1242,12 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["moment"] = "flow360_moment_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
         conversion_system["heat_flux"] = "flow360_heat_flux_unit"
+        conversion_system["heat_source"] = "flow360_heat_source_unit"
+        conversion_system["heat_capacity"] = "flow360_heat_capacity_unit"
+        conversion_system["thermal_conductivity"] = "flow360_thermal_conductivity_unit"
+        conversion_system["inverse_area"] = "flow360_inverse_area_unit"
+        conversion_system["inverse_length"] = "flow360_inverse_length_unit"
+
         super().__init__(registry=registry, conversion_system=conversion_system)
 
     # pylint: disable=no-self-argument
@@ -1137,6 +1282,11 @@ class _PredefinedUnitSystem(UnitSystem):
     moment: MomentType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)
     heat_flux: HeatFluxType = pd.Field(exclude=True)
+    heat_source: HeatSourceType = pd.Field(exclude=True)
+    heat_capacity: HeatCapacityType = pd.Field(exclude=True)
+    thermal_conductivity: ThermalConductivityType = pd.Field(exclude=True)
+    inverse_area: InverseAreaType = pd.Field(exclude=True)
+    inverse_length: InverseLengthType = pd.Field(exclude=True)
 
     def system_repr(self):
         return self.name

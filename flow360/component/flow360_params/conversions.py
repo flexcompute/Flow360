@@ -214,6 +214,34 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
         return base_heat_flux
 
+    def get_base_heat_source():
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_length = get_base_length()
+
+        base_heat_source = base_density * base_velocity**3 / base_length
+
+        return base_heat_source
+
+    def get_base_heat_capacity():
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_temperature = get_base_temperature()
+
+        base_heat_capacity = base_density * base_velocity**2 / base_temperature
+
+        return base_heat_capacity
+
+    def get_base_thermal_conductivity():
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        base_temperature = get_base_temperature()
+        base_length = get_base_length()
+
+        base_thermal_conductivity = base_density * base_velocity**3 * base_length / base_temperature
+
+        return base_thermal_conductivity
+
     if dimension == u.dimensions.length:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
@@ -261,6 +289,26 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     elif dimension == u.dimensions.heat_flux:
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
+
+    elif dimension == u.dimensions.heat_capacity:
+        base_heat_capacity = get_base_heat_capacity()
+        flow360_conversion_unit_system.base_heat_capacity = base_heat_capacity
+
+    elif dimension == u.dimensions.thermal_conductivity:
+        base_thermal_conductivity = get_base_thermal_conductivity()
+        flow360_conversion_unit_system.base_thermal_conductivity = base_thermal_conductivity
+
+    elif dimension == u.dimensions.inverse_area:
+        base_length = get_base_length()
+        flow360_conversion_unit_system.base_inverse_area = 1 / base_length**2
+
+    elif dimension == u.dimensions.inverse_length:
+        base_length = get_base_length()
+        flow360_conversion_unit_system.base_inverse_area = 1 / base_length
+
+    elif dimension == u.dimensions.heat_source:
+        base_heat_source = get_base_heat_source()
+        flow360_conversion_unit_system.base_heat_source = base_heat_source
 
     else:
         raise ValueError(

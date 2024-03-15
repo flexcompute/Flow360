@@ -484,6 +484,13 @@ def test_unit_system_init():
         "moment": {"value": 1.0, "units": "N*m"},
         "angular_velocity": {"value": 1.0, "units": "rad/s"},
         "heat_flux": {"value": 1.0, "units": "kg/s**3"},
+        "heat_source": {"value": 1.0, "units": "kg/s**3/m"},
+        "heat_capacity": {"value": 1.0, "units": "kg/s**2/m/K"},
+        "thermal_conductivity": {"value": 1.0, "units": "kg/s**3*m/K"},
+        "inverse_length": {"value": 1.0, "units": "m**(-1)"},
+        "inverse_area": {"value": 1.0, "units": "m**(-2)"},
     }
     us = fl.UnitSystem(**unit_system_dict)
+    print(us)
+    print(fl.SI_unit_system)
     assert us == fl.SI_unit_system

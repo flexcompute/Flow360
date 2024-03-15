@@ -10,19 +10,29 @@ from abc import ABCMeta
 from typing import Optional, Union
 
 import pydantic as pd
+from numpy import array, dot
 from pydantic import StrictStr
 from typing_extensions import Literal
 
+from ..constants import NumericalConstants
 from ..types import (
     Axis,
     Coordinate,
+    List,
     NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
+    Tuple,
     Vector,
 )
 from .params_base import Flow360BaseModel
-from .unit_system import AngularVelocityType, LengthType
+from .unit_system import (
+    AngularVelocityType,
+    HeatSourceType,
+    InverseAreaType,
+    InverseLengthType,
+    LengthType,
+)
 
 
 class ReferenceFrameBase(Flow360BaseModel):
@@ -274,4 +284,36 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         return super().to_solver(params, **kwargs)
 
 
-VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone]
+class PorousMediumBase(Flow360BaseModel):
+    """PorousMediumBase type"""
+
+    darcy_coefficient: InverseAreaType.Point = pd.Field(alias="DarcyCoefficient")
+    forchheimer_coefficient: InverseLengthType.Point = pd.Field(alias="ForchheimerCoefficient")
+    volumetric_heat_source: Optional[HeatSourceType] = pd.Field(alias="VolumetricHeatSource")
+    axes: List[Axis] = pd.Field(min_items=2, max_items=3, default=[[1, 0, 0], [0, 1, 0]])
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def validate_axes_orthogonal(cls, values):
+        """
+        check if axes are orthogonal
+        """
+        axes = values.get("axes")
+        x_axis, y_axis = array(axes[0]), array(axes[1])
+        max_dot = dot(x_axis, y_axis)
+        if len(axes) == 3:
+            z_axis = array(axes[2])
+            max_dot = max(max_dot, dot(x_axis, z_axis), dot(y_axis, z_axis))
+        if max_dot > NumericalConstants.epsilon:
+            raise ValueError("Porous zone axes not orthogonal.")
+
+        return values
+
+
+class PorousMediumVolumeZone(VolumeZoneBase, PorousMediumBase):
+    """PorousMediumVolumeZone type"""
+
+    model_type: Literal["PorousMedium"] = pd.Field("PorousMedium", alias="modelType", const=True)
+
+
+VolumeZoneType = Union[FluidDynamicsVolumeZone, HeatTransferVolumeZone, PorousMediumVolumeZone]

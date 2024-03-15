@@ -3,7 +3,7 @@
 """
 
 
-class constants:
-    """physical constants"""
+class NumericalConstants:
+    """numerical constants"""
 
-    R = 287.0529
+    epsilon = 1e-7
