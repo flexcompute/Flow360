@@ -194,7 +194,8 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         """
 
         if self.low_mach_preconditioner:
-            self.low_mach_preconditioner_threshold = params.freestream.Mach
+            if self.low_mach_preconditioner_threshold is None:
+                self.low_mach_preconditioner_threshold = params.freestream.Mach
 
         return super().to_solver(self, **kwargs)
 
@@ -556,6 +557,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
             "lowMachPreconditioner": self.low_mach_preconditioner,
+            "lowMachPreconditionerThreshold": self.low_mach_preconditioner_threshold,
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
