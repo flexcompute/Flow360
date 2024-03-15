@@ -24,10 +24,9 @@ class FreestreamInitialCondition(InitialCondition):
     type: Literal["freestream"] = pd.Field("freestream", const=True)
 
 
-class ExpressionInitialCondition(InitialCondition):
-    """:class:`ExpressionInitialCondition` class"""
+class ExpressionInitialConditionBase(InitialCondition):
+    """:class:`ExpressionInitialConditionBase` class which can be used to manipulate restart solutions too"""
 
-    type: Literal["expression"] = pd.Field("expression", const=True)
     constants: Optional[Dict[str, str]] = pd.Field(alias="constants")
     rho: str = pd.Field(displayed="rho [non-dim]")
     u: str = pd.Field(displayed="u [non-dim]")
@@ -36,4 +35,22 @@ class ExpressionInitialCondition(InitialCondition):
     p: str = pd.Field(displayed="p [non-dim]")
 
 
-InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
+class ExpressionInitialCondition(ExpressionInitialConditionBase):
+    """:class:`ExpressionInitialCondition` class"""
+
+    type: Literal["expression"] = pd.Field("expression", const=True)
+
+
+class ExpressionRestartInitialCondition(ExpressionInitialConditionBase):
+    """:class:`ExpressionRestartInitialCondition` class that can be used to manipulate restart solution"""
+
+    type: Literal["restartManipulation"] = pd.Field("restartManipulation", const=True)
+
+    # pylint: disable=arguments-differ,invalid-name
+    def to_solver(self, params, **kwargs) -> ExpressionRestartInitialCondition:
+        return super().to_solver(self, exclude=["type"], **kwargs)
+
+
+InitialConditions = Union[
+    FreestreamInitialCondition, ExpressionInitialCondition, ExpressionRestartInitialCondition
+]
