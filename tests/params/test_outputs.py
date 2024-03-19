@@ -23,6 +23,7 @@ from flow360.component.flow360_params.flow360_params import (
     AeroacousticOutput,
     Flow360Params,
     FreestreamFromMach,
+    Geometry,
 )
 from tests.utils import array_equality_override, to_file_from_file_test
 
@@ -216,6 +217,7 @@ def test_slice_output():
             slice_output=output,
             boundaries={},
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            geometry=Geometry(mesh_unit=1),
         )
         solver_params = params.to_solver()
         for slice_name, slice_item in solver_params.slice_output.slices.dict().items():
@@ -337,6 +339,7 @@ def test_monitor_output():
             monitor_output=output,
             boundaries={},
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            geometry=Geometry(mesh_unit=1),
         )
         solver_params = params.to_solver()
 

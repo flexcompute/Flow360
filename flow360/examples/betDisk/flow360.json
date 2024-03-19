@@ -29,8 +29,6 @@
       "primitiveVars": false,
       "Cp": true,
       "Cf": true,
-      "CfTangent": false,
-      "CfNormal": false,
       "CfVec": true,
       "yPlus": true,
       "wallDistance": false,

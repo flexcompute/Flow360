@@ -240,7 +240,8 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SurfaceOutput:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         # Add boundaries that are not listed into `surfaces` and applying shared fields.
         boundary_names = []
         for boundary_name in params.boundaries.names():
@@ -331,7 +332,8 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SliceOutput:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         _distribute_shared_output_fields(solver_values, "slices")
         return SliceOutput(**solver_values)
 
@@ -357,7 +359,8 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> VolumeOutput:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
         return VolumeOutput(**solver_values, output_fields=fields)
@@ -390,7 +393,8 @@ class SurfaceIntegralMonitor(MonitorBase):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
         return SurfaceIntegralMonitor(**solver_values, output_fields=fields)
@@ -417,7 +421,8 @@ class ProbeMonitor(MonitorBase):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ProbeMonitor:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
         return ProbeMonitor(**solver_values, output_fields=fields)
@@ -470,7 +475,8 @@ class MonitorOutput(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> MonitorOutput:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         _distribute_shared_output_fields(solver_values, "monitors")
         return MonitorOutput(**solver_values)
 
@@ -497,7 +503,8 @@ class IsoSurface(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> IsoSurface:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
         return IsoSurface(**solver_values, output_fields=fields)
@@ -536,7 +543,8 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
-        solver_values = self._convert_dimensions_to_solver(params, **kwargs)
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
         _distribute_shared_output_fields(solver_values, "iso_surfaces")
         return IsoSurfaceOutput(**solver_values)
 
@@ -644,7 +652,7 @@ class SliceNamedLegacy(Flow360BaseModel):
     slice_name: str = pd.Field(alias="sliceName")
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: Coordinate = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[List[str]] = pd.Field(alias="outputFields")
+    output_fields: Optional[List[str]] = pd.Field([], alias="outputFields")
 
 
 class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):

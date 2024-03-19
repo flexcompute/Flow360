@@ -4,7 +4,7 @@ Initial condition parameters
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Dict, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Literal
@@ -28,6 +28,7 @@ class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
 
     type: Literal["expression"] = pd.Field("expression", const=True)
+    constants: Optional[Dict[str, str]] = pd.Field(alias="constants")
     rho: str = pd.Field(displayed="rho [non-dim]")
     u: str = pd.Field(displayed="u [non-dim]")
     v: str = pd.Field(displayed="v [non-dim]")

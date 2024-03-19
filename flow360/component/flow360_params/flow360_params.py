@@ -152,7 +152,12 @@ from .validations import (
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
-from .volume_zones import FluidDynamicsVolumeZone, ReferenceFrameType, VolumeZoneType
+from .volume_zones import (
+    FluidDynamicsVolumeZone,
+    HeatTransferVolumeZone,
+    ReferenceFrameType,
+    VolumeZoneType,
+)
 
 
 # pylint: disable=invalid-name
@@ -1401,11 +1406,13 @@ class GeometryLegacy(Geometry, LegacyModel):
 class FreestreamLegacy(LegacyModel):
     """:class: `FreestreamLegacy` class"""
 
-    Reynolds: Optional[PositiveFloat] = pd.Field()
+    Reynolds: Optional[Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]]] = pd.Field(
+        displayed="Reynolds number"
+    )
     Mach: Optional[NonNegativeFloat] = pd.Field()
     Mach_Ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
     mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: PositiveFloat = pd.Field(alias="Temperature")
+    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(alias="Temperature")
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
@@ -1622,6 +1629,13 @@ class VolumeZonesLegacy(VolumeZones):
                         model, "field/modelType", options, _ReferenceFrameTempModel
                     )
                     value["referenceFrame"] = model["field"]
+
+                volume_zone_type = value.get("modelType")
+
+                if volume_zone_type == "HeatEquation":
+                    value["modelType"] = HeatTransferVolumeZone.__fields__["model_type"].default
+                if volume_zone_type == "NavierStokes":
+                    value["modelType"] = FluidDynamicsVolumeZone.__fields__["model_type"].default
 
             super().__init__(*args, **kwargs)
 

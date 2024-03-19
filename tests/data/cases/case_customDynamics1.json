@@ -46,17 +46,11 @@
         "linearIterations" : 25,
         "kappaMUSCL" : -1.0
     },
-    "turbulenceModelSolver" : {
-        "modelType" : "None",
-        "tolerance" : 1e-8,
-        "linearIterations" : 15,
-        "kappaMUSCL" : -1.0
-    },
     "freestream" :
     {
         "Reynolds" : "inf",
         "Mach" : 0.5,
-        "Temperature" : -1,
+        "Temperature" : 283,
         "alphaAngle" : 3.12,
         "betaAngle" : 0.0
     },
