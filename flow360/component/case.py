@@ -1,10 +1,13 @@
+# pylint: disable=too-many-lines
 """
 Case component
 """
 
 from __future__ import annotations
 
+import copy
 import json
+import math
 import tempfile
 import time
 from typing import Any, Iterator, List, Union
@@ -16,7 +19,11 @@ from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
+from .flow360_params.flow360_params import (
+    Flow360Params,
+    UnsteadyTimeStepping,
+    UnvalidatedFlow360Params,
+)
 from .folder import Folder
 from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
 from .resource_base import (
@@ -330,6 +337,41 @@ class CaseDraft(CaseBase, ResourceDraft):
         self._submitted_case = Case(self.id)
         log.info(f"Case successfully submitted: {self._submitted_case.short_description()}")
         return self._submitted_case
+
+    def submit_multiple_phases(
+        self, phase_steps: pd.conint(ge=1), force_submit: bool = False
+    ) -> List[Case]:
+        """
+        submits a series of cases to cloud for running
+        """
+        time_stepping = self.params.time_stepping
+        if not isinstance(time_stepping, UnsteadyTimeStepping):
+            raise Flow360ValueError(
+                "submit_multiple_phases() is only supported for unsteady simulations."
+            )
+
+        total_physical_steps = time_stepping.physical_steps
+        phase_steps = math.ceil(total_physical_steps / phase_steps)
+        index = 1
+        cases_submitted = []
+        case_draft_to_submit = copy.deepcopy(self)
+
+        while total_physical_steps > 0:
+            physical_steps_curr = min(total_physical_steps, phase_steps)
+            case_draft_to_submit.params.time_stepping.physical_steps = physical_steps_curr
+            case_draft_to_submit.name = self.name + f"_{index}"
+            case = case_draft_to_submit.submit(force_submit=force_submit)
+
+            cases_submitted.append(case)
+            total_physical_steps -= phase_steps
+            index += 1
+
+            if total_physical_steps > 0:
+                case_draft_to_submit = case.continuation(
+                    params=copy.deepcopy(self.params), tags=copy.deepcopy(self.tags)
+                )
+
+        return cases_submitted
 
     def validate_case_inputs(self, pre_submit_checks=False):
         """
