@@ -193,7 +193,7 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         Set preconditioner threshold to freestream Mach number
         """
 
-        if self.low_mach_preconditioner:
+        if self.low_mach_preconditioner is not None and self.low_mach_preconditioner:
             if self.low_mach_preconditioner_threshold is None:
                 self.low_mach_preconditioner_threshold = params.freestream.Mach
 
