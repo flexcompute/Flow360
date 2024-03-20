@@ -14,7 +14,6 @@ class EnvironmentConfig(BaseModel):
     web_api_endpoint: str
     web_url: str
     aws_region: str
-    apikey_profile: str
     portal_web_api_endpoint: str = None
 
     def active(self):
@@ -55,16 +54,14 @@ dev = EnvironmentConfig(
     web_url="https://flow360.dev-simulation.cloud",
     portal_web_api_endpoint="https://portal-api.dev-simulation.cloud",
     aws_region="us-east-1",
-    apikey_profile="dev",
 )
 
 uat = EnvironmentConfig(
     name="uat",
-    web_api_endpoint="https://uat-flow360-api.simulation.cloud",
-    web_url="https://uat-flow360.simulation.cloud",
-    portal_web_api_endpoint="https://uat-portal-api.simulation.cloud",
-    aws_region="us-gov-west-1",
-    apikey_profile="default",
+    web_api_endpoint="https://flow360-api.uat-simulation.cloud",
+    web_url="https://flow360.uat-simulation.cloud",
+    portal_web_api_endpoint="https://portal-api.uat-simulation.cloud",
+    aws_region="us-west-2",
 )
 
 prod = EnvironmentConfig(
@@ -73,7 +70,6 @@ prod = EnvironmentConfig(
     web_url="https://flow360.simulation.cloud",
     portal_web_api_endpoint="https://portal-api.simulation.cloud",
     aws_region="us-gov-west-1",
-    apikey_profile="default",
 )
 
 FLOW360_SKIP_VERSION_CHECK = True
