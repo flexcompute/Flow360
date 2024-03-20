@@ -623,7 +623,7 @@ class VolumeMesh(Flow360Resource):
             if remote_file_name is None:
                 remote_file_name = self._remote_file_name()
 
-            super()._download_file(
+            return super()._download_file(
                 remote_file_name,
                 to_file=to_file,
                 to_folder=to_folder,
