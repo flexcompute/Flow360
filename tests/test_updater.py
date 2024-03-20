@@ -131,7 +131,6 @@ def test_updater_with_comments():
 def test_updater_map():
     version_from = "1.2.3"
     version_to = "2.3.4"
-
     update_map = [
         ("1.2.3", "1.2.4", _no_update),
         ("1.2.4", "2.3.4", _no_update),
