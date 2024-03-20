@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "23.3.2",
+    "version": "23.3.3",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -15,46 +15,29 @@
             "name": "freestream",
             "velocityType": "relative"
         },
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
+        },
         "1": {
             "type": "NoSlipWall",
             "name": "wing",
             "velocityType": "relative"
-        },
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
         }
     },
     "timeStepping": {
         "maxPseudoSteps": 2000,
         "orderOfAccuracy": 2,
-        "modelType": "Steady",
-        "physicalSteps": 1,
-        "timeStepSize": "inf",
         "CFL": {
             "type": "adaptive",
             "min": 0.1,
             "max": 10000.0,
             "maxRelativeChange": 1.0,
             "convergenceLimitingFactor": 0.25
-        }
-    },
-    "navierStokesSolver": {
-        "absoluteTolerance": 1e-10,
-        "relativeTolerance": 0.0,
-        "orderOfAccuracy": 2,
-        "CFLMultiplier": 1.0,
-        "updateJacobianFrequency": 4,
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "kappaMUSCL": -1.0,
-        "equationEvalFrequency": 1,
-        "numericalDissipationFactor": 1.0,
-        "limitVelocity": false,
-        "limitPressureDensity": false,
-        "linearSolverConfig": {
-            "maxIterations": 30
         },
-        "modelType": "Compressible"
+        "modelType": "Steady",
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
     },
     "freestream": {
         "modelType": "FromVelocity",
@@ -80,13 +63,21 @@
         ],
         "surfaces": {
             "symmetry": {
-                "outputFields": [ "T", "heatFlux" ]
+                "outputFields": [
+                    "T",
+                    "heatFlux"
+                ]
             },
             "freestream": {
-                "outputFields": [ "Cp", "Mach" ]
+                "outputFields": [
+                    "Cp",
+                    "Mach"
+                ]
             },
             "wing": {
-                "outputFields": [ "CfVec" ]
+                "outputFields": [
+                    "CfVec"
+                ]
             }
         }
     },
@@ -111,24 +102,6 @@
             "Cp"
         ],
         "slices": {
-            "x0": {
-                "sliceNormal": [
-                    1,
-                    0,
-                    0
-                ],
-                "sliceOrigin": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "outputFields": [
-                    "Mach"
-                ]
-            },
             "y1": {
                 "sliceNormal": [
                     0,
@@ -137,17 +110,52 @@
                 ],
                 "sliceOrigin": {
                     "value": [
-                        2.0,
-                        1.0,
-                        0.0
+                        2,
+                        1,
+                        0
                     ],
                     "units": "flow360_length_unit"
                 },
                 "outputFields": [
                     "T"
                 ]
+            },
+            "x0": {
+                "sliceNormal": [
+                    1,
+                    0,
+                    0
+                ],
+                "sliceOrigin": {
+                    "value": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "units": "flow360_length_unit"
+                },
+                "outputFields": [
+                    "Mach"
+                ]
             }
         }
     },
-    "hash": "ae08be3ab9488b97235feaa03ef215a6e458c8b8ca01a06bd731ec364b8729d8"
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "CFLMultiplier": 1.0,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "kappaMUSCL": -1.0,
+        "equationEvalFrequency": 1,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "linearSolverConfig": {
+            "maxIterations": 30
+        },
+        "modelType": "Compressible"
+    },
+    "hash": "e5974e48129cfcfe6d909a6b78411cd4ec6952ffaf47fa967f346a604e15bc06"
 }
