@@ -618,17 +618,18 @@ class VolumeMesh(Flow360Resource):
         status = self.status
         if not status.is_final():
             log.warning(f"Cannot download file because status={status}")
-        else:
-            remote_file_name = self.info.file_name
-            if remote_file_name is None:
-                remote_file_name = self._remote_file_name()
+            return None
 
-            return super()._download_file(
-                remote_file_name,
-                to_file=to_file,
-                to_folder=to_folder,
-                overwrite=overwrite,
-            )
+        remote_file_name = self.info.file_name
+        if remote_file_name is None:
+            remote_file_name = self._remote_file_name()
+
+        return super()._download_file(
+            remote_file_name,
+            to_file=to_file,
+            to_folder=to_folder,
+            overwrite=overwrite,
+        )
 
     def _complete_upload(self, remote_file_name):
         """
