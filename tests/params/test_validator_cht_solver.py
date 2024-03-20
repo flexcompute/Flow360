@@ -216,7 +216,7 @@ def test_cht_solver_has_heat_transfer_zone():
 
     with fl.SI_unit_system:
         param = Flow360Params(
-            time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1*u.s),
+            time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1 * u.s),
             volume_zones={
                 "blk-1": HeatTransferVolumeZone(
                     thermal_conductivity=0.1,
@@ -235,7 +235,7 @@ def test_cht_solver_has_heat_transfer_zone():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1*u.s),
+                time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1 * u.s),
                 volume_zones={
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
@@ -249,7 +249,7 @@ def test_cht_solver_has_heat_transfer_zone():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1*u.s),
+                time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1 * u.s),
                 volume_zones={
                     "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1, heat_capacity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),

@@ -23,7 +23,7 @@ def change_test_dir(request, monkeypatch):
 def test_consistency_ddes_unsteady():
     with fl.SI_unit_system:
         param = Flow360Params(
-            time_stepping=UnsteadyTimeStepping(physical_steps=20, time_step_size = 0.1*u.s),
+            time_stepping=UnsteadyTimeStepping(physical_steps=20, time_step_size=0.1 * u.s),
             turbulence_model_solver=SpalartAllmaras(DDES=True),
             boundaries={},
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),

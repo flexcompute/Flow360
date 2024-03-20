@@ -68,10 +68,10 @@ def test_time_stepping():
     exported_json = json.loads(params.flow360_json())
     assert "meshUnit" not in exported_json["geometry"]
 
-    ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "timeStepSize":0.1*u.s})
+    ts = UnsteadyTimeStepping.parse_obj({"maxPhysicalSteps": 3, "timeStepSize": 0.1 * u.s})
     assert ts.physical_steps == 3
 
-    ts = UnsteadyTimeStepping.parse_obj({"physicalSteps": 2, "timeStepSize": 0.2*u.s})
+    ts = UnsteadyTimeStepping.parse_obj({"physicalSteps": 2, "timeStepSize": 0.2 * u.s})
     assert ts.physical_steps == 2
 
     with pytest.raises(ValueError):
@@ -98,19 +98,25 @@ def test_time_stepping():
         ts, fl.AdaptiveCFL(max=1e4, convergence_limiting_factor=0.25, max_relative_change=1000)
     )
 
-    ts = UnsteadyTimeStepping(physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(physical_steps=20, time_step_size=0.1 * u.s)
     assert_CFL(ts, fl.AdaptiveCFL.default_unsteady())
-    ts = UnsteadyTimeStepping(CFL=fl.RampCFL(),physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(CFL=fl.RampCFL(), physical_steps=20, time_step_size=0.1 * u.s)
     assert_CFL(ts, fl.RampCFL.default_unsteady())
-    ts = UnsteadyTimeStepping(CFL=fl.RampCFL(final=1000),physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(
+        CFL=fl.RampCFL(final=1000), physical_steps=20, time_step_size=0.1 * u.s
+    )
     assert_CFL(ts, fl.RampCFL(initial=1, final=1000, ramp_steps=30))
-    ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL(),physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL(), physical_steps=20, time_step_size=0.1 * u.s)
     assert_CFL(ts, fl.AdaptiveCFL.default_unsteady())
-    ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL(maxRelativeChange=1000),physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(
+        CFL=fl.AdaptiveCFL(maxRelativeChange=1000), physical_steps=20, time_step_size=0.1 * u.s
+    )
     assert_CFL(
         ts, fl.AdaptiveCFL(max=1e6, convergence_limiting_factor=1.0, max_relative_change=1000)
     )
-    ts = UnsteadyTimeStepping(CFL=fl.AdaptiveCFL(maxRelativeChange=1000),physical_steps=20, time_step_size = 0.1*u.s)
+    ts = UnsteadyTimeStepping(
+        CFL=fl.AdaptiveCFL(maxRelativeChange=1000), physical_steps=20, time_step_size=0.1 * u.s
+    )
     assert_CFL(
         ts,
         fl.AdaptiveCFL(max=1e6, convergence_limiting_factor=1.0, max_relative_change=1000),

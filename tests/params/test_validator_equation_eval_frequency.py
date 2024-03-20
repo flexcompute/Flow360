@@ -26,7 +26,9 @@ def change_test_dir(request, monkeypatch):
 def test_equation_eval_frequency_for_unsteady_simulations():
     with fl.SI_unit_system:
         param = Flow360Params(
-            time_stepping=UnsteadyTimeStepping(max_pseudo_steps=30,physical_steps=20, time_step_size = 0.1*u.s),
+            time_stepping=UnsteadyTimeStepping(
+                max_pseudo_steps=30, physical_steps=20, time_step_size=0.1 * u.s
+            ),
             turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=2),
             transition_model_solver=TransitionModelSolver(equation_eval_frequency=4),
             boundaries={},
@@ -48,7 +50,9 @@ def test_equation_eval_frequency_for_unsteady_simulations():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                time_stepping=UnsteadyTimeStepping(max_pseudo_steps=2,physical_steps=20, time_step_size = 0.1*u.s),
+                time_stepping=UnsteadyTimeStepping(
+                    max_pseudo_steps=2, physical_steps=20, time_step_size=0.1 * u.s
+                ),
                 turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=3),
                 boundaries={},
                 freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
@@ -59,7 +63,9 @@ def test_equation_eval_frequency_for_unsteady_simulations():
     ):
         with fl.SI_unit_system:
             param = Flow360Params(
-                time_stepping=UnsteadyTimeStepping(max_pseudo_steps=2,physical_steps=20, time_step_size = 0.1*u.s),
+                time_stepping=UnsteadyTimeStepping(
+                    max_pseudo_steps=2, physical_steps=20, time_step_size=0.1 * u.s
+                ),
                 transition_model_solver=TransitionModelSolver(equation_eval_frequency=3),
                 boundaries={},
                 freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
