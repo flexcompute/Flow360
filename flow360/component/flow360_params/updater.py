@@ -16,6 +16,7 @@ UPDATE_MAP = [
 ]
 
 
+# pylint: disable=dangerous-default-value
 def _find_update_path(version_from, version_to):
     path = []
 
