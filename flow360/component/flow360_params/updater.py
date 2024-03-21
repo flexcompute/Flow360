@@ -17,6 +17,7 @@ UPDATE_MAP = [
     ("0.2.0b18", "23.3.0", _no_update),
     ("23.3.0", "23.3.*", _no_update),
     ("23.3.*", "24.2.*", _no_update),
+    ("24.2.*", "24.2.*", _no_update),
 ]
 
 
@@ -26,6 +27,7 @@ def _version_match(version_1, version_2):
     return pattern_1.match(version_2) or pattern_2.match(version_1)
 
 
+# pylint: disable=dangerous-default-value
 def _find_update_path(version_from, version_to, update_map=UPDATE_MAP):
     path = []
 
