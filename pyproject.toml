@@ -28,6 +28,33 @@ unyt = [{ python = "^3.7", version = "^2.8.0" },
     { python = "^3.8", version = "^2.9.5" }]
 pandas = "^2.2.1"
 
+# docs
+autodoc_pydantic = {version="*", optional = true}
+jupyter = {version="*", optional = true}
+jinja2 = {version = ">=3.1.2", optional = true}
+ipython = {version="*", optional = true}
+nbconvert = {version = ">=7.11.0", optional = true}
+sphinx = {version=">=7", optional = true}
+nbsphinx = {version = ">=0.8.7", optional = true}
+sphinx-copybutton = {version=">=0.5.2", optional = true}
+sphinx-book-theme = {version = ">=1.0.1", optional = true}
+pydata-sphinx-theme = {version = ">=0.13.3", optional = true}
+sphinx-favicon = {version="*", optional = true}
+sphinx-sitemap = {version=">=2.5.1", optional = true}
+sphinx-notfound-page = {version="*", optional = true}
+sphinx-tabs = {version="*", optional = true}
+nbdime = {version="*", optional = true}
+myst-parser = {version="*", optional = true}
+sphinxemoji = {version="*", optional = true}
+
+readthedocs-sphinx-search = {version="*", optional = true}
+cairosvg = {version="*", optional = true }
+sphinxcontrib-svg2pdfconverter = {version="*", optional = true}
+sphinx-prompt = {version="*", optional = true}
+sphinx_design = {version="*", optional = true}
+sphinx_toolbox = {version="*", optional = true}
+
+
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.20.3"
 pytest-cov = "^4.0.0"
@@ -39,6 +66,34 @@ pytest = "^7.3.0"
 pylint = "^2.17.2"
 black = "^24.1.0"
 notebook = "^7.0.6"
+
+[tool.poetry.extras]
+docs = [
+    "autodoc_pydantic",
+    "jupyter",
+    "jinja2",
+    "ipython",
+    "nbconvert",
+    "sphinx",
+    "nbsphinx",
+    "sphinx-copybutton",
+    "sphinx-book-theme",
+    "pydata-sphinx-theme",
+    "sphinx-favicon",
+    "sphinx-sitemap",
+    "sphinx-notfound-page",
+    "sphinx-tabs",
+    "nbdime",
+    "myst-parser",
+    "pyswarms",
+    "sphinxemoji",
+    "readthedocs-sphinx-search",
+    "cairosvg",
+    "sphinxcontrib-svg2pdfconverter",
+    "sphinx-prompt",
+    "sphinx_design",
+    "sphinx_toolbox",
+]
 
 [tool.isort]
 profile = "black"
