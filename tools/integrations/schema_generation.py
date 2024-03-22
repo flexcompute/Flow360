@@ -250,7 +250,7 @@ class _SlidingInterface(fl.SlidingInterface):
         field_properties = {"centerOfRotation": ("widget", "vector3")}
 
 
-class _PorousMedium(fl.PorousMedium):
+class _PorousMedium(fl.PorousMediumBox):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_properties = {
             "DarcyCoefficient": ("widget", "vector3"),
