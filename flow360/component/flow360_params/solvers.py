@@ -599,6 +599,9 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         return values
 
     def update_model(self):
+        if self.model_type == "None":
+            return NoneSolver()
+
         model = {
             "absoluteTolerance": self.absolute_tolerance,
             "relativeTolerance": self.relative_tolerance,
