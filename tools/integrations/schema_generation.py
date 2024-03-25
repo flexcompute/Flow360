@@ -152,6 +152,9 @@ class _TimeStepping(Flow360BaseModel):
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_order = ["*", "CFL"]
+        field_properties = {
+            "timeStepSize": ("field", "unitInput"),
+        }
         root_property = "properties/timeStepping/anyOf"
         exclude_fields = [
             root_property + "/properties/CFL/default",
@@ -378,8 +381,8 @@ class _Boundaries(fl.Boundaries):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         optional_objects = ["anyOf/properties/turbulenceQuantities"]
         field_properties = {
-            "Velocity/value": ("widget", "vector3"),
-            "velocityDirection/value": ("widget", "vector3"),
+            "Velocity": ("field", "unitInput"),
+            "velocityDirection": ("widget", "vector3"),
             "translationVector": ("widget", "vector3"),
             "axisOfRotation": ("widget", "vector3"),
         }
@@ -391,13 +394,32 @@ class _Boundaries(fl.Boundaries):
 
         for key, value in list(dictionary.items()):
             if key == const_key:
-                dictionary[key]["const"] = True
+                dictionary[key]["readOnly"] = True
             elif isinstance(value, dict):
                 cls._mark_const(value, const_key)
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict):
                         cls._mark_const(item, const_key)
+
+        return dictionary
+
+    @classmethod
+    def _modify_boundary_types(cls, dictionary):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == "Velocity" or key == "velocityDirection":
+                dictionary[key].update(value["anyOf"][0])
+                dictionary[key]["type"] = "object"
+                del value["anyOf"]
+            elif isinstance(value, dict):
+                cls._modify_boundary_types(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._modify_boundary_types(item)
 
         return dictionary
 
@@ -427,6 +449,7 @@ class _Boundaries(fl.Boundaries):
         cls._schema_swap_key(root_schema, "title", "displayed")
         cls._schema_clean(root_schema)
         cls._mark_const(root_schema, "name")
+        cls._modify_boundary_types(root_schema)
 
         definitions = {}
 
