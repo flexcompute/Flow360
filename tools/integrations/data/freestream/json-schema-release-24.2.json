@@ -1,0 +1,1639 @@
+{
+  "title": "Freestream",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "Freestream from velocity",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromVelocity",
+          "const": "FromVelocity",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        },
+        "velocityRef": {
+          "title": "Reference velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        },
+        "_addTurbulenceQuantities": {
+          "title": "Turbulence quantities",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "velocity"
+      ],
+      "additionalProperties": false,
+      "dependencies": {
+        "_addTurbulenceQuantities": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "turbulenceQuantities": {
+                  "title": "Turbulence quantities",
+                  "anyOf": [
+                    {
+                      "title": "Turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity",
+                      "type": "object",
+                      "properties": {
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosityRatio": {
+                          "title": "Modified turbulent viscosity ratio",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosity": {
+                          "title": "Modified turbulent viscosity",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and specific dissipation rate",
+                      "type": "object",
+                      "properties": {
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Freestream from Mach number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMach",
+          "const": "FromMach",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Dynamic viscosity [non-dim]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "_addTurbulenceQuantities": {
+          "title": "Turbulence quantities",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "Mach",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false,
+      "dependencies": {
+        "_addTurbulenceQuantities": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "turbulenceQuantities": {
+                  "title": "Turbulence quantities",
+                  "anyOf": [
+                    {
+                      "title": "Turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity",
+                      "type": "object",
+                      "properties": {
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosityRatio": {
+                          "title": "Modified turbulent viscosity ratio",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosity": {
+                          "title": "Modified turbulent viscosity",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and specific dissipation rate",
+                      "type": "object",
+                      "properties": {
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Freestream from Mach number and Reynolds number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "FromMachReynolds",
+          "const": "FromMachReynolds",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Reynolds": {
+          "title": "Reynolds number",
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "const": "inf"
+            }
+          ]
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "_addTurbulenceQuantities": {
+          "title": "Turbulence quantities",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "Mach",
+        "Reynolds",
+        "Temperature"
+      ],
+      "additionalProperties": false,
+      "dependencies": {
+        "_addTurbulenceQuantities": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "turbulenceQuantities": {
+                  "title": "Turbulence quantities",
+                  "anyOf": [
+                    {
+                      "title": "Turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity",
+                      "type": "object",
+                      "properties": {
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosityRatio": {
+                          "title": "Modified turbulent viscosity ratio",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosity": {
+                          "title": "Modified turbulent viscosity",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and specific dissipation rate",
+                      "type": "object",
+                      "properties": {
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Zero freestream with reference Mach number",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroMach",
+          "const": "ZeroMach",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "Mach": {
+          "title": "Mach number",
+          "default": 0,
+          "const": 0,
+          "type": "integer"
+        },
+        "MachRef": {
+          "title": "Reference Mach number",
+          "exclusiveMinimum": 1e-12,
+          "type": "number"
+        },
+        "muRef": {
+          "title": "Dynamic viscosity [non-dim]",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "Temperature": {
+          "title": "Temperature [K]",
+          "anyOf": [
+            {
+              "type": "integer",
+              "const": -1
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "_addTurbulenceQuantities": {
+          "title": "Turbulence quantities",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "MachRef",
+        "muRef",
+        "Temperature"
+      ],
+      "additionalProperties": false,
+      "dependencies": {
+        "_addTurbulenceQuantities": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "turbulenceQuantities": {
+                  "title": "Turbulence quantities",
+                  "anyOf": [
+                    {
+                      "title": "Turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity",
+                      "type": "object",
+                      "properties": {
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosityRatio": {
+                          "title": "Modified turbulent viscosity ratio",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosity": {
+                          "title": "Modified turbulent viscosity",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and specific dissipation rate",
+                      "type": "object",
+                      "properties": {
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Zero freestream with reference velocity",
+      "type": "object",
+      "properties": {
+        "modelType": {
+          "title": "Model type",
+          "default": "ZeroVelocity",
+          "const": "ZeroVelocity",
+          "type": "string"
+        },
+        "alphaAngle": {
+          "title": "Alpha angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "betaAngle": {
+          "title": "Beta angle [deg]",
+          "default": 0,
+          "type": "number"
+        },
+        "turbulentViscosityRatio": {
+          "title": "Turbulent viscosity ratio",
+          "minimum": 0,
+          "type": "number"
+        },
+        "velocity": {
+          "title": "Velocity",
+          "default": 0,
+          "const": 0,
+          "type": "integer"
+        },
+        "velocityRef": {
+          "title": "Reference velocity",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
+              ]
+            }
+          }
+        },
+        "_addTurbulenceQuantities": {
+          "title": "Turbulence quantities",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "velocityRef"
+      ],
+      "additionalProperties": false,
+      "dependencies": {
+        "_addTurbulenceQuantities": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "turbulenceQuantities": {
+                  "title": "Turbulence quantities",
+                  "anyOf": [
+                    {
+                      "title": "Turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity",
+                      "type": "object",
+                      "properties": {
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosityRatio": {
+                          "title": "Modified turbulent viscosity ratio",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Modified turbulent viscosity",
+                      "type": "object",
+                      "properties": {
+                        "modifiedTurbulentViscosity": {
+                          "title": "Modified turbulent viscosity",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent length scale and turbulent kinetic energy",
+                      "type": "object",
+                      "properties": {
+                        "turbulentKineticEnergy": {
+                          "title": "Turbulent kinetic energy",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and specific dissipation rate",
+                      "type": "object",
+                      "properties": {
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent intensity and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentIntensity": {
+                          "title": "Turbulent intensity",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent viscosity ratio",
+                      "type": "object",
+                      "properties": {
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Specific dissipation rate and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "specificDissipationRate": {
+                          "title": "Specific dissipation rate",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "title": "Turbulent viscosity ratio and turbulent length scale",
+                      "type": "object",
+                      "properties": {
+                        "turbulentLengthScale": {
+                          "title": "Turbulent length scale",
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "turbulentViscosityRatio": {
+                          "title": "Turbulent viscosity ratio",
+                          "minimum": 0,
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addTurbulenceQuantities": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

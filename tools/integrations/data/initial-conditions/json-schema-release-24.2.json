@@ -1,0 +1,67 @@
+{
+  "title": "Initial conditions",
+  "type": "object",
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "title": "Freestream",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "freestream",
+          "const": "freestream",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "Expression",
+      "type": "object",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "default": "expression",
+          "const": "expression",
+          "type": "string"
+        },
+        "constants": {
+          "title": "Constants",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "rho": {
+          "title": "rho [non-dim]",
+          "type": "string"
+        },
+        "u": {
+          "title": "u [non-dim]",
+          "type": "string"
+        },
+        "v": {
+          "title": "v [non-dim]",
+          "type": "string"
+        },
+        "w": {
+          "title": "w [non-dim]",
+          "type": "string"
+        },
+        "p": {
+          "title": "p [non-dim]",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rho",
+        "u",
+        "v",
+        "w",
+        "p"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

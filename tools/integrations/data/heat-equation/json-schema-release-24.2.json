@@ -1,0 +1,110 @@
+{
+  "title": "Heat equation solver",
+  "type": "object",
+  "properties": {
+    "absoluteTolerance": {
+      "title": "Absolute tolerance",
+      "default": 1e-09,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "relativeTolerance": {
+      "title": "Relative tolerance",
+      "default": 0.001,
+      "minimum": 0,
+      "type": "number"
+    },
+    "orderOfAccuracy": {
+      "title": "Order of accuracy",
+      "default": 2,
+      "const": 2,
+      "type": "integer"
+    },
+    "CFLMultiplier": {
+      "title": "CFL Multiplier",
+      "default": 1.0,
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "updateJacobianFrequency": {
+      "title": "Update jacobian frequency",
+      "default": 1,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "maxForceJacUpdatePhysicalSteps": {
+      "title": "Max force JAC update physical steps",
+      "default": 0,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "modelType": {
+      "title": "Model type",
+      "default": "HeatEquation",
+      "const": "HeatEquation",
+      "type": "string"
+    },
+    "equationEvalFrequency": {
+      "title": "Equation eval frequency",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "_addLinearSolver": {
+      "title": "Linear solver",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "additionalProperties": false,
+  "dependencies": {
+    "_addLinearSolver": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": true,
+              "const": true,
+              "type": "boolean"
+            },
+            "linearSolver": {
+              "title": "Linear solver",
+              "type": "object",
+              "properties": {
+                "maxIterations": {
+                  "title": "Max iterations",
+                  "default": 50,
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                "absoluteTolerance": {
+                  "title": "Absolute tolerance",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "relativeTolerance": {
+                  "title": "Relative tolerance",
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "_addLinearSolver": {
+              "default": false,
+              "const": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

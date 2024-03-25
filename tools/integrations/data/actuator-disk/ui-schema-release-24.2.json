@@ -1,0 +1,16 @@
+{
+  "axisThrust": {
+    "ui:widget": "vector3"
+  },
+  "center": {
+    "ui:widget": "vector3"
+  },
+  "ui:options": {
+    "addable": false,
+    "orderable": false,
+    "removable": false
+  },
+  "ui:submitButtonOptions": {
+    "norender": true
+  }
+}
