@@ -81,6 +81,7 @@ class _Freestream(Flow360BaseModel):
             "velocityRef": ("field", "unitInput"),
         }
         root_property = "properties/freestream/anyOf"
+        optional_objects = ["anyOf/properties/turbulenceQuantities"]
 
 
 class _TurbulenceModelSolver(Flow360BaseModel):
@@ -89,9 +90,9 @@ class _TurbulenceModelSolver(Flow360BaseModel):
     )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["modelType", "*", "linearSolverConfig"]
-        optional_objects = ["anyOf/properties/linearSolverConfig"]
-        exclude_fields = ["anyOf/properties/linearSolverConfig/default"]
+        field_order = ["modelType", "*", "linearSolver"]
+        optional_objects = ["anyOf/properties/linearSolver"]
+        exclude_fields = ["anyOf/properties/linearSolver/default"]
         root_property = "properties/solver/anyOf"
 
 
@@ -226,23 +227,23 @@ class _Geometry(fl.Geometry):
 
 class _NavierStokesSolver(fl.NavierStokesSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolverConfig"]
-        optional_objects = ["properties/linearSolverConfig"]
-        exclude_fields = ["properties/linearSolverConfig/default"]
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["properties/linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class _TransitionModelSolver(fl.TransitionModelSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["modelType", "*", "linearSolverConfig"]
-        optional_objects = ["properties/linearSolverConfig"]
-        exclude_fields = ["properties/linearSolverConfig/default"]
+        field_order = ["modelType", "*", "linearSolver"]
+        optional_objects = ["properties/linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class _HeatEquationSolver(fl.HeatEquationSolver):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
-        field_order = ["*", "linearSolverConfig"]
-        optional_objects = ["properties/linearSolverConfig"]
-        exclude_fields = ["properties/linearSolverConfig/default"]
+        field_order = ["*", "linearSolver"]
+        optional_objects = ["properties/linearSolver"]
+        exclude_fields = ["properties/linearSolver/default"]
 
 
 class _SlidingInterface(fl.SlidingInterface):
@@ -250,7 +251,7 @@ class _SlidingInterface(fl.SlidingInterface):
         field_properties = {"centerOfRotation": ("widget", "vector3")}
 
 
-class _PorousMedium(fl.PorousMedium):
+class _PorousMediumBox(fl.PorousMediumBox):
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         field_properties = {
             "DarcyCoefficient": ("widget", "vector3"),
@@ -354,14 +355,71 @@ class _IsoSurfaceOutput(fl.IsoSurfaceOutput):
 
 
 class _Boundaries(fl.Boundaries):
+
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
+        optional_objects = ["anyOf/properties/turbulenceQuantities"]
         field_properties = {
-            "additionalProperties/velocity/value": ("widget", "vector3"),
-            "additionalProperties/Velocity/value": ("widget", "vector3"),
-            "additionalProperties/velocityDirection/value": ("widget", "vector3"),
-            "additionalProperties/translationVector": ("widget", "vector3"),
-            "additionalProperties/axisOfRotation": ("widget", "vector3"),
+            "Velocity/value": ("widget", "vector3"),
+            "velocityDirection/value": ("widget", "vector3"),
+            "translationVector": ("widget", "vector3"),
+            "axisOfRotation": ("widget", "vector3"),
         }
+
+    @classmethod
+    def _mark_const(cls, dictionary, const_key):
+        if not isinstance(dictionary, dict):
+            raise ValueError("Input must be a dictionary")
+
+        for key, value in list(dictionary.items()):
+            if key == const_key:
+                dictionary[key]["const"] = True
+            elif isinstance(value, dict):
+                cls._mark_const(value, const_key)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        cls._mark_const(item, const_key)
+
+        return dictionary
+
+    @classmethod
+    def flow360_schema(cls):
+        root_schema = {"anyOf": []}
+
+        models = cls.get_subtypes()
+
+        for model in models:
+            schema = model.flow360_schema()
+            root_schema["anyOf"].append(schema)
+
+        if cls.SchemaConfig.displayed is not None:
+            root_schema["displayed"] = cls.SchemaConfig.displayed
+        for item in cls.SchemaConfig.exclude_fields:
+            cls._schema_remove(root_schema, item.split("/"))
+        for item in cls.SchemaConfig.optional_objects:
+            cls._schema_generate_optional(root_schema, item.split("/"))
+        if cls.SchemaConfig.swap_fields is not None:
+            for key, value in cls.SchemaConfig.swap_fields.items():
+                value["title"] = root_schema["properties"][key]["title"]
+                displayed = root_schema["properties"][key].get("displayed")
+                if displayed is not None:
+                    value["displayed"] = displayed
+                root_schema["properties"][key] = value
+        cls._schema_swap_key(root_schema, "title", "displayed")
+        cls._schema_clean(root_schema)
+        cls._mark_const(root_schema, "name")
+
+        definitions = {}
+
+        cls._collect_all_definitions(root_schema, definitions)
+
+        if definitions:
+            root_schema["definitions"] = definitions
+
+        root_schema["type"] = "object"
+        root_schema["additionalProperties"] = False
+
+        return root_schema
 
 
 write_schemas(_Geometry, "geometry")
@@ -370,7 +428,7 @@ write_schemas(_TransitionModelSolver, "transition-model")
 write_schemas(_HeatEquationSolver, "heat-equation")
 write_schemas(_TurbulenceModelSolver, "turbulence-model")
 write_schemas(_SlidingInterface, "sliding-interface")
-write_schemas(_PorousMedium, "porous-media")
+write_schemas(_PorousMediumBox, "porous-media")
 write_schemas(_ActuatorDisk, "actuator-disk")
 write_schemas(_BETDisk, "bet-disk")
 write_schemas(_VolumeOutput, "volume-output")

@@ -1240,6 +1240,22 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
                 schema = model.flow360_schema()
                 root_schema["additionalProperties"]["oneOf"].append(schema)
 
+        if cls.SchemaConfig.displayed is not None:
+            root_schema["displayed"] = cls.SchemaConfig.displayed
+        for item in cls.SchemaConfig.exclude_fields:
+            cls._schema_remove(root_schema, item.split("/"))
+        for item in cls.SchemaConfig.optional_objects:
+            cls._schema_generate_optional(root_schema, item.split("/"))
+        if cls.SchemaConfig.swap_fields is not None:
+            for key, value in cls.SchemaConfig.swap_fields.items():
+                value["title"] = root_schema["properties"][key]["title"]
+                displayed = root_schema["properties"][key].get("displayed")
+                if displayed is not None:
+                    value["displayed"] = displayed
+                root_schema["properties"][key] = value
+        cls._schema_swap_key(root_schema, "title", "displayed")
+        cls._schema_clean(root_schema)
+
         definitions = {}
 
         cls._collect_all_definitions(root_schema, definitions)

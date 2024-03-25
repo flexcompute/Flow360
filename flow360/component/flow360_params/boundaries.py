@@ -102,7 +102,7 @@ class HeatFluxWall(Boundary):
 
     type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
-    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="velocity")
+    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
 
 class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
