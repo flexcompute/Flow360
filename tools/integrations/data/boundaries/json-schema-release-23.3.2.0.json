@@ -13,53 +13,34 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "Velocity": {
           "title": "Velocity",
-          "anyOf": [
-            {
-              "properties": {
-                "value": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "strictType": {
-                    "type": "vector3"
-                  }
-                },
-                "units": {
-                  "type": "string",
-                  "dimension": "velocity",
-                  "enum": [
-                    "m/s",
-                    "cm/s",
-                    "ft/s",
-                    "flow360_velocity_unit"
-                  ]
-                }
-              }
-            },
-            {
+          "properties": {
+            "value": {
               "type": "array",
+              "items": {
+                "type": "number"
+              },
               "minItems": 3,
               "maxItems": 3,
-              "items": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                }
+              "strictType": {
+                "type": "vector3"
+              }
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
               ]
             }
-          ]
+          },
+          "type": "object"
         },
         "velocityType": {
           "title": "Velocity type",
@@ -86,7 +67,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -104,53 +85,34 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "Velocity": {
           "title": "Velocity",
-          "anyOf": [
-            {
-              "properties": {
-                "value": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "strictType": {
-                    "type": "vector3"
-                  }
-                },
-                "units": {
-                  "type": "string",
-                  "dimension": "velocity",
-                  "enum": [
-                    "m/s",
-                    "cm/s",
-                    "ft/s",
-                    "flow360_velocity_unit"
-                  ]
-                }
-              }
-            },
-            {
+          "properties": {
+            "value": {
               "type": "array",
+              "items": {
+                "type": "number"
+              },
               "minItems": 3,
               "maxItems": 3,
-              "items": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                }
+              "strictType": {
+                "type": "vector3"
+              }
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
               ]
             }
-          ]
+          },
+          "type": "object"
         },
         "velocityType": {
           "title": "Velocity type",
@@ -177,7 +139,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "Temperature": {
           "title": "Temperature",
@@ -195,49 +157,30 @@
         },
         "Velocity": {
           "title": "Velocity",
-          "anyOf": [
-            {
-              "properties": {
-                "value": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "strictType": {
-                    "type": "vector3"
-                  }
-                },
-                "units": {
-                  "type": "string",
-                  "dimension": "velocity",
-                  "enum": [
-                    "m/s",
-                    "cm/s",
-                    "ft/s",
-                    "flow360_velocity_unit"
-                  ]
-                }
-              }
-            },
-            {
+          "properties": {
+            "value": {
               "type": "array",
+              "items": {
+                "type": "number"
+              },
               "minItems": 3,
               "maxItems": 3,
-              "items": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                }
+              "strictType": {
+                "type": "vector3"
+              }
+            },
+            "units": {
+              "type": "string",
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s",
+                "flow360_velocity_unit"
               ]
             }
-          ]
+          },
+          "type": "object"
         }
       },
       "required": [
@@ -258,7 +201,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "staticPressureRatio": {
           "title": "Static pressure ratio",
@@ -284,7 +227,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "MachNumber": {
           "title": "Mach number",
@@ -310,7 +253,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "totalPressureRatio": {
           "title": "Total pressure ratio",
@@ -329,40 +272,20 @@
         },
         "velocityDirection": {
           "title": "Velocity direction",
-          "anyOf": [
+          "type": "array",
+          "items": [
             {
-              "type": "array",
-              "items": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "minItems": 3,
-              "maxItems": 3
+              "type": "number"
             },
             {
-              "type": "array",
-              "minItems": 3,
-              "maxItems": 3,
-              "items": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string"
-                }
-              ]
+              "type": "number"
+            },
+            {
+              "type": "number"
             }
-          ]
+          ],
+          "minItems": 3,
+          "maxItems": 3
         }
       },
       "required": [
@@ -384,7 +307,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -402,7 +325,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -420,7 +343,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "massFlowRate": {
           "title": "Mass flow rate",
@@ -446,7 +369,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "massFlowRate": {
           "title": "Mass flow rate",
@@ -472,7 +395,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "Temperature": {
           "title": "Temperature",
@@ -507,7 +430,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -525,7 +448,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "pairedPatchName": {
           "title": "Paired patch name",
@@ -564,7 +487,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         },
         "pairedPatchName": {
           "title": "Paired patch name",
@@ -607,7 +530,7 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "const": true
+          "readOnly": true
         }
       },
       "additionalProperties": false

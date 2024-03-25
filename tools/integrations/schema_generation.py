@@ -410,9 +410,13 @@ class _Boundaries(fl.Boundaries):
             raise ValueError("Input must be a dictionary")
 
         for key, value in list(dictionary.items()):
-            if key == "Velocity" or key == "velocityDirection":
+            if key == "Velocity":
                 dictionary[key].update(value["anyOf"][0])
                 dictionary[key]["type"] = "object"
+                del value["anyOf"]
+            if key == "velocityDirection":
+                dictionary[key].update(value["anyOf"][0])
+                dictionary[key]["type"] = "array"
                 del value["anyOf"]
             elif isinstance(value, dict):
                 cls._modify_boundary_types(value)

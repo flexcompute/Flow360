@@ -1,8 +1,6 @@
 {
   "Velocity": {
-    "value": {
-      "ui:widget": "vector3"
-    }
+    "ui:field": "unitInput"
   },
   "axisOfRotation": {
     "ui:widget": "vector3"
@@ -19,8 +17,6 @@
     "norender": true
   },
   "velocityDirection": {
-    "value": {
-      "ui:widget": "vector3"
-    }
+    "ui:widget": "vector3"
   }
 }

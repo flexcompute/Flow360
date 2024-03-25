@@ -18,13 +18,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "title": "Animated",
-          "const": -1
+          "exclusiveMinimum": 0,
+          "title": "Animated"
         },
         {
           "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Static"
+          "title": "Static",
+          "const": -1
         }
       ]
     },
@@ -44,13 +44,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "title": "Animated",
-          "const": -1
+          "exclusiveMinimum": 0,
+          "title": "Animated"
         },
         {
           "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Static"
+          "title": "Static",
+          "const": -1
         }
       ]
     },
@@ -65,11 +65,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "const": -1
+          "minimum": 0,
+          "title": "From step"
         },
         {
           "type": "integer",
-          "minimum": 0
+          "title": "No averaging",
+          "const": -1
         }
       ]
     },
