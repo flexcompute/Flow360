@@ -699,10 +699,12 @@
           "anyOf": [
             {
               "type": "number",
-              "exclusiveMinimum": 0
+              "exclusiveMinimum": 0,
+              "title": "Reynolds"
             },
             {
               "type": "string",
+              "title": "Reynolds = inf",
               "const": "inf"
             }
           ]
@@ -711,12 +713,14 @@
           "title": "Temperature [K]",
           "anyOf": [
             {
-              "type": "integer",
-              "const": -1
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "title": "Temperature [K]"
             },
             {
-              "type": "number",
-              "exclusiveMinimum": 0
+              "type": "integer",
+              "title": "Constant temperature",
+              "const": -1
             }
           ]
         },
