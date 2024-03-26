@@ -1,5 +1,5 @@
 {
-  "title": "Porous medium",
+  "title": "Porous medium box",
   "type": "object",
   "properties": {
     "DarcyCoefficient": {
