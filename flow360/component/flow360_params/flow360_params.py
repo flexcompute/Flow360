@@ -1722,7 +1722,7 @@ class Flow360ParamsLegacy(LegacyModel):
     freestream: Optional[FreestreamLegacy] = pd.Field()
     time_stepping: Optional[TimeSteppingLegacy] = pd.Field(alias="timeStepping")
     navier_stokes_solver: Optional[NavierStokesSolverLegacy] = pd.Field(alias="navierStokesSolver")
-    turbulence_model_solver: Optional[Union[NoneSolver, TurbulenceModelSolverLegacy]] = pd.Field(
+    turbulence_model_solver: Optional[TurbulenceModelSolverLegacy] = pd.Field(
         alias="turbulenceModelSolver"
     )
     transition_model_solver: Optional[TransitionModelSolverLegacy] = pd.Field(

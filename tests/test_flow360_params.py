@@ -346,7 +346,10 @@ def test_params_with_units_consistency():
             fluid_properties=fl.air,
             freestream=fl.FreestreamFromVelocity(velocity=286),
             time_stepping=fl.UnsteadyTimeStepping(
-                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+                max_pseudo_steps=500,
+                CFL=fl.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=20,
             ),
             boundaries={},
         )
@@ -365,7 +368,10 @@ def test_params_with_units_consistency():
             fluid_properties=fl.air,
             freestream=fl.FreestreamFromVelocity(velocity=286),
             time_stepping=fl.UnsteadyTimeStepping(
-                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+                max_pseudo_steps=500,
+                CFL=fl.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
             boundaries={},
         )
@@ -399,7 +405,10 @@ def test_params_with_units_consistency():
             ),
             freestream=fl.FreestreamFromVelocity(velocity=286 * u.m / u.s),
             time_stepping=fl.UnsteadyTimeStepping(
-                max_pseudo_steps=500, CFL=fl.AdaptiveCFL(), time_step_size=1.2 * u.s
+                max_pseudo_steps=500,
+                CFL=fl.AdaptiveCFL(),
+                time_step_size=1.2 * u.s,
+                physical_steps=10,
             ),
             boundaries={},
         )

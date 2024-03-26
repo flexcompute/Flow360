@@ -60,7 +60,7 @@ params_no_unit_system = {
 }
 
 params_no_hash = {
-    "version": "24.2.0b2",
+    "version": "24.2.0",
     "unitSystem": {"name": "SI"},
     "boundaries": {},
     "geometry": {
@@ -73,7 +73,7 @@ params_no_hash = {
 }
 
 params_wrong_hash = {
-    "version": "24.2.0b2",
+    "version": "24.2.0",
     "unitSystem": {"name": "SI"},
     "boundaries": {},
     "geometry": {

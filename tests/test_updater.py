@@ -4,6 +4,13 @@ import tempfile
 import pytest
 
 import flow360 as fl
+from flow360.component.flow360_params.updater import (
+    UPDATE_MAP,
+    _find_update_path,
+    _no_update,
+    _version_match,
+)
+from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
 
 
 @pytest.fixture(autouse=True)
@@ -125,6 +132,7 @@ def test_updater_from_files():
         "case_unsteady.json",
         "case_customDynamics1.json",
         "case_HeatTransfer.json",
+        "case_20.json",
     ]
 
     for file in files:
@@ -163,3 +171,54 @@ def test_turbulence_updater():
     params = fl.Flow360Params(temp_file.name)
 
     assert params.boundaries["2"].turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
+
+    
+def test_updater_map():
+    version_from = "1.2.3"
+    version_to = "2.3.4"
+    update_map = [
+        ("1.2.3", "1.2.4", _no_update),
+        ("1.2.4", "2.3.4", _no_update),
+    ]
+
+    with pytest.raises(Flow360NotImplementedError):
+        update_path = _find_update_path(version_from=version_from, version_to=version_to)
+
+    update_path = _find_update_path(
+        version_from=version_from, version_to=version_to, update_map=update_map
+    )
+    assert len(update_path) == 2
+
+    update_map = [
+        ("1.2.*", "2.3.0", _no_update),
+        ("2.3.*", "2.3.*", _no_update),
+    ]
+
+    update_path = _find_update_path(
+        version_from=version_from, version_to=version_to, update_map=update_map
+    )
+    assert len(update_path) == 2
+
+    update_map = [
+        ("1.2.*", "2.3.0", _no_update),
+        ("2.3.*", "2.3.3", _no_update),
+        ("2.3.3", "2.3.4", _no_update),
+    ]
+    update_path = _find_update_path(
+        version_from=version_from, version_to=version_to, update_map=update_map
+    )
+    assert len(update_path) == 3
+
+    update_map = [
+        ("1.2.*", "2.2.0", _no_update),
+        ("2.2.*", "2.3.3", _no_update),
+        ("2.3.3", "2.3.4", _no_update),
+    ]
+
+    update_path = _find_update_path(
+        version_from="1.2.3b17", version_to=version_to, update_map=update_map
+    )
+    assert len(update_path) == 3
+
+    update_path = _find_update_path(version_from=UPDATE_MAP[0][0], version_to=UPDATE_MAP[-1][1])
+    update_path = _find_update_path(version_from=UPDATE_MAP[0][0], version_to=fl.__version__)
