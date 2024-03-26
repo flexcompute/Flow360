@@ -1,4 +1,7 @@
 {
+  "timeStepSize": {
+    "ui:field": "unitInput"
+  },
   "ui:options": {
     "addable": false,
     "orderable": false,

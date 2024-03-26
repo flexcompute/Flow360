@@ -108,7 +108,7 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .turbulence_quantities import TurbulenceQuantitiesType
+from .turbulence_quantities import TurbulenceQuantities, TurbulenceQuantitiesType
 from .unit_system import (
     AngularVelocityType,
     AreaType,
@@ -539,7 +539,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-        alias="turbulenceQuantities"
+        alias="turbulenceQuantities", discriminator="model_type"
     )
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
@@ -582,10 +582,12 @@ class FreestreamFromMachReynolds(FreestreamBase):
     Mach: PositiveFloat = pd.Field(displayed="Mach number")
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     Reynolds: Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]] = pd.Field(
-        displayed="Reynolds number"
+        displayed="Reynolds number", options=["Reynolds", "Reynolds = inf"]
     )
-    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(
-        alias="Temperature", displayed="Temperature [K]"
+    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
+        alias="Temperature",
+        displayed="Temperature [K]",
+        options=["Temperature [K]", "Constant temperature"],
     )
 
     # pylint: disable=arguments-differ, unused-argument
@@ -1604,6 +1606,38 @@ class BoundariesLegacy(Boundaries):
 
     def __init__(self, *args, **kwargs):
         with Flow360UnitSystem(verbose=False):
+            # Try to add discriminators to every
+            # boundary that has turbulence quantities,
+            class _TurbulenceQuantityTempModel(pd.BaseModel):
+                field: TurbulenceQuantitiesType = pd.Field(discriminator="model_type")
+
+            options = [
+                "TurbulentViscosityRatio",
+                "TurbulentKineticEnergy",
+                "TurbulentIntensity",
+                "TurbulentLengthScale",
+                "ModifiedTurbulentViscosityRatio",
+                "ModifiedTurbulentViscosity",
+                "SpecificDissipationRateAndTurbulentKineticEnergy",
+                "TurbulentViscosityRatioAndTurbulentKineticEnergy",
+                "TurbulentLengthScaleAndTurbulentKineticEnergy",
+                "TurbulentIntensityAndSpecificDissipationRate",
+                "TurbulentIntensityAndTurbulentViscosityRatio",
+                "TurbulentIntensityAndTurbulentLengthScale",
+                "SpecificDissipationRateAndTurbulentViscosityRatio",
+                "SpecificDissipationRateAndTurbulentLengthScale",
+                "TurbulentViscosityRatioAndTurbulentLengthScale",
+            ]
+
+            for value in kwargs.values():
+                tq = value.get("turbulenceQuantities")
+                if tq is not None and tq.get("modelType") is None:
+                    model = {"field": tq}
+                    model = try_add_discriminator(
+                        model, "field/modelType", options, _TurbulenceQuantityTempModel
+                    )
+                    value["turbulenceQuantities"] = model["field"]
+
             super().__init__(*args, **kwargs)
 
 

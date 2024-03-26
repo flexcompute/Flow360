@@ -18,13 +18,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "title": "Static",
-          "const": -1
+          "exclusiveMinimum": 0,
+          "title": "Static"
         },
         {
           "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
+          "title": "Animated",
+          "const": -1
         }
       ]
     },
@@ -44,13 +44,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "title": "Static",
-          "const": -1
+          "exclusiveMinimum": 0,
+          "title": "Static"
         },
         {
           "type": "integer",
-          "exclusiveMinimum": 0,
-          "title": "Animated"
+          "title": "Animated",
+          "const": -1
         }
       ]
     },
@@ -65,11 +65,13 @@
       "anyOf": [
         {
           "type": "integer",
-          "const": -1
+          "minimum": 0,
+          "title": "From step"
         },
         {
           "type": "integer",
-          "minimum": 0
+          "title": "No averaging",
+          "const": -1
         }
       ]
     },
@@ -107,10 +109,8 @@
           "NumericalDissipationFactor sensor",
           "Heat equation residual",
           "Velocity with respect to non-inertial frame",
-          "Viscous stress coefficient vector",
+          "Skin friction coefficient vector",
           "Magnitude of CfVec",
-          "Magnitude of CfVec normal to the wall",
-          "Magnitude of CfVec tangent to the wall",
           "Non-dimensional heat flux",
           "Wall normals",
           "Spalart-Allmaras variable",
@@ -154,10 +154,8 @@
                 "NumericalDissipationFactor sensor",
                 "Heat equation residual",
                 "Velocity with respect to non-inertial frame",
-                "Viscous stress coefficient vector",
+                "Skin friction coefficient vector",
                 "Magnitude of CfVec",
-                "Magnitude of CfVec normal to the wall",
-                "Magnitude of CfVec tangent to the wall",
                 "Non-dimensional heat flux",
                 "Wall normals",
                 "Spalart-Allmaras variable",

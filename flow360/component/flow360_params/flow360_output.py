@@ -135,7 +135,7 @@ class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
         alias="animationFrequencyTimeAverageOffset", default=0
     )
     start_average_integration_step: Optional[NonNegativeAndNegOneInt] = pd.Field(
-        alias="startAverageIntegrationStep", default=-1
+        alias="startAverageIntegrationStep", default=-1, options=["From step", "No averaging"]
     )
 
     # Temporarily disabled until solver-side support for new animation format is introduced

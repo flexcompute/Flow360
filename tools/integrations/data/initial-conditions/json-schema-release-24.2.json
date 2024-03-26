@@ -26,6 +26,13 @@
           "const": "expression",
           "type": "string"
         },
+        "constants": {
+          "title": "Constants",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "rho": {
           "title": "rho [non-dim]",
           "type": "string"

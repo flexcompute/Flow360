@@ -4,7 +4,7 @@ Turbulence quantities parameters
 
 # pylint: disable=unused-import
 from abc import ABCMeta
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -18,6 +18,9 @@ class TurbulentKineticEnergy(Flow360BaseModel):
         Turbulent kinetic energy. Applicable only when using SST model.
     """
 
+    model_type: Literal["TurbulentKineticEnergy"] = pd.Field(
+        "TurbulentKineticEnergy", alias="modelType", const=True
+    )
     turbulent_kinetic_energy: Optional[NonNegativeFloat] = pd.Field(alias="turbulentKineticEnergy")
 
 
@@ -30,6 +33,9 @@ class TurbulentIntensity(Flow360BaseModel):
         Note the use of the freestream velocity U_ref instead of C_inf.
     """
 
+    model_type: Literal["TurbulentIntensity"] = pd.Field(
+        "TurbulentIntensity", alias="modelType", const=True
+    )
     turbulent_intensity: Optional[NonNegativeFloat] = pd.Field(alias="turbulentIntensity")
 
 
@@ -39,6 +45,9 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
         Turbulent specific dissipation rate. Applicable only when using SST model.
     """
 
+    model_type: Literal["SpecificDissipationRate"] = pd.Field(
+        "SpecificDissipationRate", alias="modelType", const=True
+    )
     specific_dissipation_rate: Optional[NonNegativeFloat] = pd.Field(
         alias="specificDissipationRate"
     )
@@ -50,6 +59,9 @@ class TurbulentViscosityRatio(Flow360BaseModel):
         The ratio of turbulent eddy viscosity over the freestream viscosity. Applicable for both SA and SST model.
     """
 
+    model_type: Literal["TurbulentViscosityRatio"] = pd.Field(
+        "TurbulentViscosityRatio", alias="modelType", const=True
+    )
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
@@ -65,6 +77,9 @@ class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
         Applicable only when using SST model.
     """
 
+    model_type: Literal["TurbulentLengthScale"] = pd.Field(
+        "TurbulentLengthScale", alias="modelType", const=True
+    )
     turbulent_length_scale: Optional[PositiveFloat] = pd.Field(alias="turbulentLengthScale")
 
 
@@ -75,6 +90,9 @@ class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
         Applicable only when using SA model.
     """
 
+    model_type: Literal["ModifiedTurbulentViscosityRatio"] = pd.Field(
+        "ModifiedTurbulentViscosityRatio", alias="modelType", const=True
+    )
     modified_turbulent_viscosity_ratio: Optional[PositiveFloat] = pd.Field(
         alias="modifiedTurbulentViscosityRatio"
     )
@@ -86,6 +104,9 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
         The modified turbulent eddy viscosity (SA). Applicable only when using SA model.
     """
 
+    model_type: Literal["ModifiedTurbulentViscosity"] = pd.Field(
+        "ModifiedTurbulentViscosity", alias="modelType", const=True
+    )
     modified_turbulent_viscosity: Optional[PositiveFloat] = pd.Field(
         alias="modifiedTurbulentViscosity"
     )
@@ -95,45 +116,63 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
 class SpecificDissipationRateAndTurbulentKineticEnergy(
     _SpecificDissipationRate, TurbulentKineticEnergy
 ):
-    pass
+    model_type: Literal["SpecificDissipationRateAndTurbulentKineticEnergy"] = pd.Field(
+        "SpecificDissipationRateAndTurbulentKineticEnergy", alias="modelType", const=True
+    )
 
 
 class TurbulentViscosityRatioAndTurbulentKineticEnergy(
     TurbulentViscosityRatio, TurbulentKineticEnergy
 ):
-    pass
+    model_type: Literal["TurbulentViscosityRatioAndTurbulentKineticEnergy"] = pd.Field(
+        "TurbulentViscosityRatioAndTurbulentKineticEnergy", alias="modelType", const=True
+    )
 
 
 class TurbulentLengthScaleAndTurbulentKineticEnergy(TurbulentLengthScale, TurbulentKineticEnergy):
-    pass
+    model_type: Literal["TurbulentLengthScaleAndTurbulentKineticEnergy"] = pd.Field(
+        "TurbulentLengthScaleAndTurbulentKineticEnergy", alias="modelType", const=True
+    )
 
 
 class TurbulentIntensityAndSpecificDissipationRate(TurbulentIntensity, _SpecificDissipationRate):
-    pass
+    model_type: Literal["TurbulentIntensityAndSpecificDissipationRate"] = pd.Field(
+        "TurbulentIntensityAndSpecificDissipationRate", alias="modelType", const=True
+    )
 
 
 class TurbulentIntensityAndTurbulentViscosityRatio(TurbulentIntensity, TurbulentViscosityRatio):
-    pass
+    model_type: Literal["TurbulentIntensityAndTurbulentViscosityRatio"] = pd.Field(
+        "TurbulentIntensityAndTurbulentViscosityRatio", alias="modelType", const=True
+    )
 
 
 class TurbulentIntensityAndTurbulentLengthScale(TurbulentIntensity, TurbulentLengthScale):
-    pass
+    model_type: Literal["TurbulentIntensityAndTurbulentLengthScale"] = pd.Field(
+        "TurbulentIntensityAndTurbulentLengthScale", alias="modelType", const=True
+    )
 
 
 class SpecificDissipationRateAndTurbulentViscosityRatio(
     _SpecificDissipationRate, TurbulentViscosityRatio
 ):
-    pass
+    model_type: Literal["SpecificDissipationRateAndTurbulentViscosityRatio"] = pd.Field(
+        "SpecificDissipationRateAndTurbulentViscosityRatio", alias="modelType", const=True
+    )
 
 
 class SpecificDissipationRateAndTurbulentLengthScale(
     _SpecificDissipationRate, TurbulentLengthScale
 ):
-    pass
+    model_type: Literal["SpecificDissipationRateAndTurbulentLengthScale"] = pd.Field(
+        "SpecificDissipationRateAndTurbulentLengthScale", alias="modelType", const=True
+    )
 
 
 class TurbulentViscosityRatioAndTurbulentLengthScale(TurbulentViscosityRatio, TurbulentLengthScale):
-    pass
+    model_type: Literal["TurbulentViscosityRatioAndTurbulentLengthScale"] = pd.Field(
+        "TurbulentViscosityRatioAndTurbulentLengthScale", alias="modelType", const=True
+    )
 
 
 # pylint: enable=missing-class-docstring

@@ -237,6 +237,10 @@
           }
         }
       },
+      "required": [
+        "physicalSteps",
+        "timeStepSize"
+      ],
       "additionalProperties": false
     }
   ]

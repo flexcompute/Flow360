@@ -15,6 +15,10 @@
         },
         "density": {
           "title": "Density",
+          "default": {
+            "value": 1.225,
+            "units": "kg/m**3"
+          },
           "properties": {
             "value": {
               "type": "number",
@@ -34,6 +38,10 @@
         },
         "temperature": {
           "title": "Temperature",
+          "default": {
+            "value": 288.15,
+            "units": "K"
+          },
           "properties": {
             "value": {
               "type": "number"
@@ -50,10 +58,6 @@
           }
         }
       },
-      "required": [
-        "density",
-        "temperature"
-      ],
       "additionalProperties": false
     },
     {
@@ -68,6 +72,10 @@
         },
         "pressure": {
           "title": "Pressure",
+          "default": {
+            "value": 101325,
+            "units": "Pa"
+          },
           "properties": {
             "value": {
               "type": "number",
@@ -104,7 +112,6 @@
         }
       },
       "required": [
-        "pressure",
         "temperature"
       ],
       "additionalProperties": false

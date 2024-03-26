@@ -109,41 +109,74 @@
           },
           "additionalProperties": false
         },
-        "linearSolver": {
-          "title": "Linear solver config",
-          "default": {
-            "max_iterations": 20,
-            "absolute_tolerance": null,
-            "relative_tolerance": null
-          },
-          "type": "object",
-          "properties": {
-            "maxIterations": {
-              "title": "Max iterations",
-              "default": 50,
-              "exclusiveMinimum": 0,
-              "type": "integer"
-            },
-            "absoluteTolerance": {
-              "title": "Absolute tolerance",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "relativeTolerance": {
-              "title": "Relative tolerance",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
         "rotationCorrection": {
           "title": "Rotation correction",
           "default": false,
           "type": "boolean"
+        },
+        "_addLinearSolver": {
+          "title": "Linear solver",
+          "type": "boolean",
+          "default": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependencies": {
+        "_addLinearSolver": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "linearSolver": {
+                  "title": "Linear solver config",
+                  "default": {
+                    "max_iterations": 20,
+                    "absolute_tolerance": null,
+                    "relative_tolerance": null
+                  },
+                  "type": "object",
+                  "properties": {
+                    "maxIterations": {
+                      "title": "Max iterations",
+                      "default": 50,
+                      "exclusiveMinimum": 0,
+                      "type": "integer"
+                    },
+                    "absoluteTolerance": {
+                      "title": "Absolute tolerance",
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "relativeTolerance": {
+                      "title": "Relative tolerance",
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
     },
     {
       "title": "kOmegaSST",
@@ -233,7 +266,7 @@
             "modelType": {
               "title": "Model type",
               "default": "kOmegaSSTConsts",
-              "const": " kOmegaSSTConsts",
+              "const": "kOmegaSSTConsts",
               "type": "string"
             },
             "C_DES1": {
@@ -263,36 +296,69 @@
           },
           "additionalProperties": false
         },
-        "linearSolver": {
-          "title": "Linear solver config",
-          "default": {
-            "max_iterations": 20,
-            "absolute_tolerance": null,
-            "relative_tolerance": null
-          },
-          "type": "object",
-          "properties": {
-            "maxIterations": {
-              "title": "Max iterations",
-              "default": 50,
-              "exclusiveMinimum": 0,
-              "type": "integer"
-            },
-            "absoluteTolerance": {
-              "title": "Absolute tolerance",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            },
-            "relativeTolerance": {
-              "title": "Relative tolerance",
-              "exclusiveMinimum": 0,
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
+        "_addLinearSolver": {
+          "title": "Linear solver",
+          "type": "boolean",
+          "default": false
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependencies": {
+        "_addLinearSolver": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": true,
+                  "const": true,
+                  "type": "boolean"
+                },
+                "linearSolver": {
+                  "title": "Linear solver config",
+                  "default": {
+                    "max_iterations": 20,
+                    "absolute_tolerance": null,
+                    "relative_tolerance": null
+                  },
+                  "type": "object",
+                  "properties": {
+                    "maxIterations": {
+                      "title": "Max iterations",
+                      "default": 50,
+                      "exclusiveMinimum": 0,
+                      "type": "integer"
+                    },
+                    "absoluteTolerance": {
+                      "title": "Absolute tolerance",
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    },
+                    "relativeTolerance": {
+                      "title": "Relative tolerance",
+                      "exclusiveMinimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "_addLinearSolver": {
+                  "default": false,
+                  "const": false,
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
     },
     {
       "title": "None",
