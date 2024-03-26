@@ -33,7 +33,7 @@ class BoundaryWithTurbulenceQuantities(Boundary, metaclass=ABCMeta):
     """Turbulence Quantities on Boundaries"""
 
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
-        alias="turbulenceQuantities"
+        alias="turbulenceQuantities", discriminator="model_type"
     )
 
 

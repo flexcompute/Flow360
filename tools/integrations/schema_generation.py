@@ -18,7 +18,11 @@ from flow360.component.flow360_params.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
 )
-from flow360.component.flow360_params.unit_system import PressureType, TemperatureType, DensityType
+from flow360.component.flow360_params.unit_system import (
+    DensityType,
+    PressureType,
+    TemperatureType,
+)
 from flow360.component.flow360_params.volume_zones import (
     ReferenceFrame,
     ReferenceFrameDynamic,
@@ -162,21 +166,12 @@ class _TimeStepping(Flow360BaseModel):
 
 
 class _AirDensityTemperature(fl.AirDensityTemperature):
-    density: DensityType.Positive = pd.Field(default={
-        "value": 1.225,
-        "units": "kg/m**3"
-    })
-    temperature: TemperatureType = pd.Field(default={
-        "value": 288.15,
-        "units": "K"
-    })
+    density: DensityType.Positive = pd.Field(default={"value": 1.225, "units": "kg/m**3"})
+    temperature: TemperatureType = pd.Field(default={"value": 288.15, "units": "K"})
 
 
 class _AirPressureTemperature(fl.AirPressureTemperature):
-    pressure: PressureType.Positive = pd.Field(default={
-        "value": 101325,
-        "units": "Pa"
-    })
+    pressure: PressureType.Positive = pd.Field(default={"value": 101325, "units": "Pa"})
 
 
 class _FluidProperties(Flow360BaseModel):

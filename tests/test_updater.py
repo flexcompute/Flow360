@@ -72,6 +72,41 @@ data = {
     },
 }
 
+data_turbulence = {
+    "geometry": {
+        "refArea": 1.0,
+        "momentCenter": [1, 2, 3],
+        "momentLength": [37.490908, 20.362493146213485, 37.490908],
+    },
+    "boundaries": {
+        "2": {
+            "type": "SubsonicInflow",
+            "name": "test",
+            "totalPressureRatio": 1.0,
+            "totalTemperatureRatio": 1.0,
+            "turbulenceQuantities": {"modifiedTurbulentViscosity": 1.0},
+        },
+    },
+    "timeStepping": {
+        "maxPseudoSteps": 500,
+        "timeStepSize": 408352.8069698554,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25,
+        },
+    },
+    "freestream": {
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "Mach": 0.8404497144189705,
+        "muRef": 4.292519319815164e-05,
+        "Temperature": 288.15,
+    },
+}
+
 
 def test_updater():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
@@ -119,3 +154,12 @@ def test_updater_with_comments():
     assert params.fluid_properties.density == 1.225
     assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
     assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
+
+
+def test_turbulence_updater():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(data_turbulence, temp_file)
+
+    params = fl.Flow360Params(temp_file.name)
+
+    assert params.boundaries["2"].turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
