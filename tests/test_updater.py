@@ -172,7 +172,7 @@ def test_turbulence_updater():
 
     assert params.boundaries["2"].turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
 
-    
+
 def test_updater_map():
     version_from = "1.2.3"
     version_to = "2.3.4"
