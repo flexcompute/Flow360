@@ -33,7 +33,9 @@ from .params_base import (
 )
 from .unit_system import Flow360UnitSystem, LengthType
 
-OutputFormat = Literal["paraview", "tecplot", "both", "paraview,tecplot"]
+OutputFormat = Literal[
+    "paraview", "tecplot", "both", "paraview,tecplot"
+]  # Removed "paraview,tecplot" during schema generation
 
 CommonFields = Literal[CommonFieldNames, CommonFieldNamesFull]
 SurfaceFields = Literal[SurfaceFieldNames, SurfaceFieldNamesFull]
@@ -67,6 +69,23 @@ def _distribute_shared_output_fields(solver_values: dict, item_names: str):
                     item.output_fields = []
                 if field not in item.output_fields:
                     item.output_fields.append(field)
+
+
+def _deduplicate_output_fields(solver_values: dict, item_names: str = None):
+    duplicate_outputs = [["solutionTurbulence", "kOmega"], ["solutionTurbulence", "nuHat"]]
+    for name_pair in duplicate_outputs:
+        if (
+            name_pair[0] in solver_values["output_fields"]
+            and name_pair[1] in solver_values["output_fields"]
+        ):
+            solver_values["output_fields"].remove(name_pair[1])
+        if item_names is not None and solver_values[item_names] is not None:
+            for name in solver_values[item_names].names():
+                item = solver_values[item_names][name]
+                if item.output_fields is None:
+                    continue
+                if name_pair[0] in item.output_fields and name_pair[1] in item.output_fields:
+                    item.output_fields.remove(name_pair[1])
 
 
 class AnimationSettings(Flow360BaseModel):
@@ -242,6 +261,7 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     def to_solver(self, params, **kwargs) -> SurfaceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        _deduplicate_output_fields(solver_values, "surfaces")
         # Add boundaries that are not listed into `surfaces` and applying shared fields.
         boundary_names = []
         for boundary_name in params.boundaries.names():
@@ -336,6 +356,7 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
     def to_solver(self, params, **kwargs) -> SliceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        _deduplicate_output_fields(solver_values, "slices")
         if solver_values["output_format"] == "both":
             solver_values["output_format"] = "paraview,tecplot"
         _distribute_shared_output_fields(solver_values, "slices")
@@ -365,6 +386,7 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     def to_solver(self, params, **kwargs) -> VolumeOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        _deduplicate_output_fields(solver_values)
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
         if solver_values["output_format"] == "both":
@@ -497,11 +519,9 @@ class MonitorOutput(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> MonitorOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        _deduplicate_output_fields(solver_values, "monitors")
         _distribute_shared_output_fields(solver_values, "monitors")
         return MonitorOutput(**solver_values)
-
-
-##############################
 
 
 class NoTypeMonitor(MonitorBase):
@@ -641,6 +661,7 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
+        _deduplicate_output_fields(solver_values, "iso_surfaces")
         if solver_values["output_format"] == "both":
             solver_values["output_format"] = "paraview,tecplot"
         _distribute_shared_output_fields(solver_values, "iso_surfaces")
