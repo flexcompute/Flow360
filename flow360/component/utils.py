@@ -15,6 +15,8 @@ from ..error_messages import shared_submit_warning
 from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
 
+import numpy
+
 
 # pylint: disable=redefined-builtin
 def is_valid_uuid(id, allow_none=False):
@@ -145,3 +147,30 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
         return None
+
+
+UNIT_VECTOR_NORM_TOLERANCE = 1e-6
+
+
+def checkUnitVector(vector: list):
+    magnitude = 0
+    for comp in vector:
+        magnitude += comp * comp
+    magnitude = numpy.sqrt(magnitude)
+    if numpy.abs(magnitude - 1.0) < UNIT_VECTOR_NORM_TOLERANCE:
+        return (True, magnitude)
+    return (False, magnitude)
+
+
+def normalizeVector(vector, name: str):
+    isUnitVector, vectorNorm = checkUnitVector(vector)
+    normalized_vector = [0, 0, 0]
+    if not isUnitVector:
+        if vectorNorm == 0:
+            raise ValueError("Zero vector found for {:s}".format(name))
+        for dim in range(0, 3):
+            print("vector[dim] - vectorNorm: ", vector[dim], vectorNorm)
+            normalized_vector[dim] = vector[dim] / vectorNorm
+        print("normalized_vector = ", normalized_vector)
+        return tuple(normalized_vector)
+    return vector

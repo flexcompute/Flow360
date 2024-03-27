@@ -36,6 +36,23 @@ def test_actuator_disk():
     compare_to_ref(ad, "../ref/case_params/actuator_disk/json.json")
     compare_to_ref(ad, "../ref/case_params/actuator_disk/yaml.yaml")
 
+    ad.axis_thrust = (1, 2, 5)
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            actuator_disks=[ad],
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(meshUnit=1),
+            boundaries={
+                "MyBC": fl.FreestreamBoundary(),
+            },
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(),
+        )
+        solver_params = params.to_solver()
+        assert (
+            abs(np.linalg.norm(np.array(solver_params.actuator_disks[0].axis_thrust)) - 1) < 1e-10
+        )
+
 
 def test_bet_disk():
     twist1 = BETDiskTwist(radius=0, twist=0)
@@ -70,7 +87,7 @@ def test_bet_disk():
         bet = BETDisk(
             rotation_direction_rule="leftHand",
             center_of_rotation=(0, 0, 0),
-            axis_of_rotation=(0, 1, 0),
+            axis_of_rotation=(1, 1, 0),
             number_of_blades=4,
             radius=0.5,
             omega=0.75,
@@ -105,5 +122,6 @@ def test_bet_disk():
             for coeff2D in polarItem.drag_coeffs:
                 for coeff1D in coeff2D:
                     assert coeff1D[0] == coeff1D[-1]
+        assert abs(np.linalg.norm(np.array(bet_disk.axis_of_rotation)) - 1) < 1e-10
 
     to_file_from_file_test(bet)

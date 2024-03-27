@@ -32,6 +32,7 @@ from .params_base import (
     _self_named_property_validator,
 )
 from .unit_system import Flow360UnitSystem, LengthType
+from ..utils import normalizeVector
 
 OutputFormat = Literal[
     "paraview", "tecplot", "both", "paraview,tecplot"
@@ -304,6 +305,7 @@ class Slice(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> Slice:
+        self.slice_normal = normalizeVector(self.slice_normal, "slice_normal")
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]

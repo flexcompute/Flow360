@@ -27,6 +27,8 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from tests.utils import array_equality_override, to_file_from_file_test
 
+import numpy as np
+
 assertions = unittest.TestCase("__init__")
 
 
@@ -269,11 +271,11 @@ def test_slice_output():
                 ],
                 slices={
                     "sliceName_1": flow360.Slice(
-                        slice_normal=[0, 1, 0],
+                        slice_normal=[5, 1, 0],
                         slice_origin=(0, 0.56413, 0) * u.flow360_length_unit,
                     ),
                     "sliceName_2": flow360.Slice(
-                        slice_normal=(0, 0, 1),
+                        slice_normal=(0, 1, 1),
                         slice_origin=(0, 0.56413, 0) * u.inch,
                         output_fields=["Mach"],
                     ),
@@ -294,6 +296,24 @@ def test_slice_output():
                 assert set(["Cp", "qcriterion", "solutionTurbulence"]) == set(
                     slice_item["output_fields"]
                 )
+            assert (
+                abs(
+                    np.linalg.norm(
+                        np.array(solver_params.slice_output.slices["sliceName_1"].slice_normal)
+                    )
+                    - 1
+                )
+                < 1e-10
+            )
+            assert (
+                abs(
+                    np.linalg.norm(
+                        np.array(solver_params.slice_output.slices["sliceName_2"].slice_normal)
+                    )
+                    - 1
+                )
+                < 1e-10
+            )
 
 
 def test_volume_output():

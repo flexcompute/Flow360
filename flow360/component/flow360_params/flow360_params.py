@@ -47,7 +47,7 @@ from ..types import (
     Size,
     Vector,
 )
-from ..utils import _get_value_or_none
+from ..utils import _get_value_or_none, normalizeVector
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -282,6 +282,11 @@ class ActuatorDisk(Flow360BaseModel):
     axis_thrust: Axis = pd.Field(alias="axisThrust", displayed="Axis thrust")
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ActuatorDisk:
+        self.axis_thrust = normalizeVector(self.axis_thrust, "ActuatorDisk->axis_thrust")
+        return super().to_solver(params, **kwargs)
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -973,6 +978,7 @@ class BETDisk(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BETDisk:
+        self.axis_of_rotation = normalizeVector(self.axis_of_rotation, "BETDisk->axis_of_rotation")
         """
         average the BET coefficient if the angle is effectively same
         """
