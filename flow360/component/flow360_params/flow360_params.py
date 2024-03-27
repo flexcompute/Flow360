@@ -1392,6 +1392,13 @@ class Flow360Params(Flow360BaseModel):
         """
         Add heat_equation_solver if it is not specified but HeatTransferVolumeZone is used.
         """
+        heat_solver = values.get("heat_equation_solver")
+        volume_zones = values.get("volume_zones")
+        if heat_solver is None and volume_zones is not None:
+            for zoneName in volume_zones.names():
+                if isinstance(volume_zones[zoneName], HeatTransferVolumeZone):
+                    values["heat_equation_solver"] = HeatEquationSolver()
+        return values
 
 
 class Flow360MeshParams(Flow360BaseModel):
