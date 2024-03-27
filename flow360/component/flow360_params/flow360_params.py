@@ -109,7 +109,11 @@ from .time_stepping import (
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .turbulence_quantities import TurbulenceQuantities, TurbulenceQuantitiesType, TurbulentViscosityRatio
+from .turbulence_quantities import (
+    TurbulenceQuantities,
+    TurbulenceQuantitiesType,
+    TurbulentViscosityRatio,
+)
 from .unit_system import (
     AngularVelocityType,
     AreaType,

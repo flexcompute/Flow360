@@ -127,7 +127,7 @@ class ReferenceFrameExpression(ReferenceFrameBase):
         """
         computes the derivatives
         """
-        #TODO: Pending
+        # TODO: Pending
         return super().to_solver(params, **kwargs)
 
 
