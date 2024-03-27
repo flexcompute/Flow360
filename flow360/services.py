@@ -342,6 +342,7 @@ def handle_case_submit(params_as_dict, unit_system_name):
     """
     unit_system = init_unit_system(unit_system_name)
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
+    params_as_dict = remove_properties_with_prefix(params_as_dict, "_temp")
     params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
 
     with unit_system:
