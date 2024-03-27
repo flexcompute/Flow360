@@ -286,8 +286,9 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
 
     unit_system = init_unit_system(unit_system_name)
 
-    # removing _add properties as these are only used in WebUI
+    # removing _add and _temp properties as these are only used in WebUI
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
+    params_as_dict = remove_properties_with_prefix(params_as_dict, "_temp")
     params_as_dict = remove_dimensioned_type_none_leaves(params_as_dict)
 
     params_as_dict["unitSystem"] = unit_system.dict()
