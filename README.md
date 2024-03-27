@@ -61,3 +61,17 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 3. ``isort .`` - sorts imports
 4. ``pylint flow360 --rcfile .pylintrc`` - checks code style
 5. ``pytest tests --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report
+
+## Documentation Requirements
+
+If you want to install the requirements to locally build the documentation you can run:
+
+```bash
+poetry install -E docs
+```
+
+Alternatively, you can also install the extra in any pip-controlled venv:
+
+```bash
+pip install -e .[docs]
+```
