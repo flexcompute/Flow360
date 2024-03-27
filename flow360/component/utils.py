@@ -7,6 +7,7 @@ import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
 
+import numpy
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
@@ -14,8 +15,6 @@ from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
 from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
-
-import numpy
 
 
 # pylint: disable=redefined-builtin
@@ -169,8 +168,6 @@ def normalizeVector(vector, name: str):
         if vectorNorm == 0:
             raise ValueError("Zero vector found for {:s}".format(name))
         for dim in range(0, 3):
-            print("vector[dim] - vectorNorm: ", vector[dim], vectorNorm)
             normalized_vector[dim] = vector[dim] / vectorNorm
-        print("normalized_vector = ", normalized_vector)
         return tuple(normalized_vector)
     return vector

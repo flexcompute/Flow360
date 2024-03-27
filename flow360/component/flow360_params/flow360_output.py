@@ -11,6 +11,7 @@ import pydantic as pd
 from pydantic import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
+from ..utils import normalizeVector
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -32,7 +33,6 @@ from .params_base import (
     _self_named_property_validator,
 )
 from .unit_system import Flow360UnitSystem, LengthType
-from ..utils import normalizeVector
 
 OutputFormat = Literal[
     "paraview", "tecplot", "both", "paraview,tecplot"

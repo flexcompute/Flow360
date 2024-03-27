@@ -25,7 +25,9 @@ from ..types import (
     Tuple,
     Vector,
 )
+from ..utils import normalizeVector
 from .params_base import Flow360BaseModel
+from .solvers import HeatEquationSolver
 from .unit_system import (
     AngularVelocityType,
     HeatSourceType,
@@ -33,8 +35,6 @@ from .unit_system import (
     InverseLengthType,
     LengthType,
 )
-
-from ..utils import normalizeVector
 
 
 class ReferenceFrameBase(Flow360BaseModel):
@@ -290,6 +290,15 @@ class HeatTransferVolumeZone(VolumeZoneBase):
     )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
     initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> HeatTransferVolumeZone:
+        """
+        Add heat equation solver if not already
+        """
+        if params.heat_equation_solver is None:
+            params.heat_equation_solver = HeatEquationSolver().to_solver(params, **kwargs)
+        return super().to_solver(params, **kwargs)
 
 
 class FluidDynamicsVolumeZone(VolumeZoneBase):

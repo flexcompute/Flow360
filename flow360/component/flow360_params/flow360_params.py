@@ -1386,6 +1386,13 @@ class Flow360Params(Flow360BaseModel):
         """
         return _check_low_mach_preconditioner_support(values)
 
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def add_heat_equation_solver_if_HeatTransferVolumeZone_used(cls, values):
+        """
+        Add heat_equation_solver if it is not specified but HeatTransferVolumeZone is used.
+        """
+
 
 class Flow360MeshParams(Flow360BaseModel):
     """

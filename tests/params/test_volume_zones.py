@@ -1,9 +1,8 @@
 import unittest
 
+import numpy as np
 import pydantic as pd
 import pytest
-
-import numpy as np
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import VolumeZones
@@ -117,6 +116,21 @@ def test_volume_zones():
 
     to_file_from_file_test(zones)
 
+    with fl.SI_unit_system:
+        param = fl.Flow360Params(
+            geometry=fl.Geometry(mesh_unit=1),
+            fluid_properties=fl.air,
+            boundaries={},
+            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
+            volume_zones={
+                "zone1": fl.HeatTransferVolumeZone(
+                    thermal_conductivity=1,
+                )
+            },
+        )
+    solver_params = param.to_solver()
+    assert solver_params.heat_equation_solver is not None
+
     zones = VolumeZones(
         zone1=FluidDynamicsVolumeZone(reference_frame=rf),
         zone2=HeatTransferVolumeZone(
@@ -128,4 +142,4 @@ def test_volume_zones():
 
     assert zones
 
-    # to_file_from_file_test(zones)
+    to_file_from_file_test(zones)

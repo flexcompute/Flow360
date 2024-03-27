@@ -14,7 +14,11 @@ from flow360.component.flow360_params.flow360_params import (
     SpalartAllmaras,
     TransitionModelSolver,
 )
-from flow360.component.flow360_params.solvers import NavierStokesSolver
+from flow360.component.flow360_params.solvers import (
+    HeatEquationEvalFrequencySteady,
+    HeatEquationEvalMaxPerPseudoStepUnsteady,
+    NavierStokesSolver,
+)
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -174,6 +178,47 @@ def test_heat_equation():
                 max_iterations=50,
                 relative_tolerance=0.01,
             ),
+        )
+
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 288.15, "mu_ref": 1},
+            boundaries={},
+            heat_equation_solver=HeatEquationSolver(
+                linearSolverConfig=LinearSolver(
+                    absoluteTolerance=1e-10,
+                    max_iterations=50,
+                ),
+            ),
+            time_stepping=fl.UnsteadyTimeStepping(
+                physical_steps=10, time_step_size=0.1, max_pseudo_steps=123
+            ),
+            turbulence_model_solver=NoneSolver(),
+            geometry=fl.Geometry(mesh_unit="m"),
+            fluid_properties=fl.air,
+        )
+        solver_params = params.to_solver()
+        assert solver_params.heat_equation_solver.equation_eval_frequency == 3
+
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            freestream={"modelType": "FromMach", "Mach": 1, "temperature": 288.15, "mu_ref": 1},
+            boundaries={},
+            heat_equation_solver=HeatEquationSolver(
+                linearSolverConfig=LinearSolver(
+                    absoluteTolerance=1e-10,
+                    max_iterations=50,
+                ),
+            ),
+            time_stepping=fl.SteadyTimeStepping(max_pseudo_steps=123),
+            turbulence_model_solver=NoneSolver(),
+            geometry=fl.Geometry(mesh_unit="m"),
+            fluid_properties=fl.air,
+        )
+        solver_params = params.to_solver()
+        assert (
+            solver_params.heat_equation_solver.equation_eval_frequency
+            == HeatEquationEvalFrequencySteady
         )
 
 

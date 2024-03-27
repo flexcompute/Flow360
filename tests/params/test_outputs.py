@@ -1,5 +1,6 @@
 import unittest
 
+import numpy as np
 import pydantic as pd
 import pytest
 import unyt
@@ -26,8 +27,6 @@ from flow360.component.flow360_params.flow360_params import (
     Geometry,
 )
 from tests.utils import array_equality_override, to_file_from_file_test
-
-import numpy as np
 
 assertions = unittest.TestCase("__init__")
 
