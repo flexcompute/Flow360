@@ -528,7 +528,7 @@ class MonitorOutput(Flow360BaseModel):
 
 
 class NoTypeMonitor(MonitorBase):
-    """:class:`ProbeMonitor` class"""
+    """:class:`NoTypeMonitor` class"""
 
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
@@ -558,7 +558,7 @@ LegacyMonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor, NoTypeMonitor]
 
 
 class _GenericLegacyMonitorWrapper(Flow360BaseModel):
-    """:class:`_GenericMonitorWrapper` class"""
+    """:class:`_GenericLegacyMonitorWrapper` class"""
 
     v: LegacyMonitorType
 

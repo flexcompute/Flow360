@@ -993,20 +993,20 @@ class BETDisk(Flow360BaseModel):
         # Assuming alphas is ordered
         BET_ALPHA_TOLERANCE = 1e-5
         BET_COEFF_TOLERANCE = 1e-5
-        hasFullAlphaRange = (
+        has_full_alpha_range = (
             abs(self.alphas[0] + 180) < BET_ALPHA_TOLERANCE
             and abs(self.alphas[-1] - 180) < BET_ALPHA_TOLERANCE
         )
-        if not hasFullAlphaRange:
+        if not has_full_alpha_range:
             return super().to_solver(params, **kwargs)
         for attr_name in ["lift_coeffs", "drag_coeffs"]:
-            for polarItem in self.sectional_polars:
-                for coeff2D in getattr(polarItem, attr_name):
+            for polar_item in self.sectional_polars:
+                for coeff2D in getattr(polar_item, attr_name):
                     for coeff1D in coeff2D:
                         if abs(coeff1D[0] - coeff1D[len(coeff1D) - 1]) > BET_COEFF_TOLERANCE:
-                            avgCoeff = (coeff1D[0] + coeff1D[-1]) / 2.0
-                            coeff1D[0] = avgCoeff
-                            coeff1D[-1] = avgCoeff
+                            avg_coeff = (coeff1D[0] + coeff1D[-1]) / 2.0
+                            coeff1D[0] = avg_coeff
+                            coeff1D[-1] = avg_coeff
 
         return super().to_solver(params, **kwargs)
 

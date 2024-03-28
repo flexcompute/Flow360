@@ -179,9 +179,8 @@ def normalize_vector(vector, name: str):
         return tuple(normalized_vector)
     return vector
 
-    ##:: Expression preprocessing functions
 
-
+##::  -------- Expression preprocessing functions --------
 def remove_state_var_square_bracket(expression: str):
     """
     Remove state var square bracket

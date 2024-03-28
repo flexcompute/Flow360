@@ -170,4 +170,4 @@ def test_volume_zones():
 
     assert zones
 
-    # to_file_from_file_test(zones)
+    to_file_from_file_test(zones)
