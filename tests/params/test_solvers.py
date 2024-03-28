@@ -15,8 +15,8 @@ from flow360.component.flow360_params.flow360_params import (
     TransitionModelSolver,
 )
 from flow360.component.flow360_params.solvers import (
-    HEATEQUATIONEVALFREQUENCYSTEADY,
-    HEATEQUATIONEVALMAXPERPSEUDOSTEPUNSTEADY,
+    HEAT_EQUATION_EVAL_FREQUENCY_STEADY,
+    HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY,
     NavierStokesSolver,
 )
 from tests.utils import compare_to_ref, to_file_from_file_test
@@ -218,7 +218,7 @@ def test_heat_equation():
         solver_params = params.to_solver()
         assert (
             solver_params.heat_equation_solver.equation_eval_frequency
-            == HEATEQUATIONEVALFREQUENCYSTEADY
+            == HEAT_EQUATION_EVAL_FREQUENCY_STEADY
         )
 
 
