@@ -7,6 +7,8 @@ from typing import List, Optional, Union, get_args
 import pydantic as pd
 from typing_extensions import Literal
 
+from flow360.flags import Flags
+
 from ..flow360_params.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
@@ -211,6 +213,9 @@ class Volume(Flow360BaseModel):
     gap_treatment_strength: Optional[pd.confloat(ge=0, le=1)] = pd.Field(
         alias="gapTreatmentStrength"
     )
+    if Flags.beta_features():
+        num_boundary_layers: Optional[pd.conint(ge=0)] = pd.Field(alias="numBoundaryLayers")
+        surface_boundaries: Optional[List[str]] = pd.Field(alias="surfaceBoundaries")
 
 
 class RotationalModelBase(Flow360BaseModel):
