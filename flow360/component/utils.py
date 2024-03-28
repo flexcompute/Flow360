@@ -3,10 +3,12 @@ Utility functions
 """
 
 import os
+import re
 import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
 
+import numpy
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
@@ -145,3 +147,111 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
         return None
+
+
+UNIT_VECTOR_NORM_TOLERANCE = 1e-6
+
+
+def check_unit_vector(vector: list):
+    """
+    Return whether a vector is unit vector and its magnitude
+    """
+    magnitude = 0
+    for comp in vector:
+        magnitude += comp * comp
+    magnitude = numpy.sqrt(magnitude)
+    if numpy.abs(magnitude - 1.0) < UNIT_VECTOR_NORM_TOLERANCE:
+        return (True, magnitude)
+    return (False, magnitude)
+
+
+def normalize_vector(vector, name: str):
+    """
+    Normalize vector
+    """
+    is_unit_vector, vector_norm = check_unit_vector(vector)
+    normalized_vector = [0, 0, 0]
+    if not is_unit_vector:
+        if vector_norm == 0:
+            raise ValueError(f"Zero vector found for {name}")
+        for dim in range(0, 3):
+            normalized_vector[dim] = vector[dim] / vector_norm
+        return tuple(normalized_vector)
+    return vector
+
+
+##::  -------- Expression preprocessing functions --------
+def remove_state_var_square_bracket(expression: str):
+    """
+    Remove state var square bracket
+    """
+    pattern = r"\b(state)\s*\[\s*(\d+)\s*\]"
+    result = expression
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"state\2", result)
+    return result
+
+
+def convert_if_else(expression: str):
+    """
+    Convert if else to use ? : syntax
+    """
+    if expression.find("if") != -1:
+        regex = r"\s*if\s*\(\s*(.*?)\s*\)\s*(.*?)\s*;\s*else\s*(.*?)\s*;\s*"
+        subst = r"(\1) ? (\2) : (\3);"
+        expression = re.sub(regex, subst, expression)
+    return expression
+
+
+def convert_caret_to_power(input_str):
+    """
+    Convert caret to pow function to comply with C++ syntax
+    """
+    enclosed = r"\([^(^)]+\)"
+    non_negative_num = r"\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    number = r"[+-]?\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    symbol = r"\b[a-zA-Z_][a-zA-Z_\d]*\b"
+    base = rf"({enclosed}|{symbol}|{non_negative_num})"
+    exponent = rf"({enclosed}|{symbol}|{number})"
+    pattern = rf"{base}\s*\^\s*{exponent}"
+    result = input_str
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"powf(\1, \2)", result)
+    return result
+
+
+def add_trailing_semicolon(input_str):
+    """
+    Add trailing semicolon to comply with C++ syntax
+    """
+    regex = r";\s*$"
+    if not re.search(regex, input_str):
+        input_str += ";"
+    return input_str
+
+
+def convert_legacy_names(input_str):
+    """
+    Convert legacy var name to new ones.
+    """
+    old_names = ["rotMomentX", "rotMomentY", "rotMomentZ", "xyz"]
+    new_names = ["momentX", "momentY", "momentZ", "coordinate"]
+    result = input_str
+    for old_name, new_name in zip(old_names, new_names):
+        pattern = r"\b(" + old_name + r")\b"
+        while re.search(pattern, result):
+            result = re.sub(pattern, new_name, result)
+    return result
+
+
+def process_expression(expression: str):
+    """
+    All in one funciton to precess expressions
+    """
+    expression = str(expression)
+    expression = add_trailing_semicolon(expression)
+    expression = remove_state_var_square_bracket(expression)
+    expression = convert_if_else(expression)
+    expression = convert_caret_to_power(expression)
+    expression = convert_legacy_names(expression)
+    return expression

@@ -25,7 +25,9 @@ from ..types import (
     Tuple,
     Vector,
 )
+from ..utils import normalize_vector, process_expression
 from .params_base import Flow360BaseModel
+from .solvers import HeatEquationSolver
 from .unit_system import (
     AngularVelocityType,
     HeatSourceType,
@@ -46,6 +48,14 @@ class ReferenceFrameBase(Flow360BaseModel):
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["model_type"]
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ReferenceFrameBase:
+        """
+        Normalize the axis
+        """
+        self.axis = normalize_vector(self.axis, "ReferenceFrame->axis")
+        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrameDynamic(ReferenceFrameBase):
@@ -73,6 +83,13 @@ class ReferenceFrameDynamic(ReferenceFrameBase):
     """
 
     model_type: Literal["Dynamic"] = pd.Field("Dynamic", alias="modelType", const=True)
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ReferenceFrameDynamic:
+        """
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrameExpression(ReferenceFrameBase):
@@ -121,6 +138,13 @@ class ReferenceFrameExpression(ReferenceFrameBase):
             "theta_radians",
             "theta_degrees",
         ]
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ReferenceFrameExpression:
+        """
+        returns configuration object in flow360 units system
+        """
+        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrameOmegaRadians(ReferenceFrameBase):
@@ -228,7 +252,7 @@ class ReferenceFrame(ReferenceFrameBase):
         """
         returns configuration object in flow360 units system
         """
-
+        self.axis = normalize_vector(self.axis, "ReferenceFrame->axis")
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         omega_radians = solver_values.pop("omega").value
         solver_values.pop("model_type", None)
@@ -245,6 +269,15 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
     T: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
+
+    # pylint: disable=arguments-differ
+    # pylint: disable=invalid-name
+    def to_solver(self, params, **kwargs) -> InitialConditionHeatTransfer:
+        """
+        Process the initial condition expression
+        """
+        self.T = str(process_expression(self.T))
+        return super().to_solver(params, **kwargs)
 
 
 ReferenceFrameType = Union[
