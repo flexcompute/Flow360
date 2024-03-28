@@ -211,6 +211,8 @@ class Volume(Flow360BaseModel):
     gap_treatment_strength: Optional[pd.confloat(ge=0, le=1)] = pd.Field(
         alias="gapTreatmentStrength"
     )
+    num_layers: Optional[pd.conint(ge=0)] = pd.Field(alias="numLayers")
+    surface_boundaries: Optional[Union[List[str], List[int]]] = pd.Field(alias="surfaceBoundaries")
 
 
 class RotationalModelBase(Flow360BaseModel):
