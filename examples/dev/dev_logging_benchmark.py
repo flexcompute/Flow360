@@ -1,11 +1,8 @@
-import os
 import datetime
-import flow360
 
 from flow360.log import log
-from flow360.file_path import flow360_dir
 
-N_LOGS = 10000
+N_LOGS = 100000
 
 print("Started logging")
 # get the start datetime

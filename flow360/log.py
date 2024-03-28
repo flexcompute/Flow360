@@ -114,28 +114,7 @@ class LogHandler:
             None
         """
         if os.path.exists(source) and not os.path.exists(dest):
-            max_wait_time = 5
-            retry_delay = 0.1
-            start_time = time.time()
-            while time.time() - start_time < max_wait_time:
-                try:
-                    os.rename(source, dest)
-                    break
-                except (
-                    PermissionError,
-                    FileExistsError,
-                    IsADirectoryError,
-                    NotADirectoryError,
-                ) as error:
-                    if time.time() - start_time > max_wait_time:
-                        self.console.log(
-                            _level_print_style.get(_level_value["ERROR"], "unknown"),
-                            str(error),
-                            sep=": ",
-                        )
-                        break
-
-                    time.sleep(retry_delay)
+            os.rename(source, dest)
 
     def rotation_filename(self, name, counter):
         """
@@ -149,8 +128,9 @@ class LogHandler:
             str: Rotated filename with the format "{name}{formatted_time}.{counter}".
 
         """
+        root_ext = os.path.splitext(name)
 
-        return name + str(counter)
+        return f"{root_ext[0]}_{counter}{root_ext[1]}"
 
     def do_roll_over(self):
         """
@@ -162,9 +142,10 @@ class LogHandler:
 
         Returns:
             str: Rotated filename with the format "{name}{formatted_time}.{counter}".
-
         """
+
         if self.backup_count > 0:
+            self.console.file.close()
             for i in range(self.backup_count - 1, 0, -1):
                 sfn = self.rotation_filename(self.fname, i)
                 dfn = self.rotation_filename(self.fname, i + 1)
@@ -176,6 +157,7 @@ class LogHandler:
             if os.path.isfile(dfn):
                 os.remove(dfn)
             self.rotate(self.fname, dfn)
+            self.console.file = open(self.fname, self.console.file.mode)
 
     def should_roll_over(self, message):
         """
@@ -190,9 +172,10 @@ class LogHandler:
         # See bpo-45401: Never rollover anything other than regular files
         if not os.path.exists(self.fname) or not os.path.isfile(self.fname):
             return False
+        size = os.path.getsize(self.fname)
         if self.max_bytes > 0:  # are we rolling over?
             try:
-                if os.path.getsize(self.fname) + len(message) >= self.max_bytes:
+                if size + len(message) >= self.max_bytes:
                     return True
             except OSError as error:
                 self.console.log(
