@@ -1917,6 +1917,17 @@ class Flow360ParamsLegacy(LegacyModel):
             and isinstance(freestream, FreestreamFromVelocity)
         )
 
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def check_empty_heat_equation_solver(cls, values):
+        """
+        Skip heatEquationSolver if it is empty dict in JSON
+        """
+        heat_solver = values.get("heatEquationSolver", {})
+        if not heat_solver:
+            values["heatEquationSolver"] = None
+        return values
+
     def update_model(self) -> Flow360BaseModel:
         params = {}
 
