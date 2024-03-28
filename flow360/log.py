@@ -185,7 +185,6 @@ class LogHandler:
                 )
         return False
 
-
 class Logger:
     """Custom logger to avoid the complexities of the logging module"""
 
@@ -315,6 +314,11 @@ def set_logging_file(
     log.handlers["file"] = LogHandler(Console(file=file, log_path=False), level, fname)
     log.handlers["file"].back_up_count = back_up_count
     log.handlers["file"].max_bytes = max_bytes
+
+
+def toggle_rotation(rotate: bool):
+    if "file" in log.handlers:
+        log.handlers["file"].is_rotating = rotate
 
 
 # Set default logging output
