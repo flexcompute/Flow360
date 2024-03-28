@@ -138,8 +138,8 @@ class UnsteadyTimeStepping(BaseTimeStepping):
     """
 
     model_type: Literal["Unsteady"] = pd.Field("Unsteady", alias="modelType", const=True)
-    physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
-    time_step_size: Optional[TimeType.Positive] = pd.Field(alias="timeStepSize")
+    physical_steps: PositiveInt = pd.Field(alias="physicalSteps")
+    time_step_size: TimeType.Positive = pd.Field(alias="timeStepSize")
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
         displayed="CFL",
         options=["Ramp CFL", "Adaptive CFL"],

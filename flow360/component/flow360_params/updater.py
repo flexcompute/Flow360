@@ -12,10 +12,13 @@ def _no_update(params_as_dict):
 UPDATE_MAP = [
     ("0.2.0b16", "0.2.0b17", _no_update),
     ("0.2.0b17", "0.2.0b18", _no_update),
-    ("0.2.0b18", "23.3.2", _no_update),
+    ("0.2.0b18", "23.3.0", _no_update),
+    ("23.3.0", "23.3.3", _no_update),
+    ("23.3.*", "23.3.*", _no_update),
 ]
 
 
+# pylint: disable=dangerous-default-value
 def _find_update_path(version_from, version_to):
     path = []
 

@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "23.3.2",
+    "version": "23.3.3",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -31,6 +31,10 @@
             "name": "freestream",
             "velocityType": "relative"
         },
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
+        },
         "1": {
             "type": "NoSlipWall",
             "name": "wing",
@@ -43,21 +47,17 @@
                 "units": "flow360_velocity_unit"
             },
             "velocityType": "relative"
-        },
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
         }
     },
     "timeStepping": {
         "maxPseudoSteps": 500,
         "orderOfAccuracy": 2,
         "CFL": {
-            "convergenceLimitingFactor": 1.0,
+            "type": "adaptive",
+            "min": 0.1,
             "max": 1000000.0,
             "maxRelativeChange": 50.0,
-            "min": 0.1,
-            "type": "adaptive"
+            "convergenceLimitingFactor": 1.0
         },
         "modelType": "Unsteady",
         "physicalSteps": 20,
@@ -83,15 +83,24 @@
         "animationFrequencyTimeAverageOffset": 0,
         "startAverageIntegrationStep": -1,
         "writeSingleFile": false,
-        "outputFields": [ ],
-        "surfaces": { "freestream": { "outputFields": [ ] }, "symmetry": { "outputFields": [ ] }, "wing": { "outputFields": [ ] } }
+        "outputFields": [],
+        "surfaces": {
+            "freestream": {
+                "outputFields": []
+            },
+            "symmetry": {
+                "outputFields": []
+            },
+            "wing": {
+                "outputFields": []
+            }
+        }
     },
     "volumeZones": {
-        "zone2": {
+        "zone1": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "modelType": "OmegaRadians",
-                "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,
@@ -104,14 +113,14 @@
                     1,
                     0,
                     0
-                ]
+                ],
+                "omegaRadians": 3.0773317581937964e-06
             }
         },
         "zone3": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "modelType": "OmegaRadians",
-                "omegaRadians": 3.077331758193797e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,
@@ -124,14 +133,14 @@
                     1,
                     0,
                     0
-                ]
+                ],
+                "omegaRadians": 3.077331758193797e-06
             }
         },
-        "zone1": {
+        "zone2": {
             "modelType": "FluidDynamics",
             "referenceFrame": {
                 "modelType": "OmegaRadians",
-                "omegaRadians": 3.0773317581937964e-06,
                 "centerOfRotation": {
                     "value": [
                         0.0,
@@ -144,9 +153,10 @@
                     1,
                     0,
                     0
-                ]
+                ],
+                "omegaRadians": 3.0773317581937964e-06
             }
         }
     },
-    "hash": "fc37db5ab248bf66041b2ce9a1f21696b3f1d2e56befaa11104d9ef3657bc4be"
+    "hash": "37860405ae5a687415a236c5cf1ab4ddcbf17982a00b42c1b35be5af5cac77c8"
 }
