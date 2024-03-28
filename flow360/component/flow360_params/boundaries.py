@@ -13,6 +13,7 @@ from pydantic import StrictStr
 from flow360.component.flow360_params.unit_system import PressureType
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
+from ..utils import processExpression
 from .params_base import Flow360BaseModel
 from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import VelocityType
@@ -72,6 +73,18 @@ class NoSlipWall(Boundary):
         default="relative", alias="velocityType"
     )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> NoSlipWall:
+        """
+        Process expression string
+        """
+        if self.velocity is not None:
+            processed_exprs = []
+            for velocity_expr in self.velocity:
+                processed_exprs.append(processExpression(velocity_expr))
+            self.velocity = tuple(processed_exprs)
+        return super().to_solver(params, **kwargs)
+
 
 class SlipWall(Boundary):
     """Slip wall boundary"""
@@ -94,6 +107,18 @@ class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
         default="relative", alias="velocityType"
     )
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> FreestreamBoundary:
+        """
+        Process expression string
+        """
+        if self.velocity is not None:
+            processed_exprs = []
+            for velocity_expr in self.velocity:
+                processed_exprs.append(processExpression(velocity_expr))
+            self.velocity = tuple(processed_exprs)
+        return super().to_solver(params, **kwargs)
+
 
 class IsothermalWall(Boundary):
     """IsothermalWall boundary"""
@@ -103,6 +128,19 @@ class IsothermalWall(Boundary):
         alias="Temperature", options=["Value", "Expression"]
     )
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsothermalWall:
+        """
+        Process expression string
+        """
+        self.temperature = processExpression(self.temperature)
+        if self.velocity is not None:
+            processed_exprs = []
+            for velocity_expr in self.velocity:
+                processed_exprs.append(processExpression(velocity_expr))
+            self.velocity = tuple(processed_exprs)
+        return super().to_solver(params, **kwargs)
 
 
 class HeatFluxWall(Boundary):
@@ -129,6 +167,19 @@ class HeatFluxWall(Boundary):
     type: Literal["HeatFluxWall"] = pd.Field("HeatFluxWall", const=True)
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsothermalWall:
+        """
+        Process expression string
+        """
+        self.heat_flux = processExpression(self.heat_flux)
+        if self.velocity is not None:
+            processed_exprs = []
+            for velocity_expr in self.velocity:
+                processed_exprs.append(processExpression(velocity_expr))
+            self.velocity = tuple(processed_exprs)
+        return super().to_solver(params, **kwargs)
 
 
 class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
@@ -266,6 +317,18 @@ class VelocityInflow(BoundaryWithTurbulenceQuantities):
 
     type: Literal["VelocityInflow"] = pd.Field("VelocityInflow", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> IsothermalWall:
+        """
+        Process expression string
+        """
+        if self.velocity is not None:
+            processed_exprs = []
+            for velocity_expr in self.velocity:
+                processed_exprs.append(processExpression(velocity_expr))
+            self.velocity = tuple(processed_exprs)
+        return super().to_solver(params, **kwargs)
 
 
 class PressureOutflow(BoundaryWithTurbulenceQuantities):

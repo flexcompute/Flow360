@@ -47,7 +47,12 @@ from ..types import (
     Size,
     Vector,
 )
-from ..utils import _get_value_or_none, normalizeVector
+from ..utils import (
+    _get_value_or_none,
+    convertLegacyNames,
+    normalizeVector,
+    processExpression,
+)
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -1054,6 +1059,29 @@ class UserDefinedDynamic(Flow360BaseModel):
     update_law: List[str] = pd.Field(alias="updateLaw")
     input_boundary_patches: Optional[List[str]] = pd.Field(alias="inputBoundaryPatches")
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> UserDefinedDynamic:
+        if self.output_vars is not None:
+            for var_name, output_law in self.output_vars.items():
+                self.output_vars[var_name] = processExpression(output_law)
+
+        if self.input_vars is not None:
+            input_vars = []
+            for var_name in self.input_vars:
+                input_vars.append(convertLegacyNames(var_name))
+            self.input_vars = input_vars
+
+        update_law = []
+        for expr in self.update_law:
+            update_law.append(processExpression(expr))
+        self.update_law = update_law
+
+        state_vars_initial_value = []
+        for expr in self.state_vars_initial_value:
+            state_vars_initial_value.append(processExpression(expr))
+        self.state_vars_initial_value = state_vars_initial_value
+        return super().to_solver(params, **kwargs)
 
 
 # pylint: disable=too-many-instance-attributes,R0904

@@ -76,7 +76,6 @@ class LinearSolver(Flow360BaseModel):
     """
 
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
-    ## Reflect that only one of absolute_tolerance and relative_tolerance is allowed in schema. TODO
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
 

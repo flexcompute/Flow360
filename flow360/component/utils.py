@@ -3,6 +3,7 @@ Utility functions
 """
 
 import os
+import re
 import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -171,3 +172,62 @@ def normalizeVector(vector, name: str):
             normalized_vector[dim] = vector[dim] / vectorNorm
         return tuple(normalized_vector)
     return vector
+
+
+##:: Expression preprocessing functions
+def removeStateVarSquareBracket(expression: str):
+    pattern = r"\b(state)\s*\[\s*(\d+)\s*\]"
+    result = expression
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"state\2", result)
+    return result
+
+
+def convertIfElse(expression: str):
+    if expression.find("if") != -1:
+        regex = r"\s*if\s*\(\s*(.*?)\s*\)\s*(.*?)\s*;\s*else\s*(.*?)\s*;\s*"
+        subst = r"(\1) ? (\2) : (\3);"
+        expression = re.sub(regex, subst, expression)
+    return expression
+
+
+def convertCaretToPower(input_str):
+    enclosed = r"\([^(^)]+\)"
+    nonNegativeNum = r"\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    number = r"[+-]?\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    symbol = r"\b[a-zA-Z_][a-zA-Z_\d]*\b"
+    base = rf"({enclosed}|{symbol}|{nonNegativeNum})"
+    exponent = rf"({enclosed}|{symbol}|{number})"
+    pattern = rf"{base}\s*\^\s*{exponent}"
+    result = input_str
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"powf(\1, \2)", result)
+    return result
+
+
+def addTrailingSemiColon(input_str):
+    regex = r";\s*$"
+    if not re.search(regex, input_str):
+        input_str += ";"
+    return input_str
+
+
+def convertLegacyNames(input_str):
+    oldNames = ["rotMomentX", "rotMomentY", "rotMomentZ", "xyz"]
+    newNames = ["momentX", "momentY", "momentZ", "coordinate"]
+    result = input_str
+    for oldName, newName in zip(oldNames, newNames):
+        pattern = r"\b(" + oldName + r")\b"
+        while re.search(pattern, result):
+            result = re.sub(pattern, newName, result)
+    return result
+
+
+def processExpression(expression: str):
+    expression = str(expression)
+    expression = addTrailingSemiColon(expression)
+    expression = removeStateVarSquareBracket(expression)
+    expression = convertIfElse(expression)
+    expression = convertCaretToPower(expression)
+    expression = convertLegacyNames(expression)
+    return expression

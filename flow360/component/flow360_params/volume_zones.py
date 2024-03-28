@@ -25,7 +25,7 @@ from ..types import (
     Tuple,
     Vector,
 )
-from ..utils import normalizeVector
+from ..utils import normalizeVector, processExpression
 from .params_base import Flow360BaseModel
 from .solvers import HeatEquationSolver
 from .unit_system import (
@@ -270,6 +270,14 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
 
     T: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> InitialConditionHeatTransfer:
+        """
+        Process the initial condition expression
+        """
+        self.T = str(processExpression(self.T))
+        return super().to_solver(params, **kwargs)
+
 
 ReferenceFrameType = Union[
     ReferenceFrame,
@@ -290,15 +298,6 @@ class HeatTransferVolumeZone(VolumeZoneBase):
     )
     heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
     initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
-
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> HeatTransferVolumeZone:
-        """
-        Add heat equation solver if not already
-        """
-        if params.heat_equation_solver is None:
-            params.heat_equation_solver = HeatEquationSolver().to_solver(params, **kwargs)
-        return super().to_solver(params, **kwargs)
 
 
 class FluidDynamicsVolumeZone(VolumeZoneBase):

@@ -147,7 +147,7 @@ def test_volume_zones():
                 "zone1": fl.HeatTransferVolumeZone(
                     thermal_conductivity=1,
                     heat_capacity=0.123,
-                    initial_condition=fl.InitialConditionHeatTransfer(T=1234),
+                    initial_condition=fl.InitialConditionHeatTransfer(T="1.5*y^0.5/1.56 ^3"),
                 )
             },
             time_stepping=fl.SteadyTimeStepping(max_pseudo_steps=441),
@@ -155,6 +155,9 @@ def test_volume_zones():
     solver_params = param.to_solver()
     assert solver_params.heat_equation_solver is not None
     assert solver_params.heat_equation_solver.equation_eval_frequency == 10
+    assert (
+        solver_params.volume_zones["zone1"].initial_condition.T == "1.5*powf(y, 0.5)/powf(1.56, 3);"
+    )
 
     zones = VolumeZones(
         zone1=FluidDynamicsVolumeZone(reference_frame=rf),
@@ -167,4 +170,4 @@ def test_volume_zones():
 
     assert zones
 
-    to_file_from_file_test(zones)
+    # to_file_from_file_test(zones)

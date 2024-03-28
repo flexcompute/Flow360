@@ -540,3 +540,35 @@ def test_boundary_types():
                 )
                 == False
             )
+
+
+def test_boundary_expression():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=1),
+            boundaries={
+                "NSW": fl.NoSlipWall(velocity=("x*y^z", "1.2/45", "y^0.5-123")),
+                "FS": fl.FreestreamBoundary(velocity=("x*y^z", "1.2/45", "y^0.5-123")),
+                "ISW": fl.IsothermalWall(
+                    velocity=("x*y^z", "1.2/45", "y^0.5-123"), temperature="1.23*x^2.34/2"
+                ),
+                "HFW": fl.HeatFluxWall(velocity=("x*y^z", "1.2/45", "y^0.5-123"), heat_flux=1.234),
+                "VIF": fl.VelocityInflow(velocity=("x*y^z", "1.2/45", "y^0.5-123")),
+            },
+            freestream=fl.FreestreamFromVelocity(
+                velocity=123,
+                alpha=1,
+            ),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
+            turbulence_model_solver=fl.SpalartAllmaras(),
+        )
+    solver_params = params.to_solver()
+    for bc_name in ["NSW", "FS", "ISW", "HFW", "VIF"]:
+        assert solver_params.boundaries[bc_name].velocity == (
+            "x*powf(y, z);",
+            "1.2/45;",
+            "powf(y, 0.5)-123;",
+        )
+    assert solver_params.boundaries["ISW"].temperature == "1.23*powf(x, 2.34)/2;"
+    assert solver_params.boundaries["HFW"].heat_flux == "1.234;"
