@@ -35,6 +35,12 @@ UpwindPhiBCTypeNames = set(
 )
 
 
+def _check_velocity_is_expression(input):
+    if not isinstance(input, tuple) or len(input) != 3:
+        return False
+    return all(isinstance(element, str) for element in input)
+
+
 # pylint: enable=too-many-arguments, too-many-return-statements, too-many-branches
 class Boundary(Flow360BaseModel, metaclass=ABCMeta):
     """Basic Boundary class"""
@@ -78,7 +84,7 @@ class NoSlipWall(Boundary):
         """
         Process expression string
         """
-        if self.velocity is not None:
+        if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
                 processed_exprs.append(processExpression(velocity_expr))
@@ -112,7 +118,7 @@ class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
         """
         Process expression string
         """
-        if self.velocity is not None:
+        if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
                 processed_exprs.append(processExpression(velocity_expr))
@@ -135,7 +141,7 @@ class IsothermalWall(Boundary):
         Process expression string
         """
         self.temperature = processExpression(self.temperature)
-        if self.velocity is not None:
+        if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
                 processed_exprs.append(processExpression(velocity_expr))
@@ -174,7 +180,7 @@ class HeatFluxWall(Boundary):
         Process expression string
         """
         self.heat_flux = processExpression(self.heat_flux)
-        if self.velocity is not None:
+        if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
                 processed_exprs.append(processExpression(velocity_expr))
@@ -323,7 +329,7 @@ class VelocityInflow(BoundaryWithTurbulenceQuantities):
         """
         Process expression string
         """
-        if self.velocity is not None:
+        if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
                 processed_exprs.append(processExpression(velocity_expr))
