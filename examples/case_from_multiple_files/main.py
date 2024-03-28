@@ -28,7 +28,7 @@ with fl.SI_unit_system:
         geometry=fl.Geometry(datafiles.geometry),
         boundaries=fl.Boundaries(datafiles.boundaries),
         fluid_properties=fl.air,
-        freestream=fl.FreestreamFromVelocity(velocity=286 * u.m/u.s, alpha=3.06),
+        freestream=fl.FreestreamFromVelocity(velocity=286 * u.m / u.s, alpha=3.06),
         slice_output=outputs.slice_output,
         surface_output=outputs.surface_output,
         volume_output=outputs.volume_output,
