@@ -9,7 +9,7 @@ from typing import Dict, Optional, Union
 import pydantic as pd
 from typing_extensions import Literal
 
-from ..utils import processExpression
+from ..utils import process_expression
 from .params_base import Flow360BaseModel
 
 
@@ -45,7 +45,7 @@ class ExpressionInitialCondition(InitialCondition):
             expr = getattr(self, attr_name)
             if expr is None:
                 continue
-            expr = str(processExpression(expr))
+            expr = str(process_expression(expr))
             setattr(self, attr_name, expr)
         return super().to_solver(params, **kwargs)
 

@@ -11,7 +11,7 @@ import pydantic as pd
 from pydantic import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
-from ..utils import normalizeVector
+from ..utils import normalize_vector
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -305,7 +305,7 @@ class Slice(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> Slice:
-        self.slice_normal = normalizeVector(self.slice_normal, "slice_normal")
+        self.slice_normal = normalize_vector(self.slice_normal, "slice_normal")
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]
@@ -386,6 +386,9 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> VolumeOutput:
+        """
+        Add betMetrics and betMetricsPerDisk if used in slices but not in volume.
+        """
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
         _deduplicate_output_fields(solver_values)
@@ -393,9 +396,7 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
         fields = [to_short(field) for field in fields]
         if solver_values["output_format"] == "both":
             solver_values["output_format"] = "paraview,tecplot"
-        """
-        Add betMetrics and betMetricsPerDisk if used in slices but not in volume.
-        """
+
         if params.slice_output is not None and params.slice_output.slices is not None:
             slice_output_dict = params.slice_output.__dict__
             _distribute_shared_output_fields(slice_output_dict, "slices")

@@ -13,7 +13,7 @@ from pydantic import StrictStr
 from flow360.component.flow360_params.unit_system import PressureType
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
-from ..utils import processExpression
+from ..utils import process_expression
 from .params_base import Flow360BaseModel
 from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import VelocityType
@@ -35,10 +35,10 @@ UpwindPhiBCTypeNames = set(
 )
 
 
-def _check_velocity_is_expression(input):
-    if not isinstance(input, tuple) or len(input) != 3:
+def _check_velocity_is_expression(input_velocity):
+    if not isinstance(input_velocity, tuple) or len(input_velocity) != 3:
         return False
-    return all(isinstance(element, str) for element in input)
+    return all(isinstance(element, str) for element in input_velocity)
 
 
 # pylint: enable=too-many-arguments, too-many-return-statements, too-many-branches
@@ -87,7 +87,7 @@ class NoSlipWall(Boundary):
         if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
-                processed_exprs.append(processExpression(velocity_expr))
+                processed_exprs.append(process_expression(velocity_expr))
             self.velocity = tuple(processed_exprs)
         return super().to_solver(params, **kwargs)
 
@@ -121,7 +121,7 @@ class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
         if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
-                processed_exprs.append(processExpression(velocity_expr))
+                processed_exprs.append(process_expression(velocity_expr))
             self.velocity = tuple(processed_exprs)
         return super().to_solver(params, **kwargs)
 
@@ -140,11 +140,11 @@ class IsothermalWall(Boundary):
         """
         Process expression string
         """
-        self.temperature = processExpression(self.temperature)
+        self.temperature = process_expression(self.temperature)
         if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
-                processed_exprs.append(processExpression(velocity_expr))
+                processed_exprs.append(process_expression(velocity_expr))
             self.velocity = tuple(processed_exprs)
         return super().to_solver(params, **kwargs)
 
@@ -179,11 +179,11 @@ class HeatFluxWall(Boundary):
         """
         Process expression string
         """
-        self.heat_flux = processExpression(self.heat_flux)
+        self.heat_flux = process_expression(self.heat_flux)
         if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
-                processed_exprs.append(processExpression(velocity_expr))
+                processed_exprs.append(process_expression(velocity_expr))
             self.velocity = tuple(processed_exprs)
         return super().to_solver(params, **kwargs)
 
@@ -332,7 +332,7 @@ class VelocityInflow(BoundaryWithTurbulenceQuantities):
         if _check_velocity_is_expression(self.velocity):
             processed_exprs = []
             for velocity_expr in self.velocity:
-                processed_exprs.append(processExpression(velocity_expr))
+                processed_exprs.append(process_expression(velocity_expr))
             self.velocity = tuple(processed_exprs)
         return super().to_solver(params, **kwargs)
 

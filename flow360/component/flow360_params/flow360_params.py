@@ -6,6 +6,7 @@ Flow360 solver parameters
 # pylint: disable=unused-import
 from __future__ import annotations
 
+import copy
 import json
 import math
 import os
@@ -49,9 +50,9 @@ from ..types import (
 )
 from ..utils import (
     _get_value_or_none,
-    convertLegacyNames,
-    normalizeVector,
-    processExpression,
+    convert_legacy_names,
+    normalize_vector,
+    process_expression,
 )
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
@@ -290,7 +291,7 @@ class ActuatorDisk(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ActuatorDisk:
-        self.axis_thrust = normalizeVector(self.axis_thrust, "ActuatorDisk->axis_thrust")
+        self.axis_thrust = normalize_vector(self.axis_thrust, "ActuatorDisk->axis_thrust")
         return super().to_solver(params, **kwargs)
 
 
@@ -983,10 +984,12 @@ class BETDisk(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BETDisk:
-        self.axis_of_rotation = normalizeVector(self.axis_of_rotation, "BETDisk->axis_of_rotation")
         """
+        normalize the axis of rotation
         average the BET coefficient if the angle is effectively same
         """
+        self.axis_of_rotation = normalize_vector(self.axis_of_rotation, "BETDisk->axis_of_rotation")
+
         # Assuming alphas is ordered
         BET_ALPHA_TOLERANCE = 1e-5
         BET_COEFF_TOLERANCE = 1e-5
@@ -996,17 +999,16 @@ class BETDisk(Flow360BaseModel):
         )
         if not hasFullAlphaRange:
             return super().to_solver(params, **kwargs)
-        else:
-            for attr_name in ["lift_coeffs", "drag_coeffs"]:
-                for polarItem in self.sectional_polars:
-                    for coeff2D in getattr(polarItem, attr_name):
-                        for coeff1D in coeff2D:
-                            if abs(coeff1D[0] - coeff1D[len(coeff1D) - 1]) > BET_COEFF_TOLERANCE:
-                                avgCoeff = (coeff1D[0] + coeff1D[-1]) / 2.0
-                                coeff1D[0] = avgCoeff
-                                coeff1D[-1] = avgCoeff
+        for attr_name in ["lift_coeffs", "drag_coeffs"]:
+            for polarItem in self.sectional_polars:
+                for coeff2D in getattr(polarItem, attr_name):
+                    for coeff1D in coeff2D:
+                        if abs(coeff1D[0] - coeff1D[len(coeff1D) - 1]) > BET_COEFF_TOLERANCE:
+                            avgCoeff = (coeff1D[0] + coeff1D[-1]) / 2.0
+                            coeff1D[0] = avgCoeff
+                            coeff1D[-1] = avgCoeff
 
-            return super().to_solver(params, **kwargs)
+        return super().to_solver(params, **kwargs)
 
 
 # pylint: disable=too-few-public-methods
@@ -1064,23 +1066,23 @@ class UserDefinedDynamic(Flow360BaseModel):
     def to_solver(self, params, **kwargs) -> UserDefinedDynamic:
         if self.output_vars is not None:
             for var_name, output_law in self.output_vars.items():
-                self.output_vars[var_name] = processExpression(output_law)
+                self.output_vars[var_name] = process_expression(output_law)
 
         if self.input_vars is not None:
-            input_vars = []
+            processed_input_vars = []
             for var_name in self.input_vars:
-                input_vars.append(convertLegacyNames(var_name))
-            self.input_vars = input_vars
+                processed_input_vars.append(convert_legacy_names(var_name))
+            self.input_vars = copy.deepcopy(processed_input_vars)
 
-        update_law = []
+        processed_update_law = []
         for expr in self.update_law:
-            update_law.append(processExpression(expr))
-        self.update_law = update_law
+            processed_update_law.append(process_expression(expr))
+        self.update_law = copy.deepcopy(processed_update_law)
 
         state_vars_initial_value = []
         for expr in self.state_vars_initial_value:
-            state_vars_initial_value.append(processExpression(expr))
-        self.state_vars_initial_value = state_vars_initial_value
+            state_vars_initial_value.append(process_expression(expr))
+        self.state_vars_initial_value = copy.deepcopy(state_vars_initial_value)
         return super().to_solver(params, **kwargs)
 
 
@@ -1752,6 +1754,7 @@ class UserDefinedDynamicLegacy(LegacyModel):
     input_boundary_patches: Optional[List[str]] = pd.Field(alias="inputBoundaryPatches")
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
+    # pylint: disable=no-self-argument
     @pd.root_validator
     def check_output_vars_and_output_law_same_length(cls, values):
         """
@@ -1761,14 +1764,14 @@ class UserDefinedDynamicLegacy(LegacyModel):
         if isinstance(output_vars, list):
             output_law = values.get("output_law")
             if output_law is None:
-                raise ValueError(f"'output_law is missing.")
+                raise ValueError("'output_law is missing.")
             if len(output_law) != len(output_vars):
-                raise ValueError(f"'Length of output_law and output_vars has to be the same.")
+                raise ValueError("'Length of output_law and output_vars has to be the same.")
         return values
 
     def update_model(self) -> Flow360BaseModel:
         if isinstance(self.output_vars, list):
-            new_output_vars = dict()
+            new_output_vars = {}
             for var, law in zip(self.output_vars, self.output_law):
                 new_output_vars[var] = law
         else:

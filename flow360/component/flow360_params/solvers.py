@@ -16,8 +16,8 @@ from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
 from .time_stepping import UnsteadyTimeStepping
 
-HeatEquationEvalMaxPerPseudoStepUnsteady = 40
-HeatEquationEvalFrequencySteady = 10
+HEATEQUATIONEVALMAXPERPSEUDOSTEPUNSTEADY = 40
+HEATEQUATIONEVALFREQUENCYSTEADY = 10
 
 
 class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -453,10 +453,10 @@ class HeatEquationSolver(GenericFlowSolverSettings):
                 self.equation_eval_frequency = max(
                     1,
                     params.time_stepping.max_pseudo_steps
-                    // HeatEquationEvalMaxPerPseudoStepUnsteady,
+                    // HEATEQUATIONEVALMAXPERPSEUDOSTEPUNSTEADY,
                 )
             else:
-                self.equation_eval_frequency = HeatEquationEvalFrequencySteady
+                self.equation_eval_frequency = HEATEQUATIONEVALFREQUENCYSTEADY
 
         return super().to_solver(params, **kwargs)
 

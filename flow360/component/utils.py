@@ -152,7 +152,10 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
 UNIT_VECTOR_NORM_TOLERANCE = 1e-6
 
 
-def checkUnitVector(vector: list):
+def check_unit_vector(vector: list):
+    """
+    Return whether a vector is unit vector and its magnitude
+    """
     magnitude = 0
     for comp in vector:
         magnitude += comp * comp
@@ -162,20 +165,27 @@ def checkUnitVector(vector: list):
     return (False, magnitude)
 
 
-def normalizeVector(vector, name: str):
-    isUnitVector, vectorNorm = checkUnitVector(vector)
+def normalize_vector(vector, name: str):
+    """
+    Normalize vector
+    """
+    is_unit_vector, vector_norm = check_unit_vector(vector)
     normalized_vector = [0, 0, 0]
-    if not isUnitVector:
-        if vectorNorm == 0:
-            raise ValueError("Zero vector found for {:s}".format(name))
+    if not is_unit_vector:
+        if vector_norm == 0:
+            raise ValueError(f"Zero vector found for {name}")
         for dim in range(0, 3):
-            normalized_vector[dim] = vector[dim] / vectorNorm
+            normalized_vector[dim] = vector[dim] / vector_norm
         return tuple(normalized_vector)
     return vector
 
+    ##:: Expression preprocessing functions
 
-##:: Expression preprocessing functions
-def removeStateVarSquareBracket(expression: str):
+
+def remove_state_var_square_bracket(expression: str):
+    """
+    Remove state var square bracket
+    """
     pattern = r"\b(state)\s*\[\s*(\d+)\s*\]"
     result = expression
     while re.search(pattern, result):
@@ -183,7 +193,10 @@ def removeStateVarSquareBracket(expression: str):
     return result
 
 
-def convertIfElse(expression: str):
+def convert_if_else(expression: str):
+    """
+    Convert if else to use ? : syntax
+    """
     if expression.find("if") != -1:
         regex = r"\s*if\s*\(\s*(.*?)\s*\)\s*(.*?)\s*;\s*else\s*(.*?)\s*;\s*"
         subst = r"(\1) ? (\2) : (\3);"
@@ -191,12 +204,15 @@ def convertIfElse(expression: str):
     return expression
 
 
-def convertCaretToPower(input_str):
+def convert_caret_to_power(input_str):
+    """
+    Convert caret to pow function to comply with C++ syntax
+    """
     enclosed = r"\([^(^)]+\)"
-    nonNegativeNum = r"\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    non_negative_num = r"\d+(?:\.\d+)?(?:e[-+]?\d+)?"
     number = r"[+-]?\d+(?:\.\d+)?(?:e[-+]?\d+)?"
     symbol = r"\b[a-zA-Z_][a-zA-Z_\d]*\b"
-    base = rf"({enclosed}|{symbol}|{nonNegativeNum})"
+    base = rf"({enclosed}|{symbol}|{non_negative_num})"
     exponent = rf"({enclosed}|{symbol}|{number})"
     pattern = rf"{base}\s*\^\s*{exponent}"
     result = input_str
@@ -205,29 +221,38 @@ def convertCaretToPower(input_str):
     return result
 
 
-def addTrailingSemiColon(input_str):
+def add_trailing_semicolon(input_str):
+    """
+    Add trailing semicolon to comply with C++ syntax
+    """
     regex = r";\s*$"
     if not re.search(regex, input_str):
         input_str += ";"
     return input_str
 
 
-def convertLegacyNames(input_str):
-    oldNames = ["rotMomentX", "rotMomentY", "rotMomentZ", "xyz"]
-    newNames = ["momentX", "momentY", "momentZ", "coordinate"]
+def convert_legacy_names(input_str):
+    """
+    Convert legacy var name to new ones.
+    """
+    old_names = ["rotMomentX", "rotMomentY", "rotMomentZ", "xyz"]
+    new_names = ["momentX", "momentY", "momentZ", "coordinate"]
     result = input_str
-    for oldName, newName in zip(oldNames, newNames):
-        pattern = r"\b(" + oldName + r")\b"
+    for old_name, new_name in zip(old_names, new_names):
+        pattern = r"\b(" + old_name + r")\b"
         while re.search(pattern, result):
-            result = re.sub(pattern, newName, result)
+            result = re.sub(pattern, new_name, result)
     return result
 
 
-def processExpression(expression: str):
+def process_expression(expression: str):
+    """
+    All in one funciton to precess expressions
+    """
     expression = str(expression)
-    expression = addTrailingSemiColon(expression)
-    expression = removeStateVarSquareBracket(expression)
-    expression = convertIfElse(expression)
-    expression = convertCaretToPower(expression)
-    expression = convertLegacyNames(expression)
+    expression = add_trailing_semicolon(expression)
+    expression = remove_state_var_square_bracket(expression)
+    expression = convert_if_else(expression)
+    expression = convert_caret_to_power(expression)
+    expression = convert_legacy_names(expression)
     return expression
