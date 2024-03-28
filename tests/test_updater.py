@@ -127,6 +127,7 @@ def test_updater_from_files():
     files = [
         "case_10.json",
         "case_13.json",
+        "case_18.json",
         "case_14_bet.json",
         "case_udd.json",
         "case_unsteady.json",
