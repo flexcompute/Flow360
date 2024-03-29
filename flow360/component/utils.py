@@ -244,10 +244,12 @@ def convert_legacy_names(input_str):
     return result
 
 
-def process_expression(expression: str):
+def _process_string_expression(expression: str):
     """
-    All in one funciton to precess expressions
+    All in one funciton to precess string expressions
     """
+    if not isinstance(expression, str):
+        return expression
     expression = str(expression)
     expression = add_trailing_semicolon(expression)
     expression = remove_state_var_square_bracket(expression)
@@ -255,3 +257,25 @@ def process_expression(expression: str):
     expression = convert_caret_to_power(expression)
     expression = convert_legacy_names(expression)
     return expression
+
+
+def process_expressions(input_expressions: str | tuple | float | int):
+    """
+    All in one funciton to precess expressions in form of tuple or single string
+    """
+    print(">>>>", input_expressions.__class__)
+    print(">>", input_expressions)
+    if (
+        isinstance(input_expressions, str)
+        or isinstance(input_expressions, float)
+        or isinstance(input_expressions, int)
+    ):
+        return _process_string_expression(str(input_expressions))
+
+    if isinstance(input_expressions, tuple):
+        prcessed_expressions = []
+        for expression in input_expressions:
+            prcessed_expressions.append(_process_string_expression(expression))
+        return tuple(prcessed_expressions)
+    else:
+        return input_expressions

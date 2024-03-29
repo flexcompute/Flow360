@@ -25,7 +25,7 @@ from ..types import (
     Tuple,
     Vector,
 )
-from ..utils import normalize_vector, process_expression
+from ..utils import normalize_vector, process_expressions
 from .params_base import Flow360BaseModel
 from .solvers import HeatEquationSolver
 from .unit_system import (
@@ -45,7 +45,7 @@ class ReferenceFrameBase(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
 
-    _normalize_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
+    _normalized_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -241,7 +241,7 @@ class ReferenceFrame(ReferenceFrameBase):
     )
     omega: AngularVelocityType = pd.Field()
 
-    _normalize_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
+    _normalized_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:
@@ -265,14 +265,7 @@ class InitialConditionHeatTransfer(Flow360BaseModel):
 
     T: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
-    # pylint: disable=arguments-differ
-    # pylint: disable=invalid-name
-    def to_solver(self, params, **kwargs) -> InitialConditionHeatTransfer:
-        """
-        Process the initial condition expression
-        """
-        self.T = str(process_expression(self.T))
-        return super().to_solver(params, **kwargs)
+    _processed_T = pd.validator("T", allow_reuse=True)(process_expressions)
 
 
 ReferenceFrameType = Union[

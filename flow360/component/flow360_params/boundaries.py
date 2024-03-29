@@ -13,7 +13,7 @@ from pydantic import StrictStr
 from flow360.component.flow360_params.unit_system import PressureType
 
 from ..types import Axis, PositiveFloat, PositiveInt, Vector
-from ..utils import process_expression
+from ..utils import process_expressions
 from .params_base import Flow360BaseModel
 from .turbulence_quantities import TurbulenceQuantitiesType
 from .unit_system import VelocityType
@@ -79,17 +79,7 @@ class NoSlipWall(Boundary):
         default="relative", alias="velocityType"
     )
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> NoSlipWall:
-        """
-        Process expression string
-        """
-        if _check_velocity_is_expression(self.velocity):
-            processed_exprs = []
-            for velocity_expr in self.velocity:
-                processed_exprs.append(process_expression(velocity_expr))
-            self.velocity = tuple(processed_exprs)
-        return super().to_solver(params, **kwargs)
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
 
 class SlipWall(Boundary):
@@ -113,17 +103,7 @@ class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
         default="relative", alias="velocityType"
     )
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> FreestreamBoundary:
-        """
-        Process expression string
-        """
-        if _check_velocity_is_expression(self.velocity):
-            processed_exprs = []
-            for velocity_expr in self.velocity:
-                processed_exprs.append(process_expression(velocity_expr))
-            self.velocity = tuple(processed_exprs)
-        return super().to_solver(params, **kwargs)
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
 
 class IsothermalWall(Boundary):
@@ -135,18 +115,8 @@ class IsothermalWall(Boundary):
     )
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> IsothermalWall:
-        """
-        Process expression string
-        """
-        self.temperature = process_expression(self.temperature)
-        if _check_velocity_is_expression(self.velocity):
-            processed_exprs = []
-            for velocity_expr in self.velocity:
-                processed_exprs.append(process_expression(velocity_expr))
-            self.velocity = tuple(processed_exprs)
-        return super().to_solver(params, **kwargs)
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
+    _processed_temperature = pd.validator("temperature", allow_reuse=True)(process_expressions)
 
 
 class HeatFluxWall(Boundary):
@@ -174,18 +144,8 @@ class HeatFluxWall(Boundary):
     heat_flux: Union[float, StrictStr] = pd.Field(alias="heatFlux", options=["Value", "Expression"])
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> IsothermalWall:
-        """
-        Process expression string
-        """
-        self.heat_flux = process_expression(self.heat_flux)
-        if _check_velocity_is_expression(self.velocity):
-            processed_exprs = []
-            for velocity_expr in self.velocity:
-                processed_exprs.append(process_expression(velocity_expr))
-            self.velocity = tuple(processed_exprs)
-        return super().to_solver(params, **kwargs)
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
+    _processed_heat_flux = pd.validator("heat_flux", allow_reuse=True)(process_expressions)
 
 
 class SubsonicOutflowPressure(BoundaryWithTurbulenceQuantities):
@@ -324,17 +284,7 @@ class VelocityInflow(BoundaryWithTurbulenceQuantities):
     type: Literal["VelocityInflow"] = pd.Field("VelocityInflow", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> IsothermalWall:
-        """
-        Process expression string
-        """
-        if _check_velocity_is_expression(self.velocity):
-            processed_exprs = []
-            for velocity_expr in self.velocity:
-                processed_exprs.append(process_expression(velocity_expr))
-            self.velocity = tuple(processed_exprs)
-        return super().to_solver(params, **kwargs)
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
 
 class PressureOutflow(BoundaryWithTurbulenceQuantities):

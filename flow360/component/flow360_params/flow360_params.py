@@ -52,7 +52,7 @@ from ..utils import (
     _get_value_or_none,
     convert_legacy_names,
     normalize_vector,
-    process_expression,
+    process_expressions,
 )
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
@@ -289,7 +289,7 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
-    _normalize_axis_thrust = pd.validator('axis_thrust', allow_reuse=True)(normalize_vector)
+    _normalized_axis_thrust = pd.validator("axis_thrust", allow_reuse=True)(normalize_vector)
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -979,7 +979,9 @@ class BETDisk(Flow360BaseModel):
         """
         return _check_bet_disks_3d_coefficients_in_polars(values)
 
-    _normalize_axis_of_rotation = pd.validator('axis_of_rotation', allow_reuse=True)(normalize_vector)
+    _normalized_axis_of_rotation = pd.validator("axis_of_rotation", allow_reuse=True)(
+        normalize_vector
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BETDisk:
@@ -1060,28 +1062,39 @@ class UserDefinedDynamic(Flow360BaseModel):
     input_boundary_patches: Optional[List[str]] = pd.Field(alias="inputBoundaryPatches")
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> UserDefinedDynamic:
-        if self.output_vars is not None:
-            for var_name, output_law in self.output_vars.items():
-                self.output_vars[var_name] = process_expression(output_law)
+    _processed_output_vars = pd.validator("output_vars", each_item=True, allow_reuse=True)(
+        process_expressions
+    )
+    _converted_input_vars = pd.validator("input_vars", each_item=True)(convert_legacy_names)
+    _processed_update_law = pd.validator("update_law", each_item=True, allow_reuse=True)(
+        process_expressions
+    )
+    _processed_state_vars_initial_value = pd.validator("state_vars_initial_value", each_item=True)(
+        process_expressions
+    )
 
-        if self.input_vars is not None:
-            processed_input_vars = []
-            for var_name in self.input_vars:
-                processed_input_vars.append(convert_legacy_names(var_name))
-            self.input_vars = copy.deepcopy(processed_input_vars)
+    # # pylint: disable=arguments-differ
+    # def to_solver(self, params, **kwargs) -> UserDefinedDynamic:
+    #     # if self.output_vars is not None:
+    #     #     for var_name, output_law in self.output_vars.items():
+    #     #         self.output_vars[var_name] = process_expression(output_law)
 
-        processed_update_law = []
-        for expr in self.update_law:
-            processed_update_law.append(process_expression(expr))
-        self.update_law = copy.deepcopy(processed_update_law)
+    #     # if self.input_vars is not None:
+    #     #     processed_input_vars = []
+    #     #     for var_name in self.input_vars:
+    #     #         processed_input_vars.append(convert_legacy_names(var_name))
+    #     #     self.input_vars = copy.deepcopy(processed_input_vars)
 
-        state_vars_initial_value = []
-        for expr in self.state_vars_initial_value:
-            state_vars_initial_value.append(process_expression(expr))
-        self.state_vars_initial_value = copy.deepcopy(state_vars_initial_value)
-        return super().to_solver(params, **kwargs)
+    #     # processed_update_law = []
+    #     # for expr in self.update_law:
+    #     #     processed_update_law.append(process_expression(expr))
+    #     # self.update_law = copy.deepcopy(processed_update_law)
+
+    #     state_vars_initial_value = []
+    #     for expr in self.state_vars_initial_value:
+    #         state_vars_initial_value.append(process_expression(expr))
+    #     self.state_vars_initial_value = copy.deepcopy(state_vars_initial_value)
+    #     return super().to_solver(params, **kwargs)
 
 
 # pylint: disable=too-many-instance-attributes,R0904

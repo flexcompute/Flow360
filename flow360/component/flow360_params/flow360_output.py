@@ -291,7 +291,7 @@ class Slice(Flow360BaseModel):
     slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    _normalize_slice_normal = pd.validator('slice_normal', allow_reuse=True)(normalize_vector)
+    _normalized_slice_normal = pd.validator("slice_normal", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
