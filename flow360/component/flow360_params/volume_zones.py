@@ -45,17 +45,11 @@ class ReferenceFrameBase(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
 
+    _normalize_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
+
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["model_type"]
-
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> ReferenceFrameBase:
-        """
-        Normalize the axis
-        """
-        self.axis = normalize_vector(self.axis, "ReferenceFrame->axis")
-        return super().to_solver(params, **kwargs)
 
 
 class ReferenceFrameDynamic(ReferenceFrameBase):
@@ -247,12 +241,13 @@ class ReferenceFrame(ReferenceFrameBase):
     )
     omega: AngularVelocityType = pd.Field()
 
+    _normalize_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
+
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:
         """
         returns configuration object in flow360 units system
         """
-        self.axis = normalize_vector(self.axis, "ReferenceFrame->axis")
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         omega_radians = solver_values.pop("omega").value
         solver_values.pop("model_type", None)

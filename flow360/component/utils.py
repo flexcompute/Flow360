@@ -165,7 +165,7 @@ def check_unit_vector(vector: list):
     return (False, magnitude)
 
 
-def normalize_vector(vector, name: str):
+def normalize_vector(vector):
     """
     Normalize vector
     """
@@ -173,7 +173,7 @@ def normalize_vector(vector, name: str):
     normalized_vector = [0, 0, 0]
     if not is_unit_vector:
         if vector_norm == 0:
-            raise ValueError(f"Zero vector found for {name}")
+            raise ValueError(f"Zero vector found")
         for dim in range(0, 3):
             normalized_vector[dim] = vector[dim] / vector_norm
         return tuple(normalized_vector)

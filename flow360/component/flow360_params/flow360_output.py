@@ -291,6 +291,8 @@ class Slice(Flow360BaseModel):
     slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
 
+    _normalize_slice_normal = pd.validator('slice_normal', allow_reuse=True)(normalize_vector)
+
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
@@ -305,7 +307,6 @@ class Slice(Flow360BaseModel):
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> Slice:
-        self.slice_normal = normalize_vector(self.slice_normal, "slice_normal")
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
         fields = [to_short(field) for field in fields]

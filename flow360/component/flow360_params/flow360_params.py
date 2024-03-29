@@ -289,10 +289,7 @@ class ActuatorDisk(Flow360BaseModel):
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> ActuatorDisk:
-        self.axis_thrust = normalize_vector(self.axis_thrust, "ActuatorDisk->axis_thrust")
-        return super().to_solver(params, **kwargs)
+    _normalize_axis_thrust = pd.validator('axis_thrust', allow_reuse=True)(normalize_vector)
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -982,13 +979,14 @@ class BETDisk(Flow360BaseModel):
         """
         return _check_bet_disks_3d_coefficients_in_polars(values)
 
+    _normalize_axis_of_rotation = pd.validator('axis_of_rotation', allow_reuse=True)(normalize_vector)
+
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BETDisk:
         """
         normalize the axis of rotation
         average the BET coefficient if the angle is effectively same
         """
-        self.axis_of_rotation = normalize_vector(self.axis_of_rotation, "BETDisk->axis_of_rotation")
 
         # Assuming alphas is ordered
         BET_ALPHA_TOLERANCE = 1e-5
