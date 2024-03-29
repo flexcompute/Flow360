@@ -21,7 +21,7 @@ geometry:
     refArea:
         units: 2*m**2
         value: 1.0
-hash: baa131a13436b3520628a793a9cc9e58c2ec2f0840750c130b6312938b4e24d4
+hash: a53580abf4c987dea96533b79558f1d65d26e33fbe9a200e2e163ec2be23c318
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
@@ -49,9 +49,9 @@ sliceOutput:
             outputFields:
             - Mach
             sliceNormal:
-            - 1
-            - 0
-            - 0
+            - 1.0
+            - 0.0
+            - 0.0
             sliceOrigin:
                 units: flow360_length_unit
                 value:
@@ -62,9 +62,9 @@ sliceOutput:
             outputFields:
             - T
             sliceNormal:
-            - 0
-            - 1
-            - 0
+            - 0.0
+            - 1.0
+            - 0.0
             sliceOrigin:
                 units: flow360_length_unit
                 value:

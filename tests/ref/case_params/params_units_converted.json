@@ -101,9 +101,9 @@
                     "units": "flow360_length_unit"
                 },
                 "axisOfRotation": [
-                    1,
-                    0,
-                    0
+                    1.0,
+                    0.0,
+                    0.0
                 ]
             }
         },
@@ -121,9 +121,9 @@
                     "units": "flow360_length_unit"
                 },
                 "axisOfRotation": [
-                    1,
-                    0,
-                    0
+                    1.0,
+                    0.0,
+                    0.0
                 ]
             }
         },
@@ -141,12 +141,12 @@
                     "units": "flow360_length_unit"
                 },
                 "axisOfRotation": [
-                    1,
-                    0,
-                    0
+                    1.0,
+                    0.0,
+                    0.0
                 ]
             }
         }
     },
-    "hash": "09cb96b5e600cbddcb575d7ef5af8bba85c61ac9525bb1960113118c85db2ec0"
+    "hash": "2874bd0c4cc10be5dc27d78c658e8a97c70a1ccc3607ad30a23a19f069ad0cd4"
 }

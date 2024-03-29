@@ -5,9 +5,9 @@
         0.0
     ],
     "axisThrust": [
-        0,
-        0,
-        1
+        0.0,
+        0.0,
+        1.0
     ],
     "thickness": 20.0,
     "forcePerArea": {

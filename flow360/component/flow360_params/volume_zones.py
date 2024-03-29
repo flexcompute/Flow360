@@ -25,7 +25,7 @@ from ..types import (
     Tuple,
     Vector,
 )
-from ..utils import normalize_vector, process_expressions
+from ..utils import process_expressions
 from .params_base import Flow360BaseModel
 from .solvers import HeatEquationSolver
 from .unit_system import (
@@ -44,8 +44,6 @@ class ReferenceFrameBase(Flow360BaseModel):
     center: LengthType.Point = pd.Field(alias="centerOfRotation")
     axis: Axis = pd.Field(alias="axisOfRotation")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
-
-    _normalized_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -240,8 +238,6 @@ class ReferenceFrame(ReferenceFrameBase):
         "ReferenceFrame", alias="modelType", const=True
     )
     omega: AngularVelocityType = pd.Field()
-
-    _normalized_axis = pd.validator("axis", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:

@@ -48,12 +48,7 @@ from ..types import (
     Size,
     Vector,
 )
-from ..utils import (
-    _get_value_or_none,
-    convert_legacy_names,
-    normalize_vector,
-    process_expressions,
-)
+from ..utils import _get_value_or_none, convert_legacy_names, process_expressions
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -208,14 +203,14 @@ class ForcePerArea(Flow360BaseModel):
 
     Parameters
     ----------
-    radius : Coordinate
+    radius : List[float]
         Radius of the sampled locations in grid unit
 
-    thrust : Axis
+    thrust : List[float]
         Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.
         It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2
 
-    circumferential : PositiveFloat
+    circumferential : List[float]
         Force per area in the circumferential direction, positive means the circumferential force follows the same
         direction as axisThrust with the right hand rule. It is non-dimensional:
                                                                 circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2
@@ -288,8 +283,6 @@ class ActuatorDisk(Flow360BaseModel):
     axis_thrust: Axis = pd.Field(alias="axisThrust", displayed="Axis thrust")
     thickness: PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
-
-    _normalized_axis_thrust = pd.validator("axis_thrust", allow_reuse=True)(normalize_vector)
 
 
 class SlidingInterface(Flow360BaseModel):
@@ -978,10 +971,6 @@ class BETDisk(Flow360BaseModel):
         check dimension of force coefficients in polars
         """
         return _check_bet_disks_3d_coefficients_in_polars(values)
-
-    _normalized_axis_of_rotation = pd.validator("axis_of_rotation", allow_reuse=True)(
-        normalize_vector
-    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BETDisk:

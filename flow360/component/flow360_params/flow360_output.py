@@ -11,7 +11,6 @@ import pydantic as pd
 from pydantic import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
-from ..utils import normalize_vector
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -290,8 +289,6 @@ class Slice(Flow360BaseModel):
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
-
-    _normalized_slice_normal = pd.validator("slice_normal", allow_reuse=True)(normalize_vector)
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):

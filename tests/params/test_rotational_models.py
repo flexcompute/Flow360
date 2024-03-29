@@ -87,7 +87,7 @@ def test_bet_disk():
         bet = BETDisk(
             rotation_direction_rule="leftHand",
             center_of_rotation=(0, 0, 0),
-            axis_of_rotation=(1, 1, 0),
+            axis_of_rotation=(2, 0, 0),
             number_of_blades=4,
             radius=0.5,
             omega=0.75,

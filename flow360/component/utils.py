@@ -149,37 +149,6 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
         return None
 
 
-UNIT_VECTOR_NORM_TOLERANCE = 1e-6
-
-
-def check_unit_vector(vector: list):
-    """
-    Return whether a vector is unit vector and its magnitude
-    """
-    magnitude = 0
-    for comp in vector:
-        magnitude += comp * comp
-    magnitude = numpy.sqrt(magnitude)
-    if numpy.abs(magnitude - 1.0) < UNIT_VECTOR_NORM_TOLERANCE:
-        return (True, magnitude)
-    return (False, magnitude)
-
-
-def normalize_vector(vector):
-    """
-    Normalize vector
-    """
-    is_unit_vector, vector_norm = check_unit_vector(vector)
-    normalized_vector = [0, 0, 0]
-    if not is_unit_vector:
-        if vector_norm == 0:
-            raise ValueError("Zero vector found")
-        for dim in range(0, 3):
-            normalized_vector[dim] = vector[dim] / vector_norm
-        return tuple(normalized_vector)
-    return vector
-
-
 ##::  -------- Expression preprocessing functions --------
 def remove_state_var_square_bracket(expression: str):
     """

@@ -2,6 +2,7 @@
 
 from typing import List, Literal, Optional, Tuple, Union
 
+import numpy as np
 import pydantic as pd
 from typing_extensions import Annotated
 
@@ -60,7 +61,16 @@ class Vector(Coordinate):
             vector = cls(vector)
         if vector == (0, 0, 0):
             raise ValueError(Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
-        return vector
+
+        ## Always normalize the vector
+        vector_norm = 0.0
+        for element in vector:
+            vector_norm += element * element
+        vector_norm = np.sqrt(vector_norm)
+        normalized_vector = []
+        for element in vector:
+            normalized_vector.append(element / vector_norm)
+        return Vector(normalized_vector)
 
     # pylint: disable=unused-argument
     @classmethod
