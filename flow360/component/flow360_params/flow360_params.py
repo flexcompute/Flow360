@@ -1073,29 +1073,6 @@ class UserDefinedDynamic(Flow360BaseModel):
         process_expressions
     )
 
-    # # pylint: disable=arguments-differ
-    # def to_solver(self, params, **kwargs) -> UserDefinedDynamic:
-    #     # if self.output_vars is not None:
-    #     #     for var_name, output_law in self.output_vars.items():
-    #     #         self.output_vars[var_name] = process_expression(output_law)
-
-    #     # if self.input_vars is not None:
-    #     #     processed_input_vars = []
-    #     #     for var_name in self.input_vars:
-    #     #         processed_input_vars.append(convert_legacy_names(var_name))
-    #     #     self.input_vars = copy.deepcopy(processed_input_vars)
-
-    #     # processed_update_law = []
-    #     # for expr in self.update_law:
-    #     #     processed_update_law.append(process_expression(expr))
-    #     # self.update_law = copy.deepcopy(processed_update_law)
-
-    #     state_vars_initial_value = []
-    #     for expr in self.state_vars_initial_value:
-    #         state_vars_initial_value.append(process_expression(expr))
-    #     self.state_vars_initial_value = copy.deepcopy(state_vars_initial_value)
-    #     return super().to_solver(params, **kwargs)
-
 
 # pylint: disable=too-many-instance-attributes,R0904
 class Flow360Params(Flow360BaseModel):
