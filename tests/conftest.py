@@ -4,7 +4,7 @@ import tempfile
 import pytest
 
 from flow360.file_path import flow360_dir
-from flow360.log import log, set_logging_file
+from flow360.log import log, set_logging_file, toggle_rotation
 
 """
 Before running all tests redirect all test logging to a temporary log file, turn off log rotation 
@@ -20,10 +20,11 @@ def pytest_configure():
     if os.path.exists(pytest.log_test_file):
         os.remove(pytest.log_test_file)
     set_logging_file(fo.name, level="DEBUG")
+    toggle_rotation(False)
 
 
 @pytest.fixture
-def before_log_test():
+def before_log_test(request):
     set_logging_file(pytest.log_test_file, level="DEBUG")
 
 

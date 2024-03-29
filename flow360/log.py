@@ -1,8 +1,6 @@
 """Logging for Flow360."""
 
 import os
-import platform
-import time
 from datetime import datetime
 from typing import Union
 
@@ -114,28 +112,7 @@ class LogHandler:
             None
         """
         if os.path.exists(source) and not os.path.exists(dest):
-            max_wait_time = 5
-            retry_delay = 0.1
-            start_time = time.time()
-            while time.time() - start_time < max_wait_time:
-                try:
-                    os.rename(source, dest)
-                    break
-                except (
-                    PermissionError,
-                    FileExistsError,
-                    IsADirectoryError,
-                    NotADirectoryError,
-                ) as error:
-                    if time.time() - start_time > max_wait_time:
-                        self.console.log(
-                            _level_print_style.get(_level_value["ERROR"], "unknown"),
-                            str(error),
-                            sep=": ",
-                        )
-                        break
-
-                    time.sleep(retry_delay)
+            os.rename(source, dest)
 
     def rotation_filename(self, name, counter):
         """
@@ -149,8 +126,9 @@ class LogHandler:
             str: Rotated filename with the format "{name}{formatted_time}.{counter}".
 
         """
+        root_ext = os.path.splitext(name)
 
-        return name + str(counter)
+        return f"{root_ext[0]}_{counter}{root_ext[1]}"
 
     def do_roll_over(self):
         """
@@ -162,9 +140,10 @@ class LogHandler:
 
         Returns:
             str: Rotated filename with the format "{name}{formatted_time}.{counter}".
-
         """
+
         if self.backup_count > 0:
+            self.console.file.close()
             for i in range(self.backup_count - 1, 0, -1):
                 sfn = self.rotation_filename(self.fname, i)
                 dfn = self.rotation_filename(self.fname, i + 1)
@@ -176,6 +155,8 @@ class LogHandler:
             if os.path.isfile(dfn):
                 os.remove(dfn)
             self.rotate(self.fname, dfn)
+            # pylint: disable=consider-using-with,unspecified-encoding
+            self.console.file = open(self.fname, self.console.file.mode)
 
     def should_roll_over(self, message):
         """
@@ -190,9 +171,10 @@ class LogHandler:
         # See bpo-45401: Never rollover anything other than regular files
         if not os.path.exists(self.fname) or not os.path.isfile(self.fname):
             return False
+        size = os.path.getsize(self.fname)
         if self.max_bytes > 0:  # are we rolling over?
             try:
-                if os.path.getsize(self.fname) + len(message) >= self.max_bytes:
+                if size + len(message) >= self.max_bytes:
                     return True
             except OSError as error:
                 self.console.log(
@@ -316,10 +298,10 @@ def set_logging_file(
     # Close previous handler, if any
     if "file" in log.handlers:
         try:
-            log.handlers["file"].file.close()
-        except:  # pylint: disable=bare-except
+            log.handlers["file"].console.file.close()
+        except Exception as error:  # pylint: disable=broad-exception-caught
             del log.handlers["file"]
-            log.warning("Log file could not be closed")
+            log.warning(f"Log file could not be closed: {error}")
 
     try:
         # pylint: disable=consider-using-with,unspecified-encoding
@@ -333,16 +315,28 @@ def set_logging_file(
     log.handlers["file"].max_bytes = max_bytes
 
 
+def toggle_rotation(rotate: bool):
+    """Toggle log file rotation (without log rotation logging
+    is thread-safe on every platform, but this may generate
+    large file sizes)
+    Parameters
+    ----------
+    rotate : bool
+        Enable or disable log rotation
+    """
+    if "file" in log.handlers:
+        log.handlers["file"].is_rotating = rotate
+
+
 # Set default logging output
 set_logging_console()
 
-# Writing log files on Windows is currently very slow, toggled off until a fix is implemented
-if platform.system() != "Windows":
-    log_dir = flow360_dir + "logs"
-    try:
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
 
-        set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
-    except OSError as err:
-        log.warning(f"Could not setup file logging: {err}")
+log_dir = flow360_dir + "logs"
+try:
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
+except OSError as err:
+    log.warning(f"Could not setup file logging: {err}")
