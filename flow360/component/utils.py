@@ -173,7 +173,7 @@ def normalize_vector(vector):
     normalized_vector = [0, 0, 0]
     if not is_unit_vector:
         if vector_norm == 0:
-            raise ValueError(f"Zero vector found")
+            raise ValueError("Zero vector found")
         for dim in range(0, 3):
             normalized_vector[dim] = vector[dim] / vector_norm
         return tuple(normalized_vector)
@@ -259,17 +259,11 @@ def _process_string_expression(expression: str):
     return expression
 
 
-def process_expressions(input_expressions: str | tuple | float | int):
+def process_expressions(input_expressions):
     """
     All in one funciton to precess expressions in form of tuple or single string
     """
-    print(">>>>", input_expressions.__class__)
-    print(">>", input_expressions)
-    if (
-        isinstance(input_expressions, str)
-        or isinstance(input_expressions, float)
-        or isinstance(input_expressions, int)
-    ):
+    if isinstance(input_expressions, (str, float, int)):
         return _process_string_expression(str(input_expressions))
 
     if isinstance(input_expressions, tuple):
@@ -277,5 +271,4 @@ def process_expressions(input_expressions: str | tuple | float | int):
         for expression in input_expressions:
             prcessed_expressions.append(_process_string_expression(expression))
         return tuple(prcessed_expressions)
-    else:
-        return input_expressions
+    return input_expressions
