@@ -1,8 +1,6 @@
 """Logging for Flow360."""
 
 import os
-import platform
-import time
 from datetime import datetime
 from typing import Union
 
@@ -157,6 +155,7 @@ class LogHandler:
             if os.path.isfile(dfn):
                 os.remove(dfn)
             self.rotate(self.fname, dfn)
+            # pylint: disable=consider-using-with,unspecified-encoding
             self.console.file = open(self.fname, self.console.file.mode)
 
     def should_roll_over(self, message):
@@ -184,6 +183,7 @@ class LogHandler:
                     sep=": ",
                 )
         return False
+
 
 class Logger:
     """Custom logger to avoid the complexities of the logging module"""
@@ -298,11 +298,10 @@ def set_logging_file(
     # Close previous handler, if any
     if "file" in log.handlers:
         try:
-            c: Console = log.handlers["file"].console
-            c.file.close()
-        except Exception as e:  # pylint: disable=bare-except
+            log.handlers["file"].console.file.close()
+        except Exception as error:  # pylint: disable=broad-exception-caught
             del log.handlers["file"]
-            log.warning(f"Log file could not be closed: {e}")
+            log.warning(f"Log file could not be closed: {error}")
 
     try:
         # pylint: disable=consider-using-with,unspecified-encoding
@@ -317,6 +316,14 @@ def set_logging_file(
 
 
 def toggle_rotation(rotate: bool):
+    """Toggle log file rotation (without log rotation logging
+    is thread-safe on every platform, but this may generate
+    large file sizes)
+    Parameters
+    ----------
+    rotate : bool
+        Enable or disable log rotation
+    """
     if "file" in log.handlers:
         log.handlers["file"].is_rotating = rotate
 

@@ -17,4 +17,4 @@ print("Finished logging")
 
 exec_time = et - st
 
-print(f'Log time for {N_LOGS} calls:', exec_time, 'seconds')
+print(f"Log time for {N_LOGS} calls:", exec_time, "seconds")
