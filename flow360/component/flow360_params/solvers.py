@@ -14,6 +14,10 @@ from typing_extensions import Literal
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from .flow360_legacy import LegacyModel, try_set, try_update
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
+from .time_stepping import UnsteadyTimeStepping
+
+HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
+HEAT_EQUATION_EVAL_FREQUENCY_STEADY = 10
 
 
 class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -72,7 +76,6 @@ class LinearSolver(Flow360BaseModel):
     """
 
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
-    ## Reflect that only one of absolute_tolerance and relative_tolerance is allowed in schema. TODO
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
 
@@ -439,6 +442,23 @@ class HeatEquationSolver(GenericFlowSolverSettings):
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
             DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> HeatEquationSolver:
+        """
+        set Default Equation Eval Frequency
+        """
+        if self.equation_eval_frequency is None:
+            if isinstance(params.time_stepping, UnsteadyTimeStepping):
+                self.equation_eval_frequency = max(
+                    1,
+                    params.time_stepping.max_pseudo_steps
+                    // HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY,
+                )
+            else:
+                self.equation_eval_frequency = HEAT_EQUATION_EVAL_FREQUENCY_STEADY
+
+        return super().to_solver(params, **kwargs)
 
 
 class TransitionModelSolver(GenericFlowSolverSettings):

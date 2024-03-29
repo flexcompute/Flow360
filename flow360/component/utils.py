@@ -3,6 +3,7 @@ Utility functions
 """
 
 import os
+import re
 import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -145,3 +146,97 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
     except (zstd.ZstdError, FileNotFoundError, IOError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
         return None
+
+
+##::  -------- Expression preprocessing functions --------
+def remove_state_var_square_bracket(expression: str):
+    """
+    Remove state var square bracket
+    """
+    pattern = r"\b(state)\s*\[\s*(\d+)\s*\]"
+    result = expression
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"state\2", result)
+    return result
+
+
+def convert_if_else(expression: str):
+    """
+    Convert if else to use ? : syntax
+    """
+    if expression.find("if") != -1:
+        regex = r"\s*if\s*\(\s*(.*?)\s*\)\s*(.*?)\s*;\s*else\s*(.*?)\s*;\s*"
+        subst = r"(\1) ? (\2) : (\3);"
+        expression = re.sub(regex, subst, expression)
+    return expression
+
+
+def convert_caret_to_power(input_str):
+    """
+    Convert caret to pow function to comply with C++ syntax
+    """
+    enclosed = r"\([^(^)]+\)"
+    non_negative_num = r"\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    number = r"[+-]?\d+(?:\.\d+)?(?:e[-+]?\d+)?"
+    symbol = r"\b[a-zA-Z_][a-zA-Z_\d]*\b"
+    base = rf"({enclosed}|{symbol}|{non_negative_num})"
+    exponent = rf"({enclosed}|{symbol}|{number})"
+    pattern = rf"{base}\s*\^\s*{exponent}"
+    result = input_str
+    while re.search(pattern, result):
+        result = re.sub(pattern, r"powf(\1, \2)", result)
+    return result
+
+
+def add_trailing_semicolon(input_str):
+    """
+    Add trailing semicolon to comply with C++ syntax
+    """
+    regex = r";\s*$"
+    if not re.search(regex, input_str):
+        input_str += ";"
+    return input_str
+
+
+def convert_legacy_names(input_str):
+    """
+    Convert legacy var name to new ones.
+    """
+    old_names = ["rotMomentX", "rotMomentY", "rotMomentZ", "xyz"]
+    new_names = ["momentX", "momentY", "momentZ", "coordinate"]
+    result = input_str
+    for old_name, new_name in zip(old_names, new_names):
+        pattern = r"\b(" + old_name + r")\b"
+        while re.search(pattern, result):
+            result = re.sub(pattern, new_name, result)
+    return result
+
+
+def _process_string_expression(expression: str):
+    """
+    All in one funciton to precess string expressions
+    """
+    if not isinstance(expression, str):
+        return expression
+    expression = str(expression)
+    expression = add_trailing_semicolon(expression)
+    expression = remove_state_var_square_bracket(expression)
+    expression = convert_if_else(expression)
+    expression = convert_caret_to_power(expression)
+    expression = convert_legacy_names(expression)
+    return expression
+
+
+def process_expressions(input_expressions):
+    """
+    All in one funciton to precess expressions in form of tuple or single string
+    """
+    if isinstance(input_expressions, (str, float, int)):
+        return _process_string_expression(str(input_expressions))
+
+    if isinstance(input_expressions, tuple):
+        prcessed_expressions = []
+        for expression in input_expressions:
+            prcessed_expressions.append(_process_string_expression(expression))
+        return tuple(prcessed_expressions)
+    return input_expressions

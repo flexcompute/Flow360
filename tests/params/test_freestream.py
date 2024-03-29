@@ -80,3 +80,63 @@ def test_freesteam():
 
         fs = FreestreamFromMachReynolds(Mach=0.1, Reynolds="inf", temperature=288.15)
         to_file_from_file_test(fs)
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=FreestreamFromMach(
+                Mach=1, temperature=288.15, mu_ref=1, turbulent_viscosity_ratio=0.001
+            ),
+        )
+    case_params = params.to_solver()
+    assert case_params.freestream.turbulence_quantities.turbulent_viscosity_ratio == 0.001
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=FreestreamFromMachReynolds(
+                Mach=0.1, Reynolds="inf", temperature=288.15, turbulent_viscosity_ratio=0.002
+            ),
+        )
+    case_params = params.to_solver()
+    assert case_params.freestream.turbulence_quantities.turbulent_viscosity_ratio == 0.002
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=FreestreamFromVelocity(
+                velocity=5 * u.m / u.s, turbulent_viscosity_ratio=0.003
+            ),
+        )
+    case_params = params.to_solver()
+    assert case_params.freestream.turbulence_quantities.turbulent_viscosity_ratio == 0.003
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=ZeroFreestream(
+                Mach_ref=0.123, mu_ref=1e-5, temperature=288.15, turbulent_viscosity_ratio=0.004
+            ),
+        )
+    case_params = params.to_solver()
+    assert case_params.freestream.turbulence_quantities.turbulent_viscosity_ratio == 0.004
+
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            fluid_properties=fl.air,
+            geometry=fl.Geometry(mesh_unit=u.m),
+            boundaries={},
+            freestream=ZeroFreestreamFromVelocity(
+                velocity=0, velocity_ref=1 * u.m / u.s, turbulent_viscosity_ratio=0.005
+            ),
+        )
+    case_params = params.to_solver()
+    assert case_params.freestream.turbulence_quantities.turbulent_viscosity_ratio == 0.005
