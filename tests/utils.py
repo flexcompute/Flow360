@@ -67,6 +67,9 @@ def to_file_from_file_test(obj):
             obj_filename = os.path.join(tmpdir, f"obj.{ext}")
             obj.to_file(obj_filename)
             obj_read = factory.from_file(obj_filename)
+            if not obj == obj_read:
+                print(">> \n", obj)
+                print(">>>> \n", obj_read)
             assert obj == obj_read
             obj_read = factory(filename=obj_filename)
             assert obj == obj_read

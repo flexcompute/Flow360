@@ -42,7 +42,7 @@ class Vector(Coordinate):
 
     Example
     -------
-    >>> v = Vector((0, 0, 1)) # doctest: +SKIP
+    >>> v = Vector((2, 1, 1)) # doctest: +SKIP
     """
 
     @classmethod
@@ -62,15 +62,7 @@ class Vector(Coordinate):
         if vector == (0, 0, 0):
             raise ValueError(Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
 
-        ## Always normalize the vector
-        vector_norm = 0.0
-        for element in vector:
-            vector_norm += element * element
-        vector_norm = np.sqrt(vector_norm)
-        normalized_vector = []
-        for element in vector:
-            normalized_vector.append(element / vector_norm)
-        return Vector(normalized_vector)
+        return vector
 
     # pylint: disable=unused-argument
     @classmethod
@@ -85,4 +77,25 @@ class Vector(Coordinate):
         field_schema.update(new_schema)
 
 
-Axis = Vector
+class Axis(Vector):
+    """:class: Axis (unit vector)
+
+    Example
+    -------
+    >>> v = Axis((0, 0, 1)) # doctest: +SKIP
+    """
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, vector):
+        """validator for Axis"""
+        vector = super().validate(vector)
+        vector_norm = 0.0
+        for element in vector:
+            vector_norm += element * element
+        vector_norm = np.sqrt(vector_norm)
+        normalized_vector = tuple(e / vector_norm for e in vector)
+        return Axis(normalized_vector)
