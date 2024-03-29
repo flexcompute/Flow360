@@ -525,8 +525,8 @@ class MonitorOutput(Flow360BaseModel):
         return MonitorOutput(**solver_values)
 
 
-class NoTypeMonitor(MonitorBase):
-    """:class:`NoTypeMonitor` class"""
+class LegacyMonitor(MonitorBase):
+    """:class:`LegacyMonitor` class"""
 
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
@@ -552,7 +552,7 @@ class NoTypeMonitor(MonitorBase):
         return ProbeMonitor(**solver_values, output_fields=fields)
 
 
-LegacyMonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor, NoTypeMonitor]
+LegacyMonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor, LegacyMonitor]
 
 
 class _GenericLegacyMonitorWrapper(Flow360BaseModel):
@@ -588,7 +588,7 @@ class MonitorOutputLegacy(LegacyModel):
     def update_model(self):
         new_monitors = {}
         for monitor_name in self.monitors.names():
-            if isinstance(self.monitors[monitor_name], NoTypeMonitor):
+            if isinstance(self.monitors[monitor_name], LegacyMonitor):
                 self.monitors[monitor_name].type = "probe"
             else:
                 new_monitors[monitor_name] = self.monitors[monitor_name]
