@@ -8,7 +8,6 @@ import uuid
 from functools import wraps
 from tempfile import NamedTemporaryFile
 
-import numpy
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
