@@ -57,9 +57,9 @@ def _filter_fields(fields, literal_filter):
 
 
 def _distribute_shared_output_fields(solver_values: dict, item_names: str):
-    shared_fields = solver_values.pop("output_fields")
-    if shared_fields is None:
+    if "output_fields" not in solver_values or solver_values["output_fields"] is None:
         return
+    shared_fields = solver_values.pop("output_fields")
     shared_fields = [to_short(field) for field in shared_fields]
     if solver_values[item_names] is not None:
         for name in solver_values[item_names].names():
