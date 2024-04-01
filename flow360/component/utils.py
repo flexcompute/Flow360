@@ -149,15 +149,6 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
 
 
 ##::  -------- Expression preprocessing functions --------
-def remove_state_var_square_bracket(expression: str):
-    """
-    Remove state var square bracket
-    """
-    pattern = r"\b(state)\s*\[\s*(\d+)\s*\]"
-    result = expression
-    while re.search(pattern, result):
-        result = re.sub(pattern, r"state\2", result)
-    return result
 
 
 def convert_if_else(expression: str):
@@ -220,7 +211,6 @@ def _process_string_expression(expression: str):
         return expression
     expression = str(expression)
     expression = add_trailing_semicolon(expression)
-    expression = remove_state_var_square_bracket(expression)
     expression = convert_if_else(expression)
     expression = convert_caret_to_power(expression)
     expression = convert_legacy_names(expression)
