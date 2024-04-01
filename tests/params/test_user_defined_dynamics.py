@@ -46,13 +46,13 @@ def test_user_defined_dynamics():
         assert solver_params.user_defined_dynamics[0].input_vars == ["CL", "momentX"]
         assert (
             solver_params.user_defined_dynamics[0].output_vars["alphaAngle"]
-            == "(pseudoStep > 500) ? (state0) : (alphaAngle);"
+            == "(pseudoStep > 500) ? (state[0]) : (alphaAngle);"
         )
         assert solver_params.user_defined_dynamics[0].state_vars_initial_value == [
             "alphaAngle;",
             "momentY;",
         ]
         assert solver_params.user_defined_dynamics[0].update_law == [
-            "(pseudoStep > 500) ? (state0 + Kp * (CLTarget - CL) + Ki * state1) : (state0);",
-            "(pseudoStep > 500) ? (state1 + (CLTarget - CL)) : (state1);",
+            "(pseudoStep > 500) ? (state[0] + Kp * (CLTarget - CL) + Ki * state[1]) : (state[0]);",
+            "(pseudoStep > 500) ? (state[1] + (CLTarget - CL)) : (state[1]);",
         ]
