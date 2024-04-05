@@ -249,8 +249,8 @@ class IncompressibleNavierStokesSolver(GenericFlowSolverSettings):
 NavierStokesSolverType = Union[NavierStokesSolver, IncompressibleNavierStokesSolver]
 
 
-class TurbulenceModelConstantsSA(Flow360BaseModel):
-    """:class:`TurbulenceModelConstantsSA` class"""
+class SpalartAllmarasModelConstants(Flow360BaseModel):
+    """:class:`SpalartAllmarasModelConstants` class"""
 
     model_type: Literal["SpalartAllmarasConsts"] = pd.Field(
         "SpalartAllmarasConsts", alias="modelType", const=True
@@ -259,8 +259,8 @@ class TurbulenceModelConstantsSA(Flow360BaseModel):
     C_d: Optional[NonNegativeFloat] = pd.Field(8.0)
 
 
-class TurbulenceModelConstantsSST(Flow360BaseModel):
-    """:class:`TurbulenceModelConstantsSST` class"""
+class KOmegaSSTModelConstants(Flow360BaseModel):
+    """:class:`KOmegaSSTModelConstants` class"""
 
     model_type: Literal["kOmegaSSTConsts"] = pd.Field(
         "kOmegaSSTConsts", alias="modelType", const=True
@@ -271,7 +271,7 @@ class TurbulenceModelConstantsSST(Flow360BaseModel):
     C_d2: Optional[NonNegativeFloat] = pd.Field(3.0)
 
 
-TurbulenceModelConstants = Union[TurbulenceModelConstantsSA, TurbulenceModelConstantsSST]
+TurbulenceModelConstants = Union[SpalartAllmarasModelConstants, KOmegaSSTModelConstants]
 
 
 class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
@@ -364,7 +364,9 @@ class KOmegaSST(TurbulenceModelSolver):
     """:class:`KOmegaSST` class"""
 
     model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", alias="modelType", const=True)
-    model_constants: Optional[TurbulenceModelConstantsSST] = pd.Field(alias="modelConstants")
+    model_constants: Optional[KOmegaSSTModelConstants] = pd.Field(
+        alias="modelConstants", default=KOmegaSSTModelConstants()
+    )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
@@ -378,7 +380,9 @@ class SpalartAllmaras(TurbulenceModelSolver):
     )
     rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
-    model_constants: Optional[TurbulenceModelConstantsSA] = pd.Field(alias="modelConstants")
+    model_constants: Optional[SpalartAllmarasModelConstants] = pd.Field(
+        alias="modelConstants", default=SpalartAllmarasModelConstants()
+    )
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         0.5, alias="reconstructionGradientLimiter"
     )
@@ -609,11 +613,11 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         ):
             return values
         if turbulence_model_type == SpalartAllmaras.__fields__["model_type"].default:
-            values["modelConstants"]["modelType"] = TurbulenceModelConstantsSA.__fields__[
+            values["modelConstants"]["modelType"] = SpalartAllmarasModelConstants.__fields__[
                 "model_type"
             ].default
         if turbulence_model_type == KOmegaSST.__fields__["model_type"].default:
-            values["modelConstants"]["modelType"] = TurbulenceModelConstantsSST.__fields__[
+            values["modelConstants"]["modelType"] = KOmegaSSTModelConstants.__fields__[
                 "model_type"
             ].default
         return values

@@ -88,6 +88,16 @@ def test_turbulence_solver():
     )
     to_file_from_file_test(ts)
 
+    with fl.SI_unit_system:
+        params = Flow360Params(
+            geometry=fl.Geometry(mesh_unit="m"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            fluid_properties=fl.air,
+            boundaries={},
+            turbulence_model_solver=SpalartAllmaras(),
+        )
+        assert params.turbulence_model_solver.model_constants is not None
+
 
 def test_transition():
     tr = TransitionModelSolver()
