@@ -92,6 +92,8 @@ from .component.flow360_params.solvers import (
     LinearSolver,
     NavierStokesSolver,
     PressureCorrectionSolver,
+    TurbulenceModelConstantsSA,
+    TurbulenceModelConstantsSST,
 )
 from .component.flow360_params.time_stepping import (
     AdaptiveCFL,

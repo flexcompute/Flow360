@@ -353,7 +353,7 @@ def test_unit_system():
 
     with pytest.raises(
         ValueError,
-        match="arg '\[1 1 1 1\] m' needs to be a collection of 3 values",
+        match=r"arg '\[1 1 1 1\] m' needs to be a collection of 3 values",
     ):
         data = VectorDataWithUnits(
             pt=(1, 1, 1, 1) * u.m,
