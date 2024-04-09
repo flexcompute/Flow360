@@ -550,7 +550,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
     Inherits from ResultBaseModel.
     """
 
-    remote_file_name: str = pd.Field(None, const=True)
+    remote_file_name: str = pd.Field(None)
     get_download_file_list_method: Optional[Callable] = pd.Field()
 
     _udd_names: List[str] = pd.PrivateAttr([])
@@ -609,6 +609,54 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                 f"available user defined dynamics: {self.udd_names}"
             )
         return self._udds[name]
+
+    def get_downloader(self, download_method: Callable = None):
+        def _download_all_files(
+            file_name,
+            to_file=None,
+            to_folder=".",
+            overwrite: bool = True,
+            progress_callback=None,
+            **kwargs,
+        ):
+            """
+            Download all UDD files associated with the case.
+
+            Parameters
+            ----------
+            file_name : str
+                Name of the file to be downloaded.
+            to_folder : str, optional
+                Folder name to save the downloaded file. If None, the file will be saved in the current directory.
+            overwrite : bool, optional
+                If True, overwrite existing files with the same name in the destination.
+            progress_callback : callable, optional
+                A callback function to track the download progress.
+            **kwargs : dict, optional
+                Additional arguments to be passed to the download process.
+
+            Returns
+            -------
+            List[str]
+                File paths of the downloaded files.
+            """
+
+            pattern = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
+            file_list = [file["fileName"] for file in self.get_download_file_list_method()]
+            for file in file_list:
+                if file.startswith("results/"):
+                    name = file.split("results/")[1]
+                    match = re.match(pattern, name)
+                    if match:
+                        download_method(
+                            file,
+                            to_folder=to_folder,
+                            overwrite=overwrite,
+                            progress_callback=progress_callback,
+                            **kwargs,
+                        )
+
+        return _download_all_files
 
     def __getitem__(self, name: str) -> UserDefinedDynamicsCSVModel:
         """

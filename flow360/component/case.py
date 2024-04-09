@@ -723,7 +723,12 @@ class CaseResultsModel(pd.BaseModel):
         for field in cls.__fields__.values():
             if field.name in values.keys():
                 value = values[field.name]
-                if isinstance(value, ResultBaseModel):
+                if isinstance(value, UserDefinedDynamicsResultModel):
+                    value._download_method = value.get_downloader(values["case"]._download_file)
+                    value._get_params_method = lambda: values["case"].params
+
+                    values[field.name] = value
+                elif isinstance(value, ResultBaseModel):
                     value._download_method = values["case"]._download_file
                     value._get_params_method = lambda: values["case"].params
 
