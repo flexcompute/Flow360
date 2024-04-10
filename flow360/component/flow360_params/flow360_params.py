@@ -565,7 +565,9 @@ class FreestreamFromMach(FreestreamBase):
     Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
     temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
-        alias="Temperature", displayed="Temperature [K]", options=["Temperature [K]", "Constant temperature"]
+        alias="Temperature",
+        displayed="Temperature [K]",
+        options=["Temperature [K]", "Constant temperature"],
     )
 
     # pylint: disable=arguments-differ, unused-argument
@@ -590,7 +592,9 @@ class FreestreamFromMachReynolds(FreestreamBase):
         displayed="Reynolds number", options=["Reynolds", "Reynolds = inf"]
     )
     temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
-        alias="Temperature", displayed="Temperature [K]", options=["Temperature [K]", "Constant temperature"]
+        alias="Temperature",
+        displayed="Temperature [K]",
+        options=["Temperature [K]", "Constant temperature"],
     )
 
     # pylint: disable=arguments-differ, unused-argument
@@ -611,7 +615,9 @@ class ZeroFreestream(FreestreamBase):
     Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
     mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
     temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
-        alias="Temperature", displayed="Temperature [K]", options=["Temperature [K]", "Constant temperature"]
+        alias="Temperature",
+        displayed="Temperature [K]",
+        options=["Temperature [K]", "Constant temperature"],
     )
 
     # pylint: disable=arguments-differ, unused-argument
