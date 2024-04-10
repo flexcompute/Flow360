@@ -111,6 +111,7 @@ data_turbulence = {
         "Mach": 0.8404497144189705,
         "muRef": 4.292519319815164e-05,
         "Temperature": 288.15,
+        "turbulenceQuantities": {"modifiedTurbulentViscosity": 1.0},
     },
 }
 
@@ -174,6 +175,8 @@ def test_turbulence_updater():
     params = fl.Flow360Params(temp_file.name)
 
     assert params.boundaries["2"].turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
+
+    assert params.freestream.turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
 
 
 def test_updater_map():

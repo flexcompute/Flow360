@@ -546,9 +546,6 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
-    ## Legacy update pending.
-    ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
-    ## is also pending. TODO
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
         alias="turbulenceQuantities", discriminator="model_type"
     )
@@ -1537,6 +1534,43 @@ class FreestreamLegacy(LegacyModel):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
+    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+        alias="turbulenceQuantities"
+    )
+
+    def __init__(self, *args, **kwargs):
+        with Flow360UnitSystem(verbose=False):
+            # Try to add discriminators to turbulence quantities,
+            class _TurbulenceQuantityTempModel(pd.BaseModel):
+                field: TurbulenceQuantitiesType = pd.Field(discriminator="model_type")
+
+            options = [
+                "TurbulentViscosityRatio",
+                "TurbulentKineticEnergy",
+                "TurbulentIntensity",
+                "TurbulentLengthScale",
+                "ModifiedTurbulentViscosityRatio",
+                "ModifiedTurbulentViscosity",
+                "SpecificDissipationRateAndTurbulentKineticEnergy",
+                "TurbulentViscosityRatioAndTurbulentKineticEnergy",
+                "TurbulentLengthScaleAndTurbulentKineticEnergy",
+                "TurbulentIntensityAndSpecificDissipationRate",
+                "TurbulentIntensityAndTurbulentViscosityRatio",
+                "TurbulentIntensityAndTurbulentLengthScale",
+                "SpecificDissipationRateAndTurbulentViscosityRatio",
+                "SpecificDissipationRateAndTurbulentLengthScale",
+                "TurbulentViscosityRatioAndTurbulentLengthScale",
+            ]
+
+            tq = kwargs.get("turbulenceQuantities")
+            if tq is not None and tq.get("modelType") is None:
+                model = {"field": tq}
+                model = try_add_discriminator(
+                    model, "field/modelType", options, _TurbulenceQuantityTempModel
+                )
+                kwargs["turbulenceQuantities"] = model["field"]
+
+            super().__init__(*args, **kwargs)
 
     def update_model(self) -> Flow360BaseModel:
         class _FreestreamTempModel(pd.BaseModel):
@@ -1552,6 +1586,8 @@ class FreestreamLegacy(LegacyModel):
                 "turbulentViscosityRatio": self.turbulent_viscosity_ratio,
             }
         }
+
+        try_set(model["field"], "turbulenceQuantities", self.turbulence_quantities)
 
         # Set velocity
         if self.comments is not None:
