@@ -582,6 +582,22 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
 
         return self._udd_names
 
+    def download(self, to_folder: str = ".", overwrite: bool = False):
+        """
+        Download all udd files to the specified location.
+
+        Parameters
+        ----------
+        to_folder : str, optional
+            The folder where the file will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+
+        self.udd_names
+        for udd in self._udds.values():
+            udd.download(to_folder=to_folder, overwrite=overwrite)
+
     def get_udd_by_name(self, name: str) -> UserDefinedDynamicsCSVModel:
         """
         Get user-defined dynamics by name.

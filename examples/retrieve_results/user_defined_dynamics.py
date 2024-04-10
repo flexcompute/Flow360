@@ -35,3 +35,6 @@ for name in udds.udd_names:
 
 udds["alphaController"].as_dataframe().plot(x="pseudo_step", y=["CL", "state[0]", "alphaAngle"])
 show()
+
+case.results.set_destination(use_case_name=True)
+case.results.download(user_defined_dynamics=True)
