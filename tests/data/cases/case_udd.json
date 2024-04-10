@@ -119,6 +119,9 @@
     "isoSurfaceOutput": {
         "animationFrequency": -1,
         "outputFormat": "tecplot",
+        "outputFields": [
+            "Cp"
+        ],
         "isoSurfaces": {
             "newKey": {
                 "surfaceField": "Mach",

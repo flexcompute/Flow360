@@ -488,6 +488,13 @@ def test_iso_surface_output():
             else:
                 assert set(["Mach", "solutionTurbulence"]) == set(iso_surface_item["output_fields"])
 
+    params = Flow360Params("../data/cases/case_udd.json")
+    params_as_dict = params.flow360_dict()
+    assert set(params_as_dict["isoSurfaceOutput"]["isoSurfaces"]["newKey"]["outputFields"]) == set(
+        ["Mach", "Cp"]
+    )
+    assert set(params_as_dict["isoSurfaceOutput"]["outputFields"]) == set()
+
 
 def test_monitor_output():
     probe = ProbeMonitor(monitor_locations=[[0, 0, 0], [0, 10, 0.4]], output_fields=["Cp", "T"])
