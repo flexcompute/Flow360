@@ -535,9 +535,6 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     turbulent_viscosity_ratio: Optional[NonNegativeFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
-    ## Legacy update pending.
-    ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
-    ## is also pending. TODO
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
         alias="turbulenceQuantities", discriminator="model_type"
     )
