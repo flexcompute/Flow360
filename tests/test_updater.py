@@ -111,6 +111,7 @@ data_turbulence = {
         "Mach": 0.8404497144189705,
         "muRef": 4.292519319815164e-05,
         "Temperature": 288.15,
+        "turbulenceQuantities": {"modifiedTurbulentViscosity": 1.0},
     },
 }
 
@@ -161,6 +162,17 @@ def test_updater_with_comments():
     assert params.fluid_properties.density == 1.225
     assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
     assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
+
+
+def test_turbulence_updater():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        json.dump(data_turbulence, temp_file)
+
+    params = fl.Flow360Params(temp_file.name)
+
+    assert params.boundaries["2"].turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
+
+    assert params.freestream.turbulence_quantities.model_type == "ModifiedTurbulentViscosity"
 
 
 def test_updater_map():
