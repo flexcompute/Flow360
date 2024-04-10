@@ -630,7 +630,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
         )
 
         if self.output_fields is not None:
-            fields += self.output_fields
+            fields = list(set(fields + self.output_fields))
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -673,7 +673,7 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         )
 
         if self.output_fields is not None:
-            fields += self.output_fields
+            fields = list(set(fields + self.output_fields))
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -724,9 +724,7 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         )
 
         if self.output_fields is not None:
-            for item in self.output_fields:
-                if item not in fields:
-                    fields.append(item)
+            fields = list(set(fields + self.output_fields))
 
         model = {
             "animationFrequency": self.animation_frequency,
@@ -756,6 +754,9 @@ class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):
             [],
             allowed=get_field_values(CommonFieldNames),
         )
+        if self.output_fields is not None:
+            fields = list(set(fields + self.output_fields))
+
         model = {
             "animationFrequency": self.animation_frequency,
             "animationFrequencyOffset": self.animation_frequency_offset,

@@ -316,6 +316,43 @@ def test_iso_surface_output():
             else:
                 assert set(["Mach"]) == set(iso_surface_item["output_fields"])
 
+    with flow360.SI_unit_system:
+        params = Flow360Params(
+            iso_surface_output=IsoSurfaceOutput(
+                output_fields=["Mach", "kOmega", "solutionTurbulence"],
+                iso_surfaces={
+                    "s1": iso_surface,
+                    "s2": IsoSurface(
+                        surface_field_magnitude=0.2,
+                        surface_field="Cp",
+                    ),
+                },
+            ),
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+        )
+        solver_params = params.to_solver()
+
+        for (
+            iso_surface_name,
+            iso_surface_item,
+        ) in solver_params.iso_surface_output.iso_surfaces.dict().items():
+            if iso_surface_name == "s1":
+                assert set(["Cp", "Mach", "kOmega", "qcriterion", "solutionTurbulence"]) == set(
+                    iso_surface_item["output_fields"]
+                )
+            else:
+                assert set(["Mach", "kOmega", "solutionTurbulence"]) == set(
+                    iso_surface_item["output_fields"]
+                )
+
+    params = Flow360Params("../data/cases/case_udd.json")
+    params_as_dict = params.flow360_dict()
+    assert set(params_as_dict["isoSurfaceOutput"]["isoSurfaces"]["newKey"]["outputFields"]) == set(
+        ["Mach", "Cp"]
+    )
+    assert set(params_as_dict["isoSurfaceOutput"]["outputFields"]) == set()
+
 
 def test_monitor_output():
     probe = ProbeMonitor(monitor_locations=[[0, 0, 0], [0, 10, 0.4]], output_fields=["Cp", "T"])
