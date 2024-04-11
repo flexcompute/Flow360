@@ -25,7 +25,9 @@ Get your *api-key* from [flow360.simulation.cloud](https://flow360.simulation.cl
 
 You can set your *api-key* by ONE of the following methods:
 1. Set globaly for your acount: ``flow360 configure`` will store *api-key* in ~/.flow360
-2. In shell: ``export FLOW360_APIKEY="my api-key"``
+2. In shell: 
+    * Bash/Zsh shell (Linux or Mac): ``export FLOW360_APIKEY="my api-key"``
+    * Powershell (Windows): ``$Env:FLOW360_APIKEY="my api-key"``
 3. In python script: ``os.environ["FLOW360_APIKEY"] = "my api-key"`` before or after `import flow360`
 
 
