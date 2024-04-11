@@ -56,17 +56,14 @@ class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
         """
         return SurfaceMesh(self.id)
 
+
 class SurfaceMeshDraftFromSurfaceMesh(ResourceDraft):
     """
     Surface Mesh Draft from Surface Mesh
     """
+
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        surface_mesh_file: str,
-        name: str = None,
-        tags: List[str] = None
-    ):
+    def __init__(self, surface_mesh_file: str, name: str = None, tags: List[str] = None):
         self._surface_mesh_file = surface_mesh_file
         self.name = name
         self.tags = tags
@@ -129,6 +126,7 @@ class SurfaceMeshDraftFromSurfaceMesh(ResourceDraft):
         submitted_mesh._complete_upload(remote_file_name)
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
+
 
 class SurfaceMeshDraftFromGeometry(ResourceDraft):
     """
@@ -327,8 +325,8 @@ class SurfaceMesh(Flow360Resource):
     @classmethod
     def from_file(
         cls,
-        surface_mesh_file:str,
-        name:str = None,
+        surface_mesh_file: str,
+        name: str = None,
         tags: List[str] = None,
     ):
         """
@@ -340,9 +338,9 @@ class SurfaceMesh(Flow360Resource):
         :return:
         """
         return SurfaceMeshDraftFromSurfaceMesh(
-            surface_mesh_file = surface_mesh_file,
-            name = name,
-            tags = tags,
+            surface_mesh_file=surface_mesh_file,
+            name=name,
+            tags=tags,
         )
 
     @classmethod
@@ -374,7 +372,7 @@ class SurfaceMesh(Flow360Resource):
         SurfaceMeshDraftFromGeometry
             _description_
         """
-        new_surface_mesh = SurfaceMeshDraftGeometry(
+        new_surface_mesh = SurfaceMeshDraftFromGeometry(
             geometry_file=geometry_file,
             params=params,
             name=name,

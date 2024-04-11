@@ -256,8 +256,8 @@ class VolumeMeshingParams(Flow360BaseModel):
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
 
-	if Flags.beta_features():
-		type: Optional[Literal["v1", "v2"]] = pd.Field(alias="type", default="v1")
+    if Flags.beta_features():
+        type: Optional[Literal["v1", "v2"]] = pd.Field(alias="type", default="v1")
 
     def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
