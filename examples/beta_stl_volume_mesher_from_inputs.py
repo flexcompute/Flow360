@@ -5,7 +5,7 @@ from flow360.component.meshing.params import VolumeMeshingParams, Volume,\
 import os
 os.environ["FLOW360_BETA_FEATURES"] = '1'
 
-surface_mesh = fl.SurfaceMesh.create(
+surface_mesh = fl.SurfaceMesh.from_file(
     geometry_file = "airplaneGeometry.stl", params=None, name="airplane-surface-mesh-beta"
 )
 surface_mesh = surface_mesh.submit()

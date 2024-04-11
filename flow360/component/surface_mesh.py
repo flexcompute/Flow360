@@ -252,6 +252,25 @@ class SurfaceMesh(Flow360Resource):
         return cls(surface_mesh_id)
 
     @classmethod
+    def from_file(
+        cls,
+        surface_mesh_file:str,
+        name:str = None,
+        tags: List[str] = None,
+    ):
+        """
+        Create surface mesh from surface mesh file
+        :param surface_mesh_file:
+        :param name:
+        :param tags:
+        :param solver_version:
+        :return:
+        """
+        return SurfaceMeshDraft(
+            
+        )
+
+    @classmethod
     def create(
         cls,
         geometry_file: str,
