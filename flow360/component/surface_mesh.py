@@ -56,8 +56,81 @@ class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
         """
         return SurfaceMesh(self.id)
 
+class SurfaceMeshDraftFromSurfaceMesh(ResourceDraft):
+    """
+    Surface Mesh Draft from Surface Mesh
+    """
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        surface_mesh_file: str,
+        name: str = None,
+        tags: List[str] = None
+    ):
+        self._surface_mesh_file = surface_mesh_file
+        self.name = name
+        self.tags = tags
+        self._validate()
+        ResourceDraft.__init__(self)
 
-class SurfaceMeshDraft(ResourceDraft):
+    def _validate(self):
+        _, ext = os.path.splitext(self.surface_mesh_file)
+        if ext not in [".stl"]:
+            raise Flow360ValueError(
+                f"Unsupported surface mesh file extensions: {ext}. Supported: [stl]."
+            )
+
+        if not os.path.exists(self.surface_mesh_file):
+            raise Flow360FileError(f"{self.surface_mesh_file} not found.")
+
+    @property
+    def surface_mesh_file(self) -> str:
+        """surface mesh file"""
+        return self._surface_mesh_file
+
+    # pylint: disable=protected-access
+    def submit(self, progress_callback=None) -> SurfaceMesh:
+        """submit surface meshing to cloud
+
+        Parameters
+        ----------
+        progress_callback : callback, optional
+            Use for custom progress bar, by default None
+
+        Returns
+        -------
+        SurfaceMesh
+            SurfaceMesh object with id
+        """
+
+        self._validate()
+        name = self.name
+        if name is None:
+            name = os.path.splitext(os.path.basename(self.surface_mesh_file))[0]
+
+        if not shared_account_confirm_proceed():
+            raise Flow360ValueError("User aborted resource submit.")
+
+        data = {
+            "name": self.name,
+            "tags": self.tags,
+        }
+
+        resp = RestApi(SurfaceMeshInterface.endpoint).post(data)
+        info = SurfaceMeshMeta(**resp)
+        self._id = info.id
+        submitted_mesh = SurfaceMesh(self.id)
+
+        _, ext = os.path.splitext(self.surface_mesh_file)
+        remote_file_name = f"surface_mesh{ext}"
+        submitted_mesh._upload_file(
+            remote_file_name, self.surface_mesh_file, progress_callback=progress_callback
+        )
+        submitted_mesh._complete_upload(remote_file_name)
+        log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
+        return submitted_mesh
+
+class SurfaceMeshDraftFromGeometry(ResourceDraft):
     """
     Surface Mesh Draft component
     """
@@ -266,8 +339,10 @@ class SurfaceMesh(Flow360Resource):
         :param solver_version:
         :return:
         """
-        return SurfaceMeshDraft(
-            
+        return SurfaceMeshDraftFromSurfaceMesh(
+            surface_mesh_file = surface_mesh_file,
+            name = name,
+            tags = tags,
         )
 
     @classmethod
@@ -278,7 +353,7 @@ class SurfaceMesh(Flow360Resource):
         name: str = None,
         tags: List[str] = None,
         solver_version: str = None,
-    ) -> SurfaceMeshDraft:
+    ) -> SurfaceMeshDraftFromGeometry:
         """ "Create new surface mesh from geometry"
 
         Parameters
@@ -296,10 +371,10 @@ class SurfaceMesh(Flow360Resource):
 
         Returns
         -------
-        SurfaceMeshDraft
+        SurfaceMeshDraftFromGeometry
             _description_
         """
-        new_surface_mesh = SurfaceMeshDraft(
+        new_surface_mesh = SurfaceMeshDraftGeometry(
             geometry_file=geometry_file,
             params=params,
             name=name,
