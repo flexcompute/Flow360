@@ -2,6 +2,7 @@ import os
 
 os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
+fl.Env.dev.active()
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 
 surface_mesh_stl = "../tests/data/surface_mesh/airplaneGeometry.stl"
@@ -15,7 +16,7 @@ print(surface_mesh)
 print(surface_mesh.params)
 
 params = fl.VolumeMeshingParams(
-    type="v2",
+    version="v2",
     volume=Volume(
         first_layer_thickness=0.001,
         growth_rate=1.1,
@@ -27,4 +28,4 @@ params = fl.VolumeMeshingParams(
 volume_mesh = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id, name="airplane-volume-mesh-from-stl", params=params
 )
-volume_mesh = volume_mesh.submit()
+volume_mesh = volume_mesh.submit(force_submit=True)
