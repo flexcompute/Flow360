@@ -8,9 +8,7 @@ from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingPara
 
 surface_mesh_stl = "../tests/data/surface_mesh/airplaneGeometry.stl"
 
-surface_mesh = fl.SurfaceMesh.from_file(
-    surface_mesh_stl, name="airplane-surface-mesh-stl"
-)
+surface_mesh = fl.SurfaceMesh.from_file(surface_mesh_stl, name="airplane-surface-mesh-stl")
 surface_mesh = surface_mesh.submit()
 
 print(surface_mesh)
