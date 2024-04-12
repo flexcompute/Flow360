@@ -14,7 +14,7 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_draft_surface_mesh():
+def test_draft_surface_mesh_create():
     with pytest.raises(ex.Flow360ValueError):
         sm = SurfaceMesh.create("file.unsupported", params=None)
 
@@ -30,4 +30,15 @@ def test_draft_surface_mesh():
             max_edge_length=0.1, faces={"mysphere": Face(max_edge_length=0.05)}
         ),
     )
+    assert sm
+
+
+def test_draft_surface_mesh_from_file():
+    with pytest.raises(ex.Flow360ValueError):
+        sm = SurfaceMesh.from_file("file.unsupported")
+
+    with pytest.raises(ex.Flow360FileError):
+        sm = SurfaceMesh.from_file("file_does_not_exist.stl")
+
+    sm = SurfaceMesh.from_file("data/surface_mesh/airplaneGeometry.stl")
     assert sm
