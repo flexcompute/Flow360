@@ -2,6 +2,7 @@ import os
 
 os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
+
 fl.Env.dev.active()
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 

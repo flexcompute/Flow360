@@ -407,8 +407,10 @@ class VolumeMeshDraft(ResourceDraft):
         self.compress_method = CompressionFormat.ZST
         ResourceDraft.__init__(self)
 
-    def _submit_from_surface(self, force_submit:bool =False):
-        self.validator_api(self.params, solver_version=self.solver_version, raise_on_error = (not force_submit))
+    def _submit_from_surface(self, force_submit: bool = False):
+        self.validator_api(
+            self.params, solver_version=self.solver_version, raise_on_error=(not force_submit)
+        )
         body = {
             "name": self.name,
             "tags": self.tags,
@@ -496,7 +498,7 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
-    def submit(self, progress_callback=None, force_submit:bool = False) -> VolumeMesh:
+    def submit(self, progress_callback=None, force_submit: bool = False) -> VolumeMesh:
         """submit mesh to cloud
 
         Parameters
@@ -524,11 +526,15 @@ class VolumeMeshDraft(ResourceDraft):
         )
 
     @classmethod
-    def validator_api(cls, params: VolumeMeshingParams, solver_version=None, raise_on_error:bool = True):
+    def validator_api(
+        cls, params: VolumeMeshingParams, solver_version=None, raise_on_error: bool = True
+    ):
         """
         validation api: validates surface meshing parameters before submitting
         """
-        return Validator.VOLUME_MESH.validate(params, solver_version=solver_version, raise_on_error=raise_on_error)
+        return Validator.VOLUME_MESH.validate(
+            params, solver_version=solver_version, raise_on_error=raise_on_error
+        )
 
 
 class VolumeMesh(Flow360Resource):
