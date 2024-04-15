@@ -4,13 +4,12 @@ Module exposing utilities for the validation service
 
 import json
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    SpalartAllmaras,
 )
 from .component.flow360_params.params_base import (
     Flow360BaseModel,
@@ -18,7 +17,7 @@ from .component.flow360_params.params_base import (
     _schema_optional_toggle_name,
     flow360_json_encoder,
 )
-from .component.flow360_params.solvers import NavierStokesSolver
+from .component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -44,7 +43,6 @@ def _is_dimensioned_value_dict(value):
 def _add_nested_object_flag(params: Flow360BaseModel, params_as_dict: dict, level: int = 0) -> dict:
     if isinstance(params, Flow360BaseModel):
         for property_name, value in params.__dict__.items():
-            # pylint: disable=protected-access
             alias_name = params._get_field_alias(property_name)
             key = property_name
             if alias_name is not None:

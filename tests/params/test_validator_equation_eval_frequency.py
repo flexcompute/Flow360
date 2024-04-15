@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import pytest
@@ -25,7 +24,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_equation_eval_frequency_for_unsteady_simulations():
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             time_stepping=UnsteadyTimeStepping(
                 max_pseudo_steps=30, physical_steps=20, time_step_size=0.1 * u.s
             ),
@@ -36,7 +35,7 @@ def test_equation_eval_frequency_for_unsteady_simulations():
         )
 
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             time_stepping=SteadyTimeStepping(max_pseudo_steps=10),
             turbulence_model_solver=SpalartAllmaras(equation_eval_frequency=12),
             transition_model_solver=TransitionModelSolver(equation_eval_frequency=15),
@@ -49,7 +48,7 @@ def test_equation_eval_frequency_for_unsteady_simulations():
         match="'equation evaluation frequency' in turbulence_model_solver is greater than max_pseudo_steps.",
     ):
         with fl.SI_unit_system:
-            param = Flow360Params(
+            Flow360Params(
                 time_stepping=UnsteadyTimeStepping(
                     max_pseudo_steps=2, physical_steps=20, time_step_size=0.1 * u.s
                 ),
@@ -62,7 +61,7 @@ def test_equation_eval_frequency_for_unsteady_simulations():
         match="'equation evaluation frequency' in transition_model_solver is greater than max_pseudo_steps.",
     ):
         with fl.SI_unit_system:
-            param = Flow360Params(
+            Flow360Params(
                 time_stepping=UnsteadyTimeStepping(
                     max_pseudo_steps=2, physical_steps=20, time_step_size=0.1 * u.s
                 ),

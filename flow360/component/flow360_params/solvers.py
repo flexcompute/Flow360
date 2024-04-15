@@ -8,7 +8,7 @@ from abc import ABCMeta
 from typing import Optional, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
@@ -40,7 +40,6 @@ class GenericFlowSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
         0, alias="maxForceJacUpdatePhysicalSteps", displayed="Max force JAC update physical steps"
     )
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
@@ -85,7 +84,6 @@ class LinearSolver(Flow360BaseModel):
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
         conflicting_fields = [Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
@@ -98,7 +96,6 @@ class PressureCorrectionSolver(Flow360BaseModel):
         LinearSolver(absoluteTolerance=1e-8), alias="linearSolver"
     )
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig")
@@ -196,7 +193,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         alias="lowMachPreconditionerThreshold"
     )
 
-    # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> NavierStokesSolver:
         """
         Set preconditioner threshold to freestream Mach number
@@ -446,14 +442,12 @@ class HeatEquationSolver(GenericFlowSolverSettings):
 
     linear_solver: Optional[LinearSolver] = pd.Field(LinearSolver(), alias="linearSolver")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [
             DeprecatedAlias(name="linear_solver", deprecated="linearSolverConfig"),
             DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance"),
         ]
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> HeatEquationSolver:
         """
         set Default Equation Eval Frequency
@@ -506,7 +500,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
         LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
     )
 
-    # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> TransitionModelSolver:
         """
         Convert turbulenceIntensityPercent to Ncrit
@@ -523,7 +516,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
 
         return super().to_solver(self, exclude=["turbulence_intensity_percent"], **kwargs)
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         conflicting_fields = [Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
 
@@ -591,7 +583,6 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
         "linear_solver_config", allow_reuse=True, pre=True
     )(set_linear_solver_config_if_none)
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def populate_model_constant_type(cls, values):
         """

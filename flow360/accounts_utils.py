@@ -81,12 +81,10 @@ class AccountsUtils:
     def _check_state_consistency(self):
         if Env.impersonate != self._current_user_identity:
             log.warning(
-                (
-                    f"Environment impersonation ({Env.impersonate}) does "
-                    f"not match current account ({self._current_user_identity}), "
-                    "this may be caused by explicit modification of impersonation "
-                    "in the environment, use choose_shared_account() instead."
-                )
+                f"Environment impersonation ({Env.impersonate}) does "
+                f"not match current account ({self._current_user_identity}), "
+                "this may be caused by explicit modification of impersonation "
+                "in the environment, use choose_shared_account() instead."
             )
             self._current_email = None
             self._current_user_identity = None

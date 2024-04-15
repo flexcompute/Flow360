@@ -9,7 +9,7 @@ import tempfile
 import time
 from typing import Any, Iterator, List, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
@@ -74,7 +74,6 @@ class CaseBase:
 
         return self.retry(name, params, solver_version=solver_version, tags=tags)
 
-    # pylint: disable=no-member
     def retry(
         self,
         name: str = None,
@@ -110,7 +109,6 @@ class CaseBase:
 
         return self.fork(name, params, tags)
 
-    # pylint: disable=no-member
     def fork(
         self, name: str = None, params: Flow360Params = None, tags: List[str] = None
     ) -> CaseDraft:
@@ -137,7 +135,6 @@ class CaseMeta(Flow360ResourceBaseModel):
     parent_id: Union[str, None] = pd.Field(alias="parentId")
     status: Flow360Status = pd.Field()
 
-    # pylint: disable=no-self-argument
     @pd.validator("status")
     def set_status_type(cls, value: Flow360Status):
         """set_status_type when case uploaded"""
@@ -152,13 +149,11 @@ class CaseMeta(Flow360ResourceBaseModel):
         return Case(self.id)
 
 
-# pylint: disable=too-many-instance-attributes
 class CaseDraft(CaseBase, ResourceDraft):
     """
     Case Draft component (before submission)
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         name: str,
@@ -372,13 +367,11 @@ class CaseDraft(CaseBase, ResourceDraft):
         )
 
 
-# pylint: disable=too-many-instance-attributes
 class Case(CaseBase, Flow360Resource):
     """
     Case component
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
             interface=CaseInterface,
@@ -578,7 +571,6 @@ class Case(CaseBase, Flow360Resource):
         """
         return cls(case_id)
 
-    # pylint: disable=too-many-arguments
     @classmethod
     def create(
         cls,
@@ -636,7 +628,6 @@ class Case(CaseBase, Flow360Resource):
             time.sleep(2)
 
 
-# pylint: disable=unnecessary-lambda
 class CaseResultsModel(pd.BaseModel):
     """
     Pydantic models for case results
@@ -708,7 +699,6 @@ class CaseResultsModel(pd.BaseModel):
 
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.root_validator(pre=False)
     def pass_download_function(cls, values):
         """
@@ -731,7 +721,6 @@ class CaseResultsModel(pd.BaseModel):
 
         return values
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("monitors", "user_defined_dynamics", always=True)
     def pass_get_files_function(cls, value, values):
         """
@@ -740,7 +729,6 @@ class CaseResultsModel(pd.BaseModel):
         value.get_download_file_list_method = values["case"].get_download_file_list
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("bet_forces", always=True)
     def pass_has_bet_forces_function(cls, value, values):
         """
@@ -749,7 +737,6 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_bet_disks
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("actuator_disks", always=True)
     def pass_has_actuator_disks_function(cls, value, values):
         """
@@ -758,7 +745,6 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_actuator_disks
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("isosurfaces", always=True)
     def pass_has_isosurfaces_function(cls, value, values):
         """
@@ -767,7 +753,6 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_isosurfaces
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("monitors", always=True)
     def pass_has_monitors_function(cls, value, values):
         """
@@ -776,7 +761,6 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_monitors
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("aeroacoustics", always=True)
     def pass_has_aeroacoustics_function(cls, value, values):
         """
@@ -785,7 +769,6 @@ class CaseResultsModel(pd.BaseModel):
         value._is_downloadable = values["case"].has_aeroacoustics
         return value
 
-    # pylint: disable=no-self-argument, protected-access
     @pd.validator("user_defined_dynamics", always=True)
     def pass_has_user_defined_dynamics_function(cls, value, values):
         """
@@ -843,7 +826,6 @@ class CaseResultsModel(pd.BaseModel):
         if use_case_id is True:
             self._downloader_settings.destination = self.case.id
 
-    # pylint: disable=too-many-arguments, too-many-locals, redefined-builtin
     def download(
         self,
         surface: bool = None,
@@ -962,7 +944,6 @@ class CaseList(Flow360ResourceListBase):
         raise NotImplementedError("Filters are not implemented yet")
         # resp = list(filter(lambda i: i['caseStatus'] != 'deleted', resp))
 
-    # pylint: disable=useless-parent-delegation
     def __getitem__(self, index) -> Case:
         """
         returns CaseMeta info item of the list

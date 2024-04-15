@@ -3,7 +3,6 @@ utilities module
 """
 
 
-# pylint: disable=invalid-name
 class classproperty(property):
     """classproperty decorator"""
 

@@ -17,7 +17,7 @@ class TestClass:
         result = runner.invoke(flow360, ["configure"], input="apikey")
         assert result.exit_code == 0
         assert result.output == "API Key: apikey\ndone.\n"
-        with open(f"{home}/.flow360/config.toml", "r") as f:
+        with open(f"{home}/.flow360/config.toml") as f:
             config = toml.loads(f.read())
             assert config.get("default", {}).get("apikey", "") == "apikey"
 
@@ -28,6 +28,6 @@ class TestClass:
         result = runner.invoke(flow360, ["configure"], input="apikey")
         assert result.exit_code == 0
         assert result.output == "API Key[apikey]: apikey\ndone.\n"
-        with open(f"{home}/.flow360/config.toml", "r") as f:
+        with open(f"{home}/.flow360/config.toml") as f:
             config = toml.loads(f.read())
             assert config.get("default", {}).get("apikey", "") == "apikey"

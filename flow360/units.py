@@ -2,9 +2,6 @@
 This module is for accessing units and unit systems including flow360 unit system.
 """
 
-# pylint: disable=unused-import
-
-
 import unyt
 from unyt import unit_symbols
 
@@ -27,6 +24,26 @@ from .component.flow360_params.unit_system import (
     flow360_viscosity_unit,
     imperial_unit_system,
 )
+
+__all__ = [
+    "BaseSystemType",
+    "CGS_unit_system",
+    "SI_unit_system",
+    "UnitSystem",
+    "flow360_angular_velocity_unit",
+    "flow360_area_unit",
+    "flow360_density_unit",
+    "flow360_force_unit",
+    "flow360_length_unit",
+    "flow360_mass_unit",
+    "flow360_pressure_unit",
+    "flow360_temperature_unit",
+    "flow360_time_unit",
+    "flow360_unit_system",
+    "flow360_velocity_unit",
+    "flow360_viscosity_unit",
+    "imperial_unit_system",
+]
 
 
 def import_units(module, namespace):

@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import pytest
@@ -22,7 +21,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_consistency_ddes_unsteady():
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             time_stepping=UnsteadyTimeStepping(physical_steps=20, time_step_size=0.1 * u.s),
             turbulence_model_solver=SpalartAllmaras(DDES=True),
             boundaries={},
@@ -30,14 +29,14 @@ def test_consistency_ddes_unsteady():
         )
 
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             time_stepping=SteadyTimeStepping(),
             turbulence_model_solver=SpalartAllmaras(),
             boundaries={},
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             turbulence_model_solver=SpalartAllmaras(),
             boundaries={},
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
@@ -48,7 +47,7 @@ def test_consistency_ddes_unsteady():
         match="Running DDES with steady simulation is invalid.",
     ):
         with fl.SI_unit_system:
-            param = Flow360Params(
+            Flow360Params(
                 time_stepping=SteadyTimeStepping(),
                 turbulence_model_solver=SpalartAllmaras(DDES=True),
                 boundaries={},
@@ -60,7 +59,7 @@ def test_consistency_ddes_unsteady():
         match="Running DDES with steady simulation is invalid.",
     ):
         with fl.SI_unit_system:
-            param = Flow360Params(
+            Flow360Params(
                 turbulence_model_solver=SpalartAllmaras(DDES=True),
                 boundaries={},
                 freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),

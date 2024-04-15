@@ -11,7 +11,6 @@ class RestApi:
     RestApi class
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, endpoint, id=None):
         is_valid_uuid(id, allow_none=True)
         self._id = id

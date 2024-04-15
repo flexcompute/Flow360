@@ -11,7 +11,7 @@ from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pandas
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ...cloud.s3_utils import (
     CloudFileNotFoundError,
@@ -29,7 +29,6 @@ from ..flow360_params.unit_system import (
     is_flow360_unit,
 )
 
-# pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
 
 
@@ -499,10 +498,8 @@ class MonitorsResultModel(ResultTarGZModel):
                         name = match.group(1)
                         self._monitor_names.append(name)
                         self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
-                        # pylint: disable=protected-access
-                        self._monitors[name]._download_method = (
-                            self._download_method
-                        )  # pylint: disable=protected-access
+
+                        self._monitors[name]._download_method = self._download_method
 
         return self._monitor_names
 
@@ -578,7 +575,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                         name = match.group(1)
                         self._udd_names.append(name)
                         self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                        # pylint: disable=protected-access
+
                         self._udds[name]._download_method = self._download_method
 
         return self._udd_names
@@ -595,7 +592,6 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
             Flag indicating whether to overwrite existing files.
         """
 
-        self.udd_names
         for udd in self._udds.values():
             udd.download(to_folder=to_folder, overwrite=overwrite)
 
@@ -746,10 +742,7 @@ class OptionallyDownloadableResultCSVModel(ResultCSVModel):
                 log.warning(self._err_msg)
             else:
                 log.error(
-                    (
-                        "A problem occured when trying to download results:"
-                        f"{self.remote_file_name}"
-                    )
+                    "A problem occured when trying to download results:" f"{self.remote_file_name}"
                 )
                 raise err
 

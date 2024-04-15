@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Iterator, List, Optional, Union
 
 import numpy as np
-from pydantic import Extra, Field, validator
+from pydantic.v1 import Extra, Field, validator
 
 from flow360.component.compress_upload import compress_and_upload_chunks
 
@@ -106,7 +106,6 @@ def get_boundaries_from_sliding_interfaces(params: Union[Flow360Params, Flow360M
     return res
 
 
-# pylint: disable=too-many-branches
 def get_boundaries_from_file(cgns_file: str, solver_version: str = None):
     """
     Get boundary names from CGNS file
@@ -309,7 +308,6 @@ class CompressionFormat(Enum):
         return CompressionFormat.NONE, file
 
 
-# pylint: disable=E0213
 class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     """
     VolumeMeshMeta component
@@ -362,7 +360,6 @@ class VolumeMeshDraft(ResourceDraft):
     Volume mesh draft component (before submit)
     """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_name: str = None,
@@ -432,7 +429,6 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
         return mesh
 
-    # pylint: disable=protected-access, too-many-locals
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
@@ -542,7 +538,6 @@ class VolumeMesh(Flow360Resource):
     Volume mesh component
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
             interface=VolumeMeshInterface,
@@ -587,7 +582,6 @@ class VolumeMesh(Flow360Resource):
         """
         return self.info.boundaries
 
-    # pylint: disable=too-many-arguments,R0801
     def download_file(
         self,
         file_name: Union[str, VolumeMeshDownloadable],
@@ -614,7 +608,6 @@ class VolumeMesh(Flow360Resource):
             **kwargs,
         )
 
-    # pylint: disable=R0801
     def download(self, to_file=None, to_folder=".", overwrite: bool = True):
         """
         Download volume mesh file
@@ -834,13 +827,11 @@ class VolumeMeshList(Flow360ResourceListBase):
 
         # resp = list(filter(lambda i: i['caseStatus'] != 'deleted', resp))
 
-    # pylint: disable=useless-parent-delegation
     def __getitem__(self, index) -> VolumeMesh:
         """
         returns VolumeMeshMeta item of the list
         """
         return super().__getitem__(index)
 
-    # pylint: disable=useless-parent-delegation
     def __iter__(self) -> Iterator[VolumeMesh]:
         return super().__iter__()

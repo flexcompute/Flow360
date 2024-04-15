@@ -7,8 +7,8 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
-import pydantic as pd
-from pydantic import conlist
+import pydantic.v1 as pd
+from pydantic.v1 import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (
@@ -121,7 +121,7 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """
     animation_settings: Optional[AnimationSettings] = pd.Field(alias="animationSettings")
 
-    # pylint: disable=unused-argument
+
     def to_solver(self, params, **kwargs) -> AnimatedOutput:
         # Convert animation settings (UI representation) to solver representation
         if self.animation_settings is not None:
@@ -161,7 +161,7 @@ class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
     """
     animation_settings: Optional[AnimationSettingsExtended] = pd.Field(alias="animationSettings")
 
-    # pylint: disable=unused-argument
+
     def to_solver(self, params, **kwargs) -> TimeAverageAnimatedOutput:
         if self.animation_settings is not None:
             if self.animation_settings.frequency is not None:
@@ -201,11 +201,9 @@ class Surface(Flow360BaseModel):
         alias="outputFields", displayed="Output fields", default=[]
     )
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -227,7 +225,6 @@ class Surfaces(Flow360SortableBaseModel):
     def get_subtypes(cls) -> list:
         return [_GenericSurfaceWrapper.__fields__["v"].type_]
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_surface(cls, values):
         """
@@ -245,11 +242,9 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields", default=[])
     surfaces: Optional[Surfaces] = pd.Field()
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -257,7 +252,6 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SurfaceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -290,11 +284,9 @@ class Slice(Flow360BaseModel):
     slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -302,7 +294,6 @@ class Slice(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> Slice:
         solver_values = self._convert_dimensions_to_solver(params, **kwargs)
         fields = solver_values.pop("output_fields")
@@ -317,7 +308,6 @@ class Slices(Flow360SortableBaseModel):
     def get_subtypes(cls) -> list:
         return [_GenericSliceWrapper.__fields__["v"].type_]
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_slice(cls, values):
         """
@@ -340,11 +330,9 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
     output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
     slices: Slices = pd.Field()
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -352,7 +340,6 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SliceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -370,11 +357,9 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
         alias="outputFields", default=["primitiveVars", "Cp", "mut", "Mach"]
     )
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -382,7 +367,6 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> VolumeOutput:
         """
         Add betMetrics and betMetricsPerDisk if used in slices but not in volume.
@@ -422,11 +406,9 @@ class SurfaceIntegralMonitor(MonitorBase):
     surfaces: List[str] = pd.Field()
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -434,7 +416,6 @@ class SurfaceIntegralMonitor(MonitorBase):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> SurfaceIntegralMonitor:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -450,11 +431,9 @@ class ProbeMonitor(MonitorBase):
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -462,7 +441,6 @@ class ProbeMonitor(MonitorBase):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ProbeMonitor:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -487,7 +465,6 @@ class Monitors(Flow360SortableBaseModel):
     def get_subtypes(cls) -> list:
         return list(get_args(_GenericMonitorWrapper.__fields__["v"].type_))
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         """
@@ -504,11 +481,9 @@ class MonitorOutput(Flow360BaseModel):
     monitors: Monitors = pd.Field()
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -516,7 +491,6 @@ class MonitorOutput(Flow360BaseModel):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> MonitorOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -531,11 +505,9 @@ class LegacyMonitor(MonitorBase):
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -543,7 +515,6 @@ class LegacyMonitor(MonitorBase):
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ProbeMonitor:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -568,7 +539,6 @@ class LegacyMonitors(Flow360SortableBaseModel):
     def get_subtypes(cls) -> list:
         return list(get_args(_GenericLegacyMonitorWrapper.__fields__["v"].type_))
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         """
@@ -606,11 +576,9 @@ class IsoSurface(Flow360BaseModel):
     surface_field_magnitude: float = pd.Field(alias="surfaceFieldMagnitude")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
         """:class: Model config to cull output field shorthands"""
 
-        # pylint: disable=unused-argument
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
@@ -619,7 +587,6 @@ class IsoSurface(Flow360BaseModel):
             )
             _filter_fields(schema["properties"]["surfaceField"]["enum"], IsoSurfaceFieldNamesFull)
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> IsoSurface:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -641,7 +608,6 @@ class IsoSurfaces(Flow360SortableBaseModel):
     def get_subtypes(cls) -> list:
         return [_GenericIsoSurfaceWrapper.__fields__["v"].type_]
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def validate_monitor(cls, values):
         """
@@ -658,7 +624,6 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     iso_surfaces: IsoSurfaces = pd.Field(alias="isoSurfaces")
     output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
         solver_model = super().to_solver(params, **kwargs)
         solver_values = solver_model.__dict__
@@ -723,7 +688,6 @@ class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
     low_mach_preconditioner_sensor: Optional[bool] = pd.Field(alias="lowMachPreconditionerSensor")
 
 
-# pylint: disable=too-many-ancestors
 class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
     """:class:`SurfaceOutputLegacy` class"""
 
@@ -823,7 +787,6 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         return SliceOutput.parse_obj(model)
 
 
-# pylint: disable=too-many-ancestors
 class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
     """:class:`VolumeOutputLegacy` class"""
 

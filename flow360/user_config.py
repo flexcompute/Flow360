@@ -59,7 +59,7 @@ class BasicUserConfig:
     def _read_config(self):
         self.config = {}
         if os.path.exists(config_file):
-            with open(config_file, "r", encoding="utf-8") as file_handler:
+            with open(config_file, encoding="utf-8") as file_handler:
                 self.config = toml.loads(file_handler.read())
 
     def apikey(self, env):

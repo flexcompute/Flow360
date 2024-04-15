@@ -1,63 +1,23 @@
 import json
-import math
-import os
 import re
 import unittest
 
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.boundaries import (
-    FreestreamBoundary,
-    HeatFluxWall,
-    IsothermalWall,
-    MassInflow,
-    MassOutflow,
-    NoSlipWall,
-    SlidingInterfaceBoundary,
-    SlipWall,
-    SolidAdiabaticWall,
-    SolidIsothermalWall,
-    SubsonicInflow,
-    SubsonicOutflowMach,
-    SubsonicOutflowPressure,
-    SupersonicInflow,
-    WallFunction,
-)
 from flow360.component.flow360_params.flow360_params import (
-    ActuatorDisk,
-    AeroacousticOutput,
     Flow360MeshParams,
     Flow360Params,
-    ForcePerArea,
     FreestreamFromVelocity,
-    Geometry,
-    HeatEquationSolver,
     MeshBoundary,
-    MeshSlidingInterface,
     PorousMediumBox,
-    PorousMediumVolumeZone,
-    SlidingInterface,
-    UnsteadyTimeStepping,
-    VolumeZones,
 )
-from flow360.component.flow360_params.solvers import NavierStokesSolver
-from flow360.component.flow360_params.volume_zones import (
-    FluidDynamicsVolumeZone,
-    HeatTransferVolumeZone,
-    InitialConditionHeatTransfer,
-    ReferenceFrame,
-)
-from flow360.examples import OM6wing
-from flow360.exceptions import (
-    Flow360ConfigError,
-    Flow360RuntimeError,
-    Flow360ValidationError,
-)
+from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
+from flow360.exceptions import Flow360RuntimeError
 
-from .utils import array_equality_override, compare_to_ref, to_file_from_file_test
+from .utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -264,14 +224,16 @@ def clear_formatting(message):
 
 
 def test_depracated(capfd):
-    ns = fl.NavierStokesSolver(tolerance=1e-8)
+    fl.NavierStokesSolver(tolerance=1e-8)
     captured = capfd.readouterr()
-    expected = f'WARNING: "tolerance" is deprecated. Use "absolute_tolerance" OR "absoluteTolerance" instead'
+    expected = 'WARNING: "tolerance" is deprecated. Use "absolute_tolerance" OR "absoluteTolerance" instead'
     assert expected in clear_formatting(captured.out)
 
-    ns = fl.UnsteadyTimeStepping(maxPhysicalSteps=10, time_step_size=1.3 * u.s)
+    fl.UnsteadyTimeStepping(maxPhysicalSteps=10, time_step_size=1.3 * u.s)
     captured = capfd.readouterr()
-    expected = f'WARNING: "maxPhysicalSteps" is deprecated. Use "physical_steps" OR "physicalSteps" instead'
+    expected = (
+        'WARNING: "maxPhysicalSteps" is deprecated. Use "physical_steps" OR "physicalSteps" instead'
+    )
     assert expected in clear_formatting(captured.out)
 
 
@@ -503,19 +465,13 @@ def test_params_temperature_consistency():
             )
 
     with pytest.raises(pd.ValidationError):
-        fluid_properties = (
-            fl.AirDensityTemperature(temperature=-2 * u.K, density=1.225 * u.kg / u.m**3),
-        )
+        (fl.AirDensityTemperature(temperature=-2 * u.K, density=1.225 * u.kg / u.m**3),)
 
     with pytest.raises(pd.ValidationError):
-        fluid_properties = (
-            fl.AirDensityTemperature(temperature=-288.15 * u.degC, density=1.225 * u.kg / u.m**3),
-        )
+        (fl.AirDensityTemperature(temperature=-288.15 * u.degC, density=1.225 * u.kg / u.m**3),)
 
     with pytest.raises(pd.ValidationError):
-        fluid_properties = (
-            fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),
-        )
+        (fl.AirPressureTemperature(temperature=-500.00 * u.degF, pressure=1.225 * u.N / u.m**2),)
 
 
 def test_flow360_will_export():
@@ -541,5 +497,5 @@ def test_flow360_will_export():
         )
 
     params.set_will_export_to_flow360(True)
-    assert params.freestream._will_export_to_flow360 == True
-    assert params.porous_media[0]._will_export_to_flow360 == True
+    assert params.freestream._will_export_to_flow360 is True
+    assert params.porous_media[0]._will_export_to_flow360 is True

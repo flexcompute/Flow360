@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..component.flow360_params.flow360_params import Flow360MeshParams
@@ -20,7 +20,7 @@ class Flow360Requests(pd.BaseModel):
         """returns dict representation of request"""
         return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
 
-    class Config:  # pylint: disable=too-few-public-methods
+    class Config:
         """config"""
 
         allow_population_by_field_name = True
@@ -38,7 +38,6 @@ class NewVolumeMeshRequest(Flow360Requests):
     mesh_params: Optional[Flow360MeshParams] = pd.Field(alias="meshParams")
     solver_version: Optional[str] = pd.Field(alias="solverVersion")
 
-    # pylint: disable=no-self-argument
     @pd.validator("mesh_params")
     def set_mesh_params(cls, value: Union[Flow360MeshParams, None]):
         """validate mesh params"""

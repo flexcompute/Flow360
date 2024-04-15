@@ -2,7 +2,6 @@
 Unit system definitions and utilities
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -13,7 +12,7 @@ from threading import Lock
 from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import unyt as u
 
 from ...log import log
@@ -33,61 +32,61 @@ u.dimensions.thermal_conductivity = (
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
 
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["moment"] = u.N * u.m
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
-# pylint: disable=no-member
+
 u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
 
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
-# pylint: disable=no-member
+
 u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
 
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
-# pylint: disable=no-member
+
 u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
 
 
@@ -133,7 +132,6 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
-# pylint: disable=no-member
 def _has_dimensions(quant, dim):
     """
     Checks the argument has the right dimensionality.
@@ -237,7 +235,6 @@ def _has_dimensions_validator(value, dim):
     return value
 
 
-# pylint: disable=too-few-public-methods
 class ValidatedType(metaclass=ABCMeta):
     """
     :class: Abstract class for dimensioned types with custom validation
@@ -277,7 +274,6 @@ class DimensionedType(ValidatedType):
 
         return value
 
-    # pylint: disable=unused-argument
     @classmethod
     def __modify_schema__(cls, field_schema, field):
         field_schema["properties"] = {}
@@ -288,7 +284,7 @@ class DimensionedType(ValidatedType):
         if cls.dim_name is not None:
             field_schema["properties"]["units"]["dimension"] = cls.dim_name
             # Local import to prevent exposing mappings to the user
-            # pylint: disable=import-outside-toplevel
+
             from flow360.component.flow360_params.exposed_units import extra_units
 
             units = [
@@ -337,19 +333,15 @@ class DimensionedType(ValidatedType):
                     field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
             cls_obj = type("_Constrained", (), {})
-            setattr(cls_obj, "con_type", _ConType)
-            setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
-            setattr(
-                cls_obj,
-                "__modify_schema__",
-                lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field),
+            cls_obj.con_type = _ConType
+            cls_obj.validate = lambda value: validate(cls_obj, value)
+            cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(
+                cls_obj, field_schema, field
             )
-            setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
+            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
 
             return cls_obj
 
-    # pylint: disable=invalid-name
-    # pylint: disable=too-many-arguments
     @classmethod
     def Constrained(cls, gt=None, ge=None, lt=None, le=None, allow_inf_nan=False):
         """
@@ -359,7 +351,6 @@ class DimensionedType(ValidatedType):
             cls, gt=gt, ge=ge, lt=lt, le=le, allow_inf_nan=allow_inf_nan
         )
 
-    # pylint: disable=invalid-name
     @classproperty
     def NonNegative(self):
         """
@@ -367,7 +358,6 @@ class DimensionedType(ValidatedType):
         """
         return self._Constrained.get_class_object(self, ge=0, allow_inf_nan=False)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Positive(self):
         """
@@ -375,7 +365,6 @@ class DimensionedType(ValidatedType):
         """
         return self._Constrained.get_class_object(self, gt=0, allow_inf_nan=False)
 
-    # pylint: disable=invalid-name
     @classproperty
     def NonPositive(self):
         """
@@ -383,7 +372,6 @@ class DimensionedType(ValidatedType):
         """
         return self._Constrained.get_class_object(self, le=0, allow_inf_nan=False)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Negative(self):
         """
@@ -437,15 +425,14 @@ class DimensionedType(ValidatedType):
                 return value
 
             cls_obj = type("_VectorType", (), {})
-            setattr(cls_obj, "type", dim_type)
-            setattr(cls_obj, "allow_zero_norm", allow_zero_norm)
-            setattr(cls_obj, "allow_zero_coord", allow_zero_coord)
-            setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
-            setattr(cls_obj, "__modify_schema__", __modify_schema__)
-            setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
+            cls_obj.type = dim_type
+            cls_obj.allow_zero_norm = allow_zero_norm
+            cls_obj.allow_zero_coord = allow_zero_coord
+            cls_obj.validate = lambda value: validate(cls_obj, value)
+            cls_obj.__modify_schema__ = __modify_schema__
+            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
             return cls_obj
 
-    # pylint: disable=invalid-name
     @classproperty
     def Array(self):
         """
@@ -453,7 +440,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self, length=None)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Point(self):
         """
@@ -461,7 +447,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Vector(self):
         """
@@ -469,7 +454,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Direction(self):
         """
@@ -477,7 +461,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self, allow_zero_norm=False)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Axis(self):
         """
@@ -485,7 +468,6 @@ class DimensionedType(ValidatedType):
         """
         return self._VectorType.get_class_object(self, allow_zero_norm=False)
 
-    # pylint: disable=invalid-name
     @classproperty
     def Moment(self):
         """
@@ -659,7 +641,6 @@ class _Flow360BaseUnit(DimensionedType):
         """
         parent_self = self
 
-        # pylint: disable=invalid-name
         class _units:
             dimensions = self.dimension_type.dim
 
@@ -675,7 +656,6 @@ class _Flow360BaseUnit(DimensionedType):
         """
         return np.asarray(self.val)
 
-    # pylint: disable=invalid-name
     @property
     def v(self):
         "alias for value"
@@ -1174,7 +1154,6 @@ dimensions = [
 _flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
 
 
-# pylint: disable=too-many-instance-attributes
 class Flow360ConversionUnitSystem(pd.BaseModel):
     """
     Flow360ConversionUnitSystem class for setting convertion rates for converting from dimensioned values into flow360
@@ -1206,7 +1185,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     registry: Any = pd.Field(allow_mutation=False)
     conversion_system: Any = pd.Field(allow_mutation=False)
 
-    class Config:  # pylint: disable=too-few-public-methods
+    class Config:
         """config"""
 
         extra = "forbid"
@@ -1250,7 +1229,6 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
         super().__init__(registry=registry, conversion_system=conversion_system)
 
-    # pylint: disable=no-self-argument
     @pd.validator("*")
     def assign_conversion_rate(cls, value, values, field):
         """

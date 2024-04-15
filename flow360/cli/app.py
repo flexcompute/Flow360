@@ -14,7 +14,7 @@ home = expanduser("~")
 config_file = f"{home}/.flow360/config.toml"
 
 if os.path.exists(config_file):
-    with open(config_file, "r", encoding="utf-8") as current_fh:
+    with open(config_file, encoding="utf-8") as current_fh:
         current_config = toml.loads(current_fh.read())
         saved_apikey = current_config.get("default", {}).get("apikey", None)
         if saved_apikey is not None:
@@ -56,7 +56,7 @@ def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
 
     config = {}
     if os.path.exists(config_file):
-        with open(config_file, "r", encoding="utf-8") as file_handler:
+        with open(config_file, encoding="utf-8") as file_handler:
             config = toml.loads(file_handler.read())
 
     if apikey is not None:

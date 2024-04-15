@@ -6,7 +6,7 @@ import operator
 from functools import reduce
 from typing import Callable, List
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ...exceptions import Flow360ConfigurationError
 from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
@@ -111,7 +111,6 @@ def require(required_parameter, required_by, params):
         )
 
 
-# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
 def unit_converter(dimension, params, required_by: List[str] = None):
     """
 

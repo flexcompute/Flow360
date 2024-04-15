@@ -13,7 +13,7 @@ from functools import wraps
 from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
@@ -81,7 +81,6 @@ class Flow360ResourceBaseModel(pd.BaseModel):
     updated_by: Optional[str] = pd.Field(alias="updatedBy")
     deleted: bool
 
-    # pylint: disable=no-self-argument
     @pd.validator("*", pre=True)
     def handle_none_str(cls, value):
         """handle None strings"""
@@ -89,7 +88,6 @@ class Flow360ResourceBaseModel(pd.BaseModel):
             value = None
         return value
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config:
         extra = pd.Extra.allow
         allow_mutation = False
@@ -158,7 +156,6 @@ class Flow360Resource(RestApi):
     Flow360 base resource model
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, interface: BaseInterface, info_type_class, id=None):
         is_valid_uuid(id, allow_none=False)
         self._resource_type = interface.resource_type
@@ -266,7 +263,6 @@ class Flow360Resource(RestApi):
         """
         return self.get(method="files")
 
-    # pylint: disable=too-many-arguments
     def _download_file(
         self,
         file_name,
@@ -377,7 +373,6 @@ class Flow360Resource(RestApi):
             self.id, remote_file_name, upload_id, uploaded_parts
         )
 
-    # pylint: disable=no-member
     def open_in_browser(self):
         """
         Open resource in browser
@@ -416,7 +411,6 @@ class Flow360ResourceListBase(list, RestApi):
     Flow360 ResourceList base component
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         ancestor_id: str = None,
@@ -477,7 +471,6 @@ class TemporaryLogDirectory:
 
     """
 
-    # pylint: disable=consider-using-with
     def __init__(self):
         """
         Initializes a new instance of the TemporaryLogDirectory class.
@@ -569,12 +562,10 @@ class RemoteResourceLogs:
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
 
-    # pylint: disable=protected-access
     def _refresh_file(self):
         tmp_file = self._get_tmp_file_name()
         self.flow360_resource._download_file(self._remote_file_name, tmp_file, overwrite=True)
 
-    # pylint: disable=protected-access
     @property
     def _cached_file(self):
         tmp_file = self._get_tmp_file_name()
@@ -598,7 +589,7 @@ class RemoteResourceLogs:
                     return lines[-num_lines:]
                 return lines
 
-        except (OSError, IOError) as error:
+        except OSError as error:
             log.error("invalid path to log files", error)
             return None
 
@@ -621,7 +612,7 @@ class RemoteResourceLogs:
                 else:
                     filt = r".*"
                 return [line for line in re.findall(filt, log_contents) if line.strip() != ""]
-        except (OSError, IOError) as error:
+        except OSError as error:
             log.error("invalid path to log files", error)
             return None
 

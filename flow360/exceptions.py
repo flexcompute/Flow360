@@ -14,7 +14,6 @@ class Flow360Error(Exception):
         log.error(message)
 
 
-# pylint: disable=redefined-builtin
 class Flow360ValueError(Flow360Error):
     """Error with value."""
 

@@ -17,7 +17,6 @@ from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
 
 
-# pylint: disable=redefined-builtin
 def is_valid_uuid(id, allow_none=False):
     """
     Checks if id is valid
@@ -78,14 +77,6 @@ def shared_account_confirm_proceed():
         return True
 
 
-# pylint: disable=bare-except
-def _get_value_or_none(callable):
-    try:
-        return callable()
-    except:
-        return None
-
-
 def validate_type(value, parameter_name: str, expected_type):
     """validate type
 
@@ -109,7 +100,6 @@ def validate_type(value, parameter_name: str, expected_type):
         )
 
 
-# pylint: disable=consider-using-with
 def zstd_compress(file_path, output_file_path=None, compression_level=3):
     """
     Compresses the file located at 'file_path' using Zstandard compression.
@@ -143,7 +133,7 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
                     compressor.write(chunk)
                     progress.update(task_id, advance=len(chunk))
         return output_file_path
-    except (zstd.ZstdError, FileNotFoundError, IOError) as error:
+    except (OSError, zstd.ZstdError, FileNotFoundError) as error:
         log.error(f"Error occurred while compressing the file: {error}")
         return None
 

@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from flow360.cloud.s3_utils import S3TransferType

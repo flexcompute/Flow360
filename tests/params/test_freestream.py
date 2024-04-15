@@ -1,8 +1,7 @@
-import json
 import unittest
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
@@ -14,7 +13,6 @@ from flow360.component.flow360_params.flow360_params import (
     ZeroFreestream,
     ZeroFreestreamFromVelocity,
 )
-from flow360.exceptions import Flow360ConfigError
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -39,11 +37,11 @@ def test_freesteam():
 
         to_file_from_file_test(fs)
 
-        p = fl.Flow360Params(
+        fl.Flow360Params(
             freestream={"modelType": "FromMach", "Mach": 1, "temperature": 300, "mu_ref": 1},
             boundaries={},
         )
-        p = fl.Flow360Params(
+        fl.Flow360Params(
             freestream={
                 "modelType": "ZeroMach",
                 "Mach": 0,
@@ -53,7 +51,7 @@ def test_freesteam():
             },
             boundaries={},
         )
-        p = fl.Flow360Params(
+        fl.Flow360Params(
             freestream={"modelType": "FromVelocity", "velocity": 1},
             boundaries={},
         )

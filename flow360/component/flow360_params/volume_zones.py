@@ -2,32 +2,20 @@
 Volume zones parameters
 """
 
-# pylint: disable=too-many-lines
-# pylint: disable=unused-import
 from __future__ import annotations
 
 from abc import ABCMeta
 from typing import Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from numpy import array, dot
-from pydantic import StrictStr
+from pydantic.v1 import StrictStr
 from typing_extensions import Literal
 
 from ..constants import NumericalConstants
-from ..types import (
-    Axis,
-    Coordinate,
-    List,
-    NonNegativeFloat,
-    PositiveFloat,
-    PositiveInt,
-    Tuple,
-    Vector,
-)
+from ..types import Axis, List, NonNegativeFloat, PositiveFloat
 from ..utils import process_expressions
 from .params_base import Flow360BaseModel
-from .solvers import HeatEquationSolver
 from .unit_system import (
     AngularVelocityType,
     HeatSourceType,
@@ -45,7 +33,6 @@ class ReferenceFrameBase(Flow360BaseModel):
     axis: Axis = pd.Field(alias="axisOfRotation")
     parent_volume_name: Optional[str] = pd.Field(alias="parentVolumeName")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         exclude_on_flow360_export = ["model_type"]
 
@@ -76,7 +63,6 @@ class ReferenceFrameDynamic(ReferenceFrameBase):
 
     model_type: Literal["Dynamic"] = pd.Field("Dynamic", alias="modelType", const=True)
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameDynamic:
         """
         returns configuration object in flow360 units system
@@ -124,14 +110,12 @@ class ReferenceFrameExpression(ReferenceFrameBase):
     theta_radians: Optional[str] = pd.Field(alias="thetaRadians")
     theta_degrees: Optional[str] = pd.Field(alias="thetaDegrees")
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(ReferenceFrameBase.Config):
         require_one_of = [
             "theta_radians",
             "theta_degrees",
         ]
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameExpression:
         """
         returns configuration object in flow360 units system
@@ -164,7 +148,6 @@ class ReferenceFrameOmegaRadians(ReferenceFrameBase):
     model_type: Literal["OmegaRadians"] = pd.Field("OmegaRadians", alias="modelType", const=True)
     omega_radians: float = pd.Field(alias="omegaRadians")
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:
         """
         returns configuration object in flow360 units system
@@ -197,7 +180,6 @@ class ReferenceFrameOmegaDegrees(ReferenceFrameBase):
     model_type: Literal["OmegaDegrees"] = pd.Field("OmegaDegrees", alias="modelType", const=True)
     omega_degrees: float = pd.Field(alias="omegaDegrees")
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaDegrees:
         """
         returns configuration object in flow360 units system
@@ -239,7 +221,6 @@ class ReferenceFrame(ReferenceFrameBase):
     )
     omega: AngularVelocityType = pd.Field()
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> ReferenceFrameOmegaRadians:
         """
         returns configuration object in flow360 units system
@@ -293,7 +274,6 @@ class FluidDynamicsVolumeZone(VolumeZoneBase):
         alias="referenceFrame", discriminator="model_type"
     )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> FluidDynamicsVolumeZone:
         """
         returns configuration object in flow360 units system
@@ -309,7 +289,6 @@ class PorousMediumBase(Flow360BaseModel):
     volumetric_heat_source: Optional[HeatSourceType] = pd.Field(alias="VolumetricHeatSource")
     axes: List[Axis] = pd.Field(min_items=2, max_items=3, default=[[1, 0, 0], [0, 1, 0]])
 
-    # pylint: disable=no-self-argument
     @pd.root_validator
     def validate_axes_orthogonal(cls, values):
         """

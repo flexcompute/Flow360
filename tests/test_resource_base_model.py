@@ -4,8 +4,6 @@ from flow360.component.case import Case, CaseMeta
 from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
 from flow360.exceptions import Flow360RuntimeError
 
-from .utils import mock_id
-
 
 def test_status():
     print(Flow360Status("uploaded").is_final())
@@ -222,7 +220,7 @@ def test_case_meta_model():
     assert model.status.is_final()
 
 
-def test_set_meta():
+def test_set_meta(mock_id):
     meta = CaseMeta.parse_obj(
         {
             "status": "completed",

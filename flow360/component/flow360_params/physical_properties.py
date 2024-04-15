@@ -86,7 +86,6 @@ class _GasModel(ABC):
         """
 
 
-# pylint: disable=no-member
 class _AirModel(_GasModel):
     """
     Class representing air properties based on the gas model.

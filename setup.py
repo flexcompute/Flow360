@@ -17,7 +17,7 @@ For interactive installs, consider one of the alrenatives:
 
 if __name__ == "__main__":
     major, minor = sys.version_info.major, sys.version_info.minor
-    with open("pyproject.toml", "r") as f:
+    with open("pyproject.toml") as f:
         toml_data = toml.load(f)
 
     install_requires = []

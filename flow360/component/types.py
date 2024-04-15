@@ -3,7 +3,7 @@
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Annotated
 
 from ..exceptions import Flow360ValidationError
@@ -13,7 +13,7 @@ TYPE_TAG_STR = "_type"
 COMMENTS = "comments"
 
 
-def annotate_type(UnionType):  # pylint:disable=invalid-name
+def annotate_type(UnionType):
     """Annotated union type using TYPE_TAG_STR as discriminator."""
     return Annotated[UnionType, pd.Field(discriminator=TYPE_TAG_STR)]
 
@@ -64,7 +64,6 @@ class Vector(Coordinate):
 
         return vector
 
-    # pylint: disable=unused-argument
     @classmethod
     def __modify_schema__(cls, field_schema, field):
         new_schema = {

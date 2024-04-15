@@ -2,11 +2,10 @@
 Turbulence quantities parameters
 """
 
-# pylint: disable=unused-import
 from abc import ABCMeta
 from typing import Literal, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..types import NonNegativeFloat, PositiveFloat
 from .params_base import Flow360BaseModel
@@ -112,7 +111,6 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
     )
 
 
-# pylint: disable=missing-class-docstring
 class SpecificDissipationRateAndTurbulentKineticEnergy(
     _SpecificDissipationRate, TurbulentKineticEnergy
 ):
@@ -175,8 +173,6 @@ class TurbulentViscosityRatioAndTurbulentLengthScale(TurbulentViscosityRatio, Tu
     )
 
 
-# pylint: enable=missing-class-docstring
-
 TurbulenceQuantitiesType = Union[
     TurbulentViscosityRatio,
     TurbulentKineticEnergy,
@@ -196,7 +192,6 @@ TurbulenceQuantitiesType = Union[
 ]
 
 
-# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches, invalid-name
 # using class naming convetion here
 def TurbulenceQuantities(
     viscosity_ratio=None,

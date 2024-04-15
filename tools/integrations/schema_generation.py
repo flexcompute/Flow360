@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Literal, Optional, Type, Union, get_args
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
@@ -338,7 +338,7 @@ class _AeroacousticOutput(fl.AeroacousticOutput):
 
 
 class _SliceOutput(fl.SliceOutput):
-    # pylint: disable=protected-access, too-few-public-methods
+
     output_format: List[Literal["paraview", "tecplot", "both"]]
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):

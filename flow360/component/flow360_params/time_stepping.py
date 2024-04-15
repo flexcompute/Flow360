@@ -2,14 +2,12 @@
 Time stepping parameters
 """
 
-# pylint: disable=too-many-lines
-# pylint: disable=unused-import
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..types import PositiveFloat, PositiveInt
@@ -78,7 +76,6 @@ class AdaptiveCFL(Flow360BaseModel):
         return cls(max=1e4, convergence_limiting_factor=0.25, max_relative_change=1)
 
 
-# pylint: disable=E0213
 class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
     """
     Base class for time stepping component
@@ -90,14 +87,12 @@ class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
         displayed="CFL", options=["Ramp CFL", "Adaptive CFL"]
     )
 
-    # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> BaseTimeStepping:
         """
         returns configuration object in flow360 units system
         """
         return super().to_solver(params, **kwargs)
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         deprecated_aliases = [DeprecatedAlias(name="physical_steps", deprecated="maxPhysicalSteps")]
         exclude_on_flow360_export = ["model_type"]

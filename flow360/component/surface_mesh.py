@@ -8,7 +8,7 @@ import os
 from enum import Enum
 from typing import Iterator, List, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
@@ -35,7 +35,6 @@ class SurfaceMeshDownloadable(Enum):
     CONFIG_JSON = "config.json"
 
 
-# pylint: disable=E0213
 class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
     """
     SurfaceMeshMeta component
@@ -62,7 +61,6 @@ class SurfaceMeshDraft(ResourceDraft):
     Surface Mesh Draft component
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         geometry_file: str = None,
@@ -125,7 +123,6 @@ class SurfaceMeshDraft(ResourceDraft):
         """surface mesh file"""
         return self._surface_mesh_file
 
-    # pylint: disable=protected-access
     def submit(self, progress_callback=None) -> SurfaceMesh:
         """submit surface meshing to cloud
 
@@ -198,7 +195,6 @@ class SurfaceMesh(Flow360Resource):
     Surface mesh component
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
             interface=SurfaceMeshInterface,
@@ -229,7 +225,6 @@ class SurfaceMesh(Flow360Resource):
             self._params = self.info.params
         return self._params
 
-    # pylint: disable=too-many-arguments
     # def download_file(
     #     self,
     #     file_name: Union[str, SurfaceMeshDownloadable],
@@ -386,13 +381,11 @@ class SurfaceMeshList(Flow360ResourceListBase):
             resourceClass=SurfaceMesh,
         )
 
-    # pylint: disable=useless-parent-delegation
     def __getitem__(self, index) -> SurfaceMesh:
         """
         returns SurfaceMeshMeta item of the list
         """
         return super().__getitem__(index)
 
-    # pylint: disable=useless-parent-delegation
     def __iter__(self) -> Iterator[SurfaceMesh]:
         return super().__iter__()

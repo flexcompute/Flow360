@@ -1,5 +1,5 @@
 """
-Module containing updaters from version to version 
+Module containing updaters from version to version
 """
 
 import re
@@ -27,7 +27,6 @@ def _version_match(version_1, version_2):
     return pattern_1.match(version_2) or pattern_2.match(version_1)
 
 
-# pylint: disable=dangerous-default-value
 def _find_update_path(version_from, version_to, update_map=UPDATE_MAP):
     path = []
 

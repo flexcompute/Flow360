@@ -104,7 +104,6 @@ def _check_consistency_ddes_volume_output(values):
     return values
 
 
-# pylint: disable=line-too-long
 def _validate_cht_no_heat_transfer_zone(values):
     heat_equation_solver = values.get("heat_equation_solver")
     if heat_equation_solver is not None:
@@ -186,7 +185,6 @@ def _validate_cht_has_heat_transfer_zone(values):
     return values
 
 
-# pylint: disable=line-too-long
 def _check_cht_solver_settings(values):
     has_heat_transfer_zone = False
     volume_zones = values.get("volume_zones")
@@ -261,7 +259,6 @@ def _check_incompressible_navier_stokes_solver(values):
     return values
 
 
-# pylint: disable=line-too-long
 def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoReturn:
     paired_patch_name = boundary_obj.paired_patch_name
     if paired_patch_name is None:
@@ -365,8 +362,6 @@ def _check_bet_disks_number_of_defined_polars(disk):
     return disk
 
 
-# pylint: disable=invalid-name
-# pylint: disable=too-many-arguments
 def _check_3d_coeffs_in_BET_polars(
     coeffs_3d, num_Mach, num_Re, num_alphas, section_index, coeffs_name
 ):

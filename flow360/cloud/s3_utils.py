@@ -10,10 +10,8 @@ from enum import Enum
 
 import boto3
 from boto3.s3.transfer import TransferConfig
-
-# pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from ..environment import Env
 from ..exceptions import Flow360ValueError
@@ -197,7 +195,6 @@ class S3TransferType(Enum):
             Key=token.get_s3_key(),
         )["UploadId"]
 
-    # pylint: disable=too-many-arguments
     def upload_part(
         self,
         resource_id: str,
@@ -299,7 +296,6 @@ class S3TransferType(Enum):
                     Config=_s3_config,
                 )
 
-    # pylint: disable=too-many-arguments
     def download_file(
         self,
         resource_id: str,

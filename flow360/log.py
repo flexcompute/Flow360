@@ -55,8 +55,6 @@ def _get_level_int(level: LogValue) -> int:
     return _level_value[level_upper]
 
 
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-instance-attributes
 class LogHandler:
     """Handle log messages depending on log level"""
 
@@ -155,7 +153,6 @@ class LogHandler:
             if os.path.isfile(dfn):
                 os.remove(dfn)
             self.rotate(self.fname, dfn)
-            # pylint: disable=consider-using-with,unspecified-encoding
             self.console.file = open(self.fname, self.console.file.mode)
 
     def should_roll_over(self, message):
@@ -299,14 +296,13 @@ def set_logging_file(
     if "file" in log.handlers:
         try:
             log.handlers["file"].console.file.close()
-        except Exception as error:  # pylint: disable=broad-exception-caught
+        except Exception as error:
             del log.handlers["file"]
             log.warning(f"Log file could not be closed: {error}")
 
     try:
-        # pylint: disable=consider-using-with,unspecified-encoding
         file = open(fname, filemode)
-    except:  # pylint: disable=bare-except
+    except OSError:
         log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return
 

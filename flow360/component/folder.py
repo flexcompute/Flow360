@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..cloud.requests import MoveFolderItem, MoveToFolderRequest, NewFolderRequest
 from ..cloud.rest_api import RestApi
@@ -17,7 +17,6 @@ from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDr
 from .utils import shared_account_confirm_proceed, validate_type
 
 
-# pylint: disable=E0213
 class FolderMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
     """
     FolderMeta component
@@ -35,7 +34,6 @@ class FolderDraft(ResourceDraft):
     Folder Draft component
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, name: str = None, tags: List[str] = None, parent_folder: Folder = None):
         self.name = name
         self.tags = tags
@@ -43,7 +41,6 @@ class FolderDraft(ResourceDraft):
         self._parent_folder = parent_folder
         ResourceDraft.__init__(self)
 
-    # pylint: disable=protected-access
     def submit(self) -> Folder:
         """create folder in cloud
 
@@ -72,7 +69,6 @@ class Folder(Flow360Resource):
     Folder component
     """
 
-    # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
             interface=FolderInterface,
@@ -187,13 +183,13 @@ class Folder(Flow360Resource):
 #             resourceClass=Folder,
 #         )
 
-#     # pylint: disable=useless-parent-delegation
+#
 #     def __getitem__(self, index) -> Folder:
 #         """
 #         returns Folder item of the list
 #         """
 #         return super().__getitem__(index)
 
-#     # pylint: disable=useless-parent-delegation
+#
 #     def __iter__(self) -> Iterator[Folder]:
 #         return super().__iter__()

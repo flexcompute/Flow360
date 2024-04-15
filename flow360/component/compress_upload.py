@@ -11,7 +11,6 @@ from flow360.component.resource_base import Flow360Resource
 from ..cloud.utils import _get_progress, _S3Action
 
 
-# pylint: disable=too-many-arguments, too-many-locals
 def compress_and_upload_chunks(
     file_name: str,
     upload_id: str,

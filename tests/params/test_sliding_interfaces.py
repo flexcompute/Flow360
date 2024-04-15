@@ -1,18 +1,11 @@
-import json
-import math
 import unittest
 
 import pytest
 
-from flow360 import units as u
 from flow360.component.flow360_params.flow360_params import (
-    Flow360Params,
-    FreestreamFromVelocity,
-    Geometry,
     MeshSlidingInterface,
     SlidingInterface,
 )
-from flow360.exceptions import Flow360ConfigError
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

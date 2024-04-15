@@ -2,7 +2,6 @@
 Flow360 solver parameters
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import hashlib
@@ -13,12 +12,12 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import rich
 import unyt
 import yaml
-from pydantic import BaseModel
-from pydantic.fields import ModelField
+from pydantic.v1 import BaseModel
+from pydantic.v1.fields import ModelField
 from typing_extensions import Literal
 
 from ...error_messages import do_not_modify_file_manually_msg
@@ -33,10 +32,10 @@ SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 
 def json_dumps(value, *args, **kwargs):
     """custom json dump with sort_keys=True"""
-    return json.dumps(value, sort_keys=True, *args, **kwargs)
+    kwargs["sort_keys"] = True  # Set sort_keys within kwargs
+    return json.dumps(value, *args, **kwargs)
 
 
-# pylint: disable=invalid-name
 def params_generic_validator(value, ExpectedParamsType):
     """generic validator for params comming from webAPI
 
@@ -179,7 +178,6 @@ def _schema_optional_toggle_name(name):
     return f"_add{name[0].upper() + name[1:]}"
 
 
-# pylint: disable=too-many-public-methods
 class Flow360BaseModel(BaseModel):
     """Base pydantic model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -212,7 +210,7 @@ class Flow360BaseModel(BaseModel):
         cls.add_type_field()
         cls.generate_docstring()
 
-    class Config:  # pylint: disable=too-few-public-methods
+    class Config:
         """Sets config for all :class:`Flow360BaseModel` objects.
 
         Configuration Options
@@ -255,14 +253,12 @@ class Flow360BaseModel(BaseModel):
                 raise ValueError(f"Cannot modify immutable fields: {name}")
         super().__setattr__(name, value)
 
-    # pylint: disable=unused-argument
     @classmethod
     def __modify_schema__(cls, field_schema, field):
         field_schema.update(cls.schema())
         if cls.SchemaConfig.displayed is not None:
             field_schema["displayed"] = cls.SchemaConfig.displayed
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def one_of(cls, values):
         """
@@ -277,7 +273,6 @@ class Flow360BaseModel(BaseModel):
                 raise ValueError(f"One of {cls.Config.require_one_of} is required.")
         return values
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def allow_but_remove(cls, values):
         """
@@ -288,7 +283,6 @@ class Flow360BaseModel(BaseModel):
                 values.pop(field, None)
         return values
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def handle_deprecated_aliases(cls, values):
         """
@@ -299,7 +293,6 @@ class Flow360BaseModel(BaseModel):
                 values = cls._handle_depracated_alias(values, deprecated_alias)
         return values
 
-    # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
     def handle_conflicting_fields(cls, values):
         """
@@ -364,7 +357,6 @@ class Flow360BaseModel(BaseModel):
 
         return values
 
-    # pylint: disable=too-few-public-methods
     class SchemaConfig:
         """Sets JSON schema generation config for :class:`Flow360BaseModel` objects.
 
@@ -648,7 +640,6 @@ class Flow360BaseModel(BaseModel):
         properties = cls.SchemaConfig.field_properties
         schema = {}
 
-        # pylint: disable=consider-using-enumerate
         for i in range(0, len(order)):
             name = order[i].split("/")[:-1]
             if name in optionals:
@@ -900,7 +891,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params_dict = Flow360Params.dict_from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        with open(filename, "r", encoding="utf-8") as json_fhandle:
+        with open(filename, encoding="utf-8") as json_fhandle:
             model_dict = json.load(json_fhandle)
         return model_dict
 
@@ -964,7 +955,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params_dict = Flow360Params.dict_from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        with open(filename, "r", encoding="utf-8") as yaml_in:
+        with open(filename, encoding="utf-8") as yaml_in:
             model_dict = yaml.safe_load(yaml_in)
         return model_dict
 
@@ -1083,7 +1074,6 @@ class Flow360BaseModel(BaseModel):
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
-    # pylint: disable=unnecessary-dunder-call
     def append(self, params: Flow360BaseModel, overwrite: bool = False):
         """append parametrs to the model
 
@@ -1144,7 +1134,7 @@ class Flow360BaseModel(BaseModel):
                 continue
 
             # get data type
-            data_type = field._type_display()  # pylint:disable=protected-access
+            data_type = field._type_display()
 
             # get default values
             default_val = field.get_default()
@@ -1267,7 +1257,6 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         return root_schema
 
-    # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):
         extra = "allow"
         json_dumps = json_dumps

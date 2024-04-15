@@ -55,5 +55,5 @@ jobs:
           cache: 'poetry'
       - name: Install dependencies
         run: poetry install
-      - name: Run pylint
-        run: poetry run pylint flow360 --rcfile .pylintrc
+      - name: Run ruff (linter)
+        run: poetry run ruff check 
