@@ -223,6 +223,13 @@ class WallFunction(Boundary):
 
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
+    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
+        default="relative", alias="velocityType"
+    )
+
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
+
 
 class MassInflow(BoundaryWithTurbulenceQuantities):
     """:class: `MassInflow` boundary"""
