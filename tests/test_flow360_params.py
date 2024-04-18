@@ -254,6 +254,18 @@ def test_update_from_multiple_files_overwrite():
     assert params.geometry.ref_area == 2 * u.m**2
 
 
+def test_copy():
+    with fl.SI_unit_system:
+        params = fl.Flow360Params(
+            geometry=fl.Geometry("data/case_params/geometry.yaml"),
+            boundaries=fl.Boundaries("data/case_params/boundaries.yaml"),
+            freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
+            navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
+        )
+
+    params.copy()
+
+
 def clear_formatting(message):
     # Remove color formatting escape codes
     ansi_escape = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]")
