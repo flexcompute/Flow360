@@ -6,12 +6,18 @@ the current standard via the update_model method)
 """
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 
 import pydantic as pd
 
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.flow360_params.params_base import (
+    Conflicts,
+    DeprecatedAlias,
+    Flow360BaseModel,
+)
 from flow360.component.flow360_params.unit_system import DimensionedType
+
+from ..types import NonNegativeInt, PositiveFloat, PositiveInt
 
 
 class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
@@ -22,6 +28,37 @@ class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
     @abstractmethod
     def update_model(self):
         """Update the legacy model to the up-to-date version"""
+
+
+class LinearSolverLegacy(LegacyModel):
+    """:class:`LinearSolverLegacy` class"""
+
+    max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
+    max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
+    relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
+
+    # pylint: disable=missing-class-docstring,too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        deprecated_aliases = [DeprecatedAlias(name="absolute_tolerance", deprecated="tolerance")]
+
+    def update_model(self):
+        model = {
+            "absoluteTolerance": self.absolute_tolerance,
+            "relativeTolerance": self.relative_tolerance,
+            "maxIterations": self.max_iterations,
+        }
+
+        return model
+
+
+class FreestreamInitialConditionLegacy(LegacyModel):
+    """:class:`FreestreamInitialConditionLegacy` class"""
+
+    type: Literal["freestream"] = pd.Field("freestream", const=True)
+
+    def update_model(self):
+        return None
 
 
 def try_add_unit(model, key, unit: DimensionedType):
@@ -76,3 +113,13 @@ def get_output_fields(instance: Flow360BaseModel, exclude, allowed=None):
             if allowed is not None and value.alias in allowed:
                 fields.append(value.alias)
     return fields
+
+
+def set_linear_solver_config_if_none(v, values):
+    """Use to 'linear_solver' if linear_solver_config is not present and default if both are none"""
+    if v is None:
+        if values.get("linear_solver") is not None:
+            v = values.get("linear_solver").dict()
+        else:
+            v = LinearSolverLegacy().dict()
+    return v

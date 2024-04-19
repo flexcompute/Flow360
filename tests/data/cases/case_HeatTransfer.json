@@ -37,7 +37,7 @@
     "heatEquationSolver": {
         "modelType": "HeatEquation",
         "linearSolver": {
-            "maxIterations": 100,
+            "maxIterations": 4,
             "absoluteTolerance": 1e-12
         },
         "equationEvalFrequency": 20

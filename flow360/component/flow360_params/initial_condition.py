@@ -19,12 +19,6 @@ class InitialCondition(Flow360BaseModel):
     type: str
 
 
-class FreestreamInitialCondition(InitialCondition):
-    """:class:`FreestreamInitialCondition` class"""
-
-    type: Literal["freestream"] = pd.Field("freestream", const=True)
-
-
 class ExpressionInitialCondition(InitialCondition):
     """:class:`ExpressionInitialCondition` class"""
 
@@ -43,4 +37,12 @@ class ExpressionInitialCondition(InitialCondition):
     _processed_p = pd.validator("p", allow_reuse=True)(process_expressions)
 
 
-InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
+class ModifiedRestartSolution(ExpressionInitialCondition):
+    """:class:`ModifiedRestartSolution` class.
+    For forked (restart) cases, expressions will be applied  to manipulate the restart solution before it is applied.
+    """
+
+    type: Literal["restartManipulation"] = pd.Field("restartManipulation", const=True)
+
+
+InitialConditions = Union[ModifiedRestartSolution, ExpressionInitialCondition]

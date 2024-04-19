@@ -85,7 +85,7 @@ from .component.flow360_params.flow360_params import (
 )
 from .component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
-    FreestreamInitialCondition,
+    ModifiedRestartSolution,
 )
 from .component.flow360_params.solvers import (
     IncompressibleNavierStokesSolver,

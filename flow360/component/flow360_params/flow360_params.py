@@ -58,6 +58,7 @@ from .flow360_legacy import (
     try_add_unit,
     try_set,
     try_update,
+    FreestreamInitialConditionLegacy,
 )
 from .flow360_output import (
     AeroacousticOutput,
@@ -79,7 +80,11 @@ from .flow360_output import (
     VolumeOutput,
     VolumeOutputLegacy,
 )
-from .initial_condition import InitialConditions
+from .initial_condition import (
+    InitialConditions,
+    ModifiedRestartSolution,
+    ExpressionInitialCondition,
+)
 from .params_base import (
     Conflicts,
     DeprecatedAlias,
@@ -1879,6 +1884,11 @@ class VolumeZonesLegacy(VolumeZones):
             super().__init__(*args, **kwargs)
 
 
+InitialConditionsLegacy = Union[
+    FreestreamInitialConditionLegacy, ModifiedRestartSolution, ExpressionInitialCondition
+]
+
+
 class Flow360ParamsLegacy(LegacyModel):
     """:class: `Flow360ParamsLegacy` class"""
 
@@ -1901,7 +1911,7 @@ class Flow360ParamsLegacy(LegacyModel):
     iso_surface_output: Optional[IsoSurfaceOutputLegacy] = pd.Field(alias="isoSurfaceOutput")
     boundaries: Optional[BoundariesLegacy] = pd.Field()
     # Needs decoupling from current model
-    initial_condition: Optional[InitialConditions] = pd.Field(
+    initial_condition: Optional[InitialConditionsLegacy] = pd.Field(
         alias="initialCondition", discriminator="type"
     )
     # Needs decoupling from current model
@@ -1982,7 +1992,7 @@ class Flow360ParamsLegacy(LegacyModel):
                 {
                     "geometry": try_update(self.geometry),
                     "boundaries": self.boundaries,
-                    "initial_condition": self.initial_condition,
+                    "initial_condition": try_update(self.initial_condition),
                     "time_stepping": try_update(self.time_stepping),
                     "navier_stokes_solver": try_update(self.navier_stokes_solver),
                     "turbulence_model_solver": try_update(self.turbulence_model_solver),
