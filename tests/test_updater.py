@@ -150,7 +150,6 @@ def test_updater_from_files():
     params = fl.Flow360Params(f"data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
     assert params.initial_condition is None
-    print(">>>>>>", params.surface_output)
 
     # ##:: case_udd_legacy.json has linearSolver instead of linearSovlerConfig(legacy)
     params = fl.Flow360Params(f"data/cases/case_udd_legacy.json")
