@@ -51,7 +51,7 @@
         "quadraticConstitutiveRelation": false,
         "reconstructionGradientLimiter": 0.5,
         "linearSolverConfig": {
-            "maxIterations": 20,
+            "maxIterations": 2,
             "absoluteTolerance": 1e-10
         },
         "modelConstants": {
@@ -60,6 +60,15 @@
         },
         "rotationCorrection": false
     },
+    "transitionModelSolver": {
+		"modelType": "AmplificationFactorTransport",
+		"orderOfAccuracy": 2,
+		"Ncrit": 3,
+        "linearSolverConfig": {
+            "maxIterations": 3,
+            "absoluteTolerance": 1e-10
+        }
+	},
     "freestream": {
         "alphaAngle": 0,
         "betaAngle": 0,
@@ -173,7 +182,7 @@
         "limitVelocity": false,
         "limitPressureDensity": false,
         "linearSolverConfig": {
-            "maxIterations": 30,
+            "maxIterations": 1,
             "absoluteTolerance": 1e-10
         }
     },

@@ -5,7 +5,6 @@ import pytest
 import flow360 as fl
 from flow360.component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
-    FreestreamInitialCondition,
 )
 from tests.utils import to_file_from_file_test
 
@@ -18,9 +17,6 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_initial_condition():
-    ic = FreestreamInitialCondition()
-    assert ic
-    assert ic.type == "freestream"
 
     ic = ExpressionInitialCondition(rho="x*y", u="x+y", v="x-y", w="z+x+y", p="x/y")
     assert ic

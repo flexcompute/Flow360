@@ -33,18 +33,25 @@
       "startAverageIntegrationStep": 100000
    },
    "surfaceOutput": {
-      "outputFormat": "both",
-      "primitiveVars": true,
-      "Cp": true,
-      "Cf": true,
-      "CfTangent": true,
-      "CfNormal": true,
-      "CfVec": true,
-      "yPlus": true,
-      "wallDistance": true,
-      "Mach": true,
-      "nodeForcesPerUnitArea": true,
-      "animationFrequency": -1
+      "animationFrequency": -1,
+      "animationFrequencyOffset": 0,
+      "computeTimeAverages": false,
+      "startAverageIntegrationStep": 0,
+      "surfaces": {
+         "farfieldBlock/farfield": {
+            "outputFields": []
+         },
+         "outerBlock/Interface_innerBlock": {
+            "outputFields": [
+               "primitiveVars"
+            ]
+         },
+         "farfieldBlock/wing": {
+            "outputFields": []
+         }
+      },
+      "outputFormat": "paraview",
+      "writeSingleFile": false
    },
    "sliceOutput": {
       "outputFormat": "tecplot",
@@ -179,5 +186,8 @@
          "final": 10000000,
          "rampSteps": 33
       }
+   },
+   "initialCondition": {
+      "type": "freestream"
    }
 }

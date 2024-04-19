@@ -762,6 +762,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             "outputFormat": self.output_format,
             "outputFields": fields,
             "startAverageIntegrationStep": self.start_average_integration_step,
+            "surfaces": self.surfaces,
         }
 
         return SurfaceOutput.parse_obj(model)
