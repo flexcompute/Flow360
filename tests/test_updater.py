@@ -151,6 +151,9 @@ def test_updater_from_files():
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
     assert params.initial_condition is None
 
+    params = fl.Flow360Params(f"data/cases/case_20.json")
+    assert set(params.surface_output.output_fields) == set(["Cp", "yPlus"])
+
     # ##:: case_udd_legacy.json has linearSolver instead of linearSovlerConfig(legacy)
     params = fl.Flow360Params(f"data/cases/case_udd_legacy.json")
     assert params.navier_stokes_solver.linear_solver.max_iterations == 1

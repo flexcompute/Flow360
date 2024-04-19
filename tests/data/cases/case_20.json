@@ -31,7 +31,7 @@
 		"Cp": true,
 		"Cf": false,
 		"CfVec": false,
-		"yPlus": false,
+		"yPlus": true,
 		"wallDistance": false,
 		"Mach": false
 	},
