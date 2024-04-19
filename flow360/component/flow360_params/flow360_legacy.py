@@ -11,7 +11,6 @@ from typing import Dict, Literal, Optional
 import pydantic as pd
 
 from flow360.component.flow360_params.params_base import (
-    Conflicts,
     DeprecatedAlias,
     Flow360BaseModel,
 )
@@ -34,6 +33,7 @@ class LinearSolverLegacy(LegacyModel):
     """:class:`LinearSolverLegacy` class"""
 
     max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
+    # pylint: disable=duplicate-code
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
     absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
     relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
@@ -115,11 +115,11 @@ def get_output_fields(instance: Flow360BaseModel, exclude, allowed=None):
     return fields
 
 
-def set_linear_solver_config_if_none(v, values):
+def set_linear_solver_config_if_none(linear_sovler_config, values):
     """Use to 'linear_solver' if linear_solver_config is not present and default if both are none"""
-    if v is None:
+    if linear_sovler_config is None:
         if values.get("linear_solver") is not None:
-            v = values.get("linear_solver").dict()
+            linear_sovler_config = values.get("linear_solver").dict()
         else:
-            v = LinearSolverLegacy().dict()
-    return v
+            linear_sovler_config = LinearSolverLegacy().dict()
+    return linear_sovler_config

@@ -52,13 +52,13 @@ from ..utils import _get_value_or_none, convert_legacy_names, process_expression
 from .boundaries import BoundaryType, WallFunction
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
+    FreestreamInitialConditionLegacy,
     LegacyModel,
     get_output_fields,
     try_add_discriminator,
     try_add_unit,
     try_set,
     try_update,
-    FreestreamInitialConditionLegacy,
 )
 from .flow360_output import (
     AeroacousticOutput,
@@ -81,9 +81,9 @@ from .flow360_output import (
     VolumeOutputLegacy,
 )
 from .initial_condition import (
+    ExpressionInitialCondition,
     InitialConditions,
     ModifiedRestartSolution,
-    ExpressionInitialCondition,
 )
 from .params_base import (
     Conflicts,
