@@ -78,7 +78,7 @@ class BaseTestCase(metaclass=ABCMeta):
 
     @classmethod
     def _get_version_prefix(cls):
-        if cls._solver_version == None:
+        if cls._solver_version is None:
             return ""
 
         versionList = [
@@ -149,7 +149,7 @@ class BaseTestCase(metaclass=ABCMeta):
     @classmethod
     def is_file_downloaded(cls, file):
         if not os.path.exists(file):
-            raise FileNotFoundError(f"File not found. Run get_files() first to download files.")
+            raise FileNotFoundError("File not found. Run get_files() first to download files.")
         return file
 
     @classproperty

@@ -1,4 +1,4 @@
-from pylab import *
+from pylab import show
 
 import flow360 as fl
 from flow360.examples import OM6wingUserDefinedDynamics

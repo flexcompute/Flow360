@@ -2,7 +2,7 @@
 monitors example
 """
 
-from .base_test_case import BaseTestCase, url_base
+from .base_test_case import BaseTestCase
 
 
 class MonitorsAndSlices(BaseTestCase):

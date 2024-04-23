@@ -1,5 +1,4 @@
 import copy
-import os
 import unittest
 
 import pytest
@@ -88,7 +87,7 @@ def test_bet_disks_alphas_disorder():
             ValueError,
             match="alphas are not in increasing order.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[5, -2],
@@ -121,7 +120,7 @@ def test_bet_disks_duplicated_radial_locations():
         ):
             chords_wrong = copy.deepcopy(chords)
             chords_wrong[0].radius = chords_wrong[1].radius
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[-2, 5],
@@ -151,7 +150,7 @@ def test_bet_disks_duplicated_radial_locations():
         ):
             twists_wrong = copy.deepcopy(twists)
             twists_wrong[0].radius = twists_wrong[1].radius
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[-2, 5],
@@ -184,7 +183,7 @@ def test_bet_disks_number_of_polars():
         ):
             polars_wrong = copy.deepcopy(polars)
             polars_wrong.append(polars[0])
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[-2, 5],
@@ -216,7 +215,7 @@ def test_bet_disks_dimension_polars():
             match=r"\(cross section: 0\): number of MachNumbers = 2, but the first dimension of lift_coeffs is 1.",
         ):
             mach_wrong = [0.4, 0.5]
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[-2, 5],
@@ -244,7 +243,7 @@ def test_bet_disks_dimension_polars():
             match=r"\(cross section: 0\) \(Mach index \(0-based\) 0\): number of Reynolds = 2, but the second dimension of lift_coeffs is 1.",
         ):
             re_wrong = [0.4, 0.5]
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=[-2, 5],
@@ -272,7 +271,7 @@ def test_bet_disks_dimension_polars():
             match=r"\(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 3, but the third dimension of lift_coeffs is 2.",
         ):
             alpha_wrong = [0.4, 0.5, 0.6]
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=alpha_wrong,
@@ -305,7 +304,7 @@ def test_bet_disks_dimension_polars():
                 BETDiskSectionalPolar(lift_coeffs=lift_coeffs_local, drag_coeffs=drag_coeffs_local)
             ]
             alpha_wrong = [0.4, 0.5, 0.6]
-            param = Flow360Params(
+            Flow360Params(
                 bet_disks=[
                     BETDisk(
                         alphas=alpha_wrong,

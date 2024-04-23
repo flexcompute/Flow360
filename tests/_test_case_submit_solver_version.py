@@ -53,7 +53,7 @@ def test_versions():
         name="test-retry-release-23.1.1.0", solver_version="release-23.2.1.0", params=params2
     ).submit()
     assert case4.solver_version == "release-23.2.1.0"
-    assert case4.info.parent_id == None
+    assert case4.info.parent_id is None
 
     case = vm.create_case(
         name="test-release-23.2.1.0", params=params2, solver_version="release-23.2.1.0"
@@ -74,7 +74,7 @@ def test_versions():
             name="test-retry-release-23.1.1.0", solver_version="release-23.1.1.0", params=params
         ).submit()
     assert case3.solver_version == "release-23.1.1.0"
-    assert case3.info.parent_id == None
+    assert case3.info.parent_id is None
 
     case4 = case2.retry(name="test-retry-fork-release-23.2.1.0").submit()
     assert case4.solver_version == "release-23.2.1.0"

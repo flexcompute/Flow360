@@ -1,15 +1,10 @@
-import pytest
-
 from flow360 import Case, Folder
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
 
-from .mock_server import mock_response
-from .utils import mock_id
 
-
-def test_case(mock_response: None):
+def test_case(mock_id, mock_response: None):
     # create folder in ROOT level
     folder_A = Folder.create("folder-python-level-A").submit()
     print(folder_A)
@@ -25,7 +20,4 @@ def test_case(mock_response: None):
     folder_C = folder_C.move_to_folder(folder_B)
     print(folder_C)
 
-    case = Case(id=mock_id).move_to_folder(folder_C)
-
-    # case = Case
-    # case = case
+    Case(id=mock_id).move_to_folder(folder_C)

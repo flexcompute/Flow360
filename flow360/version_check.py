@@ -6,7 +6,7 @@ Classes:
 
 Functions:
 - get_supported_server_versions(None) -> List[str]: Fetches a list of supported versions from the server.
-- check_client_version(None) -> Tuple[VersionSupported, Union[str, Version]]: 
+- check_client_version(None) -> Tuple[VersionSupported, Union[str, Version]]:
     Checks the current client version against the available versions.
 - client_version_get_info(None) -> None: Logs information about the client version.
 

@@ -5,7 +5,7 @@ Module: custom_exception_wrapper for ValidationError
 import sys
 import traceback
 
-from pydantic import ValidationError as PydanticValidationError
+from pydantic.v1 import ValidationError as PydanticValidationError
 
 from flow360.exceptions import Flow360ValidationError
 

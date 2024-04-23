@@ -13,7 +13,7 @@ from functools import wraps
 from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .. import error_messages
 from ..cloud.rest_api import RestApi
@@ -598,7 +598,7 @@ class RemoteResourceLogs:
                     return lines[-num_lines:]
                 return lines
 
-        except (OSError, IOError) as error:
+        except OSError as error:
             log.error("invalid path to log files", error)
             return None
 
@@ -621,7 +621,7 @@ class RemoteResourceLogs:
                 else:
                     filt = r".*"
                 return [line for line in re.findall(filt, log_contents) if line.strip() != ""]
-        except (OSError, IOError) as error:
+        except OSError as error:
             log.error("invalid path to log files", error)
             return None
 

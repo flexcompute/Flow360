@@ -2,7 +2,7 @@
 Environment Setup
 """
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 
 class EnvironmentConfig(BaseModel):

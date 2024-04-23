@@ -9,7 +9,7 @@ import tempfile
 import time
 from typing import Any, Iterator, List, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest

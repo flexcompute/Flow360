@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Iterator, List, Optional, Union
 
 import numpy as np
-from pydantic import Extra, Field, validator
+from pydantic.v1 import Extra, Field, validator
 
 from flow360.component.compress_upload import compress_and_upload_chunks
 

@@ -13,7 +13,7 @@ from boto3.s3.transfer import TransferConfig
 
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from ..environment import Env
 from ..exceptions import Flow360ValueError

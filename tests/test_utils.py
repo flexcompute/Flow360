@@ -12,8 +12,6 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshMeta
 from flow360.exceptions import Flow360TypeError, Flow360ValueError
 
-from .mock_server import mock_response
-
 
 def test_validate_type():
     validate_type("str", "meta", str)

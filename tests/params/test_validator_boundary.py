@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import pytest
@@ -21,7 +20,7 @@ def test_duplidated_boundary_names():
             ValueError,
             match="Boundary name <wing> under patch <fluid/.*Wing> appears multiple times",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "fluid/fuselage": NoSlipWall(name="fuselage"),
                     "fluid/leftWing": NoSlipWall(name="wing"),
@@ -36,7 +35,7 @@ def test_tri_quad_boundaries():
     todo: handle warning
     """
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             boundaries={
                 "fluid/tri_fuselage": NoSlipWall(),
                 "fluid/quad_fuselage": NoSlipWall(),

@@ -3,7 +3,7 @@ from threading import Thread
 from time import sleep
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import unyt
 
 import flow360 as fl
@@ -26,7 +26,7 @@ from flow360.component.flow360_params.unit_system import (
 
 
 class DataWithUnits(pd.BaseModel):
-    l: LengthType = pd.Field()
+    L: LengthType = pd.Field()
     m: MassType.Constrained(ge=2, allow_inf_nan=True) = pd.Field()
     t: TimeType.Positive = pd.Field()
     T: TemperatureType = pd.Field()

@@ -4,7 +4,7 @@ import pytest
 
 from flow360 import SI_unit_system
 from flow360.component.flow360_params.flow360_params import PorousMediumBox
-from tests.utils import array_equality_override, to_file_from_file_test
+from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 

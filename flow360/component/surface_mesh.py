@@ -8,7 +8,7 @@ import os
 from enum import Enum
 from typing import Iterator, List, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError

@@ -7,7 +7,7 @@ from flow360.services import get_default_fork
 # Webservice examples
 
 rootdir = "../../tests/data/cases/web/"
-regex = re.compile("(.*\.json$)")
+regex = re.compile(r"(.*\.json$)")
 
 for root, dirs, files in os.walk(rootdir):
     for file in files:

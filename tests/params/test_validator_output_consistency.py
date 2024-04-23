@@ -1,6 +1,5 @@
 import unittest
 
-import pydantic as pd
 import pytest
 
 import flow360 as fl
@@ -11,7 +10,6 @@ from flow360.component.flow360_params.boundaries import (
 )
 from flow360.component.flow360_params.flow360_output import SurfaceOutput
 from flow360.component.flow360_params.flow360_params import Flow360Params
-from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -23,13 +21,13 @@ def change_test_dir(request, monkeypatch):
 
 def test_consistency_wall_function_and_surface_output():
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             boundaries={"fluid/wing": NoSlipWall(), "fluid/farfield": FreestreamBoundary()},
             surface_output=SurfaceOutput(output_fields=["Cp"]),
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
 
-        param = Flow360Params(
+        Flow360Params(
             boundaries={"fluid/wing": WallFunction(), "fluid/farfield": FreestreamBoundary()},
             surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
             freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
@@ -40,7 +38,7 @@ def test_consistency_wall_function_and_surface_output():
         match="'wallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary type",
     ):
         with fl.SI_unit_system:
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={"fluid/wing": NoSlipWall(), "fluid/farfield": FreestreamBoundary()},
                 surface_output=SurfaceOutput(output_fields=["wallFunctionMetric"]),
                 freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),

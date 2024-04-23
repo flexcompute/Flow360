@@ -8,7 +8,7 @@ from abc import ABCMeta
 from typing import Optional, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt

@@ -6,25 +6,11 @@ Flow360 solver parameters
 # pylint: disable=unused-import
 from __future__ import annotations
 
-import copy
 import json
-import math
-import os
-from abc import ABCMeta, abstractmethod
-from typing import (
-    Callable,
-    Dict,
-    List,
-    NoReturn,
-    Optional,
-    Tuple,
-    Union,
-    get_args,
-    get_type_hints,
-)
+from abc import ABCMeta
+from typing import Dict, List, NoReturn, Optional, Union, get_args
 
-import pydantic as pd
-from pydantic import StrictStr
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from flow360 import units
@@ -34,7 +20,6 @@ from ...exceptions import (
     Flow360ConfigError,
     Flow360NotImplementedError,
     Flow360RuntimeError,
-    Flow360ValidationError,
 )
 from ...log import log
 from ...user_config import UserConfig
@@ -48,13 +33,12 @@ from ..types import (
     Size,
     Vector,
 )
-from ..utils import _get_value_or_none, convert_legacy_names, process_expressions
-from .boundaries import BoundaryType, WallFunction
+from ..utils import convert_legacy_names, process_expressions
+from .boundaries import BoundaryType
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
     FreestreamInitialConditionLegacy,
     LegacyModel,
-    get_output_fields,
     try_add_discriminator,
     try_add_unit,
     try_set,
@@ -62,21 +46,14 @@ from .flow360_legacy import (
 )
 from .flow360_output import (
     AeroacousticOutput,
-    AnimationSettings,
-    AnimationSettingsExtended,
     IsoSurfaceOutput,
     IsoSurfaceOutputLegacy,
-    IsoSurfaces,
     MonitorOutput,
     MonitorOutputLegacy,
-    Monitors,
-    ProbeMonitor,
     SliceOutput,
     SliceOutputLegacy,
-    SurfaceIntegralMonitor,
     SurfaceOutput,
     SurfaceOutputLegacy,
-    Surfaces,
     VolumeOutput,
     VolumeOutputLegacy,
 )
@@ -87,7 +64,6 @@ from .initial_condition import (
 )
 from .params_base import (
     Conflicts,
-    DeprecatedAlias,
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
@@ -97,50 +73,29 @@ from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     HeatEquationSolverLegacy,
-    KOmegaSST,
-    LinearSolver,
-    NavierStokesSolver,
     NavierStokesSolverLegacy,
     NavierStokesSolverType,
-    NoneSolver,
-    SpalartAllmaras,
     TransitionModelSolver,
     TransitionModelSolverLegacy,
     TurbulenceModelSolverLegacy,
     TurbulenceModelSolverType,
 )
-from .time_stepping import (
-    BaseTimeStepping,
-    SteadyTimeStepping,
-    TimeStepping,
-    UnsteadyTimeStepping,
-)
-from .turbulence_quantities import (
-    TurbulenceQuantities,
-    TurbulenceQuantitiesType,
-    TurbulentViscosityRatio,
-)
+from .time_stepping import BaseTimeStepping, SteadyTimeStepping, TimeStepping
+from .turbulence_quantities import TurbulenceQuantitiesType, TurbulentViscosityRatio
 from .unit_system import (
     AngularVelocityType,
     AreaType,
-    CGS_unit_system,
-    CGSUnitSystem,
     DensityType,
-    DimensionedType,
     Flow360UnitSystem,
-    ImperialUnitSystem,
     LengthType,
     PressureType,
-    SI_unit_system,
     SIUnitSystem,
     TemperatureType,
-    TimeType,
     UnitSystem,
     UnitSystemType,
     VelocityType,
     ViscosityType,
     flow360_unit_system,
-    imperial_unit_system,
     u,
     unit_system_manager,
 )
@@ -169,7 +124,6 @@ from .volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     PorousMediumBase,
-    PorousMediumVolumeZone,
     ReferenceFrameType,
     VolumeZoneType,
 )

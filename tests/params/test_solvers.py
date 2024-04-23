@@ -1,23 +1,21 @@
-import os
 import unittest
 
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
-    KOmegaSST,
-    LinearSolver,
-    NoneSolver,
-    SpalartAllmaras,
     TransitionModelSolver,
 )
 from flow360.component.flow360_params.solvers import (
     HEAT_EQUATION_EVAL_FREQUENCY_STEADY,
-    HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY,
+    KOmegaSST,
+    LinearSolver,
     NavierStokesSolver,
+    NoneSolver,
+    SpalartAllmaras,
 )
 from tests.utils import compare_to_ref, to_file_from_file_test
 

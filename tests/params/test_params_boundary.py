@@ -1,7 +1,6 @@
-import os
 import unittest
 
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
@@ -97,7 +96,7 @@ def test_case_boundary():
                             1.0
                         ],
                         "refArea": 0.5325
-                    },                    
+                    },
                     "boundaries": {
                         "fluid/fuselage": {
                             "type": "UnsupportedBC"
@@ -107,7 +106,7 @@ def test_case_boundary():
                         },
                         "fluid/rightWing": {
                             "type": "NoSlipWall"
-                        } 
+                        }
                     }.
                     "freestream": {
                         "modelType": "FromMach",
@@ -135,7 +134,7 @@ def test_case_boundary():
                         1.0
                     ],
                     "refArea": 0.5325
-                },    
+                },
                 "boundaries": {
                     "fluid/fuselage": {
                         "type": "SlipWall"
@@ -145,7 +144,7 @@ def test_case_boundary():
                     },
                     "fluid/rightWing": {
                         "type": "NoSlipWall"
-                    } 
+                    }
                 },
                 "freestream": {
                     "modelType": "FromMach",
@@ -533,12 +532,9 @@ def test_boundary_types():
                 ].turbulence_quantities.modified_turbulent_viscosity_ratio
                 == 0.5
             )
-            assert (
-                hasattr(
-                    params.boundaries["PressureOutflowBC"].turbulence_quantities,
-                    "turbulent_viscosity_ratio",
-                )
-                == False
+            assert not hasattr(
+                params.boundaries["PressureOutflowBC"].turbulence_quantities,
+                "turbulent_viscosity_ratio",
             )
 
 

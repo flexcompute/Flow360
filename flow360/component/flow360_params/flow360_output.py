@@ -7,8 +7,8 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
-import pydantic as pd
-from pydantic import conlist
+import pydantic.v1 as pd
+from pydantic.v1 import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (

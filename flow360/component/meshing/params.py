@@ -4,7 +4,7 @@ Flow360 meshing parameters
 
 from typing import List, Optional, Union, get_args
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from flow360.flags import Flags

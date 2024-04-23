@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl

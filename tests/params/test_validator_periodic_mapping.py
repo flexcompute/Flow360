@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import pytest
@@ -21,7 +20,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_periodic_boundary_mapping():
     with fl.SI_unit_system:
-        param = Flow360Params(
+        Flow360Params(
             boundaries={
                 "blk-1/left": TranslationallyPeriodic(paired_patch_name="blk-1/right"),
                 "blk-1/right": TranslationallyPeriodic(),
@@ -35,7 +34,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="blk-1/left's paired_patch_name should not be equal to the name of itself.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/left": TranslationallyPeriodic(paired_patch_name="blk-1/left"),
                     "blk-1/right": TranslationallyPeriodic(),
@@ -46,7 +45,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="blk-1/left and its paired boundary blk-1/right do not have the same type of boundary condition.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/right": NoSlipWall(),
                     "blk-1/left": TranslationallyPeriodic(paired_patch_name="blk-1/right"),
@@ -58,14 +57,14 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="blk-1/left's paired_patch_name does not exist in boundaries.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/left": TranslationallyPeriodic(paired_patch_name="blk-1/dummyRight"),
                 },
                 freestream=fl.FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
             )
 
-        param = Flow360Params(
+        Flow360Params(
             boundaries={
                 "blk-1/left": TranslationallyPeriodic(
                     paired_patch_name="blk-1/right", translation_vector=(1, 2, 3)
@@ -83,7 +82,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="Flow360 doesn't allow periodic pairing information of .* specified for both patches.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/left": TranslationallyPeriodic(
                         paired_patch_name="blk-1/right", translation_vector=(1, 2, 3)
@@ -96,7 +95,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="Flow360 doesn't allow periodic pairing information of .* specified for both patches.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/left": TranslationallyPeriodic(
                         paired_patch_name="blk-1/right", translation_vector=(1, 2, 3)
@@ -110,7 +109,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="Flow360 doesn't allow periodic pairing information of .* specified for both patches.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/top": RotationallyPeriodic(paired_patch_name="blk-1/bottom"),
                     "blk-1/bottom": RotationallyPeriodic(
@@ -123,7 +122,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="Flow360 doesn't allow periodic pairing information of .* specified for both patches.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/top": RotationallyPeriodic(axis_of_rotation=(1, 2, 3)),
                     "blk-1/bottom": RotationallyPeriodic(paired_patch_name="blk-1/top"),
@@ -134,7 +133,7 @@ def test_periodic_boundary_mapping():
             ValueError,
             match="Periodic pair for patch blk-1.* is not specified.",
         ):
-            param = Flow360Params(
+            Flow360Params(
                 boundaries={
                     "blk-1/top": RotationallyPeriodic(),
                     "blk-1/bottom": RotationallyPeriodic(),

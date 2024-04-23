@@ -1,5 +1,4 @@
 import os
-from tempfile import NamedTemporaryFile
 from unittest.mock import Mock
 
 import pytest
@@ -152,8 +151,8 @@ class TestRemoteResourceLogs:
 
         self.remote_logs.to_file(temp_file)
 
-        with open(temp_file, "r") as temp:
-            with open(self.remote_logs._get_tmp_file_name(), "r") as original_file:
+        with open(temp_file) as temp:
+            with open(self.remote_logs._get_tmp_file_name()) as original_file:
                 temp.seek(0)
                 assert temp.read() == original_file.read()
         os.remove(temp_file)
