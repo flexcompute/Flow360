@@ -474,6 +474,7 @@ class Case(CaseBase, Flow360Resource):
         """
         return self._results
 
+    # pylint: disable=no-member
     def is_steady(self):
         """
         returns True when case is steady state
@@ -802,6 +803,7 @@ class CaseResultsModel(pd.BaseModel):
             if isinstance(value, ResultBaseModel):
                 # we download if explicitly set set_downloader(<result_name>=True),
                 # or all=True but only when is not result=False
+                # pylint: disable=no-member
                 try_download = value.do_download is True
                 if self._downloader_settings.all is True and value.do_download is not False:
                     try_download = value._is_downloadable() is True
@@ -836,8 +838,10 @@ class CaseResultsModel(pd.BaseModel):
         if sum(arg is not None for arg in [folder_name, use_case_name, use_case_id]) != 1:
             raise ValueError("Exactly one argument should be provided.")
 
+        # pylint: disable=assigning-non-slot
         if folder_name is not None:
             self._downloader_settings.destination = folder_name
+        # pylint: disable=no-member
         if use_case_name is True:
             self._downloader_settings.destination = self.case.name
         if use_case_id is True:
@@ -900,7 +904,7 @@ class CaseResultsModel(pd.BaseModel):
         destination : str, optional
             Location to save downloaded files. If None, files will be saved in the current directory under ID folder.
         """
-
+        # pylint: disable=assigning-non-slot
         self.surfaces.do_download = surface
         self.volumes.do_download = volume
         self.slices.do_download = slices
@@ -934,6 +938,7 @@ class CaseResultsModel(pd.BaseModel):
         """
         Download file by name
         """
+        # pylint: disable=no-member
         return self.case._download_file(
             file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )

@@ -131,6 +131,7 @@ class _S3STSToken(BaseModel):
         Get s3 client.
         :return:
         """
+        # pylint: disable=no-member
         return boto3.client(
             "s3",
             region_name=Env.current.aws_region,
@@ -144,6 +145,7 @@ class _S3STSToken(BaseModel):
         Check if the token is expired.
         :return:
         """
+        # pylint: disable=no-member
         return (
             self.user_credential.expiration
             - datetime.now(tz=self.user_credential.expiration.tzinfo)

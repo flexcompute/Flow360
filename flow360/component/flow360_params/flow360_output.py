@@ -587,6 +587,7 @@ class MonitorOutputLegacy(LegacyModel):
 
     def update_model(self):
         new_monitors = {}
+        # pylint: disable=no-member,unsubscriptable-object
         for monitor_name in self.monitors.names():
             if isinstance(self.monitors[monitor_name], LegacyMonitor):
                 self.monitors[monitor_name].type = "probe"
@@ -807,9 +808,11 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         if (
             isinstance(self.slices, List)
             and len(self.slices) > 0
+            # pylint: disable=unsubscriptable-object
             and isinstance(self.slices[0], SliceNamedLegacy)
         ):
             slices = {}
+            # pylint: disable=not-an-iterable
             for named_slice in self.slices:
                 slices[named_slice.slice_name] = Slice(
                     slice_normal=named_slice.slice_normal,

@@ -941,6 +941,7 @@ class BETDisk(Flow360BaseModel):
         # Assuming alphas is ordered
         BET_ALPHA_TOLERANCE = 1e-5
         BET_COEFF_TOLERANCE = 1e-5
+        # pylint: disable=unsubscriptable-object
         has_full_alpha_range = (
             abs(self.alphas[0] + 180) < BET_ALPHA_TOLERANCE
             and abs(self.alphas[-1] - 180) < BET_ALPHA_TOLERANCE
@@ -948,6 +949,7 @@ class BETDisk(Flow360BaseModel):
         if not has_full_alpha_range:
             return super().to_solver(params, **kwargs)
         for attr_name in ["lift_coeffs", "drag_coeffs"]:
+            # pylint: disable=not-an-iterable
             for polar_item in self.sectional_polars:
                 for coeff2D in getattr(polar_item, attr_name):
                     for coeff1D in coeff2D:
@@ -1136,6 +1138,7 @@ class Flow360Params(Flow360BaseModel):
                 model_dict = updater(
                     version_from=version, version_to=__version__, params_as_dict=model_dict
                 )
+            # pylint: disable=not-context-manager
             with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)
         else:
@@ -1147,6 +1150,7 @@ class Flow360Params(Flow360BaseModel):
 
     def copy(self, update=None, **kwargs) -> Flow360Params:
         if unit_system_manager.current is None:
+            # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().copy(update=update, **kwargs)
 
@@ -1158,6 +1162,7 @@ class Flow360Params(Flow360BaseModel):
         returns configuration object in flow360 units system
         """
         if unit_system_manager.current is None:
+            # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().to_solver(self, exclude=["fluid_properties"])
         return super().to_solver(self, exclude=["fluid_properties"])
@@ -1471,6 +1476,7 @@ class GeometryLegacy(Geometry, LegacyModel):
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
+        # pylint: disable=unsubscriptable-object
         if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
             model["meshUnit"] = unit
@@ -1554,14 +1560,14 @@ class FreestreamLegacy(LegacyModel):
         # Set velocity
         if self.comments is not None:
             if self.comments.get("freestreamMeterPerSecond") is not None:
-                # pylint: disable=no-member
+                # pylint: disable=no-member,unsubscriptable-object
                 velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
                 try_set(model["field"], "velocity", velocity)
             elif (
                 self.comments.get("speedOfSoundMeterPerSecond") is not None
                 and self.Mach is not None
             ):
-                # pylint: disable=no-member
+                # pylint: disable=no-member,unsubscriptable-object
                 velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
                 try_set(model["field"], "velocity", velocity)
 
@@ -1579,7 +1585,7 @@ class FreestreamLegacy(LegacyModel):
                     and self.Mach_Ref is not None
                 ):
                     velocity_ref = (
-                        # pylint: disable=no-member
+                        # pylint: disable=no-member,unsubscriptable-object
                         self.comments["speedOfSoundMeterPerSecond"]
                         * self.Mach_Ref
                         * u.m
@@ -1619,7 +1625,7 @@ class FreestreamLegacy(LegacyModel):
         try_set(model["field"], "temperature", self.temperature * u.K)
 
         if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
-            # pylint: disable=no-member
+            # pylint: disable=no-member,unsubscriptable-object
             density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
             try_set(model["field"], "density", density)
         else:
@@ -1662,6 +1668,7 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
             and self.comments is not None
             and self.comments.get("timeStepSizeInSeconds") is not None
         ):
+            # pylint: disable=unsubscriptable-object
             step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
             try_add_unit(model["field"], "timeStepSize", step_unit)
 
@@ -1696,7 +1703,7 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
 
         if self.comments is not None and self.comments.get("rpm") is not None:
-            # pylint: disable=no-member
+            # pylint: disable=no-member,unsubscriptable-object
             omega = self.comments["rpm"] * u.rpm
             try_set(model["referenceFrame"], "omega", omega)
 
@@ -1917,6 +1924,7 @@ class Flow360ParamsLegacy(LegacyModel):
 
         if self.bet_disks is not None:
             disks = []
+            # pylint: disable=not-an-iterable
             for disk in self.bet_disks:
                 disks.append(try_update(disk))
             params["bet_disks"] = disks
@@ -1924,6 +1932,7 @@ class Flow360ParamsLegacy(LegacyModel):
         params["volume_zones"] = self.volume_zones
         if self.sliding_interfaces is not None:
             volume_zones = {}
+            # pylint: disable=not-an-iterable
             for interface in self.sliding_interfaces:
                 volume_zone = try_update(interface)
                 volume_name = interface.volume_name

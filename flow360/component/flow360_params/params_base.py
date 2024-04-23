@@ -707,6 +707,7 @@ class Flow360BaseModel(BaseModel):
                     params=params,
                     required_by=[*required_by, loc_name],
                 )
+                # pylint: disable=no-member
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
                 log.debug(f"      converted to: {solver_values[property_name]}")
