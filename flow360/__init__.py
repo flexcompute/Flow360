@@ -179,7 +179,6 @@ __all__ = [
     "FreestreamFromMach",
     "FreestreamFromMachReynolds",
     "FreestreamFromVelocity",
-    "FreestreamInitialCondition",
     "Geometry",
     "HeatEquationSolver",
     "HeatFluxWall",
