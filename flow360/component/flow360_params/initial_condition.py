@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..utils import process_expressions

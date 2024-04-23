@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from pylab import *
+from pylab import plot, show, xlabel, ylabel
 
 import flow360 as fl
 from flow360.examples import OM6wing

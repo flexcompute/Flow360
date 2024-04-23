@@ -8,7 +8,7 @@ the current standard via the update_model method)
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Literal, Optional
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from flow360.component.flow360_params.params_base import (
     DeprecatedAlias,

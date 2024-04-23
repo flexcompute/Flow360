@@ -1,6 +1,6 @@
 import pytest
 
-from flow360.log import Logger, log, set_logging_level
+from flow360.log import log
 
 
 @pytest.mark.usefixtures("before_log_test", "after_log_test")

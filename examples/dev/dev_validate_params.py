@@ -4,7 +4,7 @@ import re
 from flow360.component.flow360_params.flow360_params import Flow360ParamsLegacy
 
 rootdir = "../../tests/data/cases/"
-regex = re.compile("(case_.*\.json$)")
+regex = re.compile(r"(case_.*\.json$)")
 
 for root, dirs, files in os.walk(rootdir):
     for file in files:

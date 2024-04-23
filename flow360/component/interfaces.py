@@ -3,7 +3,7 @@
 
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from ..cloud.s3_utils import S3TransferType
 

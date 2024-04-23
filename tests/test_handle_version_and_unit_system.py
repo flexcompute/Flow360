@@ -1,7 +1,7 @@
 import json
 import tempfile
 
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360
@@ -98,7 +98,7 @@ def test_import_no_unit_system_no_context():
 
     # when there is no unit system, we run the updater which should fail due to dimensioned fields
     with pytest.raises(pd.ValidationError):
-        params = Flow360Params(temp_file.name)
+        Flow360Params(temp_file.name)
 
 
 def test_import_no_unit_system_with_context():
@@ -107,7 +107,7 @@ def test_import_no_unit_system_with_context():
 
     with pytest.raises(Flow360RuntimeError):
         with flow360.flow360_unit_system:
-            params = Flow360Params(temp_file.name)
+            Flow360Params(temp_file.name)
 
 
 def test_import_with_unit_system_no_context():
@@ -125,7 +125,7 @@ def test_import_with_unit_system_with_context():
 
     with pytest.raises(Flow360RuntimeError):
         with flow360.SI_unit_system:
-            params = Flow360Params(temp_file.name)
+            Flow360Params(temp_file.name)
 
 
 def test_copy_with_unit_system_no_context():
@@ -162,7 +162,7 @@ def test_copy_with_unit_system_with_context():
 
 def test_create_no_unit_system_no_context():
     with pytest.raises(Flow360RuntimeError):
-        params = flow360.Flow360Params(
+        flow360.Flow360Params(
             geometry=flow360.Geometry(
                 ref_area=1 * u.m**2,
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
@@ -182,7 +182,7 @@ def test_create_no_unit_system_no_context():
 
 def test_create_with_unit_system_no_context():
     with pytest.raises(Flow360RuntimeError):
-        params = flow360.Flow360Params(
+        flow360.Flow360Params(
             geometry=flow360.Geometry(
                 ref_area=1 * u.m**2,
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
@@ -203,7 +203,7 @@ def test_create_with_unit_system_no_context():
 
 def test_create_no_unit_system_with_context():
     with flow360.SI_unit_system:
-        params = flow360.Flow360Params(
+        flow360.Flow360Params(
             geometry=flow360.Geometry(
                 ref_area=1,
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
@@ -224,7 +224,7 @@ def test_create_no_unit_system_with_context():
 
 def test_create_with_unit_system_with_context():
     with flow360.SI_unit_system:
-        params = flow360.Flow360Params(
+        flow360.Flow360Params(
             geometry=flow360.Geometry(
                 ref_area=1,
                 moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
@@ -245,7 +245,7 @@ def test_create_with_unit_system_with_context():
 
     with pytest.raises(Flow360RuntimeError):
         with flow360.CGS_unit_system:
-            params = flow360.Flow360Params(
+            flow360.Flow360Params(
                 geometry=flow360.Geometry(
                     ref_area=1,
                     moment_length=(1.47602, 0.801672958512342, 1.47602) * u.inch,
@@ -285,7 +285,7 @@ def test_parse_no_version():
         json.dump(params_no_version, temp_file)
 
     with pytest.raises(pd.ValidationError):
-        params = Flow360Params(temp_file.name)
+        Flow360Params(temp_file.name)
 
 
 def test_parse_wrong_version():
@@ -293,13 +293,13 @@ def test_parse_wrong_version():
         json.dump(params_old_version, temp_file)
 
     with pytest.raises(Flow360NotImplementedError):
-        params = Flow360Params(temp_file.name)
+        Flow360Params(temp_file.name)
 
 
 def test_parse_with_hash():
     with pytest.raises(pd.ValidationError):
         with flow360.SI_unit_system:
-            params = Flow360Params(**params_current_version)
+            Flow360Params(**params_current_version)
 
 
 def test_parse_no_hash():
@@ -312,4 +312,4 @@ def test_parse_no_hash():
 def test_parse_wrong_hash():
     with pytest.raises(pd.ValidationError):
         with flow360.SI_unit_system:
-            params = Flow360Params(**params_wrong_hash)
+            Flow360Params(**params_wrong_hash)

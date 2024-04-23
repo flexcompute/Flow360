@@ -17,7 +17,7 @@ class _FeatureFlags:
     def __init__(self):
         self.config = {}
         if os.path.exists(config_file):
-            with open(config_file, "r", encoding="utf-8") as file_handler:
+            with open(config_file, encoding="utf-8") as file_handler:
                 self.config = toml.loads(file_handler.read())
 
         self._beta_features = os.environ.get("FLOW360_BETA_FEATURES", None)

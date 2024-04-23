@@ -1,5 +1,5 @@
 """
-Module containing updaters from version to version 
+Module containing updaters from version to version
 """
 
 import re

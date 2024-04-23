@@ -13,7 +13,7 @@ from threading import Lock
 from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import unyt as u
 
 from ...log import log
@@ -337,14 +337,12 @@ class DimensionedType(ValidatedType):
                     field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
             cls_obj = type("_Constrained", (), {})
-            setattr(cls_obj, "con_type", _ConType)
-            setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
-            setattr(
-                cls_obj,
-                "__modify_schema__",
-                lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field),
+            cls_obj.con_type = _ConType
+            cls_obj.validate = lambda value: validate(cls_obj, value)
+            cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(
+                cls_obj, field_schema, field
             )
-            setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
+            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
 
             return cls_obj
 
@@ -437,12 +435,12 @@ class DimensionedType(ValidatedType):
                 return value
 
             cls_obj = type("_VectorType", (), {})
-            setattr(cls_obj, "type", dim_type)
-            setattr(cls_obj, "allow_zero_norm", allow_zero_norm)
-            setattr(cls_obj, "allow_zero_coord", allow_zero_coord)
-            setattr(cls_obj, "validate", lambda value: validate(cls_obj, value))
-            setattr(cls_obj, "__modify_schema__", __modify_schema__)
-            setattr(cls_obj, "__get_validators__", lambda: (yield getattr(cls_obj, "validate")))
+            cls_obj.type = dim_type
+            cls_obj.allow_zero_norm = allow_zero_norm
+            cls_obj.allow_zero_coord = allow_zero_coord
+            cls_obj.validate = lambda value: validate(cls_obj, value)
+            cls_obj.__modify_schema__ = __modify_schema__
+            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
             return cls_obj
 
     # pylint: disable=invalid-name

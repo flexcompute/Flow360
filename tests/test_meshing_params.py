@@ -13,7 +13,6 @@ from flow360.component.meshing.params import (
     Volume,
     VolumeMeshingParams,
 )
-from flow360.exceptions import Flow360ValidationError
 
 from .utils import compare_to_ref, to_file_from_file_test
 
@@ -118,9 +117,9 @@ def test_surface_meshing_params():
     params = SurfaceMeshingParams.parse_raw(
         """
         {
-            "maxEdgeLength": 0.1, 
+            "maxEdgeLength": 0.1,
             "curvatureResolutionAngle": 15,
-            "growthRate": 1.2, 
+            "growthRate": 1.2,
             "faces": {
                 "mysphere": {
                     "maxEdgeLength": 0.05

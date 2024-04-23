@@ -1,10 +1,8 @@
 import json
 from typing import Optional, Union
 
-import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
-import unyt
 
 import flow360 as fl
 from flow360 import units as u
@@ -12,7 +10,6 @@ from flow360.component.flow360_params.params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
-    BaseSystemType,
     DensityType,
     ForceType,
     LengthType,
@@ -23,11 +20,11 @@ from flow360.component.flow360_params.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import array_equality_override, to_file_from_file_test
+from tests.utils import to_file_from_file_test
 
 
 class DataWithUnits(pd.BaseModel):
-    l: LengthType = pd.Field()
+    L: LengthType = pd.Field()
     m: MassType = pd.Field()
     t: TimeType = pd.Field()
     T: TemperatureType = pd.Field()
@@ -41,7 +38,7 @@ class DataWithUnits(pd.BaseModel):
 
 
 class DataWithUnitsConstrained(pd.BaseModel):
-    l: Optional[LengthType.NonNegative] = pd.Field()
+    L: Optional[LengthType.NonNegative] = pd.Field()
     m: MassType.Positive = pd.Field()
     t: TimeType.Negative = pd.Field()
     T: TemperatureType.NonNegative = pd.Field()
@@ -64,7 +61,7 @@ class VectorDataWithUnits(pd.BaseModel):
 
 
 class Flow360DataWithUnits(Flow360BaseModel):
-    l: LengthType = pd.Field()
+    L: LengthType = pd.Field()
     pt: Optional[LengthType.Point] = pd.Field()
     lc: LengthType.NonNegative = pd.Field()
 
@@ -184,11 +181,11 @@ def test_flow360_unit_arithmetic():
 def test_unit_system():
     # No inference outside of context
     with pytest.raises(ValueError):
-        data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2)
+        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2)
 
     # But we can still specify units explicitly
     data = DataWithUnits(
-        l=1 * u.m,
+        L=1 * u.m,
         m=2 * u.kg,
         t=3 * u.s,
         T=300 * u.K,
@@ -201,7 +198,7 @@ def test_unit_system():
         omega=5 * u.rad / u.s,
     )
 
-    assert data.l == 1 * u.m
+    assert data.L == 1 * u.m
     assert data.m == 2 * u.kg
     assert data.t == 3 * u.s
     assert data.T == 300 * u.K
@@ -217,9 +214,9 @@ def test_unit_system():
 
     # SI
     with fl.SI_unit_system:
-        data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
-        assert data.l == 1 * u.m
+        assert data.L == 1 * u.m
         assert data.m == 2 * u.kg
         assert data.t == 3 * u.s
         assert data.T == 300 * u.K
@@ -233,9 +230,9 @@ def test_unit_system():
 
     # CGS
     with fl.CGS_unit_system:
-        data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
-        assert data.l == 1 * u.cm
+        assert data.L == 1 * u.cm
         assert data.m == 2 * u.g
         assert data.t == 3 * u.s
         assert data.T == 300 * u.K
@@ -249,9 +246,9 @@ def test_unit_system():
 
     # Imperial
     with fl.imperial_unit_system:
-        data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
-        assert data.l == 1 * u.ft
+        assert data.L == 1 * u.ft
         assert data.m == 2 * u.lb
         assert data.t == 3 * u.s
         assert data.T == 300 * u.R
@@ -265,9 +262,9 @@ def test_unit_system():
 
     # Flow360
     with fl.flow360_unit_system:
-        data = DataWithUnits(l=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
-        assert data.l == 1 * u.flow360_length_unit
+        assert data.L == 1 * u.flow360_length_unit
         assert data.m == 2 * u.flow360_mass_unit
         assert data.t == 3 * u.flow360_time_unit
         assert data.T == 300 * u.flow360_temperature_unit
@@ -283,59 +280,59 @@ def test_unit_system():
     with fl.SI_unit_system:
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+                L=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=0, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+                L=1, m=0, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=2, t=0, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+                L=1, m=2, t=0, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=2, t=-3, T=-300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+                L=1, m=2, t=-3, T=-300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=-1, m=2, t=-3, T=300, v=-2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+                L=-1, m=2, t=-3, T=300, v=-2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=-1, m=2, t=-3, T=300, v=2 / 3, A=0, F=-4, p=5, r=2, mu=3, omega=5
+                L=-1, m=2, t=-3, T=300, v=2 / 3, A=0, F=-4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=9, r=2, mu=3, omega=5
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=9, r=2, mu=3, omega=5
             )
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
-                l=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=-5
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=-5
             )
 
         data = DataWithUnitsConstrained(
-            l=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
+            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
         )
 
         data = DataWithUnitsConstrained(
-            l=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=11, r=2, mu=3, omega=5
+            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=11, r=2, mu=3, omega=5
         )
 
         data = DataWithUnitsConstrained(
-            l=None, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
+            L=None, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
         )
 
     # Vector data
@@ -433,7 +430,7 @@ def test_unit_system():
 @pytest.mark.usefixtures("array_equality_override")
 def test_units_serializer():
     with fl.SI_unit_system:
-        data = Flow360DataWithUnits(l=2 * u.mm, pt=(2, 3, 4), lc=2)
+        data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
 
     data_as_json = data.json(indent=4)
 
@@ -441,14 +438,14 @@ def test_units_serializer():
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
 
     with fl.SI_unit_system:
-        data = Flow360DataWithUnits(l=2 * u.mm, pt=(2, 3, 4), lc=2)
+        data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
 
     data_as_json = data.json(indent=4)
 
     data_schema = data.schema()
 
-    assert data_schema["properties"]["l"]["properties"]["units"]["type"] == "string"
-    assert data_schema["properties"]["l"]["properties"]["value"]["type"] == "number"
+    assert data_schema["properties"]["L"]["properties"]["units"]["type"] == "string"
+    assert data_schema["properties"]["L"]["properties"]["value"]["type"] == "number"
     assert data_schema["properties"]["lc"]["properties"]["value"]["minimum"] == 0
     assert data_schema["properties"]["pt"]["properties"]["value"]["type"] == "array"
     assert data_schema["properties"]["pt"]["properties"]["value"]["minItems"] == 3
@@ -457,11 +454,11 @@ def test_units_serializer():
     with fl.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
 
-    assert data_reimport.l == data.l
+    assert data_reimport.L == data.L
     assert data_reimport.lc == data.lc
     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
 
-    assert data_reimport.l == data.l
+    assert data_reimport.L == data.L
     assert data_reimport.lc == data.lc
     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
 

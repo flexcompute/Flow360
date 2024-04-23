@@ -29,7 +29,6 @@ class Validator(Enum):
 
         return None
 
-    # pylint: disable=anomalous-backslash-in-string
     def validate(
         self,
         params: Union[Flow360Params, SurfaceMeshingParams, VolumeMeshingParams],
@@ -86,7 +85,7 @@ class Validator(Enum):
             return None
 
         if "validationWarning" in res and res["validationWarning"] is not None:
-            res_str = str(res["validationWarning"]).replace("[", "\[")
+            res_str = str(res["validationWarning"]).replace("[", r"\[")
             log.warning(f"warning when validating: {res_str}")
 
         if "success" in res and res["success"] is True:
@@ -94,7 +93,7 @@ class Validator(Enum):
 
         if "success" in res and res["success"] is False:
             if "validationError" in res and res["validationError"] is not None:
-                res_str = str(res).replace("[", "\[")
+                res_str = str(res).replace("[", r"\[")
                 if raise_on_error:
                     raise Flow360ValidationError(f"Error when validating: {res_str}")
                 # pylint: disable=pointless-exception-statement

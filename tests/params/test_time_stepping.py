@@ -1,7 +1,7 @@
 import json
 import unittest
 
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
@@ -11,8 +11,8 @@ from flow360.component.flow360_params.flow360_params import (
     FreestreamFromVelocity,
     Geometry,
     SteadyTimeStepping,
-    UnsteadyTimeStepping,
 )
+from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

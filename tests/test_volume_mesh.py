@@ -167,4 +167,4 @@ def test_volume_mesh_json():
 
 def test_volume_mesh():
     params = Flow360MeshParams(boundaries=MeshBoundary(no_slip_walls=[1]))
-    vm = VolumeMesh.from_file(file_name="data/cylinder.cgns", params=params)
+    VolumeMesh.from_file(file_name="data/cylinder.cgns", params=params)

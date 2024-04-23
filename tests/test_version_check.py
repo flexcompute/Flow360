@@ -1,5 +1,5 @@
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -7,7 +7,6 @@ import requests
 import flow360.version_check as vc
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 
-from .mock_server import mock_response
 from .utils import (
     empty_mock_webapi_data_version_check,
     generate_mock_webapi_data_version_check,
@@ -33,7 +32,7 @@ def test_get_supported_server_versions(mock_response):
     empty_mock_webapi_data_version_check()
     with pytest.raises(Flow360RuntimeError) as exc_info:
         vc.get_supported_server_versions()
-    info = str(exc_info.value)
+    str(exc_info.value)
     assert (
         str(exc_info.value)
         == "Something went wrong when checking python client version. The supported"

@@ -7,9 +7,9 @@ Time stepping parameters
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..types import PositiveFloat, PositiveInt

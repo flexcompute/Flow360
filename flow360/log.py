@@ -306,7 +306,7 @@ def set_logging_file(
     try:
         # pylint: disable=consider-using-with,unspecified-encoding
         file = open(fname, filemode)
-    except:  # pylint: disable=bare-except
+    except OSError:
         log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return
 

@@ -9,25 +9,15 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from numpy import array, dot
-from pydantic import StrictStr
+from pydantic.v1 import StrictStr
 from typing_extensions import Literal
 
 from ..constants import NumericalConstants
-from ..types import (
-    Axis,
-    Coordinate,
-    List,
-    NonNegativeFloat,
-    PositiveFloat,
-    PositiveInt,
-    Tuple,
-    Vector,
-)
+from ..types import Axis, List, NonNegativeFloat, PositiveFloat
 from ..utils import process_expressions
 from .params_base import Flow360BaseModel
-from .solvers import HeatEquationSolver
 from .unit_system import (
     AngularVelocityType,
     HeatSourceType,

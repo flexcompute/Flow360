@@ -3,7 +3,7 @@
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Annotated
 
 from ..exceptions import Flow360ValidationError

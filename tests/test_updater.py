@@ -9,7 +9,6 @@ from flow360.component.flow360_params.updater import (
     UPDATE_MAP,
     _find_update_path,
     _no_update,
-    _version_match,
 )
 from flow360.exceptions import Flow360NotImplementedError
 
@@ -145,23 +144,23 @@ def test_updater_from_files():
         assert params
         params.flow360_json()
 
-    params = fl.Flow360Params(f"data/cases/case_5.json")
+    params = fl.Flow360Params("data/cases/case_5.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 0.5
-    params = fl.Flow360Params(f"data/cases/case_7.json")
+    params = fl.Flow360Params("data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
     assert params.initial_condition is None
 
-    params = fl.Flow360Params(f"data/cases/case_20.json")
-    assert set(params.surface_output.output_fields) == set(["Cp", "yPlus"])
+    params = fl.Flow360Params("data/cases/case_20.json")
+    assert set(params.surface_output.output_fields) == {"Cp", "yPlus"}
 
     # ##:: case_udd_legacy.json has linearSolver instead of linearSovlerConfig(legacy)
-    params = fl.Flow360Params(f"data/cases/case_udd_legacy.json")
+    params = fl.Flow360Params("data/cases/case_udd_legacy.json")
     assert params.navier_stokes_solver.linear_solver.max_iterations == 1
     assert params.turbulence_model_solver.linear_solver.max_iterations == 2
     assert params.transition_model_solver.linear_solver.max_iterations == 3
 
     ##:: case_HeatTransfer.json has linearSolver instead of linearSovlerConfig(legacy)
-    params = fl.Flow360Params(f"data/cases/case_HeatTransfer.json")
+    params = fl.Flow360Params("data/cases/case_HeatTransfer.json")
     assert params.heat_equation_solver.linear_solver.max_iterations == 4
     assert (
         params.navier_stokes_solver.linear_solver.max_iterations

@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..component.flow360_params.flow360_params import Flow360MeshParams

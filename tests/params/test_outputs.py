@@ -1,15 +1,13 @@
 import unittest
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import pytest
 import unyt
 
 import flow360
 import flow360.units as u
 from flow360.component.flow360_params.flow360_output import (
-    AnimationSettings,
-    AnimationSettingsExtended,
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -26,7 +24,7 @@ from flow360.component.flow360_params.flow360_params import (
     FreestreamFromMach,
     Geometry,
 )
-from tests.utils import array_equality_override, to_file_from_file_test
+from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 
@@ -127,7 +125,7 @@ def test_surface_output():
         assert "freestream" in solver_params.surface_output.surfaces.names()
         for surface_name, surface_item in solver_params.surface_output.surfaces.dict().items():
             if surface_name == "symmetry":
-                assert set(["Cp", "Mach"]) == set(surface_item["output_fields"])
+                assert {"Cp", "Mach"} == set(surface_item["output_fields"])
             else:
                 assert surface_item["output_fields"] == ["Cp"]
 
@@ -149,11 +147,9 @@ def test_surface_output():
 
         for surface_name, surface_item in solver_params.surface_output.surfaces.dict().items():
             if surface_name == "symmetry":
-                assert set(["Cp", "Mach", "solutionTurbulence"]) == set(
-                    surface_item["output_fields"]
-                )
+                assert {"Cp", "Mach", "solutionTurbulence"} == set(surface_item["output_fields"])
             else:
-                assert set(surface_item["output_fields"]) == set(["Cp", "solutionTurbulence"])
+                assert set(surface_item["output_fields"]) == {"Cp", "solutionTurbulence"}
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -205,7 +201,7 @@ def test_slice_output():
             output_fields=["Coefficient of pressure", "qcriterion"],
             slices={
                 "sliceName_1": flow360.Slice(
-                    slice_normal={0, 1, 0},
+                    slice_normal={0, 1},
                     slice_origin=(0, 0.56413, 0) * u.m,
                 )
             },
@@ -217,7 +213,7 @@ def test_slice_output():
             slices={
                 "sliceName_1": flow360.Slice(
                     slice_normal=(0, 1, 0),
-                    slice_origin={0, 0.56413, 0} * u.m,
+                    slice_origin={0, 0.56413} * u.m,
                 )
             },
         )
@@ -255,9 +251,9 @@ def test_slice_output():
 
         for slice_name, slice_item in solver_params.slice_output.slices.dict().items():
             if slice_name == "sliceName_2":
-                assert set(["Cp", "Mach", "qcriterion"]) == set(slice_item["output_fields"])
+                assert {"Cp", "Mach", "qcriterion"} == set(slice_item["output_fields"])
             else:
-                assert set(["Cp", "qcriterion"]) == set(slice_item["output_fields"])
+                assert {"Cp", "qcriterion"} == set(slice_item["output_fields"])
 
     with flow360.SI_unit_system:
         params = Flow360Params(
@@ -288,11 +284,11 @@ def test_slice_output():
 
         for slice_name, slice_item in solver_params.slice_output.slices.dict().items():
             if slice_name == "sliceName_2":
-                assert set(["Cp", "Mach", "qcriterion", "solutionTurbulence"]) == set(
+                assert {"Cp", "Mach", "qcriterion", "solutionTurbulence"} == set(
                     slice_item["output_fields"]
                 )
             else:
-                assert set(["Cp", "qcriterion", "solutionTurbulence"]) == set(
+                assert {"Cp", "qcriterion", "solutionTurbulence"} == set(
                     slice_item["output_fields"]
                 )
             assert (
@@ -359,7 +355,7 @@ def test_volume_output():
         )
         solver_params = params.to_solver()
 
-        assert set(solver_params.volume_output.output_fields) == set(["Cp", "qcriterion"])
+        assert set(solver_params.volume_output.output_fields) == {"Cp", "qcriterion"}
 
     with flow360.SI_unit_system:
         """
@@ -389,9 +385,12 @@ def test_volume_output():
 
         assert solver_params.volume_output.output_format == "paraview,tecplot"
 
-    assert set(solver_params.volume_output.output_fields) == set(
-        ["qcriterion", "Cp", "betMetrics", "betMetricsPerDisk"]
-    )
+    assert set(solver_params.volume_output.output_fields) == {
+        "qcriterion",
+        "Cp",
+        "betMetrics",
+        "betMetricsPerDisk",
+    }
 
     output.output_fields = ["qcriterion", "Cp", "solutionTurbulence", "kOmega"]
     with flow360.SI_unit_system:
@@ -406,9 +405,11 @@ def test_volume_output():
         )
         solver_params = params.to_solver()
 
-    assert set(solver_params.volume_output.output_fields) == set(
-        ["qcriterion", "Cp", "solutionTurbulence"]
-    )
+    assert set(solver_params.volume_output.output_fields) == {
+        "qcriterion",
+        "Cp",
+        "solutionTurbulence",
+    }
 
 
 def test_iso_surface_output():
@@ -456,9 +457,9 @@ def test_iso_surface_output():
             iso_surface_item,
         ) in solver_params.iso_surface_output.iso_surfaces.dict().items():
             if iso_surface_name == "s1":
-                assert set(["Cp", "Mach", "qcriterion"]) == set(iso_surface_item["output_fields"])
+                assert {"Cp", "Mach", "qcriterion"} == set(iso_surface_item["output_fields"])
             else:
-                assert set(["Mach"]) == set(iso_surface_item["output_fields"])
+                assert {"Mach"} == set(iso_surface_item["output_fields"])
 
     with flow360.SI_unit_system:
         params = Flow360Params(
@@ -482,17 +483,18 @@ def test_iso_surface_output():
             iso_surface_item,
         ) in solver_params.iso_surface_output.iso_surfaces.dict().items():
             if iso_surface_name == "s1":
-                assert set(["Cp", "Mach", "qcriterion", "solutionTurbulence"]) == set(
+                assert {"Cp", "Mach", "qcriterion", "solutionTurbulence"} == set(
                     iso_surface_item["output_fields"]
                 )
             else:
-                assert set(["Mach", "solutionTurbulence"]) == set(iso_surface_item["output_fields"])
+                assert {"Mach", "solutionTurbulence"} == set(iso_surface_item["output_fields"])
 
     params = Flow360Params("../data/cases/case_udd.json")
     params_as_dict = params.flow360_dict()
-    assert set(params_as_dict["isoSurfaceOutput"]["isoSurfaces"]["newKey"]["outputFields"]) == set(
-        ["Mach", "Cp"]
-    )
+    assert set(params_as_dict["isoSurfaceOutput"]["isoSurfaces"]["newKey"]["outputFields"]) == {
+        "Mach",
+        "Cp",
+    }
     assert set(params_as_dict["isoSurfaceOutput"]["outputFields"]) == set()
 
 
@@ -527,9 +529,9 @@ def test_monitor_output():
             monitor_item,
         ) in solver_params.monitor_output.monitors.dict().items():
             if monitor_name == "m1":
-                assert set(["Cp", "Mach", "T"]) == set(monitor_item["output_fields"])
+                assert {"Cp", "Mach", "T"} == set(monitor_item["output_fields"])
             else:
-                assert set(["Cp", "qcriterion", "Mach"]) == set(monitor_item["output_fields"])
+                assert {"Cp", "qcriterion", "Mach"} == set(monitor_item["output_fields"])
 
     with flow360.SI_unit_system:
         params = Flow360Params(
@@ -548,8 +550,8 @@ def test_monitor_output():
             monitor_item,
         ) in solver_params.monitor_output.monitors.dict().items():
             if monitor_name == "m1":
-                assert set(["Cp", "solutionTurbulence", "T"]) == set(monitor_item["output_fields"])
+                assert {"Cp", "solutionTurbulence", "T"} == set(monitor_item["output_fields"])
             else:
-                assert set(["Cp", "qcriterion", "solutionTurbulence"]) == set(
+                assert {"Cp", "qcriterion", "solutionTurbulence"} == set(
                     monitor_item["output_fields"]
                 )
