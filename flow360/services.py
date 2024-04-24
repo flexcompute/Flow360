@@ -335,7 +335,7 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
     return validation_errors, validation_warnings
 
 
-def handle_case_submit(params_as_dict: dict | list | Any, unit_system_name: str):
+def handle_case_submit(params_as_dict: dict | list, unit_system_name: str):
     """
     Handles case submit. Performs pydantic validation, converts units to solver units, and exports JSON representation.
 
