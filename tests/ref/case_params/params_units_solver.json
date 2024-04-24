@@ -62,10 +62,18 @@
     "animationFrequencyTimeAverageOffset": 0,
     "startAverageIntegrationStep": -1,
     "writeSingleFile": false,
-    "outputFields": [ ],
-    "surfaces": { "freestream": { "outputFields": [ ] },
-      "symmetry": { "outputFields": [ ] },
-      "wing": { "outputFields": [ ] } }
+    "outputFields": [],
+    "surfaces": {
+      "freestream": {
+        "outputFields": []
+      },
+      "symmetry": {
+        "outputFields": []
+      },
+      "wing": {
+        "outputFields": []
+      }
+    }
   },
   "volumeZones": {
     "zone3": {
@@ -116,5 +124,23 @@
         ]
       }
     }
+  },
+  "navierStokesSolver": {
+    "CFLMultiplier": 1.0,
+    "absoluteTolerance": 1e-10,
+    "equationEvalFrequency": 1,
+    "kappaMUSCL": -1.0,
+    "limitPressureDensity": false,
+    "limitVelocity": false,
+    "linearSolver": {
+      "maxIterations": 30
+    },
+    "lowMachPreconditioner": false,
+    "maxForceJacUpdatePhysicalSteps": 0,
+    "modelType": "Compressible",
+    "numericalDissipationFactor": 1.0,
+    "orderOfAccuracy": 2,
+    "relativeTolerance": 0.0,
+    "updateJacobianFrequency": 4
   }
 }

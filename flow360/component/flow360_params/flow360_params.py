@@ -73,6 +73,7 @@ from .physical_properties import _AirModel
 from .solvers import (
     HeatEquationSolver,
     HeatEquationSolverLegacy,
+    NavierStokesSolver,
     NavierStokesSolverLegacy,
     NavierStokesSolverType,
     TransitionModelSolver,
@@ -1068,7 +1069,9 @@ class Flow360Params(Flow360BaseModel):
     volume_zones: Optional[VolumeZones] = pd.Field(alias="volumeZones")
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
-    navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(alias="navierStokesSolver")
+    navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(
+        alias="navierStokesSolver", default=NavierStokesSolver()
+    )
 
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
@@ -1201,7 +1204,7 @@ class Flow360Params(Flow360BaseModel):
         flow360_dict = json.loads(self.flow360_json())
         return flow360_dict
 
-    def to_flow360_json(self, filename: str) -> NoReturn:
+    def to_flow360_json(self, filename: str) -> None:
         """Exports :class:`Flow360Params` instance to .json file
 
         Example

@@ -276,7 +276,7 @@ def test_submit_and_retry():
         },
     }
 
-    params, solver_dict = services.handle_case_submit(params_data, "SI")
+    params = services.handle_case_submit(params_data, "SI")
 
     temp_file_user = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     params.to_json(temp_file_user.name)
