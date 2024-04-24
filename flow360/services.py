@@ -4,6 +4,7 @@ Module exposing utilities for the validation service
 
 import json
 from typing import Union
+
 import pydantic.v1 as pd
 
 from .component.flow360_params.flow360_params import (
