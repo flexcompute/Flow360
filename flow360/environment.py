@@ -60,10 +60,10 @@ dev = EnvironmentConfig(
 
 uat = EnvironmentConfig(
     name="uat",
-    web_api_endpoint="https://uat-flow360-api.simulation.cloud",
-    web_url="https://uat-flow360.simulation.cloud",
-    portal_web_api_endpoint="https://uat-portal-api.simulation.cloud",
-    aws_region="us-gov-west-1",
+    web_api_endpoint="https://flow360-api.uat-simulation.cloud",
+    web_url="https://flow360.uat-simulation.cloud",
+    portal_web_api_endpoint="https://portal-api.uat-simulation.cloud",
+    aws_region="us-west-2",
     apikey_profile="default",
 )
 
