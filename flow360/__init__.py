@@ -66,6 +66,7 @@ from .component.flow360_params.flow360_params import (
     FreestreamFromMach,
     FreestreamFromMachReynolds,
     FreestreamFromVelocity,
+    Geometry,
     HeatEquationSolver,
     MeshBoundary,
     PorousMediumBox,
@@ -136,10 +137,7 @@ from .component.meshing.params import (
     Volume,
     VolumeMeshingParams,
 )
-from .component.simulation.inputs import Geometry
 
-# Simulation interface related:
-from .component.simulation.simulation import Simulation
 from .component.surface_mesh import SurfaceMesh
 from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
