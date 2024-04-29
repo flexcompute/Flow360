@@ -7,12 +7,13 @@ from typing import List, Literal, Optional
 import pydantic as pd
 import rich
 import yaml
+from pydantic import ConfigDict
+from pydantic.fields import FieldInfo
 
 from flow360.component.types import TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
-from pydantic import ConfigDict
 
 
 class Conflicts(pd.BaseModel):
@@ -33,7 +34,7 @@ class Flow360BaseModel(pd.BaseModel):
     """
 
     def __init__(self, filename: str = None, **kwargs):
-        model_dict = self._init_handle_file(filename=filename, **kwargs)
+        model_dict = self._handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
 
     @classmethod
@@ -48,11 +49,12 @@ class Flow360BaseModel(pd.BaseModel):
             return cls.dict_from_file(filename=filename)
         return kwargs
 
-    def __init_subclass__(cls) -> None:
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
-        super().__init_subclass__()
-        cls.add_type_field()
-        cls.generate_docstring()
+        super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
+        cls._add_type_field()
+        cls._generate_docstring()
 
     """Sets config for all :class:`Flow360BaseModel` objects.
 
@@ -86,22 +88,24 @@ class Flow360BaseModel(pd.BaseModel):
                 raise ValueError(f"Cannot modify immutable/frozen fields: {name}")
         super().__setattr__(name, value)
 
-    @pd.field_validator(pre=True)
+    @pd.model_validator(mode="before")
     def one_of(cls, values):
         """
         root validator for require one of
         """
         if cls.model_config["require_one_of"]:
             set_values = [key for key, v in values.items() if v is not None]
-            aliases = [cls._get_field_alias(field_name=name) for name in cls.model_config["require_one_of"]]
+            aliases = [
+                cls._get_field_alias(field_name=name) for name in cls.model_config["require_one_of"]
+            ]
             aliases = [item for item in aliases if item is not None]
             intersection = list(set(set_values) & set(cls.model_config["require_one_of"] + aliases))
             if len(intersection) == 0:
-                raise ValueError(f"One of {cls.model_config["require_one_of"]} is required.")
+                raise ValueError(f"One of {cls.model_config['require_one_of']} is required.")
         return values
 
     # pylint: disable=no-self-argument
-    @pd.field_validator(pre=True)
+    @pd.model_validator(mode="before")
     def handle_conflicting_fields(cls, values):
         """
         root validator to handle deprecated aliases and fields
@@ -140,7 +144,7 @@ class Flow360BaseModel(pd.BaseModel):
                 return alias[0]
         return None
 
-    # to_solver architecture will be reworked in favor of splitting the models between
+    # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference
     # in the design360 repo)
     #
@@ -186,7 +190,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> simulation = Simulation.from_file(filename='folder/sim.json') # doctest: +SKIP
+        >>> params = Flow360BaseModel.from_file(filename='folder/sim.json') # doctest: +SKIP
         """
         return cls(filename=filename)
 
@@ -206,14 +210,13 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360Params.from_file(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params = Flow360BaseModel.from_file(filename='folder/flow360.json') # doctest: +SKIP
         """
 
         if ".json" in filename:
             model_dict = cls._dict_from_json(filename=filename)
         elif ".yaml" in filename:
             model_dict = cls._dict_from_yaml(filename=filename)
-
         else:
             raise Flow360FileError(f"File must be *.json or *.yaml type, given {filename}")
 
@@ -258,7 +261,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360Params.from_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params = Flow360BaseModel.from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
         model_dict = cls.dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -279,7 +282,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params_dict = Flow360Params.dict_from_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params_dict = Flow360BaseModel.dict_from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
         with open(filename, "r", encoding="utf-8") as json_fhandle:
             model_dict = json.load(json_fhandle)
@@ -299,7 +302,7 @@ class Flow360BaseModel(pd.BaseModel):
         """
         json_string = self.model_dump_json()
         model_dict = json.loads(json_string)
-        if self.Config.include_hash:
+        if self.model_config["include_hash"] is True:
             model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
@@ -322,7 +325,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360Params.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params = Flow360BaseModel.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
         model_dict = cls.dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -343,7 +346,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params_dict = Flow360Params.dict_from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params_dict = Flow360BaseModel.dict_from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
         with open(filename, "r", encoding="utf-8") as yaml_in:
             model_dict = yaml.safe_load(yaml_in)
@@ -363,7 +366,7 @@ class Flow360BaseModel(pd.BaseModel):
         """
         json_string = self.model_dump_json()
         model_dict = json.loads(json_string)
-        if self.Config.include_hash:
+        if self.model_config["include_hash"]:
             model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             yaml.dump(model_dict, file_handle, indent=4, sort_keys=True)
@@ -405,27 +408,20 @@ class Flow360BaseModel(pd.BaseModel):
                 self.__setattr__(key, value)
 
     @classmethod
-    def add_type_field(cls) -> None:
+    def _add_type_field(cls) -> None:
         """Automatically place "type" field with model name in the model field dictionary."""
 
-        value = cls.__name__
-        annotation = Literal[value]
-
-        #TODO: Check if this actually works
-        cls.__annotations__[TYPE_TAG_STR] = annotation
-        setattr(cls, TYPE_TAG_STR, pd.Field(default=value, alias=TYPE_TAG_STR))
-
-        # tag_field = pd.FieldInfo(
-        #     alias=TYPE_TAG_STR,
-        #     value=value,
-        #     annotation=annotation,
-        #     class_validators=None,
-        #     config=cls.__config__,
-        # )
-        # cls.model_fields[TYPE_TAG_STR] = tag_field
+        # TODO: Check if this _type actually fulfill its goal(?)
+        tag_field = pd.fields.FieldInfo(
+            alias=TYPE_TAG_STR,
+            value=cls.__name__,
+            annotation=Literal[cls.__name__],
+            class_validators=None,
+        )
+        cls.model_fields[TYPE_TAG_STR] = tag_field
 
     @classmethod
-    def generate_docstring(cls) -> str:
+    def _generate_docstring(cls) -> str:
         """Generates a docstring for a Flow360 model and saves it to the __doc__ of the class."""
 
         # store the docstring in here
@@ -447,7 +443,7 @@ class Flow360BaseModel(pd.BaseModel):
                 continue
 
             # get data type
-            data_type = field._type_display()  # pylint:disable=protected-access
+            data_type = field.annotation
 
             # get default values
             default_val = field.get_default()
@@ -457,15 +453,16 @@ class Flow360BaseModel(pd.BaseModel):
                 default_val = (", ").join(default_val.split(" "))
 
             # make first line: name : type = default
-            default_str = "" if field.required else f" = {default_val}"
+            default_str = "" if field.is_required() else f" = {default_val}"
             doc += f"    {field_name} : {data_type}{default_str}\n"
 
             # get field metadata
-            field_info = field.field_info
             doc += "        "
 
             # add units (if present)
-            units = field_info.extra.get("units")
+            units = None
+            if field.json_schema_extra is not None:
+                units = field.json_schema_extra.get("units")
             if units is not None:
                 if isinstance(units, (tuple, list)):
                     unitstr = "("
@@ -479,7 +476,7 @@ class Flow360BaseModel(pd.BaseModel):
                 doc += f"[units = {unitstr}].  "
 
             # add description
-            description_str = field_info.description
+            description_str = field.description
             if description_str is not None:
                 doc += f"{description_str}\n"
 

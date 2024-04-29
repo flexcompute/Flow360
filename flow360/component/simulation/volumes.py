@@ -2,36 +2,32 @@
 Contains classes that we put under the volumes key of Simulation constructor.
 """
 
+from abc import ABCMeta
 from typing import Optional, Tuple, Union
 
 import pydantic as pd
-from material import Material
-from operating_condition import OperatingConditionTypes
-from zones import BoxZone, CylindricalZone
-from abc import ABCMeta
 
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.material import Material
+from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.physics_components import (
     ActuatorDisk,
     BETDisk,
-    PorousMediumBox,
-)
-from flow360.component.flow360_params.params_base import Flow360BaseModel
-from flow360.component.flow360_params.solvers import (
     HeatEquationSolver,
+    NavierStokesSolver,
+    PorousMediumBox,
+    TransitionModelSolver,
     TurbulenceModelSolverType,
 )
-from flow360.component.simulation.physics_components import (
-    NavierStokesSolver,
-    TransitionModelSolver,
-)
+from flow360.component.simulation.zones import BoxZone, CylindricalZone
 
 ##:: Physical Volume ::##
 
-class VolumeBase(Flow360BaseModel):
-    
+
+class VolumeBase(Flow360BaseModel): ...
 
 
-class PhysicalVolumeBase(Flow360BaseModel, metaclass = ABCMeta):
+class PhysicalVolumeBase(Flow360BaseModel, metaclass=ABCMeta):
     entities: list[Union[BoxZone | CylindricalZone]]
     operating_condition: OperatingConditionTypes = pd.Field()
     material: Optional[Material] = pd.Field()
@@ -40,9 +36,7 @@ class PhysicalVolumeBase(Flow360BaseModel, metaclass = ABCMeta):
 class FluidDynamics(PhysicalVolumeBase):
     # Contains all the common fields every fluid dynamics zone should have
     navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field()
-    turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(
-        discriminator="model_type"
-    )
+    turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field()
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field()
     ...
 

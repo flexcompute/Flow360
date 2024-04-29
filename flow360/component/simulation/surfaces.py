@@ -4,8 +4,15 @@ Contains basically only boundary conditons for now. In future we can add new mod
 
 from typing import List, Literal, Optional, Tuple, Union
 
-from flow360.component.flow360_params.params_base import Flow360BaseModel
-from flow360.component.flow360_params.boundaries import Boundary, BoundaryWithTurbulenceQuantities
+from flow360.component.simulation.base_model import Flow360BaseModel
+
+
+class Boundary:
+    pass
+
+
+class BoundaryWithTurbulenceQuantities:
+    pass
 
 
 class NoSlipWall(Boundary):

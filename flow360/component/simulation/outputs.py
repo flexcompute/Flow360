@@ -1,8 +1,6 @@
 from typing import Union
 
-import pydantic as pd
-
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.simulation.base_model import Flow360BaseModel
 
 
 class SurfaceOutput(Flow360BaseModel):
@@ -31,3 +29,14 @@ class AeroAcousticOutput(Flow360BaseModel):
 
 class UserDefinedFields(Flow360BaseModel):
     pass
+
+
+OutputTypes = Union[
+    SurfaceOutput,
+    VolumeOutput,
+    SliceOutput,
+    IsoSurfaceOutput,
+    MonitorOutput,
+    AeroAcousticOutput,
+    UserDefinedFields,
+]

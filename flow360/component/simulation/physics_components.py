@@ -7,16 +7,9 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 From what I can think of right now most can be reused from flow360_params for example the BETDisk and TransitionModelSolver.
 """
 
-from typing import List, Optional, Union
+from typing import Union
 
-import pydantic as pd
-
-from flow360.component.flow360_params.flow360_params import (
-    ActuatorDisk,
-    BETDisk,
-    PorousMediumBox,
-)
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.simulation.base_model import Flow360BaseModel
 
 
 class NavierStokesSolver(Flow360BaseModel):
@@ -33,3 +26,22 @@ class SpalartAllmaras(Flow360BaseModel):
 
 class TransitionModelSolver(Flow360BaseModel):
     pass
+
+
+class HeatEquationSolver(Flow360BaseModel):
+    pass
+
+
+class ActuatorDisk(Flow360BaseModel):
+    pass
+
+
+class BETDisk(Flow360BaseModel):
+    pass
+
+
+class PorousMediumBox(Flow360BaseModel):
+    pass
+
+
+TurbulenceModelSolverType = Union[KOmegaSST, SpalartAllmaras]

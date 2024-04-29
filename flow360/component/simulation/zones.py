@@ -1,8 +1,8 @@
-from typing import Optional, Tuple, Union
+from typing import Tuple
 
 import pydantic as pd
 
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.simulation.base_model import Flow360BaseModel
 
 ##:: Geometrical Volume ::##
 

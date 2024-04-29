@@ -1,20 +1,19 @@
 from typing import List, Optional, Union
 
 import pydantic as pd
-from mesh import MeshingParameters
-from operating_condition import OperatingConditionTypes
-from references import ReferenceGeometry
-from surfaces import SurfaceTypes
-from volumes import VolumeTypes
 
-from flow360.component.flow360_params.time_stepping import (
+from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.inputs import Geometry, SurfaceMesh, VolumeMesh
+from flow360.component.simulation.mesh import MeshingParameters
+from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.outputs import OutputTypes
+from flow360.component.simulation.references import ReferenceGeometry
+from flow360.component.simulation.surfaces import SurfaceTypes
+from flow360.component.simulation.time_stepping import (
     SteadyTimeStepping,
     UnsteadyTimeStepping,
 )
-from flow360.component.simulation.base_model import Flow360BaseModel
-
-from .inputs import Geometry, SurfaceMesh, VolumeMesh
-from .outputs import OutputTypes
+from flow360.component.simulation.volumes import VolumeTypes
 
 
 class UserDefinedDynamics(Flow360BaseModel):
