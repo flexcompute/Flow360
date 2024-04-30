@@ -28,6 +28,8 @@ CommonFieldNamesFull = Literal[
     "Heat equation residual",
     "Velocity with respect to non-inertial frame",
     "Low-Mach preconditioner factor",
+    "N-S linear residual",
+    "N-S wave speed multiplier",
 ]
 
 CommonFieldNames = Literal[
@@ -54,6 +56,8 @@ CommonFieldNames = Literal[
     "residualHeatSolver",
     "VelocityRelative",
     "lowMachPreconditionerSensor",
+    "NavierStokes_linearResidual",
+    "NavierStokes_waveSpeedMultiplier",
 ]
 
 SurfaceFieldNamesFull = Literal[
