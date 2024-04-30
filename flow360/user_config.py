@@ -23,6 +23,7 @@ class BasicUserConfig:
         self.set_profile(DEFAULT_PROFILE)
         self._check_env_profile()
         self._apikey = None
+        self._use_system_certs = None
         self._check_env_apikey()
         self._do_validation = True
         self._suppress_submit_warning = None
@@ -38,6 +39,12 @@ class BasicUserConfig:
         if self._apikey != apikey:
             log.info("Found env variable FLOW360_APIKEY, using as apikey")
             self._apikey = apikey
+
+    def _check_env_usessytemcerts(self):
+        use_system_certs = os.environ.get("FLOW360_USE_SYSTEM_CERTS", None)
+        if use_system_certs:
+            log.info("Found env variable ,, using as use_system_certs")
+            self._use_system_certs = use_system_certs.toLowerCase() in ['true', 'yes', '1']
 
     @property
     def profile(self):
@@ -126,6 +133,11 @@ class BasicUserConfig:
     
     @property
     def use_system_certs(self) -> bool:
+        self._check_env_profile()
+        self._check_env_usessytemcerts()
+        if self._use_system_certs is not None:
+            return self._use_system_certs
+        
         map = self.config.get(self.profile, {})
         setting = map.get("usesystemcerts", False)
         return setting
