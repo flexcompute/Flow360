@@ -31,7 +31,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry cache clear pypi --all
-        poetry env remove python
+        poetry env remove $(which python)
         poetry install
     - name: Run tests
-      run: pytest -rA
+      run: poetry run pytest -rA
