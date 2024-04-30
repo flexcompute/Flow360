@@ -29,6 +29,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
     - name: Install dependencies
-      run: poetry install
+      run: |
+        poetry shell
+        poetry env remove $(which python)
+        poetry install
     - name: Run tests
-      run: poetry run pytest -rA
+      run: pytest -rA
