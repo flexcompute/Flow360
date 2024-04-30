@@ -123,6 +123,11 @@ class BasicUserConfig:
     def enable_validation(self):
         """enable user side validation (pydantic)"""
         self._do_validation = True
-
+    
+    @property
+    def use_system_certs(self) -> bool:
+        map = self.config.get(self.profile, {})
+        setting = map.get("usesystemcerts", False)
+        return setting
 
 UserConfig = BasicUserConfig()

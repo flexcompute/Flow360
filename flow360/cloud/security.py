@@ -14,3 +14,7 @@ def api_key():
 
     apikey = UserConfig.apikey(Env.current)
     return apikey
+
+def use_system_certs() -> bool:
+    setting = UserConfig.use_system_certs
+    return setting

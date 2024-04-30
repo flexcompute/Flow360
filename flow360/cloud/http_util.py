@@ -6,6 +6,9 @@ http.get(path)
 from functools import wraps
 
 import requests
+import ssl
+from urllib3.poolmanager import PoolManager
+from requests.adapters import HTTPAdapter
 
 from ..environment import Env
 from ..exceptions import (
@@ -16,7 +19,7 @@ from ..exceptions import (
 from ..log import log
 from ..user_config import UserConfig
 from ..version import __version__
-from .security import api_key
+from .security import api_key, use_system_certs
 
 
 def api_key_auth(request):
@@ -76,6 +79,31 @@ def http_interceptor(func):
 
     return wrapper
 
+class SystemHttpsAdapter(HTTPAdapter):
+    """"Transport adapter" that allows us to validate SSL certs against the system store."""
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        self._pool_connections = connections
+        self._pool_maxsize = maxsize
+        self._pool_block = block
+
+        self.poolmanager = PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            ssl_context=self._init_ssl_context(),
+            **pool_kwargs,
+        )
+    
+    def cert_verify(self, conn, url, verify, cert):
+        super().cert_verify(conn, url, verify, cert)
+        conn.ca_certs = None
+        conn.conn_kw["ssl_context"].check_hostname = bool(verify)
+    
+    def _init_ssl_context(self):
+        ssl_context = ssl.create_default_context()
+        ssl_context.load_default_certs()
+        return ssl_context
 
 class Http:
     """
@@ -138,5 +166,7 @@ class Http:
         """
         return self.session.delete(Env.current.get_real_url(path), auth=api_key_auth)
 
-
-http = Http(requests.Session())
+_session = requests.Session()
+if use_system_certs():
+    _session.mount("https://", SystemHttpsAdapter())
+http = Http(_session)
