@@ -1203,7 +1203,7 @@ class Flow360SortableBaseModel(Flow360BaseModel, metaclass=ABCMeta):
         super().__setattr__(key, value)
 
     def names(self) -> List[str]:
-        """return names of all boundaries"""
+        """return names of all instances"""
         return [k for k, _ in self if k not in [COMMENTS, TYPE_TAG_STR]]
 
     @classmethod
