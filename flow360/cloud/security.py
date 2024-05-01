@@ -15,6 +15,11 @@ def api_key():
     apikey = UserConfig.apikey(Env.current)
     return apikey
 
+
 def use_system_certs() -> bool:
+    """
+    Get the use_system_certs configuration option for the current environment
+    :return:
+    """
     setting = UserConfig.use_system_certs
     return setting

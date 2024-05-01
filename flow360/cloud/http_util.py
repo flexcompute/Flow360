@@ -3,12 +3,12 @@ http utils. Example:
 http.get(path)
 """
 
+import ssl
 from functools import wraps
 
 import requests
-import ssl
-from urllib3.poolmanager import PoolManager
 from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
 
 from ..environment import Env
 from ..exceptions import (
@@ -79,8 +79,9 @@ def http_interceptor(func):
 
     return wrapper
 
+
 class SystemHttpsAdapter(HTTPAdapter):
-    """"Transport adapter" that allows us to validate SSL certs against the system store."""
+    """ "Transport adapter" that allows us to validate SSL certs against the system store."""
 
     def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
         self._pool_connections = connections
@@ -94,16 +95,17 @@ class SystemHttpsAdapter(HTTPAdapter):
             ssl_context=self._init_ssl_context(),
             **pool_kwargs,
         )
-    
+
     def cert_verify(self, conn, url, verify, cert):
         super().cert_verify(conn, url, verify, cert)
         conn.ca_certs = None
         conn.conn_kw["ssl_context"].check_hostname = bool(verify)
-    
+
     def _init_ssl_context(self):
         ssl_context = ssl.create_default_context()
         ssl_context.load_default_certs()
         return ssl_context
+
 
 class Http:
     """
@@ -165,6 +167,7 @@ class Http:
         :return:
         """
         return self.session.delete(Env.current.get_real_url(path), auth=api_key_auth)
+
 
 _session = requests.Session()
 if use_system_certs():

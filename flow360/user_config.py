@@ -44,7 +44,7 @@ class BasicUserConfig:
         use_system_certs = os.environ.get("FLOW360_USE_SYSTEM_CERTS", None)
         if use_system_certs:
             log.info("Found env variable ,, using as use_system_certs")
-            self._use_system_certs = use_system_certs.toLowerCase() in ['true', 'yes', '1']
+            self._use_system_certs = use_system_certs.toLowerCase() in ["true", "yes", "1"]
 
     @property
     def profile(self):
@@ -130,16 +130,23 @@ class BasicUserConfig:
     def enable_validation(self):
         """enable user side validation (pydantic)"""
         self._do_validation = True
-    
+
     @property
     def use_system_certs(self) -> bool:
+        """retrieve the current value of the use_system_certs configuration option
+
+        Returns
+        -------
+        bool
+            whether to use the OS system certificate store for SSL validation"""
         self._check_env_profile()
         self._check_env_usessytemcerts()
         if self._use_system_certs is not None:
             return self._use_system_certs
-        
-        map = self.config.get(self.profile, {})
-        setting = map.get("usesystemcerts", False)
+
+        config_map = self.config.get(self.profile, {})
+        setting = config_map.get("usesystemcerts", False)
         return setting
+
 
 UserConfig = BasicUserConfig()
