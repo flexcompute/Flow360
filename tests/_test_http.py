@@ -5,7 +5,8 @@ import pytest
 import requests
 from click.testing import CliRunner
 
-from flow360.cloud.http_util import api_key_auth
+from flow360.cloud.http_util import Http, SystemHttpsAdapter, api_key_auth
+from flow360.exceptions import Flow360AuthorisationError
 
 
 def test_apikey_auth():
@@ -22,7 +23,29 @@ def test_no_apikey_auth():
     r = requests.Request()
     if os.path.exists(f"{expanduser('~')}/.flow360/config.toml"):
         os.remove(f"{expanduser('~')}/.flow360/config.toml")
-    with pytest.raises(
-        ValueError, match="API key not found, please set it by commandline: flow360 configure."
-    ):
+    with pytest.raises(Flow360AuthorisationError, match="API key not found"):
         api_key_auth(r)
+
+
+def test_request_to_public_target():
+    session = requests.Session()
+    http = Http(session)
+    result = http.get("/health")
+    assert result.status_code == 200
+
+
+def test_request_to_public_target_os_certs():
+    session = requests.Session()
+    session.mount("https://", SystemHttpsAdapter())
+    http = Http(session)
+    result = http.get("/health")
+    assert result.status_code == 200
+
+
+def test_system_connect_via_https_adapter():
+    session = requests.Session()
+    session.mount("https://", SystemHttpsAdapter())
+    result = session.get("https://flow360-api.simulation.cloud/health")
+    assert result.status_code == 200
+    data = result.json()
+    assert data["healthEnv"] == "prod"
