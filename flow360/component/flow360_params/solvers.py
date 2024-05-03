@@ -631,8 +631,10 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "DDES": self.DDES,
             "gridSizeForLES": self.grid_size_for_LES,
             "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
-            "modelConstants": self.model_constants,
         }
+
+        if self.model_constants is not None:
+            model["modelConstants"] = self.model_constants
 
         try_set(model, "rotationCorrection", self.rotation_correction)
 
