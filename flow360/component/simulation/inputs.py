@@ -22,6 +22,7 @@ class Geometry(Flow360BaseModel):
 
 
 class SurfaceMesh(Flow360BaseModel):
+    """SurfaceMesh object manage existing mesh."""
 
     def from_file(self, filename):
         pass

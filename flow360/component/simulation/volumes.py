@@ -19,25 +19,41 @@ from flow360.component.simulation.physics_components import (
     TransitionModelSolver,
     TurbulenceModelSolverType,
 )
-from flow360.component.simulation.zones import BoxZone, CylindricalZone
+
+##:: Geometrical volumes ::##
+
+
+class ZoneBase(Flow360BaseModel):
+    name: str = pd.Field()
+
+
+class BoxZone(ZoneBase):
+    x_range: Tuple[float, float]
+    y_range: Tuple[float, float]
+    z_range: Tuple[float, float]
+    pass
+
+
+class CylindricalZone(ZoneBase):
+    axis: Tuple[float, float, float]
+    center: Tuple[float, float, float]
+    height: float
+
 
 ##:: Physical Volume ::##
 
 
-class VolumeBase(Flow360BaseModel): ...
-
-
 class PhysicalVolumeBase(Flow360BaseModel, metaclass=ABCMeta):
-    entities: list[Union[BoxZone | CylindricalZone]]
-    operating_condition: OperatingConditionTypes = pd.Field()
-    material: Optional[Material] = pd.Field()
+    entities: list[Union[BoxZone | CylindricalZone]] = pd.Field([])
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    material: Optional[Material] = pd.Field(None)
 
 
 class FluidDynamics(PhysicalVolumeBase):
     # Contains all the common fields every fluid dynamics zone should have
-    navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field()
-    turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field()
-    transition_model_solver: Optional[TransitionModelSolver] = pd.Field()
+    navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(None)
+    turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(None)
+    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(None)
     ...
 
 

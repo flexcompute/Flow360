@@ -82,8 +82,8 @@ class LinearSolver(Flow360BaseModel):
     """
 
     max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
-    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
-    relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
+    absolute_tolerance: Optional[PositiveFloat] = pd.Field(None, alias="absoluteTolerance")
+    relative_tolerance: Optional[PositiveFloat] = pd.Field(None, alias="relativeTolerance")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):

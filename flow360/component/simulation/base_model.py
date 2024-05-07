@@ -73,13 +73,13 @@ class Flow360BaseModel(pd.BaseModel):
         populate_by_name=True,
         validate_assignment=True,
         validate_default=True,
+        ##:: Custom keys
+        require_one_of=[],
+        allow_but_remove=[],
+        conflicting_fields=[],
+        include_hash=False,
+        include_defaults_in_schema=True,
     )
-    ##:: Custom keys
-    model_config["require_one_of"] = []
-    model_config["allow_but_remove"] = []
-    model_config["conflicting_fields"] = []
-    model_config["include_hash"] = False
-    model_config["include_defaults_in_schema"] = True
 
     def __setattr__(self, name, value):
         if name in self.model_fields:

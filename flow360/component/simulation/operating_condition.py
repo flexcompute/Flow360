@@ -17,15 +17,21 @@ from flow360.component.simulation.base_model import Flow360BaseModel
 
 
 class ExternalFlowOperatingConditions(Flow360BaseModel):
+    # TODO: Units!!
+    ##Note: Did not specify fileds as optional cause I am sure we will forget to specify proper defaults if it is optional and have "None" related errors.
+    pressure: float = pd.Field(111)
+    altitude: float = pd.Field(111)
+    velocity: float = pd.Field(111)
+    Mach: float = pd.Field(111)
+    alpha: float = pd.Field(0)
+    beta: float = pd.Field(0)
+    temperature: float = pd.Field(111)
+    Reynolds: float = (
+        111,
+        pd.Field(),
+    )  # Note: Is this possible to just compute Reynolds from user inputs?
 
-    pressure: float = pd.Field()
-    altitude: float = pd.Field()
-    velocity: float = pd.Field()
-    mach: float = pd.Field()
-    alpha: float = pd.Field()
-    beta: float = pd.Field()
-
-    initial_condition: tuple[str, str, str] = pd.Field()
+    initial_condition: tuple[str, str, str] = pd.Field(("None", "None", "None"))
 
 
 class InternalFlowOperatingConditions(Flow360BaseModel):

@@ -4,7 +4,7 @@ import pydantic as pd
 
 from flow360.component.simulation.base_model import Flow360BaseModel
 
-from .zones import BoxZone, CylindricalZone
+from .volumes import BoxZone, CylindricalZone
 
 
 class FaceRefinement(Flow360BaseModel):
