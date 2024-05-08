@@ -35,10 +35,14 @@ class BoxZone(ZoneBase):
 
 
 class CylindricalZone(ZoneBase):
-    axis: Tuple[float, float, float]
+    axis: Tuple[float, float, float] = pd.Field()
     center: Tuple[float, float, float]
     height: float
 
+    inner_radius: Optional[pd.NonNegativeFloat] = pd.Field)
+    outer_radius: pd.PositiveFloat = pd.Field()
+    thickness: pd.PositiveFloat = pd.Field()
+   
 
 ##:: Physical Volume ::##
 
