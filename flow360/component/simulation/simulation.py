@@ -48,10 +48,10 @@ class Simulation(SimulationParams):
         volume_mesh: Union[VolumeMesh, VolumeMeshDraft],
         **kwargs,
     ):  # Ref: _init_with_context
-        if volume_mesh is not None:
-            if isinstance(volume_mesh, VolumeMeshDraft):
-                self.volume_mesh = volume_mesh.submit()
-            elif 
+        # if volume_mesh is not None:
+        #     if isinstance(volume_mesh, VolumeMeshDraft):
+        #         self.volume_mesh = volume_mesh.submit()
+        #     elif 
 
         # self.unit_system = unit_system_manager.copy_current()
 
