@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import tempfile
 import time
-from typing import Any, Iterator, List, Union, Optional
+from typing import Any, Iterator, List, Optional, Union
 
 import pydantic as pd
 

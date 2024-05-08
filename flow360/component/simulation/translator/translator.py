@@ -1,15 +1,9 @@
-from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.volumes import FluidDynamics
-
-from flow360.exceptions import (
-    Flow360ConfigError,
-    Flow360NotImplementedError,
-    Flow360RuntimeError,
-)
-
+import flow360.component.flow360_params.boundaries as bdV1
+from flow360 import flow360_unit_system
 from flow360.component.flow360_params.flow360_params import Flow360Params
-from flow360.component.flow360_params.time_stepping import SteadyTimeStepping, RampCFL
-
+from flow360.component.flow360_params.flow360_params import (
+    FreestreamFromMachReynolds as FreestreamFromMachReynoldsV1,
+)
 from flow360.component.flow360_params.flow360_params import Geometry as GeometryV1
 from flow360.component.flow360_params.flow360_params import (
     NavierStokesSolver as NavierStokesSolverV1,
@@ -17,15 +11,15 @@ from flow360.component.flow360_params.flow360_params import (
 from flow360.component.flow360_params.solvers import (
     SpalartAllmaras as SpalartAllmarasV1,
 )
-from flow360.component.flow360_params.flow360_params import (
-    FreestreamFromMachReynolds as FreestreamFromMachReynoldsV1,
-)
-
+from flow360.component.flow360_params.time_stepping import RampCFL, SteadyTimeStepping
 from flow360.component.simulation.physics_components import SpalartAllmaras
-
-import flow360.component.flow360_params.boundaries as bdV1
-
-from flow360 import flow360_unit_system
+from flow360.component.simulation.simulation import SimulationParams
+from flow360.component.simulation.volumes import FluidDynamics
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360NotImplementedError,
+    Flow360RuntimeError,
+)
 
 
 def convert_SimulationParams_to_Flow360Params(input_param: SimulationParams) -> Flow360Params:

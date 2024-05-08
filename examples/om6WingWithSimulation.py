@@ -14,8 +14,8 @@ from flow360.component.simulation.starting_points.volume_mesh import VolumeMesh
 from flow360.component.simulation.surfaces import (
     FreestreamBoundary,
     NoSlipWall,
-    Patch,
     SlipWall,
+    Surface,
 )
 from flow360.component.simulation.volumes import FluidDynamics
 
@@ -25,35 +25,35 @@ om6wing_mesh = VolumeMesh.from_file(
 )
 
 
-wing_surface = Patch(mesh_patch_name="1", custom_name="wing_surface")
-slip_wall = Patch(mesh_patch_name="2", custom_name="slip_wall")
-far_field = Patch(mesh_patch_name="3", custom_name="far_field")
+wing_surface = Surface(mesh_patch_name="1", custom_name="wing_surface")
+slip_wall = Surface(mesh_patch_name="2", custom_name="slip_wall")
+far_field = Surface(mesh_patch_name="3", custom_name="far_field")
 
-# with SI_unit_system:
-simulation = Simulation(
-    volume_mesh=om6wing_mesh,
-    reference_geometry=ReferenceGeometry(
-        area=1.15315084119231,
-        moment_center=(0, 0, 0),
-        moment_length=(0.801672958512342, 0.801672958512342, 0.801672958512342),
-    ),
-    operating_condition=ExternalFlowOperatingConditions(
-        Mach=0.84, temperature=288.15, alpha=3.06 * u.deg, Reynolds=14.6e6
-    ),
-    volumes=[
-        FluidDynamics(
-            navier_stokes_solver=NavierStokesSolver(
-                linear_solver=LinearSolver(absolute_tolerance=1e-10)
+with SI_unit_system:
+    simulation = Simulation(
+        volume_mesh=om6wing_mesh,
+        reference_geometry=ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=(0, 0, 0),
+            moment_length=(0.801672958512342, 0.801672958512342, 0.801672958512342),
+        ),
+        operating_condition=ExternalFlowOperatingConditions(
+            Mach=0.84, temperature=288.15, alpha=3.06 * u.deg, Reynolds=14.6e6
+        ),
+        volumes=[
+            FluidDynamics(
+                navier_stokes_solver=NavierStokesSolver(
+                    linear_solver=LinearSolver(absolute_tolerance=1e-10)
+                ),
+                turbulence_model_solver=SpalartAllmaras(),
             ),
-            turbulence_model_solver=SpalartAllmaras(),
-        ),
-    ],
-    surfaces=[
-        NoSlipWall(
-            entities=[wing_surface],
-        ),
-        SlipWall(entities=[slip_wall]),
-        FreestreamBoundary(entities=[far_field]),
-    ],
-)
+        ],
+        surfaces=[
+            NoSlipWall(
+                entities=[wing_surface],
+            ),
+            SlipWall(entities=[slip_wall]),
+            FreestreamBoundary(entities=[far_field]),
+        ],
+    )
 simulation.run()

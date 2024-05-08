@@ -1,4 +1,5 @@
-from typing import Union, Literal, Tuple, List
+from typing import List, Literal, Tuple, Union
+
 import pydantic as pd
 
 PositiveFloat = pd.PositiveFloat

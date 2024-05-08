@@ -21,6 +21,17 @@ class Geometry(Flow360BaseModel):
         pass
 
 
+class GeometryDraft(Flow360BaseModel):
+
+    geoemtry_meta: _tempGeometryMeta
+
+    def from_file(self, filename):
+        pass
+
+    def from_cloud(self, id):
+        pass
+
+
 class SurfaceMesh(Flow360BaseModel):
     """SurfaceMesh object manage existing mesh."""
 

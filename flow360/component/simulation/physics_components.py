@@ -7,13 +7,19 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 From what I can think of right now most can be reused from flow360_params for example the BETDisk and TransitionModelSolver.
 """
 
-from typing import Union, Optional, Literal
-from typing_extensions import Annotated
 from abc import ABCMeta
+from typing import Literal, Optional, Union
+
+import pydantic as pd
+from typing_extensions import Annotated
 
 from flow360.component.simulation.base_model import Flow360BaseModel
-from flow360.component_v2.types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
-import pydantic as pd
+from flow360.component_v2.types import (
+    NonNegativeFloat,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+)
 
 
 class LinearSolver(Flow360BaseModel):
