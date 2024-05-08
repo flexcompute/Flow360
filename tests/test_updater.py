@@ -148,6 +148,7 @@ def test_updater_from_files():
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 0.5
     params = fl.Flow360Params("data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
+    assert params.turbulence_model_solver.model_constants is not None
     assert params.initial_condition is None
 
     params = fl.Flow360Params("data/cases/case_20.json")
