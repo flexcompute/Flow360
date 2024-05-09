@@ -3,7 +3,7 @@ I have my surface mesh, want to run my first simulation
 """
 
 from ..inputs import SurfaceMesh
-from ..mesh import MeshingParameters, ZoneRefinement
+from ..meshing_param.params import MeshingParameters, ZoneRefinement
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..references import ReferenceGeometry
 from ..simulation import Simulation

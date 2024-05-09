@@ -7,18 +7,14 @@ from flow360.component.simulation.base_model import Flow360BaseModel
 ##:: Geometrical Volume ::##
 
 
-class ZoneBase(Flow360BaseModel):
-    name: str = pd.Field()
+class BoxZone(Flow360BaseModel):
+    center: Tuple[float, float] = pd.Field()
+    size: Tuple[float, float, float] = pd.Field()
 
 
-class BoxZone(ZoneBase):
-    x_range: Tuple[float, float]
-    y_range: Tuple[float, float]
-    z_range: Tuple[float, float]
-    pass
-
-
-class CylindricalZone(ZoneBase):
-    axis: Tuple[float, float, float]
-    center: Tuple[float, float, float]
-    height: float
+class CylindricalZone(Flow360BaseModel):
+    axis: Tuple[float, float, float] = pd.Field()
+    center: Tuple[float, float, float] = pd.Field()
+    height: float = pd.Field()
+    inner_radius: pd.PositiveFloat = pd.Field()
+    outer_radius: pd.PositiveFloat = pd.Field()

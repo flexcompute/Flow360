@@ -2,25 +2,21 @@ from typing import List, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
-from flow360.component.simulation.inputs import Geometry, SurfaceMesh, VolumeMesh
-from flow360.component.simulation.mesh import MeshingParameters
-from flow360.component.simulation.operating_condition import OperatingConditionTypes
-from flow360.component.simulation.outputs import OutputTypes
-from flow360.component.simulation.references import ReferenceGeometry
-from flow360.component.simulation.surfaces import SurfaceTypes
-from flow360.component.simulation.time_stepping import (
-    SteadyTimeStepping,
-    UnsteadyTimeStepping,
+from flow360.component.case import Case
+
+## Warning: pydantic V1
+from flow360.component.flow360_params.unit_system import (
+    UnitSystemType,
+    unit_system_manager,
 )
-from flow360.component.simulation.volumes import VolumeTypes
+from flow360.component.simulation.inputs import Geometry, GeometryDraft
+from flow360.component.simulation.references import ReferenceGeometry
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.surface_mesh import SurfaceMesh, SurfaceMeshDraft
+from flow360.component.volume_mesh import VolumeMesh, VolumeMeshDraft
 
 
-class UserDefinedDynamics(Flow360BaseModel):
-    pass
-
-
-class Simulation(Flow360BaseModel):
+class Simulation(SimulationParams):
     """
     Simulation interface for user to submit a simulation starting from certain stage (geometry/surface mesh/volume mesh)
 
@@ -34,75 +30,47 @@ class Simulation(Flow360BaseModel):
         surface_mesh (Optional[SurfaceMesh]): Surface mesh.
         volume_mesh (Optional[VolumeMesh]): Volume mesh.
 
-    -----
-        meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or modify the existing surface/volume meshing parameters from starting points.
-
-    -----
-        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values will **always** overwrite global ones.
-
-        reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
-        operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
-    -----
-        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary conditions.
-
-        volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
-        surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
-    -----
-        - Other configurations that are orthogonal to all previous items.
-
-        time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
-        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
-        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs.
-
     Limitations:
         Sovler capability:
             - Cannot specify multiple reference_geometry/operating_condition in volumes.
     """
 
-    name: str = pd.Field()
-    tags: Optional[List[str]] = pd.Field()
-    #
-    geometry: Optional[Geometry] = pd.Field()
-    surface_mesh: Optional[SurfaceMesh] = pd.Field()
-    volume_mesh: Optional[VolumeMesh] = pd.Field()
-    #
-    meshing: Optional[MeshingParameters] = pd.Field()
+    # Resources
+    geometry: Optional[Geometry] = pd.Field(default=None)
+    surface_mesh: Optional[SurfaceMesh] = pd.Field(default=None)
+    volume_mesh: Optional[VolumeMesh] = pd.Field(default=None)
+    case: Optional[Case] = pd.Field(default=None)
 
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field()
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field()
-    #
-    """
-    meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
-    1. __getitem__ to allow [] access
-    2. __setitem__ to allow [] assignment
-    3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
-    3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
-    """
-    volumes: Optional[List[VolumeTypes]] = pd.Field()
-    surfaces: Optional[List[SurfaceTypes]] = pd.Field()
-    """
-    Below can be mostly reused with existing models 
-    """
-    time_stepping: Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]] = pd.Field()
-    user_defined_dynamics: Optional[UserDefinedDynamics] = pd.Field()
-    """
-    Support for user defined expression?
-    If so:
-        1. Move over the expression validation functions.
-        2. Have camelCase to snake_case naming converter for consistent user experience.
-    Limitations:
-        1. No per volume zone output. (single volume output)
-    """
-    outputs: Optional[List[OutputTypes]] = pd.Field()
+    def __init__(
+        self,
+        geometry: Union[Geometry, GeometryDraft],
+        surface_mesh: Union[SurfaceMesh, SurfaceMeshDraft],
+        volume_mesh: Union[VolumeMesh, VolumeMeshDraft],
+        **kwargs,
+    ):  # Ref: _init_with_context
 
-    def __init__(self, **kwargs):
-        pass
+        super().__init__(**kwargs)
 
-    def to_surface_meshing_params(self): ...
-
-    def to_volume_meshing_params(self): ...
-
-    def to_solver_params(self): ...
+    def _get_simulation_params(self):
+        return SimulationParams(
+            meshing=self.meshing,
+            reference_geometry=self.reference_geometry,
+            operating_condition=self.operating_condition,
+            volumes=self.volumes,
+            surfaces=self.surfaces,
+            time_stepping=self.time_stepping,
+            user_defined_dynamics=self.user_defined_dynamics,
+            outputs=self.outputs,
+        )
 
     def run(self) -> str:
-        return "f113d93a-c61a-4438-84af-f760533bbce4"
+        volume_mesh_draft = VolumeMesh.from_file()
+        self.volume_mesh.volume_mesh_draft.submit()
+        self.case = Case(
+            name="Simulation_om6wing",
+            params=self._get_simulation_params(),
+            volume_mesh_id=self.volume_mesh.volume_mesh_draft.id,
+            solver_version="TestUserJSON-24.3.0",
+        )
+        self.case.case_draft.submit()
+        return self.case.case_draft.id
