@@ -2,7 +2,6 @@ from typing import Literal
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
 from flow360.component.simulation.entities_base import EntitiesBase
 
 

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 import pydantic as pd
 
@@ -12,28 +12,37 @@ from flow360.component.simulation.base_model import Flow360BaseModel
     2. The initial condition for the problem.
 
     TODO:
-    1. What types of operation conditions do we need?
+    1. What other types of operation conditions do we need?
 """
 
 
+class TurbulenceQuantities(Flow360BaseModel):
+    """PLACE HOLDER, Should be exactly the the same as `TurbulenceQuantitiesType` in current Flow360Params"""
+
+    pass
+
+
 class ExternalFlowOperatingConditions(Flow360BaseModel):
+    Mach: float = pd.Field()
+    alpha: float = pd.Field(0)
+    beta: float = pd.Field(0)
+    temperature: float = pd.Field(288.15)
+    reference_velocity: Optional[float] = pd.Field()  # See U_{ref} definition in our documentation
 
-    pressure: float = pd.Field()
-    altitude: float = pd.Field()
-    velocity: float = pd.Field()
-    mach: float = pd.Field()
-    alpha: float = pd.Field()
-    beta: float = pd.Field()
-
-    initial_condition: tuple[str, str, str] = pd.Field()
+    initial_flow_condition: Optional[tuple[str, str, str, str, str]] = pd.Field(
+        ("NotImplemented", "NotImplemented", "NotImplemented")
+    )
+    turbulence_quantities = Optional[TurbulenceQuantities] = pd.Field()
 
 
 class InternalFlowOperatingConditions(Flow360BaseModel):
     pressure_difference: float = pd.Field()
-    velocity: float = pd.Field()
+    reference_velocity: float = pd.Field()
+    inlet_velocity: float = pd.Field()
 
 
-class SolidOperatingConditions(Flow360BaseModel): ...
+class SolidOperatingConditions(Flow360BaseModel):
+    initial_temperature: float = pd.Field()
 
 
 OperatingConditionTypes = Union[

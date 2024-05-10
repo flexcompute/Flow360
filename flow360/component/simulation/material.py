@@ -13,4 +13,10 @@ class MaterialBase(Flow360BaseModel):
 
 class Material(Flow360BaseModel):
     # contains models of getting properites, for example US standard atmosphere model
-    name: Literal["air"] = pd.Field("air")
+    name: str = pd.Field()
+    dynamic_viscosity: float = pd.Field()
+
+
+class Air(Material):
+    name: Literal["air"] = pd.Field(frozen=True)
+    dynamic_viscosity: float = pd.Field(18.03e-6, frozen=True)
