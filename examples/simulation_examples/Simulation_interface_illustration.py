@@ -11,7 +11,7 @@ from flow360.component.simulation.physics_components import (
     SpalartAllmaras,
 )
 from flow360.component.simulation.references import ReferenceGeometry
-from flow360.component.simulation.simulation import Simulation, SimulationParams
+from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.surfaces import (
     FreestreamBoundary,
     SlipWall,
@@ -20,7 +20,7 @@ from flow360.component.simulation.surfaces import (
 )
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
 from flow360.component.simulation.user_defined_dynamics import UserDefinedDynamics
-from flow360.component.simulation.volumes import FluidDynamics, Volume, PorousMedium
+from flow360.component.simulation.volumes import FluidDynamics, PorousMedium
 from flow360.component.surface_mesh import SurfaceMesh
 
 from flow360.component.simulation.zones import BoxZone
@@ -28,13 +28,9 @@ from flow360.component.simulation.zones import BoxZone
 from flow360.component.case import Case
 
 from flow360.component.simulation.meshing_param.params import MeshingParameters
-from flow360.component.simulation.meshing_param.edge_params import EdgeRefinementTypes
 from flow360.component.simulation.meshing_param.face_params import FaceRefinement
-from flow360.component.simulation.meshing_param.volume_params import (
-    Farfield,
-    ZoneRefinementTypes,
-    BoxRefinement,
-)
+from flow360.component.simulation.meshing_param.volume_params import BoxRefinement
+
 
 ##:: Volume and Surface Definition ::##
 wing_surface = Surface(mesh_patch_name="1")
