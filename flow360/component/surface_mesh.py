@@ -147,6 +147,7 @@ class SurfaceMeshDraft(ResourceDraft):
                 name = os.path.splitext(os.path.basename(self.geometry_file))[0]
             elif self.surface_mesh_file is not None:
                 name = os.path.splitext(os.path.basename(self.surface_mesh_file))[0]
+        self.name = name
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
