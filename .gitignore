@@ -326,3 +326,6 @@ $RECYCLE.BIN/
 tmp/
 
 /.vscode
+
+# test residual
+flow360/examples/cylinder/flow360mesh.json

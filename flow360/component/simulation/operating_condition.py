@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 """
     Defines all the operating conditions for different physics.

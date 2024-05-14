@@ -1,10 +1,9 @@
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
-
-##:: Geometrical Volume ::##
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityBase
 
 
 class Transformation(Flow360BaseModel):
@@ -14,13 +13,17 @@ class Transformation(Flow360BaseModel):
     angle_of_rotation: Optional[float] = pd.Field()
 
 
-class Box(Flow360BaseModel):
+class _VolumeEntityBase(EntityBase):
+    _entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
+
+
+class Box(_VolumeEntityBase):
     center: Tuple[float, float] = pd.Field()
     size: Tuple[float, float, float] = pd.Field()
     axes: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = pd.Field()
 
 
-class Cylinder(Flow360BaseModel):
+class Cylinder(_VolumeEntityBase):
     axis: Tuple[float, float, float] = pd.Field()
     center: Tuple[float, float, float] = pd.Field()
     height: float = pd.Field()

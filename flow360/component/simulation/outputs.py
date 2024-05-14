@@ -2,8 +2,8 @@ from typing import List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
 from flow360.component.simulation.entities_base import EntitiesBase
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 """Mostly the same as Flow360Param counterparts.
 Caveats:

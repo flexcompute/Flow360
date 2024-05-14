@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 from flow360.component.flow360_params.flow360_params import Flow360BaseModel
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
@@ -70,7 +70,7 @@ def test_dict_from_file():
         temp_file_name = temp_file.name
 
     try:
-        base_model_dict = BaseModelTestModel.dict_from_file(temp_file_name)
+        base_model_dict = BaseModelTestModel._dict_from_file(temp_file_name)
         assert base_model_dict["some_value"] == 3210
     finally:
         os.remove(temp_file_name)
@@ -81,7 +81,7 @@ def test_dict_from_file():
         temp_file_name = temp_file.name
 
     try:
-        base_model_dict = BaseModelTestModel.dict_from_file(temp_file_name)
+        base_model_dict = BaseModelTestModel._dict_from_file(temp_file_name)
         assert base_model_dict["some_value"] == 3210
     finally:
         os.remove(temp_file_name)
