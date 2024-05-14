@@ -15,7 +15,7 @@ from .interfaces import GeometryInterface
 from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
 from .utils import shared_account_confirm_proceed, validate_type
 
-supportedGeometryFilePatterns = [
+SUPPORTED_GEOMETRY_FILE_PATTERNS = [
     ".sat",
     ".sab",
     ".asat",
@@ -109,22 +109,22 @@ class Geometry(Flow360Resource):
     @classmethod
     def from_file(
         cls,
-        geometry_files: Union[List[str], str],
+        file_names: Union[List[str], str],
         name: str = None,
         tags: List[str] = None,
     ):
         """
         Create geometry from geometry files
-        :param geometry_files:
+        :param file_names:
         :param name:
         :param tags:
         :param solver_version:
         :return:
         """
-        if isinstance(geometry_files, str):
-            geometry_files = [geometry_files]
+        if isinstance(file_names, str):
+            file_names = [file_names]
         return GeometryDraft(
-            geometry_files=geometry_files,
+            file_names=file_names,
             name=name,
             tags=tags,
         )
@@ -150,12 +150,12 @@ class GeometryDraft(ResourceDraft):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        geometry_files: List[str],
+        file_names: List[str],
         name: str = None,
         tags: List[str] = None,
         solver_version=None,
     ):
-        self._geometry_files = geometry_files
+        self._file_names = file_names
         self.name = name
         self.tags = tags
         self.solver_version = solver_version
@@ -168,29 +168,29 @@ class GeometryDraft(ResourceDraft):
 
     # pylint: disable=consider-using-f-string
     def _validate_geometry(self):
-        if not isinstance(self.geometry_files, list):
-            raise Flow360FileError("geometry_files field has to be a list.")
-        for geometry_file in self.geometry_files:
+        if not isinstance(self.file_names, list):
+            raise Flow360FileError("file_names field has to be a list.")
+        for geometry_file in self.file_names:
             _, ext = os.path.splitext(geometry_file)
-            if not _match_file_pattern(supportedGeometryFilePatterns, geometry_file):
+            if not _match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
                 raise Flow360FileError(
                     "Unsupported geometry file extensions: {}. Supported: [{}].".format(
-                        ext.lower(), ", ".join(supportedGeometryFilePatterns)
+                        ext.lower(), ", ".join(SUPPORTED_GEOMETRY_FILE_PATTERNS)
                     )
                 )
 
             if not os.path.exists(geometry_file):
                 raise Flow360FileError(f"{geometry_file} not found.")
 
-        if self.name is None and len(self.geometry_files) > 1:
+        if self.name is None and len(self.file_names) > 1:
             raise Flow360ValueError(
                 "name field is required if more than one geometry files are provided."
             )
 
     @property
-    def geometry_files(self) -> List[str]:
+    def file_names(self) -> List[str]:
         """geometry file"""
-        return self._geometry_files
+        return self._file_names
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
@@ -211,7 +211,7 @@ class GeometryDraft(ResourceDraft):
         self._validate()
         name = self.name
         if name is None:
-            name = os.path.splitext(os.path.basename(self.geometry_files[0]))[0]
+            name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
         self.name = name
 
         if not shared_account_confirm_proceed():
@@ -221,8 +221,6 @@ class GeometryDraft(ResourceDraft):
             "name": self.name,
             "tags": self.tags,
         }
-        print("debug=============")
-        print(data)
 
         if self.solver_version:
             data["solverVersion"] = self.solver_version
@@ -230,17 +228,17 @@ class GeometryDraft(ResourceDraft):
         resp = RestApi(GeometryInterface.endpoint).post(data)
         info = GeometryMeta(**resp)
         self._id = info.id
-        submitted_mesh = Geometry(self.id)
+        submitted_geometry = Geometry(self.id)
 
         remote_file_names = []
-        for index, geometry_file in enumerate(self.geometry_files):
+        for index, geometry_file in enumerate(self.file_names):
             _, ext = os.path.splitext(geometry_file)
             remote_file_name = f"geometry_{index}{ext}"
             file_name_to_upload = geometry_file
-            submitted_mesh._upload_file(
+            submitted_geometry._upload_file(
                 remote_file_name, file_name_to_upload, progress_callback=progress_callback
             )
             remote_file_names.append(remote_file_name)
-        submitted_mesh._complete_upload(remote_file_names)
-        log.info(f"Geometry successfully submitted: {submitted_mesh.short_description()}")
-        return submitted_mesh
+        submitted_geometry._complete_upload(remote_file_names)
+        log.info(f"Geometry successfully submitted: {submitted_geometry.short_description()}")
+        return submitted_geometry
