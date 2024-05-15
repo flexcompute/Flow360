@@ -7,12 +7,12 @@ from flow360.component.simulation.base_model import Flow360BaseModel
 ##:: Geometrical Volume ::##
 
 
-class BoxZone(Flow360BaseModel):
+class Box(Flow360BaseModel):
     center: Tuple[float, float] = pd.Field()
     size: Tuple[float, float, float] = pd.Field()
 
 
-class CylindricalZone(Flow360BaseModel):
+class Cylinder(Flow360BaseModel):
     axis: Tuple[float, float, float] = pd.Field()
     center: Tuple[float, float, float] = pd.Field()
     height: float = pd.Field()

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pydantic as pd
 from edge_params import EdgeRefinementTypes
@@ -19,9 +19,15 @@ class MeshingParameters(Flow360BaseModel):
     2. Add default BETDisk refinement.
 
     Attributes:
-        edge_refinement (Optional[List[EdgeRefinementTypes]]): edge (1D) refinement
-        face_refinement (Optional[List[FaceRefinement]]): face (2D) refinement
-        zone_refinement (Optional[List[ZoneRefinement]]): zone (3D) refinement
+    ----------
+    farfield: Optional[Farfield]
+        Farfield type for meshing.
+    refinement_factor: Optional[pd.PositiveFloat]
+        If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh. For example, if refinementFactor=2, all spacings will be divided by 2**(1/3), so the resulting mesh will have approximately 2 times more nodes.
+    gap_treatment_strength: Optional[float]
+        Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.
+    refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]]
+        Refinements for meshing.
     """
 
     # Global fields:
@@ -29,6 +35,6 @@ class MeshingParameters(Flow360BaseModel):
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field()
     gap_treatment_strength: Optional[float] = pd.Field(ge=0, le=1)
 
-    edge_refinement: Optional[List[EdgeRefinementTypes]] = pd.Field()
-    face_refinement: Optional[List[FaceRefinement]] = pd.Field()
-    zone_refinement: Optional[List[ZoneRefinementTypes]] = pd.Field()
+    refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]] = (
+        pd.Field()
+    )  # Note: May need discriminator for performance??

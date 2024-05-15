@@ -1,6 +1,10 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
+from flow360.component.case import Case
 from flow360.component.simulation.material import Air
+from flow360.component.simulation.meshing_param.face_params import FaceRefinement
+from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.meshing_param.volume_params import BoxRefinement
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -10,6 +14,7 @@ from flow360.component.simulation.physics_components import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
+from flow360.component.simulation.primitives import Box
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.surfaces import (
@@ -23,22 +28,13 @@ from flow360.component.simulation.user_defined_dynamics import UserDefinedDynami
 from flow360.component.simulation.volumes import FluidDynamics, PorousMedium
 from flow360.component.surface_mesh import SurfaceMesh
 
-from flow360.component.simulation.zones import BoxZone
-
-from flow360.component.case import Case
-
-from flow360.component.simulation.meshing_param.params import MeshingParameters
-from flow360.component.simulation.meshing_param.face_params import FaceRefinement
-from flow360.component.simulation.meshing_param.volume_params import BoxRefinement
-
-
 ##:: Volume and Surface Definition ::##
 wing_surface = Surface(mesh_patch_name="1")
 slip_wall = Surface(mesh_patch_name="2")
 far_field = Surface(mesh_patch_name="3")
 
 
-porous_media_zone = BoxZone(
+porous_media_zone = Box(
     center=[0, 0, 0],
     lengths=[0.2, 0.3, 2],
 )

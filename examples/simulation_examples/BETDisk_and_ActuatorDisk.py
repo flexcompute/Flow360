@@ -1,6 +1,14 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
+from flow360.component.case import Case
 from flow360.component.simulation.material import Air
+from flow360.component.simulation.meshing_param.params import (
+    Farfield,
+    MeshingParameters,
+)
+from flow360.component.simulation.meshing_param.volume_params import (
+    CylindricalRefinement,
+)
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -10,29 +18,21 @@ from flow360.component.simulation.physics_components import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
+from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.surfaces import (
-    Surface,
-)
+from flow360.component.simulation.surfaces import Surface
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
-from flow360.component.simulation.volumes import BETDisk, ActuatorDisk
+from flow360.component.simulation.volumes import ActuatorDisk, BETDisk
 from flow360.component.surface_mesh import SurfaceMesh
-from flow360.component.simulation.zones import CylindricalZone
-from flow360.component.case import Case
-
-from flow360.component.simulation.meshing_param.params import MeshingParameters, Farfield
-from flow360.component.simulation.meshing_param.volume_params import RotorDisk
 
 fuselage = Surface(mesh_patch_name="fuselage")
 
-my_actuator_disk = CylindricalZone(
+my_actuator_disk = Cylinder(
     axis=(1, 1, 0), center=(0, 2, 1), height=1, inner_radius=0, outer_radius=2
 )
 
-my_BETDisk = CylindricalZone(
-    axis=(1, 1, 0), center=(0, -2, -2), height=1, inner_radius=0, outer_radius=3
-)
+my_BETDisk = Cylinder(axis=(1, 1, 0), center=(0, -2, -2), height=1, inner_radius=0, outer_radius=3)
 
 
 with SI_unit_system:
@@ -41,14 +41,14 @@ with SI_unit_system:
         meshing=MeshingParameters(
             refinement_factor=1,
             farfield=Farfield(type="auto"),
-            zone_refinement=[
-                RotorDisk(
+            refinements=[
+                CylindricalRefinement(
                     entities=[my_actuator_disk],
                     spacing_axial=my_actuator_disk.height / 1000,
                     spacing_radial=my_actuator_disk.outer_radius / 1000,
                     spacing_circumferential=my_actuator_disk.height / 2000,
                 ),
-                RotorDisk(
+                CylindricalRefinement(
                     entities=[my_BETDisk],
                     spacing_axial=my_BETDisk.height / 1100,
                     spacing_radial=my_BETDisk.outer_radius / 1200,

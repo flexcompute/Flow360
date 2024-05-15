@@ -19,34 +19,24 @@ class Transformation(Flow360BaseModel):
     angle_of_rotation: Optional[float] = pd.Field()
 
 
-class BoxRefinement(EntitiesBase):
-    type = pd.Field("box", frozen=True)
+class UniformRefinement(EntitiesBase):
+    """TODO: `type` can actually be infered from the type of entity passed in (Box or Cylinder)."""
+
+    type: str = pd.Field("NotSet")  # Should be "box" or "cylinder"
     spacing: pd.PositiveFloat = pd.Field()
     transformation: Optional[Transformation] = pd.Field()
 
 
-class CylinderRefinement(EntitiesBase):
-    """Note: `type` can actually be infered from the entity passed in (BoxZone or CylindricalZone). So there is no point differentiating `CylinderRefinement` from `BoxRefinement`"""
-
-    type = pd.Field("cylinder", frozen=True)
-    spacing: pd.PositiveFloat = pd.Field()
-
-
-class RotorDisk(EntitiesBase):
-    """:class: RotorDisk"""
+class CylindricalRefinement(EntitiesBase):
+    """:class: CylindricalRefinement
+    Note: This uniffies RotorDisk and SlidingInterface.
+    For SlidingInterface, enclosed_objects: Optional[List[EntitiesBase]] = pd.Field() will be infered from mesh data.
+    """
 
     spacing_axial: pd.PositiveFloat = pd.Field()
     spacing_radial: pd.PositiveFloat = pd.Field()
     spacing_circumferential: pd.PositiveFloat = pd.Field()
+    enclosed_objects: Optional[List[EntitiesBase]] = pd.Field(None)
 
 
-class SlidingInterface(EntitiesBase):
-    """:class: SlidingInterface for meshing"""
-
-    spacing_axial: pd.PositiveFloat = pd.Field()
-    spacing_radial: pd.PositiveFloat = pd.Field()
-    spacing_circumferential: pd.PositiveFloat = pd.Field()
-    enclosed_objects: Optional[List[EntitiesBase]] = pd.Field()
-
-
-ZoneRefinementTypes = Union[BoxRefinement, CylinderRefinement, RotorDisk, SlidingInterface]
+ZoneRefinementTypes = Union[UniformRefinement, CylindricalRefinement]

@@ -12,8 +12,8 @@ from flow360.component.simulation.base_model import Flow360BaseModel
 from flow360.component.simulation.entities_base import EntitiesBase
 from flow360.component.simulation.material import Material
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
-from flow360.component.simulation.zones import BoxZone, CylindricalZone
 
 
 class Volume(Flow360BaseModel):
@@ -37,7 +37,7 @@ class FluidDynamics(PhysicalVolumeBase):
     transition_model_solver: Optional[components.TransitionModelSolver] = pd.Field()
 
 
-class ActuatorDisk(FluidDynamics):
+class ActuatorDisk(PhysicalVolumeBase):
     """Same as Flow360Param ActuatorDisks.
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
@@ -45,7 +45,7 @@ class ActuatorDisk(FluidDynamics):
     pass
 
 
-class BETDisk(FluidDynamics):
+class BETDisk(PhysicalVolumeBase):
     """Same as Flow360Param BETDisk.
     Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
@@ -53,14 +53,12 @@ class BETDisk(FluidDynamics):
     pass
 
 
-class Rotation(FluidDynamics):
+class Rotation(PhysicalVolumeBase):
     """Similar to Flow360Param ReferenceFrame.
     Note that `center`, `axis`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
     Note: Should use the unit system to convert degree or degree per second to radian and radian per second
     """
 
-    # Can be number or mathematical expression.
-    rotation_per_second: Union[float, pd.StrictStr] = pd.Field()
     # (AKA omega) In conflict with `rotation_per_second`.
     angular_velocity: Union[float, pd.StrictStr] = pd.Field()
     # (AKA theta) Must be expression otherwise zone become static.

@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union, Literal
+from typing import List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 

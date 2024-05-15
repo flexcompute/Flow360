@@ -1,33 +1,30 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
+from flow360.component.case import Case
+from flow360.component.not_implemented import Geometry
+from flow360.component.simulation.meshing_param.params import (
+    Farfield,
+    MeshingParameters,
+)
+from flow360.component.simulation.meshing_param.volume_params import SlidingInterface
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
 from flow360.component.simulation.outputs import SurfaceOutput
-
+from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.surfaces import (
-    Surface,
-    Wall,
-)
+from flow360.component.simulation.surfaces import Surface, Wall
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
 from flow360.component.simulation.volumes import Rotation
-from flow360.component.not_implemented import Geometry
-from flow360.component.case import Case
-
-from flow360.component.simulation.zones import CylindricalZone
-
-from flow360.component.simulation.meshing_param.params import MeshingParameters, Farfield
-from flow360.component.simulation.meshing_param.volume_params import SlidingInterface
 
 wing_surface = Surface(mesh_patch_name="1")
 
-rotation_zone_inner = CylindricalZone(
+rotation_zone_inner = Cylinder(
     axis=(1, 1, 0), center=(0, 0, 0), height=1, inner_radius=0, outer_radius=2
 )
 
-rotation_zone_outer = CylindricalZone(
+rotation_zone_outer = Cylinder(
     axis=(0, 1, 0), center=(0, 0, 0), height=4, inner_radius=0, outer_radius=5
 )
 
