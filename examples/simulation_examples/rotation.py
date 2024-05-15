@@ -13,6 +13,10 @@ from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
 from flow360.component.simulation.outputs import SurfaceOutput
+from flow360.component.simulation.physics_components import (
+    NavierStokesSolver,
+    SpalartAllmaras,
+)
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
@@ -63,6 +67,20 @@ with SI_unit_system:
             mesh_unit=1 * u.m,
         ),
         volumes=[
+            FluidDynamics(
+                entities=["*"],  # This means we apply settings to all the volume zones
+                navier_stokes_solver=NavierStokesSolver(),
+                turbulence_model_solver=SpalartAllmaras(),
+                operating_condition=ExternalFlowOperatingConditions(
+                    Mach=0.3,
+                    temperature=288.15,
+                ),
+                reference_geometry=ReferenceGeometry(
+                    area=1,
+                    moment_length=2,
+                    mesh_unit=3 * u.m,
+                ),
+            ),
             Rotation(
                 entities=[rotation_zone_inner],
                 angular_velocity=5 * u.rpm,
