@@ -3,7 +3,7 @@ I want to perform mesh refinement study
 """
 
 from ..inputs import Geometry
-from ..mesh import FaceRefinement, MeshingParameters, ZoneRefinement
+from ..meshing_param.params import FaceRefinement, MeshingParameters, ZoneRefinement
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..simulation import Simulation
 
