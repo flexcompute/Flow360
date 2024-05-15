@@ -71,13 +71,13 @@ with SI_unit_system:
                 ),
                 turbulence_model_solver=SpalartAllmaras(),
                 material=Air(),
-                operating_condition=ExternalFlowOperatingConditions(  # Per volume override
+                operating_condition=ExternalFlowOperatingConditions(  # Each volume can override this setting
                     Mach=0.84,
                     temperature=288.15,
                     alpha=3.06 * u.deg,
                     # Reynolds=14.6e6 should be obtained from user
                 ),
-                reference_geometry=ReferenceGeometry(  # Per volume override
+                reference_geometry=ReferenceGeometry(  # Each volume can override this setting
                     area=1.15315084119231,
                     moment_length=(0.801672958512342, 0.801672958512342, 0.801672958512342),
                     mesh_unit=1 * u.m,

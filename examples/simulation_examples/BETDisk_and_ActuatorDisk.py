@@ -22,7 +22,7 @@ from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
-from flow360.component.simulation.volumes import ActuatorDisk, BETDisk
+from flow360.component.simulation.volumes import ActuatorDisk, BETDisk, FluidDynamics
 from flow360.component.surface_mesh import SurfaceMesh
 
 my_actuator_disk = Cylinder(
@@ -67,6 +67,23 @@ with SI_unit_system:
             mesh_unit=1 * u.m,
         ),
         volumes=[
+            FluidDynamics(
+                entities=["*"],  # This means we apply settings to all the volume zones
+                navier_stokes_solver=NavierStokesSolver(
+                    linear_solver=LinearSolver(absolute_tolerance=1e-10)
+                ),
+                turbulence_model_solver=SpalartAllmaras(),
+                material=Air(),
+                operating_condition=ExternalFlowOperatingConditions(
+                    Mach=0.3,
+                    temperature=288.15,
+                ),
+                reference_geometry=ReferenceGeometry(
+                    area=1,
+                    moment_length=2,
+                    mesh_unit=3 * u.m,
+                ),
+            ),
             BETDisk(
                 entities=[my_zone_for_BETDisk_1, my_zone_for_BETDisk_2],
                 rotation_direction_rule="leftHand",
