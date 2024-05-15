@@ -4,7 +4,7 @@ from flow360.component.case import Case
 from flow360.component.simulation.material import Air
 from flow360.component.simulation.meshing_param.face_params import FaceRefinement
 from flow360.component.simulation.meshing_param.params import MeshingParameters
-from flow360.component.simulation.meshing_param.volume_params import BoxRefinement
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -58,14 +58,14 @@ with SI_unit_system:
         # Global settings, skiped in current example
         meshing=MeshingParameters(
             refinement_factor=1,
-            face_refinement=[FaceRefinement(entities=[far_field], growth_rate=0.2)],
-            zone_refinement=[BoxRefinement(entities=[porous_media_zone], spacing=0.002)],
+            refinements=[
+                FaceRefinement(entities=[far_field], growth_rate=0.2),
+                UniformRefinement(entities=[porous_media_zone], spacing=0.002),
+            ],
         ),
-        operating_condition=None,
-        reference_geometry=None,
         volumes=[
             FluidDynamics(
-                entities=["*"],  # Selects all the volume zones
+                entities=["*"],  # This means we apply settings to all the volume zones
                 navier_stokes_solver=NavierStokesSolver(
                     linear_solver=LinearSolver(absolute_tolerance=1e-10)
                 ),

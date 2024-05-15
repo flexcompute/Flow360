@@ -6,7 +6,9 @@ from flow360.component.simulation.meshing_param.params import (
     Farfield,
     MeshingParameters,
 )
-from flow360.component.simulation.meshing_param.volume_params import SlidingInterface
+from flow360.component.simulation.meshing_param.volume_params import (
+    CylindricalRefinement,
+)
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -35,17 +37,17 @@ with SI_unit_system:
         meshing=MeshingParameters(
             refinement_factor=1,
             farfield=Farfield(type="auto"),
-            zone_refinement=[
-                SlidingInterface(
+            refinements=[
+                CylindricalRefinement(
                     entities=[rotation_zone_inner],
-                    enclosed_objects=[wing_surface],
+                    # enclosed_objects=[wing_surface], # this will be automatically populated by analysing topology
                     spacing_axial=0.1,
                     spacing_radial=0.1,
                     spacing_circumferential=0.2,
                 ),
-                SlidingInterface(
+                CylindricalRefinement(
                     entities=[rotation_zone_outer],
-                    enclosed_objects=[rotation_zone_inner],  # Or should this be
+                    # enclosed_objects=[rotation_zone_inner], # this will be automatically populated by analysing topology
                     spacing_axial=0.1,
                     spacing_radial=0.1,
                     spacing_circumferential=0.2,
@@ -63,7 +65,7 @@ with SI_unit_system:
         volumes=[
             Rotation(
                 entities=[rotation_zone_inner],
-                rotation_per_second=5,
+                angular_velocity=5 * u.rpm,
             ),
             Rotation(
                 entities=[rotation_zone_outer],

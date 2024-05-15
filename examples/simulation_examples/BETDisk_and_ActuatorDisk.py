@@ -21,18 +21,20 @@ from flow360.component.simulation.physics_components import (
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.surfaces import Surface
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
 from flow360.component.simulation.volumes import ActuatorDisk, BETDisk
 from flow360.component.surface_mesh import SurfaceMesh
-
-fuselage = Surface(mesh_patch_name="fuselage")
 
 my_actuator_disk = Cylinder(
     axis=(1, 1, 0), center=(0, 2, 1), height=1, inner_radius=0, outer_radius=2
 )
 
-my_BETDisk = Cylinder(axis=(1, 1, 0), center=(0, -2, -2), height=1, inner_radius=0, outer_radius=3)
+my_zone_for_BETDisk_1 = Cylinder(
+    axis=(1, 1, 0), center=(0, -2, -2), height=1, inner_radius=0, outer_radius=3
+)
+my_zone_for_BETDisk_2 = my_zone_for_BETDisk_1.copy(
+    center=(0, 0, 2)
+)  # Shifted the center to mimic array of BETDisk
 
 
 with SI_unit_system:
@@ -49,10 +51,10 @@ with SI_unit_system:
                     spacing_circumferential=my_actuator_disk.height / 2000,
                 ),
                 CylindricalRefinement(
-                    entities=[my_BETDisk],
-                    spacing_axial=my_BETDisk.height / 1100,
-                    spacing_radial=my_BETDisk.outer_radius / 1200,
-                    spacing_circumferential=my_BETDisk.height / 2300,
+                    entities=[my_zone_for_BETDisk_1, my_zone_for_BETDisk_2],
+                    spacing_axial=my_zone_for_BETDisk_1.height / 1100,
+                    spacing_radial=my_zone_for_BETDisk_1.outer_radius / 1200,
+                    spacing_circumferential=my_zone_for_BETDisk_1.height / 2300,
                 ),
             ],
         ),
@@ -66,24 +68,19 @@ with SI_unit_system:
         ),
         volumes=[
             BETDisk(
-                entities=[my_BETDisk],
-                navier_stokes_solver=NavierStokesSolver(
-                    linear_solver=LinearSolver(absolute_tolerance=1e-10)
-                ),
-                turbulence_model_solver=SpalartAllmaras(),
-                material=Air(),
+                entities=[my_zone_for_BETDisk_1, my_zone_for_BETDisk_2],
                 rotation_direction_rule="leftHand",
-                center_of_rotation=my_BETDisk.center,
-                axis_of_rotation=my_BETDisk.axis,  # This should be automatic?
+                # `center_of_rotation` will be populated by entities center
+                # `axis_of_rotation` will be populated by entities axis
                 number_of_blades=3,
-                radius=my_BETDisk.outer_radius / 1.1,
+                radius=2.5,  # If left blank, it will be entities' outer radius
                 omega=5,
                 chord_ref=14 * u.inch,
-                thickness=my_BETDisk.height,
+                thickness=0.9,  # If left blank, it will be entities' height
                 n_loading_nodes=20,
-                mach_numbers=0.4,
-                reynolds_numbers=1000,
-                twists=...,
+                mach_numbers=[0.4],
+                reynolds_numbers=[1000],
+                twists=...,  # Planned for loading BET setting from files.
                 chords=...,
                 alphas=...,
                 sectional_radiuses=...,
