@@ -5,7 +5,6 @@ Geometry component
 from __future__ import annotations
 
 import os
-import re
 from typing import List, Union
 
 from ..cloud.rest_api import RestApi
@@ -13,43 +12,12 @@ from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .interfaces import GeometryInterface
 from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
-from .utils import shared_account_confirm_proceed, validate_type
-
-SUPPORTED_GEOMETRY_FILE_PATTERNS = [
-    ".sat",
-    ".sab",
-    ".asat",
-    ".asab",
-    ".iam",
-    ".catpart",
-    ".catproduct",
-    ".igs",
-    ".iges",
-    ".gt",
-    ".prt",
-    ".prt.*",
-    ".asm.*",
-    ".par",
-    ".asm",
-    ".psm",
-    ".sldprt",
-    ".sldasm",
-    ".stp",
-    ".step",
-    ".x_t",
-    ".xmt_txt",
-    ".x_b",
-    ".xmt_bin",
-    ".3dm",
-    ".ipt",
-]
-
-
-def _match_file_pattern(patterns, filename):
-    for pattern in patterns:
-        if re.search(pattern + "$", filename.lower()) is not None:
-            return True
-    return False
+from .utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
+    match_file_pattern,
+    shared_account_confirm_proceed,
+    validate_type,
+)
 
 
 class Geometry(Flow360Resource):
@@ -93,9 +61,9 @@ class Geometry(Flow360Resource):
         Complete geometry files upload
         :return:
         """
-        for remote_file_name in remote_file_names:
-            resp = self.post({}, method=f"completeUpload?fileName={remote_file_name}")
-            self._info = GeometryMeta(**resp)
+        remote_file_names_as_string = ",".join(remote_file_names).rstrip(",")
+        resp = self.post({}, method=f"completeUpload?fileNames={remote_file_names_as_string}")
+        self._info = GeometryMeta(**resp)
 
     @classmethod
     def from_cloud(cls, geometry_id: str):
@@ -112,6 +80,7 @@ class Geometry(Flow360Resource):
         file_names: Union[List[str], str],
         name: str = None,
         tags: List[str] = None,
+        solver_version=None,
     ):
         """
         Create geometry from geometry files
@@ -127,6 +96,7 @@ class Geometry(Flow360Resource):
             file_names=file_names,
             name=name,
             tags=tags,
+            solver_version=solver_version,
         )
 
 
@@ -172,7 +142,7 @@ class GeometryDraft(ResourceDraft):
             raise Flow360FileError("file_names field has to be a list.")
         for geometry_file in self.file_names:
             _, ext = os.path.splitext(geometry_file)
-            if not _match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
+            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
                 raise Flow360FileError(
                     "Unsupported geometry file extensions: {}. Supported: [{}].".format(
                         ext.lower(), ", ".join(SUPPORTED_GEOMETRY_FILE_PATTERNS)
@@ -218,7 +188,7 @@ class GeometryDraft(ResourceDraft):
             raise Flow360ValueError("User aborted resource submit.")
 
         data = {
-            "name": self.name,
+            "geometryName": self.name,
             "tags": self.tags,
         }
 

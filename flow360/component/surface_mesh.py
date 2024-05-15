@@ -22,7 +22,12 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .utils import shared_account_confirm_proceed, validate_type
+from .utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
+    match_file_pattern,
+    shared_account_confirm_proceed,
+    validate_type,
+)
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
 
@@ -90,11 +95,14 @@ class SurfaceMeshDraft(ResourceDraft):
         elif self.surface_mesh_file is not None:
             self._validate_surface_mesh()
 
+    # pylint: disable=consider-using-f-string
     def _validate_geometry(self):
         _, ext = os.path.splitext(self.geometry_file)
-        if ext not in [".csm", ".egads"]:
+        if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, self.geometry_file):
             raise Flow360ValueError(
-                f"Unsupported geometry file extensions: {ext}. Supported: [csm, egads]."
+                "Unsupported geometry file extensions: {}, Supported: [{}].".format(
+                    ext.lower(), ", ".join(SUPPORTED_GEOMETRY_FILE_PATTERNS)
+                )
             )
 
         if not os.path.exists(self.geometry_file):
