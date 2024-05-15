@@ -40,6 +40,8 @@ jobs:
           cache: 'poetry'
       - name: Install isort
         run: poetry install --only=dev
+      - name: Check isort version
+        run: poetry run isort --version 
       - name: Run isort
         run: poetry run isort . --check-only
 
