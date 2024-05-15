@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -14,17 +14,11 @@ class Farfield(Flow360BaseModel):
     type: Literal["auto", "quasi-3d", "user-defined"] = pd.Field()
 
 
-class Transformation(Flow360BaseModel):
-    axis_of_rotation: Optional[Tuple[float, float, float]] = pd.Field()
-    angle_of_rotation: Optional[float] = pd.Field()
-
-
 class UniformRefinement(EntitiesBase):
     """TODO: `type` can actually be infered from the type of entity passed in (Box or Cylinder)."""
 
     type: str = pd.Field("NotSet")  # Should be "box" or "cylinder"
     spacing: pd.PositiveFloat = pd.Field()
-    transformation: Optional[Transformation] = pd.Field()
 
 
 class CylindricalRefinement(EntitiesBase):

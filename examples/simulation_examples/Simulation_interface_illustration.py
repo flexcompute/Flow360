@@ -37,6 +37,7 @@ far_field = Surface(mesh_patch_name="3")
 porous_media_zone = Box(
     center=[0, 0, 0],
     lengths=[0.2, 0.3, 2],
+    axes=[[0, 1, 0], [0, 0, 1]],
 )
 
 ##:: Output entities definition ::##
@@ -85,7 +86,7 @@ with SI_unit_system:
             ),
             PorousMedium(
                 entities=[porous_media_zone],
-                axes=[[0, 1, 0], [0, 0, 1]],
+                # axes=[[0, 1, 0], [0, 0, 1]], This comes from Box definition
                 darcy_coefficient=[1e6, 0, 0],
                 forchheimer_coefficient=[1, 0, 0],
                 volumetric_heat_source=0,
