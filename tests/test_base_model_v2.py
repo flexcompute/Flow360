@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 
 import pydantic as pd
@@ -33,17 +34,28 @@ def test_copy():
 
 def test_from_file():
     file_content = {"some_value": 321}
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=True) as temp_file:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
         temp_file.flush()
-        base_model = BaseModelTestModel.from_file(temp_file.name)
-        assert base_model.some_value == 321
+        temp_file_name = temp_file.name
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=True) as temp_file:
+    try:
+        base_model = BaseModelTestModel.from_file(temp_file_name)
+        assert base_model.some_value == 321
+    finally:
+        os.remove(temp_file_name)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
         yaml.dump(file_content, temp_file)
         temp_file.flush()
-        base_model = BaseModelTestModel.from_file(temp_file.name)
+        temp_file_name = temp_file.name
+
+    try:
+        base_model = BaseModelTestModel.from_file(temp_file_name)
         assert base_model.some_value == 321
+    finally:
+        os.remove(temp_file_name)
 
 
 def test_dict_from_file():
@@ -51,33 +63,54 @@ def test_dict_from_file():
         "some_value": 3210,
         "hash": "e6d346f112fc2ba998a286f9736ce389abb79f154dc84a104d3b4eb8ba4d4529",
     }
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=True) as temp_file:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
         temp_file.flush()
-        base_model_dict = BaseModelTestModel.dict_from_file(temp_file.name)
-        assert base_model_dict["some_value"] == 3210
+        temp_file_name = temp_file.name
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=True) as temp_file:
+    try:
+        base_model_dict = BaseModelTestModel.dict_from_file(temp_file_name)
+        assert base_model_dict["some_value"] == 3210
+    finally:
+        os.remove(temp_file_name)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
         yaml.dump(file_content, temp_file)
         temp_file.flush()
-        base_model_dict = BaseModelTestModel.dict_from_file(temp_file.name)
+        temp_file_name = temp_file.name
+
+    try:
+        base_model_dict = BaseModelTestModel.dict_from_file(temp_file_name)
         assert base_model_dict["some_value"] == 3210
+    finally:
+        os.remove(temp_file_name)
 
 
 def test_to_file():
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=True) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         base_model = BaseModelTestModel(some_value=1230)
-        base_model.to_file(temp_file.name)
-        with open(temp_file.name) as fp:
+        temp_file_name = temp_file.name
+
+    try:
+        base_model.to_file(temp_file_name)
+        with open(temp_file_name) as fp:
             base_model_dict = json.load(fp)
             assert base_model_dict["some_value"] == 1230
             assert "hash" in base_model_dict
+    finally:
+        os.remove(temp_file_name)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=True) as temp_file:
-        base_model.to_file(temp_file.name)
-        with open(temp_file.name) as fp:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
+        temp_file_name = temp_file.name
+
+    try:
+        base_model.to_file(temp_file_name)
+        with open(temp_file_name) as fp:
             base_model_dict = yaml.load(fp, Loader=yaml.Loader)
             assert base_model_dict["some_value"] == 1230
+    finally:
+        os.remove(temp_file_name)
 
 
 def test_from_json_yaml():
@@ -86,28 +119,41 @@ def test_from_json_yaml():
         "hash": "e6d346f112fc2ba998a286f9736ce389abb79f154dc84a104d3b4eb8ba4d4529",
     }
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=True) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
         temp_file.flush()
-        base_model = BaseModelTestModel.from_json(temp_file.name)
+        temp_file_name = temp_file.name
+
+    try:
+        base_model = BaseModelTestModel.from_json(temp_file_name)
         assert base_model.some_value == 3210
+    finally:
+        os.remove(temp_file_name)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
         yaml.dump(file_content, temp_file)
         temp_file.flush()
-        base_model = BaseModelTestModel.from_yaml(temp_file.name)
+        temp_file_name = temp_file.name
+
+    try:
+        base_model = BaseModelTestModel.from_yaml(temp_file_name)
         assert base_model.some_value == 3210
+    finally:
+        os.remove(temp_file_name)
 
     file_content = {"some_value": "43210", "hash": "aasdasd"}
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
         temp_file.flush()
-        print(json.dumps(file_content, indent=4))
-        with pytest.raises(
-            pd.ValidationError,
-            match=r" Input should be a valid number",
-        ):
-            base_model = BaseModelTestModel.from_json(temp_file.name)
+        temp_file_name = temp_file.name
+
+    print(json.dumps(file_content, indent=4))
+    try:
+        with pytest.raises(pd.ValidationError, match=r" Input should be a valid number"):
+            base_model = BaseModelTestModel.from_json(temp_file_name)
+    finally:
+        os.remove(temp_file_name)
 
 
 def test_add_type_field():
