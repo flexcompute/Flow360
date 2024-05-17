@@ -126,7 +126,6 @@ def test_updater():
 
 def test_updater_from_files():
     files = [
-        "case_20.json",
         "case_10.json",
         "case_13.json",
         "case_18.json",
@@ -137,6 +136,7 @@ def test_updater_from_files():
         "case_unsteady.json",
         "case_customDynamics1.json",
         "case_HeatTransfer.json",
+        "case_20.json",
     ]
 
     for file in files:
