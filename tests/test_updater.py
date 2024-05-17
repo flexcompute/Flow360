@@ -168,6 +168,11 @@ def test_updater_from_files():
         == LinearSolverLegacy.__fields__["max_iterations"].default
     )
 
+    ##:: case_18.json has empty heatEquationSolver,
+    params = fl.Flow360Params("data/cases/case_18.json")
+    assert params.heat_equation_solver is None
+    assert params.transition_model_solver is None
+
 
 def test_version_update():
     files = ["test_version_b16.json"]
