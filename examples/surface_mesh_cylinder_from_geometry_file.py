@@ -9,4 +9,11 @@ geometry = Geometry.from_file(
 )
 geometry = geometry.submit()
 
-print(geometry)
+params = fl.SurfaceMeshingParams(CylinderGeometry.surface_json)
+surface_mesh = fl.SurfaceMesh.create(
+    geometry_id=geometry.id, params=params, name="cylinder-geometry-new-python-client"
+)
+surface_mesh = surface_mesh.submit()
+
+print(surface_mesh)
+print(surface_mesh.params)

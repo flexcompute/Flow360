@@ -57,6 +57,7 @@ class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
         return SurfaceMesh(self.id)
 
 
+# pylint: disable=too-many-instance-attributes
 class SurfaceMeshDraft(ResourceDraft):
     """
     Surface Mesh Draft component
@@ -66,6 +67,7 @@ class SurfaceMeshDraft(ResourceDraft):
     def __init__(
         self,
         geometry_file: str = None,
+        geometry_id: str = None,
         surface_mesh_file: str = None,
         params: SurfaceMeshingParams = None,
         name: str = None,
@@ -73,6 +75,7 @@ class SurfaceMeshDraft(ResourceDraft):
         solver_version=None,
     ):
         self._geometry_file = geometry_file
+        self._geometry_id = geometry_id
         self._surface_mesh_file = surface_mesh_file
         self.name = name
         self.tags = tags
@@ -86,11 +89,28 @@ class SurfaceMeshDraft(ResourceDraft):
 
     def _validate(self):
         if self.geometry_file is not None:
-            self._validate_geometry()
+            self._validate_geometry_file()
+        elif self.geometry_id is not None:
+            self._validate_geometry_id()
         elif self.surface_mesh_file is not None:
             self._validate_surface_mesh()
+        else:
+            raise Flow360ValueError(
+                "One of geometry_file, geometry_id and surface_mesh_file has to be given to create a surface mesh."
+            )
 
-    def _validate_geometry(self):
+        if self.geometry_file is not None or self.geometry_id is not None:
+            if self.params is None:
+                raise Flow360ValueError(
+                    "params must be specified if either geometry_file or geometry_id is used to create a surface mesh."
+                )
+
+    def _validate_geometry_id(self):
+        if self.name is None:
+            raise Flow360ValueError("Surface mesh created from geometry id must be given a name.")
+
+    # pylint: disable=consider-using-f-string
+    def _validate_geometry_file(self):
         _, ext = os.path.splitext(self.geometry_file)
         if ext not in [".csm", ".egads"]:
             raise Flow360ValueError(
@@ -119,6 +139,11 @@ class SurfaceMeshDraft(ResourceDraft):
     def geometry_file(self) -> str:
         """geometry file"""
         return self._geometry_file
+
+    @property
+    def geometry_id(self) -> str:
+        """geometry id"""
+        return self._geometry_id
 
     @property
     def surface_mesh_file(self) -> str:
@@ -161,6 +186,9 @@ class SurfaceMeshDraft(ResourceDraft):
         if self.solver_version:
             data["solverVersion"] = self.solver_version
 
+        if self.geometry_id is not None:
+            data["geometryId"] = self.geometry_id
+
         if self.params is not None:
             self.validator_api(self.params, solver_version=self.solver_version)
 
@@ -169,6 +197,7 @@ class SurfaceMeshDraft(ResourceDraft):
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
 
+        remote_file_name = None
         if self.geometry_file is not None:
             _, ext = os.path.splitext(self.geometry_file)
             remote_file_name = f"geometry{ext}"
@@ -178,10 +207,11 @@ class SurfaceMeshDraft(ResourceDraft):
             remote_file_name = f"surface_mesh{ext}"
             file_name_to_upload = self.surface_mesh_file
 
-        submitted_mesh._upload_file(
-            remote_file_name, file_name_to_upload, progress_callback=progress_callback
-        )
-        submitted_mesh._complete_upload(remote_file_name)
+        if remote_file_name is not None:
+            submitted_mesh._upload_file(
+                remote_file_name, file_name_to_upload, progress_callback=progress_callback
+            )
+            submitted_mesh._complete_upload(remote_file_name)
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
 
@@ -312,8 +342,9 @@ class SurfaceMesh(Flow360Resource):
     @classmethod
     def create(
         cls,
-        geometry_file: str,
-        params: SurfaceMeshingParams,
+        geometry_file: str = None,
+        geometry_id: str = None,
+        params: SurfaceMeshingParams = None,
         name: str = None,
         tags: List[str] = None,
         solver_version: str = None,
@@ -340,6 +371,7 @@ class SurfaceMesh(Flow360Resource):
         """
         new_surface_mesh = SurfaceMeshDraft(
             geometry_file=geometry_file,
+            geometry_id=geometry_id,
             params=params,
             name=name,
             tags=tags,
