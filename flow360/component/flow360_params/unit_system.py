@@ -13,7 +13,12 @@ from threading import Lock
 from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
-import pydantic.v1 as pd
+import pydantic.v1 as pd1
+
+from pydantic_core import CoreSchema, core_schema
+from pydantic import GetCoreSchemaHandler
+
+
 import unyt as u
 
 from ...log import log
@@ -253,6 +258,27 @@ class ValidatedType(metaclass=ABCMeta):
         """validation"""
 
 
+    @classmethod
+    def validate_v2(cls, value, *args):
+        print(f'calling validator_v2, {args=}')
+        return cls.validate(value)
+
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        print('running pydantic v2 validation')
+        return core_schema.with_info_before_validator_function(cls.validate_v2, handler(core_schema.any_schema()))
+
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls):
+        pass
+
+
+
+
 class DimensionedType(ValidatedType):
     """
     :class: Base class for dimensioned values
@@ -313,13 +339,13 @@ class DimensionedType(ValidatedType):
             """Get a dynamically created metaclass representing the constraint"""
 
             class _ConType:
-                type_ = pd.confloat(**kwargs)
+                type_ = pd1.confloat(**kwargs)
 
             def validate(con_cls, value):
                 """Additional validator for value"""
                 dimensioned_value = dim_type.validate(value)
-                pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
-                pd.validators.float_finite_validator(
+                pd1.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
+                pd1.validators.float_finite_validator(
                     dimensioned_value.value, con_cls.con_type, None
                 )
                 return dimensioned_value
@@ -342,6 +368,7 @@ class DimensionedType(ValidatedType):
             cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(
                 cls_obj, field_schema, field
             )
+            cls_obj.__get_pydantic_json_schema__ = lambda *args: None
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
 
             return cls_obj
@@ -440,6 +467,7 @@ class DimensionedType(ValidatedType):
             cls_obj.allow_zero_coord = allow_zero_coord
             cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = __modify_schema__
+            cls_obj.__get_pydantic_json_schema__ = lambda *args: None
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
             return cls_obj
 
@@ -969,34 +997,34 @@ class BaseSystemType(Enum):
     NONE = None
 
 
-class UnitSystem(pd.BaseModel):
+class UnitSystem(pd1.BaseModel):
     """
     :class: Customizable unit system containing definitions for most atomic and complex dimensions.
     """
 
-    mass: MassType = pd.Field()
-    length: LengthType = pd.Field()
-    time: TimeType = pd.Field()
-    temperature: TemperatureType = pd.Field()
-    velocity: VelocityType = pd.Field()
-    area: AreaType = pd.Field()
-    force: ForceType = pd.Field()
-    pressure: PressureType = pd.Field()
-    density: DensityType = pd.Field()
-    viscosity: ViscosityType = pd.Field()
-    power: PowerType = pd.Field()
-    moment: MomentType = pd.Field()
-    angular_velocity: AngularVelocityType = pd.Field()
-    heat_flux: HeatFluxType = pd.Field()
-    heat_source: HeatSourceType = pd.Field()
-    heat_capacity: HeatCapacityType = pd.Field()
-    thermal_conductivity: ThermalConductivityType = pd.Field()
-    inverse_area: InverseAreaType = pd.Field()
-    inverse_length: InverseLengthType = pd.Field()
+    mass: MassType = pd1.Field()
+    length: LengthType = pd1.Field()
+    time: TimeType = pd1.Field()
+    temperature: TemperatureType = pd1.Field()
+    velocity: VelocityType = pd1.Field()
+    area: AreaType = pd1.Field()
+    force: ForceType = pd1.Field()
+    pressure: PressureType = pd1.Field()
+    density: DensityType = pd1.Field()
+    viscosity: ViscosityType = pd1.Field()
+    power: PowerType = pd1.Field()
+    moment: MomentType = pd1.Field()
+    angular_velocity: AngularVelocityType = pd1.Field()
+    heat_flux: HeatFluxType = pd1.Field()
+    heat_source: HeatSourceType = pd1.Field()
+    heat_capacity: HeatCapacityType = pd1.Field()
+    thermal_conductivity: ThermalConductivityType = pd1.Field()
+    inverse_area: InverseAreaType = pd1.Field()
+    inverse_length: InverseLengthType = pd1.Field()
 
-    name: Literal["Custom"] = pd.Field("Custom")
+    name: Literal["Custom"] = pd1.Field("Custom")
 
-    _verbose: bool = pd.PrivateAttr(True)
+    _verbose: bool = pd1.PrivateAttr(True)
 
     _dim_names = [
         "mass",
@@ -1063,8 +1091,8 @@ class UnitSystem(pd.BaseModel):
     def from_dict(cls, **kwargs):
         """Construct a unit system from the provided dictionary"""
 
-        class _TemporaryModel(pd.BaseModel):
-            unit_system: UnitSystemType = pd.Field(discriminator="name")
+        class _TemporaryModel(pd1.BaseModel):
+            unit_system: UnitSystemType = pd1.Field(discriminator="name")
 
         params = {"unit_system": kwargs}
         model = _TemporaryModel(**params)
@@ -1173,36 +1201,36 @@ _flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
 
 
 # pylint: disable=too-many-instance-attributes
-class Flow360ConversionUnitSystem(pd.BaseModel):
+class Flow360ConversionUnitSystem(pd1.BaseModel):
     """
     Flow360ConversionUnitSystem class for setting convertion rates for converting from dimensioned values into flow360
     values
     """
 
-    base_length: float = pd.Field(np.inf, target_dimension=Flow360LengthUnit)
-    base_mass: float = pd.Field(np.inf, target_dimension=Flow360MassUnit)
-    base_time: float = pd.Field(np.inf, target_dimension=Flow360TimeUnit)
-    base_temperature: float = pd.Field(np.inf, target_dimension=Flow360TemperatureUnit)
-    base_velocity: float = pd.Field(np.inf, target_dimension=Flow360VelocityUnit)
-    base_area: float = pd.Field(np.inf, target_dimension=Flow360AreaUnit)
-    base_force: float = pd.Field(np.inf, target_dimension=Flow360ForceUnit)
-    base_density: float = pd.Field(np.inf, target_dimension=Flow360DensityUnit)
-    base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
-    base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
-    base_power: float = pd.Field(np.inf, target_dimension=Flow360PowerUnit)
-    base_moment: float = pd.Field(np.inf, target_dimension=Flow360MomentUnit)
-    base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
-    base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
-    base_heat_source: float = pd.Field(np.inf, target_dimension=Flow360HeatSourceUnit)
-    base_heat_capacity: float = pd.Field(np.inf, target_dimension=Flow360HeatCapacityUnit)
-    base_thermal_conductivity: float = pd.Field(
+    base_length: float = pd1.Field(np.inf, target_dimension=Flow360LengthUnit)
+    base_mass: float = pd1.Field(np.inf, target_dimension=Flow360MassUnit)
+    base_time: float = pd1.Field(np.inf, target_dimension=Flow360TimeUnit)
+    base_temperature: float = pd1.Field(np.inf, target_dimension=Flow360TemperatureUnit)
+    base_velocity: float = pd1.Field(np.inf, target_dimension=Flow360VelocityUnit)
+    base_area: float = pd1.Field(np.inf, target_dimension=Flow360AreaUnit)
+    base_force: float = pd1.Field(np.inf, target_dimension=Flow360ForceUnit)
+    base_density: float = pd1.Field(np.inf, target_dimension=Flow360DensityUnit)
+    base_pressure: float = pd1.Field(np.inf, target_dimension=Flow360PressureUnit)
+    base_viscosity: float = pd1.Field(np.inf, target_dimension=Flow360ViscosityUnit)
+    base_power: float = pd1.Field(np.inf, target_dimension=Flow360PowerUnit)
+    base_moment: float = pd1.Field(np.inf, target_dimension=Flow360MomentUnit)
+    base_angular_velocity: float = pd1.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
+    base_heat_flux: float = pd1.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
+    base_heat_source: float = pd1.Field(np.inf, target_dimension=Flow360HeatSourceUnit)
+    base_heat_capacity: float = pd1.Field(np.inf, target_dimension=Flow360HeatCapacityUnit)
+    base_thermal_conductivity: float = pd1.Field(
         np.inf, target_dimension=Flow360ThermalConductivityUnit
     )
-    base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
-    base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
+    base_inverse_area: float = pd1.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
+    base_inverse_length: float = pd1.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
 
-    registry: Any = pd.Field(allow_mutation=False)
-    conversion_system: Any = pd.Field(allow_mutation=False)
+    registry: Any = pd1.Field(allow_mutation=False)
+    conversion_system: Any = pd1.Field(allow_mutation=False)
 
     class Config:  # pylint: disable=too-few-public-methods
         """config"""
@@ -1249,7 +1277,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         super().__init__(registry=registry, conversion_system=conversion_system)
 
     # pylint: disable=no-self-argument
-    @pd.validator("*")
+    @pd1.validator("*")
     def assign_conversion_rate(cls, value, values, field):
         """
         Pydantic validator for assigning conversion rates to a specific unit in the registry.
@@ -1266,25 +1294,25 @@ flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 
 
 class _PredefinedUnitSystem(UnitSystem):
-    mass: MassType = pd.Field(exclude=True)
-    length: LengthType = pd.Field(exclude=True)
-    time: TimeType = pd.Field(exclude=True)
-    temperature: TemperatureType = pd.Field(exclude=True)
-    velocity: VelocityType = pd.Field(exclude=True)
-    area: AreaType = pd.Field(exclude=True)
-    force: ForceType = pd.Field(exclude=True)
-    pressure: PressureType = pd.Field(exclude=True)
-    density: DensityType = pd.Field(exclude=True)
-    viscosity: ViscosityType = pd.Field(exclude=True)
-    power: PowerType = pd.Field(exclude=True)
-    moment: MomentType = pd.Field(exclude=True)
-    angular_velocity: AngularVelocityType = pd.Field(exclude=True)
-    heat_flux: HeatFluxType = pd.Field(exclude=True)
-    heat_source: HeatSourceType = pd.Field(exclude=True)
-    heat_capacity: HeatCapacityType = pd.Field(exclude=True)
-    thermal_conductivity: ThermalConductivityType = pd.Field(exclude=True)
-    inverse_area: InverseAreaType = pd.Field(exclude=True)
-    inverse_length: InverseLengthType = pd.Field(exclude=True)
+    mass: MassType = pd1.Field(exclude=True)
+    length: LengthType = pd1.Field(exclude=True)
+    time: TimeType = pd1.Field(exclude=True)
+    temperature: TemperatureType = pd1.Field(exclude=True)
+    velocity: VelocityType = pd1.Field(exclude=True)
+    area: AreaType = pd1.Field(exclude=True)
+    force: ForceType = pd1.Field(exclude=True)
+    pressure: PressureType = pd1.Field(exclude=True)
+    density: DensityType = pd1.Field(exclude=True)
+    viscosity: ViscosityType = pd1.Field(exclude=True)
+    power: PowerType = pd1.Field(exclude=True)
+    moment: MomentType = pd1.Field(exclude=True)
+    angular_velocity: AngularVelocityType = pd1.Field(exclude=True)
+    heat_flux: HeatFluxType = pd1.Field(exclude=True)
+    heat_source: HeatSourceType = pd1.Field(exclude=True)
+    heat_capacity: HeatCapacityType = pd1.Field(exclude=True)
+    thermal_conductivity: ThermalConductivityType = pd1.Field(exclude=True)
+    inverse_area: InverseAreaType = pd1.Field(exclude=True)
+    inverse_length: InverseLengthType = pd1.Field(exclude=True)
 
     def system_repr(self):
         return self.name
@@ -1293,7 +1321,7 @@ class _PredefinedUnitSystem(UnitSystem):
 class SIUnitSystem(_PredefinedUnitSystem):
     """:class: `SIUnitSystem` predefined SI system wrapper"""
 
-    name: Literal["SI"] = pd.Field("SI", const=True)
+    name: Literal["SI"] = pd1.Field("SI", const=True)
 
     def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
@@ -1310,7 +1338,7 @@ class SIUnitSystem(_PredefinedUnitSystem):
 class CGSUnitSystem(_PredefinedUnitSystem):
     """:class: `CGSUnitSystem` predefined CGS system wrapper"""
 
-    name: Literal["CGS"] = pd.Field("CGS", const=True)
+    name: Literal["CGS"] = pd1.Field("CGS", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.CGS)
@@ -1327,7 +1355,7 @@ class CGSUnitSystem(_PredefinedUnitSystem):
 class ImperialUnitSystem(_PredefinedUnitSystem):
     """:class: `ImperialUnitSystem` predefined imperial system wrapper"""
 
-    name: Literal["Imperial"] = pd.Field("Imperial", const=True)
+    name: Literal["Imperial"] = pd1.Field("Imperial", const=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.IMPERIAL)
@@ -1344,7 +1372,7 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
 class Flow360UnitSystem(_PredefinedUnitSystem):
     """:class: `Flow360UnitSystem` predefined flow360 system wrapper"""
 
-    name: Literal["Flow360"] = pd.Field("Flow360", const=True)
+    name: Literal["Flow360"] = pd1.Field("Flow360", const=True)
 
     def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
