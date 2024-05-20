@@ -20,7 +20,7 @@ set_logging_level("DEBUG")
 
 
 class AssetBase(metaclass=ABCMeta):
-    _registry: EntityRegistry  # TODO: Try no init?
+    _registry: EntityRegistry
 
     def __init__(self):
         self._registry = EntityRegistry()
