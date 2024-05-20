@@ -10,6 +10,8 @@ from typing import Iterator, List, Union
 
 import pydantic.v1 as pd
 
+from flow360.flags import Flags
+
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
@@ -163,6 +165,9 @@ class SurfaceMeshDraft(ResourceDraft):
 
         if self.params is not None:
             self.validator_api(self.params, solver_version=self.solver_version)
+
+        if Flags.beta_features():
+            data["version"] = self.params.version
 
         resp = RestApi(SurfaceMeshInterface.endpoint).post(data)
         info = SurfaceMeshMeta(**resp)
