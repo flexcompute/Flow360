@@ -15,8 +15,8 @@ from typing import Any, Collection, List, Literal, Union
 import numpy as np
 import pydantic.v1 as pd1
 
-from pydantic_core import CoreSchema, core_schema
-from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema, InitErrorDetails
+from pydantic import GetCoreSchemaHandler, ValidationError
 
 
 import unyt as u
@@ -261,20 +261,25 @@ class ValidatedType(metaclass=ABCMeta):
     @classmethod
     def validate_v2(cls, value, *args):
         print(f'calling validator_v2, {args=}')
-        return cls.validate(value)
+        try:
+            return cls.validate(value)
+        except (TypeError, ValueError) as err:
+            details = InitErrorDetails(type="value_error", ctx={"error": err})
+            raise ValidationError.from_exception_data('validation error', [details])
 
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
+        cls, *args, **kwargs
     ) -> CoreSchema:
-        print('running pydantic v2 validation')
-        return core_schema.with_info_before_validator_function(cls.validate_v2, handler(core_schema.any_schema()))
+        print(f'running pydantic v2 validation, {cls.dim_name}')
+        return core_schema.no_info_plain_validator_function(cls.validate_v2)
 
 
     @classmethod
     def __get_pydantic_json_schema__(cls):
         pass
+
 
 
 
@@ -343,12 +348,30 @@ class DimensionedType(ValidatedType):
 
             def validate(con_cls, value):
                 """Additional validator for value"""
+                print(f'calling _Constrained validate, {value=}')
+
                 dimensioned_value = dim_type.validate(value)
                 pd1.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
                 pd1.validators.float_finite_validator(
                     dimensioned_value.value, con_cls.con_type, None
                 )
                 return dimensioned_value
+            
+            # def validate_v2(con_cls, value, *args):
+            #     return con_cls.validate(value)
+
+            def validate_v2(con_cls, value, *args):
+                print(f'calling validator_v2, {args=}')
+
+                try:
+                    return con_cls.validate(value)
+                except TypeError as err:
+                    print('error found')
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise ValidationError.from_exception_data('validation error', [details])
+
+
+
 
             def __modify_schema__(con_cls, field_schema, field):
                 dim_type.__modify_schema__(field_schema, field)
@@ -362,14 +385,28 @@ class DimensionedType(ValidatedType):
                 if constraints.lt is not None:
                     field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
+            # def __get_pydantic_core_schema__(
+            #     con_cls,
+            #     *args,
+            # ) -> CoreSchema:
+            #     return core_schema.no_info_before_validator_function(lambda *args: validate_v2(con_cls, *args), core_schema.any_schema())
+
+            def __get_pydantic_core_schema__(
+                con_cls, *args, **kwargs
+            ) -> CoreSchema:
+                return core_schema.no_info_plain_validator_function(lambda *args: validate_v2(con_cls, *args))
+
+
+
             cls_obj = type("_Constrained", (), {})
             cls_obj.con_type = _ConType
             cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(
                 cls_obj, field_schema, field
             )
-            cls_obj.__get_pydantic_json_schema__ = lambda *args: None
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_json_schema__ = lambda: None
 
             return cls_obj
 
@@ -460,6 +497,29 @@ class DimensionedType(ValidatedType):
                 value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                 return value
+            
+            # def validate_v2(vec_cls, value, *args):
+            #     print(f'validating vector v2, {vec_cls=}, {value=}')
+            #     return vec_cls.validate(value)
+
+
+            def validate_v2(vec_cls, value, *args):
+                print(f'calling validator_v2, {args=}')
+
+                try:
+                    return vec_cls.validate(value)
+                except TypeError as err:
+                    print('error found')
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise ValidationError.from_exception_data('validation error', [details])
+
+
+            def __get_pydantic_core_schema__(
+                vec_cls, *args, **kwargs
+            ) -> CoreSchema:
+                return core_schema.no_info_plain_validator_function(lambda *args: validate_v2(vec_cls, *args))
+
+
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
@@ -467,8 +527,10 @@ class DimensionedType(ValidatedType):
             cls_obj.allow_zero_coord = allow_zero_coord
             cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = __modify_schema__
-            cls_obj.__get_pydantic_json_schema__ = lambda *args: None
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_json_schema__ = lambda: None
+
             return cls_obj
 
     # pylint: disable=invalid-name

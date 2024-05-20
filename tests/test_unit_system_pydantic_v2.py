@@ -155,32 +155,32 @@ def test_flow360_unit_arithmetic():
     with pytest.raises(TypeError):
         assert (1, 1, 1) * u.flow360_mass_unit + (1, 1, 1) * u.flow360_length_unit
 
-    # data = VectorDataWithUnits(
-    #     pt=(1, 1, 1) * u.flow360_length_unit,
-    #     vec=(1, 1, 1) * u.flow360_velocity_unit,
-    #     ax=(1, 1, 1) * u.flow360_length_unit,
-    #     omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
-    # )
+    data = VectorDataWithUnits(
+        pt=(1, 1, 1) * u.flow360_length_unit,
+        vec=(1, 1, 1) * u.flow360_velocity_unit,
+        ax=(1, 1, 1) * u.flow360_length_unit,
+        omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
+    )
 
-    # with fl.flow360_unit_system:
-    #     data_flow360 = VectorDataWithUnits(
-    #         pt=(1, 1, 1),
-    #         vec=(1, 1, 1),
-    #         ax=(1, 1, 1),
-    #         omega=(1, 1, 1),
-    #     )
-    # assert data == data_flow360
+    with fl.flow360_unit_system:
+        data_flow360 = VectorDataWithUnits(
+            pt=(1, 1, 1),
+            vec=(1, 1, 1),
+            ax=(1, 1, 1),
+            omega=(1, 1, 1),
+        )
+    assert data == data_flow360
 
-    # with pytest.raises(TypeError):
-    #     data.pt + (1, 1, 1) * u.m
+    with pytest.raises(TypeError):
+        data.pt + (1, 1, 1) * u.m
 
-    # with pytest.raises(TypeError):
-    #     data.vec + (1, 1, 1) * u.m / u.s
+    with pytest.raises(TypeError):
+        data.vec + (1, 1, 1) * u.m / u.s
 
 
 def test_unit_system():
     # No inference outside of context
-    with pytest.raises(TypeError):
+    with pytest.raises(pd.ValidationError):
         data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2)
 
     # But we can still specify units explicitly
@@ -277,162 +277,162 @@ def test_unit_system():
         assert data.omega == 5 * u.flow360_angular_velocity_unit
 
     # Constraints
-    # with fl.SI_unit_system:
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+    with fl.SI_unit_system:
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=0, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=0, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=2, t=0, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=2, t=0, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=2, t=-3, T=-300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=2, t=-3, T=-300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=-1, m=2, t=-3, T=300, v=-2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=-1, m=2, t=-3, T=300, v=-2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=-1, m=2, t=-3, T=300, v=2 / 3, A=0, F=-4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=-1, m=2, t=-3, T=300, v=2 / 3, A=0, F=-4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=9, r=2, mu=3, omega=5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=9, r=2, mu=3, omega=5
+            )
 
-        # with pytest.raises(ValueError):
-        #     data = DataWithUnitsConstrained(
-        #         L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=-5
-        #     )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(
+                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=-5
+            )
 
-        # data = DataWithUnitsConstrained(
-        #     L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
-        # )
+        data = DataWithUnitsConstrained(
+            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
+        )
 
-        # data = DataWithUnitsConstrained(
-        #     L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=11, r=2, mu=3, omega=5
-        # )
+        data = DataWithUnitsConstrained(
+            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=11, r=2, mu=3, omega=5
+        )
 
-        # data = DataWithUnitsConstrained(
-        #     L=None, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
-        # )
+        data = DataWithUnitsConstrained(
+            L=None, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
+        )
 
     # Vector data
-    # data = VectorDataWithUnits(
-    #     pt=(1, 1, 1) * u.m,
-    #     vec=(1, 1, 1) * u.m / u.s,
-    #     ax=(1, 1, 1) * u.m,
-    #     omega=(1, 1, 1) * u.rad / u.s,
-    # )
+    data = VectorDataWithUnits(
+        pt=(1, 1, 1) * u.m,
+        vec=(1, 1, 1) * u.m / u.s,
+        ax=(1, 1, 1) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+    )
 
-    # assert all(coord == 1 * u.m for coord in data.pt)
-    # assert all(coord == 1 * u.m / u.s for coord in data.vec)
-    # assert all(coord == 1 * u.m for coord in data.ax)
-    # assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+    assert all(coord == 1 * u.m for coord in data.pt)
+    assert all(coord == 1 * u.m / u.s for coord in data.vec)
+    assert all(coord == 1 * u.m for coord in data.ax)
+    assert all(coord == 1 * u.rad / u.s for coord in data.omega)
 
-    # with pytest.raises(
-    #     ValueError,
-    #     match=r"arg '\[1 1 1 1\] m' needs to be a collection of 3 values",
-    # ):
-    #     data = VectorDataWithUnits(
-    #         pt=(1, 1, 1, 1) * u.m,
-    #         vec=(1, 0, 0) * u.m / u.s,
-    #         ax=(1, 1, 1) * u.m,
-    #         omega=(1, 1, 1) * u.rad / u.s,
-    #     )
-    # with pytest.raises(ValueError):
-    #     data = VectorDataWithUnits(
-    #         pt=(1, 1, 1) * u.m,
-    #         vec=(0, 0, 0) * u.m / u.s,
-    #         ax=(1, 1, 1) * u.m,
-    #         omega=(1, 1, 1) * u.rad / u.s,
-    #     )
+    with pytest.raises(
+        ValueError,
+        match=r"arg '\[1 1 1 1\] m' needs to be a collection of 3 values",
+    ):
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1, 1) * u.m,
+            vec=(1, 0, 0) * u.m / u.s,
+            ax=(1, 1, 1) * u.m,
+            omega=(1, 1, 1) * u.rad / u.s,
+        )
+    with pytest.raises(ValueError):
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1) * u.m,
+            vec=(0, 0, 0) * u.m / u.s,
+            ax=(1, 1, 1) * u.m,
+            omega=(1, 1, 1) * u.rad / u.s,
+        )
 
-    # data = VectorDataWithUnits(
-    #     pt=(1, 1, 1) * u.m,
-    #     vec=(1, 0, 0) * u.m / u.s,
-    #     ax=(1, 1, 1) * u.m,
-    #     omega=(1, 1, 1) * u.rad / u.s,
-    # )
+    data = VectorDataWithUnits(
+        pt=(1, 1, 1) * u.m,
+        vec=(1, 0, 0) * u.m / u.s,
+        ax=(1, 1, 1) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+    )
 
-    # with pytest.raises(ValueError):
-    #     data = VectorDataWithUnits(
-    #         pt=(1, 1, 1) * u.m,
-    #         vec=(1, 1, 1) * u.m / u.s,
-    #         ax=(0, 0, 0) * u.m,
-    #         omega=(1, 1, 1) * u.rad / u.s,
-    #     )
+    with pytest.raises(ValueError):
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1) * u.m,
+            vec=(1, 1, 1) * u.m / u.s,
+            ax=(0, 0, 0) * u.m,
+            omega=(1, 1, 1) * u.rad / u.s,
+        )
 
-    # data = VectorDataWithUnits(
-    #     pt=(1, 1, 1) * u.m,
-    #     vec=(1, 1, 1) * u.m / u.s,
-    #     ax=(1, 0, 0) * u.m,
-    #     omega=(1, 1, 1) * u.rad / u.s,
-    # )
+    data = VectorDataWithUnits(
+        pt=(1, 1, 1) * u.m,
+        vec=(1, 1, 1) * u.m / u.s,
+        ax=(1, 0, 0) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+    )
 
-    # with pytest.raises(ValueError):
-    #     data = VectorDataWithUnits(
-    #         pt=(1, 1, 1) * u.m,
-    #         vec=(1, 1, 1) * u.m / u.s,
-    #         ax=(1, 1, 1) * u.m,
-    #         omega=(0, 1, 1) * u.rad / u.s,
-    #     )
+    with pytest.raises(ValueError):
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1) * u.m,
+            vec=(1, 1, 1) * u.m / u.s,
+            ax=(1, 1, 1) * u.m,
+            omega=(0, 1, 1) * u.rad / u.s,
+        )
 
-    # data = VectorDataWithUnits(
-    #     pt=None,
-    #     vec=(1, 1, 1) * u.m / u.s,
-    #     ax=(1, 0, 0) * u.m,
-    #     omega=(1, 1, 1) * u.rad / u.s,
-    # )
+    data = VectorDataWithUnits(
+        pt=None,
+        vec=(1, 1, 1) * u.m / u.s,
+        ax=(1, 0, 0) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+    )
 
-    # data = VectorDataWithUnits(
-    #     pt=None,
-    #     vec=(1, 1, 1) * u.N,
-    #     ax=(1, 0, 0) * u.m,
-    #     omega=(1, 1, 1) * u.rad / u.s,
-    # )
+    data = VectorDataWithUnits(
+        pt=None,
+        vec=(1, 1, 1) * u.N,
+        ax=(1, 0, 0) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+    )
 
-    # with fl.SI_unit_system:
-    #     # Note that for union types the first element of union that passes validation is inferred!
-    #     data = VectorDataWithUnits(pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
+    with fl.SI_unit_system:
+        # Note that for union types the first element of union that passes validation is inferred!
+        data = VectorDataWithUnits(pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
 
-    #     assert all(coord == 1 * u.m for coord in data.pt)
-    #     assert all(coord == 1 * u.m / u.s for coord in data.vec)
-    #     assert all(coord == 1 * u.m for coord in data.ax)
-    #     assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+        assert all(coord == 1 * u.m for coord in data.pt)
+        assert all(coord == 1 * u.m / u.s for coord in data.vec)
+        assert all(coord == 1 * u.m for coord in data.ax)
+        assert all(coord == 1 * u.rad / u.s for coord in data.omega)
 
-    #     data = VectorDataWithUnits(pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
+        data = VectorDataWithUnits(pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
 
-    #     assert data.pt is None
-    #     assert all(coord == 1 * u.m / u.s for coord in data.vec)
-    #     assert all(coord == 1 * u.m for coord in data.ax)
-    #     assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+        assert data.pt is None
+        assert all(coord == 1 * u.m / u.s for coord in data.vec)
+        assert all(coord == 1 * u.m for coord in data.ax)
+        assert all(coord == 1 * u.rad / u.s for coord in data.omega)
 
 
-# @pytest.mark.usefixtures("array_equality_override")
-# def test_units_serializer():
-#     with fl.SI_unit_system:
-#         data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
+@pytest.mark.usefixtures("array_equality_override")
+def test_units_serializer():
+    with fl.SI_unit_system:
+        data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
 
-#     data_as_json = data.json(indent=4)
+    data_as_json = data.model_dump_json(indent=4)
 
 #     with fl.CGS_unit_system:
 #         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
