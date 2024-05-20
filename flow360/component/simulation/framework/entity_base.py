@@ -127,7 +127,8 @@ class EntityList(Flow360BaseModel, metaclass=_EntitiesListMeta):
     stored_entities: List = pd.Field()
 
     @classmethod
-    def get_valid_entity_types(cls):
+    def _get_valid_entity_types(cls):
+        """Get the list of types that the entity list can accept."""
         entity_field_type = cls.__annotations__.get("stored_entities")
         if (
             entity_field_type is not None
@@ -140,10 +141,11 @@ class EntityList(Flow360BaseModel, metaclass=_EntitiesListMeta):
             else:
                 valid_types = (valid_types,)
             return valid_types
-        return None
+        raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
 
     @classmethod
     def _valid_individual_input(cls, input):
+        """Validate each individual element in a list or as standalone entity."""
         if isinstance(input, str) or isinstance(input, EntityBase):
             return input
         else:
@@ -163,7 +165,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntitiesListMeta):
         # 2. The List[EntityBase], comes from the Assets.
         # 3. EntityBase comes from direct specification of entity in the list.
         formated_input = []
-        valid_types = cls.get_valid_entity_types()
+        valid_types = cls._get_valid_entity_types()
         if isinstance(input, list):
             if input == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
@@ -222,7 +224,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntitiesListMeta):
 
         entities = getattr(self, "stored_entities", [])
 
-        valid_types = self.__class__.get_valid_entity_types()
+        valid_types = self.__class__._get_valid_entity_types()
 
         expanded_entities = []
 
