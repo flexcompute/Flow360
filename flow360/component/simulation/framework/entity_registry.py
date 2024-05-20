@@ -33,19 +33,22 @@ class EntityRegistry:
         _registry (Dict[str, List[EntityBase]]): A dictionary that maps entity types to lists of instances.
     """
 
-    _registry = {}
+    _registry = None
 
-    @classmethod
-    def register(cls, entity):
+    def __init__(self) -> None:
+        self._registry = {}
+
+    def register(self, entity):
         """
         Registers an entity in the registry under its type.
 
         Parameters:
             entity (EntityBase): The entity instance to register.
         """
-        if entity._entity_type not in cls._registry:
-            cls._registry[entity._entity_type] = []
-        for existing_entity in cls._registry[entity._entity_type]:
+        if entity._entity_type not in self._registry:
+            self._registry[entity._entity_type] = []
+
+        for existing_entity in self._registry[entity._entity_type]:
             if existing_entity.name == entity.name:
                 # Same type and same name. Now we try to update existing entity with new values.
                 try:
@@ -60,10 +63,9 @@ class EntityRegistry:
                     log.debug("Merge failed unexpectly: %s", e)
                     raise
 
-        cls._registry[entity._entity_type].append(entity)
+        self._registry[entity._entity_type].append(entity)
 
-    @classmethod
-    def get_entities(cls, entity_type):
+    def get_all_entities_of_given_type(self, entity_type):
         """
         Retrieves all entities of a specified type.
 
@@ -73,10 +75,9 @@ class EntityRegistry:
         Returns:
             List[EntityBase]: A list of registered entities of the specified type.
         """
-        return cls._registry.get(entity_type._entity_type.default, [])
+        return self._registry.get(entity_type._entity_type.default, [])
 
-    @classmethod
-    def find_by_name_pattern(cls, pattern: str):
+    def find_by_name_pattern(self, pattern: str):
         """
         Finds all registered entities whose names match a given pattern.
 
@@ -88,23 +89,21 @@ class EntityRegistry:
         """
         matched_entities = []
         regex = re.compile(pattern.replace("*", ".*"))
-        for entity_list in cls._registry.values():
+        for entity_list in self._registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
         return matched_entities
 
-    @classmethod
-    def show(cls):
+    def show(self):
         """
         Prints a list of all registered entities, grouped by type.
         """
-        for entity_type, entities in cls._registry.items():
+        for entity_type, entities in self._registry.items():
             print(f"Entities of type '{entity_type}':")
             for entity in entities:
                 print(f"  - {entity}")
 
-    @classmethod
-    def clear(cls):
+    def clear(self):
         """
         Clears all entities from the registry.
         """
-        cls._registry.clear()
+        self._registry.clear()
