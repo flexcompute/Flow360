@@ -57,8 +57,7 @@ class SimulationParams(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    volumes: Optional[List[VolumeTypes]] = pd.Field(None)
-    surfaces: Optional[List[SurfaceTypes]] = pd.Field(None)
+    models: Optional[List[Union[VolumeTypes, SurfaceTypes]]] = pd.Field(None)
     """
     Below can be mostly reused with existing models 
     """
