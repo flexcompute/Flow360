@@ -164,6 +164,16 @@ def my_volume_mesh2():
 ##:: ---------------- Entity tests ----------------
 
 
+def unset_entity_type():
+    def IncompleteEntity(EntityBase):
+        pass
+
+    try:
+        IncompleteEntity(name="IncompleteEntity")
+    except NotImplementedError as e:
+        assert "_entity_type is not defined in the entity class." in str(e)
+
+
 def test_wrong_ways_of_copying_entity(my_cylinder1):
     try:
         my_cylinder1.copy()

@@ -19,13 +19,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     Attributes:
         _entity_type (str): A string representing the specific type of the entity.
                             This should be set in subclasses to differentiate between entity types.
-                            Note this controls the granularity of the registry.
-        _is_generic(bool): A flag indicating whether the entity is a generic entity (constructed from metadata).
+                            Warning:
+                            This controls the granularity of the registry and must be unique for each entity type and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
+        _auto_constructed (bool):   A flag indicating whether the entity is automatically constructed
+                                    by assets using their metadata. This means that the entity is not directly
+                                    specified by the user and contains less information than user-defined entities.
+
         name (str): The name of the entity, used for identification and retrieval.
     """
 
     _entity_type: str = None
-    _is_generic = False
+    _auto_constructed = False
     name: str = pd.Field(frozen=True)
 
     def __init__(self, **data):
@@ -36,7 +40,8 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
             data: Keyword arguments containing initial values for fields declared in the entity.
         """
         super().__init__(**data)
-        assert self._entity_type is not None, "_entity_type is not defined in the entity class."
+        if self._entity_type is None:
+            raise NotImplementedError("_entity_type is not defined in the entity class.")
 
     def copy(self, update=None, **kwargs) -> EntityBase:
         """
@@ -64,7 +69,7 @@ class _CombinedMeta(type(Flow360BaseModel), type):
     pass
 
 
-class _EntitiesListMeta(_CombinedMeta):
+class _EntityListMeta(_CombinedMeta):
     def __getitem__(cls, entity_types):
         """
         Creates a new class with the specified entity types as a list of stored entities.
@@ -97,7 +102,7 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     for entity_list in all_entities.values():
         if len(entity_list) > 1:
             for entity in entity_list:
-                if entity._is_generic and len(entity_list) > 1:
+                if entity._auto_constructed and len(entity_list) > 1:
                     entity_list.remove(entity)
 
         assert len(entity_list) == 1
@@ -105,7 +110,7 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     return [entity_list[0] for entity_list in all_entities.values()]
 
 
-class EntityList(Flow360BaseModel, metaclass=_EntitiesListMeta):
+class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
     The type accepting a list of entities or (name, registry) pair.
 

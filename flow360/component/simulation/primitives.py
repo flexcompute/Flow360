@@ -15,17 +15,20 @@ class Transformation(Flow360BaseModel):
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
     _entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
     _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
 
 
 class GenericVolume(_VolumeEntityBase):
-    """Do not expose"""
+    """Do not expose.
+    This type of entity will get auto-constructed by assets when loading metadata."""
 
-    _is_generic = True
+    _auto_constructed = True
 
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
@@ -33,9 +36,10 @@ class GenericVolume(_VolumeEntityBase):
 
 
 class GenericSurface(_SurfaceEntityBase):
-    """Do not expose"""
+    """Do not expose.
+    This type of entity will get auto-constructed by assets when loading metadata."""
 
-    _is_generic = True
+    _auto_constructed = True
 
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
