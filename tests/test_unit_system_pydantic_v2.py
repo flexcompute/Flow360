@@ -36,9 +36,16 @@ class DataWithUnits(pd.BaseModel):
     mu: ViscosityType = pd.Field()
     omega: AngularVelocityType = pd.Field()
 
+class DataWithOptionalUnion(pd.BaseModel):
+    L: LengthType = pd.Field()
+    m: Optional[MassType] = pd.Field(None)
+    t: Union[TimeType, TemperatureType] = pd.Field()
+    v: Optional[Union[TimeType, TemperatureType]] = pd.Field(None)
+
+
 
 class DataWithUnitsConstrained(pd.BaseModel):
-    L: Optional[LengthType.NonNegative] = pd.Field()
+    L: Optional[LengthType.NonNegative] = pd.Field(None)
     m: MassType.Positive = pd.Field()
     t: TimeType.Negative = pd.Field()
     T: TemperatureType.NonNegative = pd.Field()
@@ -54,16 +61,55 @@ class DataWithUnitsConstrained(pd.BaseModel):
 
 
 class VectorDataWithUnits(pd.BaseModel):
-    pt: Optional[LengthType.Point] = pd.Field()
+    pt: Optional[LengthType.Point] = pd.Field(None)
     vec: Union[VelocityType.Direction, ForceType.Point] = pd.Field()
     ax: LengthType.Axis = pd.Field()
     omega: AngularVelocityType.Moment = pd.Field()
 
 
+
+
+
+
+### remove this part if unit test is fixed:
+
+def encode_ndarray(x):
+    """
+    encoder for ndarray
+    """
+    if x.size == 1:
+        return float(x)
+    return tuple(x.tolist())
+
+
+def dimensioned_type_serializer(x):
+    """
+    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    """
+    return {"value": encode_ndarray(x.value), "units": str(x.units)}
+
+def any_serialiser(v):
+    print(f'calling any serialiser {v=}')
+
+import unyt
+
+_json_encoders_map = {
+    unyt.unyt_quantity: dimensioned_type_serializer,
+    unyt.unyt_array: dimensioned_type_serializer,
+    unyt.Unit: str,
+}
+
+
+
 class Flow360DataWithUnits(Flow360BaseModel):
     L: LengthType = pd.Field()
-    pt: Optional[LengthType.Point] = pd.Field()
+    pt: Optional[LengthType.Point] = pd.Field(None)
     lc: LengthType.NonNegative = pd.Field()
+
+    model_config = pd.ConfigDict(
+        json_encoders=_json_encoders_map,
+    )
+
 
 
 def test_unit_access():
@@ -427,29 +473,57 @@ def test_unit_system():
         assert all(coord == 1 * u.rad / u.s for coord in data.omega)
 
 
+def test_optionals_and_unions():
+
+    data = DataWithOptionalUnion(
+        L=1 * u.m,
+        m=2 * u.kg,
+        t=3 * u.s,
+        v=300 * u.K,
+    )
+
+    data = DataWithOptionalUnion(
+        L=1 * u.m,
+        t=3 * u.s,
+    )
+
+    data = DataWithOptionalUnion(
+        L=1 * u.m,
+        t=3 * u.K,
+    )
+
+    data = DataWithOptionalUnion(
+        L=1 * u.m,
+        t=3 * u.s,
+        v=300 * u.s,
+    )
+
+
+
 @pytest.mark.usefixtures("array_equality_override")
 def test_units_serializer():
     with fl.SI_unit_system:
-        data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
+        data = Flow360DataWithUnits(L=2 * u.mm, lc=2)
 
     data_as_json = data.model_dump_json(indent=4)
 
-#     with fl.CGS_unit_system:
-#         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
+
+    with fl.CGS_unit_system:
+        data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
+
+    # data_as_json = data.model_dump_json(indent=4)
+
+    # with fl.SI_unit_system:
+    #     data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
+
+    # data_as_json = data.model_dump_json(indent=4)
+
+
 
 #     with fl.SI_unit_system:
 #         data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
 
 #     data_as_json = data.json(indent=4)
-
-#     data_schema = data.schema()
-
-#     assert data_schema["properties"]["L"]["properties"]["units"]["type"] == "string"
-#     assert data_schema["properties"]["L"]["properties"]["value"]["type"] == "number"
-#     assert data_schema["properties"]["lc"]["properties"]["value"]["minimum"] == 0
-#     assert data_schema["properties"]["pt"]["properties"]["value"]["type"] == "array"
-#     assert data_schema["properties"]["pt"]["properties"]["value"]["minItems"] == 3
-#     assert data_schema["properties"]["pt"]["properties"]["value"]["maxItems"] == 3
 
 #     with fl.CGS_unit_system:
 #         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
