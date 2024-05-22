@@ -40,7 +40,7 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
             data: Keyword arguments containing initial values for fields declared in the entity.
         """
         super().__init__(**data)
-        if self._entity_type is None:
+        if self.entity_type is None:
             raise NotImplementedError("_entity_type is not defined in the entity class.")
 
     def copy(self, update=None, **kwargs) -> EntityBase:
@@ -63,6 +63,22 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
                 "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
             )
         return super().copy(update=update, **kwargs)
+
+    @property
+    def entity_type(self) -> str:
+        return self._entity_type
+
+    @entity_type.setter
+    def entity_type(self, value: str):
+        raise AttributeError("Cannot modify _entity_type")
+
+    @property
+    def auto_constructed(self) -> str:
+        return self._auto_constructed
+
+    @auto_constructed.setter
+    def auto_constructed(self, value: str):
+        raise AttributeError("Cannot modify _auto_constructed")
 
 
 class _CombinedMeta(type(Flow360BaseModel), type):

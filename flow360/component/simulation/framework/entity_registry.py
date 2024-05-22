@@ -45,10 +45,10 @@ class EntityRegistry:
         Parameters:
             entity (EntityBase): The entity instance to register.
         """
-        if entity._entity_type not in self._registry:
-            self._registry[entity._entity_type] = []
+        if entity.entity_type not in self._registry:
+            self._registry[entity.entity_type] = []
 
-        for existing_entity in self._registry[entity._entity_type]:
+        for existing_entity in self._registry[entity.entity_type]:
             if existing_entity.name == entity.name:
                 # Same type and same name. Now we try to update existing entity with new values.
                 try:
@@ -57,13 +57,13 @@ class EntityRegistry:
                 except MergeConflictError as e:
                     log.debug("Merge conflict: %s", e)
                     raise ValueError(
-                        f"Entity with name '{entity.name}' and type '{entity._entity_type}' already exists and have different definition."
+                        f"Entity with name '{entity.name}' and type '{entity.entity_type}' already exists and have different definition."
                     )
                 except Exception as e:
                     log.debug("Merge failed unexpectly: %s", e)
                     raise
 
-        self._registry[entity._entity_type].append(entity)
+        self._registry[entity.entity_type].append(entity)
 
     def get_all_entities_of_given_type(self, entity_type):
         """
@@ -75,7 +75,7 @@ class EntityRegistry:
         Returns:
             List[EntityBase]: A list of registered entities of the specified type.
         """
-        return self._registry.get(entity_type._entity_type.default, [])
+        return self._registry.get(entity_type.entity_type, [])
 
     def find_by_name_pattern(self, pattern: str):
         """

@@ -304,6 +304,18 @@ def test_get_entities(
     assert my_cylinder2 in all_box_entities
 
 
+def test_changing_final_attributes(my_box_zone1):
+    try:
+        my_box_zone1.entity_type = "WrongSubClass"
+    except AttributeError as e:
+        assert "Cannot modify _entity_type" in str(e)
+
+    try:
+        my_box_zone1.auto_constructed = True
+    except AttributeError as e:
+        assert "Cannot modify _entity_type" in str(e)
+
+
 def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
     # 1. Using reference of single asset entity
     expanded_entities = TempFluidDynamics(

@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Literal, Optional, Tuple
+from typing import Final, Literal, Optional, Tuple, final
 
 import pydantic as pd
 
@@ -24,45 +24,33 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
 
 
+@final
 class GenericVolume(_VolumeEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
 
-    _auto_constructed = True
-
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        raise TypeError(f"Subclassing of {cls.__name__} is not allowed")
+    _auto_constructed: Final[bool] = True
 
 
+@final
 class GenericSurface(_SurfaceEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
 
-    _auto_constructed = True
-
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        raise TypeError(f"Subclassing of {cls.__name__} is not allowed")
+    _auto_constructed: Final[bool] = True
 
 
+@final
 class Box(_VolumeEntityBase):
     center: Tuple[float, float, float] = pd.Field()
     size: Tuple[float, float, float] = pd.Field()
     axes: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = pd.Field()
 
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        raise TypeError(f"Subclassing of {cls.__name__} is not allowed")
 
-
+@final
 class Cylinder(_VolumeEntityBase):
     axis: Tuple[float, float, float] = pd.Field()
     center: Tuple[float, float, float] = pd.Field()
     height: float = pd.Field()
     inner_radius: pd.PositiveFloat = pd.Field()
     outer_radius: pd.PositiveFloat = pd.Field()
-
-    def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        raise TypeError(f"Subclassing of {cls.__name__} is not allowed")
