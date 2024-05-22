@@ -1,18 +1,16 @@
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
-    MonitorOutputFields,
     ProbeMonitor,
     Slice,
-    SliceOutputFields,
     SurfaceIntegralMonitor,
-    SurfaceOutputFields,
-    VolumeOutputFields,
 )
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.types import NonNegativeAndNegOneInt
 
 """Mostly the same as Flow360Param counterparts.
@@ -64,14 +62,13 @@ class SurfaceOutput(_AnimationSettings):
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: SurfaceOutputFields = pd.Field()
+    output_fields: List[str] = pd.Field()
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSettings):
     """
     Caveats:
     Solver side only accept exactly the same set of output_fields (is shared) between VolumeOutput and TimeAverageVolumeOutput.
-    Also let's not worry about allowing entities here as it is not supported by solver anyway.
     """
 
     pass
@@ -79,7 +76,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSet
 
 class VolumeOutput(_AnimationSettings):
 
-    output_fields: VolumeOutputFields = pd.Field()
+    output_fields: List[str] = pd.Field()
 
 
 class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSettings):
@@ -94,17 +91,17 @@ class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSetti
 
 class SliceOutput(_AnimationSettings):
     slices: EntityList[Slice] = pd.Field()
-    output_fields: SliceOutputFields = pd.Field()
+    output_fields: List[str] = pd.Field()
 
 
-class IsoSurfaceOutput(_AnimationSettings):
+class IsosurfaceOutput(_AnimationSettings):
     isosurfaces: EntityList[Isosurface] = pd.Field()
-    output_fields: SurfaceOutputFields = pd.Field()
+    output_fields: List[str] = pd.Field()
 
 
 class MonitorOutput(_AnimationSettings):
     monitors: EntityList[SurfaceIntegralMonitor, ProbeMonitor] = pd.Field()
-    output_fields: MonitorOutputFields = pd.Field()
+    output_fields: List[str] = pd.Field()
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -123,7 +120,7 @@ OutputTypes = Union[
     SurfaceOutput,
     VolumeOutput,
     SliceOutput,
-    IsoSurfaceOutput,
+    IsosurfaceOutput,
     MonitorOutput,
     AeroAcousticOutput,
 ]

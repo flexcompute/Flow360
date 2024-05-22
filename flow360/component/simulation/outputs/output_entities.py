@@ -1,16 +1,19 @@
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Tuple, final
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.primitives import Surface
 
 
+@final
 class Slice(EntityBase):
     _entity_type: Literal["SliceType"] = "SliceType"
     slice_normal: Tuple[float, float, float] = pd.Field()
     slice_origin: Tuple[float, float, float] = pd.Field()
 
 
+@final
 class Isosurface(EntityBase):
     _entity_type: Literal["IsosurfaceType"] = "IsosurfaceType"
     surface_field: str = pd.Field()
@@ -18,13 +21,14 @@ class Isosurface(EntityBase):
     surface_field_magnitude: float = pd.Field(description="Expect scaled value.")
 
 
+@final
 class SurfaceIntegralMonitor(EntityBase):
     _entity_type: Literal["SurfaceIntegralMonitorType"] = "SurfaceIntegralMonitorType"
     type: Literal["surfaceIntegral"] = pd.Field("surfaceIntegral", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="surfaces")
-    output_fields: MonitorOutputFields = pd.Field()
 
 
+@final
 class ProbeMonitor(EntityBase):
     _entity_type: Literal["ProbeMonitorType"] = "ProbeMonitorType"
     type: Literal["probe"] = pd.Field("probe", frozen=True)
