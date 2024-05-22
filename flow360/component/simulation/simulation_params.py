@@ -13,7 +13,7 @@ from flow360.component.simulation.operating_condition import OperatingConditionT
 from flow360.component.simulation.outputs import OutputTypes
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.surfaces import SurfaceTypes
-from flow360.component.simulation.time_stepping import (
+from flow360.component.simulation.time_stepping.time_stepping import (
     SteadyTimeStepping,
     UnsteadyTimeStepping,
 )

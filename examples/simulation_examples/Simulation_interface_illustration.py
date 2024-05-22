@@ -23,7 +23,7 @@ from flow360.component.simulation.surfaces import (
     Surface,
     Wall,
 )
-from flow360.component.simulation.time_stepping import SteadyTimeStepping
+from flow360.component.simulation.time_stepping.time_stepping import SteadyTimeStepping
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamics,
 )

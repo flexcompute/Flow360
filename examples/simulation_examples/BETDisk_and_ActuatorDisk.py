@@ -21,7 +21,7 @@ from flow360.component.simulation.physics_components import (
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.time_stepping import SteadyTimeStepping
+from flow360.component.simulation.time_stepping.time_stepping import SteadyTimeStepping
 from flow360.component.simulation.volumes import ActuatorDisk, BETDisk, FluidDynamics
 from flow360.component.surface_mesh import SurfaceMesh
 
