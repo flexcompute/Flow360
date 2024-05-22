@@ -295,6 +295,7 @@ def test_get_entities(
     registry.register(my_cylinder2)
     registry.register(my_box_zone1)
     registry.register(my_box_zone2)
+    print(">>> ", Box.entity_type)
     all_box_entities = registry.get_all_entities_of_given_type(Box)
     assert len(all_box_entities) == 4
     assert my_box_zone1 in all_box_entities
@@ -313,7 +314,7 @@ def test_changing_final_attributes(my_box_zone1):
     try:
         my_box_zone1.auto_constructed = True
     except AttributeError as e:
-        assert "Cannot modify _entity_type" in str(e)
+        assert "Cannot modify _auto_constructed" in str(e)
 
 
 def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):

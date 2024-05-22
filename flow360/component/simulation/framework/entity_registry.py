@@ -75,7 +75,7 @@ class EntityRegistry:
         Returns:
             List[EntityBase]: A list of registered entities of the specified type.
         """
-        return self._registry.get(entity_type.entity_type, [])
+        return self._registry.get(entity_type._entity_type.default, [])
 
     def find_by_name_pattern(self, pattern: str):
         """
