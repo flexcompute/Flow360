@@ -24,7 +24,9 @@ from flow360.component.simulation.surfaces import (
     Wall,
 )
 from flow360.component.simulation.time_stepping import SteadyTimeStepping
-from flow360.component.simulation.user_defined_dynamics import UserDefinedDynamics
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamics,
+)
 from flow360.component.simulation.volumes import FluidDynamics, PorousMedium
 from flow360.component.surface_mesh import SurfaceMesh
 

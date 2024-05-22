@@ -17,7 +17,9 @@ from flow360.component.simulation.time_stepping import (
     SteadyTimeStepping,
     UnsteadyTimeStepping,
 )
-from flow360.component.simulation.user_defined_dynamics import UserDefinedDynamics
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamics,
+)
 from flow360.component.simulation.volumes import VolumeTypes
 from flow360.exceptions import Flow360ConfigError
 from flow360.log import log
