@@ -9,7 +9,7 @@ From what I can think of right now most can be reused from flow360_params for ex
 
 from typing import Union
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
 class NavierStokesSolver(Flow360BaseModel):

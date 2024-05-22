@@ -1,10 +1,10 @@
-from typing import Optional, Tuple
+from abc import ABCMeta
+from typing import Final, Literal, Optional, Tuple, final
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
-
-##:: Geometrical Volume ::##
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityBase
 
 
 class Transformation(Flow360BaseModel):
@@ -14,13 +14,41 @@ class Transformation(Flow360BaseModel):
     angle_of_rotation: Optional[float] = pd.Field()
 
 
-class Box(Flow360BaseModel):
-    center: Tuple[float, float] = pd.Field()
+class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
+
+
+class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
+
+
+@final
+class GenericVolume(_VolumeEntityBase):
+    """Do not expose.
+    This type of entity will get auto-constructed by assets when loading metadata."""
+
+    _auto_constructed: Final[bool] = True
+
+
+@final
+class GenericSurface(_SurfaceEntityBase):
+    """Do not expose.
+    This type of entity will get auto-constructed by assets when loading metadata."""
+
+    _auto_constructed: Final[bool] = True
+
+
+@final
+class Box(_VolumeEntityBase):
+    center: Tuple[float, float, float] = pd.Field()
     size: Tuple[float, float, float] = pd.Field()
     axes: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = pd.Field()
 
 
-class Cylinder(Flow360BaseModel):
+@final
+class Cylinder(_VolumeEntityBase):
     axis: Tuple[float, float, float] = pd.Field()
     center: Tuple[float, float, float] = pd.Field()
     height: float = pd.Field()

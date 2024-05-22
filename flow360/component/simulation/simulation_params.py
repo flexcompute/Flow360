@@ -7,7 +7,7 @@ from flow360.component.flow360_params.unit_system import (
     UnitSystemType,
     unit_system_manager,
 )
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs import OutputTypes

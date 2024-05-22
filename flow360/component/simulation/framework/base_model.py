@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import List, Literal, Optional
+from typing import Literal, Optional, Union, get_args
 
 import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
-from pydantic.fields import FieldInfo
 
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.types import TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -39,14 +39,23 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _handle_dict(cls, **kwargs):
+        """Handle dictionary input for the model."""
         model_dict = kwargs
         model_dict = cls._handle_dict_with_hash(model_dict)
         return model_dict
 
     @classmethod
     def _handle_file(cls, filename: str = None, **kwargs):
+        """Handle file input for the model.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .json or .yaml file to load the :class:`Flow360BaseModel` from.
+        **kwargs
+            Keyword arguments to be passed to the model."""
         if filename is not None:
-            return cls.dict_from_file(filename=filename)
+            return cls._dict_from_file(filename=filename)
         return kwargs
 
     @classmethod
@@ -67,7 +76,7 @@ class Flow360BaseModel(pd.BaseModel):
     """
     model_config = ConfigDict(
         ##:: Pydantic kwargs
-        arbitrary_types_allowed=True,
+        arbitrary_types_allowed=True,  # ?
         extra="forbid",
         frozen=False,
         populate_by_name=True,
@@ -155,8 +164,7 @@ class Flow360BaseModel(pd.BaseModel):
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
         if "deep" in kwargs and kwargs["deep"] is False:
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
-        kwargs.update({"deep": True})
-        new_copy = pd.BaseModel.model_copy(self, update=update, **kwargs)
+        new_copy = pd.BaseModel.model_copy(self, update=update, deep=True, **kwargs)
         data = new_copy.model_dump()
         return self.model_validate(data)
 
@@ -195,7 +203,7 @@ class Flow360BaseModel(pd.BaseModel):
         return cls(filename=filename)
 
     @classmethod
-    def dict_from_file(cls, filename: str) -> dict:
+    def _dict_from_file(cls, filename: str) -> dict:
         """Loads a dictionary containing the model from a .json or .yaml file.
 
         Parameters
@@ -263,7 +271,7 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params = Flow360BaseModel.from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_file(filename=filename)
+        model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
 
     @classmethod
@@ -327,7 +335,7 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params = Flow360BaseModel.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        model_dict = cls.dict_from_file(filename=filename)
+        model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
 
     @classmethod
