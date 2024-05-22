@@ -2,8 +2,10 @@ from typing import Dict, List, Optional
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.primitives import Surface
 
 
 class UserDefinedDynamic(Flow360BaseModel):
