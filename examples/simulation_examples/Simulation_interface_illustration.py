@@ -70,38 +70,32 @@ with SI_unit_system:
                 UniformRefinement(entities=[porous_media_zone], spacing=0.002),
             ],
         ),
-        volumes=[
+        operating_condition=ExternalFlow(
+            freestream_velocity=VelocityFromMachAndAngles(Mach=0.5, alpha=2),
+            state=TemperatureDensity(temperature=300, density=1.225),
+        ),
+        reference_geometry=ReferenceGeometry(
+            area=1.15315084119231,
+            moment_length=(0.801672958512342, 0.801672958512342, 0.801672958512342),
+        ),
+        models=[
             FluidDynamics(
-                entities=["*"],  # This means we apply settings to all the volume zones
+                volumes=["*"],  # This means we apply settings to all the volume zones
                 navier_stokes_solver=NavierStokesSolver(
                     linear_solver=LinearSolver(absolute_tolerance=1e-10)
                 ),
                 turbulence_model_solver=SpalartAllmaras(),
                 material=Air(),
-                operating_condition=ExternalFlowOperatingConditions(  # Each volume can override this setting
-                    Mach=0.84,
-                    temperature=288.15,
-                    alpha=3.06 * u.deg,
-                    # Reynolds=14.6e6 should be obtained from user
-                ),
-                reference_geometry=ReferenceGeometry(  # Each volume can override this setting
-                    area=1.15315084119231,
-                    moment_length=(0.801672958512342, 0.801672958512342, 0.801672958512342),
-                    mesh_unit=1 * u.m,
-                ),
             ),
             PorousMedium(
-                entities=[porous_media_zone],
+                volumes=[porous_media_zone],
                 # axes=[[0, 1, 0], [0, 0, 1]], This comes from Box definition
                 darcy_coefficient=[1e6, 0, 0],
                 forchheimer_coefficient=[1, 0, 0],
                 volumetric_heat_source=0,
             ),
-        ],
-        surfaces=[
-            Wall(entities=[wing_surface], use_wall_function=True),
-            SlipWall(entities=[slip_wall]),
-            FreestreamBoundary(entities=[far_field]),
+            Wall(surfaces=[wing_surface, surface2], use_wall_function=True),
+            SlipWall(surfaces=[surface_mesh["1"]]),
         ],
         time_stepping=Steady(),
         outputs=[
@@ -130,6 +124,8 @@ case = Case.submit(
     surface_mesh=SurfaceMesh.from_file(
         file_name="./SurfaceMesh.ugrid",
         name="My-surface-mesh",
+        mesh_unit=1 * u.m,
     ),
+    surface_mesh["1"].update(reference_geometry=...),
     param=simulationParams,
 )
