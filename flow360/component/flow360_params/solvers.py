@@ -8,11 +8,17 @@ from abc import ABCMeta
 from typing import Optional, Union
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..types import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
-from .flow360_legacy import LegacyModel, try_set, try_update
+from .flow360_legacy import (
+    LegacyModel,
+    LinearSolverLegacy,
+    set_linear_solver_config_if_none,
+    try_set,
+    try_update,
+)
 from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
 from .time_stepping import UnsteadyTimeStepping
 
@@ -523,23 +529,6 @@ class TransitionModelSolver(GenericFlowSolverSettings):
 
 
 # Legacy models for Flow360 updater, do not expose
-
-
-class LinearSolverLegacy(LinearSolver, LegacyModel):
-    """:class:`LinearSolverLegacy` class"""
-
-    max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
-
-    def update_model(self):
-        model = {
-            "absoluteTolerance": self.absolute_tolerance,
-            "relativeTolerance": self.relative_tolerance,
-            "maxIterations": self.max_iterations,
-        }
-
-        return model
-
-
 class PressureCorrectionSolverLegacy(PressureCorrectionSolver, LegacyModel):
     """:class:`PressureCorrectionSolverLegacy` class"""
 
@@ -561,10 +550,12 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
     pressure_correction_solver: Optional[PressureCorrectionSolver] = pd.Field(
         alias="pressureCorrectionSolver"
     )
-    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolverLegacy()
-    )
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(alias="linearSolverConfig")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
+
+    _processed_linear_solver_config = pd.validator(
+        "linear_solver_config", allow_reuse=True, pre=True
+    )(set_linear_solver_config_if_none)
 
     def update_model(self):
         model = {
@@ -593,10 +584,12 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
 
     kappa_MUSCL: Optional[pd.confloat(ge=-1, le=1)] = pd.Field(alias="kappaMUSCL")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolverLegacy()
-    )
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(alias="linearSolverConfig")
     rotation_correction: Optional[bool] = pd.Field(alias="rotationCorrection")
+
+    _processed_linear_solver_config = pd.validator(
+        "linear_solver_config", allow_reuse=True, pre=True
+    )(set_linear_solver_config_if_none)
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
@@ -638,8 +631,10 @@ class TurbulenceModelSolverLegacy(TurbulenceModelSolver, LegacyModel):
             "DDES": self.DDES,
             "gridSizeForLES": self.grid_size_for_LES,
             "quadraticConstitutiveRelation": self.quadratic_constitutive_relation,
-            "modelConstants": self.model_constants,
         }
+
+        if self.model_constants is not None:
+            model["modelConstants"] = self.model_constants
 
         try_set(model, "rotationCorrection", self.rotation_correction)
 
@@ -665,9 +660,11 @@ class HeatEquationSolverLegacy(HeatEquationSolver, LegacyModel):
     max_force_jac_update_physical_steps: Optional[NonNegativeInt] = pd.Field(
         alias="maxForceJacUpdatePhysicalSteps"
     )
-    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolverLegacy()
-    )
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(alias="linearSolverConfig")
+
+    _processed_linear_solver_config = pd.validator(
+        "linear_solver_config", allow_reuse=True, pre=True
+    )(set_linear_solver_config_if_none)
 
     def update_model(self) -> Flow360BaseModel:
         model = {
@@ -687,9 +684,11 @@ class TransitionModelSolverLegacy(TransitionModelSolver, LegacyModel):
     )
     CFL_multiplier: Optional[PositiveFloat] = pd.Field(alias="CFLMultiplier")
     linear_iterations: Optional[PositiveInt] = pd.Field(alias="linearIterations")
-    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(
-        alias="linearSolverConfig", default=LinearSolverLegacy()
-    )
+    linear_solver_config: Optional[LinearSolverLegacy] = pd.Field(alias="linearSolverConfig")
+
+    _processed_linear_solver_config = pd.validator(
+        "linear_solver_config", allow_reuse=True, pre=True
+    )(set_linear_solver_config_if_none)
 
     def update_model(self) -> Flow360BaseModel:
         model = {

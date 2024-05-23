@@ -4,8 +4,6 @@ import pytest
 
 from flow360 import Accounts, Env
 
-from .mock_server import mock_response
-
 
 def test_shared_account(mock_response, monkeypatch):
     Accounts.choose_shared_account("user1@test.com")

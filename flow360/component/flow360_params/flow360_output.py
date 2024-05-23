@@ -7,8 +7,8 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union, get_args
 
-import pydantic as pd
-from pydantic import conlist
+import pydantic.v1 as pd
+from pydantic.v1 import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (
@@ -587,6 +587,7 @@ class MonitorOutputLegacy(LegacyModel):
 
     def update_model(self):
         new_monitors = {}
+        # pylint: disable=no-member,unsubscriptable-object
         for monitor_name in self.monitors.names():
             if isinstance(self.monitors[monitor_name], LegacyMonitor):
                 self.monitors[monitor_name].type = "probe"
@@ -762,6 +763,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             "outputFormat": self.output_format,
             "outputFields": fields,
             "startAverageIntegrationStep": self.start_average_integration_step,
+            "surfaces": self.surfaces,
         }
 
         return SurfaceOutput.parse_obj(model)
@@ -806,9 +808,11 @@ class SliceOutputLegacy(SliceOutput, LegacyOutputFormat, LegacyModel):
         if (
             isinstance(self.slices, List)
             and len(self.slices) > 0
+            # pylint: disable=unsubscriptable-object
             and isinstance(self.slices[0], SliceNamedLegacy)
         ):
             slices = {}
+            # pylint: disable=not-an-iterable
             for named_slice in self.slices:
                 slices[named_slice.slice_name] = Slice(
                     slice_normal=named_slice.slice_normal,

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from ..utils import process_expressions
@@ -17,12 +17,6 @@ class InitialCondition(Flow360BaseModel):
     """:class:`InitialCondition` class"""
 
     type: str
-
-
-class FreestreamInitialCondition(InitialCondition):
-    """:class:`FreestreamInitialCondition` class"""
-
-    type: Literal["freestream"] = pd.Field("freestream", const=True)
 
 
 class ExpressionInitialCondition(InitialCondition):
@@ -43,4 +37,12 @@ class ExpressionInitialCondition(InitialCondition):
     _processed_p = pd.validator("p", allow_reuse=True)(process_expressions)
 
 
-InitialConditions = Union[FreestreamInitialCondition, ExpressionInitialCondition]
+class ModifiedRestartSolution(ExpressionInitialCondition):
+    """:class:`ModifiedRestartSolution` class.
+    For forked (restart) cases, expressions will be applied  to manipulate the restart solution before it is applied.
+    """
+
+    type: Literal["restartManipulation"] = pd.Field("restartManipulation", const=True)
+
+
+InitialConditions = Union[ModifiedRestartSolution, ExpressionInitialCondition]

@@ -9,10 +9,6 @@ import pytest
 import flow360 as fl
 import flow360.units as u
 from flow360 import log
-from flow360.component.results.case_results import ActuatorDiskResultCSVModel
-
-from .mock_server import mock_response
-from .utils import mock_id, s3_download_override
 
 log.set_logging_level("DEBUG")
 
@@ -22,7 +18,7 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_actuator_disk_results(mock_response):
+def test_actuator_disk_results(mock_id, mock_response):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -68,7 +64,7 @@ def test_actuator_disk_results(mock_response):
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "ft**2*lb/s**3"
 
 
-def test_bet_disk_results(mock_response):
+def test_bet_disk_results(mock_id, mock_response):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -101,7 +97,7 @@ def test_bet_disk_results(mock_response):
 
 
 @pytest.mark.usefixtures("s3_download_override")
-def test_downloading(mock_response):
+def test_downloading(mock_id, mock_response):
     case = fl.Case(id=mock_id)
     results = case.results
 
@@ -125,7 +121,7 @@ def test_downloading(mock_response):
 
 
 @pytest.mark.usefixtures("s3_download_override")
-def test_downloader(mock_response):
+def test_downloader(mock_id, mock_response):
     case = fl.Case(id=mock_id)
     results = case.results
 

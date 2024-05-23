@@ -3,14 +3,14 @@ Module exposing utilities for the validation service
 """
 
 import json
+from typing import Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from .component.flow360_params.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
-    SpalartAllmaras,
 )
 from .component.flow360_params.params_base import (
     Flow360BaseModel,
@@ -18,7 +18,7 @@ from .component.flow360_params.params_base import (
     _schema_optional_toggle_name,
     flow360_json_encoder,
 )
-from .component.flow360_params.solvers import NavierStokesSolver
+from .component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
 from .component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -336,9 +336,19 @@ def validate_flow360_params_model(params_as_dict, unit_system_name):
     return validation_errors, validation_warnings
 
 
-def handle_case_submit(params_as_dict, unit_system_name):
+def handle_case_submit(params_as_dict: Union[dict, list], unit_system_name: str):
     """
     Handles case submit. Performs pydantic validation, converts units to solver units, and exports JSON representation.
+
+    Parameters
+    ----------
+    params_as_dict : dict | list | Any
+
+    unit_system_name : str
+
+    Returns
+    -------
+    Flow360Params
     """
     unit_system = init_unit_system(unit_system_name)
     params_as_dict = remove_properties_with_prefix(params_as_dict, "_add")
@@ -348,7 +358,4 @@ def handle_case_submit(params_as_dict, unit_system_name):
     with unit_system:
         params = Flow360Params(**params_as_dict)
 
-    solver_json = params.flow360_json()
-    solver_dict = json.loads(solver_json)
-
-    return params, solver_dict
+    return params

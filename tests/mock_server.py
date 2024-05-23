@@ -40,7 +40,7 @@ class MockResponseVolumeMeshesPage(MockResponse):
     def json():
         with open(os.path.join(here, "data/mock_webapi/volumemesh_page_webapi_resp.json")) as fh:
             res = json.load(fh)
-            res["data"]["data"] = [item for item in res["data"]["data"] if item["deleted"] == False]
+            res["data"]["data"] = [item for item in res["data"]["data"] if not item["deleted"]]
         return res
 
 
@@ -61,7 +61,7 @@ class MockResponseVolumeMeshes(MockResponse):
     def json():
         with open(os.path.join(here, "data/mock_webapi/volumemesh_webapi_resp.json")) as fh:
             res = json.load(fh)
-            res["data"] = [item for item in res["data"] if item["deleted"] == False]
+            res["data"] = [item for item in res["data"] if not item["deleted"]]
         return res
 
 

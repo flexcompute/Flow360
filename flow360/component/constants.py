@@ -1,8 +1,8 @@
-# pylint: disable=invalid-name,too-few-public-methods
 """Constants file
 """
 
 
+# pylint: disable=invalid-name,too-few-public-methods
 class NumericalConstants:
     """numerical constants"""
 

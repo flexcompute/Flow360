@@ -11,7 +11,7 @@ from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pandas
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ...cloud.s3_utils import (
     CloudFileNotFoundError,
@@ -595,7 +595,6 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
             Flag indicating whether to overwrite existing files.
         """
 
-        self.udd_names
         for udd in self._udds.values():
             udd.download(to_folder=to_folder, overwrite=overwrite)
 
@@ -746,10 +745,7 @@ class OptionallyDownloadableResultCSVModel(ResultCSVModel):
                 log.warning(self._err_msg)
             else:
                 log.error(
-                    (
-                        "A problem occured when trying to download results:"
-                        f"{self.remote_file_name}"
-                    )
+                    "A problem occured when trying to download results:" f"{self.remote_file_name}"
                 )
                 raise err
 

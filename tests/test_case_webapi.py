@@ -1,17 +1,13 @@
 import pytest
 
-import flow360
 from flow360 import Case
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import Logger, log
 
-from .mock_server import mock_response
-from .utils import mock_id
-
 Logger.log_to_file = False
 
 
-def test_case(mock_response):
+def test_case(mock_id, mock_response):
     case = Case(id=mock_id)
     log.info(f"{case.info}")
     log.info(f"{case.params.json()}")
@@ -24,7 +20,7 @@ def test_case(mock_response):
     assert not case.has_bet_disks()
     assert not case.has_parent()
     with pytest.raises(Flow360RuntimeError):
-        case.parent
+        print(case.parent)
 
 
 Logger.log_to_file = True

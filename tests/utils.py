@@ -1,23 +1,21 @@
 import difflib
-import importlib
 import json
 import os
 import shutil
 import tempfile
-import types
-from numbers import Number
-from typing import Collection
 
 import numpy as np
 import pytest
 import unyt
 
-import flow360
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import S3TransferType, get_local_filename_and_create_folders
 from flow360.component.flow360_params import unit_system
 
-mock_id = "00000000-0000-0000-0000-000000000000"
+
+@pytest.fixture
+def mock_id():
+    return "00000000-0000-0000-0000-000000000000"
 
 
 def file_compare(file1, file2):

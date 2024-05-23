@@ -6,7 +6,7 @@ Turbulence quantities parameters
 from abc import ABCMeta
 from typing import Literal, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..types import NonNegativeFloat, PositiveFloat
 from .params_base import Flow360BaseModel

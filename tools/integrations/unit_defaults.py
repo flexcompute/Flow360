@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 import flow360 as fl
 from flow360.component.flow360_params.params_base import Flow360BaseModel

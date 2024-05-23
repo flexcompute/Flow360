@@ -13,12 +13,12 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
-import pydantic as pd
+import pydantic.v1 as pd
 import rich
 import unyt
 import yaml
-from pydantic import BaseModel
-from pydantic.fields import ModelField
+from pydantic.v1 import BaseModel
+from pydantic.v1.fields import ModelField
 from typing_extensions import Literal
 
 from ...error_messages import do_not_modify_file_manually_msg
@@ -33,7 +33,8 @@ SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 
 def json_dumps(value, *args, **kwargs):
     """custom json dump with sort_keys=True"""
-    return json.dumps(value, sort_keys=True, *args, **kwargs)
+    kwargs["sort_keys"] = True  # Set sort_keys within kwargs
+    return json.dumps(value, *args, **kwargs)
 
 
 # pylint: disable=invalid-name
@@ -706,6 +707,7 @@ class Flow360BaseModel(BaseModel):
                     params=params,
                     required_by=[*required_by, loc_name],
                 )
+                # pylint: disable=no-member
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
                 log.debug(f"      converted to: {solver_values[property_name]}")
@@ -900,7 +902,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params_dict = Flow360Params.dict_from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        with open(filename, "r", encoding="utf-8") as json_fhandle:
+        with open(filename, encoding="utf-8") as json_fhandle:
             model_dict = json.load(json_fhandle)
         return model_dict
 
@@ -964,7 +966,7 @@ class Flow360BaseModel(BaseModel):
         -------
         >>> params_dict = Flow360Params.dict_from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        with open(filename, "r", encoding="utf-8") as yaml_in:
+        with open(filename, encoding="utf-8") as yaml_in:
             model_dict = yaml.safe_load(yaml_in)
         return model_dict
 

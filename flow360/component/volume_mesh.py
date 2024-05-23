@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Iterator, List, Optional, Union
 
 import numpy as np
-from pydantic import Extra, Field, validator
+from pydantic.v1 import Extra, Field, validator
 
 from flow360.component.compress_upload import compress_and_upload_chunks
 
@@ -83,6 +83,7 @@ def get_no_slip_walls(params: Union[Flow360Params, Flow360MeshParams]):
         return [
             wall_name
             for wall_name, wall in params.boundaries.dict().items()
+            # pylint: disable=no-member
             if wall_name != COMMENTS and _GenericBoundaryWrapper(v=wall).v.type == NoSlipWall().type
         ]
 
@@ -407,8 +408,10 @@ class VolumeMeshDraft(ResourceDraft):
         self.compress_method = CompressionFormat.ZST
         ResourceDraft.__init__(self)
 
-    def _submit_from_surface(self):
-        self.validator_api(self.params, solver_version=self.solver_version)
+    def _submit_from_surface(self, force_submit: bool = False):
+        self.validator_api(
+            self.params, solver_version=self.solver_version, raise_on_error=(not force_submit)
+        )
         body = {
             "name": self.name,
             "tags": self.tags,
@@ -496,7 +499,7 @@ class VolumeMeshDraft(ResourceDraft):
         log.info(f"VolumeMesh successfully uploaded: {mesh.short_description()}")
         return mesh
 
-    def submit(self, progress_callback=None) -> VolumeMesh:
+    def submit(self, progress_callback=None, force_submit: bool = False) -> VolumeMesh:
         """submit mesh to cloud
 
         Parameters
@@ -517,18 +520,22 @@ class VolumeMeshDraft(ResourceDraft):
             return self._submit_upload_mesh(progress_callback)
 
         if self.surface_mesh_id is not None and self.name is not None and self.params is not None:
-            return self._submit_from_surface()
+            return self._submit_from_surface(force_submit=force_submit)
 
         raise Flow360ValueError(
             "You must provide volume mesh file for upload or surface mesh Id with meshing parameters."
         )
 
     @classmethod
-    def validator_api(cls, params: VolumeMeshingParams, solver_version=None):
+    def validator_api(
+        cls, params: VolumeMeshingParams, solver_version=None, raise_on_error: bool = True
+    ):
         """
         validation api: validates surface meshing parameters before submitting
         """
-        return Validator.VOLUME_MESH.validate(params, solver_version=solver_version)
+        return Validator.VOLUME_MESH.validate(
+            params, solver_version=solver_version, raise_on_error=raise_on_error
+        )
 
 
 class VolumeMesh(Flow360Resource):

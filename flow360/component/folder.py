@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 from ..cloud.requests import MoveFolderItem, MoveToFolderRequest, NewFolderRequest
 from ..cloud.rest_api import RestApi

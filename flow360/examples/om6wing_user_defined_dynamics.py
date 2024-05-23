@@ -2,7 +2,7 @@
 user defined dynamics example
 """
 
-from .base_test_case import BaseTestCase, url_base
+from .base_test_case import BaseTestCase
 
 
 class OM6wingUserDefinedDynamics(BaseTestCase):

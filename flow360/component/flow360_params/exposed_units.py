@@ -1,5 +1,5 @@
-""" 
-Extra units to be included in the dimensioned type schema 
+"""
+Extra units to be included in the dimensioned type schema
 (default SI, CGS, imperial units are included by default)
 """
 

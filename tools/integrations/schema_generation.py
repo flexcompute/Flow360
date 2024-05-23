@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Literal, Optional, Type, Union, get_args
 
-import pydantic as pd
+import pydantic.v1 as pd
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_params import (
@@ -12,7 +12,7 @@ from flow360.component.flow360_params.flow360_params import (
 )
 from flow360.component.flow360_params.initial_condition import (
     ExpressionInitialCondition,
-    FreestreamInitialCondition,
+    ModifiedRestartSolution,
 )
 from flow360.component.flow360_params.params_base import (
     Flow360BaseModel,
@@ -191,8 +191,8 @@ class _FluidProperties(Flow360BaseModel):
 
 
 class _InitialConditions(Flow360BaseModel):
-    initial_conditions: Union[FreestreamInitialCondition, ExpressionInitialCondition] = pd.Field(
-        alias="initialConditions", options=["Freestream", "Expression"]
+    initial_conditions: Union[ModifiedRestartSolution, ExpressionInitialCondition] = pd.Field(
+        alias="initialConditions", options=["ModifyRestart", "Expression"]
     )
 
     class SchemaConfig(Flow360BaseModel.SchemaConfig):

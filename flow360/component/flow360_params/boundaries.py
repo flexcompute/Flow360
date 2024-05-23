@@ -7,8 +7,8 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union
 
-import pydantic as pd
-from pydantic import StrictStr
+import pydantic.v1 as pd
+from pydantic.v1 import StrictStr
 
 from flow360.component.flow360_params.unit_system import PressureType
 
@@ -21,18 +21,16 @@ from .unit_system import VelocityType
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]
 
-UpwindPhiBCTypeNames = set(
-    [
-        "Freestream",
-        "RiemannInvariant",
-        "SubsonicOutflowPressure",
-        "PressureOutflow",
-        "SubsonicOutflowMach",
-        "SubsonicInflow",
-        "MassOutflow",
-        "MassInflow",
-    ]
-)
+UpwindPhiBCTypeNames = {
+    "Freestream",
+    "RiemannInvariant",
+    "SubsonicOutflowPressure",
+    "PressureOutflow",
+    "SubsonicOutflowMach",
+    "SubsonicInflow",
+    "MassOutflow",
+    "MassInflow",
+}
 
 
 def _check_velocity_is_expression(input_velocity):
@@ -222,6 +220,13 @@ class WallFunction(Boundary):
     """:class: `WallFunction` boundary"""
 
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
+
+    velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
+    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
+        default="relative", alias="velocityType"
+    )
+
+    _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
 
 class MassInflow(BoundaryWithTurbulenceQuantities):

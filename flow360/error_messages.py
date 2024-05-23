@@ -3,7 +3,6 @@
 error messages
 """
 
-
 not_a_cloud_resource = """\
 Reference resource is not a cloud resource.
 If a case was retried or forked from other case, submit the other case first before submitting this case.
@@ -15,7 +14,7 @@ def change_solver_version_error(from_version, to_version):
 Cannot change solver version from parent to child.
 Parent: solver_version={from_version}
 Requested: solver_version={to_version}
-You need to run sequence of all cases starting from mesh 
+You need to run sequence of all cases starting from mesh
 """
 
 
@@ -57,7 +56,7 @@ The file was manually edited. It is recommended to not edit config files manuall
 
 use_unit_system_msg = """\
 Params must be created with unit system context. For example:
->>> with SI_unit_system: 
+>>> with SI_unit_system:
 >>>     params = Flow360Params(
             ...
         )

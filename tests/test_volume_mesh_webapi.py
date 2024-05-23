@@ -1,11 +1,7 @@
-import pytest
-
 from flow360.component.volume_mesh import VolumeMesh, VolumeMeshList
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
-
-from .mock_server import mock_response
 
 
 def test_volume_mesh_list(mock_response):

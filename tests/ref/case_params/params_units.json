@@ -99,7 +99,7 @@
     "animationFrequencyTimeAverageOffset": 0,
     "startAverageIntegrationStep": -1,
     "writeSingleFile": false,
-    "outputFields": [ ]
+    "outputFields": []
   },
   "volumeZones": {
     "zone2": {
@@ -172,5 +172,23 @@
       }
     }
   },
-  "hash": "789392a66b050ef4dc6fd6055d10c1236f202d6a25644728f1cefca93d813a79"
+  "navierStokesSolver": {
+    "CFLMultiplier": 1.0,
+    "absoluteTolerance": 1e-10,
+    "equationEvalFrequency": 1,
+    "kappaMUSCL": -1.0,
+    "limitPressureDensity": false,
+    "limitVelocity": false,
+    "linearSolver": {
+      "maxIterations": 30
+    },
+    "lowMachPreconditioner": false,
+    "maxForceJacUpdatePhysicalSteps": 0,
+    "modelType": "Compressible",
+    "numericalDissipationFactor": 1.0,
+    "orderOfAccuracy": 2,
+    "relativeTolerance": 0.0,
+    "updateJacobianFrequency": 4
+  },
+  "hash": "4c590bef145e27eaa5557667c35d04018d8c95907b43df10879000a087f6cd88"
 }

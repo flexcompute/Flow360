@@ -4,12 +4,14 @@ import tempfile
 import pytest
 
 from flow360.file_path import flow360_dir
-from flow360.log import log, set_logging_file, toggle_rotation
+from flow360.log import set_logging_file, toggle_rotation
 
 """
-Before running all tests redirect all test logging to a temporary log file, turn off log rotation 
+Before running all tests redirect all test logging to a temporary log file, turn off log rotation
 due to multi-threaded rotation being unsupported at this time
 """
+
+pytest_plugins = ["tests.utils", "tests.mock_server"]
 
 
 def pytest_configure():

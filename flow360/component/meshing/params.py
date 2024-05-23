@@ -4,7 +4,7 @@ Flow360 meshing parameters
 
 from typing import List, Optional, Union, get_args
 
-import pydantic as pd
+import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from flow360.flags import Flags
@@ -255,6 +255,9 @@ class VolumeMeshingParams(Flow360BaseModel):
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
+
+    if Flags.beta_features():
+        version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")
 
     def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360

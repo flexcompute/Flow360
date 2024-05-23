@@ -204,7 +204,7 @@ def test_validate_service_should_not_be_called_with_context():
 
 
 def test_init_fork_with_update():
-    with open("data/cases/case_13.json", "r") as fh:
+    with open("data/cases/case_13.json") as fh:
         params = json.load(fh)
 
     data = services.get_default_fork(params)
@@ -212,7 +212,7 @@ def test_init_fork_with_update():
 
 
 def test_init_fork_with_update_2():
-    with open("data/cases/case_14_bet.json", "r") as fh:
+    with open("data/cases/case_14_bet.json") as fh:
         data = json.load(fh)
 
     params = services.get_default_fork(data)
@@ -223,16 +223,16 @@ def test_init_fork_with_update_2():
 
     assert len(params_as_dict["BETDisks"]) == 1
     assert params_as_dict["BETDisks"][0]["thickness"] == 30.0
-    assert params_as_dict["timeStepping"]["_addCFL"] == True
+    assert params_as_dict["timeStepping"]["_addCFL"] is True
     assert "fluid/body" in params_as_dict["boundaries"]
-    assert not "_addFluid/body" in params_as_dict["boundaries"]
+    assert "_addFluid/body" not in params_as_dict["boundaries"]
 
 
 def test_init_retry():
     files = ["params_units.json", "case_15.json", "case_18.json"]
 
     for file in files:
-        with open(f"data/cases/{file}", "r") as fh:
+        with open(f"data/cases/{file}") as fh:
             params = json.load(fh)
 
         data = services.get_default_retry(params)
@@ -243,7 +243,7 @@ def test_validate():
     files = ["case_16.json"]
 
     for file in files:
-        with open(f"data/cases/{file}", "r") as fh:
+        with open(f"data/cases/{file}") as fh:
             params = json.load(fh)
 
         errors, warning = services.validate_flow360_params_model(
@@ -276,11 +276,11 @@ def test_submit_and_retry():
         },
     }
 
-    params, solver_dict = services.handle_case_submit(params_data, "SI")
+    params = services.handle_case_submit(params_data, "SI")
 
     temp_file_user = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     params.to_json(temp_file_user.name)
 
-    with open(temp_file_user.name, "r") as fh:
+    with open(temp_file_user.name) as fh:
         params = json.load(fh)
-    data = services.get_default_retry(params)
+    services.get_default_retry(params)
