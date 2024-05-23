@@ -1,29 +1,32 @@
-from typing import List, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
+from flow360.component.flow360_params.flow360_fields import (
+    CommonFields,
+    SliceFields,
+    SurfaceFields,
+    VolumeFields,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.unique_list import (
+    UniqueAliasedItemList,
+    UniqueItemList,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
-    ProbeMonitor,
+    Probe,
     Slice,
-    SurfaceIntegralMonitor,
+    SurfaceList,
 )
 from flow360.component.simulation.primitives import Surface
-from flow360.component.simulation.types import NonNegativeAndNegOneInt
 
 """Mostly the same as Flow360Param counterparts.
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver. (Yes but they share the same output_fields)
 2. We do not support mulitple output frequencies for the same type of output.
 """
-
-# TODO: We need a proper list
-SurfaceOutputFields = List[str]
-VolumeOutputFields = List[str]
-SliceOutputFields = List[str]
-MonitorOutputFields = List[str]
 
 
 class _AnimationSettings(Flow360BaseModel):
@@ -51,7 +54,7 @@ class _TimeAverageAdditionalAnimationSettings(Flow360BaseModel):
         Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
     """
 
-    start_average_integration_step: Optional[NonNegativeAndNegOneInt] = pd.Field(
+    start_step: Optional[Union[pd.NonNegativeInt, Literal[-1]]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
 
@@ -62,7 +65,7 @@ class SurfaceOutput(_AnimationSettings):
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: List[str] = pd.Field()
+    output_fields: UniqueAliasedItemList[SurfaceFields] = pd.Field()
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSettings):
@@ -75,8 +78,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSet
 
 
 class VolumeOutput(_AnimationSettings):
-
-    output_fields: List[str] = pd.Field()
+    output_fields: UniqueAliasedItemList[VolumeFields] = pd.Field()
 
 
 class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSettings):
@@ -90,18 +92,23 @@ class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSetti
 
 
 class SliceOutput(_AnimationSettings):
-    slices: EntityList[Slice] = pd.Field()
-    output_fields: List[str] = pd.Field()
+    slices: UniqueItemList[Slice] = pd.Field()
+    output_fields: UniqueAliasedItemList[SliceFields] = pd.Field()
 
 
 class IsosurfaceOutput(_AnimationSettings):
-    isosurfaces: EntityList[Isosurface] = pd.Field()
-    output_fields: List[str] = pd.Field()
+    isosurfaces: UniqueItemList[Isosurface] = pd.Field()
+    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
 
 
-class MonitorOutput(_AnimationSettings):
-    monitors: EntityList[SurfaceIntegralMonitor, ProbeMonitor] = pd.Field()
-    output_fields: List[str] = pd.Field()
+class SurfaceIntegralOutput(_AnimationSettings):
+    monitors: UniqueItemList[SurfaceList] = pd.Field()
+    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
+
+
+class ProbeOutput(_AnimationSettings):
+    probes: UniqueItemList[Probe] = pd.Field()
+    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -121,6 +128,7 @@ OutputTypes = Union[
     VolumeOutput,
     SliceOutput,
     IsosurfaceOutput,
-    MonitorOutput,
+    SurfaceIntegralOutput,
+    ProbeOutput,
     AeroAcousticOutput,
 ]
