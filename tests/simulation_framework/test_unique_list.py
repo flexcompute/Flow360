@@ -1,9 +1,13 @@
 import re
+from typing import Literal
 
 import pydantic as pd
 import pytest
 
-from flow360.component.flow360_params.flow360_fields import CommonFields
+from flow360.component.flow360_params.flow360_fields import (
+    CommonFieldNames,
+    CommonFieldNamesFull,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.unique_list import (
     UniqueAliasedItemList,
@@ -38,7 +42,9 @@ class TempSlice(_OutputItemBase):
 
 class TempIsosurfaceOutput(Flow360BaseModel):
     isosurfaces: UniqueItemList[TempIsosurface] = pd.Field()
-    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
+    output_fields: UniqueAliasedItemList[Literal[CommonFieldNames, CommonFieldNamesFull]] = (
+        pd.Field()
+    )
 
 
 def test_unique_list():
