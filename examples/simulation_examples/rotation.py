@@ -9,7 +9,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     CylindricalRefinement,
 )
-from flow360.component.simulation.models.volumes.volumes import Rotation
+from flow360.component.simulation.models.volumes_models import Rotation
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )

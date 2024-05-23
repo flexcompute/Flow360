@@ -1,7 +1,6 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
 from flow360.component.case import Case
-from flow360.component.simulation.material.material import Air
 from flow360.component.simulation.meshing_param.params import (
     Farfield,
     MeshingParameters,
@@ -9,7 +8,8 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     CylindricalRefinement,
 )
-from flow360.component.simulation.models.volumes.volumes import (
+from flow360.component.simulation.models.material import Air
+from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     FluidDynamics,

@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Final, Literal, Optional, Tuple, final
+from typing import Final, Literal, Optional, Tuple, Union, final
 
 import pydantic as pd
 
@@ -59,3 +59,5 @@ class Cylinder(_VolumeEntityBase):
 @final
 class Surface(_SurfaceEntityBase):
     pass
+
+VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
