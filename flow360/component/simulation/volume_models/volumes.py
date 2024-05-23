@@ -10,7 +10,7 @@ import pydantic as pd
 import flow360.component.simulation.physics_components as components
 from flow360.component.simulation.entities_base import EntitiesBase
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.material import Material
+from flow360.component.simulation.material.material import Material
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.references import ReferenceGeometry

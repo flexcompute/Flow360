@@ -1,13 +1,18 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
 from flow360.component.case import Case
-from flow360.component.simulation.material import Air
+from flow360.component.simulation.material.material import Air
 from flow360.component.simulation.meshing_param.params import (
     Farfield,
     MeshingParameters,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     CylindricalRefinement,
+)
+from flow360.component.simulation.models.volumes.volumes import (
+    ActuatorDisk,
+    BETDisk,
+    FluidDynamics,
 )
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
@@ -22,7 +27,6 @@ from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.volumes import ActuatorDisk, BETDisk, FluidDynamics
 from flow360.component.surface_mesh import SurfaceMesh
 
 my_actuator_disk = Cylinder(
