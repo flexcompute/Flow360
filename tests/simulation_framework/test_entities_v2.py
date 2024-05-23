@@ -1,3 +1,4 @@
+import re
 from abc import ABCMeta
 from typing import List, Literal, Union
 
@@ -168,34 +169,37 @@ def unset_entity_type():
     def IncompleteEntity(EntityBase):
         pass
 
-    try:
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape("_entity_type is not defined in the entity class."),
+    ):
         IncompleteEntity(name="IncompleteEntity")
-    except NotImplementedError as e:
-        assert "_entity_type is not defined in the entity class." in str(e)
 
 
 def test_wrong_ways_of_copying_entity(my_cylinder1):
-    try:
-        my_cylinder1.copy()
-    except ValueError as e:
-        assert (
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
             "Change is necessary when calling .copy() as there cannot be two identical entities at the same time. Please use update parameter to change the entity attributes."
-            in str(e)
-        )
-    try:
+        ),
+    ):
+        my_cylinder1.copy()
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
+        ),
+    ):
         my_cylinder1.copy(update={"height": 1.0234})
-    except ValueError as e:
-        assert (
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
             "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
-            in str(e)
-        )
-    try:
+        ),
+    ):
         my_cylinder1.copy(update={"height": 1.0234, "name": my_cylinder1.name})
-    except ValueError as e:
-        assert (
-            "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
-            in str(e)
-        )
 
     assert (
         len(TempFluidDynamics(entities=[my_cylinder1, my_cylinder1]).entities.stored_entities) == 1
@@ -223,12 +227,13 @@ def test_copying_entity(my_cylinder1):
 
 def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface1):
     # 0. No supplied registry but trying to use str
-    try:
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Internal error, registry is not supplied for entity (Box*) expansion."),
+    ):
         expanded_entities = TempFluidDynamics(
             entities=["Box*", my_cylinder1, my_box_zone1]
         ).entities._get_expanded_entities()
-    except ValueError as e:
-        assert "Internal error, registry is not supplied for entity (Box*) expansion." in str(e)
 
     # 1. No supplied registry
     expanded_entities = TempFluidDynamics(
@@ -306,15 +311,11 @@ def test_get_entities(
 
 
 def test_changing_final_attributes(my_box_zone1):
-    try:
+    with pytest.raises(AttributeError, match=re.escape("Cannot modify _entity_type")):
         my_box_zone1.entity_type = "WrongSubClass"
-    except AttributeError as e:
-        assert "Cannot modify _entity_type" in str(e)
 
-    try:
+    with pytest.raises(AttributeError, match=re.escape("Cannot modify _auto_constructed")):
         my_box_zone1.auto_constructed = True
-    except AttributeError as e:
-        assert "Cannot modify _auto_constructed" in str(e)
 
 
 def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
@@ -326,42 +327,45 @@ def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
     assert expanded_entities == my_volume_mesh1["zone*"]
 
     # 2. test using invalid entity input (UGRID convention example)
-    try:
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Type(<class 'int'>) of input to `entities` (1) is not valid. Expected str or entity instance."
+        ),
+    ):
         expanded_entities = TempFluidDynamics(entities=1).entities._get_expanded_entities()
-    except ValueError as e:
-        assert (
-            f"Type(<class 'int'>) of input to `entities` (1) is not valid. Expected str or entity instance."
-            in str(e)
-        )
     # 3. test empty list
-    try:
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Invalid input type to `entities`, list is empty."),
+    ):
         expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities()
-    except ValueError as e:
-        assert "Invalid input type to `entities`, list is empty." in str(e)
 
     # 4. test None
-    try:
-        expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
-    except pd.ValidationError as e:
-        assert (
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
             "Type(<class 'NoneType'>) of input to `entities` (None) is not valid. Expected str or entity instance."
-            in str(e)
-        )
+        ),
+    ):
+        expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
 
     # 5. test non-existing entity
-    try:
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Failed to find any matching entity with ['Non_existing_volume']. Please check the input to entities."
+        ),
+    ):
         expanded_entities = TempFluidDynamics(
             entities=["Non_existing_volume"]
         ).entities._get_expanded_entities(EntityRegistry())
-    except ValueError as e:
-        assert (
-            "Failed to find any matching entity with ['Non_existing_volume']. Please check the input to entities."
-            in str(e)
-        )
-    try:
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
+    ):
         my_volume_mesh1["asdf"]
-    except ValueError as e:
-        assert "Failed to find any matching entity with asdf. Please check your input." in str(e)
 
 
 def test_duplicate_entities(my_volume_mesh1):

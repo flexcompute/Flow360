@@ -254,7 +254,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 # Expand from supplied registry
                 if supplied_registry is None:
                     raise ValueError(
-                        f"Internal error, registry is not supplied for entity ({entity}) expansion. "
+                        f"Internal error, registry is not supplied for entity ({entity}) expansion."
                     )
                 # Expand based on naming pattern registered in the Registry
                 pattern_matched_entities = supplied_registry.find_by_name_pattern(entity)
