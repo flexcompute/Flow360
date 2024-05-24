@@ -7,6 +7,18 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 
 
+class ReferenceGeometry(Flow360BaseModel):
+    """
+    Contains all geometrical related refrence values
+    Note:
+    - mesh_unit is removed from here and will be a property
+    """
+
+    moment_center: Optional[LengthType.Point] = pd.Field()
+    moment_length: Optional[Union[LengthType.Positive, LengthType.Moment]] = pd.Field()
+    area: Optional[AreaType.Positive] = pd.Field()
+
+
 class Transformation(Flow360BaseModel):
     """Used in preprocess()/translator to meshing param for volume meshing interface"""
 
@@ -57,5 +69,5 @@ class Cylinder(_VolumeEntityBase):
 
 
 @final
-class Surface(_SurfaceEntityBase):
+class Surface(_SurfaceEntityBase, ReferenceGeometry):
     pass
