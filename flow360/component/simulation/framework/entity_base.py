@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from abc import ABCMeta
 from collections import defaultdict
-from typing import List, Union, get_args
+from typing import List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
@@ -93,7 +93,9 @@ class _EntityListMeta(_CombinedMeta):
         if not isinstance(entity_types, tuple):
             entity_types = (entity_types,)
         union_type = Union[entity_types]
-        annotations = {"stored_entities": List[union_type]}
+        annotations = {
+            "stored_entities": Optional[List[union_type]]
+        }  # Make sure it is somewhat consistent with the EntityList class
         new_cls = type(
             f"{cls.__name__}[{','.join([t.__name__ for t in entity_types])}]",
             (cls,),
@@ -145,23 +147,30 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     """
 
-    stored_entities: List = pd.Field()
+    stored_entities: Optional[List] = pd.Field()
 
     @classmethod
     def _get_valid_entity_types(cls):
         """Get the list of types that the entity list can accept."""
         entity_field_type = cls.__annotations__.get("stored_entities")
-        if (
-            entity_field_type is not None
-            and hasattr(entity_field_type, "__origin__")
-            and entity_field_type.__origin__ is list
-        ):
-            valid_types = get_args(entity_field_type)[0]
-            if hasattr(valid_types, "__origin__") and valid_types.__origin__ is Union:
-                valid_types = get_args(valid_types)
-            else:
-                valid_types = (valid_types,)
-            return valid_types
+
+        if entity_field_type is not None:
+            # Handle Optional[List[Union[xxxx]]]
+            origin = get_origin(entity_field_type)
+            if origin is Union:
+                args = get_args(entity_field_type)
+                for arg in args:
+                    if get_origin(arg) is list:
+                        entity_field_type = arg
+                        break
+
+            if hasattr(entity_field_type, "__origin__") and entity_field_type.__origin__ is list:
+                valid_types = get_args(entity_field_type)[0]
+                if hasattr(valid_types, "__origin__") and valid_types.__origin__ is Union:
+                    valid_types = get_args(valid_types)
+                else:
+                    valid_types = (valid_types,)
+                return valid_types
         raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
 
     @classmethod
@@ -207,15 +216,20 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         elif isinstance(input, dict):
             return dict(stored_entities=input["stored_entities"])
         else:  # Single reference to an entity
-            cls._valid_individual_input(input)
-            if isinstance(item, tuple(valid_types)):
-                formated_input.append(item)
+            if input is None:
+                return dict(stored_entities=None)
+            else:
+                cls._valid_individual_input(input)
+                if isinstance(item, tuple(valid_types)):
+                    formated_input.append(item)
         return dict(stored_entities=formated_input)
 
     @pd.field_validator("stored_entities", mode="after")
     @classmethod
     def _check_duplicate_entity_in_list(cls, values):
         seen = []
+        if values is None:
+            return None
         for value in values:
             if value in seen:
                 if isinstance(value, EntityBase):
@@ -244,6 +258,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         """
 
         entities = getattr(self, "stored_entities", [])
+
+        if entities is None:
+            return None
 
         valid_types = self.__class__._get_valid_entity_types()
 
