@@ -21,7 +21,7 @@ class _UniqueListMeta(_CombinedMeta):
         union_type = Union[item_types]
         annotations = {"items": List[union_type]}
         new_cls = type(
-            f"{cls.__name__}[{','.join([t.__name__ for t in item_types])}]",
+            f"{cls.__name__}[{','.join([t.__name__ if hasattr(t, '__name__') else repr(t) for t in item_types])}]",
             (cls,),
             {"__annotations__": annotations},
         )
