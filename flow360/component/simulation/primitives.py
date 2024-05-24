@@ -25,6 +25,26 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 @final
+class Face(Flow360BaseModel):
+    """
+    Collection of the patches that share meshing parameters
+    """
+
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericFaceType"] = "GenericFaceType"
+
+
+@final
+class Edge(Flow360BaseModel):
+    """
+    Edge with edge name defined in the geometry file
+    """
+
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+
+
+@final
 class GenericVolume(_VolumeEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
