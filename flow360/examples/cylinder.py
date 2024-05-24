@@ -13,4 +13,4 @@ class Cylinder(BaseTestCase):
         mesh_json = "https://simcloud-public-1.s3.amazonaws.com/examples/cylinder/flow360mesh.json"
         case_json = "local://flow360.json"
         geometry = "local://cylinder.x_t"
-        surface_meshing_json = "local://surface_params.json"
+        surface_json = "local://surface_params.json"
