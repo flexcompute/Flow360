@@ -74,7 +74,9 @@ class TempSurface(_SurfaceEntityBase):
 
 
 class TempFluidDynamics(Flow360BaseModel):
-    entities: EntityList[GenericVolume, Box, Cylinder, str] = pd.Field(alias="volumes", default=[])
+    entities: EntityList[GenericVolume, Box, Cylinder, str] = pd.Field(
+        alias="volumes", default=None
+    )
 
 
 class TempWallBC(Flow360BaseModel):
@@ -216,7 +218,6 @@ def test_wrong_ways_of_copying_entity(my_cylinder1):
 
 
 def test_copying_entity(my_cylinder1):
-
     my_cylinder3_2 = my_cylinder1.copy(update={"height": 8119, "name": "zone/Cylinder3-2"})
     print(my_cylinder3_2)
     assert my_cylinder3_2.height == 8119
@@ -300,7 +301,6 @@ def test_get_entities(
     registry.register(my_cylinder2)
     registry.register(my_box_zone1)
     registry.register(my_box_zone2)
-    print(">>> ", Box.entity_type)
     all_box_entities = registry.get_all_entities_of_given_type(Box)
     assert len(all_box_entities) == 4
     assert my_box_zone1 in all_box_entities
@@ -342,13 +342,8 @@ def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
         expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities()
 
     # 4. test None
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Type(<class 'NoneType'>) of input to `entities` (None) is not valid. Expected str or entity instance."
-        ),
-    ):
-        expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
+    expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
+    assert expanded_entities is None
 
     # 5. test non-existing entity
     with pytest.raises(
@@ -366,6 +361,11 @@ def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
         match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
     ):
         my_volume_mesh1["asdf"]
+
+
+def test_skipped_entities(my_cylinder1, my_cylinder2):
+    TempFluidDynamics()
+    assert TempFluidDynamics().entities.stored_entities is None
 
 
 def test_duplicate_entities(my_volume_mesh1):
