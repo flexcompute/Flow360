@@ -11,7 +11,7 @@ from flow360.component.flow360_params.flow360_fields import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import (
-    UniqueAliasedItemList,
+    UniqueAliasedStringList,
     UniqueItemList,
 )
 from flow360.component.simulation.outputs.output_entities import (
@@ -65,7 +65,7 @@ class SurfaceOutput(_AnimationSettings):
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: UniqueAliasedItemList[SurfaceFields] = pd.Field()
+    output_fields: UniqueAliasedStringList[SurfaceFields] = pd.Field()
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSettings):
@@ -78,7 +78,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSet
 
 
 class VolumeOutput(_AnimationSettings):
-    output_fields: UniqueAliasedItemList[VolumeFields] = pd.Field()
+    output_fields: UniqueAliasedStringList[VolumeFields] = pd.Field()
 
 
 class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSettings):
@@ -92,28 +92,28 @@ class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSetti
 
 
 class SliceOutput(_AnimationSettings):
-    slices: UniqueItemList[Slice] = pd.Field()
-    output_fields: UniqueAliasedItemList[SliceFields] = pd.Field()
+    entities: UniqueItemList[Slice] = pd.Field(alias="slices")
+    output_fields: UniqueAliasedStringList[SliceFields] = pd.Field()
 
 
 class IsosurfaceOutput(_AnimationSettings):
-    isosurfaces: UniqueItemList[Isosurface] = pd.Field()
-    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
+    entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
+    output_fields: UniqueAliasedStringList[CommonFields] = pd.Field()
 
 
 class SurfaceIntegralOutput(_AnimationSettings):
-    monitors: UniqueItemList[SurfaceList] = pd.Field()
-    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
+    entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
+    output_fields: UniqueAliasedStringList[CommonFields] = pd.Field()
 
 
 class ProbeOutput(_AnimationSettings):
-    probes: UniqueItemList[Probe] = pd.Field()
-    output_fields: UniqueAliasedItemList[CommonFields] = pd.Field()
+    entities: UniqueItemList[Probe] = pd.Field(alias="probes")
+    output_fields: UniqueAliasedStringList[CommonFields] = pd.Field()
 
 
 class AeroAcousticOutput(Flow360BaseModel):
     patch_type: Optional[str] = pd.Field("solid", frozen=True)
-    observers: List[Tuple[float, float, float]] = pd.Field()
+    observers: List[LengthType.Point] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False)
 
 

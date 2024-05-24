@@ -36,20 +36,18 @@ def _validate_unique_list(v: List) -> List:
     return v
 
 
-def _validate_unique_aliased_item(v: List[str]) -> List[str]:
-    for item in v:
-        if get_aliases(item)[1] in v:
-            raise ValueError(
-                f"Input item to this list must be unique but {item} and {get_aliases(item)[1]} are both present."
-            )
-    return v
-
-
 class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
+    """
+    A list of general type items that must be unique (uniqueness is determined by the item's __eq__ and __hash__ method).
+
+    We will **not** try to remove duplicate items as choice is user's preference.
+    """
+
     items: Annotated[List, {"uniqueItems": True}]
 
     @pd.field_validator("items", mode="after")
     def check_unique(cls, v):
+        """Check if the items are unique after type checking"""
         return _validate_unique_list(v)
 
     @pd.model_validator(mode="before")
@@ -63,8 +61,35 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
             return dict(items=[input])
 
 
-class UniqueAliasedItemList(UniqueItemList):
+def _validate_unique_aliased_item(v: List[str]) -> List[str]:
+    deduplicated_list = []
+    for item in v:
+        if get_aliases(item)[1] not in deduplicated_list and item not in deduplicated_list:
+            deduplicated_list.append(item)
+    return deduplicated_list
+
+
+class UniqueAliasedStringList(Flow360BaseModel, metaclass=_UniqueListMeta):
+    """
+    A list of items that must be unique by original name or by aliased name.
+    Expect string only and we will remove the duplicate ones.
+    """
+
+    items: Annotated[List[str], {"uniqueItems": True}]
+
     @pd.field_validator("items", mode="after")
-    def check_unique(cls, v):
-        _validate_unique_aliased_item(v)
-        return _validate_unique_list(v)
+    def deduplicate(cls, v):
+        # for item in v:
+        #     if isinstance(item, str) == False:
+        #         raise ValueError(f"Expected string for the list but got {item.__class__.__name__}.")
+        return _validate_unique_aliased_item(v)
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _format_input_to_list(cls, input: Union[dict, list]):
+        if isinstance(input, list):
+            return dict(items=input)
+        elif isinstance(input, dict):
+            return dict(items=input["items"])
+        else:  # Single reference to an entity
+            return dict(items=[input])

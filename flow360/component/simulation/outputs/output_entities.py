@@ -25,7 +25,7 @@ class _OutputItemBase(Flow360BaseModel):
         return False
 
     def __str__(self):
-        return f"{self.__class__.__name__} {self.name}"
+        return f"{self.__class__.__name__} with name: {self.name}"
 
 
 class Slice(_OutputItemBase):

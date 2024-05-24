@@ -10,7 +10,7 @@ from flow360.component.flow360_params.flow360_fields import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.unique_list import (
-    UniqueAliasedItemList,
+    UniqueAliasedStringList,
     UniqueItemList,
 )
 
@@ -29,7 +29,7 @@ class _OutputItemBase(Flow360BaseModel):
         return False
 
     def __str__(self):
-        return f"{self.__class__.__name__} {self.name}"
+        return f"{self.__class__.__name__} with name: {self.name}"
 
 
 class TempIsosurface(_OutputItemBase):
@@ -37,12 +37,12 @@ class TempIsosurface(_OutputItemBase):
 
 
 class TempSlice(_OutputItemBase):
-    field_magnitude: float = pd.Field()
+    pass
 
 
 class TempIsosurfaceOutput(Flow360BaseModel):
     isosurfaces: UniqueItemList[TempIsosurface] = pd.Field()
-    output_fields: UniqueAliasedItemList[Literal[CommonFieldNames, CommonFieldNamesFull]] = (
+    output_fields: UniqueAliasedStringList[Literal[CommonFieldNames, CommonFieldNamesFull]] = (
         pd.Field()
     )
 
@@ -50,39 +50,43 @@ class TempIsosurfaceOutput(Flow360BaseModel):
 def test_unique_list():
     my_iso_1 = TempIsosurface(name="iso_1", field_magnitude=1.01)
     my_iso_1_dup = TempIsosurface(name="iso_1", field_magnitude=1.02)
-    my_fake_slice = TempSlice(name="iso_1", field_magnitude=1.02)
+    my_slice = TempSlice(name="slice_1")
     # 1: Test duplicate isosurfaces
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input item to this list must be unique but ['TempIsosurface iso_1'] appears multiple times."
+            "Input item to this list must be unique but ['TempIsosurface with name: iso_1'] appears multiple times."
         ),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1, my_iso_1_dup], output_fields=["wallDistance"])
+
     # 2: Test duplicate output_fields
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Input item to this list must be unique but ['wallDistance'] appears multiple times."
-        ),
-    ):
-        TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", "wallDistance"])
+    output = TempIsosurfaceOutput(
+        isosurfaces=[my_iso_1], output_fields=["wallDistance", "wallDistance"]
+    )
+    assert output.output_fields.items == ["wallDistance"]
+
     # 3: Test duplicate output_fields by aliased name
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Input item to this list must be unique but wallDistance and Wall distance are both present."
-        ),
-    ):
-        TempIsosurfaceOutput(
-            isosurfaces=[my_iso_1], output_fields=["wallDistance", "Wall distance"]
-        )
+    output = TempIsosurfaceOutput(
+        isosurfaces=[my_iso_1],
+        output_fields=[
+            "Wall distance",
+            "wallDistance",
+            "Wall distance",
+            "Cp",
+            "wallDistance",
+            "Q criterion",
+        ],
+    )
+
+    assert output.output_fields.items == ["Wall distance", "Cp", "Q criterion"]
+
     # 4: Test unvalid types:
     with pytest.raises(
         ValueError,
         match=re.escape("Input should be a valid dictionary or instance of TempIsosurface"),
     ):
-        TempIsosurfaceOutput(isosurfaces=[my_iso_1, my_fake_slice], output_fields=["wallDistance"])
+        TempIsosurfaceOutput(isosurfaces=[my_iso_1, my_slice], output_fields=["wallDistance"])
 
     with pytest.raises(
         ValueError,
