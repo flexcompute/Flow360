@@ -111,6 +111,7 @@ class BaseTestCase(metaclass=ABCMeta):
 
     @classmethod
     def _real_path(cls, *args):
+        here = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(here, cls.name, *args)
 
     @classproperty
