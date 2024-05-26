@@ -21,7 +21,7 @@ from ...exceptions import Flow360ValueError
 from ...log import log
 from ..flow360_params.conversions import unit_converter
 from ..flow360_params.flow360_params import Flow360Params
-from ..flow360_params.unit_system import (
+from flow360.component.flow360_params.unit_system import (
     Flow360UnitSystem,
     ForceType,
     MomentType,

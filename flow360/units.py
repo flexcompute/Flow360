@@ -5,7 +5,7 @@ This module is for accessing units and unit systems including flow360 unit syste
 import unyt
 from unyt import unit_symbols
 
-from .component.flow360_params.unit_system import (
+from flow360.component.flow360_params.unit_system import (
     BaseSystemType,
     CGS_unit_system,
     SI_unit_system,

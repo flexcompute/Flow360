@@ -31,7 +31,7 @@ from .params_base import (
     Flow360SortableBaseModel,
     _self_named_property_validator,
 )
-from .unit_system import Flow360UnitSystem, LengthType
+from flow360.component.flow360_params.unit_system import Flow360UnitSystem, LengthType
 
 OutputFormat = Literal[
     "paraview", "tecplot", "both", "paraview,tecplot"

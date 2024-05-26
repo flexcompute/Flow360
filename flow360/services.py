@@ -19,7 +19,7 @@ from .component.flow360_params.params_base import (
     flow360_json_encoder,
 )
 from .component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
-from .component.flow360_params.unit_system import (
+from flow360.component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
     UnitSystem,

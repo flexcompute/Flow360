@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import List, Literal, Optional
+from typing import Literal
 
 import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
-from pydantic.fields import FieldInfo
 
 from flow360.component.types import TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
@@ -18,34 +17,6 @@ from flow360.log import log
 
 import unyt
 import numpy as np
-from ...component.flow360_params.unit_system import DimensionedType
-
-def encode_ndarray(x):
-    """
-    encoder for ndarray
-    """
-    if x.size == 1:
-        return float(x)
-    return tuple(x.tolist())
-
-
-def dimensioned_type_serializer(x):
-    """
-    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
-    """
-    return {"value": encode_ndarray(x.value), "units": str(x.units)}
-
-def any_serialiser(v):
-    print(f'calling any serialiser {v=}')
-
-_json_encoders_map = {
-    unyt.unyt_quantity: dimensioned_type_serializer,
-    unyt.unyt_array: dimensioned_type_serializer,
-    DimensionedType: dimensioned_type_serializer,
-    unyt.Unit: str,
-    np.ndarray: encode_ndarray,
-}
-
 
 
 class Conflicts(pd.BaseModel):
@@ -101,7 +72,6 @@ class Flow360BaseModel(pd.BaseModel):
         ##:: Pydantic kwargs
         arbitrary_types_allowed=True,
         extra="forbid",
-        json_encoders=_json_encoders_map,
         frozen=False,
         populate_by_name=True,
         validate_assignment=True,

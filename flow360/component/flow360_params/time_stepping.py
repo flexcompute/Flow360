@@ -14,7 +14,7 @@ from typing_extensions import Literal
 
 from ..types import PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
-from .unit_system import TimeType
+from flow360.component.flow360_params.unit_system import TimeType
 
 
 def _apply_default_to_none(original, default):

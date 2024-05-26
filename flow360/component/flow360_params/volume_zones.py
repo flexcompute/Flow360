@@ -18,7 +18,7 @@ from ..constants import NumericalConstants
 from ..types import Axis, List, NonNegativeFloat, PositiveFloat
 from ..utils import process_expressions
 from .params_base import Flow360BaseModel
-from .unit_system import (
+from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from abc import ABCMeta
-from typing import Dict, List, NoReturn, Optional, Union, get_args
+from typing import Dict, List, Optional, Union, get_args
 
 import pydantic.v1 as pd
 from typing_extensions import Literal
@@ -83,7 +83,7 @@ from .solvers import (
 )
 from .time_stepping import BaseTimeStepping, SteadyTimeStepping, TimeStepping
 from .turbulence_quantities import TurbulenceQuantitiesType, TurbulentViscosityRatio
-from .unit_system import (
+from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     AreaType,
     DensityType,

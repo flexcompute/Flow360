@@ -7,7 +7,7 @@ import pytest
 import flow360 as fl
 from flow360 import units as u
 from flow360.component.simulation.base_model import Flow360BaseModel
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.simulation.unit_system import (
     AngularVelocityType,
     AreaType,
     DensityType,
@@ -20,7 +20,6 @@ from flow360.component.flow360_params.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import to_file_from_file_test
 
 
 class DataWithUnits(pd.BaseModel):

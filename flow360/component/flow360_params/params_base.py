@@ -26,7 +26,7 @@ from ...exceptions import Flow360FileError, Flow360ValidationError
 from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
-from .unit_system import DimensionedType, is_flow360_unit
+from flow360.component.flow360_params.unit_system import DimensionedType, is_flow360_unit
 
 SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
 

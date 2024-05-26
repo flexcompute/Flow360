@@ -16,7 +16,7 @@ from ..types import Axis, PositiveFloat, PositiveInt, Vector
 from ..utils import process_expressions
 from .params_base import Flow360BaseModel
 from .turbulence_quantities import TurbulenceQuantitiesType
-from .unit_system import VelocityType
+from flow360.component.flow360_params.unit_system import VelocityType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]

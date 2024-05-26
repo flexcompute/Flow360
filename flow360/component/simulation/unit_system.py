@@ -10,12 +10,14 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List, Literal, Union
+from typing import Any, Collection, List, Literal, Union, Annotated
 
 import numpy as np
-import pydantic.v1 as pd
+import pydantic as pd
 
 import unyt as u
+from pydantic import PlainValidator, PlainSerializer
+from pydantic_core import core_schema
 
 from flow360.log import log
 from flow360.utils import classproperty
@@ -134,6 +136,22 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
+def _encode_ndarray(x):
+    """
+    encoder for ndarray
+    """
+    if x.size == 1:
+        return float(x)
+    return tuple(x.tolist())
+
+
+def _dimensioned_type_serializer(x):
+    """
+    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    """
+    return {"value": _encode_ndarray(x.value), "units": str(x.units)}
+
+
 # pylint: disable=no-member
 def _has_dimensions(quant, dim):
     """
@@ -249,16 +267,27 @@ class ValidatedType(metaclass=ABCMeta):
         yield cls.validate
 
     @classmethod
-    @abstractmethod
-    def validate(cls, value):
-        """validation"""
+    def validate(cls, value, *args):
+        print(f'calling validator_v2, {args=}')
+        try:
+            return value
+        except (TypeError, ValueError) as err:
+            details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
+            raise pd.ValidationError.from_exception_data('validation error', [details])
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+            cls, *args, **kwargs
+    ) -> pd.CoreSchema:
+        print(f'running pydantic v2 validation, {cls.dim_name}')
+        return core_schema.no_info_plain_validator_function(cls.validate)
 
     @classmethod
     def __get_pydantic_json_schema__(cls):
         pass
 
 
-class DimensionedType(ValidatedType):
+class _DimensionedType(ValidatedType):
     """
     :class: Base class for dimensioned values
     """
@@ -320,16 +349,21 @@ class DimensionedType(ValidatedType):
             class _ConType:
                 type_ = pd.confloat(**kwargs)
 
-            def validate(con_cls, value):
-                """Additional validator for value"""
-                print(f'calling _Constrained validate, {value=}')
+            def validate(con_cls, value, *args):
+                print(f'calling validator_v2, {args=}')
 
-                dimensioned_value = dim_type.validate(value)
-                pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
-                pd.validators.float_finite_validator(
-                    dimensioned_value.value, con_cls.con_type, None
-                )
-                return dimensioned_value
+                try:
+                    """Additional validator for value"""
+                    print(f'calling _Constrained validate, {value=}')
+
+                    dimensioned_value = dim_type.validate(value)
+                    pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
+                    pd.validators.float_finite_validator(dimensioned_value.value, con_cls.con_type, None)
+                    return dimensioned_value
+                except TypeError as err:
+                    print('error found')
+                    details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise pd.ValidationError.from_exception_data('validation error', [details])
 
             def __modify_schema__(con_cls, field_schema, field):
                 dim_type.__modify_schema__(field_schema, field)
@@ -343,14 +377,22 @@ class DimensionedType(ValidatedType):
                 if constraints.lt is not None:
                     field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
+            def __get_pydantic_core_schema__(
+                    con_cls, *args, **kwargs
+            ) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(lambda *args: validate(con_cls, *args))
+
             cls_obj = type("_Constrained", (), {})
             cls_obj.con_type = _ConType
-            cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field)
-            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_json_schema__ = lambda: None
 
-            return cls_obj
-
+            return Annotated[
+                cls_obj,
+                PlainValidator(lambda value: validate(cls_obj, value)),
+                PlainSerializer(_dimensioned_type_serializer)
+            ]
 
     # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
@@ -410,46 +452,61 @@ class DimensionedType(ValidatedType):
                 if length == 3:
                     field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
-            def validate(vec_cls, value):
+            def validate(vec_cls, value, *args):
                 """additional validator for value"""
-                value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
-                value = _is_unit_validator(value)
+                print(f'calling validator_v2, {args=}')
+                try:
 
-                is_collection = isinstance(value, Collection) or (
-                        isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
-                )
+                    value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _is_unit_validator(value)
 
-                if length is None:
-                    if not is_collection:
-                        raise TypeError(
-                            f"arg '{value}' needs to be a collection of values of any length"
-                        )
-                else:
-                    if not is_collection or len(value) != length:
-                        raise TypeError(
-                            f"arg '{value}' needs to be a collection of {length} values"
-                        )
-                if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
-                    raise ValueError(f"arg '{value}' cannot have zero coordinate values")
-                if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
-                    raise ValueError(f"arg '{value}' cannot have zero norm")
+                    is_collection = isinstance(value, Collection) or (
+                            isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                    )
 
-                value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
-                value = _unit_array_validator(value, vec_cls.type.dim)
-                value = _has_dimensions_validator(value, vec_cls.type.dim)
+                    if length is None:
+                        if not is_collection:
+                            raise TypeError(
+                                f"arg '{value}' needs to be a collection of values of any length"
+                            )
+                    else:
+                        if not is_collection or len(value) != length:
+                            raise TypeError(
+                                f"arg '{value}' needs to be a collection of {length} values"
+                            )
+                    if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
+                        raise ValueError(f"arg '{value}' cannot have zero coordinate values")
+                    if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
+                        raise ValueError(f"arg '{value}' cannot have zero norm")
 
-                return value
+                    value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
+                    value = _unit_array_validator(value, vec_cls.type.dim)
+                    value = _has_dimensions_validator(value, vec_cls.type.dim)
+
+                    return value
+                except TypeError as err:
+                    print('error found')
+                    details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise pd.ValidationError.from_exception_data('validation error', [details])
+
+            def __get_pydantic_core_schema__(
+                    vec_cls, *args, **kwargs
+            ) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(lambda *args: validate(vec_cls, *args))
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_coord = allow_zero_coord
-            cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = __modify_schema__
-            cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_json_schema__ = lambda: None
 
-            return cls_obj
-
+            return Annotated[
+                cls_obj,
+                PlainValidator(lambda value: validate(cls_obj, value)),
+                PlainSerializer(_dimensioned_type_serializer)
+            ]
 
     # pylint: disable=invalid-name
     @classproperty
@@ -500,6 +557,13 @@ class DimensionedType(ValidatedType):
         return self._VectorType.get_class_object(
             self, allow_zero_norm=False, allow_zero_coord=False
         )
+
+
+DimensionedType = Annotated[
+    _DimensionedType,
+    PlainValidator(lambda value: _DimensionedType.validate(value)),
+    PlainSerializer(_dimensioned_type_serializer)
+]
 
 
 class LengthType(DimensionedType):
@@ -1006,7 +1070,7 @@ class UnitSystem(pd.BaseModel):
 
     _verbose: bool = pd.PrivateAttr(True)
 
-    _dim_names = [
+    _dim_names: List[str] = pd.PrivateAttr([
         "mass",
         "length",
         "time",
@@ -1026,7 +1090,7 @@ class UnitSystem(pd.BaseModel):
         "thermal_conductivity",
         "inverse_area",
         "inverse_length",
-    ]
+    ])
 
     @staticmethod
     def __get_unit(system, dim_name, unit):
@@ -1221,12 +1285,13 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     def __init__(self):
         registry = u.UnitRegistry()
 
-        for field in self.__fields__.values():
-            target_dimension = field.field_info.extra.get("target_dimension", None)
-            if target_dimension is not None:
-                registry.add(
-                    target_dimension.unit_name, field.default, target_dimension.dimension_type.dim
-                )
+        for field in self.model_fields.values():
+            if field.json_schema_extra is not None:
+                target_dimension = field.json_schema_extra.get("target_dimension", None)
+                if target_dimension is not None:
+                    registry.add(
+                        target_dimension.unit_name, field.default, target_dimension.dimension_type.dim
+                    )
 
         conversion_system = u.UnitSystem(
             "flow360",
@@ -1256,15 +1321,17 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         super().__init__(registry=registry, conversion_system=conversion_system)
 
     # pylint: disable=no-self-argument
-    @pd.validator("*")
-    def assign_conversion_rate(cls, value, values, field):
+    @pd.field_validator("*")
+    def assign_conversion_rate(cls, value, info: pd.ValidationInfo):
         """
         Pydantic validator for assigning conversion rates to a specific unit in the registry.
         """
-        target_dimension = field.field_info.extra.get("target_dimension", None)
-        if target_dimension is not None:
-            registry = values["registry"]
-            registry.modify(target_dimension.unit_name, value)
+        field = cls.model_fields.get(info.field_name)
+        if field.json_schema_extra is not None:
+            target_dimension = field.json_schema_extra.get("target_dimension", None)
+            if target_dimension is not None:
+                 registry = info.data["registry"]
+                 registry.modify(target_dimension.unit_name, value)
 
         return value
 
@@ -1300,7 +1367,7 @@ class _PredefinedUnitSystem(UnitSystem):
 class SIUnitSystem(_PredefinedUnitSystem):
     """:class: `SIUnitSystem` predefined SI system wrapper"""
 
-    name: Literal["SI"] = pd.Field("SI", const=True)
+    name: Literal["SI"] = pd.Field("SI", frozen=True)
 
     def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
@@ -1317,7 +1384,7 @@ class SIUnitSystem(_PredefinedUnitSystem):
 class CGSUnitSystem(_PredefinedUnitSystem):
     """:class: `CGSUnitSystem` predefined CGS system wrapper"""
 
-    name: Literal["CGS"] = pd.Field("CGS", const=True)
+    name: Literal["CGS"] = pd.Field("CGS", frozen=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.CGS)
@@ -1334,7 +1401,7 @@ class CGSUnitSystem(_PredefinedUnitSystem):
 class ImperialUnitSystem(_PredefinedUnitSystem):
     """:class: `ImperialUnitSystem` predefined imperial system wrapper"""
 
-    name: Literal["Imperial"] = pd.Field("Imperial", const=True)
+    name: Literal["Imperial"] = pd.Field("Imperial", frozen=True)
 
     def __init__(self):
         super().__init__(base_system=BaseSystemType.IMPERIAL)
@@ -1351,7 +1418,7 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
 class Flow360UnitSystem(_PredefinedUnitSystem):
     """:class: `Flow360UnitSystem` predefined flow360 system wrapper"""
 
-    name: Literal["Flow360"] = pd.Field("Flow360", const=True)
+    name: Literal["Flow360"] = pd.Field("Flow360", frozen=True)
 
     def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
