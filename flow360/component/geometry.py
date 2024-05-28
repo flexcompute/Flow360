@@ -202,8 +202,7 @@ class GeometryDraft(ResourceDraft):
 
         remote_file_names = []
         for geometry_file in self.file_names:
-            _, ext = os.path.splitext(geometry_file)
-            remote_file_name = f"geometry{ext}"
+            remote_file_name = geometry_file
             file_name_to_upload = geometry_file
             submitted_geometry._upload_file(
                 remote_file_name, file_name_to_upload, progress_callback=progress_callback
