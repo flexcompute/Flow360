@@ -17,6 +17,7 @@ import numpy as np
 import pydantic as pd
 
 import unyt as u
+from pydantic import PlainSerializer
 from pydantic_core import core_schema, InitErrorDetails
 
 from flow360.log import log
@@ -524,31 +525,46 @@ class _DimensionedType(metaclass=ABCMeta):
         )
 
 
-DimensionedType = Annotated[_DimensionedType, pd.PlainSerializer(_dimensioned_type_serializer)]
-
-
-class LengthType(DimensionedType):
+class _LengthType(_DimensionedType):
     """:class: LengthType"""
 
     dim = u.dimensions.length
     dim_name = "length"
 
 
-class MassType(DimensionedType):
+LengthType = Annotated[
+    _LengthType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _MassType(_DimensionedType):
     """:class: MassType"""
 
     dim = u.dimensions.mass
     dim_name = "mass"
 
 
-class TimeType(DimensionedType):
+MassType = Annotated[
+    _MassType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _TimeType(_DimensionedType):
     """:class: TimeType"""
 
     dim = u.dimensions.time
     dim_name = "time"
 
 
-class TemperatureType(DimensionedType):
+TimeType = Annotated[
+    _TimeType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _TemperatureType(_DimensionedType):
     """:class: TemperatureType"""
 
     dim = u.dimensions.temperature
@@ -566,109 +582,205 @@ class TemperatureType(DimensionedType):
         return value
 
 
-class VelocityType(DimensionedType):
+TemperatureType = Annotated[
+    _TemperatureType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _VelocityType(_DimensionedType):
     """:class: VelocityType"""
 
     dim = u.dimensions.velocity
     dim_name = "velocity"
 
 
-class AreaType(DimensionedType):
+VelocityType = Annotated[
+    _VelocityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _AreaType(_DimensionedType):
     """:class: AreaType"""
 
     dim = u.dimensions.area
     dim_name = "area"
 
 
-class ForceType(DimensionedType):
+AreaType = Annotated[
+    _AreaType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _ForceType(_DimensionedType):
     """:class: ForceType"""
 
     dim = u.dimensions.force
     dim_name = "force"
 
 
-class PressureType(DimensionedType):
+ForceType = Annotated[
+    _ForceType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _PressureType(_DimensionedType):
     """:class: PressureType"""
 
     dim = u.dimensions.pressure
     dim_name = "pressure"
 
 
-class DensityType(DimensionedType):
+PressureType = Annotated[
+    _PressureType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _DensityType(_DimensionedType):
     """:class: DensityType"""
 
     dim = u.dimensions.density
     dim_name = "density"
 
 
-class ViscosityType(DimensionedType):
+DensityType = Annotated[
+    _DensityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _ViscosityType(_DimensionedType):
     """:class: ViscosityType"""
 
     dim = u.dimensions.viscosity
     dim_name = "viscosity"
 
 
-class PowerType(DimensionedType):
+ViscosityType = Annotated[
+    _ViscosityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _PowerType(_DimensionedType):
     """:class: PowerType"""
 
     dim = u.dimensions.power
     dim_name = "power"
 
 
-class MomentType(DimensionedType):
+PowerType = Annotated[
+    _PowerType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _MomentType(_DimensionedType):
     """:class: MomentType"""
 
     dim = u.dimensions.moment
     dim_name = "moment"
 
 
-class AngularVelocityType(DimensionedType):
+MomentType = Annotated[
+    _MomentType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _AngularVelocityType(_DimensionedType):
     """:class: AngularVelocityType"""
 
     dim = u.dimensions.angular_velocity
     dim_name = "angular_velocity"
 
 
-class HeatFluxType(DimensionedType):
+AngularVelocityType = Annotated[
+    _AngularVelocityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _HeatFluxType(_DimensionedType):
     """:class: HeatFluxType"""
 
     dim = u.dimensions.heat_flux
     dim_name = "heat_flux"
 
 
-class HeatSourceType(DimensionedType):
+HeatFluxType = Annotated[
+    _HeatFluxType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _HeatSourceType(_DimensionedType):
     """:class: HeatSourceType"""
 
     dim = u.dimensions.heat_source
     dim_name = "heat_source"
 
 
-class HeatCapacityType(DimensionedType):
+HeatSourceType = Annotated[
+    _HeatSourceType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _HeatCapacityType(_DimensionedType):
     """:class: HeatCapacityType"""
 
     dim = u.dimensions.heat_capacity
     dim_name = "heat_capacity"
 
 
-class ThermalConductivityType(DimensionedType):
+HeatCapacityType = Annotated[
+    _HeatCapacityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _ThermalConductivityType(_DimensionedType):
     """:class: ThermalConductivityType"""
 
     dim = u.dimensions.thermal_conductivity
     dim_name = "thermal_conductivity"
 
 
-class InverseAreaType(DimensionedType):
+ThermalConductivityType = Annotated[
+    _ThermalConductivityType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _InverseAreaType(_DimensionedType):
     """:class: InverseAreaType"""
 
     dim = u.dimensions.inverse_area
     dim_name = "inverse_area"
 
 
-class InverseLengthType(DimensionedType):
+InverseAreaType = Annotated[
+    _InverseAreaType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _InverseLengthType(_DimensionedType):
     """:class: InverseLengthType"""
 
     dim = u.dimensions.inverse_length
     dim_name = "inverse_length"
+
+
+InverseLengthType = Annotated[
+    _InverseLengthType,
+    PlainSerializer(_dimensioned_type_serializer)
+]
 
 
 def _iterable(obj):
@@ -679,7 +791,7 @@ def _iterable(obj):
     return True
 
 
-class _Flow360BaseUnit(DimensionedType):
+class _Flow360BaseUnit(_DimensionedType):
     dimension_type = None
     unit_name = None
 

@@ -68,7 +68,9 @@ class VectorDataWithUnits(pd.BaseModel):
 
 
 class Flow360DataWithUnits(Flow360BaseModel):
-    L: LengthType = pd.Field()
+    l: LengthType = pd.Field()
+    lp: LengthType.Point = pd.Field()
+    lc: LengthType.NonNegative = pd.Field()
 
 
 def test_unit_access():
@@ -457,9 +459,9 @@ def test_optionals_and_unions():
 @pytest.mark.usefixtures("array_equality_override")
 def test_units_serializer():
     with u.SI_unit_system:
-        data = Flow360DataWithUnits(L=2 * u.mm)
+        data = Flow360DataWithUnits(l=2 * u.mm, lp=[1, 2, 3] * u.mm, lc=3 * u.mm)
 
-    data_as_json = data.model_dump_json()
+    data_as_json = data.model_dump_json(indent=2)
 
     with u.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))

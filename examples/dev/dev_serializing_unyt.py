@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Annotated
+from typing import List, Annotated, Literal
 
 import pydantic as pd
 import unyt as u
 from pydantic import PlainSerializer, PlainValidator
+from pydantic_core import core_schema
 
 
 def _has_dimensions(quant, dim):
@@ -68,21 +69,56 @@ def serialize(value):
     Serializer for unyt value
     """
 
-    return {"value": str(value.value), "units": str(value.units)}
+    return {"value": str(value["data"].value), "units": str(value["data"].units)}
 
 
-UnytQuantity = Annotated[
-    u.unyt_quantity,
-    PlainValidator(validate),
+class _DimensionedField(pd.BaseModel):
+    data: u.unyt_quantity = pd.Field()
+    dim_type: Literal["length"] = pd.Field()
+
+    @classmethod
+    def validate(cls, value):
+        """
+        Validator for value
+        """
+
+        try:
+            value = _unit_object_parser(value, [u.unyt_quantity])
+        except TypeError as err:
+            raise pd.ValidationError.from_exception_data('validation error', [])
+
+        if isinstance(value, u.Unit):
+            return {"data": 1.0 * value}
+
+        return {"data": value}
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> pd.CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+
+DimensionedField = Annotated[
+    _DimensionedField,
     PlainSerializer(serialize),
 ]
 
 
-class ExampleUnytModel(pd.BaseModel):
-    v1: UnytQuantity = pd.Field()
+class _OtherField(_DimensionedField):
+    dim_type: Literal["time"] = pd.Field()
 
 
-data = ExampleUnytModel(v1=1 * u.mm)
+OtherField = Annotated[
+    _OtherField,
+    PlainSerializer(serialize),
+]
+
+
+class DataModel(pd.BaseModel):
+    dimensioned_field: OtherField = pd.Field()
+
+
+data = DataModel(dimensioned_field=1*u.m)
+
 
 data_json = data.model_dump_json(indent=2)
 
