@@ -14,7 +14,6 @@ from typing import Any, Collection, List, Literal, Union
 
 import numpy as np
 import pydantic.v1 as pd
-
 import unyt as u
 
 from flow360.log import log
@@ -22,14 +21,14 @@ from flow360.utils import classproperty
 
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
-u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time ** 3
+u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
 u.dimensions.moment = u.dimensions.force * u.dimensions.length
-u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time ** 3 / u.dimensions.length
+u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time**3 / u.dimensions.length
 u.dimensions.heat_capacity = (
-        u.dimensions.mass / u.dimensions.time ** 2 / u.dimensions.length / u.dimensions.temperature
+    u.dimensions.mass / u.dimensions.time**2 / u.dimensions.length / u.dimensions.temperature
 )
 u.dimensions.thermal_conductivity = (
-        u.dimensions.mass / u.dimensions.time ** 3 * u.dimensions.length / u.dimensions.temperature
+    u.dimensions.mass / u.dimensions.time**3 * u.dimensions.length / u.dimensions.temperature
 )
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
@@ -39,53 +38,53 @@ u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s ** 3
+u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s ** 3 / u.m
+u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s ** 2 / u.m / u.K
+u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s ** 3 * u.m / u.K
+u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
 
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm ** 2
+u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s ** 3
+u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s ** 3 / u.cm
+u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s ** 2 / u.cm / u.K
+u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s ** 3 * u.cm / u.K
+u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
 
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft ** 2
+u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s ** 3
+u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s ** 3 / u.ft
+u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s ** 2 / u.ft / u.K
+u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s ** 3 * u.ft / u.K
+u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
 # pylint: disable=no-member
@@ -322,7 +321,7 @@ class DimensionedType(ValidatedType):
 
             def validate(con_cls, value):
                 """Additional validator for value"""
-                print(f'calling _Constrained validate, {value=}')
+                print(f"calling _Constrained validate, {value=}")
 
                 dimensioned_value = dim_type.validate(value)
                 pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
@@ -346,11 +345,12 @@ class DimensionedType(ValidatedType):
             cls_obj = type("_Constrained", (), {})
             cls_obj.con_type = _ConType
             cls_obj.validate = lambda value: validate(cls_obj, value)
-            cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field)
+            cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(
+                cls_obj, field_schema, field
+            )
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
 
             return cls_obj
-
 
     # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
@@ -416,7 +416,7 @@ class DimensionedType(ValidatedType):
                 value = _is_unit_validator(value)
 
                 is_collection = isinstance(value, Collection) or (
-                        isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                    isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
                 )
 
                 if length is None:
@@ -449,7 +449,6 @@ class DimensionedType(ValidatedType):
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
 
             return cls_obj
-
 
     # pylint: disable=invalid-name
     @classproperty

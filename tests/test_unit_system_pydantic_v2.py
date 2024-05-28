@@ -2,10 +2,9 @@ import json
 from typing import Optional, Union
 
 import pydantic as pd
-import numpy as np
 import pytest
-import unyt
 
+from flow360.component.simulation import units as u
 from flow360.component.simulation.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     AngularVelocityType,
@@ -20,7 +19,6 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from flow360.component.simulation import units as u
 
 
 class DataWithUnits(pd.BaseModel):
@@ -73,11 +71,6 @@ class Flow360DataWithUnits(Flow360BaseModel):
     lc: LengthType.NonNegative = pd.Field()
 
 
-def test_unit_access():
-    assert u.CGS_unit_system
-    assert u.inch
-
-
 def test_unit_systems_compare():
     assert u.SI_unit_system != u.flow360_unit_system
     assert u.SI_unit_system != u.CGS_unit_system
@@ -87,6 +80,11 @@ def test_unit_systems_compare():
 
     assert u.flow360_unit_system == u.UnitSystem(base_system="Flow360")
     assert u.SI_unit_system == u.UnitSystem(base_system="SI")
+
+
+def test_unit_access():
+    assert u.CGS_unit_system
+    assert u.inch
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -459,39 +457,20 @@ def test_optionals_and_unions():
 @pytest.mark.usefixtures("array_equality_override")
 def test_units_serializer():
     with u.SI_unit_system:
-        data = Flow360DataWithUnits(l=2 * u.mm, lp=[1, 2, 3] * u.mm, lc=3 * u.mm)
+        data = Flow360DataWithUnits(l=2 * u.mm, lp=[1, 2, 3], lc=u.mm)
 
     data_as_json = data.model_dump_json(indent=2)
 
     with u.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
 
-    # data_as_json = data.model_dump_json(indent=4)
-
-    # with fl.SI_unit_system:
-    #     data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
-
-    # data_as_json = data.model_dump_json(indent=4)
+    assert data_reimport == data
 
 
+def test_units_schema():
+    schema = Flow360DataWithUnits.model_json_schema()
 
-#     with u.SI_unit_system:
-#         data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
-
-#     data_as_json = data.json(indent=4)
-
-#     with fl.CGS_unit_system:
-#         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
-
-#     assert data_reimport.L == data.L
-#     assert data_reimport.lc == data.lc
-#     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
-
-#     assert data_reimport.L == data.L
-#     assert data_reimport.lc == data.lc
-#     assert data_reimport.pt.value.tolist() == data.pt.value.tolist()
-
-#     to_file_from_file_test(data)
+    assert schema
 
 
 def test_unit_system_init():

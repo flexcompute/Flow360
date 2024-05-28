@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 import flow360 as fl
-import flow360.units as u
+import flow360.component.flow360_params.units as u
 from flow360.component.flow360_params.boundaries import FreestreamBoundary, NoSlipWall
 from flow360.component.flow360_params.flow360_output import (
     IsoSurface,

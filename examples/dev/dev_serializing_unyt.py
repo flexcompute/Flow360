@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Annotated, Literal
+from typing import Annotated, List, Literal
 
 import pydantic as pd
 import unyt as u
@@ -85,7 +85,7 @@ class _DimensionedField(pd.BaseModel):
         try:
             value = _unit_object_parser(value, [u.unyt_quantity])
         except TypeError as err:
-            raise pd.ValidationError.from_exception_data('validation error', [])
+            raise pd.ValidationError.from_exception_data("validation error", [])
 
         if isinstance(value, u.Unit):
             return {"data": 1.0 * value}
@@ -117,7 +117,7 @@ class DataModel(pd.BaseModel):
     dimensioned_field: OtherField = pd.Field()
 
 
-data = DataModel(dimensioned_field=1*u.m)
+data = DataModel(dimensioned_field=1 * u.m)
 
 
 data_json = data.model_dump_json(indent=2)

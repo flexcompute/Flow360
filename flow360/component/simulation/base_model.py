@@ -4,8 +4,10 @@ import hashlib
 import json
 from typing import Literal
 
+import numpy as np
 import pydantic as pd
 import rich
+import unyt
 import yaml
 from pydantic import ConfigDict
 
@@ -13,10 +15,6 @@ from flow360.component.types import TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
-
-
-import unyt
-import numpy as np
 
 
 class Conflicts(pd.BaseModel):

@@ -14,10 +14,6 @@ from numpy import array, dot
 from pydantic.v1 import StrictStr
 from typing_extensions import Literal
 
-from ..constants import NumericalConstants
-from ..types import Axis, List, NonNegativeFloat, PositiveFloat
-from ..utils import process_expressions
-from .params_base import Flow360BaseModel
 from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     HeatSourceType,
@@ -25,6 +21,11 @@ from flow360.component.flow360_params.unit_system import (
     InverseLengthType,
     LengthType,
 )
+
+from ..constants import NumericalConstants
+from ..types import Axis, List, NonNegativeFloat, PositiveFloat
+from ..utils import process_expressions
+from .params_base import Flow360BaseModel
 
 
 class ReferenceFrameBase(Flow360BaseModel):

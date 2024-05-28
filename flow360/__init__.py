@@ -6,6 +6,14 @@ import os
 
 from numpy import pi
 
+from flow360.component.flow360_params.unit_system import (
+    CGS_unit_system,
+    SI_unit_system,
+    UnitSystem,
+    flow360_unit_system,
+    imperial_unit_system,
+)
+
 from . import global_exception_handler
 from .accounts_utils import Accounts
 from .cli import flow360
@@ -103,13 +111,6 @@ from .component.flow360_params.time_stepping import (
     UnsteadyTimeStepping,
 )
 from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
-from flow360.component.flow360_params.unit_system import (
-    CGS_unit_system,
-    SI_unit_system,
-    UnitSystem,
-    flow360_unit_system,
-    imperial_unit_system,
-)
 from .component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,

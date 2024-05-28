@@ -13,7 +13,24 @@ from typing import Dict, List, Optional, Union, get_args
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from . import units
+from flow360.component.flow360_params.unit_system import (
+    AngularVelocityType,
+    AreaType,
+    DensityType,
+    Flow360UnitSystem,
+    LengthType,
+    PressureType,
+    SIUnitSystem,
+    TemperatureType,
+    UnitSystem,
+    UnitSystemType,
+    VelocityType,
+    ViscosityType,
+    flow360_unit_system,
+    u,
+    unit_system_manager,
+)
+
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
     Flow360ConfigError,
@@ -33,6 +50,7 @@ from ..types import (
     Vector,
 )
 from ..utils import convert_legacy_names, process_expressions
+from . import units
 from .boundaries import BoundaryType
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -82,23 +100,6 @@ from .solvers import (
 )
 from .time_stepping import BaseTimeStepping, SteadyTimeStepping, TimeStepping
 from .turbulence_quantities import TurbulenceQuantitiesType, TurbulentViscosityRatio
-from flow360.component.flow360_params.unit_system import (
-    AngularVelocityType,
-    AreaType,
-    DensityType,
-    Flow360UnitSystem,
-    LengthType,
-    PressureType,
-    SIUnitSystem,
-    TemperatureType,
-    UnitSystem,
-    UnitSystemType,
-    VelocityType,
-    ViscosityType,
-    flow360_unit_system,
-    u,
-    unit_system_manager,
-)
 from .updater import updater
 from .validations import (
     _check_aero_acoustics,

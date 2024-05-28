@@ -10,6 +10,8 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic.v1 as pd
 from pydantic.v1 import conlist
 
+from flow360.component.flow360_params.unit_system import Flow360UnitSystem, LengthType
+
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
 from .flow360_fields import (
     CommonFieldNames,
@@ -31,7 +33,6 @@ from .params_base import (
     Flow360SortableBaseModel,
     _self_named_property_validator,
 )
-from flow360.component.flow360_params.unit_system import Flow360UnitSystem, LengthType
 
 OutputFormat = Literal[
     "paraview", "tecplot", "both", "paraview,tecplot"

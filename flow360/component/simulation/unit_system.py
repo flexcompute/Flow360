@@ -10,29 +10,28 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Any, Collection, List, Literal, Union, Annotated
+from typing import Annotated, Any, Collection, List, Literal, Union
 
 import annotated_types
 import numpy as np
 import pydantic as pd
-
 import unyt as u
 from pydantic import PlainSerializer
-from pydantic_core import core_schema, InitErrorDetails
+from pydantic_core import InitErrorDetails, core_schema
 
 from flow360.log import log
 from flow360.utils import classproperty
 
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
-u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time ** 3
+u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
 u.dimensions.moment = u.dimensions.force * u.dimensions.length
-u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time ** 3 / u.dimensions.length
+u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time**3 / u.dimensions.length
 u.dimensions.heat_capacity = (
-        u.dimensions.mass / u.dimensions.time ** 2 / u.dimensions.length / u.dimensions.temperature
+    u.dimensions.mass / u.dimensions.time**2 / u.dimensions.length / u.dimensions.temperature
 )
 u.dimensions.thermal_conductivity = (
-        u.dimensions.mass / u.dimensions.time ** 3 * u.dimensions.length / u.dimensions.temperature
+    u.dimensions.mass / u.dimensions.time**3 * u.dimensions.length / u.dimensions.temperature
 )
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
@@ -42,53 +41,53 @@ u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s ** 3
+u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s ** 3 / u.m
+u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s ** 2 / u.m / u.K
+u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s ** 3 * u.m / u.K
+u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
 
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm ** 2
+u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s ** 3
+u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s ** 3 / u.cm
+u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s ** 2 / u.cm / u.K
+u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s ** 3 * u.cm / u.K
+u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
 
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft ** 2
+u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s ** 3
+u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s ** 3 / u.ft
+u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s ** 2 / u.ft / u.K
+u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s ** 3 * u.ft / u.K
+u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
 # pylint: disable=no-member
@@ -278,7 +277,7 @@ class _DimensionedType(metaclass=ABCMeta):
             value = _has_dimensions_validator(value, cls.dim)
         except TypeError as err:
             details = InitErrorDetails(type="value_error", ctx={"error": err})
-            raise pd.ValidationError.from_exception_data('validation error', [details])
+            raise pd.ValidationError.from_exception_data("validation error", [details])
 
         if isinstance(value, u.Unit):
             return 1.0 * value
@@ -291,17 +290,15 @@ class _DimensionedType(metaclass=ABCMeta):
 
     # pylint: disable=unused-argument
     @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema, field):
-        field_schema["properties"] = {}
-        field_schema["properties"]["value"] = {}
-        field_schema["properties"]["units"] = {}
-        field_schema["properties"]["value"]["type"] = "number"
-        field_schema["properties"]["units"]["type"] = "string"
+    def __get_pydantic_json_schema__(cls, schema: pd.CoreSchema, handler: pd.GetJsonSchemaHandler):
+        schema = {"properties": {"value": {"type": "number"}, "units": {"type": "string"}}}
+
         if cls.dim_name is not None:
-            field_schema["properties"]["units"]["dimension"] = cls.dim_name
+            schema["properties"]["units"]["dimension"] = cls.dim_name
+
             # Local import to prevent exposing mappings to the user
             # pylint: disable=import-outside-toplevel
-            from flow360.component.flow360_params.exposed_units import extra_units
+            from flow360.component.simulation.exposed_units import extra_units
 
             units = [
                 str(_SI_system[cls.dim_name]),
@@ -309,9 +306,14 @@ class _DimensionedType(metaclass=ABCMeta):
                 str(_imperial_system[cls.dim_name]),
                 str(_flow360_system[cls.dim_name]),
             ]
+
             units += [str(unit) for unit in extra_units[cls.dim_name]]
             units = list(dict.fromkeys(units))
-            field_schema["properties"]["units"]["enum"] = units
+            schema["properties"]["units"]["enum"] = units
+
+            schema = handler.resolve_ref_schema(schema)
+
+        return schema
 
     class _Constrained:
         """
@@ -328,11 +330,11 @@ class _DimensionedType(metaclass=ABCMeta):
                 value: Annotated[float, annotated_types.Interval(**kwargs)]
 
             def validate(con_cls, value, *args):
-                print(f'calling validator_v2, {args=}')
+                print(f"calling validator_v2, {args=}")
 
                 try:
                     """Additional validator for value"""
-                    print(f'calling _Constrained validate, {value=}')
+                    print(f"calling _Constrained validate, {value=}")
 
                     dimensioned_value = dim_type.validate(value)
 
@@ -342,29 +344,37 @@ class _DimensionedType(metaclass=ABCMeta):
                     return dimensioned_value
                 except TypeError as err:
                     details = InitErrorDetails(type="value_error", ctx={"error": err})
-                    raise pd.ValidationError.from_exception_data('validation error', [details])
+                    raise pd.ValidationError.from_exception_data("validation error", [details])
 
-            def  __get_pydantic_json_schema__(con_cls, field_schema, field):
-                dim_type. __get_pydantic_json_schema__(field_schema, field)
-                constraints = con_cls.con_type.type_
+            def __get_pydantic_json_schema__(
+                con_cls, schema: pd.CoreSchema, handler: pd.GetJsonSchemaHandler
+            ):
+                schema = dim_type.__get_pydantic_json_schema__(schema, handler)
+                constraints = con_cls.con_type.model_fields["value"].metadata[0]
                 if constraints.ge is not None:
-                    field_schema["properties"]["value"]["minimum"] = constraints.ge
+                    schema["properties"]["value"]["minimum"] = constraints.ge
                 if constraints.le is not None:
-                    field_schema["properties"]["value"]["maximum"] = constraints.le
+                    schema["properties"]["value"]["maximum"] = constraints.le
                 if constraints.gt is not None:
-                    field_schema["properties"]["value"]["exclusiveMinimum"] = constraints.gt
+                    schema["properties"]["value"]["exclusiveMinimum"] = constraints.gt
                 if constraints.lt is not None:
-                    field_schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
+                    schema["properties"]["value"]["exclusiveMaximum"] = constraints.lt
 
-            def __get_pydantic_core_schema__(
-                    con_cls, *args, **kwargs
-            ) -> pd.CoreSchema:
-                return core_schema.no_info_plain_validator_function(lambda *args: validate(con_cls, *args))
+                return schema
+
+            def __get_pydantic_core_schema__(con_cls, *args, **kwargs) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(
+                    lambda *args: validate(con_cls, *args)
+                )
 
             cls_obj = type("_Constrained", (), {})
             cls_obj.con_type = _ConType
-            cls_obj.__get_pydantic_json_schema__ = lambda field_schema, field:  __get_pydantic_json_schema__(cls_obj, field_schema, field)
-            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
+                cls_obj, *args
+            )
+            cls_obj.__get_pydantic_json_schema__ = (
+                lambda schema, handler: __get_pydantic_json_schema__(cls_obj, schema, handler)
+            )
             return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
 
     # pylint: disable=invalid-name
@@ -374,8 +384,7 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         Utility method to generate a dimensioned type with constraints based on the pydantic confloat
         """
-        return cls._Constrained.get_class_object(cls, gt=gt, ge=ge, lt=lt, le=le
-)
+        return cls._Constrained.get_class_object(cls, gt=gt, ge=ge, lt=lt, le=le)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -414,26 +423,29 @@ class _DimensionedType(metaclass=ABCMeta):
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
             """Get a dynamically created metaclass representing the vector"""
 
-            def __get_pydantic_json_schema__(field_schema, field):
-                dim_type. __get_pydantic_json_schema__(field_schema, field)
-                field_schema["properties"]["value"]["type"] = "array"
-                field_schema["properties"]["value"]["items"] = {"type": "number"}
+            def __get_pydantic_json_schema__(
+                schema: pd.CoreSchema, handler: pd.GetJsonSchemaHandler
+            ):
+                schema = dim_type.__get_pydantic_json_schema__(schema, handler)
+                schema["properties"]["value"]["type"] = "array"
+                schema["properties"]["value"]["items"] = {"type": "number"}
                 if length is not None:
-                    field_schema["properties"]["value"]["minItems"] = length
-                    field_schema["properties"]["value"]["maxItems"] = length
+                    schema["properties"]["value"]["minItems"] = length
+                    schema["properties"]["value"]["maxItems"] = length
                 if length == 3:
-                    field_schema["properties"]["value"]["strictType"] = {"type": "vector3"}
+                    schema["properties"]["value"]["strictType"] = {"type": "vector3"}
+
+                return schema
 
             def validate(vec_cls, value, *args):
                 """additional validator for value"""
-                print(f'calling validator_v2, {args=}')
+                print(f"calling validator_v2, {args=}")
                 try:
-
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                     value = _is_unit_validator(value)
 
                     is_collection = isinstance(value, Collection) or (
-                            isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
+                        isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
                     )
 
                     if length is None:
@@ -458,19 +470,21 @@ class _DimensionedType(metaclass=ABCMeta):
                     return value
                 except TypeError as err:
                     details = InitErrorDetails(type="value_error", ctx={"error": err})
-                    raise pd.ValidationError.from_exception_data('validation error', [details])
+                    raise pd.ValidationError.from_exception_data("validation error", [details])
 
-            def __get_pydantic_core_schema__(
-                    vec_cls, *args, **kwargs
-            ) -> pd.CoreSchema:
-                return core_schema.no_info_plain_validator_function(lambda *args: validate(vec_cls, *args))
+            def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(
+                    lambda *args: validate(vec_cls, *args)
+                )
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_coord = allow_zero_coord
-            cls_obj. __get_pydantic_json_schema__ = __get_pydantic_json_schema__
-            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
+                cls_obj, *args
+            )
+            cls_obj.__get_pydantic_json_schema__ = __get_pydantic_json_schema__
 
             return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
 
@@ -532,10 +546,7 @@ class _LengthType(_DimensionedType):
     dim_name = "length"
 
 
-LengthType = Annotated[
-    _LengthType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+LengthType = Annotated[_LengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _MassType(_DimensionedType):
@@ -545,10 +556,7 @@ class _MassType(_DimensionedType):
     dim_name = "mass"
 
 
-MassType = Annotated[
-    _MassType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+MassType = Annotated[_MassType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _TimeType(_DimensionedType):
@@ -558,10 +566,7 @@ class _TimeType(_DimensionedType):
     dim_name = "time"
 
 
-TimeType = Annotated[
-    _TimeType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+TimeType = Annotated[_TimeType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _TemperatureType(_DimensionedType):
@@ -582,10 +587,7 @@ class _TemperatureType(_DimensionedType):
         return value
 
 
-TemperatureType = Annotated[
-    _TemperatureType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _VelocityType(_DimensionedType):
@@ -595,10 +597,7 @@ class _VelocityType(_DimensionedType):
     dim_name = "velocity"
 
 
-VelocityType = Annotated[
-    _VelocityType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+VelocityType = Annotated[_VelocityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _AreaType(_DimensionedType):
@@ -608,10 +607,7 @@ class _AreaType(_DimensionedType):
     dim_name = "area"
 
 
-AreaType = Annotated[
-    _AreaType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+AreaType = Annotated[_AreaType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _ForceType(_DimensionedType):
@@ -621,10 +617,7 @@ class _ForceType(_DimensionedType):
     dim_name = "force"
 
 
-ForceType = Annotated[
-    _ForceType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+ForceType = Annotated[_ForceType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _PressureType(_DimensionedType):
@@ -634,10 +627,7 @@ class _PressureType(_DimensionedType):
     dim_name = "pressure"
 
 
-PressureType = Annotated[
-    _PressureType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+PressureType = Annotated[_PressureType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _DensityType(_DimensionedType):
@@ -647,10 +637,7 @@ class _DensityType(_DimensionedType):
     dim_name = "density"
 
 
-DensityType = Annotated[
-    _DensityType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+DensityType = Annotated[_DensityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _ViscosityType(_DimensionedType):
@@ -660,10 +647,7 @@ class _ViscosityType(_DimensionedType):
     dim_name = "viscosity"
 
 
-ViscosityType = Annotated[
-    _ViscosityType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+ViscosityType = Annotated[_ViscosityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _PowerType(_DimensionedType):
@@ -673,10 +657,7 @@ class _PowerType(_DimensionedType):
     dim_name = "power"
 
 
-PowerType = Annotated[
-    _PowerType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+PowerType = Annotated[_PowerType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _MomentType(_DimensionedType):
@@ -686,10 +667,7 @@ class _MomentType(_DimensionedType):
     dim_name = "moment"
 
 
-MomentType = Annotated[
-    _MomentType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+MomentType = Annotated[_MomentType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _AngularVelocityType(_DimensionedType):
@@ -699,10 +677,7 @@ class _AngularVelocityType(_DimensionedType):
     dim_name = "angular_velocity"
 
 
-AngularVelocityType = Annotated[
-    _AngularVelocityType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+AngularVelocityType = Annotated[_AngularVelocityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _HeatFluxType(_DimensionedType):
@@ -712,10 +687,7 @@ class _HeatFluxType(_DimensionedType):
     dim_name = "heat_flux"
 
 
-HeatFluxType = Annotated[
-    _HeatFluxType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+HeatFluxType = Annotated[_HeatFluxType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _HeatSourceType(_DimensionedType):
@@ -725,10 +697,7 @@ class _HeatSourceType(_DimensionedType):
     dim_name = "heat_source"
 
 
-HeatSourceType = Annotated[
-    _HeatSourceType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+HeatSourceType = Annotated[_HeatSourceType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _HeatCapacityType(_DimensionedType):
@@ -738,10 +707,7 @@ class _HeatCapacityType(_DimensionedType):
     dim_name = "heat_capacity"
 
 
-HeatCapacityType = Annotated[
-    _HeatCapacityType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+HeatCapacityType = Annotated[_HeatCapacityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _ThermalConductivityType(_DimensionedType):
@@ -752,8 +718,7 @@ class _ThermalConductivityType(_DimensionedType):
 
 
 ThermalConductivityType = Annotated[
-    _ThermalConductivityType,
-    PlainSerializer(_dimensioned_type_serializer)
+    _ThermalConductivityType, PlainSerializer(_dimensioned_type_serializer)
 ]
 
 
@@ -764,10 +729,7 @@ class _InverseAreaType(_DimensionedType):
     dim_name = "inverse_area"
 
 
-InverseAreaType = Annotated[
-    _InverseAreaType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+InverseAreaType = Annotated[_InverseAreaType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _InverseLengthType(_DimensionedType):
@@ -777,10 +739,7 @@ class _InverseLengthType(_DimensionedType):
     dim_name = "inverse_length"
 
 
-InverseLengthType = Annotated[
-    _InverseLengthType,
-    PlainSerializer(_dimensioned_type_serializer)
-]
+InverseLengthType = Annotated[_InverseLengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 def _iterable(obj):
@@ -1114,7 +1073,7 @@ class BaseSystemType(Enum):
     NONE = None
 
 
-_dim_names =[
+_dim_names = [
     "mass",
     "length",
     "time",
@@ -1364,7 +1323,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
                 target_dimension = field.json_schema_extra.get("target_dimension", None)
                 if target_dimension is not None:
                     registry.add(
-                        target_dimension.unit_name, field.default, target_dimension.dimension_type.dim
+                        target_dimension.unit_name,
+                        field.default,
+                        target_dimension.dimension_type.dim,
                     )
 
         conversion_system = u.UnitSystem(
@@ -1404,8 +1365,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         if field.json_schema_extra is not None:
             target_dimension = field.json_schema_extra.get("target_dimension", None)
             if target_dimension is not None:
-                 registry = info.data["registry"]
-                 registry.modify(target_dimension.unit_name, value)
+                registry = info.data["registry"]
+                registry.modify(target_dimension.unit_name, value)
 
         return value
 

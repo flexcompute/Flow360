@@ -12,9 +12,10 @@ from typing import Optional, Union
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
+from flow360.component.flow360_params.unit_system import TimeType
+
 from ..types import PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
-from flow360.component.flow360_params.unit_system import TimeType
 
 
 def _apply_default_to_none(original, default):
