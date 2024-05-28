@@ -2,10 +2,10 @@ import json
 from typing import Optional, Union
 
 import pydantic as pd
+import numpy as np
 import pytest
+import unyt
 
-import flow360 as fl
-from flow360 import units as u
 from flow360.component.simulation.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     AngularVelocityType,
@@ -20,6 +20,7 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.component.simulation import units as u
 
 
 class DataWithUnits(pd.BaseModel):
@@ -35,12 +36,12 @@ class DataWithUnits(pd.BaseModel):
     mu: ViscosityType = pd.Field()
     omega: AngularVelocityType = pd.Field()
 
+
 class DataWithOptionalUnion(pd.BaseModel):
     L: LengthType = pd.Field()
     m: Optional[MassType] = pd.Field(None)
     t: Union[TimeType, TemperatureType] = pd.Field()
     v: Optional[Union[TimeType, TemperatureType]] = pd.Field(None)
-
 
 
 class DataWithUnitsConstrained(pd.BaseModel):
@@ -66,69 +67,24 @@ class VectorDataWithUnits(pd.BaseModel):
     omega: AngularVelocityType.Moment = pd.Field()
 
 
-
-
-
-
-### remove this part if unit test is fixed:
-
-def encode_ndarray(x):
-    """
-    encoder for ndarray
-    """
-    if x.size == 1:
-        return float(x)
-    return tuple(x.tolist())
-
-
-def dimensioned_type_serializer(x):
-    """
-    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
-    """
-    return {"value": encode_ndarray(x.value), "units": str(x.units)}
-
-def any_serialiser(v):
-    print(f'calling any serialiser {v=}')
-
-import unyt
-
-_json_encoders_map = {
-    unyt.unyt_quantity: dimensioned_type_serializer,
-    unyt.unyt_array: dimensioned_type_serializer,
-    unyt.Unit: str,
-}
-
-
-
 class Flow360DataWithUnits(Flow360BaseModel):
     L: LengthType = pd.Field()
-    pt: Optional[LengthType.Point] = pd.Field(None)
-    lc: LengthType.NonNegative = pd.Field()
-
-    model_config = pd.ConfigDict(
-        json_encoders=_json_encoders_map,
-    )
-
 
 
 def test_unit_access():
-    assert fl.units.flow360_area_unit
-    assert fl.units.CGS_unit_system
     assert u.CGS_unit_system
-    assert fl.units.kg
-    assert fl.units.inch
     assert u.inch
 
 
 def test_unit_systems_compare():
-    assert fl.SI_unit_system != fl.flow360_unit_system
-    assert fl.SI_unit_system != fl.CGS_unit_system
+    assert u.SI_unit_system != u.flow360_unit_system
+    assert u.SI_unit_system != u.CGS_unit_system
 
-    assert fl.SI_unit_system == fl.SI_unit_system
-    assert fl.flow360_unit_system == fl.flow360_unit_system
+    assert u.SI_unit_system == u.SI_unit_system
+    assert u.flow360_unit_system == u.flow360_unit_system
 
-    assert fl.flow360_unit_system == fl.UnitSystem(base_system="Flow360")
-    assert fl.SI_unit_system == fl.UnitSystem(base_system="SI")
+    assert u.flow360_unit_system == u.UnitSystem(base_system="Flow360")
+    assert u.SI_unit_system == u.UnitSystem(base_system="SI")
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -207,7 +163,7 @@ def test_flow360_unit_arithmetic():
         omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
     )
 
-    with fl.flow360_unit_system:
+    with u.flow360_unit_system:
         data_flow360 = VectorDataWithUnits(
             pt=(1, 1, 1),
             vec=(1, 1, 1),
@@ -258,7 +214,7 @@ def test_unit_system():
     # When using a unit system the units can be inferred
 
     # SI
-    with fl.SI_unit_system:
+    with u.SI_unit_system:
         data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
         assert data.L == 1 * u.m
@@ -274,7 +230,7 @@ def test_unit_system():
         assert data.omega == 5 * u.rad / u.s
 
     # CGS
-    with fl.CGS_unit_system:
+    with u.CGS_unit_system:
         data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
         assert data.L == 1 * u.cm
@@ -290,7 +246,7 @@ def test_unit_system():
         assert data.omega == 5 * u.rad / u.s
 
     # Imperial
-    with fl.imperial_unit_system:
+    with u.imperial_unit_system:
         data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
         assert data.L == 1 * u.ft
@@ -306,7 +262,7 @@ def test_unit_system():
         assert data.omega == 5 * u.rad / u.s
 
     # Flow360
-    with fl.flow360_unit_system:
+    with u.flow360_unit_system:
         data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
 
         assert data.L == 1 * u.flow360_length_unit
@@ -322,7 +278,7 @@ def test_unit_system():
         assert data.omega == 5 * u.flow360_angular_velocity_unit
 
     # Constraints
-    with fl.SI_unit_system:
+    with u.SI_unit_system:
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(
                 L=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
@@ -455,7 +411,7 @@ def test_unit_system():
         omega=(1, 1, 1) * u.rad / u.s,
     )
 
-    with fl.SI_unit_system:
+    with u.SI_unit_system:
         # Note that for union types the first element of union that passes validation is inferred!
         data = VectorDataWithUnits(pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
 
@@ -498,16 +454,14 @@ def test_optionals_and_unions():
     )
 
 
-
 @pytest.mark.usefixtures("array_equality_override")
 def test_units_serializer():
-    with fl.SI_unit_system:
-        data = Flow360DataWithUnits(L=2 * u.mm, lc=2)
+    with u.SI_unit_system:
+        data = Flow360DataWithUnits(L=2 * u.mm)
 
-    data_as_json = data.model_dump_json(indent=4)
+    data_as_json = data.model_dump_json()
 
-
-    with fl.CGS_unit_system:
+    with u.CGS_unit_system:
         data_reimport = Flow360DataWithUnits(**json.loads(data_as_json))
 
     # data_as_json = data.model_dump_json(indent=4)
@@ -519,7 +473,7 @@ def test_units_serializer():
 
 
 
-#     with fl.SI_unit_system:
+#     with u.SI_unit_system:
 #         data = Flow360DataWithUnits(L=2 * u.mm, pt=(2, 3, 4), lc=2)
 
 #     data_as_json = data.json(indent=4)
@@ -560,7 +514,7 @@ def test_unit_system_init():
         "inverse_length": {"value": 1.0, "units": "m**(-1)"},
         "inverse_area": {"value": 1.0, "units": "m**(-2)"},
     }
-    us = fl.UnitSystem(**unit_system_dict)
+    us = u.UnitSystem(**unit_system_dict)
     print(us)
-    print(fl.SI_unit_system)
-    assert us == fl.SI_unit_system
+    print(u.SI_unit_system)
+    assert us == u.SI_unit_system

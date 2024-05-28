@@ -12,12 +12,12 @@ from operator import add, sub
 from threading import Lock
 from typing import Any, Collection, List, Literal, Union, Annotated
 
+import annotated_types
 import numpy as np
 import pydantic as pd
 
 import unyt as u
-from pydantic import PlainValidator, PlainSerializer
-from pydantic_core import core_schema
+from pydantic_core import core_schema, InitErrorDetails
 
 from flow360.log import log
 from flow360.utils import classproperty
@@ -256,38 +256,7 @@ def _has_dimensions_validator(value, dim):
     return value
 
 
-# pylint: disable=too-few-public-methods
-class ValidatedType(metaclass=ABCMeta):
-    """
-    :class: Abstract class for dimensioned types with custom validation
-    """
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value, *args):
-        print(f'calling validator_v2, {args=}')
-        try:
-            return value
-        except (TypeError, ValueError) as err:
-            details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
-            raise pd.ValidationError.from_exception_data('validation error', [details])
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-            cls, *args, **kwargs
-    ) -> pd.CoreSchema:
-        print(f'running pydantic v2 validation, {cls.dim_name}')
-        return core_schema.no_info_plain_validator_function(cls.validate)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls):
-        pass
-
-
-class _DimensionedType(ValidatedType):
+class _DimensionedType(metaclass=ABCMeta):
     """
     :class: Base class for dimensioned values
     """
@@ -301,19 +270,27 @@ class _DimensionedType(ValidatedType):
         Validator for value
         """
 
-        value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
-        value = _is_unit_validator(value)
-        value = _unit_inference_validator(value, cls.dim_name)
-        value = _has_dimensions_validator(value, cls.dim)
+        try:
+            value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
+            value = _is_unit_validator(value)
+            value = _unit_inference_validator(value, cls.dim_name)
+            value = _has_dimensions_validator(value, cls.dim)
+        except TypeError as err:
+            details = InitErrorDetails(type="value_error", ctx={"error": err})
+            raise pd.ValidationError.from_exception_data('validation error', [details])
 
         if isinstance(value, u.Unit):
             return 1.0 * value
 
         return value
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> pd.CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
     # pylint: disable=unused-argument
     @classmethod
-    def __modify_schema__(cls, field_schema, field):
+    def __get_pydantic_json_schema__(cls, field_schema, field):
         field_schema["properties"] = {}
         field_schema["properties"]["value"] = {}
         field_schema["properties"]["units"] = {}
@@ -346,8 +323,8 @@ class _DimensionedType(ValidatedType):
         def get_class_object(cls, dim_type, **kwargs):
             """Get a dynamically created metaclass representing the constraint"""
 
-            class _ConType:
-                type_ = pd.confloat(**kwargs)
+            class _ConType(pd.BaseModel):
+                value: Annotated[float, annotated_types.Interval(**kwargs)]
 
             def validate(con_cls, value, *args):
                 print(f'calling validator_v2, {args=}')
@@ -357,16 +334,17 @@ class _DimensionedType(ValidatedType):
                     print(f'calling _Constrained validate, {value=}')
 
                     dimensioned_value = dim_type.validate(value)
-                    pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
-                    pd.validators.float_finite_validator(dimensioned_value.value, con_cls.con_type, None)
+
+                    # Workaround to run annotated validation for numeric value of field
+                    _ = _ConType(value=dimensioned_value.value)
+
                     return dimensioned_value
                 except TypeError as err:
-                    print('error found')
-                    details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
                     raise pd.ValidationError.from_exception_data('validation error', [details])
 
-            def __modify_schema__(con_cls, field_schema, field):
-                dim_type.__modify_schema__(field_schema, field)
+            def  __get_pydantic_json_schema__(con_cls, field_schema, field):
+                dim_type. __get_pydantic_json_schema__(field_schema, field)
                 constraints = con_cls.con_type.type_
                 if constraints.ge is not None:
                     field_schema["properties"]["value"]["minimum"] = constraints.ge
@@ -384,15 +362,9 @@ class _DimensionedType(ValidatedType):
 
             cls_obj = type("_Constrained", (), {})
             cls_obj.con_type = _ConType
-            cls_obj.__modify_schema__ = lambda field_schema, field: __modify_schema__(cls_obj, field_schema, field)
+            cls_obj.__get_pydantic_json_schema__ = lambda field_schema, field:  __get_pydantic_json_schema__(cls_obj, field_schema, field)
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
-            cls_obj.__get_pydantic_json_schema__ = lambda: None
-
-            return Annotated[
-                cls_obj,
-                PlainValidator(lambda value: validate(cls_obj, value)),
-                PlainSerializer(_dimensioned_type_serializer)
-            ]
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
 
     # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
@@ -401,9 +373,8 @@ class _DimensionedType(ValidatedType):
         """
         Utility method to generate a dimensioned type with constraints based on the pydantic confloat
         """
-        return cls._Constrained.get_class_object(
-            cls, gt=gt, ge=ge, lt=lt, le=le, allow_inf_nan=allow_inf_nan
-        )
+        return cls._Constrained.get_class_object(cls, gt=gt, ge=ge, lt=lt, le=le
+)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -411,7 +382,7 @@ class _DimensionedType(ValidatedType):
         """
         Shorthand for a ge=0 constrained value
         """
-        return self._Constrained.get_class_object(self, ge=0, allow_inf_nan=False)
+        return self._Constrained.get_class_object(self, ge=0)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -419,7 +390,7 @@ class _DimensionedType(ValidatedType):
         """
         Shorthand for a gt=0 constrained value
         """
-        return self._Constrained.get_class_object(self, gt=0, allow_inf_nan=False)
+        return self._Constrained.get_class_object(self, gt=0)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -427,7 +398,7 @@ class _DimensionedType(ValidatedType):
         """
         Shorthand for a le=0 constrained value
         """
-        return self._Constrained.get_class_object(self, le=0, allow_inf_nan=False)
+        return self._Constrained.get_class_object(self, le=0)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -435,15 +406,15 @@ class _DimensionedType(ValidatedType):
         """
         Shorthand for a lt=0 constrained value
         """
-        return self._Constrained.get_class_object(self, lt=0, allow_inf_nan=False)
+        return self._Constrained.get_class_object(self, lt=0)
 
     class _VectorType:
         @classmethod
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
             """Get a dynamically created metaclass representing the vector"""
 
-            def __modify_schema__(field_schema, field):
-                dim_type.__modify_schema__(field_schema, field)
+            def __get_pydantic_json_schema__(field_schema, field):
+                dim_type. __get_pydantic_json_schema__(field_schema, field)
                 field_schema["properties"]["value"]["type"] = "array"
                 field_schema["properties"]["value"]["items"] = {"type": "number"}
                 if length is not None:
@@ -485,8 +456,7 @@ class _DimensionedType(ValidatedType):
 
                     return value
                 except TypeError as err:
-                    print('error found')
-                    details = pd.InitErrorDetails(type="value_error", ctx={"error": err})
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
                     raise pd.ValidationError.from_exception_data('validation error', [details])
 
             def __get_pydantic_core_schema__(
@@ -498,15 +468,10 @@ class _DimensionedType(ValidatedType):
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_coord = allow_zero_coord
-            cls_obj.__modify_schema__ = __modify_schema__
+            cls_obj. __get_pydantic_json_schema__ = __get_pydantic_json_schema__
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(cls_obj, *args)
-            cls_obj.__get_pydantic_json_schema__ = lambda: None
 
-            return Annotated[
-                cls_obj,
-                PlainValidator(lambda value: validate(cls_obj, value)),
-                PlainSerializer(_dimensioned_type_serializer)
-            ]
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
 
     # pylint: disable=invalid-name
     @classproperty
@@ -559,11 +524,7 @@ class _DimensionedType(ValidatedType):
         )
 
 
-DimensionedType = Annotated[
-    _DimensionedType,
-    PlainValidator(lambda value: _DimensionedType.validate(value)),
-    PlainSerializer(_dimensioned_type_serializer)
-]
+DimensionedType = Annotated[_DimensionedType, pd.PlainSerializer(_dimensioned_type_serializer)]
 
 
 class LengthType(DimensionedType):
@@ -1041,6 +1002,29 @@ class BaseSystemType(Enum):
     NONE = None
 
 
+_dim_names =[
+    "mass",
+    "length",
+    "time",
+    "temperature",
+    "velocity",
+    "area",
+    "force",
+    "pressure",
+    "density",
+    "viscosity",
+    "power",
+    "moment",
+    "angular_velocity",
+    "heat_flux",
+    "heat_source",
+    "heat_capacity",
+    "thermal_conductivity",
+    "inverse_area",
+    "inverse_length",
+]
+
+
 class UnitSystem(pd.BaseModel):
     """
     :class: Customizable unit system containing definitions for most atomic and complex dimensions.
@@ -1070,28 +1054,6 @@ class UnitSystem(pd.BaseModel):
 
     _verbose: bool = pd.PrivateAttr(True)
 
-    _dim_names: List[str] = pd.PrivateAttr([
-        "mass",
-        "length",
-        "time",
-        "temperature",
-        "velocity",
-        "area",
-        "force",
-        "pressure",
-        "density",
-        "viscosity",
-        "power",
-        "moment",
-        "angular_velocity",
-        "heat_flux",
-        "heat_source",
-        "heat_capacity",
-        "thermal_conductivity",
-        "inverse_area",
-        "inverse_length",
-    ])
-
     @staticmethod
     def __get_unit(system, dim_name, unit):
         if unit is not None:
@@ -1112,11 +1074,11 @@ class UnitSystem(pd.BaseModel):
         base_system = BaseSystemType(base_system)
         units = {}
 
-        for dim in self._dim_names:
+        for dim in _dim_names:
             unit = kwargs.get(dim)
             units[dim] = UnitSystem.__get_unit(base_system, dim, unit)
 
-        missing = set(self._dim_names) - set(units.keys())
+        missing = set(_dim_names) - set(units.keys())
 
         super().__init__(**units, base_system=base_system)
 
@@ -1128,7 +1090,7 @@ class UnitSystem(pd.BaseModel):
         self._verbose = verbose
 
     def __eq__(self, other):
-        equal = [getattr(self, name) == getattr(other, name) for name in self._dim_names]
+        equal = [getattr(self, name) == getattr(other, name) for name in _dim_names]
         return all(equal)
 
     @classmethod
