@@ -18,6 +18,18 @@ class BaseModelTestModel(Flow360BaseModel):
 
     model_config = pd.ConfigDict(include_hash=True)
 
+    def preprocess(self, params, **kwargs):
+        self.some_value *= 2
+        return super().preprocess(self, **kwargs)
+
+
+class TempParams(Flow360BaseModel):
+    some_value: pd.StrictFloat
+    pseudo_field: BaseModelTestModel
+
+    def preprocess(self, params, **kwargs):
+        return super().preprocess(self, **kwargs)
+
 
 def test_help():
     Flow360BaseModel().help()
@@ -163,3 +175,11 @@ def test_add_type_field():
 
 def test_generate_docstring():
     assert "some_value" in BaseModelTestModel.__doc__
+
+
+def test_preprocess():
+    value = 123
+    test_params = TempParams(pseudo_field=BaseModelTestModel(some_value=value), some_value=value)
+    test_params = test_params.preprocess(test_params)
+    assert test_params.some_value == value
+    assert test_params.pseudo_field.some_value == value * 2
