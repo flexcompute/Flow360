@@ -13,10 +13,7 @@ from flow360.component.simulation.operating_condition import OperatingConditionT
 from flow360.component.simulation.outputs import OutputTypes
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.surfaces import SurfaceTypes
-from flow360.component.simulation.time_stepping.time_stepping import (
-    SteadyTimeStepping,
-    UnsteadyTimeStepping,
-)
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamics,
 )
@@ -63,7 +60,7 @@ class SimulationParams(Flow360BaseModel):
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]] = pd.Field(None)
+    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
     user_defined_dynamics: Optional[List[UserDefinedDynamics]] = pd.Field(None)
     """
     Support for user defined expression?

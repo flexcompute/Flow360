@@ -23,7 +23,7 @@ from flow360.component.simulation.surfaces import (
     Surface,
     Wall,
 )
-from flow360.component.simulation.time_stepping.time_stepping import SteadyTimeStepping
+from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamics,
 )
@@ -99,7 +99,7 @@ with SI_unit_system:
             SlipWall(entities=[slip_wall]),
             FreestreamBoundary(entities=[far_field]),
         ],
-        time_stepping=SteadyTimeStepping(),
+        time_stepping=Steady(),
         outputs=[
             SurfaceOutput(entities=[slip_wall, far_field], output_fields=["Cf", "Cp"]),
             SurfaceOutput(entities=[wing_surface], output_fields=["primitiveVars"]),
