@@ -23,24 +23,18 @@ class MeshingParameters(Flow360BaseModel):
     - farfield
     - refinement_factor
     - gap_treatment_strength
-    - BoundaryLayerRefinement --> growth_rate
-    - BoundaryLayerRefinement --> first_layer_thickness
+    - volume_layer_growth_rate
+    - volume_layer_first_layer_thickness
+    - `class` UniformRefinement
+    - `class` CylindricalRefinement
 
     Affects surface meshing:
     - max_edge_length
     - curvature_resolution_angle
     - surface_layer_growth_rate
-
-    Refinements that affects volume meshing:
-    - UniformRefinement
-    - CylindricalRefinement
-    - FaceRefinement-->type
-
-    Refinements that affects surface meshing:
-    - FaceRefinement-->max_edge_length
-    - Aniso
-    - ProjectAniso
-
+    - `class` FaceRefinement
+    - `class` AnisoSurfaceEdge
+    - `class` ProjectAnisoSurfaceEdge
     """
 
     # Volume **defaults**:
@@ -80,6 +74,3 @@ class MeshingParameters(Flow360BaseModel):
     refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]] = (
         pd.Field(description="Additional fine-tunning for refinement and specifications.")
     )  # Note: May need discriminator for performance??
-
-    rotor_disks: Optional[UniqueItemList[CylindricalRefinement]] = pd.Field(None)
-    sliding_interface: Optional[UniqueItemList[CylindricalRefinement]] = pd.Field(None)
