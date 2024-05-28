@@ -8,7 +8,11 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
-from flow360.component.simulation.outputs import Slice, SliceOutput, SurfaceOutput
+from flow360.component.simulation.outputs.outputs import (
+    Slice,
+    SliceOutput,
+    SurfaceOutput,
+)
 from flow360.component.simulation.physics_components import (
     LinearSolver,
     NavierStokesSolver,

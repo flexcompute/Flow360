@@ -54,3 +54,8 @@ class Cylinder(_VolumeEntityBase):
     height: float = pd.Field()
     inner_radius: pd.PositiveFloat = pd.Field()
     outer_radius: pd.PositiveFloat = pd.Field()
+
+
+@final
+class Surface(_SurfaceEntityBase):
+    pass

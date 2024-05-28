@@ -12,7 +12,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
-from flow360.component.simulation.outputs import SurfaceOutput
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.physics_components import (
     NavierStokesSolver,
     SpalartAllmaras,
