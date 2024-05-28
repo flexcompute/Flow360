@@ -1,11 +1,12 @@
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 from edge_params import EdgeRefinementTypes
 from face_params import FaceRefinement
-from volume_params import Farfield, ZoneRefinementTypes
+from volume_params import CylindricalRefinement, ZoneRefinementTypes
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 
 
 class MeshingParameters(Flow360BaseModel):
@@ -22,8 +23,8 @@ class MeshingParameters(Flow360BaseModel):
     - farfield
     - refinement_factor
     - gap_treatment_strength
-    - volume_layer_growth_rate
-    - volume_layer_first_layer_thickness
+    - BoundaryLayerRefinement --> growth_rate
+    - BoundaryLayerRefinement --> first_layer_thickness
 
     Affects surface meshing:
     - max_edge_length
@@ -34,7 +35,6 @@ class MeshingParameters(Flow360BaseModel):
     - UniformRefinement
     - CylindricalRefinement
     - FaceRefinement-->type
-    - FaceRefinement-->first_layer_thickness
 
     Refinements that affects surface meshing:
     - FaceRefinement-->max_edge_length
@@ -44,7 +44,9 @@ class MeshingParameters(Flow360BaseModel):
     """
 
     # Volume **defaults**:
-    farfield: Farfield = pd.Field(description="Type of farfield generation.")
+    farfield: Literal["auto", "quasi-3d", "user-defined"] = pd.Field(
+        description="Type of farfield generation."
+    )
     refinement_factor: pd.PositiveFloat = pd.Field(
         description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh."
     )
@@ -60,10 +62,10 @@ class MeshingParameters(Flow360BaseModel):
         description="Default first layer thickness for volumetric anisotropic layers."
     )
 
-    # Face **defaults** applied to faces without faceName and therefore cannot be references
+    # Face **defaults**
     max_edge_length: LengthType.PositiveFloat = pd.Field(
         description="Global maximum edge length for surface cells. This value will be overwritten by the local specification if provided."
-    )
+    )  # Note: Applied to faces without faceName and therefore has to exist in root level.
     curvature_resolution_angle: pd.PositiveFloat = pd.Field(
         description="""
         Global maximum angular deviation in degrees. This value will restrict:
@@ -71,10 +73,13 @@ class MeshingParameters(Flow360BaseModel):
         (2) The angle between a line segment’s normal and its underlying curve normal
         """
     )
-    surface_layer_growth_rate: pd.PositiveFloat = pd.Field(
-        gt=1, description="Growth rate of the anisotropic layers grown from the edges."
+    surface_layer_growth_rate: float = pd.Field(
+        ge=1, description="Growth rate of the anisotropic layers grown from the edges."
     )
 
     refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]] = (
-        pd.Field(description="Extra refinement and specifications for meshing.")
+        pd.Field(description="Additional fine-tunning for refinement and specifications.")
     )  # Note: May need discriminator for performance??
+
+    rotor_disks: Optional[UniqueItemList[CylindricalRefinement]] = pd.Field(None)
+    sliding_interface: Optional[UniqueItemList[CylindricalRefinement]] = pd.Field(None)

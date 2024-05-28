@@ -7,20 +7,44 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
 
 
-class Aniso(Flow360BaseModel):
-    """Aniso edge"""
+class ByAngle(Flow360BaseModel):
+    """Surface edge refinement by specifying curvature resolution in degrees"""
 
-    type: str = pd.Field("aniso", frozen=True)
-    method: Literal["angle", "height", "aspectRatio"] = pd.Field()
+    type: Literal["angle"] = pd.Field("angle", frozen=True)
+    value: u.degree = pd.Field()  # This should have dimension of angle
+
+
+class ByHeight(Flow360BaseModel):
+    """Surface edge refinement by specifying first layer height of the anisotropic layers"""
+
+    type: Literal["height"] = pd.Field("height", frozen=True)
+    value: LengthType.PositiveFloat = pd.Field()
+
+
+class ByAspectRatio(Flow360BaseModel):
+    """Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells"""
+
+    type: Literal["aspectRatio"] = pd.Field("aspectRatio", frozen=True)
     value: pd.PositiveFloat = pd.Field()
+
+
+class _BaseEdgeRefinement(Flow360BaseModel):
     entities: EntityList[Edge] = pd.Field(alias="edges")
+    growth_rate: float = pd.Field(
+        description="Growth rate for volume prism layers.", ge=1
+    )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
 
 
-class ProjectAniso(Flow360BaseModel):
-    """ProjectAniso edge"""
+class AnisoSurfaceEdge(_BaseEdgeRefinement):
+    """Grow anisotropic layers orthogonal to the edge"""
 
-    type: str = pd.Field("projectAnisoSpacing", frozen=True)
-    entities: EntityList[Edge] = pd.Field(alias="edges")
+    method: Union[ByAngle, ByHeight, ByAspectRatio] = pd.Field(discriminator="type")
 
 
-EdgeRefinementTypes = Union[Aniso, ProjectAniso]
+class ProjectAnisoSurfaceEdge(_BaseEdgeRefinement):
+    """Project the anisotropic spacing from neighboring faces to the edge"""
+
+    pass
+
+
+EdgeRefinementTypes = Union[AnisoSurfaceEdge, ProjectAnisoSurfaceEdge]
