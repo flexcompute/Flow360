@@ -16,8 +16,6 @@ from flow360.component.flow360_params.params_base import (
 )
 from flow360.component.flow360_params.unit_system import DimensionedType
 
-from ..types import NonNegativeInt, PositiveFloat, PositiveInt
-
 
 class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
     """:class: `LegacyModel` is used by legacy classes to"""
@@ -32,11 +30,11 @@ class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):
 class LinearSolverLegacy(LegacyModel):
     """:class:`LinearSolverLegacy` class"""
 
-    max_level_limit: Optional[NonNegativeInt] = pd.Field(alias="maxLevelLimit")
+    max_level_limit: Optional[pd.NonNegativeInt] = pd.Field(alias="maxLevelLimit")
     # pylint: disable=duplicate-code
-    max_iterations: Optional[PositiveInt] = pd.Field(alias="maxIterations", default=50)
-    absolute_tolerance: Optional[PositiveFloat] = pd.Field(alias="absoluteTolerance")
-    relative_tolerance: Optional[PositiveFloat] = pd.Field(alias="relativeTolerance")
+    max_iterations: Optional[pd.PositiveInt] = pd.Field(alias="maxIterations", default=50)
+    absolute_tolerance: Optional[pd.PositiveFloat] = pd.Field(alias="absoluteTolerance")
+    relative_tolerance: Optional[pd.PositiveFloat] = pd.Field(alias="relativeTolerance")
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config(Flow360BaseModel.Config):

@@ -14,7 +14,6 @@ from typing_extensions import Literal
 
 from flow360.component.flow360_params.unit_system import TimeType
 
-from ..types import PositiveFloat, PositiveInt
 from .params_base import DeprecatedAlias, Flow360BaseModel
 
 
@@ -32,8 +31,8 @@ class RampCFL(Flow360BaseModel):
     """
 
     type: Literal["ramp"] = pd.Field("ramp", const=True)
-    initial: Optional[PositiveFloat] = pd.Field()
-    final: Optional[PositiveFloat] = pd.Field()
+    initial: Optional[pd.PositiveFloat] = pd.Field()
+    final: Optional[pd.PositiveFloat] = pd.Field()
     ramp_steps: Optional[int] = pd.Field(alias="rampSteps")
 
     @classmethod
@@ -57,10 +56,10 @@ class AdaptiveCFL(Flow360BaseModel):
     """
 
     type: Literal["adaptive"] = pd.Field("adaptive", const=True)
-    min: Optional[PositiveFloat] = pd.Field(default=0.1)
-    max: Optional[PositiveFloat] = pd.Field()
-    max_relative_change: Optional[PositiveFloat] = pd.Field(alias="maxRelativeChange")
-    convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+    min: Optional[pd.PositiveFloat] = pd.Field(default=0.1)
+    max: Optional[pd.PositiveFloat] = pd.Field()
+    max_relative_change: Optional[pd.PositiveFloat] = pd.Field(alias="maxRelativeChange")
+    convergence_limiting_factor: Optional[pd.PositiveFloat] = pd.Field(
         alias="convergenceLimitingFactor"
     )
 
@@ -139,7 +138,7 @@ class UnsteadyTimeStepping(BaseTimeStepping):
     """
 
     model_type: Literal["Unsteady"] = pd.Field("Unsteady", alias="modelType", const=True)
-    physical_steps: PositiveInt = pd.Field(alias="physicalSteps")
+    physical_steps: pd.PositiveInt = pd.Field(alias="physicalSteps")
     time_step_size: TimeType.Positive = pd.Field(alias="timeStepSize")
     CFL: Optional[Union[RampCFL, AdaptiveCFL]] = pd.Field(
         displayed="CFL",

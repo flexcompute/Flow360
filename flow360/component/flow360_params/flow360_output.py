@@ -12,7 +12,7 @@ from pydantic.v1 import conlist
 
 from flow360.component.flow360_params.unit_system import Flow360UnitSystem, LengthType
 
-from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
+from ..types import Axis, Coordinate
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -92,7 +92,7 @@ def _deduplicate_output_fields(solver_values: dict, item_names: str = None):
 class AnimationSettings(Flow360BaseModel):
     """:class:`AnimationSettings` class"""
 
-    frequency: Optional[PositiveAndNegOneInt] = pd.Field(
+    frequency: Optional[Union[pd.PositiveInt, Literal[-1]]] = pd.Field(
         alias="frequency", options=["Animated", "Static"]
     )
     frequency_offset: Optional[int] = pd.Field(alias="frequencyOffset")
@@ -101,7 +101,7 @@ class AnimationSettings(Flow360BaseModel):
 class AnimationSettingsExtended(AnimationSettings):
     """:class:`AnimationSettingsExtended` class"""
 
-    frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
+    frequency_time_average: Optional[Union[pd.PositiveInt, Literal[-1]]] = pd.Field(
         alias="frequencyTimeAverage", options=["Animated", "Static"]
     )
     frequency_time_average_offset: Optional[int] = pd.Field(alias="frequencyTimeAverageOffset")
@@ -111,7 +111,7 @@ class AnimatedOutput(pd.BaseModel, metaclass=ABCMeta):
     """:class:`AnimatedOutput` class"""
 
     output_format: Optional[OutputFormat] = pd.Field(alias="outputFormat", default="paraview")
-    animation_frequency: Optional[PositiveAndNegOneInt] = pd.Field(
+    animation_frequency: Optional[Union[pd.PositiveInt, Literal[-1]]] = pd.Field(
         alias="animationFrequency", options=["Animated", "Static"], default=-1
     )
     animation_frequency_offset: Optional[int] = pd.Field(
@@ -148,13 +148,13 @@ class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
 
     compute_time_averages: Optional[bool] = pd.Field(alias="computeTimeAverages", default=False)
 
-    animation_frequency_time_average: Optional[PositiveAndNegOneInt] = pd.Field(
+    animation_frequency_time_average: Optional[Union[pd.PositiveInt, Literal[-1]]] = pd.Field(
         alias="animationFrequencyTimeAverage", options=["Animated", "Static"], default=-1
     )
     animation_frequency_time_average_offset: Optional[int] = pd.Field(
         alias="animationFrequencyTimeAverageOffset", default=0
     )
-    start_average_integration_step: Optional[NonNegativeAndNegOneInt] = pd.Field(
+    start_average_integration_step: Optional[Union[pd.NonNegativeInt, Literal[-1]]] = pd.Field(
         alias="startAverageIntegrationStep", default=-1, options=["From step", "No averaging"]
     )
 

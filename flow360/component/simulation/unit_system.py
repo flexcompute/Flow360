@@ -362,7 +362,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
             def __get_pydantic_core_schema__(con_cls, *args, **kwargs) -> pd.CoreSchema:
                 return core_schema.no_info_plain_validator_function(
-                    lambda *args: validate(con_cls, *args)
+                    lambda *val_args: validate(con_cls, *val_args)
                 )
 
             cls_obj = type("_Constrained", (), {})
@@ -472,7 +472,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
             def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
                 return core_schema.no_info_plain_validator_function(
-                    lambda *args: validate(vec_cls, *args)
+                    lambda *val_args: validate(vec_cls, *val_args)
                 )
 
             cls_obj = type("_VectorType", (), {})
