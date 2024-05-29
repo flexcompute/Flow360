@@ -21,6 +21,7 @@ from flow360.component.simulation.outputs.output_entities import (
     SurfaceList,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.unit_system import LengthType
 
 """Mostly the same as Flow360Param counterparts.
 Caveats:
@@ -125,7 +126,9 @@ class UserDefinedFields(Flow360BaseModel):
 
 OutputTypes = Union[
     SurfaceOutput,
+    TimeAverageSurfaceOutput,
     VolumeOutput,
+    TimeAverageVolumeOutput,
     SliceOutput,
     IsosurfaceOutput,
     SurfaceIntegralOutput,
