@@ -21,7 +21,7 @@ from flow360.component.simulation.physics_components import (
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
-from flow360.component.simulation.time_stepping import SteadyTimeStepping
+from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.volumes import ActuatorDisk, BETDisk, FluidDynamics
 from flow360.component.surface_mesh import SurfaceMesh
 
@@ -115,7 +115,7 @@ with SI_unit_system:
                 ),
             ),
         ],
-        time_stepping=SteadyTimeStepping(),  # MRF or use unsteady for sliding interface
+        time_stepping=Steady(),  # MRF or use unsteady for sliding interface
         outputs=[
             VolumeOutput(entities=["*"], output_fields=["Cp"]),
         ],
