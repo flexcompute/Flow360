@@ -26,7 +26,7 @@ from flow360.component.simulation.unit_system import LengthType
 """Mostly the same as Flow360Param counterparts.
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver. (Yes but they share the same output_fields)
-2. We do not support mulitple output frequencies for the same type of output.
+2. We do not support mulitple output frequencies/file format for the same type of output.
 """
 
 
@@ -46,21 +46,15 @@ class _AnimationSettings(Flow360BaseModel):
     )
 
 
-class _TimeAverageAdditionalAnimationSettings(Flow360BaseModel):
+class _AnimationAndFileFormatSettings(_AnimationSettings):
     """
-    Additional controls when using time-averaged output.
-
-    Notes
-    -----
-        Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
+    Controls how frequently the output files are generated and the file format.
     """
 
-    start_step: Optional[Union[pd.NonNegativeInt, Literal[-1]]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
-    )
+    output_format: Literal["paraview", "tecplot", "both"] = pd.Field(default="paraview")
 
 
-class SurfaceOutput(_AnimationSettings):
+class SurfaceOutput(_AnimationAndFileFormatSettings):
     entities: EntityList[Surface] = pd.Field(alias="surfaces")
     write_single_file: Optional[bool] = pd.Field(
         default=False,
@@ -69,35 +63,47 @@ class SurfaceOutput(_AnimationSettings):
     output_fields: UniqueAliasedStringList[SurfaceFields] = pd.Field()
 
 
-class TimeAverageSurfaceOutput(SurfaceOutput, _TimeAverageAdditionalAnimationSettings):
+class TimeAverageSurfaceOutput(SurfaceOutput):
     """
     Caveats:
     Solver side only accept exactly the same set of output_fields (is shared) between VolumeOutput and TimeAverageVolumeOutput.
+
+    Notes
+    -----
+        Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
     """
 
-    pass
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
 
 
-class VolumeOutput(_AnimationSettings):
+class VolumeOutput(_AnimationAndFileFormatSettings):
     output_fields: UniqueAliasedStringList[VolumeFields] = pd.Field()
 
 
-class TimeAverageVolumeOutput(VolumeOutput, _TimeAverageAdditionalAnimationSettings):
+class TimeAverageVolumeOutput(VolumeOutput):
     """
     Caveats:
     Solver side only accept exactly the same set of output_fields (is shared) between VolumeOutput and TimeAverageVolumeOutput.
     Also let's not worry about allowing entities here as it is not supported by solver anyway.
+
+    Notes
+    -----
+        Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
     """
 
-    pass
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
 
 
-class SliceOutput(_AnimationSettings):
+class SliceOutput(_AnimationAndFileFormatSettings):
     entities: UniqueItemList[Slice] = pd.Field(alias="slices")
     output_fields: UniqueAliasedStringList[SliceFields] = pd.Field()
 
 
-class IsosurfaceOutput(_AnimationSettings):
+class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFields] = pd.Field()
 
@@ -113,9 +119,9 @@ class ProbeOutput(_AnimationSettings):
 
 
 class AeroAcousticOutput(Flow360BaseModel):
-    patch_type: Optional[str] = pd.Field("solid", frozen=True)
+    patch_type: str = pd.Field("solid", frozen=True)
     observers: List[LengthType.Point] = pd.Field()
-    write_per_surface_output: Optional[bool] = pd.Field(False)
+    write_per_surface_output: bool = pd.Field(False)
 
 
 class UserDefinedFields(Flow360BaseModel):
