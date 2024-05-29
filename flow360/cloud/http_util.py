@@ -63,7 +63,9 @@ def http_interceptor(func):
             raise Flow360WebError(f"Web {args[1]}: Bad request error: {resp.json()['error']}")
 
         if resp.status_code == 401:
-            raise Flow360AuthorisationError("Unauthorized.")
+            raise Flow360AuthorisationError(
+                f"Unauthorized. Seems your APIKEY is invalid. Check it on {Env.current.web_url} in account section."
+            )
 
         if resp.status_code == 404:
             raise Flow360WebNotFoundError(f"Web {args[1]}: Not found error: {resp.json()}")
