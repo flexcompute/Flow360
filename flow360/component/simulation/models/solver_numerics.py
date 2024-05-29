@@ -72,7 +72,7 @@ class LinearSolver(Flow360BaseModel):
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericSolverSettings` class"""
 
-    absolute_tolerance: Optional[PositiveFloat] = pd.Field(1.0e-10)
+    absolute_tolerance: PositiveFloat = pd.Field(1.0e-10)
     relative_tolerance: Optional[NonNegativeFloat] = pd.Field(None)
     order_of_accuracy: Literal[1, 2] = pd.Field(2)
     equation_eval_frequency: PositiveInt = pd.Field(1)
@@ -147,6 +147,8 @@ class NavierStokesSolver(GenericSolverSettings):
     >>> ns = NavierStokesSolver(absolute_tolerance=1e-10)
     """
 
+    absolute_tolerance: PositiveFloat = pd.Field(1.0e-10)
+
     CFL_multiplier: PositiveFloat = pd.Field(1.0)
     kappa_MUSCL: pd.confloat(ge=-1, le=1) = pd.Field(-1)
 
@@ -154,7 +156,7 @@ class NavierStokesSolver(GenericSolverSettings):
     limit_velocity: bool = pd.Field(False)
     limit_pressure_density: bool = pd.Field(False)
 
-    model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
+    model_type: Literal["Compressible"] = pd.Field("Compressible", frozen=True)
 
     low_mach_preconditioner: bool = pd.Field(False)
     low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(None)
@@ -175,9 +177,7 @@ class NavierStokesSolver(GenericSolverSettings):
 class SpalartAllmarasModelConstants(Flow360BaseModel):
     """:class:`SpalartAllmarasModelConstants` class"""
 
-    model_type: Literal["SpalartAllmarasConsts"] = pd.Field(
-        "SpalartAllmarasConsts", alias="modelType", const=True
-    )
+    model_type: Literal["SpalartAllmarasConsts"] = pd.Field("SpalartAllmarasConsts", frozen=True)
     C_DES: NonNegativeFloat = pd.Field(0.72)
     C_d: NonNegativeFloat = pd.Field(8.0)
 
@@ -185,9 +185,7 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
 class KOmegaSSTModelConstants(Flow360BaseModel):
     """:class:`KOmegaSSTModelConstants` class"""
 
-    model_type: Literal["kOmegaSSTConsts"] = pd.Field(
-        "kOmegaSSTConsts", alias="modelType", const=True
-    )
+    model_type: Literal["kOmegaSSTConsts"] = pd.Field("kOmegaSSTConsts", frozen=True)
     C_DES1: NonNegativeFloat = pd.Field(0.78)
     C_DES2: NonNegativeFloat = pd.Field(0.61)
     C_d1: NonNegativeFloat = pd.Field(20.0)
@@ -261,16 +259,14 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
-    model_type: str = pd.Field(alias="modelType")
+    model_type: str = pd.Field()
     absolute_tolerance: PositiveFloat = pd.Field(1e-8)
     equation_eval_frequency: PositiveInt = pd.Field(4)
     DDES: bool = pd.Field(False)
     grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field("maxEdgeLength")
     reconstruction_gradient_limiter: pd.confloat(ge=0, le=2) = pd.Field(1.0)
     quadratic_constitutive_relation: bool = pd.Field(False)
-    model_constants: Optional[TurbulenceModelConstants] = pd.Field(
-        alias="modelConstants", discriminator="model_type"
-    )
+    model_constants: Optional[TurbulenceModelConstants] = pd.Field(discriminator="model_type")
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
 
@@ -278,14 +274,14 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
 class KOmegaSST(TurbulenceModelSolver):
     """:class:`KOmegaSST` class"""
 
-    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", const=True)
+    model_type: Literal["kOmegaSST"] = pd.Field("kOmegaSST", frozen=True)
     model_constants: KOmegaSSTModelConstants = pd.Field(KOmegaSSTModelConstants())
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
     """:class:`SpalartAllmaras` class"""
 
-    model_type: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", const=True)
+    model_type: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", frozen=True)
     rotation_correction: bool = pd.Field(False)
 
     model_constants: Optional[SpalartAllmarasModelConstants] = pd.Field(
@@ -297,7 +293,7 @@ class SpalartAllmaras(TurbulenceModelSolver):
 class NoneSolver(Flow360BaseModel):
     """:class:`SolverNone` class"""
 
-    model_type: Literal["None"] = pd.Field("None", alias="modelType", const=True)
+    model_type: Literal["None"] = pd.Field("None", frozen=True)
 
 
 TurbulenceModelSolverType = Union[NoneSolver, SpalartAllmaras, KOmegaSST]
@@ -334,7 +330,7 @@ class HeatEquationSolver(GenericSolverSettings):
         )
     """
 
-    model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", const=True)
+    model_type: Literal["HeatEquation"] = pd.Field("HeatEquation", frozen=True)
     update_jacobian_frequency: PositiveInt = pd.Field(1)
     absolute_tolerance: PositiveFloat = pd.Field(1e-9)
     equation_eval_frequency: PositiveInt = pd.Field(10)
@@ -380,7 +376,7 @@ class TransitionModelSolver(GenericSolverSettings):
     """
 
     model_type: Literal["AmplificationFactorTransport"] = pd.Field(
-        "AmplificationFactorTransport", const=True
+        "AmplificationFactorTransport", frozen=True
     )
     absolute_tolerance: PositiveFloat = pd.Field(1e-7)
     equation_eval_frequency: PositiveInt = pd.Field(4)

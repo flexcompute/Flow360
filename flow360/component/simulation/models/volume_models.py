@@ -5,54 +5,53 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.models.material import Air, MaterialType
 from flow360.component.simulation.models.solver_numerics import (
+    HeatEquationSolver,
     NavierStokesSolver,
+    SpalartAllmaras,
     TransitionModelSolver,
     TurbulenceModelSolverType,
 )
 
 
-class VolumeModelBase(Flow360BaseModel):
+class PDEModelBase(Flow360BaseModel):
     """
     Base class for equation models
 
     """
 
-    volumes: EntityList[Union[GenericVolume, str]] = pd.Field()
     material: MaterialType = pd.Field()
     initial_conditions: Optional[dict] = pd.Field(None)
 
 
-class FluidDynamicsAddOnBase(Flow360BaseModel):
-    volumes: EntityList[Union[GenericVolume, str]] = pd.Field()
-
-
-class FluidDynamics(VolumeModelBase):
+class FluidDynamics(PDEModelBase):
     """
     General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.
     """
 
-    navier_stokes_solver: Optional[NavierStokesSolver] = pd.Field(None)
-    turbulence_model_solver: Optional[TurbulenceModelSolverType] = pd.Field(None)
+    navier_stokes_solver: NavierStokesSolver = pd.Field(NavierStokesSolver())
+    turbulence_model_solver: TurbulenceModelSolverType = pd.Field(SpalartAllmaras())
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(None)
 
     material: MaterialTypes = pd.Field(Air())
 
 
-class HeatTransfer(VolumeModelBase):
+class HeatTransfer(PDEModelBase):
     """
     General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
     """
 
-    heat_equation_solver: Optional[components.HeatEquationSolver] = pd.Field(None)
-    volumetric_heat_source: Union[NonNegativeFloat, StrictStr] = pd.Field(0)
+    entities: EntityList[Union[GenericVolume, str]] = pd.Field(alias="volumes")
+
+    heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
+    volumetric_heat_source: Union[NonNegativeFloat, pd.StrictStr] = pd.Field(0)
 
 
-class ActuatorDisk(FluidDynamicsAddOnBase):
+class ActuatorDisk(Flow360BaseModel):
     """Same as Flow360Param ActuatorDisks.
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
-    volumes: Optional[EntityList[Cylinder]] = pd.Field(None)
+    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     center: Optional[Coordinate] = pd.Field(None)
     thickness: Optional[PositiveFloat] = pd.Field(None)
@@ -60,12 +59,12 @@ class ActuatorDisk(FluidDynamicsAddOnBase):
     force_per_area: ForcePerArea = pd.Field()
 
 
-class BETDisk(FluidDynamicsAddOnBase):
+class BETDisk(Flow360BaseModel):
     """Same as Flow360Param BETDisk.
     Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
-    volumes: Optional[EntityList[Cylinder]] = pd.Field(None)
+    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
     center_of_rotation: Optional[Coordinate] = pd.Field(None)
@@ -88,25 +87,24 @@ class BETDisk(FluidDynamicsAddOnBase):
     sectional_radiuses: List[float] = pd.Field()
 
 
-class Rotation(FluidDynamicsAddOnBase):
+class Rotation(Flow360BaseModel):
     """Similar to Flow360Param ReferenceFrame.
     Note that `center`, `axis` can be acquired from `entity` so they are not required anymore.
     Note: Should use the unit system to convert degree or degree per second to radian and radian per second
     """
 
-    # (AKA omega) In conflict with `rotation_per_second`.
-    angular_velocity: Optional[Union[float, pd.StrictStr]] = pd.Field(None)
-    # (AKA theta) Must be expression otherwise zone become static.
-    rotation_angle_radians: Optional[pd.StrictStr] = pd.Field(None)
-    parent_volume_name: Optional[VolumeEntityTypes] = pd.Field(None)
+    entities: EntityList[Union[GenericVolume, str]] = pd.Field(alias="volumes")
+
+    rotation: Union[AngularVelocityType, pd.StrictStr] = pd.Field()
+    parent_volume_name: Optional[Union[GenericVolume, str]] = pd.Field(None)
     center: Optional[LengthType.Point] = pd.Field(None)
     axis: Optional[Axis] = pd.Field(None)
 
 
-class PorousMedium(FluidDynamicsAddOnBase):
+class PorousMedium(Flow360BaseModel):
     """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
 
-    volumes: EntityList[Volume, Box, str] = pd.Field()
+    entities: Optional[EntityList[Volume, Box, str]] = pd.Field(None, alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()

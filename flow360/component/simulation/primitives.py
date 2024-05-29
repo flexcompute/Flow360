@@ -60,4 +60,5 @@ class Cylinder(_VolumeEntityBase):
 class Surface(_SurfaceEntityBase):
     pass
 
+
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
