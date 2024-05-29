@@ -1909,13 +1909,14 @@ class Flow360ParamsLegacy(LegacyModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator(pre=True)
-    def check_empty_heat_equation_solver(cls, values):
+    def check_empty_solver(cls, values):
         """
-        Skip heatEquationSolver if it is empty dict in JSON
+        Skip heatEquationSolver/transitionModelSolver if it is empty dict in JSON
         """
-        heat_solver = values.get("heatEquationSolver", {})
-        if not heat_solver:
-            values["heatEquationSolver"] = None
+        for item in ["transitionModelSolver", "heatEquationSolver"]:
+            solver = values.get(item, {})
+            if not solver:
+                values[item] = None
         return values
 
     def update_model(self) -> Flow360BaseModel:

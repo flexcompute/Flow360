@@ -150,6 +150,9 @@ class SurfaceMeshingParams(Flow360BaseModel):
     )
     growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
 
+    if Flags.beta_features():
+        version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")
+
     def flow360_json(self) -> str:
         """Generate a JSON representation of the model, as required by Flow360
 

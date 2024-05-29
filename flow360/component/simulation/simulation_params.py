@@ -2,9 +2,13 @@ from typing import List, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.base_model import Flow360BaseModel
-from flow360.component.simulation.inputs import Geometry, SurfaceMesh, VolumeMesh
-from flow360.component.simulation.mesh import MeshingParameters
+## Warning: pydantic V1
+from flow360.component.flow360_params.unit_system import (
+    UnitSystemType,
+    unit_system_manager,
+)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs import OutputTypes
 from flow360.component.simulation.references import ReferenceGeometry
@@ -13,28 +17,17 @@ from flow360.component.simulation.time_stepping import (
     SteadyTimeStepping,
     UnsteadyTimeStepping,
 )
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamics,
+)
 from flow360.component.simulation.volumes import VolumeTypes
+from flow360.exceptions import Flow360ConfigError
+from flow360.log import log
+from flow360.user_config import UserConfig
 
 
-class UserDefinedDynamics(Flow360BaseModel):
-    pass
-
-
-class Simulation(Flow360BaseModel):
+class SimulationParams(Flow360BaseModel):
     """
-    Simulation interface for user to submit a simulation starting from certain stage (geometry/surface mesh/volume mesh)
-
-    Attributes:
-        name (str): Name of simulation.
-        tags (List[str]): List of tags to help classify the simulation.
-    -----
-        - Different stages of the simulation that can either come from cloud or local files. As the simulation progresses, each of these will get populated/updated if not specified at the beginning. All these attributes should have methods to compute/update/retrieve the params. Only one/zero of them can be specified in the `Simulation` constructor.
-
-        geometry (Optional[Geometry]): Geometry.
-        surface_mesh (Optional[SurfaceMesh]): Surface mesh.
-        volume_mesh (Optional[VolumeMesh]): Volume mesh.
-
-    -----
         meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or modify the existing surface/volume meshing parameters from starting points.
 
     -----
@@ -52,24 +45,12 @@ class Simulation(Flow360BaseModel):
 
         time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
         user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
-        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs.
+        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    Limitations:
-        Sovler capability:
-            - Cannot specify multiple reference_geometry/operating_condition in volumes.
-    """
+    meshing: Optional[MeshingParameters] = pd.Field(None)
 
-    name: str = pd.Field()
-    tags: Optional[List[str]] = pd.Field()
-    #
-    geometry: Optional[Geometry] = pd.Field()
-    surface_mesh: Optional[SurfaceMesh] = pd.Field()
-    volume_mesh: Optional[VolumeMesh] = pd.Field()
-    #
-    meshing: Optional[MeshingParameters] = pd.Field()
-
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field()
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field()
+    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
@@ -78,13 +59,12 @@ class Simulation(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    volumes: Optional[List[VolumeTypes]] = pd.Field()
-    surfaces: Optional[List[SurfaceTypes]] = pd.Field()
+    models: Optional[List[Union[VolumeTypes, SurfaceTypes]]] = pd.Field(None)
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]] = pd.Field()
-    user_defined_dynamics: Optional[UserDefinedDynamics] = pd.Field()
+    time_stepping: Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]] = pd.Field(None)
+    user_defined_dynamics: Optional[List[UserDefinedDynamics]] = pd.Field(None)
     """
     Support for user defined expression?
     If so:
@@ -93,16 +73,26 @@ class Simulation(Flow360BaseModel):
     Limitations:
         1. No per volume zone output. (single volume output)
     """
-    outputs: Optional[List[OutputTypes]] = pd.Field()
+    outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
-    def __init__(self, **kwargs):
+
+class UnvalidatedSimulationParams(Flow360BaseModel):
+    """
+    Unvalidated parameters
+    """
+
+    model_config = pd.ConfigDict(extra="allow")
+
+    def __init__(self, filename: str = None, **kwargs):
+        if UserConfig.do_validation:
+            raise Flow360ConfigError(
+                "This is DEV feature. To use it activate by: fl.UserConfig.disable_validation()."
+            )
+        log.warning("This is DEV feature, use it only when you know what you are doing.")
+        super().__init__(filename, **kwargs)
+
+    def flow360_json(self) -> str:
+        """Generate a JSON representation of the model"""
+
+        # return self.json(encoder=flow360_json_encoder)
         pass
-
-    def to_surface_meshing_params(self): ...
-
-    def to_volume_meshing_params(self): ...
-
-    def to_solver_params(self): ...
-
-    def run(self) -> str:
-        return "f113d93a-c61a-4438-84af-f760533bbce4"

@@ -1305,15 +1305,14 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
     base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
 
-    registry: Any = pd.Field(allow_mutation=False)
-    conversion_system: Any = pd.Field(allow_mutation=False)
+    registry: Any = pd.Field(frozen=False)
+    conversion_system: Any = pd.Field(frozen=False)
 
-    class Config:  # pylint: disable=too-few-public-methods
-        """config"""
-
-        extra = "forbid"
-        validate_assignment = True
-        allow_mutation = True
+    model_config = pd.ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        frozen=True
+    )
 
     def __init__(self):
         registry = u.UnitRegistry()

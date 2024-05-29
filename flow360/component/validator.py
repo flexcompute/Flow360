@@ -15,6 +15,7 @@ from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 class Validator(Enum):
     """ ":class: Validator"""
 
+    GEOMETRY = "Geometry"
     VOLUME_MESH = "VolumeMesh"
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
@@ -26,6 +27,8 @@ class Validator(Enum):
             return "validator/surfacemesh/validate"
         if self is Validator.CASE:
             return "validator/case/validate"
+        if self is Validator.GEOMETRY:
+            return "validator/geometry/validate"
 
         return None
 
@@ -40,7 +43,7 @@ class Validator(Enum):
 
         Parameters
         ----------
-        params : Union[Flow360Params, SurfaceMeshingParams]
+        params : Union[Flow360Params, SurfaceMeshingParams, VolumeMeshingParams]
             flow360 parameters to validate
         solver_version : str, optional
             solver version, by default None

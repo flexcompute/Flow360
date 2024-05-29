@@ -9,38 +9,36 @@ From what I can think of right now most can be reused from flow360_params for ex
 
 from typing import Union
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
 class NavierStokesSolver(Flow360BaseModel):
+    """Same as Flow360Param NavierStokesSolver."""
+
     pass
 
 
 class KOmegaSST(Flow360BaseModel):
+    """Same as Flow360Param KOmegaSST."""
+
     pass
 
 
 class SpalartAllmaras(Flow360BaseModel):
+    """Same as Flow360Param SpalartAllmaras."""
+
     pass
 
 
 class TransitionModelSolver(Flow360BaseModel):
+    """Same as Flow360Param TransitionModelSolver."""
+
     pass
 
 
 class HeatEquationSolver(Flow360BaseModel):
-    pass
+    """Same as Flow360Param HeatEquationSolver."""
 
-
-class ActuatorDisk(Flow360BaseModel):
-    pass
-
-
-class BETDisk(Flow360BaseModel):
-    pass
-
-
-class PorousMediumBox(Flow360BaseModel):
     pass
 
 

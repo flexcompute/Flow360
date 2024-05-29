@@ -5,7 +5,7 @@ import pydantic as pd
 import pytest
 
 from flow360.component.simulation import units as u
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     AngularVelocityType,
     AreaType,
