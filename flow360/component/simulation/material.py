@@ -1,3 +1,5 @@
+""" Classes related to material definitions representing different media contained within the simulation """
+
 from typing import Literal
 
 import pydantic as pd

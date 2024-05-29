@@ -21,7 +21,7 @@ from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.surfaces import Surface, Wall
-from flow360.component.simulation.time_stepping import SteadyTimeStepping
+from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.volumes import Rotation
 
 wing_surface = Surface(mesh_patch_name="1")
@@ -95,7 +95,7 @@ with SI_unit_system:
             ## TODO: FreestreamBoundary is supposed to be auto populated since we have farfield=Farfield(type="auto"),
             # FreestreamBoundary(entities=[far_field]),
         ],
-        time_stepping=SteadyTimeStepping(),  # MRF or use unsteady for sliding interface
+        time_stepping=Steady(),  # MRF or use unsteady for sliding interface
         outputs=[
             SurfaceOutput(entities=[wing_surface], output_fields=["primitiveVars"]),
         ],

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Literal, Optional, Union, get_args
+from typing import Literal
 
 import pydantic as pd
 import rich
