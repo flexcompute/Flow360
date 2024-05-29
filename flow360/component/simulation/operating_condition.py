@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 import numpy as np
 import pydantic as pd
-from pydantic import validate_arguments
+from pydantic import computed_field, validate_arguments
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
@@ -31,19 +31,15 @@ class ThermalCondition(Flow360BaseModel):
             material=Air(),
         )
 
+    @computed_field
     @property
     def altitude(self) -> LengthType:
-        if self._altitude:
-            return self._altitude
-        else:
-            raise
+        return self._altitude
 
+    @computed_field
     @property
     def temperature_offset(self) -> TemperatureType:
-        if self._temperature_offset:
-            return self._temperature_offset
-        else:
-            raise
+        return self._temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType:

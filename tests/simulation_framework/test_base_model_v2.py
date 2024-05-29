@@ -9,24 +9,14 @@ import yaml
 from flow360.component.flow360_params.flow360_params import Flow360BaseModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.log import set_logging_level
-from pydantic import computed_field
-
-from typing import Optional
 
 set_logging_level("DEBUG")
 
 
 class BaseModelTestModel(Flow360BaseModel):
     some_value: pd.StrictFloat = pd.Field()
-    none_value: Optional[pd.StrictFloat] = None
-    _private_value: pd.StrictFloat = None
 
     model_config = pd.ConfigDict(include_hash=True)
-
-    @computed_field
-    @property
-    def private_value(self) -> pd.StrictFloat:
-        return self._private_value
 
 
 def test_help():
@@ -98,10 +88,9 @@ def test_dict_from_file():
 
 
 def test_to_file():
-    base_model = BaseModelTestModel(some_value=1230)
-    temp_file_name = "test.json"
-    #with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        #temp_file_name = temp_file.name
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
+        base_model = BaseModelTestModel(some_value=1230)
+        temp_file_name = temp_file.name
 
     try:
         base_model.to_file(temp_file_name)
@@ -110,21 +99,18 @@ def test_to_file():
             assert base_model_dict["some_value"] == 1230
             assert "hash" in base_model_dict
     finally:
-        #os.remove(temp_file_name)
-        pass
+        os.remove(temp_file_name)
 
-    #with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        #temp_file_name = temp_file.name
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
+        temp_file_name = temp_file.name
 
-    temp_file_name = "test.yaml"
     try:
         base_model.to_file(temp_file_name)
         with open(temp_file_name) as fp:
             base_model_dict = yaml.load(fp, Loader=yaml.Loader)
             assert base_model_dict["some_value"] == 1230
     finally:
-        #os.remove(temp_file_name)
-        pass
+        os.remove(temp_file_name)
 
 
 def test_from_json_yaml():

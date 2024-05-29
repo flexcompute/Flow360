@@ -70,9 +70,10 @@ with SI_unit_system:
                 UniformRefinement(entities=[porous_media_zone], spacing=0.002),
             ],
         ),
-        operating_condition=ExternalFlow(
-            freestream_velocity=VelocityFromMachAndAngles(Mach=0.5, alpha=2),
-            state=TemperatureDensity(temperature=300, density=1.225),
+        operating_condition=ExternalFlow.from_freestream_Mach_and_angles(
+            Mach=0.5,
+            alpha=2,
+            thermal_condition=ThermalCondition(temperature=300, density=1.225, material=Air()),
         ),
         reference_geometry=ReferenceGeometry(
             area=1.15315084119231,
