@@ -1,7 +1,7 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
-from edge_params import EdgeRefinementTypes
+from edge_params import SurfaceEdgeRefinement
 from face_params import FaceRefinement
 from volume_params import CylindricalRefinement, ZoneRefinementTypes
 
@@ -71,6 +71,8 @@ class MeshingParameters(Flow360BaseModel):
         ge=1, description="Growth rate of the anisotropic layers grown from the edges."
     )
 
-    refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]] = (
-        pd.Field(description="Additional fine-tunning for refinement and specifications.")
+    refinements: Optional[
+        List[Union[SurfaceEdgeRefinement, FaceRefinement, ZoneRefinementTypes]]
+    ] = pd.Field(
+        description="Additional fine-tunning for refinement and specifications."
     )  # Note: May need discriminator for performance??

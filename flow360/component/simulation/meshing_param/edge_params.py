@@ -35,16 +35,14 @@ class _BaseEdgeRefinement(Flow360BaseModel):
     )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
 
 
-class AnisoSurfaceEdge(_BaseEdgeRefinement):
-    """Grow anisotropic layers orthogonal to the edge"""
+class SurfaceEdgeRefinement(_BaseEdgeRefinement):
+    """
+    Grow anisotropic layers orthogonal to the edge.
 
-    method: Union[ByAngle, ByHeight, ByAspectRatio] = pd.Field(discriminator="type")
+    If `method` is None then it projects the anisotropic spacing from neighboring faces to the edge
+    (equivalent to `ProjectAniso` in old params).
+    """
 
+    """"""
 
-class ProjectAnisoSurfaceEdge(_BaseEdgeRefinement):
-    """Project the anisotropic spacing from neighboring faces to the edge"""
-
-    pass
-
-
-EdgeRefinementTypes = Union[AnisoSurfaceEdge, ProjectAnisoSurfaceEdge]
+    method: Optional[Union[ByAngle, ByHeight, ByAspectRatio]] = pd.Field(None, discriminator="type")
