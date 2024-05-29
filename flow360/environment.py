@@ -76,6 +76,16 @@ prod = EnvironmentConfig(
     apikey_profile="default",
 )
 
+
+preprod = EnvironmentConfig(
+    name="preprod",
+    web_api_endpoint="https://preprod-flow360-api.simulation.cloud",
+    web_url="https://preprod-flow360.simulation.cloud",
+    portal_web_api_endpoint="https://preprod-portal-api.simulation.cloud",
+    aws_region="us-gov-west-1",
+    apikey_profile="default",
+)
+
 FLOW360_SKIP_VERSION_CHECK = True
 
 
@@ -125,6 +135,14 @@ class Environment:
         :return:
         """
         return prod
+
+    @property
+    def preprod(self):
+        """
+        Get the preprod environment.
+        :return:
+        """
+        return preprod
 
     def set_current(self, config: EnvironmentConfig):
         """
