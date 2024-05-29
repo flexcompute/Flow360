@@ -12,6 +12,9 @@ class ReferenceGeometry(Flow360BaseModel):
     Contains all geometrical related refrence values
     Note:
     - mesh_unit is removed from here and will be a property
+    TODO:
+    - Support expression for time-dependent axis etc?
+    - What about force axis?
     """
 
     moment_center: Optional[LengthType.Point] = pd.Field()
@@ -69,5 +72,6 @@ class Cylinder(_VolumeEntityBase):
 
 
 @final
-class Surface(_SurfaceEntityBase, ReferenceGeometry):
+class Surface(_SurfaceEntityBase):
+    # Should inherit from `ReferenceGeometry` but we do not support this from solver side.
     pass
