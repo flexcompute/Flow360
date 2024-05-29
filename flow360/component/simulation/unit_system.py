@@ -584,6 +584,11 @@ class _TemperatureType(_DimensionedType):
 
         return value
 
+    # pylint: disable=unused-argument
+    @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> pd.CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
 
 TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_serializer)]
 
