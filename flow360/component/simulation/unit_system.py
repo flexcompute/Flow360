@@ -2,7 +2,7 @@
 Unit system definitions and utilities
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines, duplicate-code
 from __future__ import annotations
 
 from abc import ABCMeta
@@ -316,7 +316,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
         return schema
 
-    #pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
     class _Constrained:
         """
         :class: _Constrained
@@ -416,7 +416,7 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         return self._Constrained.get_class_object(self, lt=0)
 
-    #pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
     class _VectorType:
         @classmethod
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
@@ -1308,11 +1308,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
 
-    model_config = pd.ConfigDict(
-        extra="forbid",
-        validate_assignment=True,
-        frozen=True
-    )
+    model_config = pd.ConfigDict(extra="forbid", validate_assignment=True, frozen=True)
 
     def __init__(self):
         registry = u.UnitRegistry()
