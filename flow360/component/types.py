@@ -6,7 +6,6 @@ import numpy as np
 import pydantic.v1 as pd
 from pydantic import GetJsonSchemaHandler
 from pydantic_core import CoreSchema, core_schema
-from typing_extensions import Annotated
 
 from ..exceptions import Flow360ValidationError
 
@@ -31,10 +30,12 @@ class Vector(Coordinate):
     def __get_validators__(cls):
         yield cls.validate
 
+    # pylint: disable=unused-argument
     @classmethod
     def __get_pydantic_core_schema__(cls, *args, **kwargs) -> CoreSchema:
         return core_schema.no_info_plain_validator_function(cls.validate)
 
+    # pylint: disable=unused-argument
     @classmethod
     def __get_pydantic_json_schema__(cls, schema: CoreSchema, handler: GetJsonSchemaHandler):
         new_schema = {

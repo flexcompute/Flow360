@@ -252,10 +252,6 @@ class ValidatedType(metaclass=ABCMeta):
     def validate(cls, value):
         """validation"""
 
-    @classmethod
-    def __get_pydantic_json_schema__(cls):
-        pass
-
 
 class DimensionedType(ValidatedType):
     """
@@ -321,7 +317,6 @@ class DimensionedType(ValidatedType):
 
             def validate(con_cls, value):
                 """Additional validator for value"""
-                print(f"calling _Constrained validate, {value=}")
 
                 dimensioned_value = dim_type.validate(value)
                 pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
