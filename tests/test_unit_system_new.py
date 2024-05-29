@@ -71,8 +71,14 @@ class Flow360DataWithUnits(Flow360BaseModel):
     lc: LengthType.NonNegative = pd.Field()
 
 
+def test_unit_access():
+    assert u.CGS_unit_system
+    assert u.inch
+
+
 def test_unit_systems_compare():
-    assert u.SI_unit_system != u.flow360_unit_system
+    # For some reason this fails but only when run with pytest -rA if we switch order
+    assert u.flow360_unit_system != u.SI_unit_system
     assert u.SI_unit_system != u.CGS_unit_system
 
     assert u.SI_unit_system == u.SI_unit_system
@@ -80,11 +86,6 @@ def test_unit_systems_compare():
 
     assert u.flow360_unit_system == u.UnitSystem(base_system="Flow360")
     assert u.SI_unit_system == u.UnitSystem(base_system="SI")
-
-
-def test_unit_access():
-    assert u.CGS_unit_system
-    assert u.inch
 
 
 @pytest.mark.usefixtures("array_equality_override")

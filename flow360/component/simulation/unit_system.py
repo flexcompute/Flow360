@@ -5,7 +5,7 @@ Unit system definitions and utilities
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from enum import Enum
 from numbers import Number
 from operator import add, sub
@@ -284,6 +284,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
         return value
 
+    # pylint: disable=unused-argument
     @classmethod
     def __get_pydantic_core_schema__(cls, *args, **kwargs) -> pd.CoreSchema:
         return core_schema.no_info_plain_validator_function(cls.validate)
@@ -315,6 +316,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
         return schema
 
+    #pylint: disable=too-few-public-methods
     class _Constrained:
         """
         :class: _Constrained
@@ -330,12 +332,8 @@ class _DimensionedType(metaclass=ABCMeta):
                 value: Annotated[float, annotated_types.Interval(**kwargs)]
 
             def validate(con_cls, value, *args):
-                print(f"calling validator_v2, {args=}")
-
+                """Additional validator for value"""
                 try:
-                    """Additional validator for value"""
-                    print(f"calling _Constrained validate, {value=}")
-
                     dimensioned_value = dim_type.validate(value)
 
                     # Workaround to run annotated validation for numeric value of field
@@ -418,6 +416,7 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         return self._Constrained.get_class_object(self, lt=0)
 
+    #pylint: disable=too-few-public-methods
     class _VectorType:
         @classmethod
         def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
@@ -439,7 +438,6 @@ class _DimensionedType(metaclass=ABCMeta):
 
             def validate(vec_cls, value, *args):
                 """additional validator for value"""
-                print(f"calling validator_v2, {args=}")
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                     value = _is_unit_validator(value)
@@ -761,14 +759,15 @@ class _Flow360BaseUnit(_DimensionedType):
         """
         parent_self = self
 
+        # pylint: disable=too-few-public-methods
         # pylint: disable=invalid-name
-        class _units:
+        class _Units:
             dimensions = self.dimension_type.dim
 
             def __str__(self):
                 return f"{parent_self.unit_name}"
 
-        return _units()
+        return _Units()
 
     @property
     def value(self):
@@ -1061,6 +1060,7 @@ def is_flow360_unit(value):
 _lock = Lock()
 
 
+# pylint: disable=too-few-public-methods
 class BaseSystemType(Enum):
     """
     :class: Type of the base unit system to use for unit inference (all units need to be specified if not provided)
