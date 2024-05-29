@@ -115,7 +115,7 @@ class Unsteady(BaseTimeStepping):
 
     model_type: Literal["Unsteady"] = pd.Field("Unsteady", frozen=True)
     max_pseudo_steps: int = pd.Field(
-        2000, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
+        100, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
     step_size: TimeType.Positive = pd.Field(description="Time step size in physical step marching,")
