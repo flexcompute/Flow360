@@ -36,6 +36,7 @@ u.dimensions.thermal_conductivity = (
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
 
+# TODO: IIRC below is automatically derived once you define things above.
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
 # pylint: disable=no-member

@@ -1,10 +1,11 @@
 from abc import ABCMeta
-from typing import Final, Literal, Optional, Tuple, final
+from typing import Final, Literal, Optional, Tuple, Union, final
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.unit_system import AreaType, LengthType
 
 
 class ReferenceGeometry(Flow360BaseModel):
