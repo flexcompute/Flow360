@@ -9,7 +9,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
-BoundaryVelocityType = Tuple[pd.StrictStrpd, pd.StrictStr, pd.StrictStr]
+BoundaryVelocityType = Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr]
 
 
 class Surface(Flow360BaseModel):

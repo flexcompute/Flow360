@@ -2,7 +2,7 @@
 Flow360 meshing parameters
 """
 
-from typing import List, Optional, Union, get_args
+from typing import List, Optional, Tuple, Union, get_args
 
 import pydantic.v1 as pd
 from typing_extensions import Literal
@@ -15,7 +15,7 @@ from ..flow360_params.params_base import (
     _self_named_property_validator,
     flow360_json_encoder,
 )
-from ..types import Axis, Coordinate, NonNegativeFloat, PositiveFloat, Size
+from ..types import Axis, Coordinate
 
 
 class Aniso(Flow360BaseModel):
@@ -23,7 +23,7 @@ class Aniso(Flow360BaseModel):
 
     type = pd.Field("aniso", const=True)
     method: Literal["angle", "height", "aspectRatio"] = pd.Field()
-    value: PositiveFloat = pd.Field()
+    value: pd.PositiveFloat = pd.Field()
     adapt: Optional[bool] = pd.Field()
 
 
@@ -88,7 +88,7 @@ class Edges(Flow360SortableBaseModel):
 class Face(Flow360BaseModel):
     """Face"""
 
-    max_edge_length: PositiveFloat = pd.Field(alias="maxEdgeLength")
+    max_edge_length: pd.PositiveFloat = pd.Field(alias="maxEdgeLength")
     adapt: Optional[bool] = pd.Field()
 
 
@@ -142,13 +142,13 @@ class SurfaceMeshingParams(Flow360BaseModel):
     Flow360 Surface Meshing parameters
     """
 
-    max_edge_length: PositiveFloat = pd.Field(alias="maxEdgeLength")
+    max_edge_length: pd.PositiveFloat = pd.Field(alias="maxEdgeLength")
     edges: Optional[Edges] = pd.Field()
     faces: Optional[Faces] = pd.Field()
-    curvature_resolution_angle: Optional[PositiveFloat] = pd.Field(
+    curvature_resolution_angle: Optional[pd.PositiveFloat] = pd.Field(
         alias="curvatureResolutionAngle", default=15
     )
-    growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
+    growth_rate: Optional[pd.PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
 
     if Flags.beta_features():
         version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")
@@ -173,7 +173,7 @@ class Refinement(Flow360BaseModel):
     """Base class for refinement zones"""
 
     center: Coordinate = pd.Field()
-    spacing: PositiveFloat
+    spacing: pd.PositiveFloat
 
 
 class BoxRefinement(Refinement):
@@ -182,7 +182,7 @@ class BoxRefinement(Refinement):
     """
 
     type = pd.Field("box", const=True)
-    size: Size = pd.Field()
+    size: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field()
     axis_of_rotation: Optional[Axis] = pd.Field(alias="axisOfRotation", default=(0, 0, 1))
     angle_of_rotation: Optional[float] = pd.Field(alias="angleOfRotation", default=0)
 
@@ -193,8 +193,8 @@ class CylinderRefinement(Refinement):
     """
 
     type = pd.Field("cylinder", const=True)
-    radius: PositiveFloat = pd.Field()
-    length: PositiveFloat = pd.Field()
+    radius: pd.PositiveFloat = pd.Field()
+    length: pd.PositiveFloat = pd.Field()
     axis: Axis = pd.Field()
 
 
@@ -211,8 +211,8 @@ class Volume(Flow360BaseModel):
     Core volume meshing parameters
     """
 
-    first_layer_thickness: PositiveFloat = pd.Field(alias="firstLayerThickness")
-    growth_rate: Optional[PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
+    first_layer_thickness: pd.PositiveFloat = pd.Field(alias="firstLayerThickness")
+    growth_rate: Optional[pd.PositiveFloat] = pd.Field(alias="growthRate", default=1.2)
     gap_treatment_strength: Optional[pd.confloat(ge=0, le=1)] = pd.Field(
         alias="gapTreatmentStrength"
     )
@@ -225,13 +225,13 @@ class RotationalModelBase(Flow360BaseModel):
     """:class: RotorDisk"""
 
     name: Optional[str] = pd.Field()
-    inner_radius: Optional[NonNegativeFloat] = pd.Field(alias="innerRadius", default=0)
-    outer_radius: PositiveFloat = pd.Field(alias="outerRadius")
-    thickness: PositiveFloat = pd.Field()
+    inner_radius: Optional[pd.NonNegativeFloat] = pd.Field(alias="innerRadius", default=0)
+    outer_radius: pd.PositiveFloat = pd.Field(alias="outerRadius")
+    thickness: pd.PositiveFloat = pd.Field()
     center: Coordinate = pd.Field()
-    spacing_axial: PositiveFloat = pd.Field(alias="spacingAxial")
-    spacing_radial: PositiveFloat = pd.Field(alias="spacingRadial")
-    spacing_circumferential: PositiveFloat = pd.Field(alias="spacingCircumferential")
+    spacing_axial: pd.PositiveFloat = pd.Field(alias="spacingAxial")
+    spacing_radial: pd.PositiveFloat = pd.Field(alias="spacingRadial")
+    spacing_circumferential: pd.PositiveFloat = pd.Field(alias="spacingCircumferential")
 
 
 class RotorDisk(RotationalModelBase):
@@ -253,7 +253,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     """
 
     volume: Volume = pd.Field()
-    refinement_factor: Optional[PositiveFloat] = pd.Field(alias="refinementFactor")
+    refinement_factor: Optional[pd.PositiveFloat] = pd.Field(alias="refinementFactor")
     farfield: Optional[Farfield] = pd.Field()
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")

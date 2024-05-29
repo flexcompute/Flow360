@@ -3,14 +3,13 @@ from typing import Optional
 import pytest
 from pydantic.v1 import BaseModel, ValidationError
 
-from flow360.component.types import Axis, Coordinate, Size, Vector
+from flow360.component.types import Axis, Coordinate, Vector
 
 
 class Model(BaseModel):
     a: Optional[Axis]
     v: Optional[Vector]
     c: Optional[Coordinate]
-    size: Optional[Size]
 
 
 def test_axis_correct():
@@ -61,36 +60,3 @@ def test_coordinate_correct():
 def test_coordinate_incorrect():
     with pytest.raises(ValidationError):
         Model(c=(1, 0, 0, 0))
-
-
-def test_size_correct():
-    Model(size=(1, 1, 1))
-
-
-def test_size_correct1():
-    Model(size=[1, 1, 1])
-
-
-def test_size_incorrect():
-    with pytest.raises(ValidationError):
-        Model(size=(0, 0, 0))
-
-
-def test_size_incorrect1():
-    with pytest.raises(ValidationError):
-        Model(size=[0, 0, 0])
-
-
-def test_size_incorrect2():
-    with pytest.raises(ValidationError):
-        Model(size=(-1, 1, 1))
-
-
-def test_size_correct3():
-    with pytest.raises(ValidationError):
-        Model(size=(1, 1, 1, 1))
-
-
-def test_size_correct4():
-    with pytest.raises(ValidationError):
-        Model(size=[1, 1, 1, 1])
