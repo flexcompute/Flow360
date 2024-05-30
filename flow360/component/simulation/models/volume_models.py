@@ -13,6 +13,14 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 
 
+class AngularVelocity(SingleAttributeModel):
+    value: AngularVelocityType = pd.Field()
+
+
+class RotationAngleDegrees(SingleAttributeModel):
+    value: pd.StrictStr = pd.Field()
+
+
 class PDEModelBase(Flow360BaseModel):
     """
     Base class for equation models
@@ -40,10 +48,10 @@ class HeatTransfer(PDEModelBase):
     General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
     """
 
-    entities: EntityList[Union[GenericVolume, str]] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume, str] = pd.Field(alias="volumes")
 
     heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
-    volumetric_heat_source: Union[NonNegativeFloat, pd.StrictStr] = pd.Field(0)
+    volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(0)
 
 
 class ActuatorDisk(Flow360BaseModel):
@@ -53,9 +61,6 @@ class ActuatorDisk(Flow360BaseModel):
 
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
-    center: Optional[Coordinate] = pd.Field(None)
-    thickness: Optional[PositiveFloat] = pd.Field(None)
-    axis_thrust: Optional[Axis] = pd.Field(None)
     force_per_area: ForcePerArea = pd.Field()
 
 
@@ -67,9 +72,6 @@ class BETDisk(Flow360BaseModel):
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
-    center_of_rotation: Optional[Coordinate] = pd.Field(None)
-    axis_of_rotation: Optional[Axis] = pd.Field(None)
-    thickness: Optional[LengthType.Positive] = pd.Field(None)
     radius: Optional[LengthType.Positive] = pd.Field(None)
     number_of_blades: pd.conint(strict=True, gt=0, le=10) = pd.Field()
     omega: AngularVelocityType.NonNegative = pd.Field()
@@ -93,27 +95,22 @@ class Rotation(Flow360BaseModel):
     Note: Should use the unit system to convert degree or degree per second to radian and radian per second
     """
 
-    entities: EntityList[Union[GenericVolume, str]] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
-    rotation: Union[AngularVelocityType, pd.StrictStr] = pd.Field()
+    rotation: Union[AngularVelocity, RotationAngleDegrees] = pd.Field()
     parent_volume_name: Optional[Union[GenericVolume, str]] = pd.Field(None)
-    center: Optional[LengthType.Point] = pd.Field(None)
-    axis: Optional[Axis] = pd.Field(None)
 
 
 class PorousMedium(Flow360BaseModel):
     """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
 
-    entities: Optional[EntityList[Volume, Box, str]] = pd.Field(None, alias="volumes")
+    entities: Optional[EntityList[GenericVolume, Box, str]] = pd.Field(None, alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
-    volumetric_heat_source: Optional[HeatSourceType] = pd.Field(None)
-    # box specific
+    volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
+    # needed for GenericVolume, need to check for conflict for Box
     axes: Optional[List[Axis]] = pd.Field(None)
-    center: Optional[LengthType.Point] = pd.Field(None)
-    lengths: Optional[LengthType.Moment] = pd.Field(None)
-    windowing_lengths: Optional[Size] = pd.Field(None)
 
 
 VolumeModelsTypes = Union[

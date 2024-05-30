@@ -161,18 +161,6 @@ class NavierStokesSolver(GenericSolverSettings):
     low_mach_preconditioner: bool = pd.Field(False)
     low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(None)
 
-    # pylint: disable=arguments-differ,invalid-name
-    def to_solver(self, params, **kwargs) -> NavierStokesSolver:
-        """
-        Set preconditioner threshold to freestream Mach number
-        """
-
-        if self.low_mach_preconditioner:
-            if self.low_mach_preconditioner_threshold is None:
-                self.low_mach_preconditioner_threshold = params.freestream.Mach
-
-        return super().to_solver(self, **kwargs)
-
 
 class SpalartAllmarasModelConstants(Flow360BaseModel):
     """:class:`SpalartAllmarasModelConstants` class"""
@@ -335,26 +323,9 @@ class HeatEquationSolver(GenericSolverSettings):
     absolute_tolerance: PositiveFloat = pd.Field(1e-9)
     equation_eval_frequency: PositiveInt = pd.Field(10)
 
-    linear_solver: Optional[LinearSolver] = pd.Field(
+    linear_solver: LinearSolver = pd.Field(
         LinearSolver(max_interation=50, absolute_tolerance=1e-10)
     )
-
-    # pylint: disable=arguments-differ
-    def to_solver(self, params, **kwargs) -> HeatEquationSolver:
-        """
-        set Default Equation Eval Frequency
-        """
-        if self.equation_eval_frequency is None:
-            if isinstance(params.time_stepping, UnsteadyTimeStepping):
-                self.equation_eval_frequency = max(
-                    1,
-                    params.time_stepping.max_pseudo_steps
-                    // HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY,
-                )
-            else:
-                self.equation_eval_frequency = HEAT_EQUATION_EVAL_FREQUENCY_STEADY
-
-        return super().to_solver(params, **kwargs)
 
 
 class TransitionModelSolver(GenericSolverSettings):
@@ -384,24 +355,3 @@ class TransitionModelSolver(GenericSolverSettings):
     N_crit: pd.confloat(ge=1, le=11) = pd.Field(8.15)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
-
-    # pylint: disable=arguments-differ,invalid-name
-    def to_solver(self, params, **kwargs) -> TransitionModelSolver:
-        """
-        Convert turbulenceIntensityPercent to Ncrit
-        """
-
-        if self.turbulence_intensity_percent is not None:
-            Ncrit_converted = -8.43 - 2.4 * np.log(
-                0.025 * np.tanh(self.turbulence_intensity_percent / 2.5)
-            )
-            self.turbulence_intensity_percent = None
-            self.N_crit = Ncrit_converted
-        elif self.N_crit is None:
-            self.N_crit = 8.15
-
-        return super().to_solver(self, exclude=["turbulence_intensity_percent"], **kwargs)
-
-    # pylint: disable=missing-class-docstring,too-few-public-methods
-    class Config(Flow360BaseModel.Config):
-        conflicting_fields = [Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]

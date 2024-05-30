@@ -17,7 +17,7 @@ class Gas(MaterialBase):
     dynamic_viscosity: Union[ViscosityType, Sutherland] = pd.Field()
     specific_heat_ratio: float = pd.Field()
     gas_constant: GasConstantType = pd.Field()
-    Prandtl_number: float = pd.Field()
+    prandtl_number: float = pd.Field()
 
 
 class Sutherland(Flow360BaseModel):
@@ -35,7 +35,7 @@ class Air(Gas):
     )
     specific_heat_ratio: Literal["1.4"] = pd.Field("1.4", frozen=True)
     gas_constant: Literal["287.0529"] = pd.Field("287.0529", frozen=True)
-    Prandtl_number: Literal["0.72"] = pd.Field("0.72", frozen=True)
+    prandtl_number: Literal["0.72"] = pd.Field("0.72", frozen=True)
 
 
 class Solid(MaterialBase):
