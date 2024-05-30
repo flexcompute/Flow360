@@ -21,6 +21,29 @@ class RotationAngleDegrees(SingleAttributeModel):
     value: pd.StrictStr = pd.Field()
 
 
+class ExpressionInitialConditionBase(Flow360BaseModel):
+    """:class:`ExpressionInitialCondition` class"""
+
+    type: Literal["expression"] = pd.Field("expression", frozen=True)
+    constants: Optional[Dict[str, str]] = pd.Field()
+
+
+class NavierStokesInitialCondition(ExpressionInitialConditionBase):
+    rho: str = pd.Field(displayed="rho [non-dim]")
+    u: str = pd.Field(displayed="u [non-dim]")
+    v: str = pd.Field(displayed="v [non-dim]")
+    w: str = pd.Field(displayed="w [non-dim]")
+    p: str = pd.Field(displayed="p [non-dim]")
+
+
+class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
+    type: Literal["restartManipulation"] = pd.Field("restartManipulation", frozen=True)
+
+
+class HeatEquationInitialCondition(ExpressionInitialConditionBase):
+    temperature: str = pd.Field(displayed="T [non-dim]")
+
+
 class PDEModelBase(Flow360BaseModel):
     """
     Base class for equation models
@@ -28,7 +51,7 @@ class PDEModelBase(Flow360BaseModel):
     """
 
     material: MaterialType = pd.Field()
-    initial_conditions: Optional[dict] = pd.Field(None)
+    initial_condition: Optional[dict] = pd.Field(None)
 
 
 class FluidDynamics(PDEModelBase):
@@ -42,6 +65,10 @@ class FluidDynamics(PDEModelBase):
 
     material: MaterialTypes = pd.Field(Air())
 
+    initial_condition: Optional[
+        Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
+    ] = pd.Field(None)
+
 
 class HeatTransfer(PDEModelBase):
     """
@@ -52,6 +79,8 @@ class HeatTransfer(PDEModelBase):
 
     heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
     volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(0)
+
+    initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(None)
 
 
 class ActuatorDisk(Flow360BaseModel):
