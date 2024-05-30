@@ -26,6 +26,11 @@ SUPPORTED_GEOMETRY_FILE_PATTERNS = [
     ".iam",
     ".catpart",
     ".catproduct",
+<<<<<<< HEAD
+=======
+    ".igs",
+    ".iges",
+>>>>>>> 981349d (create surface mesh from geometry id)
     ".gt",
     ".prt",
     ".prt.*",

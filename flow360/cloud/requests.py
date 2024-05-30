@@ -5,6 +5,8 @@ from typing import List, Optional, Union
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
+from flow360.flags import Flags
+
 from ..component.flow360_params.flow360_params import Flow360MeshParams
 
 
@@ -37,6 +39,8 @@ class NewVolumeMeshRequest(Flow360Requests):
     compression: Optional[Literal["gz", "bz2", "zst"]] = pd.Field(alias="meshCompression")
     mesh_params: Optional[Flow360MeshParams] = pd.Field(alias="meshParams")
     solver_version: Optional[str] = pd.Field(alias="solverVersion")
+    if Flags.beta_features():
+        version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")
 
     # pylint: disable=no-self-argument
     @pd.validator("mesh_params")
