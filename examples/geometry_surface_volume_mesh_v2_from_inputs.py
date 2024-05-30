@@ -8,9 +8,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 from flow360.examples import Cylinder
 
-geometry = Geometry.from_file(
-    Cylinder.geometry, name="cylinder-geometry"
-)
+geometry = Geometry.from_file(Cylinder.geometry, name="cylinder-geometry")
 geometry = geometry.submit()
 
 print(geometry)
