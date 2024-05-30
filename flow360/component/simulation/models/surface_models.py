@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import List, Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -27,15 +27,15 @@ class HeatFlux(SingleAttributeModel):
 
 
 class Temperature(SingleAttributeModel):
-    value: Union[TemperatureType, pd.StrictStr] = pd.Field()
+    value: Union[TemperatureType.Positive, pd.StrictStr] = pd.Field()
 
 
 class TotalPressure(SingleAttributeModel):
-    value: PressureType = pd.Field()
+    value: PressureType.Positive = pd.Field()
 
 
 class Pressure(SingleAttributeModel):
-    value: PressureType = pd.Field()
+    value: PressureType.Positive = pd.Field()
 
 
 class MassFlowRate(SingleAttributeModel):
@@ -92,7 +92,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     )
 
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
-    total_temperature: TemperatureType = pd.Field()
+    total_temperature: TemperatureType.Positive = pd.Field()
     velocity_direction: Optional[Axis] = pd.Field(None)
     spec: Union[TotalPressure, MassFlowRate] = pd.Field()
 
