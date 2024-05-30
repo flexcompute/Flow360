@@ -187,6 +187,8 @@ class BaseTestCase(metaclass=ABCMeta):
 
     @classmethod
     def _get_file(cls, remote_filename, local_filename):
+        print("debug ==== local filename = " + local_filename)
+        print("debug ==== remote filename = " + remote_filename)
         if not os.path.exists(local_filename):
             download(remote_filename, local_filename)
 
