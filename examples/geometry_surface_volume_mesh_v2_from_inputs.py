@@ -2,17 +2,14 @@ import os
 
 import flow360 as fl
 
-# os.environ["FLOW360_BETA_FEATURES"] = "1"
-
-
 fl.Env.preprod.active()
 
 from flow360.component.geometry import Geometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
-from flow360.examples import CylinderGeometry
+from flow360.examples import Cylinder
 
 geometry = Geometry.from_file(
-    CylinderGeometry.geometry, name="cylinder-geometry", solver_version="release-24.2.2"
+    Cylinder.geometry, name="cylinder-geometry"
 )
 geometry = geometry.submit()
 
