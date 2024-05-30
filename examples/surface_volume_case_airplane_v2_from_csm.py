@@ -56,7 +56,7 @@ def createBaseParams():
             ),
             fluid_properties=fl.air,
             time_stepping=fl.SteadyTimeStepping(
-                max_pseudo_steps=3000,
+                max_pseudo_steps=4000,
                 CFL=fl.AdaptiveCFL(),
             ),
             boundaries={
@@ -76,8 +76,9 @@ surface_mesh = fl.SurfaceMesh.create(
     Airplane.geometry,
     params=params,
     name="airplane-new-python-client-v2",
+    solver_version="mesher-24.2.1"
 )
-surface_mesh = surface_mesh.submit(force_submit=True)
+surface_mesh = surface_mesh.submit()
 
 print(surface_mesh)
 print(surface_mesh.params)
@@ -96,10 +97,11 @@ volume_mesh = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
     name="airplane-volume-mesh-from-geometry",
     params=params,
+    solver_version="mesher-24.2.1"
 )
 volume_mesh = volume_mesh.submit()
 
 # case
 params = createBaseParams()
-case_draft = volume_mesh.create_case("airplane-case-from-geometry", params)
+case_draft = volume_mesh.create_case("airplane-case-from-geometry-v2", params)
 case = case_draft.submit()
