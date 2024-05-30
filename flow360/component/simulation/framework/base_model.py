@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from typing import Literal
 
 import pydantic as pd
@@ -10,7 +11,7 @@ import yaml
 from pydantic import ConfigDict
 
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.types import TYPE_TAG_STR
+from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
@@ -495,3 +496,84 @@ class Flow360BaseModel(pd.BaseModel):
 
         doc += "\n"
         cls.__doc__ = doc
+
+    def _convert_dimensions_to_solver(
+        self,
+        params,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        extra: List[Any] = None,
+    ) -> dict:
+        solver_values = {}
+        self_dict = deepcopy(self.__dict__)
+
+        if exclude is None:
+            exclude = []
+
+        if required_by is None:
+            required_by = []
+
+        if extra is not None:
+            for extra_item in extra:
+                require(extra_item.dependency_list, required_by, params)
+                self_dict[extra_item.name] = extra_item.value_factory()
+
+        for property_name, value in self_dict.items():
+            if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
+                continue
+            # TODO: call unit conversion
+            solver_values[property_name] = value
+
+        return solver_values
+
+    def preprocess(
+        self, params, exclude: List[str] = None, required_by: List[str] = None
+    ) -> Flow360BaseModel:
+        """
+        Loops through all fields, for Flow360BaseModel runs .preprocess() recusrively. For dimensioned value performs
+
+        unit conversion to flow360_base system.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Full config definition as Flow360Params.
+
+        exclude: List[str] (optional)
+            List of fields to ignore on returned model.
+
+        required_by: List[str] (optional)
+            Path to property which requires conversion.
+
+        Returns
+        -------
+        caller class
+            returns caller class with units all in flow360 base unit system
+        """
+
+        if exclude is None:
+            exclude = []
+
+        if required_by is None:
+            required_by = []
+
+        solver_values = self._convert_dimensions_to_solver(params, exclude, required_by)
+        for property_name, value in self.__dict__.items():
+            if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
+                continue
+            loc_name = property_name
+            field = self.model_fields.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
+            if isinstance(value, Flow360BaseModel):
+                solver_values[property_name] = value.preprocess(
+                    params, required_by=[*required_by, loc_name]
+                )
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, Flow360BaseModel):
+                        solver_values[property_name][i] = item.preprocess(
+                            params, required_by=[*required_by, loc_name, f"{i}"]
+                        )
+
+        return self.__class__(**solver_values)
