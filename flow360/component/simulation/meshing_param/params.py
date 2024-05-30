@@ -23,18 +23,14 @@ class MeshingParameters(Flow360BaseModel):
     - farfield
     - refinement_factor
     - gap_treatment_strength
-    - volume_layer_growth_rate
-    - volume_layer_first_layer_thickness
+    - `class` BoundaryLayerRefinement
     - `class` UniformRefinement
     - `class` CylindricalRefinement
 
     Affects surface meshing:
-    - max_edge_length
-    - curvature_resolution_angle
     - surface_layer_growth_rate
     - `class` FaceRefinement
-    - `class` AnisoSurfaceEdge
-    - `class` ProjectAnisoSurfaceEdge
+    - `class` SurfaceEdgeRefinement
     """
 
     # Volume **defaults**:
