@@ -16,6 +16,45 @@ from ..error_messages import shared_submit_warning
 from ..exceptions import Flow360TypeError, Flow360ValueError
 from ..log import log
 
+SUPPORTED_GEOMETRY_FILE_PATTERNS = [
+    ".csm",
+    ".egads",
+    ".sat",
+    ".sab",
+    ".asat",
+    ".asab",
+    ".iam",
+    ".catpart",
+    ".catproduct",
+    ".gt",
+    ".prt",
+    ".prt.*",
+    ".asm.*",
+    ".par",
+    ".asm",
+    ".psm",
+    ".sldprt",
+    ".sldasm",
+    ".stp",
+    ".step",
+    ".x_t",
+    ".xmt_txt",
+    ".x_b",
+    ".xmt_bin",
+    ".3dm",
+    ".ipt",
+]
+
+
+def match_file_pattern(patterns, filename):
+    """
+    Check if filename matches a pattern
+    """
+    for pattern in patterns:
+        if re.search(pattern + "$", filename.lower()) is not None:
+            return True
+    return False
+
 
 # pylint: disable=redefined-builtin
 def is_valid_uuid(id, allow_none=False):

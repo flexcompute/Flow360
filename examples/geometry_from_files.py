@@ -1,8 +1,13 @@
 import flow360 as fl
 from flow360.component.geometry import Geometry
-from flow360.examples import Octahedron
+from flow360.examples import Cylinder
 
-geometry = Geometry.from_file(Octahedron.geometry, name="octahedron")
-geometry = geometry.submit()
+fl.Env.preprod.active()
+
+geometry_draft = Geometry.from_file(
+    Cylinder.geometry,
+    name="testing-cylinder-geometry",
+)
+geometry = geometry_draft.submit()
 
 print(geometry)

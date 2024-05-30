@@ -111,6 +111,7 @@ class BaseTestCase(metaclass=ABCMeta):
 
     @classmethod
     def _real_path(cls, *args):
+        here = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(here, cls.name, *args)
 
     @classproperty
@@ -199,3 +200,7 @@ class BaseTestCase(metaclass=ABCMeta):
             cls._get_file(cls.url.case_json, cls._case_json)
         if hasattr(cls.url, "case_yaml"):
             cls._get_file(cls.url.case_yaml, cls._case_yaml)
+        if hasattr(cls.url, "geometry"):
+            cls._get_file(cls.url.geometry, cls._geometry_filename)
+        if hasattr(cls.url, "surface_json"):
+            cls._get_file(cls.url.surface_json, cls._surface_json)
