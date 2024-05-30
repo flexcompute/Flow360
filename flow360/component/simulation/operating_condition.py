@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 import numpy as np
 import pydantic as pd
-from pydantic import computed_field, validate_arguments
+from pydantic import validate_arguments
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
@@ -13,6 +13,7 @@ class ThermalCondition(Flow360BaseModel):
     temperature: TemperatureType = 288.15
     density: DensityType = 1.225
     material: materialTypes = Air()
+    # TODO: special serializer
     _altitude: Optional[LengthType] = None
     _temperature_offset: Optional[TemperatureType] = None
 
@@ -31,12 +32,10 @@ class ThermalCondition(Flow360BaseModel):
             material=Air(),
         )
 
-    @computed_field
     @property
     def altitude(self) -> LengthType:
         return self._altitude
 
-    @computed_field
     @property
     def temperature_offset(self) -> TemperatureType:
         return self._temperature_offset
@@ -58,60 +57,52 @@ class ThermalCondition(Flow360BaseModel):
         return 1.825e-5
 
 
-class GenericOperatingCondition(Flow360BaseModel):
+class GenericReferenceCondition(Flow360BaseModel):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
     """
 
-    speed: VelocityType.Positive
+    velocity_magnitude: VelocityType.Positive
     thermal_condition: ThermalCondition = ThermalCondition()
 
     @validate_arguments
     @classmethod
     def from_Mach(
         cls,
-        Mach: PositiveFloat,
+        mach: PositiveFloat,
         thermal_condition: ThermalCondition = ThermalCondition(),
     ):
-        velocity = Mach * self.thermal_condition.speed_of_sound
-        return cls(velocity=velocity, thermal_condition=thermal_condition)
+        velocity_magnitude = mach * self.thermal_condition.speed_of_sound
+        return cls(velocity_magnitude=velocity_magnitude, thermal_condition=thermal_condition)
 
 
-class ExternalFlow(Flow360BaseModel):
-    freestream_velocity: VelocityVectorType
-    thermal_condition: ThermalCondition = ThermalCondition()
-    reference_speed: Optional[VelocityType.Positive] = pd.Field(None)
+class AerospaceCondition(Flow360BaseModel):
+    alpha: float = 0
+    beta: float = 0
+    velocity_magnitude: VelocityType.NonNegative
+    atmosphere: ThermalCondition = ThermalCondition()
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = None
 
     @validate_arguments
     @classmethod
-    def from_freestream_Mach_and_angles(
+    def from_Mach(
         cls,
-        Mach: NonNegativeFloat,
+        mach: PositiveFloat,
         alpha: float = 0,
         beta: float = 0,
-        thermal_condition: ThermalCondition = ThermalCondition(),
+        atmosphere: ThermalCondition = ThermalCondition(),
     ):
         pass
 
     @validate_arguments
     @classmethod
-    def from_freestream_speed_and_angles(
+    def from_stationary(
         cls,
-        speed: VelocityType.NonNegative,
-        alpha: float = 0,
-        beta: float = 0,
-        thermal_condition: ThermalCondition = ThermalCondition(),
-    ):
-        pass
-
-    @validate_arguments
-    @classmethod
-    def from_stationary_freestream(
-        cls,
-        reference_speed: VelocityType.Positive,
-        thermal_condition: ThermalCondition = ThermalCondition(),
+        reference_velocity_magnitude: VelocityType.Positive,
+        atmosphere: ThermalCondition = ThermalCondition(),
     ):
         pass
 
 
-OperatingConditionType = Union[GenericOperatingCondition, ExternalFlow]
+# TODO: AutomotiveCondition
+OperatingConditionType = Union[GenericReferenceCondition, AerospaceCondition]
