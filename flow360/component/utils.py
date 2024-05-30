@@ -26,8 +26,6 @@ SUPPORTED_GEOMETRY_FILE_PATTERNS = [
     ".iam",
     ".catpart",
     ".catproduct",
-    ".igs",
-    ".iges",
     ".gt",
     ".prt",
     ".prt.*",
