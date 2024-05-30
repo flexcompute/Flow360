@@ -4,7 +4,7 @@ os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
 from flow360 import units as u
 
-fl.Env.dev.active()
+fl.Env.preprod.active()
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 from flow360.examples import Airplane
 
@@ -74,7 +74,6 @@ surface_mesh = fl.SurfaceMesh.create(
     Airplane.geometry,
     params=params,
     name="airplane-new-python-client-v2",
-    solver_version="ugrid-bc-fix-24.2.1",
 )
 surface_mesh = surface_mesh.submit(force_submit=True)
 
@@ -95,7 +94,6 @@ volume_mesh = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
     name="airplane-volume-mesh-from-geometry",
     params=params,
-    solver_version="ugrid-bc-fix-24.2.1",
 )
 volume_mesh = volume_mesh.submit()
 

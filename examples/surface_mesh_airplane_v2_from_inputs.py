@@ -4,7 +4,7 @@ os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
 from flow360.examples import Airplane
 
-fl.Env.dev.active()
+fl.Env.preprod.active()
 
 params = fl.SurfaceMeshingParams(version="v2", max_edge_length=0.16)
 

@@ -3,11 +3,6 @@ import os
 import flow360 as fl
 from flow360.examples import Airplane
 
-# os.environ["FLOW360_BETA_FEATURES"] = "1"
-
-
-# fl.Env.dev.active()
-
 params = fl.SurfaceMeshingParams(
     max_edge_length=0.16,
     edges={
