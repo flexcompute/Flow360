@@ -1,13 +1,15 @@
 import os
-#os.environ["FLOW360_BETA_FEATURES"] = "1"
 
 import flow360 as fl
+
+# os.environ["FLOW360_BETA_FEATURES"] = "1"
+
 
 fl.Env.preprod.active()
 
 from flow360.component.geometry import Geometry
-from flow360.examples import CylinderGeometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
+from flow360.examples import CylinderGeometry
 
 geometry = Geometry.from_file(
     CylinderGeometry.geometry, name="cylinder-geometry", solver_version="release-24.2.2"
@@ -20,7 +22,7 @@ print(geometry)
 params = fl.SurfaceMeshingParams(max_edge_length=10)
 
 surface_mesh = fl.SurfaceMesh.create(
-    geometry_id = geometry.id,
+    geometry_id=geometry.id,
     params=params,
     name="cylinder-surface-mesh-from-geometry",
 )
@@ -44,7 +46,3 @@ volume_mesh = fl.VolumeMesh.create(
     params=params,
 )
 volume_mesh = volume_mesh.submit(force_submit=True)
-
-
-
-

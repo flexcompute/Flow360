@@ -5,7 +5,8 @@ from flow360.examples import Airplane
 fl.Env.preprod.active()
 
 geometry = Geometry.from_file(
-    Airplane.geometry, name="testing-airplane-csm-geometry",
+    Airplane.geometry,
+    name="testing-airplane-csm-geometry",
 )
 geometry = geometry.submit()
 

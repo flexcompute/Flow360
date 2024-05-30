@@ -5,7 +5,8 @@ from flow360.examples import CylinderGeometry
 fl.Env.preprod.active()
 
 geometry = Geometry.from_file(
-    CylinderGeometry.geometry, name="testing-cylinder-geometry",
+    CylinderGeometry.geometry,
+    name="testing-cylinder-geometry",
 )
 geometry = geometry.submit()
 

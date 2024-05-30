@@ -8,6 +8,7 @@ fl.Env.preprod.active()
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 from flow360.examples import Airplane
 
+
 def createBaseParams():
     mesh_unit = 1 * u.m
     with fl.SI_unit_system:
@@ -67,6 +68,7 @@ def createBaseParams():
         )
     return params
 
+
 # surface mesh
 params = fl.SurfaceMeshingParams(version="v2", max_edge_length=0.16)
 
@@ -101,4 +103,3 @@ volume_mesh = volume_mesh.submit()
 params = createBaseParams()
 case_draft = volume_mesh.create_case("airplane-case-from-geometry", params)
 case = case_draft.submit()
-
