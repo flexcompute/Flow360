@@ -1,10 +1,26 @@
 from abc import ABCMeta
-from typing import Final, Literal, Optional, Tuple, final
+from typing import Final, Literal, Optional, Tuple, Union, final
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.unit_system import AreaType, LengthType
+
+
+class ReferenceGeometry(Flow360BaseModel):
+    """
+    Contains all geometrical related refrence values
+    Note:
+    - mesh_unit is removed from here and will be a property
+    TODO:
+    - Support expression for time-dependent axis etc?
+    - What about force axis?
+    """
+
+    moment_center: Optional[LengthType.Point] = pd.Field()
+    moment_length: Optional[Union[LengthType.Positive, LengthType.Moment]] = pd.Field()
+    area: Optional[AreaType.Positive] = pd.Field()
 
 
 class Transformation(Flow360BaseModel):
@@ -58,4 +74,5 @@ class Cylinder(_VolumeEntityBase):
 
 @final
 class Surface(_SurfaceEntityBase):
+    # Should inherit from `ReferenceGeometry` but we do not support this from solver side.
     pass

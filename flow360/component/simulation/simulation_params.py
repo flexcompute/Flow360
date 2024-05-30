@@ -11,7 +11,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs import OutputTypes
-from flow360.component.simulation.references import ReferenceGeometry
+from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.surfaces import SurfaceTypes
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
