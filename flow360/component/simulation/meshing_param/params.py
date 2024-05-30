@@ -49,30 +49,13 @@ class MeshingParameters(Flow360BaseModel):
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
     )
-    volume_layer_growth_rate: pd.PositiveFloat = pd.Field(
-        gt=1, description="Growth rate for volume prism layers."
-    )
-    volume_layer_first_layer_thickness: pd.PositiveFloat = pd.Field(
-        description="Default first layer thickness for volumetric anisotropic layers."
-    )
 
-    # Face **defaults**
-    max_edge_length: LengthType.PositiveFloat = pd.Field(
-        description="Global maximum edge length for surface cells. This value will be overwritten by the local specification if provided."
-    )  # Note: Applied to faces without faceName and therefore has to exist in root level.
-    curvature_resolution_angle: pd.PositiveFloat = pd.Field(
-        description="""
-        Global maximum angular deviation in degrees. This value will restrict:
-        (1) The angle between a cell’s normal and its underlying surface normal
-        (2) The angle between a line segment’s normal and its underlying curve normal
-        """
-    )
     surface_layer_growth_rate: float = pd.Field(
-        ge=1, description="Growth rate of the anisotropic layers grown from the edges."
+        ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )
 
     refinements: Optional[
         List[Union[SurfaceEdgeRefinement, FaceRefinement, ZoneRefinementTypes]]
     ] = pd.Field(
-        description="Additional fine-tunning for refinement and specifications."
+        None, description="Additional fine-tunning for refinement and specifications."
     )  # Note: May need discriminator for performance??
