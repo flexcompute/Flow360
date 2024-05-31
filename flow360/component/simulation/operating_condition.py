@@ -12,7 +12,7 @@ VelocityVectorType = Unioin[VelocityType.Vector, Tuple[pd.StrictStr, pd.StrictSt
 class ThermalState(Flow360BaseModel):
     temperature: TemperatureType.Positive = 288.15
     density: DensityType.Positive = 1.225
-    material: materialTypes = Air()
+    material: FluidMaterialTypes = Air()
     # TODO: special serializer
     _altitude: Optional[LengthType.Positive] = None
     _temperature_offset: Optional[TemperatureType.Positive] = None
