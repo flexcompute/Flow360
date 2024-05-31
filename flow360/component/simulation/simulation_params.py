@@ -9,6 +9,7 @@ from flow360.component.flow360_params.unit_system import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.models.volume_models import VolumeTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs import OutputTypes
 from flow360.component.simulation.primitives import ReferenceGeometry
@@ -17,7 +18,6 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady, Uns
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamics,
 )
-from flow360.component.simulation.volumes import VolumeTypes
 from flow360.exceptions import Flow360ConfigError
 from flow360.log import log
 from flow360.user_config import UserConfig

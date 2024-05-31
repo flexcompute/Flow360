@@ -9,6 +9,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     CylindricalRefinement,
 )
+from flow360.component.simulation.models.volumes_models import Rotation
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -22,7 +23,6 @@ from flow360.component.simulation.references import ReferenceGeometry
 from flow360.component.simulation.simulation import SimulationParams
 from flow360.component.simulation.surfaces import Surface, Wall
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.volumes import Rotation
 
 wing_surface = Surface(mesh_patch_name="1")
 

@@ -1,10 +1,14 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
 from flow360.component.case import Case
-from flow360.component.simulation.material import Air
 from flow360.component.simulation.meshing_param.face_params import FaceRefinement
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.models.material import Air
+from flow360.component.simulation.models.volume_models import (
+    FluidDynamics,
+    PorousMedium,
+)
 from flow360.component.simulation.operating_condition import (
     ExternalFlowOperatingConditions,
 )
@@ -31,7 +35,6 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamics,
 )
-from flow360.component.simulation.volumes import FluidDynamics, PorousMedium
 from flow360.component.surface_mesh import SurfaceMesh
 
 ##:: Volume and Surface Definition ::##

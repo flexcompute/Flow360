@@ -76,3 +76,6 @@ class Cylinder(_VolumeEntityBase):
 class Surface(_SurfaceEntityBase):
     # Should inherit from `ReferenceGeometry` but we do not support this from solver side.
     pass
+
+
+VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
