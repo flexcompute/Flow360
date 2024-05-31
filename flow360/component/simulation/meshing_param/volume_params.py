@@ -32,7 +32,7 @@ class CylindricalRefinement(Flow360BaseModel):
     spacing_axial: LengthType.PositiveFloat = pd.Field()
     spacing_radial: LengthType.PositiveFloat = pd.Field()
     spacing_circumferential: LengthType.PositiveFloat = pd.Field()
-    enclosed_objects: Optional[EntityList[Box, Cylinder, Face]] = pd.Field(
+    enclosed_objects: Optional[EntityList[Cylinder, Face]] = pd.Field(
         None,
         description="Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc. This helps determining the volume zone boundary.",
     )
