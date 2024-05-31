@@ -92,15 +92,17 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     spec: Union[TotalPressure, MassFlowRate] = pd.Field()
 
 
-class TranslationallyPeriodic(BoundaryBase):
-    type: Literal["TranslationallyPeriodic"] = pd.Field("TranslationallyPeriodic", frozen=True)
-    paired_patch: Optional[Surface] = pd.Field(None)
+class Translationally(Flow360BaseModel):
+    pass
 
 
-class RotationallyPeriodic(BoundaryBase):
-    type: Literal["RotationallyPeriodic"] = pd.Field("RotationallyPeriodic", frozen=True)
-    paired_patch: Optional[Surface] = pd.Field(None)
+class Rotationally(Flow360BaseModel):
     axis_of_rotation: Optional[Axis] = pd.Field(None)
+
+
+class Periodic(BoundaryBase):
+    type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
+    spec: Union[Translationally, Rotationally] = pd.Field()
 
 
 class SlipWall(BoundaryBase):
@@ -117,7 +119,6 @@ SurfaceTypes = Union[
     Freestream,
     Outflow,
     Inflow,
-    TranslationallyPeriodic,
-    RotationallyPeriodic,
+    Periodic,
     SymmetryPlane,
 ]
