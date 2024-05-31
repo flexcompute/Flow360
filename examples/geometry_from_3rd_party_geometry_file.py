@@ -4,10 +4,10 @@ from flow360.examples import Cylinder
 
 fl.Env.preprod.active()
 
-geometry = Geometry.from_file(
+geometry_draft = Geometry.from_file(
     Cylinder.geometry,
     name="testing-cylinder-geometry",
 )
-geometry = geometry.submit()
+geometry = geometry_draft.submit()
 
 print(geometry)
