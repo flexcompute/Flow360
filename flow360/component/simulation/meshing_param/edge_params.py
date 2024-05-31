@@ -2,21 +2,47 @@ from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.entities_base import EntitiesBase
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.primitives import Edge
 
 
-class Aniso(EntitiesBase):
-    """Aniso edge"""
+class ByAngle(Flow360BaseModel):
+    """Surface edge refinement by specifying curvature resolution in degrees"""
 
-    type: str = pd.Field("aniso", frozen=True)
-    method: Literal["angle", "height", "aspectRatio"] = pd.Field()
+    type: Literal["angle"] = pd.Field("angle", frozen=True)
+    value: u.degree = pd.Field()  # This should have dimension of angle
+
+
+class ByHeight(Flow360BaseModel):
+    """Surface edge refinement by specifying first layer height of the anisotropic layers"""
+
+    type: Literal["height"] = pd.Field("height", frozen=True)
+    value: LengthType.PositiveFloat = pd.Field()
+
+
+class ByAspectRatio(Flow360BaseModel):
+    """Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells"""
+
+    type: Literal["aspectRatio"] = pd.Field("aspectRatio", frozen=True)
     value: pd.PositiveFloat = pd.Field()
 
 
-class ProjectAniso(EntitiesBase):
-    """ProjectAniso edge"""
+class _BaseEdgeRefinement(Flow360BaseModel):
+    entities: EntityList[Edge] = pd.Field(alias="edges")
+    growth_rate: float = pd.Field(
+        description="Growth rate for volume prism layers.", ge=1
+    )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
 
-    type: str = pd.Field("projectAnisoSpacing", frozen=True)
 
+class SurfaceEdgeRefinement(_BaseEdgeRefinement):
+    """
+    Grow anisotropic layers orthogonal to the edge.
 
-EdgeRefinementTypes = Union[Aniso, ProjectAniso]
+    If `method` is None then it projects the anisotropic spacing from neighboring faces to the edge
+    (equivalent to `ProjectAniso` in old params).
+    """
+
+    """"""
+
+    method: Optional[Union[ByAngle, ByHeight, ByAspectRatio]] = pd.Field(None, discriminator="type")

@@ -1,11 +1,12 @@
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
-from edge_params import EdgeRefinementTypes
+from edge_params import SurfaceEdgeRefinement
 from face_params import FaceRefinement
-from volume_params import Farfield, ZoneRefinementTypes
+from volume_params import CylindricalRefinement, ZoneRefinementTypes
 
-from flow360.component.simulation.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 
 
 class MeshingParameters(Flow360BaseModel):
@@ -18,23 +19,39 @@ class MeshingParameters(Flow360BaseModel):
     1. Add rotational zones.
     2. Add default BETDisk refinement.
 
-    Attributes:
-    ----------
-    farfield: Optional[Farfield]
-        Farfield type for meshing.
-    refinement_factor: Optional[pd.PositiveFloat]
-        If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh. For example, if refinementFactor=2, all spacings will be divided by 2**(1/3), so the resulting mesh will have approximately 2 times more nodes.
-    gap_treatment_strength: Optional[float]
-        Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.
-    refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]]
-        Refinements for meshing.
+    Affects volume meshing:
+    - farfield
+    - refinement_factor
+    - gap_treatment_strength
+    - `class` BoundaryLayerRefinement
+    - `class` UniformRefinement
+    - `class` CylindricalRefinement
+
+    Affects surface meshing:
+    - surface_layer_growth_rate
+    - `class` FaceRefinement
+    - `class` SurfaceEdgeRefinement
     """
 
-    # Global fields:
-    farfield: Optional[Farfield] = pd.Field()
-    refinement_factor: Optional[pd.PositiveFloat] = pd.Field()
-    gap_treatment_strength: Optional[float] = pd.Field(ge=0, le=1)
+    # Volume **defaults**:
+    farfield: Literal["auto", "quasi-3d", "user-defined"] = pd.Field(
+        description="Type of farfield generation."
+    )
+    refinement_factor: pd.PositiveFloat = pd.Field(
+        description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh."
+    )
+    gap_treatment_strength: float = pd.Field(
+        ge=0,
+        le=1,
+        description="Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
+    )
 
-    refinements: Optional[List[Union[EdgeRefinementTypes, FaceRefinement, ZoneRefinementTypes]]] = (
-        pd.Field()
+    surface_layer_growth_rate: float = pd.Field(
+        ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
+    )
+
+    refinements: Optional[
+        List[Union[SurfaceEdgeRefinement, FaceRefinement, ZoneRefinementTypes]]
+    ] = pd.Field(
+        None, description="Additional fine-tunning for refinement and specifications."
     )  # Note: May need discriminator for performance??
