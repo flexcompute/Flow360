@@ -86,11 +86,6 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     - MassInflow
     """
 
-    model_config = ConfigDict(
-        conflicting_fields=[Conflicts("total_pressure", "mass_flow_rate")],
-        require_one_of=["total_pressure", "mass_flow_rate"],
-    )
-
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     total_temperature: TemperatureType.Positive = pd.Field()
     velocity_direction: Optional[Axis] = pd.Field(None)
