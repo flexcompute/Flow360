@@ -4,6 +4,7 @@ from typing import Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import TimeType
 
 
 def _apply_default_to_none(original, default):
@@ -22,7 +23,7 @@ class RampCFL(Flow360BaseModel):
     type: Literal["ramp"] = pd.Field("ramp", frozen=True)
     initial: Optional[pd.PositiveFloat] = pd.Field(None)
     final: Optional[pd.PositiveFloat] = pd.Field(None)
-    ramp_steps: Optional[int] = pd.Field(None)
+    ramp_steps: Optional[pd.PositiveInt] = pd.Field(None)
 
     @classmethod
     def default_unsteady(cls):

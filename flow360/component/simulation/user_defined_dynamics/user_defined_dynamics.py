@@ -1,11 +1,11 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import Cylinder, Surface
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -17,5 +17,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     output_vars: Optional[Dict[str, StringExpression]] = pd.Field(None)
     state_vars_initial_value: List[StringExpression] = pd.Field()
     update_law: List[StringExpression] = pd.Field()
-    input_boundary_patches: EntityList[Surface] = pd.Field(None)
-    output_target_name: Optional[str] = pd.Field(None)
+    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(None)
+    output_target: Optional[Cylinder] = pd.Field(
+        None
+    )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.

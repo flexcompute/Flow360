@@ -3,7 +3,7 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 from edge_params import SurfaceEdgeRefinement
 from face_params import FaceRefinement
-from volume_params import CylindricalRefinement, ZoneRefinementTypes
+from volume_params import AxisymmetricRefinement, ZoneRefinementTypes
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -25,7 +25,7 @@ class MeshingParameters(Flow360BaseModel):
     - gap_treatment_strength
     - `class` BoundaryLayerRefinement
     - `class` UniformRefinement
-    - `class` CylindricalRefinement
+    - `class` AxisymmetricRefinement
 
     Affects surface meshing:
     - surface_layer_growth_rate

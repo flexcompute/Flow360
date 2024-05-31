@@ -5,13 +5,14 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
+from flow360.component.simulation.unit_system import LengthType
 
 
 class ByAngle(Flow360BaseModel):
     """Surface edge refinement by specifying curvature resolution in degrees"""
 
     type: Literal["angle"] = pd.Field("angle", frozen=True)
-    value: u.degree = pd.Field()  # This should have dimension of angle
+    value: u.degree = pd.Field()  # TODO: This should have dimension of angle
 
 
 class ByHeight(Flow360BaseModel):

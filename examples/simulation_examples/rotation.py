@@ -7,7 +7,7 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParameters,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
-    CylindricalRefinement,
+    AxisymmetricRefinement,
 )
 from flow360.component.simulation.models.volumes_models import Rotation
 from flow360.component.simulation.operating_condition import (
@@ -42,14 +42,14 @@ with SI_unit_system:
             refinement_factor=1,
             farfield=Farfield(type="auto"),
             refinements=[
-                CylindricalRefinement(
+                AxisymmetricRefinement(
                     entities=[rotation_zone_inner],
                     # enclosed_objects=[wing_surface], # this will be automatically populated by analysing topology
                     spacing_axial=0.1,
                     spacing_radial=0.1,
                     spacing_circumferential=0.2,
                 ),
-                CylindricalRefinement(
+                AxisymmetricRefinement(
                     entities=[rotation_zone_outer],
                     # enclosed_objects=[rotation_zone_inner], # this will be automatically populated by analysing topology
                     spacing_axial=0.1,
