@@ -101,7 +101,6 @@ class BETDisk(Flow360BaseModel):
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
-    radius: Optional[LengthType.Positive] = pd.Field(None)
     number_of_blades: pd.conint(strict=True, gt=0, le=10) = pd.Field()
     omega: AngularVelocityType.NonNegative = pd.Field()
     chord_ref: LengthType.Positive = pd.Field()
