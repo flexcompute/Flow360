@@ -40,7 +40,7 @@ class Air(Flow360BaseModel):
         return 0.72
 
 
-class Solid(MaterialBase):
+class SolidMaterial(MaterialBase):
     name: Literal["solid"] = pd.Field("solid", frozen=True)
     thermal_conductivity: ThermalConductivityType.Positive = pd.Field()
     density: Optional[DensityType.Positive] = pd.Field(None)
@@ -63,4 +63,5 @@ class Aluminum(MaterialBase):
         return 903
 
 
-MaterialTypes = Union[Air, Solid, Aluminum]
+SolidMaterialTypes = Union[SolidMaterial, Aluminum]
+FluidMaterialTypes = Air

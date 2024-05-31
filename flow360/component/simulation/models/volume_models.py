@@ -3,7 +3,11 @@ from typing import Optional
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.models.material import Air, MaterialType
+from flow360.component.simulation.models.material import (
+    Air,
+    FluidMaterialTypes,
+    SolidMaterialTypes,
+)
 from flow360.component.simulation.models.solver_numerics import (
     HeatEquationSolver,
     NavierStokesSolver,
@@ -63,7 +67,7 @@ class Fluid(PDEModelBase):
     turbulence_model_solver: TurbulenceModelSolverType = pd.Field(SpalartAllmaras())
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(None)
 
-    material: MaterialTypes = pd.Field(Air())
+    material: FluidMaterialTypes = pd.Field(Air())
 
     initial_condition: Optional[
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
@@ -76,6 +80,8 @@ class Solid(PDEModelBase):
     """
 
     entities: EntityList[GenericVolume, str] = pd.Field(alias="volumes")
+
+    material: SolidMaterialTypes = pd.Field()
 
     heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
     volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(0)
