@@ -95,6 +95,7 @@ class AerospaceCondition(Flow360BaseModel):
         alpha: float = 0,
         beta: float = 0,
         atmosphere: ThermalState = ThermalState(),
+        reference_mach: Optional[PositiveFloat] = None,
     ):
         pass
 
