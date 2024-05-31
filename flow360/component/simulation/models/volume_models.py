@@ -54,7 +54,7 @@ class PDEModelBase(Flow360BaseModel):
     initial_condition: Optional[dict] = pd.Field(None)
 
 
-class FluidDynamics(PDEModelBase):
+class Fluid(PDEModelBase):
     """
     General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.
     """
@@ -70,7 +70,7 @@ class FluidDynamics(PDEModelBase):
     ] = pd.Field(None)
 
 
-class HeatTransfer(PDEModelBase):
+class Solid(PDEModelBase):
     """
     General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
     """
@@ -142,10 +142,10 @@ class PorousMedium(Flow360BaseModel):
 
 
 VolumeModelsTypes = Union[
-    FluidDynamics,
+    Fluid,
+    Solid,
     ActuatorDisk,
     BETDisk,
     Rotation,
     PorousMedium,
-    HeatTransfer,
 ]
