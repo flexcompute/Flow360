@@ -1,50 +1,116 @@
 from typing import Optional, Union
 
+import numpy as np
 import pydantic as pd
+from pydantic import validate_arguments
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
-"""
-    Defines all the operating conditions for different physics.
-    The type of operating condition has to match its volume type.
-    Operating conditions defines:
-    1. The physical (non-geometrical) reference values for the problem.
-    2. The initial condition for the problem.
-
-    TODO:
-    1. What other types of operation conditions do we need?
-"""
+VelocityVectorType = Unioin[VelocityType.Vector, Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr]]
 
 
-class TurbulenceQuantities(Flow360BaseModel):
-    """PLACE HOLDER, Should be exactly the the same as `TurbulenceQuantitiesType` in current Flow360Params"""
+class ThermalState(Flow360BaseModel):
+    temperature: TemperatureType.Positive = 288.15
+    density: DensityType.Positive = 1.225
+    material: materialTypes = Air()
+    # TODO: special serializer
+    _altitude: Optional[LengthType.Positive] = None
+    _temperature_offset: Optional[TemperatureType.Positive] = None
 
-    pass
+    @validate_arguments
+    @classmethod
+    def from_standard_atmosphere(
+        cls, altitude: LengthType.Positive = 0, temperature_offset: TemperatureType = 0
+    ):
+        # TODO: add standard atmosphere implementation
+        density = 1.225
+        temperature = 288.15
+
+        return cls(
+            density=density,
+            temperature=temperature,
+            material=Air(),
+        )
+
+    @property
+    def altitude(self) -> LengthType.Positive:
+        return self._altitude
+
+    @property
+    def temperature_offset(self) -> TemperatureType:
+        return self._temperature_offset
+
+    @property
+    def speed_of_sound(self) -> VelocityType.Positive:
+        return np.sqrt(
+            self.material.specific_heat_ratio * self.material.gas_constant * self.temperature
+        )
+
+    @property
+    def pressure(self) -> PressureType.Positive:
+        # TODO: implement
+        return 1.013e5
+
+    @property
+    def dynamic_viscosity(self) -> ViscosityType.Positive:
+        # TODO: implement
+        return 1.825e-5
 
 
-class ExternalFlowOperatingConditions(Flow360BaseModel):
-    Mach: float = pd.Field()
-    alpha: float = pd.Field(0)
-    beta: float = pd.Field(0)
-    temperature: float = pd.Field(288.15)
-    reference_velocity: Optional[float] = pd.Field()  # See U_{ref} definition in our documentation
+class GenericReferenceCondition(Flow360BaseModel):
+    """
+    Operating condition defines the physical (non-geometrical) reference values for the problem.
+    """
 
-    initial_flow_condition: Optional[tuple[str, str, str, str, str]] = pd.Field(
-        ("NotImplemented", "NotImplemented", "NotImplemented")
-    )
-    turbulence_quantities = Optional[TurbulenceQuantities] = pd.Field()
+    velocity_magnitude: VelocityType.Positive
+    thermal_state: ThermalState = ThermalState()
+
+    @validate_arguments
+    @classmethod
+    def from_mach(
+        cls,
+        mach: PositiveFloat,
+        thermal_state: ThermalState = ThermalState(),
+    ):
+        velocity_magnitude = mach * self.thermal_state.speed_of_sound
+        return cls(velocity_magnitude=velocity_magnitude, thermal_state=thermal_state)
+
+    @property
+    def mach(self) -> PositiveFloat:
+        return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
 
-class InternalFlowOperatingConditions(Flow360BaseModel):
-    pressure_difference: float = pd.Field()
-    reference_velocity: float = pd.Field()
-    inlet_velocity: float = pd.Field()
+class AerospaceCondition(Flow360BaseModel):
+    alpha: float = 0
+    beta: float = 0
+    velocity_magnitude: VelocityType.NonNegative
+    atmosphere: ThermalState = ThermalState()
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = None
+
+    @validate_arguments
+    @classmethod
+    def from_mach(
+        cls,
+        mach: PositiveFloat,
+        alpha: float = 0,
+        beta: float = 0,
+        atmosphere: ThermalState = ThermalState(),
+    ):
+        pass
+
+    @validate_arguments
+    @classmethod
+    def from_stationary(
+        cls,
+        reference_velocity_magnitude: VelocityType.Positive,
+        atmosphere: ThermalState = ThermalState(),
+    ):
+        pass
+
+    @property
+    def mach(self) -> PositiveFloat:
+        return self.velocity_magnitude / self.atmosphere.speed_of_sound
 
 
-class SolidOperatingConditions(Flow360BaseModel):
-    initial_temperature: float = pd.Field()
-
-
-OperatingConditionTypes = Union[
-    ExternalFlowOperatingConditions, InternalFlowOperatingConditions, SolidOperatingConditions
-]
+# TODO: AutomotiveCondition
+OperatingConditionType = Union[GenericReferenceCondition, AerospaceCondition]
