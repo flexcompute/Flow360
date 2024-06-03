@@ -21,6 +21,14 @@ from flow360.component.simulation.unit_system import (
     UnitSystemType,
     unit_system_manager,
 )
+# from flow360.component.simulation.models.volume_models import VolumeTypes
+# from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.primitives import ReferenceGeometry
+
+# from flow360.component.simulation.surfaces import SurfaceTypes
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.unit_system import UnitSystemType, unit_system_manager
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -51,18 +59,20 @@ class SimulationParams(Flow360BaseModel):
         - Other configurations that are orthogonal to all previous items.
 
         time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
+<<<<<<< HEAD
         user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
         ones or how volumes/surfaces are intertwined.
+=======
+        user_defined_dynamics (Optional[UserDefinedDynamic]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
+>>>>>>> 1f6dfdf (Created pydantic V2 version of the validation service, created tests.)
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     version: str = pd.Field(__version__, frozen=True)
 
     meshing: Optional[MeshingParameters] = pd.Field(None)
-
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
-    #
+    # operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
     1. __getitem__ to allow [] access

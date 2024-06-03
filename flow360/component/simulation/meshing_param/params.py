@@ -11,6 +11,10 @@ from flow360.component.simulation.meshing_param.volume_params import (
     ZoneRefinementTypes,
 )
 
+from .edge_params import SurfaceEdgeRefinement
+from .face_params import FaceRefinement
+from .volume_params import AxisymmetricRefinement, ZoneRefinementTypes
+
 
 class MeshingParameters(Flow360BaseModel):
     """

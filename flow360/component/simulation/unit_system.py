@@ -16,28 +16,25 @@ import annotated_types
 import numpy as np
 import pydantic as pd
 import unyt as u
+import unyt.dimensions as udim
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
 
 from flow360.log import log
 from flow360.utils import classproperty
 
-u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
-u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
-u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
-u.dimensions.moment = u.dimensions.force * u.dimensions.length
-u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time**3 / u.dimensions.length
-u.dimensions.heat_capacity = (
-    u.dimensions.length**2 / u.dimensions.time**2 / u.dimensions.temperature
-)
-u.dimensions.thermal_conductivity = (
-    u.dimensions.mass / u.dimensions.time**3 * u.dimensions.length / u.dimensions.temperature
-)
-u.dimensions.inverse_area = 1 / u.dimensions.area
-u.dimensions.inverse_length = 1 / u.dimensions.length
-u.dimensions.mass_flow_rate = u.dimensions.mass / u.dimensions.time
-u.dimensions.specific_energy = u.dimensions.length**2 * u.dimensions.time ** (-2)
-u.dimensions.frequency = u.dimensions.time ** (-1)
+udim.viscosity = udim.pressure * udim.time
+udim.angular_velocity = udim.angle / udim.time
+udim.heat_flux = udim.mass / udim.time**3
+udim.moment = udim.force * udim.length
+udim.heat_source = udim.mass / udim.time**3 / udim.length
+udim.heat_capacity = udim.mass / udim.time**2 / udim.length / udim.temperature
+udim.thermal_conductivity = udim.mass / udim.time**3 * udim.length / udim.temperature
+udim.inverse_area = 1 / udim.area
+udim.inverse_length = 1 / udim.length
+udim.mass_flow_rate = udim.mass / udim.time
+udim.specific_energy = udim.length**2 * udim.time ** (-2)
+udim.frequency = udim.time ** (-1)
 
 # pylint: disable=fixme
 # TODO: IIRC below is automatically derived once you define things above.
@@ -545,17 +542,27 @@ class _DimensionedType(metaclass=ABCMeta):
 class _LengthType(_DimensionedType):
     """:class: LengthType"""
 
-    dim = u.dimensions.length
+    dim = udim.length
     dim_name = "length"
 
 
 LengthType = Annotated[_LengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+class _AngleType(_DimensionedType):
+    """:class: AngleType"""
+
+    dim = udim.angle
+    dim_name = "angle"
+
+
+AngleType = Annotated[_AngleType, PlainSerializer(_dimensioned_type_serializer)]
+
+
 class _MassType(_DimensionedType):
     """:class: MassType"""
 
-    dim = u.dimensions.mass
+    dim = udim.mass
     dim_name = "mass"
 
 
@@ -565,7 +572,7 @@ MassType = Annotated[_MassType, PlainSerializer(_dimensioned_type_serializer)]
 class _TimeType(_DimensionedType):
     """:class: TimeType"""
 
-    dim = u.dimensions.time
+    dim = udim.time
     dim_name = "time"
 
 
@@ -576,7 +583,7 @@ TimeType = Annotated[_TimeType, PlainSerializer(_dimensioned_type_serializer)]
 class _TemperatureType(_DimensionedType):
     """:class: TemperatureType"""
 
-    dim = u.dimensions.temperature
+    dim = udim.temperature
     dim_name = "temperature"
 
 
@@ -586,7 +593,7 @@ TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_
 class _VelocityType(_DimensionedType):
     """:class: VelocityType"""
 
-    dim = u.dimensions.velocity
+    dim = udim.velocity
     dim_name = "velocity"
 
 
@@ -596,7 +603,7 @@ VelocityType = Annotated[_VelocityType, PlainSerializer(_dimensioned_type_serial
 class _AreaType(_DimensionedType):
     """:class: AreaType"""
 
-    dim = u.dimensions.area
+    dim = udim.area
     dim_name = "area"
 
 
@@ -606,7 +613,7 @@ AreaType = Annotated[_AreaType, PlainSerializer(_dimensioned_type_serializer)]
 class _ForceType(_DimensionedType):
     """:class: ForceType"""
 
-    dim = u.dimensions.force
+    dim = udim.force
     dim_name = "force"
 
 
@@ -616,7 +623,7 @@ ForceType = Annotated[_ForceType, PlainSerializer(_dimensioned_type_serializer)]
 class _PressureType(_DimensionedType):
     """:class: PressureType"""
 
-    dim = u.dimensions.pressure
+    dim = udim.pressure
     dim_name = "pressure"
 
 
@@ -626,7 +633,7 @@ PressureType = Annotated[_PressureType, PlainSerializer(_dimensioned_type_serial
 class _DensityType(_DimensionedType):
     """:class: DensityType"""
 
-    dim = u.dimensions.density
+    dim = udim.density
     dim_name = "density"
 
 
@@ -636,7 +643,7 @@ DensityType = Annotated[_DensityType, PlainSerializer(_dimensioned_type_serializ
 class _ViscosityType(_DimensionedType):
     """:class: ViscosityType"""
 
-    dim = u.dimensions.viscosity
+    dim = udim.viscosity
     dim_name = "viscosity"
 
 
@@ -646,7 +653,7 @@ ViscosityType = Annotated[_ViscosityType, PlainSerializer(_dimensioned_type_seri
 class _PowerType(_DimensionedType):
     """:class: PowerType"""
 
-    dim = u.dimensions.power
+    dim = udim.power
     dim_name = "power"
 
 
@@ -656,7 +663,7 @@ PowerType = Annotated[_PowerType, PlainSerializer(_dimensioned_type_serializer)]
 class _MomentType(_DimensionedType):
     """:class: MomentType"""
 
-    dim = u.dimensions.moment
+    dim = udim.moment
     dim_name = "moment"
 
 
@@ -666,7 +673,7 @@ MomentType = Annotated[_MomentType, PlainSerializer(_dimensioned_type_serializer
 class _AngularVelocityType(_DimensionedType):
     """:class: AngularVelocityType"""
 
-    dim = u.dimensions.angular_velocity
+    dim = udim.angular_velocity
     dim_name = "angular_velocity"
 
 
@@ -676,7 +683,7 @@ AngularVelocityType = Annotated[_AngularVelocityType, PlainSerializer(_dimension
 class _HeatFluxType(_DimensionedType):
     """:class: HeatFluxType"""
 
-    dim = u.dimensions.heat_flux
+    dim = udim.heat_flux
     dim_name = "heat_flux"
 
 
@@ -686,7 +693,7 @@ HeatFluxType = Annotated[_HeatFluxType, PlainSerializer(_dimensioned_type_serial
 class _HeatSourceType(_DimensionedType):
     """:class: HeatSourceType"""
 
-    dim = u.dimensions.heat_source
+    dim = udim.heat_source
     dim_name = "heat_source"
 
 
@@ -696,7 +703,7 @@ HeatSourceType = Annotated[_HeatSourceType, PlainSerializer(_dimensioned_type_se
 class _HeatCapacityType(_DimensionedType):
     """:class: HeatCapacityType"""
 
-    dim = u.dimensions.heat_capacity
+    dim = udim.heat_capacity
     dim_name = "heat_capacity"
 
 
@@ -706,7 +713,7 @@ HeatCapacityType = Annotated[_HeatCapacityType, PlainSerializer(_dimensioned_typ
 class _ThermalConductivityType(_DimensionedType):
     """:class: ThermalConductivityType"""
 
-    dim = u.dimensions.thermal_conductivity
+    dim = udim.thermal_conductivity
     dim_name = "thermal_conductivity"
 
 
@@ -718,7 +725,7 @@ ThermalConductivityType = Annotated[
 class _InverseAreaType(_DimensionedType):
     """:class: InverseAreaType"""
 
-    dim = u.dimensions.inverse_area
+    dim = udim.inverse_area
     dim_name = "inverse_area"
 
 
@@ -728,7 +735,7 @@ InverseAreaType = Annotated[_InverseAreaType, PlainSerializer(_dimensioned_type_
 class _InverseLengthType(_DimensionedType):
     """:class: InverseLengthType"""
 
-    dim = u.dimensions.inverse_length
+    dim = udim.inverse_length
     dim_name = "inverse_length"
 
 
@@ -936,6 +943,13 @@ class Flow360LengthUnit(_Flow360BaseUnit):
     unit_name = "flow360_length_unit"
 
 
+class Flow360AngleUnit(_Flow360BaseUnit):
+    """:class: Flow360AngleUnit"""
+
+    dimension_type = AngleType
+    unit_name = "flow360_angle_unit"
+
+
 class Flow360MassUnit(_Flow360BaseUnit):
     """:class: Flow360MassUnit"""
 
@@ -1122,6 +1136,7 @@ class BaseSystemType(Enum):
 _dim_names = [
     "mass",
     "length",
+    "angle",
     "time",
     "temperature",
     "velocity",
@@ -1152,6 +1167,7 @@ class UnitSystem(pd.BaseModel):
 
     mass: MassType = pd.Field()
     length: LengthType = pd.Field()
+    angle: AngleType = pd.Field()
     time: TimeType = pd.Field()
     temperature: TemperatureType = pd.Field()
     velocity: VelocityType = pd.Field()
@@ -1284,6 +1300,7 @@ _CGS_system = u.unit_systems.cgs_unit_system
 _imperial_system = u.unit_systems.imperial_unit_system
 
 flow360_length_unit = Flow360LengthUnit()
+flow360_angle_unit = Flow360AngleUnit()
 flow360_mass_unit = Flow360MassUnit()
 flow360_time_unit = Flow360TimeUnit()
 flow360_temperature_unit = Flow360TemperatureUnit()
@@ -1308,6 +1325,7 @@ flow360_frequency_unit = Flow360FrequencyUnit()
 
 dimensions = [
     flow360_length_unit,
+    flow360_angle_unit,
     flow360_mass_unit,
     flow360_time_unit,
     flow360_temperature_unit,
@@ -1436,6 +1454,7 @@ flow360_conversion_unit_system = Flow360ConversionUnitSystem()
 class _PredefinedUnitSystem(UnitSystem):
     mass: MassType = pd.Field(exclude=True)
     length: LengthType = pd.Field(exclude=True)
+    angle: AngleType = pd.Field(exclude=True)
     time: TimeType = pd.Field(exclude=True)
     temperature: TemperatureType = pd.Field(exclude=True)
     velocity: VelocityType = pd.Field(exclude=True)

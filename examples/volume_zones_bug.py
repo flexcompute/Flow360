@@ -1,6 +1,6 @@
 import flow360
 from flow360 import Flow360Params
-from flow360.services import get_default_retry, params_to_dict
+from flow360.component.flow360_params.services import params_to_dict
 
 data = {
     "unitSystem": {"name": "Flow360"},
