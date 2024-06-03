@@ -13,6 +13,7 @@ from flow360.component.simulation.framework.unique_list import (
     UniqueAliasedStringList,
     UniqueItemList,
 )
+from flow360.component.simulation.primitives import Surface, SurfacePair
 
 
 class _OutputItemBase(Flow360BaseModel):
@@ -45,6 +46,10 @@ class TempIsosurfaceOutput(Flow360BaseModel):
     output_fields: UniqueAliasedStringList[Literal[CommonFieldNames, CommonFieldNamesFull]] = (
         pd.Field()
     )
+
+
+class TempPeriodic(Flow360BaseModel):
+    surface_pairs: UniqueItemList[SurfacePair]
 
 
 def test_unique_list():
@@ -95,3 +100,33 @@ def test_unique_list():
         ),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", 1234])
+
+
+def test_unique_list_with_surface_pair():
+    surface1 = Surface(name="MySurface1")
+    surface2 = Surface(name="MySurface2")
+    periodic = TempPeriodic(
+        surface_pairs=[
+            [surface1, surface2],
+        ]
+    )
+    assert periodic
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("A surface cannot be paired with itself."),
+    ):
+        SurfacePair(pair=[surface1, surface1])
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Input item to this list must be unique but ['MySurface1,MySurface2'] appears multiple times."
+        ),
+    ):
+        TempPeriodic(
+            surface_pairs=[
+                [surface1, surface2],
+                [surface2, surface1],
+            ]
+        )
