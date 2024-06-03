@@ -28,7 +28,7 @@ u.dimensions.heat_flux = u.dimensions.mass / u.dimensions.time**3
 u.dimensions.moment = u.dimensions.force * u.dimensions.length
 u.dimensions.heat_source = u.dimensions.mass / u.dimensions.time**3 / u.dimensions.length
 u.dimensions.heat_capacity = (
-    u.dimensions.mass / u.dimensions.time**2 / u.dimensions.length / u.dimensions.temperature
+    u.dimensions.length**2 / u.dimensions.time**2 / u.dimensions.temperature
 )
 u.dimensions.thermal_conductivity = (
     u.dimensions.mass / u.dimensions.time**3 * u.dimensions.length / u.dimensions.temperature
@@ -48,7 +48,7 @@ u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
+u.unit_systems.mks_unit_system["heat_capacity"] = u.m**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
 # pylint: disable=no-member
@@ -67,7 +67,7 @@ u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
+u.unit_systems.cgs_unit_system["heat_capacity"] = u.cm**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
 # pylint: disable=no-member
@@ -86,7 +86,7 @@ u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
+u.unit_systems.imperial_unit_system["heat_capacity"] = u.ft**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
 # pylint: disable=no-member
@@ -1199,7 +1199,7 @@ class UnitSystem(pd.BaseModel):
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
         'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3',
-        'heat_capacity': 'kg/(s**2*m*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
+        'heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
         'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """
 
