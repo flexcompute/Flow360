@@ -13,8 +13,8 @@ Meshing settings that applies to volumes.
 
 
 class UniformRefinement(Flow360BaseModel):
-    spacing: LengthType.Positive = pd.Field()
     entities: EntityList[Box, Cylinder] = pd.Field()
+    spacing: LengthType.Positive = pd.Field()
 
 
 class AxisymmetricRefinement(Flow360BaseModel):
@@ -30,9 +30,9 @@ class AxisymmetricRefinement(Flow360BaseModel):
     """
 
     entities: EntityList[Cylinder] = pd.Field()
-    spacing_axial: LengthType.PositiveFloat = pd.Field()
-    spacing_radial: LengthType.PositiveFloat = pd.Field()
-    spacing_circumferential: LengthType.PositiveFloat = pd.Field()
+    spacing_axial: LengthType.Positive = pd.Field()
+    spacing_radial: LengthType.Positive = pd.Field()
+    spacing_circumferential: LengthType.Positive = pd.Field()
     enclosed_objects: Optional[EntityList[Cylinder, Face]] = pd.Field(
         None,
         description="Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc. This helps determining the volume zone boundary.",
