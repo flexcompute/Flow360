@@ -43,5 +43,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install
-    - name: Run tests
-      run: poetry run pytest -rA
+    - name: Run simulation_params tests
+      run: poetry run pytest -rA tests/simulation_framework
+    - name: Run flow360_params tests
+      run: poetry run pytest -rA --ignore tests/simulation_framework
