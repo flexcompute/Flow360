@@ -121,7 +121,7 @@ def test_unique_list_with_surface_pair():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input item to this list must be unique but ['MySurface1-MySurface2'] appears multiple times."
+            "Input item to this list must be unique but ['MySurface1,MySurface2'] appears multiple times."
         ),
     ):
         TempPeriodic(
