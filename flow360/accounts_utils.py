@@ -62,7 +62,7 @@ class AccountsUtils:
                 for entry in supported_users:
                     entry["userEmail"] = entry.pop("email")
                     entry["userIdentity"] = entry.pop("identity")
-                    return supported_users
+                return supported_users
             return []
         except HTTPError as error:
             raise Flow360WebError("Failed to retrieve supported user data from server") from error
