@@ -58,13 +58,11 @@ class AccountsUtils:
         try:
             response = http.portal_api_get("auth/credential")
             supported_users = response["guestUsers"]
-            if supported_users is None:
-                return []
-            for entry in supported_users:
-                entry["userEmail"] = entry.pop("email")
-                entry["userIdentity"] = entry.pop("identity")
             if supported_users:
-                return supported_users
+                for entry in supported_users:
+                    entry["userEmail"] = entry.pop("email")
+                    entry["userIdentity"] = entry.pop("identity")
+                    return supported_users
             return []
         except HTTPError as error:
             raise Flow360WebError("Failed to retrieve supported user data from server") from error
