@@ -58,6 +58,8 @@ class AccountsUtils:
         try:
             response = http.portal_api_get("auth/credential")
             supported_users = response["guestUsers"]
+            if supported_users is None:
+                return []
             for entry in supported_users:
                 entry["userEmail"] = entry.pop("email")
                 entry["userIdentity"] = entry.pop("identity")
