@@ -69,7 +69,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     velocity_type: Literal["absolute", "relative"] = pd.Field("relative")
 
 
-class Outflow(BoundaryBaseWithTurbulenceQuantities):
+class Outflow(BoundaryBase):
     """Replace Flow360Param:
     - SubsonicOutflowPressure
     - SubsonicOutflowMach
