@@ -126,7 +126,7 @@ class SurfacePair(Flow360BaseModel):
         return False
 
     def __str__(self):
-        return "-".join(sorted([self.pair[0].name, self.pair[1].name]))
+        return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]

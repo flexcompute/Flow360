@@ -101,17 +101,18 @@ class SymmetryPlane(BoundaryBase):
 
 
 class Translational(Flow360BaseModel):
-    pass
+    type: Literal["Translational"] = pd.Field("Translational", frozen=True)
 
 
 class Rotational(Flow360BaseModel):
+    type: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
     axis_of_rotation: Optional[Axis] = pd.Field(None)
 
 
 class Periodic(Flow360BaseModel):
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(alias="surface_pairs")
-    spec: Union[Translational, Rotational] = pd.Field()
+    spec: Union[Translational, Rotational] = pd.Field(discriminator="type")
 
 
 SurfaceTypes = Union[
