@@ -98,4 +98,35 @@ class Surface(_SurfaceEntityBase):
     pass
 
 
+class SurfacePair(Flow360BaseModel):
+    pair: Tuple[Surface, Surface]
+
+    @pd.field_validator("pair", mode="after")
+    def check_unique(cls, v):
+        if v[0].name == v[1].name:
+            raise ValueError(f"A surface cannot be paired with itself.")
+        return v
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _format_input(cls, input: Union[dict, list, tuple]):
+        if isinstance(input, list) or isinstance(input, tuple):
+            return dict(pair=input)
+        elif isinstance(input, dict):
+            return dict(pair=input["pair"])
+
+    def __hash__(self):
+        return hash(tuple(sorted([self.pair[0].name, self.pair[1].name])))
+
+    def __eq__(self, other):
+        if isinstance(other, SurfacePair):
+            return tuple(sorted([self.pair[0].name, self.pair[1].name])) == tuple(
+                sorted([other.pair[0].name, other.pair[1].name])
+            )
+        return False
+
+    def __str__(self):
+        return "-".join(sorted([self.pair[0].name, self.pair[1].name]))
+
+
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
