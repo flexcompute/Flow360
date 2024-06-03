@@ -18,9 +18,9 @@ class ReferenceGeometry(Flow360BaseModel):
     - What about force axis?
     """
 
-    moment_center: Optional[LengthType.Point] = pd.Field()
-    moment_length: Optional[Union[LengthType.Positive, LengthType.Moment]] = pd.Field()
-    area: Optional[AreaType.Positive] = pd.Field()
+    moment_center: Optional[LengthType.Point] = pd.Field(None)
+    moment_length: Optional[Union[LengthType.Positive, LengthType.Moment]] = pd.Field(None)
+    area: Optional[AreaType.Positive] = pd.Field(None)
 
 
 class Transformation(Flow360BaseModel):

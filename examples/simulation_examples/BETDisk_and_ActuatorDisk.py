@@ -6,7 +6,7 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParameters,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
-    CylindricalRefinement,
+    AxisymmetricRefinement,
 )
 from flow360.component.simulation.models.material import Air
 from flow360.component.simulation.models.volume_models import (
@@ -48,13 +48,13 @@ with SI_unit_system:
             refinement_factor=1,
             farfield=Farfield(type="auto"),
             refinements=[
-                CylindricalRefinement(
+                AxisymmetricRefinement(
                     entities=[my_actuator_disk],
                     spacing_axial=my_actuator_disk.height / 1000,
                     spacing_radial=my_actuator_disk.outer_radius / 1000,
                     spacing_circumferential=my_actuator_disk.height / 2000,
                 ),
-                CylindricalRefinement(
+                AxisymmetricRefinement(
                     entities=[my_zone_for_BETDisk_1, my_zone_for_BETDisk_2],
                     spacing_axial=my_zone_for_BETDisk_1.height / 1100,
                     spacing_radial=my_zone_for_BETDisk_1.outer_radius / 1200,

@@ -5,6 +5,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box, Cylinder, Face
+from flow360.component.simulation.unit_system import LengthType
 
 """
 Meshing settings that applies to volumes.
@@ -12,16 +13,16 @@ Meshing settings that applies to volumes.
 
 
 class UniformRefinement(Flow360BaseModel):
-    spacing: pd.PositiveFloat = pd.Field()
+    spacing: LengthType.Positive = pd.Field()
     entities: EntityList[Box, Cylinder] = pd.Field()
 
 
-class CylindricalRefinement(Flow360BaseModel):
+class AxisymmetricRefinement(Flow360BaseModel):
     """
     Note:
     - This basically creates the "rotorDisks" type of volume refinement that we used to have. If enclosed_objects is provided then it is implied that this is a sliding interface.
 
-    - In the future to support arbitrary-axisymmetric shaped sliding interface, we will define classes parallel to CylindricalRefinement.
+    - In the future to support arbitrary-axisymmetric shaped sliding interface, we will define classes parallel to AxisymmetricRefinement.
 
     - `enclosed_objects` is actually just a way of specifying the enclosing patches of a volume zone. Therefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this attribute at all. For example if the new class already has an entry to list all the enclosing patches.
 
@@ -38,4 +39,4 @@ class CylindricalRefinement(Flow360BaseModel):
     )
 
 
-ZoneRefinementTypes = Union[UniformRefinement, CylindricalRefinement]
+ZoneRefinementTypes = Union[UniformRefinement, AxisymmetricRefinement]

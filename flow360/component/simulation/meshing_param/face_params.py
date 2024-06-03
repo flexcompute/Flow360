@@ -5,6 +5,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Face
+from flow360.component.simulation.unit_system import LengthType
 
 """
 Meshing settings that applies to faces.
@@ -55,5 +56,5 @@ class BoundaryLayerRefinement(Flow360BaseModel):
         description="First layer thickness for volumetric anisotropic layers."
     )
     growth_rate: pd.PositiveFloat = pd.Field(
-        description="Growth rate for volume prism layers."
+        description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported. This is a global setting in mesher.
