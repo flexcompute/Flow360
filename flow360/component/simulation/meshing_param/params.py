@@ -1,15 +1,15 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import FaceRefinement
 from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     ZoneRefinementTypes,
 )
-
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.unique_list import UniqueItemList
 
 
 class MeshingParameters(Flow360BaseModel):

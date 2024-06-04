@@ -27,7 +27,7 @@ class Sutherland(Flow360BaseModel):
     effective_temperature: TemperatureType.Positive = pd.Field()
 
 
-class Air(Flow360BaseModel):
+class Air(MaterialBase):
     type: Literal["air"] = pd.Field("air", frozen=True)
     name: str = pd.Field("air")
     dynamic_viscosity: Union[ViscosityType.Positive, Sutherland] = pd.Field(

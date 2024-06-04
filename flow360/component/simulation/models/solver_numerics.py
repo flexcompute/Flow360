@@ -65,7 +65,7 @@ class LinearSolver(Flow360BaseModel):
     relative_tolerance: Optional[PositiveFloat] = pd.Field(None)
 
     model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts("absolute_tolerance", "relative_tolerance")]
+        conflicting_fields=[Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
     )
 
 
@@ -324,7 +324,7 @@ class HeatEquationSolver(GenericSolverSettings):
     equation_eval_frequency: PositiveInt = pd.Field(10)
 
     linear_solver: LinearSolver = pd.Field(
-        LinearSolver(max_interation=50, absolute_tolerance=1e-10)
+        LinearSolver(max_iterations=50, absolute_tolerance=1e-10)
     )
 
 

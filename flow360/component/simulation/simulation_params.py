@@ -4,28 +4,30 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-
 from typing import List, Optional, Union
 
 import pydantic as pd
 
-
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParameters
-from flow360.component.simulation.models.volume_models import VolumeTypes
+from flow360.component.simulation.models.surface_models import SurfaceModelTypes
+from flow360.component.simulation.models.volume_models import VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
-from flow360.component.simulation.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import ReferenceGeometry
-from flow360.component.simulation.models.surface_models import SurfaceTypes
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.unit_system import (
+    UnitSystem,
+    UnitSystemType,
+    unit_system_manager,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
-    UserDefinedDynamics,
+    UserDefinedDynamic,
 )
 from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from flow360.exceptions import Flow360ConfigError, Flow360RuntimeError
 from flow360.log import log
 from flow360.user_config import UserConfig
-from flow360.component.simulation.unit_system import UnitSystem, UnitSystemType, unit_system_manager
 from flow360.version import __version__
 
 
@@ -65,12 +67,12 @@ class SimulationParams(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[Union[VolumeTypes, SurfaceTypes]]] = pd.Field(None)
+    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
     """
     Below can be mostly reused with existing models 
     """
     time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
-    user_defined_dynamics: Optional[List[UserDefinedDynamics]] = pd.Field(None)
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
     """
     Support for user defined expression?
     If so:
@@ -80,6 +82,8 @@ class SimulationParams(Flow360BaseModel):
         1. No per volume zone output. (single volume output)
     """
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
+
+    model_config = pd.ConfigDict(include_hash=True)
 
     def _init_check_unit_system(self, **kwargs):
         """

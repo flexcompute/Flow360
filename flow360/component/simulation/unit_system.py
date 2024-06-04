@@ -35,6 +35,9 @@ u.dimensions.thermal_conductivity = (
 )
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
+u.dimensions.mass_flux = u.dimensions.mass / u.dimensions.time
+u.dimensions.velocity_squared = u.dimensions.length**2 * u.dimensions.time ** (-2)
+u.dimensions.frequency = u.dimensions.time ** (-1)
 
 # TODO: IIRC below is automatically derived once you define things above.
 # pylint: disable=no-member
@@ -746,6 +749,36 @@ class _InverseLengthType(_DimensionedType):
 InverseLengthType = Annotated[_InverseLengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+class _MassFluxType(_DimensionedType):
+    """:class: MassFluxType"""
+
+    dim = u.dimensions.mass_flux
+    dim_name = "mass_flux"
+
+
+MassFluxType = Annotated[_MassFluxType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _VelocitySquaredType(_DimensionedType):
+    """:class: VelocitySquaredType"""
+
+    dim = u.dimensions.velocity_squared
+    dim_name = "velocity_squared"
+
+
+VelocitySquaredType = Annotated[_VelocitySquaredType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _FrequencyType(_DimensionedType):
+    """:class: FrequencyType"""
+
+    dim = u.dimensions.frequency
+    dim_name = "frequency"
+
+
+FrequencyType = Annotated[_FrequencyType, PlainSerializer(_dimensioned_type_serializer)]
+
+
 def _iterable(obj):
     try:
         len(obj)
@@ -1043,6 +1076,27 @@ class Flow360InverseLengthUnit(_Flow360BaseUnit):
     unit_name = "flow360_inverse_length_unit"
 
 
+class Flow360MassFluxUnit(_Flow360BaseUnit):
+    """:class: Flow360MassFluxUnit"""
+
+    dimension_type = MassFluxType
+    unit_name = "flow360_mass_flux_unit"
+
+
+class Flow360VelocitySquaredUnit(_Flow360BaseUnit):
+    """:class: Flow360VelocitySquaredUnit"""
+
+    dimension_type = VelocitySquaredType
+    unit_name = "flow360_velocity_squared_unit"
+
+
+class Flow360FrequencyUnit(_Flow360BaseUnit):
+    """:class: Flow360FrequencyUnit"""
+
+    dimension_type = FrequencyType
+    unit_name = "flow360_frequency_unit"
+
+
 def is_flow360_unit(value):
     """
     Check if the provided value represents a dimensioned quantity with units
@@ -1099,6 +1153,9 @@ _dim_names = [
     "thermal_conductivity",
     "inverse_area",
     "inverse_length",
+    "mass_flux",
+    "velocity_squared",
+    "frequency",
 ]
 
 
@@ -1126,6 +1183,9 @@ class UnitSystem(pd.BaseModel):
     thermal_conductivity: ThermalConductivityType = pd.Field()
     inverse_area: InverseAreaType = pd.Field()
     inverse_length: InverseLengthType = pd.Field()
+    mass_flux: MassFluxType = pd.Field()
+    velocity_squared: VelocitySquaredType = pd.Field()
+    frequency: FrequencyType = pd.Field()
 
     name: Literal["Custom"] = pd.Field("Custom")
 
@@ -1256,6 +1316,9 @@ flow360_heat_capacity_unit = Flow360HeatCapacityUnit()
 flow360_thermal_conductivity_unit = Flow360ThermalConductivityUnit()
 flow360_inverse_area_unit = Flow360InverseAreaUnit()
 flow360_inverse_length_unit = Flow360InverseLengthUnit()
+flow360_mass_flux_unit = Flow360MassFluxUnit()
+flow360_velocity_squared_unit = Flow360VelocitySquaredUnit()
+flow360_frequency_unit = Flow360FrequencyUnit()
 
 dimensions = [
     flow360_length_unit,
@@ -1276,6 +1339,9 @@ dimensions = [
     flow360_thermal_conductivity_unit,
     flow360_inverse_area_unit,
     flow360_inverse_length_unit,
+    flow360_mass_flux_unit,
+    flow360_velocity_squared_unit,
+    flow360_frequency_unit,
     flow360_heat_source_unit,
 ]
 
@@ -1310,6 +1376,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     )
     base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
     base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
+    base_mass_flux: float = pd.Field(np.inf, target_dimension=Flow360MassFluxUnit)
+    base_velocity_squared: float = pd.Field(np.inf, target_dimension=Flow360VelocitySquaredUnit)
+    base_frequency: float = pd.Field(np.inf, target_dimension=Flow360FrequencyUnit)
 
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
@@ -1353,6 +1422,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["thermal_conductivity"] = "flow360_thermal_conductivity_unit"
         conversion_system["inverse_area"] = "flow360_inverse_area_unit"
         conversion_system["inverse_length"] = "flow360_inverse_length_unit"
+        conversion_system["mass_flux"] = "flow360_mass_flux_unit"
+        conversion_system["velocity_squared"] = "flow360_velocity_squared_unit"
+        conversion_system["frequency"] = "flow360_frequency_unit"
 
         super().__init__(registry=registry, conversion_system=conversion_system)
 
@@ -1395,6 +1467,9 @@ class _PredefinedUnitSystem(UnitSystem):
     thermal_conductivity: ThermalConductivityType = pd.Field(exclude=True)
     inverse_area: InverseAreaType = pd.Field(exclude=True)
     inverse_length: InverseLengthType = pd.Field(exclude=True)
+    mass_flux: MassFluxType = pd.Field(exclude=True)
+    velocity_squared: VelocitySquaredType = pd.Field(exclude=True)
+    frequency: FrequencyType = pd.Field(exclude=True)
 
     def system_repr(self):
         return self.name

@@ -9,6 +9,12 @@ from typing import Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import (
+    FrequencyType,
+    LengthType,
+    VelocitySquaredType,
+    ViscosityType,
+)
 
 
 class TurbulentKineticEnergy(Flow360BaseModel):
@@ -18,7 +24,7 @@ class TurbulentKineticEnergy(Flow360BaseModel):
     """
 
     model_type: Literal["TurbulentKineticEnergy"] = pd.Field("TurbulentKineticEnergy", frozen=True)
-    turbulent_kinetic_energy: VelocitySquaredType.NonNegativeFloat = pd.Field()
+    turbulent_kinetic_energy: VelocitySquaredType.NonNegative = pd.Field()
 
 
 class TurbulentIntensity(Flow360BaseModel):
@@ -43,7 +49,7 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
     model_type: Literal["SpecificDissipationRate"] = pd.Field(
         "SpecificDissipationRate", frozen=True
     )
-    specific_dissipation_rate: InverseTimeType.NonNegativeFloat = pd.Field()
+    specific_dissipation_rate: FrequencyType.NonNegative = pd.Field()
 
 
 class TurbulentViscosityRatio(Flow360BaseModel):
@@ -94,7 +100,7 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
     model_type: Literal["ModifiedTurbulentViscosity"] = pd.Field(
         "ModifiedTurbulentViscosity", frozen=True
     )
-    modified_turbulent_viscosity: Optional[ViscosityType.PositiveFloat] = pd.Field()
+    modified_turbulent_viscosity: Optional[ViscosityType.Positive] = pd.Field()
 
 
 # pylint: disable=missing-class-docstring

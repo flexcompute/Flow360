@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from typing import Optional, Union
 
 import pydantic as pd
@@ -11,11 +12,14 @@ from flow360.component.simulation.unit_system import (
     AreaType,
     DensityType,
     ForceType,
+    FrequencyType,
     LengthType,
+    MassFluxType,
     MassType,
     PressureType,
     TemperatureType,
     TimeType,
+    VelocitySquaredType,
     VelocityType,
     ViscosityType,
 )
@@ -32,6 +36,9 @@ class DataWithUnits(pd.BaseModel):
     p: PressureType = pd.Field()
     r: DensityType = pd.Field()
     mu: ViscosityType = pd.Field()
+    m_dot: MassFluxType = pd.Field()
+    v_sq: VelocitySquaredType = pd.Field()
+    fqc: FrequencyType = pd.Field()
     omega: AngularVelocityType = pd.Field()
 
 
@@ -55,6 +62,9 @@ class DataWithUnitsConstrained(pd.BaseModel):
     )
     r: DensityType = pd.Field()
     mu: ViscosityType.Constrained(ge=2) = pd.Field()
+    m_dot: MassFluxType.Constrained(ge=3) = pd.Field()
+    v_sq: VelocitySquaredType.Constrained(le=2) = pd.Field()
+    fqc: FrequencyType.Constrained(gt=22) = pd.Field()
     omega: AngularVelocityType.NonNegative = pd.Field()
 
 
@@ -106,6 +116,9 @@ def test_flow360_unit_arithmetic():
     assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
     assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
     assert -3 * u.flow360_area_unit == -1.0 * u.flow360_area_unit - 2.0 * u.flow360_area_unit
+    assert 2.5 * u.flow360_mass_flux_unit == (5 - 2.5) * u.flow360_mass_flux_unit
+    assert 2 * 8 * u.flow360_velocity_squared_unit == 2**4 * u.flow360_velocity_squared_unit
+    assert (5 * 5) * u.flow360_frequency_unit == 5**2 * u.flow360_frequency_unit
 
     with pytest.raises(TypeError):
         1 * u.flow360_area_unit + 2
@@ -198,6 +211,9 @@ def test_unit_system():
         r=2 * u.kg / u.m**3,
         mu=3 * u.Pa * u.s,
         omega=5 * u.rad / u.s,
+        m_dot=12 * u.kg / u.s,
+        v_sq=4 * u.m**2 / u.s**2,
+        fqc=1234 / u.s,
     )
 
     assert data.L == 1 * u.m
@@ -211,12 +227,31 @@ def test_unit_system():
     assert data.r == 2 * u.kg / u.m**3
     assert data.mu == 3 * u.Pa * u.s
     assert data.omega == 5 * u.rad / u.s
+    assert data.m_dot == 12 * u.kg / u.s
+    assert data.v_sq == 4 * u.m**2 / u.s**2
+    assert data.fqc == 1234 / u.s
 
     # When using a unit system the units can be inferred
 
+    input = {
+        "L": 1,
+        "m": 2,
+        "t": 3,
+        "T": 300,
+        "v": 2 / 3,
+        "A": 2 * 3,
+        "F": 4,
+        "p": 5,
+        "r": 2,
+        "mu": 3,
+        "omega": 5,
+        "m_dot": 11,
+        "v_sq": 123,
+        "fqc": 1111,
+    }
     # SI
     with u.SI_unit_system:
-        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(**input)
 
         assert data.L == 1 * u.m
         assert data.m == 2 * u.kg
@@ -229,10 +264,13 @@ def test_unit_system():
         assert data.r == 2 * u.kg / u.m**3
         assert data.mu == 3 * u.Pa * u.s
         assert data.omega == 5 * u.rad / u.s
+        assert data.m_dot == 11 * u.kg / u.s
+        assert data.v_sq == 123 * u.m**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # CGS
     with u.CGS_unit_system:
-        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(**input)
 
         assert data.L == 1 * u.cm
         assert data.m == 2 * u.g
@@ -245,10 +283,13 @@ def test_unit_system():
         assert data.r == 2 * u.g / u.cm**3
         assert data.mu == 3 * u.dyn * u.s / u.cm**2
         assert data.omega == 5 * u.rad / u.s
+        assert data.m_dot == 11 * u.g / u.s
+        assert data.v_sq == 123 * u.cm**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # Imperial
     with u.imperial_unit_system:
-        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(**input)
 
         assert data.L == 1 * u.ft
         assert data.m == 2 * u.lb
@@ -261,10 +302,13 @@ def test_unit_system():
         assert data.r == 2 * u.lb / u.ft**3
         assert data.mu == 3 * u.lbf * u.s / u.ft**2
         assert data.omega == 5 * u.rad / u.s
+        assert data.m_dot == 11 * u.lb / u.s
+        assert data.v_sq == 123 * u.ft**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # Flow360
     with u.flow360_unit_system:
-        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5)
+        data = DataWithUnits(**input)
 
         assert data.L == 1 * u.flow360_length_unit
         assert data.m == 2 * u.flow360_mass_unit
@@ -277,65 +321,75 @@ def test_unit_system():
         assert data.r == 2 * u.flow360_density_unit
         assert data.mu == 3 * u.flow360_viscosity_unit
         assert data.omega == 5 * u.flow360_angular_velocity_unit
+        assert data.m_dot == 11 * u.flow360_mass_flux_unit
+        assert data.v_sq == 123 * u.flow360_velocity_squared_unit
+        assert data.fqc == 1111 * u.flow360_frequency_unit
 
+    correct_input = {
+        "L": 1,
+        "m": 2,
+        "t": -3,
+        "T": 300,
+        "v": 2 / 3,
+        "A": 2 * 3,
+        "F": -4,
+        "p": 5,
+        "r": 2,
+        "mu": 3,
+        "omega": 5,
+        "m_dot": 10,
+        "v_sq": 0.2,
+        "fqc": 123,
+    }
     # Constraints
     with u.SI_unit_system:
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=-1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "L": -1})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=0, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "m": 0})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=2, t=0, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "t": 0})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=2, t=-3, T=-300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "T": -300})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=-1, m=2, t=-3, T=300, v=-2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "v": -2 / 3})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=-1, m=2, t=-3, T=300, v=2 / 3, A=0, F=-4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "A": 0})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "F": 4})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=9, r=2, mu=3, omega=5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "p": 9})
 
         with pytest.raises(ValueError):
-            data = DataWithUnitsConstrained(
-                L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=5, r=2, mu=3, omega=-5
-            )
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "p": 13})
 
-        data = DataWithUnitsConstrained(
-            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
-        )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "mu": 1.9})
 
-        data = DataWithUnitsConstrained(
-            L=1, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=11, r=2, mu=3, omega=5
-        )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "m_dot": 1})
 
-        data = DataWithUnitsConstrained(
-            L=None, m=2, t=-3, T=300, v=2 / 3, A=2 * 3, F=-4, p=7, r=2, mu=3, omega=5
-        )
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "v_sq": 12})
+
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "fqc": 12})
+
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "omega": -12})
+
+        data = DataWithUnitsConstrained(**correct_input)
+
+        data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "p": 11})
+
+        data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "L": None})
 
     # Vector data
     data = VectorDataWithUnits(
@@ -495,6 +549,9 @@ def test_unit_system_init():
         "thermal_conductivity": {"value": 1.0, "units": "kg/s**3*m/K"},
         "inverse_length": {"value": 1.0, "units": "m**(-1)"},
         "inverse_area": {"value": 1.0, "units": "m**(-2)"},
+        "mass_flux": {"value": 1.0, "units": "kg/s"},
+        "velocity_squared": {"value": 1.0, "units": "m**2/s**2"},
+        "frequency": {"value": 1.0, "units": "s**(-1)"},
     }
     us = u.UnitSystem(**unit_system_dict)
     print(us)

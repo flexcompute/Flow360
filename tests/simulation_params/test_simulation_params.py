@@ -1,10 +1,9 @@
-from flow360.component.simulation.simulation_params import SimulationParams
+import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
-import flow360.component.simulation.units as u
-
 
 with SI_unit_system:
     my_box = Box(

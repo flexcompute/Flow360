@@ -149,7 +149,11 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def _get_field_alias(cls, field_name: str = None):
         if field_name is not None:
-            alias = [field.alias for field in cls.model_fields.values() if field.name == field_name]
+            alias = [
+                info.alias
+                for name, info in cls.model_fields.items()
+                if name == field_name and info.alias is not None
+            ]
             if len(alias) > 0:
                 return alias[0]
         return None

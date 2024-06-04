@@ -3,10 +3,14 @@ from typing import List, Literal, Optional, Tuple, Union
 import pydantic as pd
 
 from flow360.component.flow360_params.flow360_fields import (
-    CommonFields,
-    SliceFields,
-    SurfaceFields,
-    VolumeFields,
+    CommonFieldNames,
+    CommonFieldNamesFull,
+    SliceFieldNames,
+    SliceFieldNamesFull,
+    SurfaceFieldNames,
+    SurfaceFieldNamesFull,
+    VolumeFieldNames,
+    VolumeFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -28,6 +32,11 @@ Caveats:
 1. Check if we support non-average and average output specified at the same time in solver. (Yes but they share the same output_fields)
 2. We do not support mulitple output frequencies/file format for the same type of output.
 """
+
+CommonFields = Union[CommonFieldNames, CommonFieldNamesFull]
+SliceFields = Union[SliceFieldNames, SliceFieldNamesFull]
+SurfaceFields = Union[SurfaceFieldNames, SurfaceFieldNamesFull]
+VolumeFields = Union[VolumeFieldNames, VolumeFieldNamesFull]
 
 
 class _AnimationSettings(Flow360BaseModel):
