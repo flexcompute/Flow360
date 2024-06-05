@@ -14,12 +14,12 @@ from flow360.component.simulation.unit_system import (
     ForceType,
     FrequencyType,
     LengthType,
-    MassFluxType,
+    MassFlowRateType,
     MassType,
     PressureType,
+    SpecificEnergyType,
     TemperatureType,
     TimeType,
-    VelocitySquaredType,
     VelocityType,
     ViscosityType,
 )
@@ -36,8 +36,8 @@ class DataWithUnits(pd.BaseModel):
     p: PressureType = pd.Field()
     r: DensityType = pd.Field()
     mu: ViscosityType = pd.Field()
-    m_dot: MassFluxType = pd.Field()
-    v_sq: VelocitySquaredType = pd.Field()
+    m_dot: MassFlowRateType = pd.Field()
+    v_sq: SpecificEnergyType = pd.Field()
     fqc: FrequencyType = pd.Field()
     omega: AngularVelocityType = pd.Field()
 
@@ -62,8 +62,8 @@ class DataWithUnitsConstrained(pd.BaseModel):
     )
     r: DensityType = pd.Field()
     mu: ViscosityType.Constrained(ge=2) = pd.Field()
-    m_dot: MassFluxType.Constrained(ge=3) = pd.Field()
-    v_sq: VelocitySquaredType.Constrained(le=2) = pd.Field()
+    m_dot: MassFlowRateType.Constrained(ge=3) = pd.Field()
+    v_sq: SpecificEnergyType.Constrained(le=2) = pd.Field()
     fqc: FrequencyType.Constrained(gt=22) = pd.Field()
     omega: AngularVelocityType.NonNegative = pd.Field()
 
@@ -116,8 +116,8 @@ def test_flow360_unit_arithmetic():
     assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
     assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
     assert -3 * u.flow360_area_unit == -1.0 * u.flow360_area_unit - 2.0 * u.flow360_area_unit
-    assert 2.5 * u.flow360_mass_flux_unit == (5 - 2.5) * u.flow360_mass_flux_unit
-    assert 2 * 8 * u.flow360_velocity_squared_unit == 2**4 * u.flow360_velocity_squared_unit
+    assert 2.5 * u.flow360_mass_flow_rate_unit == (5 - 2.5) * u.flow360_mass_flow_rate_unit
+    assert 2 * 8 * u.flow360_specific_energy_unit == 2**4 * u.flow360_specific_energy_unit
     assert (5 * 5) * u.flow360_frequency_unit == 5**2 * u.flow360_frequency_unit
 
     with pytest.raises(TypeError):
@@ -321,8 +321,8 @@ def test_unit_system():
         assert data.r == 2 * u.flow360_density_unit
         assert data.mu == 3 * u.flow360_viscosity_unit
         assert data.omega == 5 * u.flow360_angular_velocity_unit
-        assert data.m_dot == 11 * u.flow360_mass_flux_unit
-        assert data.v_sq == 123 * u.flow360_velocity_squared_unit
+        assert data.m_dot == 11 * u.flow360_mass_flow_rate_unit
+        assert data.v_sq == 123 * u.flow360_specific_energy_unit
         assert data.fqc == 1111 * u.flow360_frequency_unit
 
     correct_input = {
@@ -549,8 +549,8 @@ def test_unit_system_init():
         "thermal_conductivity": {"value": 1.0, "units": "kg/s**3*m/K"},
         "inverse_length": {"value": 1.0, "units": "m**(-1)"},
         "inverse_area": {"value": 1.0, "units": "m**(-2)"},
-        "mass_flux": {"value": 1.0, "units": "kg/s"},
-        "velocity_squared": {"value": 1.0, "units": "m**2/s**2"},
+        "mass_flow_rate": {"value": 1.0, "units": "kg/s"},
+        "specific_energy": {"value": 1.0, "units": "m**2/s**2"},
         "frequency": {"value": 1.0, "units": "s**(-1)"},
     }
     us = u.UnitSystem(**unit_system_dict)

@@ -12,7 +12,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     FrequencyType,
     LengthType,
-    VelocitySquaredType,
+    SpecificEnergyType,
     ViscosityType,
 )
 
@@ -24,7 +24,7 @@ class TurbulentKineticEnergy(Flow360BaseModel):
     """
 
     model_type: Literal["TurbulentKineticEnergy"] = pd.Field("TurbulentKineticEnergy", frozen=True)
-    turbulent_kinetic_energy: VelocitySquaredType.NonNegative = pd.Field()
+    turbulent_kinetic_energy: SpecificEnergyType.NonNegative = pd.Field()
 
 
 class TurbulentIntensity(Flow360BaseModel):

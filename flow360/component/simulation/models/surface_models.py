@@ -17,7 +17,7 @@ from flow360.component.simulation.operating_condition import VelocityVectorType
 from flow360.component.simulation.primitives import Surface, SurfacePair
 from flow360.component.simulation.unit_system import (
     HeatFluxType,
-    MassFluxType,
+    MassFlowRateType,
     PressureType,
     TemperatureType,
 )
@@ -54,7 +54,7 @@ class Pressure(SingleAttributeModel):
 
 
 class MassFlowRate(SingleAttributeModel):
-    value: MassFluxType.NonNegative = pd.Field()
+    value: MassFlowRateType.NonNegative = pd.Field()
 
 
 class Mach(SingleAttributeModel):
