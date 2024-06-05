@@ -577,22 +577,6 @@ class _TemperatureType(_DimensionedType):
     dim = u.dimensions.temperature
     dim_name = "temperature"
 
-    @classmethod
-    def validate(cls, value):
-        value = super(cls, cls).validate(value)
-
-        if value is not None and isinstance(value, u.unyt_array) and value.to("K") <= 0:
-            raise ValueError(
-                f"Temperature cannot be lower or equal to absolute zero {value} == {value.to('K')}"
-            )
-
-        return value
-
-    # pylint: disable=unused-argument
-    @classmethod
-    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> pd.CoreSchema:
-        return core_schema.no_info_plain_validator_function(cls.validate)
-
 
 TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_serializer)]
 
