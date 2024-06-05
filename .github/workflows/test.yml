@@ -46,4 +46,4 @@ jobs:
     - name: Run simulation_params tests
       run: poetry run pytest -rA tests/simulation_framework tests/simulation_params
     - name: Run flow360_params tests
-      run: poetry run pytest -rA --ignore tests/simulation_framework tests/simulation_params
+      run: poetry run pytest -rA --ignore tests/simulation_framework --ignore tests/simulation_params

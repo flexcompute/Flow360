@@ -115,10 +115,10 @@ class SimulationParams(Flow360BaseModel):
                 "unit context must not be used."
             )
 
-        model_dict = self._init_handle_file(filename=filename, **kwargs)
+        model_dict = self._handle_file(filename=filename, **kwargs)
 
         version = model_dict.pop("version", None)
-        unit_system = model_dict.get("unitSystem")
+        unit_system = model_dict.get("unit_system")
         if version is not None and unit_system is not None:
             if version != __version__:
                 raise NotImplementedError("No legacy support at the time being.")

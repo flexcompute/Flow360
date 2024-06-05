@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from copy import deepcopy
-from typing import Literal
+from typing import Any, List, Literal
 
 import pydantic as pd
 import rich
@@ -519,6 +519,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         if extra is not None:
             for extra_item in extra:
+                # TODO: migrate flow360_param.conversions.py
                 require(extra_item.dependency_list, required_by, params)
                 self_dict[extra_item.name] = extra_item.value_factory()
 

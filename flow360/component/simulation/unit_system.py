@@ -1480,8 +1480,8 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["SI"] = pd.Field("SI", frozen=True)
 
-    def __init__(self, verbose: bool = True):
-        super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
+    def __init__(self, verbose: bool = True, **kwargs):
+        super().__init__(base_system=BaseSystemType.SI, verbose=verbose, **kwargs)
 
     @classmethod
     def validate(cls, _):
@@ -1497,8 +1497,8 @@ class CGSUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["CGS"] = pd.Field("CGS", frozen=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.CGS)
+    def __init__(self, **kwargs):
+        super().__init__(base_system=BaseSystemType.CGS, **kwargs)
 
     @classmethod
     def validate(cls, _):
@@ -1514,8 +1514,8 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["Imperial"] = pd.Field("Imperial", frozen=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.IMPERIAL)
+    def __init__(self, **kwargs):
+        super().__init__(base_system=BaseSystemType.IMPERIAL, **kwargs)
 
     @classmethod
     def validate(cls, _):
