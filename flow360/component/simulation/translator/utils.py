@@ -52,11 +52,15 @@ def get_attribute_from_first_instance(obj_list: list, class_type, attribute_name
     return None
 
 
-def get_all_instances_and_apply_translation(obj_list: list, class_type, translation_func: str):
+def translate_setting_and_apply_to_all_entities(obj_list: list, class_type, translation_func: str):
     """In a list loop and find the all instances matching the given type and apply translation.
     `translation_func` shoud return a dictionary."""
-    translated = []
+    output_dict = {}
     for obj in obj_list:
         if isinstance(obj, class_type):
-            translated.append(translation_func(obj))
-    return translated
+            translated_setting = translation_func(obj)
+            for entity in obj.entities:
+                if output_dict.get(entity.name) is None:
+                    output_dict[entity.name] = {}
+                output_dict[entity.name].update(translated_setting)
+    return output_dict

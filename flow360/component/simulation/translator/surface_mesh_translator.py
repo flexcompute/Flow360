@@ -1,9 +1,58 @@
-from flow360.component.simulation.translator.utils import preprocess_input
+from flow360.component.simulation.translator.utils import (
+    preprocess_input,
+    get_attribute_from_first_instance,
+    translate_setting_and_apply_to_all_entities,
+)
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
+
+
+def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
+    """
+    Translate SurfaceEdgeRefinement to edges.
+
+    """
+    if obj.method is not None:
+        return {"type": "projectAnisoSpacing"}
+    else:
+        if obj.method.type == "height":
+            return {"type": "aniso", "method": "height", "value": obj.method.value.value}
 
 
 @preprocess_input
-def get_surface_mesh_json(input_params):
+def get_surface_mesh_json(input_params: SimulationParams, mesh_units):
     """
-    Get the surface mesh json from the simulation parameters.
+    Get JSON for surface meshing.
+
     """
-    print(input_params)
+    translated = {}
+    # pylint: disable=fixme
+    # TODO: Validations to be implemented:
+    # TODO: Backout what is required from the surface meshing JSON definition
+    # >> Check Presence:
+    # 1. refinements
+    # >> Check confliciting multi instances
+    # 1. SurfaceRefinement
+
+    # >>  Step 1:  Get maxEdgeLength
+    max_edge_length = get_attribute_from_first_instance(
+        input_params.meshing.refinements, SurfaceRefinement, "max_edge_length"
+    )
+    translated["maxEdgeLength"] = max_edge_length
+
+    # >> Step 2: Get curvatureResolutionAngle
+    curvature_resolution_angle = get_attribute_from_first_instance(
+        input_params.meshing.refinements, SurfaceRefinement, "curvature_resolution_angle"
+    )
+    translated["curvatureResolutionAngle"] = curvature_resolution_angle
+
+    # >> Step 3: Get growthRate
+    translated["growthRate"] = input_params.meshing.surface_layer_growth_rate
+
+    # >> Step 4: Get edges
+    translated["edges"] = translate_setting_and_apply_to_all_entities(
+        input_params.meshing, SurfaceEdgeRefinement, SurfaceEdgeRefinement_to_edges
+    )
+
+    return translated

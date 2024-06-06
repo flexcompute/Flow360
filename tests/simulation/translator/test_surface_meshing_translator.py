@@ -76,3 +76,10 @@ def get_test_param():
             )
         )
     return param
+
+
+def test_param_to_json(get_test_param, get_geometry):
+    translated = get_surface_mesh_json(get_test_param, get_geometry.mesh_unit)
+    import json
+
+    print(json.dumps(translated, indent=4))
