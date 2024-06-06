@@ -39,6 +39,7 @@ u.dimensions.mass_flow_rate = u.dimensions.mass / u.dimensions.time
 u.dimensions.specific_energy = u.dimensions.length**2 * u.dimensions.time ** (-2)
 u.dimensions.frequency = u.dimensions.time ** (-1)
 
+# pylint: disable=fixme
 # TODO: IIRC below is automatically derived once you define things above.
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
@@ -571,6 +572,7 @@ class _TimeType(_DimensionedType):
 TimeType = Annotated[_TimeType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+# pylint: disable=too-few-public-methods
 class _TemperatureType(_DimensionedType):
     """:class: TemperatureType"""
 

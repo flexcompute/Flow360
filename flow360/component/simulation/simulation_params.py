@@ -25,23 +25,25 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
-from flow360.exceptions import Flow360ConfigError, Flow360RuntimeError
-from flow360.log import log
-from flow360.user_config import UserConfig
+from flow360.exceptions import Flow360RuntimeError
 from flow360.version import __version__
 
 
 class SimulationParams(Flow360BaseModel):
     """
-        meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or modify the existing surface/volume meshing parameters from starting points.
+        meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or
+        modify the existing surface/volume meshing parameters from starting points.
 
     -----
-        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values will **always** overwrite global ones.
+        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
+        will **always** overwrite global ones.
 
         reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
         operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
     -----
-        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary conditions.
+        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
+        necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
+        conditions.
 
         volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
         surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
@@ -49,7 +51,8 @@ class SimulationParams(Flow360BaseModel):
         - Other configurations that are orthogonal to all previous items.
 
         time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
-        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
+        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
+        ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
@@ -91,7 +94,7 @@ class SimulationParams(Flow360BaseModel):
         """
         if unit_system_manager.current is None:
             raise Flow360RuntimeError(use_unit_system_msg)
-
+        # pylint: disable=duplicate-code
         kwarg_unit_system = kwargs.pop("unit_system", None)
         if kwarg_unit_system is not None:
             if not isinstance(kwarg_unit_system, UnitSystem):
@@ -137,6 +140,9 @@ class SimulationParams(Flow360BaseModel):
         kwargs = self._init_check_unit_system(**kwargs)
         super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
 
+    # pylint: disable=super-init-not-called
+    # pylint: disable=fixme
+    # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
     def __init__(self, filename: str = None, **kwargs):
         if filename is not None:
             self._init_no_context(filename, **kwargs)

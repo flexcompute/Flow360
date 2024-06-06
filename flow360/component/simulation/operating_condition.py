@@ -1,3 +1,5 @@
+"""Operating conditions for the simulation framework."""
+
 from typing import Optional, Tuple, Union
 
 import pydantic as pd
@@ -16,15 +18,36 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.log import log
 
+# pylint: disable=no-member
 VelocityVectorType = Union[VelocityType.Vector, Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr]]
 
 
 class ThermalStateCache(Flow360BaseModel):
+    """[INTERNAL] Cache for thermal state inputs"""
+
+    # pylint: disable=no-member
     altitude: Optional[LengthType.Positive] = None
     temperature_offset: Optional[TemperatureType] = None
 
 
 class ThermalState(CachedModelBase):
+    """
+    Represents the thermal state of a fluid with specific properties.
+
+    Attributes:
+    -----------
+    temperature : TemperatureType.Positive
+        The temperature of the fluid, initialized to 288.15 K. This field is frozen and should not be modified after
+        construction.
+    density : DensityType.Positive
+        The density of the fluid, initialized to 1.225 kg/m^3. This field is frozen and should not be modified after
+        construction.
+    material : FluidMaterialTypes
+        The type of fluid material, initialized to Air(). This field is frozen and should not be modified after
+        construction.
+    """
+
+    # pylint: disable=fixme
     # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     temperature: TemperatureType.Positive = pd.Field(288.15 * u.K, frozen=True)
     density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
@@ -36,6 +59,8 @@ class ThermalState(CachedModelBase):
     def from_standard_atmosphere(
         cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K
     ):
+        """Constructs a thermal state from the standard atmosphere model."""
+        # pylint: disable=fixme
         # TODO: add standard atmosphere implementation
         density = 1.225 * u.kg / u.m**3
         temperature = 288.15 * u.K
@@ -51,29 +76,37 @@ class ThermalState(CachedModelBase):
 
     @property
     def altitude(self) -> Optional[LengthType.Positive]:
+        """Return user specified altitude."""
         if not self._cached.altitude:
             log.warning("Altitude not provided from input")
-            return self._cached.altitude
+        return self._cached.altitude
 
     @property
     def temperature_offset(self) -> Optional[TemperatureType]:
+        """Return user specified temperature offset."""
         if not self._cached.altitude:
             log.warning("Temperature offset not provided from input")
         return self._cached.temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
+        """Computes speed of sound."""
+        # pylint: disable=fixme
         # TODO: implement
         # return self.material.speed_of_sound(self.temperature)
         return 343 * u.m / u.s
 
     @property
     def pressure(self) -> PressureType.Positive:
+        """Computes pressure."""
+        # pylint: disable=fixme
         # TODO: implement
         return 1.013e5 * u.Pa
 
     @property
     def dynamic_viscosity(self) -> ViscosityType.Positive:
+        """Computes dynamic viscosity."""
+        # pylint: disable=fixme
         # TODO: implement
         # return self.material.speed_of_sound(self.temperature)
         return 1.825e-5 * u.Pa * u.s
@@ -94,15 +127,20 @@ class GenericReferenceCondition(Flow360BaseModel):
         mach: pd.PositiveFloat,
         thermal_state: ThermalState = ThermalState(),
     ):
+        """Constructs a reference condition from Mach number and thermal state."""
         velocity_magnitude = mach * thermal_state.speed_of_sound
         return cls(velocity_magnitude=velocity_magnitude, thermal_state=thermal_state)
 
     @property
     def mach(self) -> pd.PositiveFloat:
+        """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
 
 class AerospaceCondition(Flow360BaseModel):
+    """A specialized GenericReferenceCondition for aerospace applications."""
+
+    # pylint: disable=fixme
     # TODO: add units for angles
     alpha: float = 0
     beta: float = 0
@@ -110,6 +148,7 @@ class AerospaceCondition(Flow360BaseModel):
     atmosphere: ThermalState = ThermalState()
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
 
+    # pylint: disable=too-many-arguments
     @classmethod
     @pd.validate_call
     def from_mach(
@@ -120,6 +159,8 @@ class AerospaceCondition(Flow360BaseModel):
         atmosphere: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
+        """Constructs a `AerospaceCondition` from Mach number and thermal state."""
+
         velocity_magnitude = mach * atmosphere.speed_of_sound
         reference_velocity_magnitude = reference_mach * atmosphere.speed_of_sound
         return cls(
@@ -137,6 +178,7 @@ class AerospaceCondition(Flow360BaseModel):
         reference_velocity_magnitude: VelocityType.Positive,
         atmosphere: ThermalState = ThermalState(),
     ):
+        """Constructs a `AerospaceCondition` for stationary conditions."""
         return cls(
             velocity_magnitude=0 * u.m / u.s,
             atmosphere=atmosphere,
@@ -145,8 +187,10 @@ class AerospaceCondition(Flow360BaseModel):
 
     @property
     def mach(self) -> pd.PositiveFloat:
+        """Computes Mach number."""
         return self.velocity_magnitude / self.atmosphere.speed_of_sound
 
 
+# pylint: disable=fixme
 # TODO: AutomotiveCondition
 OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
