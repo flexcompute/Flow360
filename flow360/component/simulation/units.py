@@ -28,6 +28,7 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
 )
 
+# pylint: disable=duplicate-code
 __all__ = [
     "BaseSystemType",
     "CGS_unit_system",

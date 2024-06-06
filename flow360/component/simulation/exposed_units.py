@@ -6,6 +6,8 @@ Extra units to be included in the dimensioned type schema
 # pylint: disable=no-member
 import unyt as u
 
+# pylint: disable=duplicate-code
+
 extra_units = {
     "mass": [],
     "length": [u.mm, u.inch],
