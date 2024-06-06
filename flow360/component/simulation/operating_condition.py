@@ -1,11 +1,10 @@
 from typing import Optional, Tuple, Union
 
-import numpy as np
 import pydantic as pd
-from pydantic import validate_call
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.cached_model_base import CachedModelBase
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes
 from flow360.component.simulation.unit_system import (
     DensityType,
@@ -15,56 +14,69 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.log import log
 
 VelocityVectorType = Union[VelocityType.Vector, Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr]]
 
 
-class ThermalState(Flow360BaseModel):
-    temperature: TemperatureType.Positive = 288.15 * u.K
-    density: DensityType.Positive = 1.225 * u.kg / u.m**3
-    material: FluidMaterialTypes = Air()
-    # TODO: special serializer
-    _altitude: Optional[LengthType.Positive] = None
-    _temperature_offset: Optional[TemperatureType.Positive] = None
+class ThermalStateCache(Flow360BaseModel):
+    altitude: Optional[LengthType.Positive] = None
+    temperature_offset: Optional[TemperatureType] = None
+
+
+class ThermalState(CachedModelBase):
+    # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
+    temperature: TemperatureType.Positive = pd.Field(288.15 * u.K, frozen=True)
+    density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
+    material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
+    _cached: ThermalStateCache = ThermalStateCache()
 
     @classmethod
-    @validate_call
+    @pd.validate_call
     def from_standard_atmosphere(
-        cls, altitude: LengthType.Positive = 0, temperature_offset: TemperatureType = 0
+        cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K
     ):
         # TODO: add standard atmosphere implementation
-        density = 1.225
-        temperature = 288.15
+        density = 1.225 * u.kg / u.m**3
+        temperature = 288.15 * u.K
 
-        return cls(
+        state = cls(
             density=density,
             temperature=temperature,
             material=Air(),
         )
+        state._cached = ThermalStateCache(altitude=altitude, temperature_offset=temperature_offset)
+
+        return state
 
     @property
-    def altitude(self) -> LengthType.Positive:
-        return self._altitude
+    def altitude(self) -> Optional[LengthType.Positive]:
+        if not self._cached.altitude:
+            log.warning("Altitude not provided from input")
+            return self._cached.altitude
 
     @property
-    def temperature_offset(self) -> TemperatureType:
-        return self._temperature_offset
+    def temperature_offset(self) -> Optional[TemperatureType]:
+        if not self._cached.altitude:
+            log.warning("Temperature offset not provided from input")
+        return self._cached.temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
-        return np.sqrt(
-            self.material.specific_heat_ratio * self.material.gas_constant * self.temperature
-        )
+        # TODO: implement
+        # return self.material.speed_of_sound(self.temperature)
+        return 343 * u.m / u.s
 
     @property
     def pressure(self) -> PressureType.Positive:
         # TODO: implement
-        return 1.013e5
+        return 1.013e5 * u.Pa
 
     @property
     def dynamic_viscosity(self) -> ViscosityType.Positive:
         # TODO: implement
-        return 1.825e-5
+        # return self.material.speed_of_sound(self.temperature)
+        return 1.825e-5 * u.Pa * u.s
 
 
 class GenericReferenceCondition(Flow360BaseModel):
@@ -76,7 +88,7 @@ class GenericReferenceCondition(Flow360BaseModel):
     thermal_state: ThermalState = ThermalState()
 
     @classmethod
-    @validate_call
+    @pd.validate_call
     def from_mach(
         cls,
         mach: pd.PositiveFloat,
@@ -91,6 +103,7 @@ class GenericReferenceCondition(Flow360BaseModel):
 
 
 class AerospaceCondition(Flow360BaseModel):
+    # TODO: add units for angles
     alpha: float = 0
     beta: float = 0
     velocity_magnitude: VelocityType.NonNegative
@@ -98,7 +111,7 @@ class AerospaceCondition(Flow360BaseModel):
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
 
     @classmethod
-    @validate_call
+    @pd.validate_call
     def from_mach(
         cls,
         mach: pd.PositiveFloat,
@@ -107,16 +120,28 @@ class AerospaceCondition(Flow360BaseModel):
         atmosphere: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
-        pass
+        velocity_magnitude = mach * atmosphere.speed_of_sound
+        reference_velocity_magnitude = reference_mach * atmosphere.speed_of_sound
+        return cls(
+            velocity_magnitude=velocity_magnitude,
+            alpha=alpha,
+            beta=beta,
+            atmosphere=atmosphere,
+            reference_velocity_magnitude=reference_velocity_magnitude,
+        )
 
     @classmethod
-    @validate_call
+    @pd.validate_call
     def from_stationary(
         cls,
         reference_velocity_magnitude: VelocityType.Positive,
         atmosphere: ThermalState = ThermalState(),
     ):
-        pass
+        return cls(
+            velocity_magnitude=0 * u.m / u.s,
+            atmosphere=atmosphere,
+            reference_velocity_magnitude=reference_velocity_magnitude,
+        )
 
     @property
     def mach(self) -> pd.PositiveFloat:
