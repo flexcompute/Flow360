@@ -40,18 +40,50 @@ with SI_unit_system:
         # Global settings, skiped in current example
         meshing=MeshingParameters(
             refinement_factor=1,
-            farfield=Farfield(type="auto"),
+            # farfield=Farfield(type="auto"),
             refinements=[
                 AxisymmetricRefinement(
                     entities=[rotation_zone_inner],
-                    # enclosed_objects=[wing_surface], # this will be automatically populated by analysing topology
                     spacing_axial=0.1,
                     spacing_radial=0.1,
                     spacing_circumferential=0.2,
                 ),
-                AxisymmetricRefinement(
+                UniformRefinement(
                     entities=[rotation_zone_outer],
-                    # enclosed_objects=[rotation_zone_inner], # this will be automatically populated by analysing topology
+                    spacing=0.2,
+                ),
+                BoundaryLayer(),
+                SurfaceRefinement(),
+                SurfaceEdgeRefinement(),
+            ],
+            volume_zones=[
+                RotationCylinder(
+                    entities=[rotation_zone_outer],
+                    spacing_axial=0.1,
+                    spacing_radial=0.1,
+                    spacing_circumferential=0.2,
+                    enclosed_entities=[rotation_zone_inner],
+                ),
+                RotationSphere(
+                    entities=[rotation_zone_inner],
+                    spacing=0.2,
+                    enclosed_entities=[my_blades],
+                ),
+                RotationZone(
+                    entities=[rotation_zone_inner],
+                    enclosed_entities=[my_blades],
+                    auto=True,
+                ),
+                SphereZone(
+                    entities=[farfield],
+                    spacing=0.2,
+                    enclosed_entities=[rotation_zone_inner],
+                ),
+                BoxZone(
+                    entities=[my_box],
+                ),
+                CylinderZone(
+                    entities=[rotation_zone_outer],
                     spacing_axial=0.1,
                     spacing_radial=0.1,
                     spacing_circumferential=0.2,
