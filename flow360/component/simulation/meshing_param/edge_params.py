@@ -2,6 +2,7 @@ from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
@@ -19,7 +20,7 @@ class ByHeight(Flow360BaseModel):
     """Surface edge refinement by specifying first layer height of the anisotropic layers"""
 
     type: Literal["height"] = pd.Field("height", frozen=True)
-    value: LengthType.PositiveFloat = pd.Field()
+    value: LengthType.Positive = pd.Field()
 
 
 class ByAspectRatio(Flow360BaseModel):

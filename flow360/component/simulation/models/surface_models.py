@@ -8,7 +8,22 @@ from typing import Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.single_attribute_base import (
+    SingleAttributeModel,
+)
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.operating_condition import VelocityVectorType
+from flow360.component.simulation.primitives import Surface, SurfacePair
+from flow360.component.simulation.unit_system import (
+    HeatFluxType,
+    MassFlowRateType,
+    PressureType,
+    TemperatureType,
+)
+
+# TODO: Warning: Pydantic V1 import
+from flow360.component.types import Axis
 
 from .turbulence_quantities import TurbulenceQuantitiesType
 
@@ -39,11 +54,11 @@ class Pressure(SingleAttributeModel):
 
 
 class MassFlowRate(SingleAttributeModel):
-    value: MassFluxType.NonNegative = pd.Field()
+    value: MassFlowRateType.NonNegative = pd.Field()
 
 
 class Mach(SingleAttributeModel):
-    value: NonNegativeFloat = pd.Field()
+    value: pd.NonNegativeFloat = pd.Field()
 
 
 class Wall(BoundaryBase):
@@ -115,7 +130,7 @@ class Periodic(Flow360BaseModel):
     spec: Union[Translational, Rotational] = pd.Field(discriminator="type")
 
 
-SurfaceTypes = Union[
+SurfaceModelTypes = Union[
     Wall,
     SlipWall,
     Freestream,

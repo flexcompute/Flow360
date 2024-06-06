@@ -35,6 +35,9 @@ u.dimensions.thermal_conductivity = (
 )
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
+u.dimensions.mass_flow_rate = u.dimensions.mass / u.dimensions.time
+u.dimensions.specific_energy = u.dimensions.length**2 * u.dimensions.time ** (-2)
+u.dimensions.frequency = u.dimensions.time ** (-1)
 
 # TODO: IIRC below is automatically derived once you define things above.
 # pylint: disable=no-member
@@ -746,6 +749,36 @@ class _InverseLengthType(_DimensionedType):
 InverseLengthType = Annotated[_InverseLengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+class _MassFlowRateType(_DimensionedType):
+    """:class: MassFlowRateType"""
+
+    dim = u.dimensions.mass_flow_rate
+    dim_name = "mass_flow_rate"
+
+
+MassFlowRateType = Annotated[_MassFlowRateType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _SpecificEnergyType(_DimensionedType):
+    """:class: SpecificEnergyType"""
+
+    dim = u.dimensions.specific_energy
+    dim_name = "specific_energy"
+
+
+SpecificEnergyType = Annotated[_SpecificEnergyType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _FrequencyType(_DimensionedType):
+    """:class: FrequencyType"""
+
+    dim = u.dimensions.frequency
+    dim_name = "frequency"
+
+
+FrequencyType = Annotated[_FrequencyType, PlainSerializer(_dimensioned_type_serializer)]
+
+
 def _iterable(obj):
     try:
         len(obj)
@@ -1043,6 +1076,27 @@ class Flow360InverseLengthUnit(_Flow360BaseUnit):
     unit_name = "flow360_inverse_length_unit"
 
 
+class Flow360MassFlowRateUnit(_Flow360BaseUnit):
+    """:class: Flow360MassFlowRateUnit"""
+
+    dimension_type = MassFlowRateType
+    unit_name = "flow360_mass_flow_rate_unit"
+
+
+class Flow360SpecificEnergyUnit(_Flow360BaseUnit):
+    """:class: Flow360SpecificEnergyUnit"""
+
+    dimension_type = SpecificEnergyType
+    unit_name = "flow360_specific_energy_unit"
+
+
+class Flow360FrequencyUnit(_Flow360BaseUnit):
+    """:class: Flow360FrequencyUnit"""
+
+    dimension_type = FrequencyType
+    unit_name = "flow360_frequency_unit"
+
+
 def is_flow360_unit(value):
     """
     Check if the provided value represents a dimensioned quantity with units
@@ -1099,6 +1153,9 @@ _dim_names = [
     "thermal_conductivity",
     "inverse_area",
     "inverse_length",
+    "mass_flow_rate",
+    "specific_energy",
+    "frequency",
 ]
 
 
@@ -1126,6 +1183,9 @@ class UnitSystem(pd.BaseModel):
     thermal_conductivity: ThermalConductivityType = pd.Field()
     inverse_area: InverseAreaType = pd.Field()
     inverse_length: InverseLengthType = pd.Field()
+    mass_flow_rate: MassFlowRateType = pd.Field()
+    specific_energy: SpecificEnergyType = pd.Field()
+    frequency: FrequencyType = pd.Field()
 
     name: Literal["Custom"] = pd.Field("Custom")
 
@@ -1256,6 +1316,9 @@ flow360_heat_capacity_unit = Flow360HeatCapacityUnit()
 flow360_thermal_conductivity_unit = Flow360ThermalConductivityUnit()
 flow360_inverse_area_unit = Flow360InverseAreaUnit()
 flow360_inverse_length_unit = Flow360InverseLengthUnit()
+flow360_mass_flow_rate_unit = Flow360MassFlowRateUnit()
+flow360_specific_energy_unit = Flow360SpecificEnergyUnit()
+flow360_frequency_unit = Flow360FrequencyUnit()
 
 dimensions = [
     flow360_length_unit,
@@ -1276,6 +1339,9 @@ dimensions = [
     flow360_thermal_conductivity_unit,
     flow360_inverse_area_unit,
     flow360_inverse_length_unit,
+    flow360_mass_flow_rate_unit,
+    flow360_specific_energy_unit,
+    flow360_frequency_unit,
     flow360_heat_source_unit,
 ]
 
@@ -1310,6 +1376,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     )
     base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
     base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
+    base_mass_flow_rate: float = pd.Field(np.inf, target_dimension=Flow360MassFlowRateUnit)
+    base_specific_energy: float = pd.Field(np.inf, target_dimension=Flow360SpecificEnergyUnit)
+    base_frequency: float = pd.Field(np.inf, target_dimension=Flow360FrequencyUnit)
 
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
@@ -1353,6 +1422,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["thermal_conductivity"] = "flow360_thermal_conductivity_unit"
         conversion_system["inverse_area"] = "flow360_inverse_area_unit"
         conversion_system["inverse_length"] = "flow360_inverse_length_unit"
+        conversion_system["mass_flow_rate"] = "flow360_mass_flow_rate_unit"
+        conversion_system["specific_energy"] = "flow360_specific_energy_unit"
+        conversion_system["frequency"] = "flow360_frequency_unit"
 
         super().__init__(registry=registry, conversion_system=conversion_system)
 
@@ -1395,6 +1467,9 @@ class _PredefinedUnitSystem(UnitSystem):
     thermal_conductivity: ThermalConductivityType = pd.Field(exclude=True)
     inverse_area: InverseAreaType = pd.Field(exclude=True)
     inverse_length: InverseLengthType = pd.Field(exclude=True)
+    mass_flow_rate: MassFlowRateType = pd.Field(exclude=True)
+    specific_energy: SpecificEnergyType = pd.Field(exclude=True)
+    frequency: FrequencyType = pd.Field(exclude=True)
 
     def system_repr(self):
         return self.name
@@ -1405,8 +1480,8 @@ class SIUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["SI"] = pd.Field("SI", frozen=True)
 
-    def __init__(self, verbose: bool = True):
-        super().__init__(base_system=BaseSystemType.SI, verbose=verbose)
+    def __init__(self, verbose: bool = True, **kwargs):
+        super().__init__(base_system=BaseSystemType.SI, verbose=verbose, **kwargs)
 
     @classmethod
     def validate(cls, _):
@@ -1422,8 +1497,8 @@ class CGSUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["CGS"] = pd.Field("CGS", frozen=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.CGS)
+    def __init__(self, **kwargs):
+        super().__init__(base_system=BaseSystemType.CGS, **kwargs)
 
     @classmethod
     def validate(cls, _):
@@ -1439,8 +1514,8 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
 
     name: Literal["Imperial"] = pd.Field("Imperial", frozen=True)
 
-    def __init__(self):
-        super().__init__(base_system=BaseSystemType.IMPERIAL)
+    def __init__(self, **kwargs):
+        super().__init__(base_system=BaseSystemType.IMPERIAL, **kwargs)
 
     @classmethod
     def validate(cls, _):

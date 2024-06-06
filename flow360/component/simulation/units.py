@@ -14,9 +14,12 @@ from flow360.component.simulation.unit_system import (
     flow360_area_unit,
     flow360_density_unit,
     flow360_force_unit,
+    flow360_frequency_unit,
     flow360_length_unit,
+    flow360_mass_flow_rate_unit,
     flow360_mass_unit,
     flow360_pressure_unit,
+    flow360_specific_energy_unit,
     flow360_temperature_unit,
     flow360_time_unit,
     flow360_unit_system,
@@ -43,6 +46,9 @@ __all__ = [
     "flow360_velocity_unit",
     "flow360_viscosity_unit",
     "imperial_unit_system",
+    "flow360_mass_flow_rate_unit",
+    "flow360_specific_energy_unit",
+    "flow360_frequency_unit",
 ]
 
 

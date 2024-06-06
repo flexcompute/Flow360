@@ -26,7 +26,7 @@ class FaceRefinement(Flow360BaseModel):
     """
 
     entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
-    max_edge_length: LengthType.PositiveFloat = pd.Field(
+    max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
     )
     curvature_resolution_angle: pd.PositiveFloat = pd.Field(
@@ -52,7 +52,7 @@ class BoundaryLayerRefinement(Flow360BaseModel):
 
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
     entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
-    first_layer_thickness: LengthType.PositiveFloat = pd.Field(
+    first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
     )
     growth_rate: pd.PositiveFloat = pd.Field(

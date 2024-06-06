@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from copy import deepcopy
-from typing import Literal
+from typing import Any, List, Literal
 
 import pydantic as pd
 import rich
@@ -149,7 +149,11 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def _get_field_alias(cls, field_name: str = None):
         if field_name is not None:
-            alias = [field.alias for field in cls.model_fields.values() if field.name == field_name]
+            alias = [
+                info.alias
+                for name, info in cls.model_fields.items()
+                if name == field_name and info.alias is not None
+            ]
             if len(alias) > 0:
                 return alias[0]
         return None
@@ -515,6 +519,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         if extra is not None:
             for extra_item in extra:
+                # TODO: migrate flow360_param.conversions.py
                 require(extra_item.dependency_list, required_by, params)
                 self_dict[extra_item.name] = extra_item.value_factory()
 

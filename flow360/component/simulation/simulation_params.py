@@ -1,26 +1,34 @@
+"""
+Flow360 simulation parameters
+"""
+
+from __future__ import annotations
+
 from typing import List, Optional, Union
 
 import pydantic as pd
 
-## Warning: pydantic V1
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.models.surface_models import SurfaceModelTypes
+from flow360.component.simulation.models.volume_models import VolumeModelTypes
+from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.unit_system import (
+    UnitSystem,
     UnitSystemType,
     unit_system_manager,
 )
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.meshing_param.params import MeshingParameters
-from flow360.component.simulation.models.volume_models import VolumeTypes
-from flow360.component.simulation.operating_condition import OperatingConditionTypes
-from flow360.component.simulation.outputs import OutputTypes
-from flow360.component.simulation.primitives import ReferenceGeometry
-from flow360.component.simulation.surfaces import SurfaceTypes
-from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
-    UserDefinedDynamics,
+    UserDefinedDynamic,
 )
-from flow360.exceptions import Flow360ConfigError
+from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
+from flow360.exceptions import Flow360ConfigError, Flow360RuntimeError
 from flow360.log import log
 from flow360.user_config import UserConfig
+from flow360.version import __version__
 
 
 class SimulationParams(Flow360BaseModel):
@@ -44,6 +52,9 @@ class SimulationParams(Flow360BaseModel):
         user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
+    unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
+    version: str = pd.Field(__version__, frozen=True)
+
     meshing: Optional[MeshingParameters] = pd.Field(None)
 
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
@@ -56,12 +67,12 @@ class SimulationParams(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[Union[VolumeTypes, SurfaceTypes]]] = pd.Field(None)
+    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
     """
     Below can be mostly reused with existing models 
     """
     time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
-    user_defined_dynamics: Optional[List[UserDefinedDynamics]] = pd.Field(None)
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
     """
     Support for user defined expression?
     If so:
@@ -72,24 +83,75 @@ class SimulationParams(Flow360BaseModel):
     """
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
+    model_config = pd.ConfigDict(include_hash=True)
 
-class UnvalidatedSimulationParams(Flow360BaseModel):
-    """
-    Unvalidated parameters
-    """
+    def _init_check_unit_system(self, **kwargs):
+        """
+        Check existence of unit system and raise an error if it is not set or inconsistent.
+        """
+        if unit_system_manager.current is None:
+            raise Flow360RuntimeError(use_unit_system_msg)
 
-    model_config = pd.ConfigDict(extra="allow")
+        kwarg_unit_system = kwargs.pop("unit_system", None)
+        if kwarg_unit_system is not None:
+            if not isinstance(kwarg_unit_system, UnitSystem):
+                kwarg_unit_system = UnitSystem.from_dict(**kwarg_unit_system)
+            if kwarg_unit_system != unit_system_manager.current:
+                raise Flow360RuntimeError(
+                    unit_system_inconsistent_msg(
+                        kwarg_unit_system.system_repr(), unit_system_manager.current.system_repr()
+                    )
+                )
+
+        return kwargs
+
+    def _init_no_context(self, filename, **kwargs):
+        """
+        Initialize the simulation parameters without a unit context.
+        """
+        if unit_system_manager.current is not None:
+            raise Flow360RuntimeError(
+                "When loading params from file: SimulationParams(filename), "
+                "unit context must not be used."
+            )
+
+        model_dict = self._handle_file(filename=filename, **kwargs)
+
+        version = model_dict.pop("version", None)
+        unit_system = model_dict.get("unit_system")
+        if version is not None and unit_system is not None:
+            if version != __version__:
+                raise NotImplementedError("No legacy support at the time being.")
+            # pylint: disable=not-context-manager
+            with UnitSystem.from_dict(**unit_system):
+                super().__init__(**model_dict)
+        else:
+            raise Flow360RuntimeError(
+                "Missing version or unit system info in file content, please check the input file."
+            )
+
+    def _init_with_context(self, **kwargs):
+        """
+        Initializes the simulation parameters with the given unit context.
+        """
+        kwargs = self._init_check_unit_system(**kwargs)
+        super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
 
     def __init__(self, filename: str = None, **kwargs):
-        if UserConfig.do_validation:
-            raise Flow360ConfigError(
-                "This is DEV feature. To use it activate by: fl.UserConfig.disable_validation()."
-            )
-        log.warning("This is DEV feature, use it only when you know what you are doing.")
-        super().__init__(filename, **kwargs)
+        if filename is not None:
+            self._init_no_context(filename, **kwargs)
+        else:
+            self._init_with_context(**kwargs)
 
-    def flow360_json(self) -> str:
-        """Generate a JSON representation of the model"""
+    def copy(self, update=None, **kwargs) -> SimulationParams:
+        if unit_system_manager.current is None:
+            # pylint: disable=not-context-manager
+            with self.unit_system:
+                return super().copy(update=update, **kwargs)
 
-        # return self.json(encoder=flow360_json_encoder)
-        pass
+        return super().copy(update=update, **kwargs)
+
+    # pylint: disable=arguments-differ
+    def preprocess(self) -> SimulationParams:
+        """Not implemented"""
+        return self
