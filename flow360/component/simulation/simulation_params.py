@@ -12,10 +12,9 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import VolumeModelTypes
+from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import ReferenceGeometry
-
-# from flow360.component.simulation.surfaces import SurfaceTypes
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     UnitSystem,
@@ -32,40 +31,36 @@ from flow360.version import __version__
 
 class SimulationParams(Flow360BaseModel):
     """
-            meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or
-            modify the existing surface/volume meshing parameters from starting points.
+        meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or
+        modify the existing surface/volume meshing parameters from starting points.
 
-        -----
-            - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
-            will **always** overwrite global ones.
+    -----
+        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
+        will **always** overwrite global ones.
 
-            reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
-            operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
-        -----
-            - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
-            necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
-            conditions.
+        reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
+        operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
+    -----
+        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
+        necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
+        conditions.
 
-            volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
-            surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
-        -----
-            - Other configurations that are orthogonal to all previous items.
+        volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
+        surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
+    -----
+        - Other configurations that are orthogonal to all previous items.
 
-            time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
-    <<<<<<< HEAD
-            user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
-            ones or how volumes/surfaces are intertwined.
-    =======
-            user_defined_dynamics (Optional[UserDefinedDynamic]): Additional user-specified dynamics on top of the existing ones or how volumes/surfaces are intertwined.
-    >>>>>>> 1f6dfdf (Created pydantic V2 version of the validation service, created tests.)
-            outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
+        time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
+        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
+        ones or how volumes/surfaces are intertwined.
+        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     version: str = pd.Field(__version__, frozen=True)
 
     meshing: Optional[MeshingParameters] = pd.Field(None)
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    # operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
     1. __getitem__ to allow [] access

@@ -28,7 +28,7 @@ udim.angular_velocity = udim.angle / udim.time
 udim.heat_flux = udim.mass / udim.time**3
 udim.moment = udim.force * udim.length
 udim.heat_source = udim.mass / udim.time**3 / udim.length
-udim.heat_capacity = udim.length**2 / udim.temperature / udim.time**2
+udim.specific_heat_capacity = udim.length**2 / udim.temperature / udim.time**2
 udim.thermal_conductivity = udim.mass / udim.time**3 * udim.length / udim.temperature
 udim.inverse_area = 1 / udim.area
 udim.inverse_length = 1 / udim.length
@@ -49,7 +49,7 @@ u.unit_systems.mks_unit_system["moment"] = u.N * u.m
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
 # pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_capacity"] = u.m**2 / u.s**2 / u.K
+u.unit_systems.mks_unit_system["specific_heat_capacity"] = u.m**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
 # pylint: disable=no-member
@@ -68,7 +68,7 @@ u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
 # pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_capacity"] = u.cm**2 / u.s**2 / u.K
+u.unit_systems.cgs_unit_system["specific_heat_capacity"] = u.cm**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
 # pylint: disable=no-member
@@ -87,7 +87,7 @@ u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
 # pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_capacity"] = u.ft**2 / u.s**2 / u.K
+u.unit_systems.imperial_unit_system["specific_heat_capacity"] = u.ft**2 / u.s**2 / u.K
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
 # pylint: disable=no-member
@@ -706,14 +706,16 @@ class _HeatSourceType(_DimensionedType):
 HeatSourceType = Annotated[_HeatSourceType, PlainSerializer(_dimensioned_type_serializer)]
 
 
-class _HeatCapacityType(_DimensionedType):
-    """:class: HeatCapacityType"""
+class _SpecificHeatCapacityType(_DimensionedType):
+    """:class: SpecificHeatCapacityType"""
 
-    dim = udim.heat_capacity
-    dim_name = "heat_capacity"
+    dim = udim.specific_heat_capacity
+    dim_name = "specific_heat_capacity"
 
 
-HeatCapacityType = Annotated[_HeatCapacityType, PlainSerializer(_dimensioned_type_serializer)]
+SpecificHeatCapacityType = Annotated[
+    _SpecificHeatCapacityType, PlainSerializer(_dimensioned_type_serializer)
+]
 
 
 class _ThermalConductivityType(_DimensionedType):
@@ -751,7 +753,7 @@ InverseLengthType = Annotated[_InverseLengthType, PlainSerializer(_dimensioned_t
 class _MassFlowRateType(_DimensionedType):
     """:class: MassFlowRateType"""
 
-    dim = u.dimensions.mass_flow_rate
+    dim = udim.mass_flow_rate
     dim_name = "mass_flow_rate"
 
 
@@ -761,7 +763,7 @@ MassFlowRateType = Annotated[_MassFlowRateType, PlainSerializer(_dimensioned_typ
 class _SpecificEnergyType(_DimensionedType):
     """:class: SpecificEnergyType"""
 
-    dim = u.dimensions.specific_energy
+    dim = udim.specific_energy
     dim_name = "specific_energy"
 
 
@@ -771,7 +773,7 @@ SpecificEnergyType = Annotated[_SpecificEnergyType, PlainSerializer(_dimensioned
 class _FrequencyType(_DimensionedType):
     """:class: FrequencyType"""
 
-    dim = u.dimensions.frequency
+    dim = udim.frequency
     dim_name = "frequency"
 
 
@@ -1054,11 +1056,11 @@ class Flow360HeatSourceUnit(_Flow360BaseUnit):
     unit_name = "flow360_heat_source_unit"
 
 
-class Flow360HeatCapacityUnit(_Flow360BaseUnit):
-    """:class: Flow360HeatCapacityUnit"""
+class Flow360SpecificHeatCapacityUnit(_Flow360BaseUnit):
+    """:class: Flow360SpecificHeatCapacityUnit"""
 
-    dimension_type = HeatCapacityType
-    unit_name = "flow360_heat_capacity_unit"
+    dimension_type = SpecificHeatCapacityType
+    unit_name = "flow360_specific_heat_capacity_unit"
 
 
 class Flow360ThermalConductivityUnit(_Flow360BaseUnit):
@@ -1156,7 +1158,7 @@ _dim_names = [
     "angular_velocity",
     "heat_flux",
     "heat_source",
-    "heat_capacity",
+    "specific_heat_capacity",
     "thermal_conductivity",
     "inverse_area",
     "inverse_length",
@@ -1187,7 +1189,7 @@ class UnitSystem(pd.BaseModel):
     angular_velocity: AngularVelocityType = pd.Field()
     heat_flux: HeatFluxType = pd.Field()
     heat_source: HeatSourceType = pd.Field()
-    heat_capacity: HeatCapacityType = pd.Field()
+    specific_heat_capacity: SpecificHeatCapacityType = pd.Field()
     thermal_conductivity: ThermalConductivityType = pd.Field()
     inverse_area: InverseAreaType = pd.Field()
     inverse_length: InverseLengthType = pd.Field()
@@ -1267,7 +1269,7 @@ class UnitSystem(pd.BaseModel):
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
         'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3',
-        'heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
+        'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
         'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """
 
@@ -1321,7 +1323,7 @@ flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
 flow360_heat_flux_unit = Flow360HeatFluxUnit()
 flow360_heat_source_unit = Flow360HeatSourceUnit()
-flow360_heat_capacity_unit = Flow360HeatCapacityUnit()
+flow360_specific_heat_capacity_unit = Flow360SpecificHeatCapacityUnit()
 flow360_thermal_conductivity_unit = Flow360ThermalConductivityUnit()
 flow360_inverse_area_unit = Flow360InverseAreaUnit()
 flow360_inverse_length_unit = Flow360InverseLengthUnit()
@@ -1345,7 +1347,7 @@ dimensions = [
     flow360_moment_unit,
     flow360_angular_velocity_unit,
     flow360_heat_flux_unit,
-    flow360_heat_capacity_unit,
+    flow360_specific_heat_capacity_unit,
     flow360_thermal_conductivity_unit,
     flow360_inverse_area_unit,
     flow360_inverse_length_unit,
@@ -1381,7 +1383,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
     base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
     base_heat_source: float = pd.Field(np.inf, target_dimension=Flow360HeatSourceUnit)
-    base_heat_capacity: float = pd.Field(np.inf, target_dimension=Flow360HeatCapacityUnit)
+    base_specific_heat_capacity: float = pd.Field(
+        np.inf, target_dimension=Flow360SpecificHeatCapacityUnit
+    )
     base_thermal_conductivity: float = pd.Field(
         np.inf, target_dimension=Flow360ThermalConductivityUnit
     )
@@ -1415,6 +1419,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
             "flow360_mass_unit",
             "flow360_time_unit",
             "flow360_temperature_unit",
+            "flow360_angle_unit",
             registry=registry,
         )
 
@@ -1429,7 +1434,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
         conversion_system["heat_flux"] = "flow360_heat_flux_unit"
         conversion_system["heat_source"] = "flow360_heat_source_unit"
-        conversion_system["heat_capacity"] = "flow360_heat_capacity_unit"
+        conversion_system["specific_heat_capacity"] = "flow360_specific_heat_capacity_unit"
         conversion_system["thermal_conductivity"] = "flow360_thermal_conductivity_unit"
         conversion_system["inverse_area"] = "flow360_inverse_area_unit"
         conversion_system["inverse_length"] = "flow360_inverse_length_unit"
@@ -1475,7 +1480,7 @@ class _PredefinedUnitSystem(UnitSystem):
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)
     heat_flux: HeatFluxType = pd.Field(exclude=True)
     heat_source: HeatSourceType = pd.Field(exclude=True)
-    heat_capacity: HeatCapacityType = pd.Field(exclude=True)
+    specific_heat_capacity: SpecificHeatCapacityType = pd.Field(exclude=True)
     thermal_conductivity: ThermalConductivityType = pd.Field(exclude=True)
     inverse_area: InverseAreaType = pd.Field(exclude=True)
     inverse_length: InverseLengthType = pd.Field(exclude=True)
