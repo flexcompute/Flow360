@@ -5,7 +5,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Face
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import AngleType, LengthType
 
 """
 Meshing settings that applies to faces.
@@ -29,7 +29,7 @@ class FaceRefinement(Flow360BaseModel):
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
     )
-    curvature_resolution_angle: pd.PositiveFloat = pd.Field(
+    curvature_resolution_angle: AngleType.Positive = pd.Field(
         description="""
         Global maximum angular deviation in degrees. This value will restrict:
         (1) The angle between a cell’s normal and its underlying surface normal

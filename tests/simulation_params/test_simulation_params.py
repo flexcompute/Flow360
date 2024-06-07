@@ -1,34 +1,79 @@
+import unittest
+
 import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.params import MeshingParameters
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.models.surface_models import HeatFlux, SlipWall, Wall
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.material import SolidMaterial
+from flow360.component.simulation.models.surface_models import (
+    HeatFlux,
+    Inflow,
+    MassFlowRate,
+    SlipWall,
+    TotalPressure,
+    Wall,
+)
+from flow360.component.simulation.models.turbulence_quantities import (
+    TurbulenceQuantities,
+)
+from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
+    Fluid,
+    PorousMedium,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.operating_condition import (
-    GenericReferenceCondition,
+    AerospaceCondition,
     ThermalState,
 )
-from flow360.component.simulation.primitives import Box, ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Steady
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.unit_system import CGS_unit_system
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
 from tests.utils import to_file_from_file_test
 
+assertions = unittest.TestCase("__init__")
 
-@pytest.mark.usefixtures("array_equality_override")
-def test_simulation_params_seralization():
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture()
+def get_the_param():
     my_wall_surface = Surface(name="my_wall")
     my_slip_wall_surface = Surface(name="my_slip_wall")
+    my_inflow1 = Surface(name="my_inflow1")
+    my_inflow2 = Surface(name="my_inflow2")
     with CGS_unit_system:
         my_box = Box(
             name="my_box",
             center=(1.2, 2.3, 3.4) * u.m,
             size=(1.0, 2.0, 3.0) * u.m,
-            axes=((1, 0, 1), (1, 2, 3)),
+            axes=((3, 4, 0), (1, 0, 0)),
+        )
+        my_cylinder_1 = Cylinder(
+            name="my_cylinder-1",
+            axis=(5, 0, 0),
+            center=(1.2, 2.3, 3.4) * u.m,
+            height=3.0 * u.m,
+            inner_radius=3.0 * u.m,
+            outer_radius=5.0 * u.m,
+        )
+        my_solid_zone = GenericVolume(
+            name="my_cylinder-2",
         )
         param = SimulationParams(
             meshing=MeshingParameters(
@@ -39,11 +84,14 @@ def test_simulation_params_seralization():
                 refinements=[UniformRefinement(entities=[my_box], spacing=0.1 * u.m)],
             ),
             reference_geometry=ReferenceGeometry(
-                moment_center=(1, 2, 3)  # , moment_length=1.0 * u.m, area=1.0 * u.cm**2
+                moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2
             ),
-            operating_condition=GenericReferenceCondition(
-                velocity_magnitude=234,
-                thermal_state=ThermalState(temperature=300 * u.K, density=1 * u.g / u.cm**3),
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.8,
+                alpha=30 * u.deg,
+                beta=20 * u.deg,
+                atmosphere=ThermalState(temperature=300 * u.K, density=1 * u.g / u.cm**3),
+                reference_mach=0.5,
             ),
             models=[
                 Fluid(),
@@ -54,8 +102,37 @@ def test_simulation_params_seralization():
                     heat_spec=HeatFlux(1.0 * u.W / u.m**2),
                 ),
                 SlipWall(entities=[my_slip_wall_surface]),
+                Rotation(volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)),
+                PorousMedium(
+                    volumes=[my_box],
+                    darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
+                    forchheimer_coefficient=(0.1, 2, 1.0) / u.ft,
+                    volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
+                ),
+                Solid(
+                    volumes=[my_solid_zone],
+                    material=SolidMaterial(
+                        name="abc",
+                        thermal_conductivity=1.0 * u.W / u.m / u.K,
+                        specific_heat_capacity=1.0 * u.J / u.kg / u.K,
+                        density=1.0 * u.kg / u.m**3,
+                    ),
+                ),
+                Inflow(
+                    surfaces=[my_inflow1],
+                    total_temperature=300 * u.K,
+                    spec=TotalPressure(123 * u.Pa),
+                    turbulence_quantities=TurbulenceQuantities(
+                        turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
+                    ),
+                ),
+                Inflow(
+                    surfaces=[my_inflow2],
+                    total_temperature=300 * u.K,
+                    spec=MassFlowRate(123 * u.lb / u.s),
+                ),
             ],
-            time_stepping=Steady(),
+            time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
             user_defined_dynamics=[
                 UserDefinedDynamic(
                     name="fake",
@@ -66,4 +143,78 @@ def test_simulation_params_seralization():
                 )
             ],
         )
-    to_file_from_file_test(param)
+        return param
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_simulation_params_seralization(get_the_param):
+    to_file_from_file_test(get_the_param)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_simulation_params_unit_conversion(get_the_param):
+    converted = get_the_param.preprocess(mesh_unit=10 * u.m)
+
+    # pylint: disable=fixme
+    # TODO: Please perform hand calculation and update the following assertions
+    # LengthType
+    assertions.assertAlmostEqual(converted.reference_geometry.moment_length.value, 0.1)
+    # AngleType
+    assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
+    # TimeType
+    assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.72)
+    # TemperatureType
+    assertions.assertAlmostEqual(
+        converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.37
+    )
+    # VelocityType
+    assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.8)
+    # AreaType
+    assertions.assertAlmostEqual(converted.reference_geometry.area.value, 1e-6)
+    # PressureType
+    assertions.assertAlmostEqual(converted.models[6].spec.value.value, 1.0454827495346328e-06)
+    # ViscosityType
+    assertions.assertAlmostEqual(
+        converted.models[0].material.dynamic_viscosity.reference_viscosity.value,
+        1.0005830903790088e-11,
+    )
+    # AngularVelocityType
+    assertions.assertAlmostEqual(converted.models[3].rotation.value.value, 0.013119533527696792)
+    # HeatFluxType
+    assertions.assertAlmostEqual(converted.models[1].heat_spec.value.value, 2.47809322e-11)
+    # HeatSourceType
+    assertions.assertAlmostEqual(
+        converted.models[4].volumetric_heat_source.value, 4.536005048050727e-08
+    )
+    # HeatSourceType
+    assertions.assertAlmostEqual(
+        converted.models[4].volumetric_heat_source.value, 4.536005048050727e-08
+    )
+    # HeatCapacityType
+    assertions.assertAlmostEqual(
+        converted.models[5].material.specific_heat_capacity.value, 2.5499579256942264e-06
+    )
+    # ThermalConductivityType
+    assertions.assertAlmostEqual(
+        converted.models[5].material.thermal_conductivity.value, 7.434279666747016e-10
+    )
+    # InverseAreaType
+    assertions.assertAlmostEqual(converted.models[4].darcy_coefficient.value[0], 1000.0)
+    # InverseLengthType
+    assertions.assertAlmostEqual(
+        converted.models[4].forchheimer_coefficient.value[0], 3.280839895013123
+    )
+    # MassFlowRateType
+    assertions.assertAlmostEqual(converted.models[7].spec.value.value, 1.6265848836734695e-06)
+
+    # SpecificEnergyType
+    assertions.assertAlmostEqual(
+        converted.models[6].turbulence_quantities.turbulent_kinetic_energy.value,
+        1.0454827495346325e-07,
+    )
+
+    # FrequencyType
+    assertions.assertAlmostEqual(
+        converted.models[6].turbulence_quantities.specific_dissipation_rate.value,
+        29.154518950437314,
+    )

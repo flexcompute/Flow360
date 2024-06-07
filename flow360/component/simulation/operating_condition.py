@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.cached_model_base import CachedModelBase
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes
 from flow360.component.simulation.unit_system import (
+    AngleType,
     DensityType,
     LengthType,
     PressureType,
@@ -142,10 +143,10 @@ class AerospaceCondition(Flow360BaseModel):
 
     # pylint: disable=fixme
     # TODO: add units for angles
-    alpha: float = 0
-    beta: float = 0
+    alpha: AngleType = 0
+    beta: AngleType = 0
     velocity_magnitude: VelocityType.NonNegative
-    atmosphere: ThermalState = ThermalState()
+    thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
 
     # pylint: disable=too-many-arguments
@@ -154,8 +155,8 @@ class AerospaceCondition(Flow360BaseModel):
     def from_mach(
         cls,
         mach: pd.PositiveFloat,
-        alpha: float = 0,
-        beta: float = 0,
+        alpha: AngleType = 0,
+        beta: AngleType = 0,
         atmosphere: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
@@ -189,6 +190,9 @@ class AerospaceCondition(Flow360BaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.atmosphere.speed_of_sound
+
+    # pylint: disable=fixme
+    # TODO:  Add after model validation that reference_velocity_magnitude is set when velocity_magnitude is 0
 
 
 # pylint: disable=fixme

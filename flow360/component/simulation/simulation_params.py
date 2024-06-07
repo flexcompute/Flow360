@@ -25,7 +25,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
 
@@ -60,7 +60,8 @@ class SimulationParams(Flow360BaseModel):
 
     meshing: Optional[MeshingParameters] = pd.Field(None)
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    operating_condition: OperatingConditionTypes = pd.Field()
+    #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
     1. __getitem__ to allow [] access
@@ -156,6 +157,12 @@ class SimulationParams(Flow360BaseModel):
         return super().copy(update=update, **kwargs)
 
     # pylint: disable=arguments-differ
-    def preprocess(self) -> SimulationParams:
-        """Not implemented"""
-        return self
+    def preprocess(self, mesh_unit) -> SimulationParams:
+        """TBD"""
+        if mesh_unit is None:
+            raise Flow360ConfigurationError("Mesh unit has not been supplied.")
+        if unit_system_manager.current is None:
+            # pylint: disable=not-context-manager
+            with self.unit_system:
+                return super().preprocess(self, mesh_unit=mesh_unit)
+        return super().preprocess(self, mesh_unit=mesh_unit)

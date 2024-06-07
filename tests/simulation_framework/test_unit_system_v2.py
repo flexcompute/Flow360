@@ -558,6 +558,7 @@ def test_unit_system_init():
         "mass_flow_rate": {"value": 1.0, "units": "kg/s"},
         "specific_energy": {"value": 1.0, "units": "m**2/s**2"},
         "frequency": {"value": 1.0, "units": "s**(-1)"},
+        "angle": {"value": 1.0, "units": "rad"},
     }
     us = u.UnitSystem(**unit_system_dict)
     print(us)

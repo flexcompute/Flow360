@@ -122,7 +122,7 @@ class UnitSystemManager:
         :return: UnitSystem
         """
         if self._current:
-            copy = self._current.copy(deep=True)
+            copy = self._current.model_copy(deep=True)
             return copy
         return None
 
@@ -214,12 +214,17 @@ def _unit_inference_validator(value, dim_name, is_array=False):
     -------
     unyt_quantity or value
     """
+
     if unit_system_manager.current:
         unit = unit_system_manager.current[dim_name]
         if is_array:
             if all(isinstance(item, Number) for item in value):
                 return value * unit
         if isinstance(value, Number):
+            if dim_name == "angle":
+                raise ValueError(
+                    "Angles must be provided in radians or degrees. Not as pure number."
+                )
             return value * unit
     return value
 
@@ -309,7 +314,6 @@ class _DimensionedType(metaclass=ABCMeta):
                 str(_SI_system[cls.dim_name]),
                 str(_CGS_system[cls.dim_name]),
                 str(_imperial_system[cls.dim_name]),
-                str(_flow360_system[cls.dim_name]),
             ]
 
             units += [str(unit) for unit in extra_units[cls.dim_name]]
@@ -1398,7 +1402,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
 
-    model_config = pd.ConfigDict(extra="forbid", validate_assignment=True, frozen=True)
+    model_config = pd.ConfigDict(extra="forbid", validate_assignment=True, frozen=False)
 
     def __init__(self):
         registry = u.UnitRegistry()
@@ -1441,6 +1445,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["mass_flow_rate"] = "flow360_mass_flow_rate_unit"
         conversion_system["specific_energy"] = "flow360_specific_energy_unit"
         conversion_system["frequency"] = "flow360_frequency_unit"
+        conversion_system["angle"] = "flow360_angle_unit"
 
         super().__init__(registry=registry, conversion_system=conversion_system)
 

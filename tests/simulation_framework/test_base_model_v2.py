@@ -6,6 +6,7 @@ import pydantic as pd
 import pytest
 import yaml
 
+import flow360.component.simulation.units as u
 from flow360.component.flow360_params.flow360_params import Flow360BaseModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.log import set_logging_level
@@ -28,7 +29,7 @@ class TempParams(Flow360BaseModel):
     pseudo_field: BaseModelTestModel
 
     def preprocess(self, params, **kwargs):
-        return super().preprocess(self, **kwargs)
+        return super().preprocess(self, mesh_unit=1 * u.cm, **kwargs)
 
 
 def test_help():
