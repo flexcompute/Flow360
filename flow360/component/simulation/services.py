@@ -59,13 +59,13 @@ def validate_model(params_as_dict, unit_system_name):
     """
 
     # To be added when unit system is supported in simulation
-    # unit_system = init_unit_system(unit_system_name)
-    # params_as_dict["unitSystem"] = unit_system.dict()
+    unit_system = init_unit_system(unit_system_name)
 
     validation_errors = None
 
     try:
-        params = SimulationParams(**params_as_dict)
+        with unit_system:
+            params = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
         # We do not care about handling / propagating the validation errors here,

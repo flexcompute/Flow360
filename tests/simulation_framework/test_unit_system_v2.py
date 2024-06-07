@@ -255,7 +255,7 @@ def test_unit_system():
     }
     # SI
     with u.SI_unit_system:
-        data = DataWithUnits(**input, a=1*u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.m
         assert data.m == 2 * u.kg
@@ -274,7 +274,7 @@ def test_unit_system():
 
     # CGS
     with u.CGS_unit_system:
-        data = DataWithUnits(**input, a=1*u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.cm
         assert data.m == 2 * u.g
@@ -293,7 +293,7 @@ def test_unit_system():
 
     # Imperial
     with u.imperial_unit_system:
-        data = DataWithUnits(**input, a=1*u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.ft
         assert data.m == 2 * u.lb
@@ -312,7 +312,7 @@ def test_unit_system():
 
     # Flow360
     with u.flow360_unit_system:
-        data = DataWithUnits(**input, a=1*u.flow360_angle_unit)
+        data = DataWithUnits(**input, a=1 * u.flow360_angle_unit)
 
         assert data.L == 1 * u.flow360_length_unit
         assert data.m == 2 * u.flow360_mass_unit
