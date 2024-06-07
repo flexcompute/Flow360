@@ -265,6 +265,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
     dim = None
     dim_name = None
+    has_defaults = True
 
     @classmethod
     def validate(cls, value):
@@ -275,7 +276,8 @@ class _DimensionedType(metaclass=ABCMeta):
         try:
             value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
             value = _is_unit_validator(value)
-            value = _unit_inference_validator(value, cls.dim_name)
+            if cls.has_defaults:
+                value = _unit_inference_validator(value, cls.dim_name)
             value = _has_dimensions_validator(value, cls.dim)
         except TypeError as err:
             details = InitErrorDetails(type="value_error", ctx={"error": err})
@@ -463,7 +465,10 @@ class _DimensionedType(metaclass=ABCMeta):
                     if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
 
-                    value = _unit_inference_validator(value, vec_cls.type.dim_name, is_array=True)
+                    if vec_cls.type.has_defaults:
+                        value = _unit_inference_validator(
+                            value, vec_cls.type.dim_name, is_array=True
+                        )
                     value = _unit_array_validator(value, vec_cls.type.dim)
                     value = _has_dimensions_validator(value, vec_cls.type.dim)
 
@@ -554,6 +559,7 @@ class _AngleType(_DimensionedType):
 
     dim = udim.angle
     dim_name = "angle"
+    has_defaults = False
 
 
 AngleType = Annotated[_AngleType, PlainSerializer(_dimensioned_type_serializer)]
@@ -1360,6 +1366,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     """
 
     base_length: float = pd.Field(np.inf, target_dimension=Flow360LengthUnit)
+    base_angle: float = pd.Field(np.inf, target_dimension=Flow360AngleUnit)
     base_mass: float = pd.Field(np.inf, target_dimension=Flow360MassUnit)
     base_time: float = pd.Field(np.inf, target_dimension=Flow360TimeUnit)
     base_temperature: float = pd.Field(np.inf, target_dimension=Flow360TemperatureUnit)

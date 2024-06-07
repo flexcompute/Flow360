@@ -116,7 +116,10 @@ def init_unit_system(unit_system_name) -> UnitSystem:
 
     unit_system = unit_system_map.get(unit_system_name, None)
     if not isinstance(unit_system, UnitSystem):
-        raise ValueError(f"Incorrect unit system provided {unit_system=}, expected type UnitSystem")
+        raise ValueError(
+            f"Incorrect unit system provided for {unit_system_name} unit "
+            f"system, got {unit_system=}, expected value of type UnitSystem"
+        )
 
     if unit_system_manager.current is not None:
         raise RuntimeError(
