@@ -4,11 +4,9 @@ import flow360 as fl
 
 fl.Env.preprod.active()
 
-from simulation_examples.cylinder_case import createBaseParams_cylinder
-
 from flow360.component.geometry import Geometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
-from flow360.examples import Cylinder
+from flow360.examples import Cylinder3D
 
 # geometry
 geometry_draft = Geometry.from_file(Cylinder.geometry, name="testing-cylinder-3rd-party-geometry")
@@ -45,7 +43,7 @@ volume_mesh = volume_mesh_draft.submit()
 print(volume_mesh)
 
 # case
-params = createBaseParams_cylinder()
+params = fl.Flow360Params(Cylinder3D.case_json)
 params.boundaries = {
     "fluid/farfield": fl.FreestreamBoundary(),
     "fluid/unspecified": fl.NoSlipWall(),

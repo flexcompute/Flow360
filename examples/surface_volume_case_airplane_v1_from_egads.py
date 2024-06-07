@@ -4,9 +4,8 @@ import flow360 as fl
 
 fl.Env.preprod.active()
 
-from simulation_examples.airplane_case import createBaseParams_airplane
-
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
+from flow360.examples import Airplane
 
 # surface mesh
 params = fl.SurfaceMeshingParams(max_edge_length=0.16)
@@ -40,7 +39,7 @@ volume_mesh_draft = fl.VolumeMesh.create(
 volume_mesh = volume_mesh_draft.submit()
 
 # case
-params = createBaseParams_airplane()
+params = fl.Flow360Params(Airplane.case_json)
 params.boundaries = {
     "fluid/farfield": fl.FreestreamBoundary(),
     "fluid/fuselage": fl.NoSlipWall(),
