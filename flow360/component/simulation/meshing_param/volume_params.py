@@ -4,7 +4,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Box, Cylinder, Face
+from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.unit_system import LengthType
 
 """
@@ -40,7 +40,7 @@ class RotationCylinder(AxisymmetricRefinement):
     https://www.notion.so/flexcompute/Python-model-design-document-78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
     """
 
-    enclosed_objects: Optional[EntityList[Cylinder, Face]] = pd.Field(
+    enclosed_objects: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc. This helps determining the volume zone boundary.",
     )

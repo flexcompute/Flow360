@@ -47,16 +47,6 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 @final
-class Face(Flow360BaseModel):
-    """
-    Collection of the patches that share meshing parameters
-    """
-
-    ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericFaceType"] = "GenericFaceType"
-
-
-@final
 class Edge(Flow360BaseModel):
     """
     Edge with edge name defined in the geometry file

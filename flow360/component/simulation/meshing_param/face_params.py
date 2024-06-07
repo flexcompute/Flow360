@@ -4,7 +4,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Face
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
 """
@@ -27,7 +27,7 @@ class SurfaceRefinement(Flow360BaseModel):
 
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
 
-    entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
+    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
     )
@@ -53,7 +53,7 @@ class BoundaryLayer(Flow360BaseModel):
     """
 
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
-    entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
+    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
     )
