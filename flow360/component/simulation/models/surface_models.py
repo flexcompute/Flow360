@@ -121,6 +121,8 @@ class Translational(Flow360BaseModel):
 
 class Rotational(Flow360BaseModel):
     type: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
+    # pylint: disable=fixme
+    # TODO: Maybe we need more precision when serializeing this one?
     axis_of_rotation: Optional[Axis] = pd.Field(None)
 
 

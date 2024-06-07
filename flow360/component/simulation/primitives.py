@@ -10,6 +10,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import AreaType, LengthType
+from flow360.component.types import Axis
 
 
 class ReferenceGeometry(Flow360BaseModel):
@@ -31,7 +32,7 @@ class ReferenceGeometry(Flow360BaseModel):
 class Transformation(Flow360BaseModel):
     """Used in preprocess()/translator to meshing param for volume meshing interface"""
 
-    axis_of_rotation: Optional[Tuple[float, float, float]] = pd.Field()
+    axis_of_rotation: Optional[Axis] = pd.Field()
     angle_of_rotation: Optional[float] = pd.Field()
 
 
@@ -90,14 +91,15 @@ class Box(_VolumeEntityBase):
     Represents a box in three-dimensional space.
 
     Attributes:
-        center (Tuple[float, float, float]): The coordinates of the center of the box.
-        size (Tuple[float, float, float]): The dimensions of the box (length, width, height).
-        axes (Tuple[Tuple[float, float, float], Tuple[float, float, float]]): The axes of the box.
+        center (LengthType.Point): The coordinates of the center of the box.
+        size (LengthType.Point): The dimensions of the box (length, width, height).
+        axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
-    center: Tuple[float, float, float] = pd.Field()
-    size: Tuple[float, float, float] = pd.Field()
-    axes: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = pd.Field()
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field()
+    size: LengthType.Point = pd.Field()
+    axes: Tuple[Axis, Axis] = pd.Field()
 
 
 @final
@@ -106,18 +108,21 @@ class Cylinder(_VolumeEntityBase):
     Represents a cylinder in three-dimensional space.
 
     Attributes:
-        axis (Tuple[float, float, float]): The axis of the cylinder.
-        center (Tuple[float, float, float]): The center point of the cylinder.
-        height (float): The height of the cylinder.
-        inner_radius (pd.PositiveFloat): The inner radius of the cylinder.
-        outer_radius (pd.PositiveFloat): The outer radius of the cylinder.
+        axis (Axis): The axis of the cylinder.
+        center (LengthType.Point): The center point of the cylinder.
+        height (LengthType.Postive): The height of the cylinder.
+        inner_radius (LengthType.Positive): The inner radius of the cylinder.
+        outer_radius (LengthType.Positive): The outer radius of the cylinder.
     """
 
-    axis: Tuple[float, float, float] = pd.Field()
-    center: Tuple[float, float, float] = pd.Field()
-    height: float = pd.Field()
-    inner_radius: pd.PositiveFloat = pd.Field()
-    outer_radius: pd.PositiveFloat = pd.Field()
+    axis: Axis = pd.Field()
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field()
+    height: LengthType.Positive = pd.Field()
+    inner_radius: LengthType.Positive = pd.Field()
+    # pylint: disable=fixme
+    # TODO validation outer > inner
+    outer_radius: LengthType.Positive = pd.Field()
 
 
 @final

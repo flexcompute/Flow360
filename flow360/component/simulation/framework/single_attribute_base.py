@@ -6,7 +6,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
-class SingleAttributeModel(pd.BaseModel, metaclass=abc.ABCMeta):
+class SingleAttributeModel(Flow360BaseModel, metaclass=abc.ABCMeta):
     value: Any = pd.Field()
 
     def __init__(self, value: Any):

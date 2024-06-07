@@ -1,0 +1,262 @@
+{
+    "hash": "9fea680147ed9e09658a34f9eef1ac5f721aaa42d047029e22302677d5d44718",
+    "meshing": {
+        "farfield": "auto",
+        "gap_treatment_strength": 0.5,
+        "refinement_factor": 1.0,
+        "refinements": [
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "axes": [
+                                [
+                                    0.6,
+                                    0.8,
+                                    0.0
+                                ],
+                                [
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ]
+                            ],
+                            "center": {
+                                "units": "flow360_length_unit",
+                                "value": [
+                                    0.12,
+                                    0.22999999999999998,
+                                    0.34
+                                ]
+                            },
+                            "name": "my_box",
+                            "size": {
+                                "units": "flow360_length_unit",
+                                "value": [
+                                    0.1,
+                                    0.2,
+                                    0.30000000000000004
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "spacing": {
+                    "units": "flow360_length_unit",
+                    "value": 0.010000000000000002
+                }
+            }
+        ],
+        "surface_layer_growth_rate": 1.5
+    },
+    "models": [
+        {
+            "initial_condition": null,
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "flow360_temperature_unit",
+                        "value": 0.37000000000000005
+                    },
+                    "reference_temperature": {
+                        "units": "flow360_temperature_unit",
+                        "value": 0.91
+                    },
+                    "reference_viscosity": {
+                        "units": "flow360_viscosity_unit",
+                        "value": 1.0005830903790088e-11
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "navier_stokes_solver": {
+                "CFL_multiplier": 1.0,
+                "absolute_tolerance": 1e-10,
+                "equation_eval_frequency": 1,
+                "kappa_MUSCL": -1.0,
+                "limit_pressure_density": false,
+                "limit_velocity": false,
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 30,
+                    "relative_tolerance": null
+                },
+                "low_mach_preconditioner": false,
+                "low_mach_preconditioner_threshold": null,
+                "max_force_jac_update_physical_steps": 0,
+                "model_type": "Compressible",
+                "numerical_dissipation_factor": 1.0,
+                "order_of_accuracy": 2,
+                "relative_tolerance": null,
+                "update_jacobian_frequency": 4
+            },
+            "transition_model_solver": null,
+            "turbulence_model_solver": {
+                "DDES": false,
+                "absolute_tolerance": 1e-08,
+                "equation_eval_frequency": 4,
+                "grid_size_for_LES": "maxEdgeLength",
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 20,
+                    "relative_tolerance": null
+                },
+                "max_force_jac_update_physical_steps": 0,
+                "model_constants": {
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "model_type": "SpalartAllmarasConsts"
+                },
+                "model_type": "SpalartAllmaras",
+                "order_of_accuracy": 2,
+                "quadratic_constitutive_relation": false,
+                "reconstruction_gradient_limiter": 0.5,
+                "relative_tolerance": null,
+                "rotation_correction": false,
+                "update_jacobian_frequency": 4
+            }
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "my_wall"
+                    }
+                ]
+            },
+            "heat_spec": {
+                "value": {
+                    "units": "flow360_heat_flux_unit",
+                    "value": 1.9824745777992044e-10
+                }
+            },
+            "type": "Wall",
+            "use_wall_function": true,
+            "velocity": {
+                "units": "flow360_velocity_unit",
+                "value": [
+                    0.001777259475218659,
+                    0.0021327113702623904,
+                    0.004265422740524781
+                ]
+            },
+            "velocity_type": "relative"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "my_slip_wall"
+                    }
+                ]
+            },
+            "type": "SlipWall"
+        }
+    ],
+    "operating_condition": {
+        "alpha": {
+            "units": "rad",
+            "value": 0.5235987755982988
+        },
+        "beta": {
+            "units": "rad",
+            "value": 0.3490658503988659
+        },
+        "reference_velocity_magnitude": {
+            "units": "flow360_velocity_unit",
+            "value": 1.0
+        },
+        "thermal_state": {
+            "_cached": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "density": {
+                "units": "flow360_density_unit",
+                "value": 1.0
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "flow360_temperature_unit",
+                        "value": 0.37000000000000005
+                    },
+                    "reference_temperature": {
+                        "units": "flow360_temperature_unit",
+                        "value": 0.91
+                    },
+                    "reference_viscosity": {
+                        "units": "flow360_viscosity_unit",
+                        "value": 1.0005830903790088e-11
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "temperature": {
+                "units": "flow360_temperature_unit",
+                "value": 1.0
+            }
+        },
+        "velocity_magnitude": {
+            "units": "flow360_velocity_unit",
+            "value": 1.6
+        }
+    },
+    "outputs": null,
+    "reference_geometry": {
+        "area": {
+            "units": "flow360_area_unit",
+            "value": 1e-06
+        },
+        "moment_center": {
+            "units": "flow360_length_unit",
+            "value": [
+                0.001,
+                0.002,
+                0.003
+            ]
+        },
+        "moment_length": {
+            "units": "flow360_length_unit",
+            "value": 0.1
+        }
+    },
+    "time_stepping": {
+        "CFL": {
+            "convergence_limiting_factor": 0.25,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "max_steps": 2000,
+        "model_type": "Steady",
+        "order_of_accuracy": 2
+    },
+    "unit_system": {
+        "name": "CGS"
+    },
+    "user_defined_dynamics": [
+        {
+            "constants": {
+                "ff": 123.0
+            },
+            "input_boundary_patches": null,
+            "input_vars": [
+                "fake"
+            ],
+            "name": "fake",
+            "output_target": null,
+            "output_vars": null,
+            "state_vars_initial_value": [
+                "fake;"
+            ],
+            "update_law": [
+                "fake;"
+            ]
+        }
+    ],
+    "version": "24.2.0"
+}

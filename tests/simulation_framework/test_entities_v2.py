@@ -5,6 +5,7 @@ from typing import List, Literal, Union
 import pydantic as pd
 import pytest
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -106,7 +107,7 @@ class TempSimulationParam(Flow360BaseModel):
         """
         _supplementary_registry = _get_supplementary_registry(self.far_field_type)
         for model in self.models:
-            model.entities.preprocess(_supplementary_registry)
+            model.entities.preprocess(_supplementary_registry, mesh_unit=1 * u.m)
 
         return self
 
@@ -115,11 +116,11 @@ class TempSimulationParam(Flow360BaseModel):
 def my_cylinder1():
     return Cylinder(
         name="zone/Cylinder1",
-        height=11,
+        height=11 * u.cm,
         axis=(1, 0, 0),
-        inner_radius=1,
-        outer_radius=2,
-        center=(1, 2, 3),
+        inner_radius=1 * u.ft,
+        outer_radius=2 * u.ft,
+        center=(1, 2, 3) * u.ft,
     )
 
 
@@ -127,25 +128,31 @@ def my_cylinder1():
 def my_cylinder2():
     return Cylinder(
         name="zone/Cylinder2",
-        height=12,
+        height=12 * u.nm,
         axis=(1, 0, 0),
-        inner_radius=1,
-        outer_radius=2,
-        center=(1, 2, 3),
+        inner_radius=1 * u.nm,
+        outer_radius=2 * u.nm,
+        center=(1, 2, 3) * u.nm,
     )
 
 
 @pytest.fixture
 def my_box_zone1():
     return Box(
-        name="zone/Box1", axes=((-1, 0, 0), (1, 0, 0)), center=(1, 2, 3), size=(0.1, 0.01, 0.001)
+        name="zone/Box1",
+        axes=((-1, 0, 0), (1, 0, 0)),
+        center=(1, 2, 3) * u.mm,
+        size=(0.1, 0.01, 0.001) * u.mm,
     )
 
 
 @pytest.fixture
 def my_box_zone2():
     return Box(
-        name="zone/Box2", axes=((-1, 0, 0), (1, 1, 0)), center=(3, 2, 3), size=(0.1, 0.01, 0.001)
+        name="zone/Box2",
+        axes=((-1, 0, 0), (1, 1, 0)),
+        center=(3, 2, 3) * u.um,
+        size=(0.1, 0.01, 0.001) * u.um,
     )
 
 
@@ -218,14 +225,15 @@ def test_wrong_ways_of_copying_entity(my_cylinder1):
 
 
 def test_copying_entity(my_cylinder1):
-    my_cylinder3_2 = my_cylinder1.copy(update={"height": 8119, "name": "zone/Cylinder3-2"})
+    my_cylinder3_2 = my_cylinder1.copy(update={"height": 8119 * u.m, "name": "zone/Cylinder3-2"})
     print(my_cylinder3_2)
-    assert my_cylinder3_2.height == 8119
+    assert my_cylinder3_2.height == 8119 * u.m
 
 
 ##:: ---------------- EntityList/Registry tests ----------------
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface1):
     # 0. No supplied registry but trying to use str
     with pytest.raises(
@@ -250,16 +258,16 @@ def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface
         Box(
             name="Implicitly_generated_Box_zone1",
             axes=((-1, 0, 0), (1, 1, 0)),
-            center=(32, 2, 3),
-            size=(0.1, 0.01, 0.001),
+            center=(32, 2, 3) * u.cm,
+            size=(0.1, 0.01, 0.001) * u.cm,
         )
     )
     _supplementary_registry.register(
         Box(
             name="Implicitly_generated_Box_zone2",
             axes=((-1, 0, 0), (1, 1, 0)),
-            center=(31, 2, 3),
-            size=(0.1, 0.01, 0.001),
+            center=(31, 2, 3) * u.cm,
+            size=(0.1, 0.01, 0.001) * u.cm,
         )
     )
     expanded_entities = TempFluidDynamics(
@@ -276,18 +284,18 @@ def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface
 def test_by_reference_registry(my_cylinder2):
     registry = EntityRegistry()
     registry.register(my_cylinder2)
-    my_cylinder2.height = 131
+    my_cylinder2.height = 131 * u.m
     for entity in registry.get_all_entities_of_given_type(Cylinder):
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
-            assert entity.height == 131
+            assert entity.height == 131 * u.m
 
 
 def test_by_value_expansion(my_cylinder2):
     expanded_entities = TempFluidDynamics(entities=[my_cylinder2]).entities._get_expanded_entities()
-    my_cylinder2.height = 1012
+    my_cylinder2.height = 1012 * u.cm
     for entity in expanded_entities:
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
-            assert entity.height == 12  # unchanged
+            assert entity.height == 12 * u.nm  # unchanged
 
 
 def test_get_entities(
@@ -371,11 +379,11 @@ def test_skipped_entities(my_cylinder1, my_cylinder2):
 def test_duplicate_entities(my_volume_mesh1):
     user_override_cylinder = Cylinder(
         name="zone_1",
-        height=12,
+        height=12 * u.m,
         axis=(1, 0, 0),
-        inner_radius=1,
-        outer_radius=2,
-        center=(1, 2, 3),
+        inner_radius=1 * u.m,
+        outer_radius=2 * u.m,
+        center=(1, 2, 3) * u.m,
     )
 
     expanded_entities = TempFluidDynamics(

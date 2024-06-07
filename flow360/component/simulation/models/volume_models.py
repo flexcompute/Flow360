@@ -38,6 +38,8 @@ class AngularVelocity(SingleAttributeModel):
 
 
 class RotationAngleDegrees(SingleAttributeModel):
+    # pylint: disable=fixme
+    # TODO: We have units for degrees right??
     value: pd.StrictStr = pd.Field()
 
 

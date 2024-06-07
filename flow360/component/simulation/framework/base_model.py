@@ -10,7 +10,12 @@ import rich
 import yaml
 from pydantic import ConfigDict
 
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+import flow360.component.simulation.units as u
+from flow360.component.simulation.conversion import (
+    need_conversion,
+    require,
+    unit_converter,
+)
 from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -504,6 +509,7 @@ class Flow360BaseModel(pd.BaseModel):
     def _convert_dimensions_to_solver(
         self,
         params,
+        mesh_unit: u.unyt_quantity = None,
         exclude: List[str] = None,
         required_by: List[str] = None,
         extra: List[Any] = None,
@@ -519,20 +525,43 @@ class Flow360BaseModel(pd.BaseModel):
 
         if extra is not None:
             for extra_item in extra:
-                # TODO: migrate flow360_param.conversions.py
+                # Note: we should not be expecting extra field for SimulationParam?
                 require(extra_item.dependency_list, required_by, params)
                 self_dict[extra_item.name] = extra_item.value_factory()
+
+        assert mesh_unit is not None
 
         for property_name, value in self_dict.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
-            # TODO: call unit conversion
-            solver_values[property_name] = value
+            loc_name = property_name
+            field = self.model_fields.get(property_name)
+            if field is not None and field.alias is not None:
+                loc_name = field.alias
+
+            if need_conversion(value):
+                log.debug(f"   -> need conversion for: {property_name} = {value}")
+                flow360_conv_system = unit_converter(
+                    value.units.dimensions,
+                    mesh_unit,
+                    params=params,
+                    required_by=[*required_by, loc_name],
+                )
+                # pylint: disable=no-member
+                value.units.registry = flow360_conv_system.registry
+                solver_values[property_name] = value.in_base(unit_system="flow360")
+                log.debug(f"      converted to: {solver_values[property_name]}")
+            else:
+                solver_values[property_name] = value
 
         return solver_values
 
     def preprocess(
-        self, params, exclude: List[str] = None, required_by: List[str] = None
+        self,
+        params,
+        mesh_unit=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .preprocess() recusrively. For dimensioned value performs
@@ -562,7 +591,7 @@ class Flow360BaseModel(pd.BaseModel):
         if required_by is None:
             required_by = []
 
-        solver_values = self._convert_dimensions_to_solver(params, exclude, required_by)
+        solver_values = self._convert_dimensions_to_solver(params, mesh_unit, exclude, required_by)
         for property_name, value in self.__dict__.items():
             if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
                 continue
@@ -572,13 +601,15 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
-                    params, required_by=[*required_by, loc_name]
+                    params, mesh_unit=mesh_unit, required_by=[*required_by, loc_name]
                 )
             elif isinstance(value, list):
                 for i, item in enumerate(value):
                     if isinstance(item, Flow360BaseModel):
                         solver_values[property_name][i] = item.preprocess(
-                            params, required_by=[*required_by, loc_name, f"{i}"]
+                            params,
+                            mesh_unit=mesh_unit,
+                            required_by=[*required_by, loc_name, f"{i}"],
                         )
 
         return self.__class__(**solver_values)

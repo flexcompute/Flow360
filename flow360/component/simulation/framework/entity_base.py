@@ -296,7 +296,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         # TODO:  As suggested by Runda. We better prompt user what entities are actually used/expanded to avoid user input error. We need a switch to turn it on or off.
         return copy.deepcopy(expanded_entities)
 
-    def preprocess(self, supplied_registry: EntityRegistry = None):
+    def preprocess(self, supplied_registry: EntityRegistry = None, **kwargs):
         """Expand and overwrite self.stored_entities in preparation for submissin/serialization."""
         self.stored_entities = self._get_expanded_entities(supplied_registry)
-        return self
+        return super().preprocess(self, **kwargs)
