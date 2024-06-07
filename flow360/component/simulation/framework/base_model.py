@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from copy import deepcopy
 from typing import Any, List, Literal
 
@@ -43,7 +44,7 @@ class Flow360BaseModel(pd.BaseModel):
         model_dict = self._handle_file(filename=filename, **kwargs)
         keys_to_remove = []
         for property_name in model_dict.keys():
-            if property_name == TYPE_TAG_STR:
+            if re.match(r"^_[^_]", property_name):
                 keys_to_remove.append(property_name)
         for key in keys_to_remove:
             model_dict.pop(key)
