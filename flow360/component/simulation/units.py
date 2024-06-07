@@ -51,6 +51,7 @@ __all__ = [
     "flow360_mass_flow_rate_unit",
     "flow360_specific_energy_unit",
     "flow360_frequency_unit",
+    "flow360_angle_unit",
 ]
 
 

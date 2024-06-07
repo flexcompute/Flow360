@@ -152,6 +152,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         return base_length
 
     def get_base_angle():
+        # pylint: disable=no-member
         return 1 * u.rad
 
     def get_base_temperature():

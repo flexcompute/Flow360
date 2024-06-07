@@ -1,3 +1,6 @@
+"""Simulation services module."""
+
+# pylint: disable=duplicate-code
 import pydantic as pd
 
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -65,12 +68,11 @@ def validate_model(params_as_dict, unit_system_name):
 
     try:
         with unit_system:
-            params = SimulationParams(**params_as_dict)
+            SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
         # We do not care about handling / propagating the validation errors here,
         # just collecting them in the context and passing them downstream
-        pass
 
     # Check if all validation loc paths are valid params dict paths that can be traversed
     if validation_errors is not None:
