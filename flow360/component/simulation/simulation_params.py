@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
@@ -31,7 +31,7 @@ from flow360.version import __version__
 
 class SimulationParams(Flow360BaseModel):
     """
-        meshing (Optional[MeshingParameters]): Contains all the user specified meshing parameters that either enrich or
+        meshing (Optional[MeshingParams]): Contains all the user specified meshing parameters that either enrich or
         modify the existing surface/volume meshing parameters from starting points.
 
     -----
@@ -58,7 +58,7 @@ class SimulationParams(Flow360BaseModel):
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     version: str = pd.Field(__version__, frozen=True)
 
-    meshing: Optional[MeshingParameters] = pd.Field(None)
+    meshing: Optional[MeshingParams] = pd.Field(None)
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
     operating_condition: OperatingConditionTypes = pd.Field()
     #

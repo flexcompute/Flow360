@@ -1,10 +1,7 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
 from flow360.component.case import Case
-from flow360.component.simulation.meshing_param.params import (
-    Farfield,
-    MeshingParameters,
-)
+from flow360.component.simulation.meshing_param.params import Farfield, MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
 )
@@ -44,7 +41,7 @@ my_zone_for_BETDisk_2 = my_zone_for_BETDisk_1.copy(
 with SI_unit_system:
     simulationParams = SimulationParams(
         # Global settings, skiped in current example
-        meshing=MeshingParameters(
+        meshing=MeshingParams(
             refinement_factor=1,
             farfield=Farfield(type="auto"),
             refinements=[

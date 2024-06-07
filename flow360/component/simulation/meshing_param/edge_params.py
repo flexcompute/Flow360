@@ -9,21 +9,21 @@ from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
 
-class ByAngle(Flow360BaseModel):
+class AngleBasedRefinement(Flow360BaseModel):
     """Surface edge refinement by specifying curvature resolution in degrees"""
 
     type: Literal["angle"] = pd.Field("angle", frozen=True)
     value: AngleType = pd.Field()
 
 
-class ByHeight(Flow360BaseModel):
+class HeightBasedRefinement(Flow360BaseModel):
     """Surface edge refinement by specifying first layer height of the anisotropic layers"""
 
     type: Literal["height"] = pd.Field("height", frozen=True)
     value: LengthType.Positive = pd.Field()
 
 
-class ByAspectRatio(Flow360BaseModel):
+class AspectRatioBasedRefinement(Flow360BaseModel):
     """Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells"""
 
     type: Literal["aspectRatio"] = pd.Field("aspectRatio", frozen=True)
@@ -45,6 +45,6 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     (equivalent to `ProjectAniso` in old params).
     """
 
-    """"""
-
-    method: Optional[Union[ByAngle, ByHeight, ByAspectRatio]] = pd.Field(None, discriminator="type")
+    method: Optional[
+        Union[AngleBasedRefinement, HeightBasedRefinement, AspectRatioBasedRefinement]
+    ] = pd.Field(None, discriminator="type")

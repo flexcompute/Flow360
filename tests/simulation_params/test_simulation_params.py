@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.material import SolidMaterial
 from flow360.component.simulation.models.surface_models import (
@@ -21,7 +21,7 @@ from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     Fluid,
     PorousMedium,
-    Rotation,
+    RotatingReferenceFrame,
     Solid,
 )
 from flow360.component.simulation.operating_condition import (
@@ -76,7 +76,7 @@ def get_the_param():
             name="my_cylinder-2",
         )
         param = SimulationParams(
-            meshing=MeshingParameters(
+            meshing=MeshingParams(
                 farfield="auto",
                 refinement_factor=1.0,
                 gap_treatment_strength=0.5,
@@ -102,7 +102,9 @@ def get_the_param():
                     heat_spec=HeatFlux(1.0 * u.W / u.m**2),
                 ),
                 SlipWall(entities=[my_slip_wall_surface]),
-                Rotation(volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)),
+                RotatingReferenceFrame(
+                    volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)
+                ),
                 PorousMedium(
                     volumes=[my_box],
                     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,

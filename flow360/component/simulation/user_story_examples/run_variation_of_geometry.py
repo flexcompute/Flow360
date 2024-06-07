@@ -3,7 +3,7 @@ I run my first simulation, I want to run simulations on 100 variations of my geo
 """
 
 from ..inputs import Geometry
-from ..meshing_param.params import FaceRefinement, MeshingParameters, ZoneRefinement
+from ..meshing_param.params import MeshingParams, SurfaceRefinement, ZoneRefinement
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..simulation import Simulation
 

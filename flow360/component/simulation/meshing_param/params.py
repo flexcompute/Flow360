@@ -3,16 +3,15 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
-from flow360.component.simulation.meshing_param.face_params import FaceRefinement
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.volume_params import (
-    AxisymmetricRefinement,
-    ZoneRefinementTypes,
+    RotationCylinder,
+    VolumeRefinementTypes,
 )
 
 
-class MeshingParameters(Flow360BaseModel):
+class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher.
 
@@ -26,13 +25,14 @@ class MeshingParameters(Flow360BaseModel):
     - farfield
     - refinement_factor
     - gap_treatment_strength
-    - `class` BoundaryLayerRefinement
+    - `class` BoundaryLayer
     - `class` UniformRefinement
     - `class` AxisymmetricRefinement
+    - `class` RotationCylinder
 
     Affects surface meshing:
     - surface_layer_growth_rate
-    - `class` FaceRefinement
+    - `class` SurfaceRefinement
     - `class` SurfaceEdgeRefinement
     """
 
@@ -54,7 +54,12 @@ class MeshingParameters(Flow360BaseModel):
     )
 
     refinements: Optional[
-        List[Union[SurfaceEdgeRefinement, FaceRefinement, ZoneRefinementTypes]]
+        List[Union[SurfaceEdgeRefinement, SurfaceRefinement, VolumeRefinementTypes]]
     ] = pd.Field(
-        None, description="Additional fine-tunning for refinement and specifications."
+        None,
+        description="Additional fine-tunning for refinements.",
     )  # Note: May need discriminator for performance??
+    # Will add more to the Union
+    volume_zones: Optional[List[Union[RotationCylinder]]] = pd.Field(
+        None, description="Creation of new volume zones."
+    )

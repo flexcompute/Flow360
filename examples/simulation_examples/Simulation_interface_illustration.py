@@ -1,8 +1,8 @@
 from flow360 import SI_unit_system
 from flow360 import units as u
 from flow360.component.case import Case
-from flow360.component.simulation.meshing_param.face_params import FaceRefinement
-from flow360.component.simulation.meshing_param.params import MeshingParameters
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.material import Air
 from flow360.component.simulation.models.volume_models import (
@@ -66,10 +66,10 @@ slice_b = Slice(
 with SI_unit_system:
     simulationParams = SimulationParams(
         # Global settings, skiped in current example
-        meshing=MeshingParameters(
+        meshing=MeshingParams(
             refinement_factor=1,
             refinements=[
-                FaceRefinement(entities=[far_field], growth_rate=0.2),
+                SurfaceRefinement(entities=[far_field], growth_rate=0.2),
                 UniformRefinement(entities=[porous_media_zone], spacing=0.002),
             ],
         ),

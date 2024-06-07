@@ -12,7 +12,7 @@ Meshing settings that applies to faces.
 """
 
 
-class FaceRefinement(Flow360BaseModel):
+class SurfaceRefinement(Flow360BaseModel):
     """
     These affects surface meshing.
 
@@ -21,9 +21,11 @@ class FaceRefinement(Flow360BaseModel):
     before submission. This is supposed to be applied to all the matching entities. We allow this so that we do not
     need to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
 
-    - For `FaceRefinement` we may need validation to detect if default has been set or not. This is because we need
+    - For `SurfaceRefinement` we may need validation to detect if default has been set or not. This is because we need
     these defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.
     """
+
+    refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
 
     entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
@@ -38,7 +40,7 @@ class FaceRefinement(Flow360BaseModel):
     )
 
 
-class BoundaryLayerRefinement(Flow360BaseModel):
+class BoundaryLayer(Flow360BaseModel):
     """
     These affects volume meshing.
     Note:

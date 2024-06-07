@@ -2,7 +2,7 @@
 My simulation diverged, I need to modify meshing parameters on one of the patches
 """
 
-from ..meshing_param.params import FaceRefinement, MeshingParameters, ZoneRefinement
+from ..meshing_param.params import MeshingParams, SurfaceRefinement, ZoneRefinement
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..simulation import Simulation
 
