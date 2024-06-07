@@ -2,7 +2,7 @@ import json
 import os
 import re
 
-from flow360.services import get_default_fork
+from flow360.component.flow360_params.services import get_default_fork
 
 # Webservice examples
 

@@ -8,6 +8,7 @@ import pytest
 from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
+    AngleType,
     AngularVelocityType,
     AreaType,
     DensityType,
@@ -27,6 +28,7 @@ from flow360.component.simulation.unit_system import (
 
 class DataWithUnits(pd.BaseModel):
     L: LengthType = pd.Field()
+    a: AngleType = pd.Field()
     m: MassType = pd.Field()
     t: TimeType = pd.Field()
     T: TemperatureType = pd.Field()
@@ -51,6 +53,7 @@ class DataWithOptionalUnion(pd.BaseModel):
 
 class DataWithUnitsConstrained(pd.BaseModel):
     L: Optional[LengthType.NonNegative] = pd.Field(None)
+    a: AngleType.NonNegative = pd.Field()
     m: MassType.Positive = pd.Field()
     t: TimeType.Negative = pd.Field()
     T: TemperatureType.NonNegative = pd.Field()
@@ -196,11 +199,12 @@ def test_flow360_unit_arithmetic():
 def test_unit_system():
     # No inference outside of context
     with pytest.raises(pd.ValidationError):
-        data = DataWithUnits(L=1, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2)
+        data = DataWithUnits(L=1, a=2, m=2, t=3, T=300, v=2 / 3, A=2 * 3, F=4, p=5, r=2)
 
     # But we can still specify units explicitly
     data = DataWithUnits(
         L=1 * u.m,
+        a=1 * u.degree,
         m=2 * u.kg,
         t=3 * u.s,
         T=300 * u.K,
@@ -251,7 +255,7 @@ def test_unit_system():
     }
     # SI
     with u.SI_unit_system:
-        data = DataWithUnits(**input)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.m
         assert data.m == 2 * u.kg
@@ -270,7 +274,7 @@ def test_unit_system():
 
     # CGS
     with u.CGS_unit_system:
-        data = DataWithUnits(**input)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.cm
         assert data.m == 2 * u.g
@@ -289,7 +293,7 @@ def test_unit_system():
 
     # Imperial
     with u.imperial_unit_system:
-        data = DataWithUnits(**input)
+        data = DataWithUnits(**input, a=1 * u.degree)
 
         assert data.L == 1 * u.ft
         assert data.m == 2 * u.lb
@@ -308,7 +312,7 @@ def test_unit_system():
 
     # Flow360
     with u.flow360_unit_system:
-        data = DataWithUnits(**input)
+        data = DataWithUnits(**input, a=1 * u.flow360_angle_unit)
 
         assert data.L == 1 * u.flow360_length_unit
         assert data.m == 2 * u.flow360_mass_unit
@@ -327,6 +331,7 @@ def test_unit_system():
 
     correct_input = {
         "L": 1,
+        "a": 1 * u.degree,
         "m": 2,
         "t": -3,
         "T": 300,
@@ -532,6 +537,7 @@ def test_unit_system_init():
     unit_system_dict = {
         "mass": {"value": 1.0, "units": "kg"},
         "length": {"value": 1.0, "units": "m"},
+        "angle": {"value": 1.0, "units": "rad"},
         "time": {"value": 1.0, "units": "s"},
         "temperature": {"value": 1.0, "units": "K"},
         "velocity": {"value": 1.0, "units": "m/s"},
@@ -545,7 +551,7 @@ def test_unit_system_init():
         "angular_velocity": {"value": 1.0, "units": "rad/s"},
         "heat_flux": {"value": 1.0, "units": "kg/s**3"},
         "heat_source": {"value": 1.0, "units": "kg/s**3/m"},
-        "heat_capacity": {"value": 1.0, "units": "m**2/s**2/K"},
+        "specific_heat_capacity": {"value": 1.0, "units": "m**2/s**2/K"},
         "thermal_conductivity": {"value": 1.0, "units": "kg/s**3*m/K"},
         "inverse_length": {"value": 1.0, "units": "m**(-1)"},
         "inverse_area": {"value": 1.0, "units": "m**(-2)"},

@@ -4,7 +4,7 @@ import tempfile
 import pytest
 
 import flow360 as fl
-from flow360 import services
+from flow360.component.flow360_params import services
 
 
 @pytest.fixture(autouse=True)
@@ -29,9 +29,7 @@ def test_validate_service():
         },
     }
 
-    errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_name="SI"
-    )
+    errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert errors is None
     assert warning is None
@@ -49,9 +47,7 @@ def test_validate_service_missing_fluid_properties():
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
-    errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_name="SI"
-    )
+    errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert errors[0]["msg"] == "fluid_properties is required by freestream for unit conversion."
 
@@ -69,9 +65,7 @@ def test_validate_service_missing_unit_system():
     }
 
     with pytest.raises(ValueError):
-        errors, warning = services.validate_flow360_params_model(
-            params_as_dict=params_data, unit_system_name=None
-        )
+        errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name=None)
 
 
 def test_validate_service_incorrect_unit():
@@ -86,9 +80,7 @@ def test_validate_service_incorrect_unit():
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
-    errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_name="SI"
-    )
+    errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert errors[0]["msg"] == "arg '1.15315084119231 m' does not match (length)**2"
 
@@ -105,9 +97,7 @@ def test_validate_service_incorrect_value():
         "freestream": {"modelType": "FromVelocity", "velocity": {"value": 286.0, "units": "m/s"}},
     }
 
-    errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_name="CGS"
-    )
+    errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name="CGS")
 
     assert errors[0]["msg"] == "ensure this value is greater than 0"
 
@@ -129,9 +119,7 @@ def test_validate_service_no_value():
         },
     }
 
-    errors, warning = services.validate_flow360_params_model(
-        params_as_dict=params_data, unit_system_name="CGS"
-    )
+    errors, warning = services.validate_model(params_as_dict=params_data, unit_system_name="CGS")
 
     assert errors[0]["msg"] == "field required"
 
@@ -198,7 +186,7 @@ def test_validate_service_should_not_be_called_with_context():
 
     with fl.CGS_unit_system:
         with pytest.raises(RuntimeError):
-            errors, warning = services.validate_flow360_params_model(
+            errors, warning = services.validate_model(
                 params_as_dict=params_data, unit_system_name="Imperial"
             )
 
@@ -223,8 +211,10 @@ def test_init_fork_with_update_2():
 
     assert len(params_as_dict["BETDisks"]) == 1
     assert params_as_dict["BETDisks"][0]["thickness"] == 30.0
+    assert params_as_dict["timeStepping"]["_addCFL"] == True
     assert params_as_dict["timeStepping"]["_addCFL"] is True
     assert "fluid/body" in params_as_dict["boundaries"]
+    assert not "_addFluid/body" in params_as_dict["boundaries"]
     assert "_addFluid/body" not in params_as_dict["boundaries"]
 
 
@@ -246,9 +236,7 @@ def test_validate():
         with open(f"data/cases/{file}") as fh:
             params = json.load(fh)
 
-        errors, warning = services.validate_flow360_params_model(
-            params_as_dict=params, unit_system_name="SI"
-        )
+        errors, warning = services.validate_model(params_as_dict=params, unit_system_name="SI")
         print(errors)
 
 
@@ -283,4 +271,5 @@ def test_submit_and_retry():
 
     with open(temp_file_user.name) as fh:
         params = json.load(fh)
+    data = services.get_default_retry(params)
     services.get_default_retry(params)

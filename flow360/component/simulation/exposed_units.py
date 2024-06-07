@@ -22,7 +22,7 @@ extra_units = {
     "angular_velocity": [],
     "heat_flux": [],
     "heat_source": [],
-    "heat_capacity": [],
+    "specific_heat_capacity": [],
     "thermal_conductivity": [],
     "inverse_area": [],
     "inverse_length": [],

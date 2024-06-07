@@ -59,10 +59,8 @@ class SimulationParams(Flow360BaseModel):
     version: str = pd.Field(__version__, frozen=True)
 
     meshing: Optional[MeshingParameters] = pd.Field(None)
-
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
     operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
-    #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
     1. __getitem__ to allow [] access

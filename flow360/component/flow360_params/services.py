@@ -7,6 +7,18 @@ from typing import Union
 
 import pydantic.v1 as pd
 
+from flow360.component.flow360_params.flow360_params import (
+    Flow360Params,
+    FreestreamFromVelocity,
+    Geometry,
+)
+from flow360.component.flow360_params.params_base import (
+    Flow360BaseModel,
+    Flow360SortableBaseModel,
+    _schema_optional_toggle_name,
+    flow360_json_encoder,
+)
+from flow360.component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
 from flow360.component.flow360_params.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -15,20 +27,7 @@ from flow360.component.flow360_params.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
-
-from .component.flow360_params.flow360_params import (
-    Flow360Params,
-    FreestreamFromVelocity,
-    Geometry,
-)
-from .component.flow360_params.params_base import (
-    Flow360BaseModel,
-    Flow360SortableBaseModel,
-    _schema_optional_toggle_name,
-    flow360_json_encoder,
-)
-from .component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
-from .exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -117,7 +116,10 @@ def init_unit_system(unit_system_name) -> UnitSystem:
 
     unit_system = unit_system_map.get(unit_system_name, None)
     if not isinstance(unit_system, UnitSystem):
-        raise ValueError(f"Incorrect unit system provided {unit_system=}, expected type UnitSystem")
+        raise ValueError(
+            f"Incorrect unit system provided for {unit_system_name} unit "
+            f"system, got {unit_system=}, expected value of type UnitSystem"
+        )
 
     if unit_system_manager.current is not None:
         raise RuntimeError(
@@ -280,7 +282,7 @@ def get_default_fork(params_as_dict):
     return params
 
 
-def validate_flow360_params_model(params_as_dict, unit_system_name):
+def validate_model(params_as_dict, unit_system_name):
     """
     Validate a params dict against the pydantic model
     """

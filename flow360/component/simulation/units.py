@@ -10,6 +10,7 @@ from flow360.component.simulation.unit_system import (
     CGS_unit_system,
     SI_unit_system,
     UnitSystem,
+    flow360_angle_unit,
     flow360_angular_velocity_unit,
     flow360_area_unit,
     flow360_density_unit,
@@ -50,6 +51,7 @@ __all__ = [
     "flow360_mass_flow_rate_unit",
     "flow360_specific_energy_unit",
     "flow360_frequency_unit",
+    "flow360_angle_unit",
 ]
 
 

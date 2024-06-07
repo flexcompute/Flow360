@@ -6,7 +6,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     DensityType,
-    HeatCapacityType,
+    SpecificHeatCapacityType,
     TemperatureType,
     ThermalConductivityType,
     ViscosityType,
@@ -44,7 +44,7 @@ class Air(MaterialBase):
         return 1.4
 
     @property
-    def gas_constant(self) -> HeatCapacityType.Positive:
+    def gas_constant(self) -> SpecificHeatCapacityType.Positive:
         return 287.0529 * u.m**2 / u.s**2 / u.K
 
     @property
@@ -57,7 +57,9 @@ class SolidMaterial(MaterialBase):
     name: str = pd.Field(frozen=True)
     thermal_conductivity: ThermalConductivityType.Positive = pd.Field(frozen=True)
     density: Optional[DensityType.Positive] = pd.Field(None, frozen=True)
-    specific_heat_capacity: Optional[HeatCapacityType.Positive] = pd.Field(None, frozen=True)
+    specific_heat_capacity: Optional[SpecificHeatCapacityType.Positive] = pd.Field(
+        None, frozen=True
+    )
 
 
 aluminum = SolidMaterial(
