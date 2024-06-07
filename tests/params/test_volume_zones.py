@@ -125,7 +125,7 @@ def test_volume_zones():
             volume_zones={
                 "zone1": fl.HeatTransferVolumeZone(
                     thermal_conductivity=1,
-                    specific_heat_capacity=0.123,
+                    heat_capacity=0.123,
                     initial_condition=fl.InitialConditionHeatTransfer(T=1234),
                 )
             },
@@ -146,7 +146,7 @@ def test_volume_zones():
             volume_zones={
                 "zone1": fl.HeatTransferVolumeZone(
                     thermal_conductivity=1,
-                    specific_heat_capacity=0.123,
+                    heat_capacity=0.123,
                     initial_condition=fl.InitialConditionHeatTransfer(T="1.5*y^0.5/1.56 ^3"),
                 )
             },
@@ -163,7 +163,7 @@ def test_volume_zones():
         zone1=FluidDynamicsVolumeZone(reference_frame=rf),
         zone2=HeatTransferVolumeZone(
             thermal_conductivity=1,
-            specific_heat_capacity=1,
+            heat_capacity=1,
             initial_condition=InitialConditionHeatTransfer(T=100),
         ),
     )

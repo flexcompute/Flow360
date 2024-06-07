@@ -220,7 +220,7 @@ def test_cht_solver_has_heat_transfer_zone():
             volume_zones={
                 "blk-1": HeatTransferVolumeZone(
                     thermal_conductivity=0.1,
-                    specific_heat_capacity=0.1,
+                    heat_capacity=0.1,
                     initial_condition=InitialConditionHeatTransfer(T=1.2),
                 ),
                 "blk-2": FluidDynamicsVolumeZone(),
@@ -251,9 +251,7 @@ def test_cht_solver_has_heat_transfer_zone():
             Flow360Params(
                 time_stepping=UnsteadyTimeStepping(physical_steps=10, time_step_size=0.1 * u.s),
                 volume_zones={
-                    "blk-1": HeatTransferVolumeZone(
-                        thermal_conductivity=0.1, specific_heat_capacity=0.1
-                    ),
+                    "blk-1": HeatTransferVolumeZone(thermal_conductivity=0.1, heat_capacity=0.1),
                     "blk-2": FluidDynamicsVolumeZone(),
                 },
                 boundaries={},
