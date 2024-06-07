@@ -192,7 +192,7 @@ def test_simulation_params_unit_conversion(get_the_param):
     )
     # HeatCapacityType
     assertions.assertAlmostEqual(
-        converted.models[5].material.specific_heat_capacity.value, 2.5499579256942264e-06
+        converted.models[5].material.specific_heat_capacity.value, 0.002549957925694226
     )
     # ThermalConductivityType
     assertions.assertAlmostEqual(

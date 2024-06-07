@@ -143,8 +143,8 @@ class AerospaceCondition(Flow360BaseModel):
 
     # pylint: disable=fixme
     # TODO: add units for angles
-    alpha: AngleType = 0
-    beta: AngleType = 0
+    alpha: AngleType = 0 * u.deg
+    beta: AngleType = 0 * u.deg
     velocity_magnitude: VelocityType.NonNegative
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
@@ -155,8 +155,8 @@ class AerospaceCondition(Flow360BaseModel):
     def from_mach(
         cls,
         mach: pd.PositiveFloat,
-        alpha: AngleType = 0,
-        beta: AngleType = 0,
+        alpha: AngleType = 0 * u.deg,
+        beta: AngleType = 0 * u.deg,
         atmosphere: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):

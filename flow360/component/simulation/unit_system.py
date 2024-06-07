@@ -221,10 +221,6 @@ def _unit_inference_validator(value, dim_name, is_array=False):
             if all(isinstance(item, Number) for item in value):
                 return value * unit
         if isinstance(value, Number):
-            if dim_name == "angle":
-                raise ValueError(
-                    "Angles must be provided in radians or degrees. Not as pure number."
-                )
             return value * unit
     return value
 

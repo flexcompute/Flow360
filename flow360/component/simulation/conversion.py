@@ -208,14 +208,13 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
 
         return base_heat_source
 
-    def get_base_heat_capacity():
-        base_density = get_base_density()
+    def get_base_specific_heat_capacity():
         base_velocity = get_base_velocity()
         base_temperature = get_base_temperature()
 
-        base_heat_capacity = base_density * base_velocity**2 / base_temperature
+        base_specific_heat_capacity = base_velocity**2 / base_temperature
 
-        return base_heat_capacity
+        return base_specific_heat_capacity
 
     def get_base_thermal_conductivity():
         base_density = get_base_density()
@@ -275,9 +274,9 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
         base_heat_flux = get_base_heat_flux()
         flow360_conversion_unit_system.base_heat_flux = base_heat_flux
 
-    elif dimension == u.dimensions.heat_capacity:
-        base_heat_capacity = get_base_heat_capacity()
-        flow360_conversion_unit_system.base_heat_capacity = base_heat_capacity
+    elif dimension == u.dimensions.specific_heat_capacity:
+        base_specific_heat_capacity = get_base_specific_heat_capacity()
+        flow360_conversion_unit_system.base_specific_heat_capacity = base_specific_heat_capacity
 
     elif dimension == u.dimensions.thermal_conductivity:
         base_thermal_conductivity = get_base_thermal_conductivity()
