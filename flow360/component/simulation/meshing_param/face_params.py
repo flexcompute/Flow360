@@ -4,7 +4,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Face
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
 """
@@ -12,7 +12,7 @@ Meshing settings that applies to faces.
 """
 
 
-class FaceRefinement(Flow360BaseModel):
+class SurfaceRefinement(Flow360BaseModel):
     """
     These affects surface meshing.
 
@@ -21,11 +21,13 @@ class FaceRefinement(Flow360BaseModel):
     before submission. This is supposed to be applied to all the matching entities. We allow this so that we do not
     need to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
 
-    - For `FaceRefinement` we may need validation to detect if default has been set or not. This is because we need
+    - For `SurfaceRefinement` we may need validation to detect if default has been set or not. This is because we need
     these defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.
     """
 
-    entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
+    refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
+
+    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
     )
@@ -38,7 +40,7 @@ class FaceRefinement(Flow360BaseModel):
     )
 
 
-class BoundaryLayerRefinement(Flow360BaseModel):
+class BoundaryLayer(Flow360BaseModel):
     """
     These affects volume meshing.
     Note:
@@ -51,7 +53,7 @@ class BoundaryLayerRefinement(Flow360BaseModel):
     """
 
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
-    entities: Optional[EntityList[Face]] = pd.Field(None, alias="faces")
+    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
     )

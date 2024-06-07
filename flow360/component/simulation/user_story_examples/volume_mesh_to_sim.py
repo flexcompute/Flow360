@@ -3,7 +3,7 @@ I have my volume mesh, want to run my first simulation
 """
 
 from ..inputs import VolumeMesh
-from ..meshing_param.params import MeshingParameters, ZoneRefinement
+from ..meshing_param.params import MeshingParams, ZoneRefinement
 from ..models.volume_models import FluidDynamics
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..primitives import Box

@@ -217,7 +217,7 @@ class BETDisk(Flow360BaseModel):
     sectional_radiuses: List[float] = pd.Field()
 
 
-class Rotation(Flow360BaseModel):
+class RotatingReferenceFrame(Flow360BaseModel):
     """Similar to Flow360Param ReferenceFrame.
     Note that `center`, `axis` can be acquired from `entity` so they are not required anymore.
     Note: Should use the unit system to convert degree or degree per second to radian and radian per second
@@ -246,6 +246,6 @@ VolumeModelTypes = Union[
     Solid,
     ActuatorDisk,
     BETDisk,
-    Rotation,
+    RotatingReferenceFrame,
     PorousMedium,
 ]

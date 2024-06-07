@@ -3,7 +3,7 @@ I want to fine-tune my turbulence model solver
 """
 
 from ..inputs import Geometry
-from ..meshing_param.params import FaceRefinement, MeshingParameters, ZoneRefinement
+from ..meshing_param.params import MeshingParams, SurfaceRefinement, ZoneRefinement
 from ..operating_condition import ExternalFlowOperatingConditions
 from ..simulation import Simulation
 
