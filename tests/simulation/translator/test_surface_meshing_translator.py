@@ -15,6 +15,7 @@ from flow360.component.simulation.translator.surface_mesh_translator import (
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from tests.simulation.conftest import AssetBase
+from tests.utils import show_dict_diff
 
 
 class TempGeometry(AssetBase):
