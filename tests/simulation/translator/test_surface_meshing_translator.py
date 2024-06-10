@@ -3,6 +3,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.edge_params import (
     HeightBasedRefinement,
+    ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -72,6 +73,10 @@ def get_test_param():
                         entities=[my_geometry["wing*Edge"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
                     ),
+                    SurfaceEdgeRefinement(
+                        entities=[my_geometry["*AirfoilEdge"]],
+                        method=ProjectAnisoSpacing(),
+                    ),
                 ],
             )
         )
@@ -82,4 +87,19 @@ def test_param_to_json(get_test_param, get_geometry):
     translated = get_surface_mesh_json(get_test_param, get_geometry.mesh_unit)
     import json
 
-    print(json.dumps(translated, indent=4))
+    # print("====TRANSLATED====\n", json.dumps(translated, indent=4))
+    ref_dict = {
+        "maxEdgeLength": 0.15,
+        "curvatureResolutionAngle": 10,
+        "growthRate": 1.07,
+        "edges": {
+            "wingLeadingEdge": {"type": "aniso", "method": "height", "value": 3e-4},
+            "wingTrailingEdge": {"type": "aniso", "method": "height", "value": 3e-4},
+            "rootAirfoilEdge": {"type": "projectAnisoSpacing"},
+            "tipAirfoilEdge": {"type": "projectAnisoSpacing"},
+        },
+        "faces": {"wing": {"maxEdgeLength": 0.15}},
+    }
+
+    diff = show_dict_diff(translated, ref_dict)
+    assert list(diff) == []

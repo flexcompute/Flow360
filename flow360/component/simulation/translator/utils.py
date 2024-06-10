@@ -59,7 +59,7 @@ def translate_setting_and_apply_to_all_entities(obj_list: list, class_type, tran
     for obj in obj_list:
         if isinstance(obj, class_type):
             translated_setting = translation_func(obj)
-            for entity in obj.entities:
+            for entity in obj.entities.stored_entities:
                 if output_dict.get(entity.name) is None:
                     output_dict[entity.name] = {}
                 output_dict[entity.name].update(translated_setting)

@@ -29,6 +29,12 @@ class AspectRatioBasedRefinement(Flow360BaseModel):
     value: pd.PositiveFloat = pd.Field()
 
 
+class ProjectAnisoSpacing(Flow360BaseModel):
+    """Project the anisotropic spacing from neighboring faces to the edge"""
+
+    type: Literal["projectAnisoSpacing"] = pd.Field("projectAnisoSpacing", frozen=True)
+
+
 class _BaseEdgeRefinement(Flow360BaseModel):
     entities: EntityList[Edge] = pd.Field(alias="edges")
     growth_rate: Optional[float] = pd.Field(
@@ -45,5 +51,10 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     """
 
     method: Optional[
-        Union[AngleBasedRefinement, HeightBasedRefinement, AspectRatioBasedRefinement]
+        Union[
+            AngleBasedRefinement,
+            HeightBasedRefinement,
+            AspectRatioBasedRefinement,
+            ProjectAnisoSpacing,
+        ]
     ] = pd.Field(None, discriminator="type")
