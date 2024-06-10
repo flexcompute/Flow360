@@ -1,5 +1,4 @@
 import re
-from abc import ABCMeta
 from typing import List, Literal, Union
 
 import pydantic as pd
@@ -7,7 +6,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import (
     Box,
@@ -17,26 +16,9 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
 )
 from flow360.log import set_logging_level
+from tests.simulation.conftest import AssetBase
 
 set_logging_level("DEBUG")
-
-
-class AssetBase(metaclass=ABCMeta):
-    _registry: EntityRegistry
-
-    def __init__(self):
-        self._registry = EntityRegistry()
-
-    def __getitem__(self, key: str) -> list[EntityBase]:
-        """Use [] to access the registry"""
-        if isinstance(key, str) == False:
-            raise ValueError(f"Entity naming pattern: {key} is not a string.")
-        found_entities = self._registry.find_by_name_pattern(key)
-        if found_entities == []:
-            raise ValueError(
-                f"Failed to find any matching entity with {key}. Please check your input."
-            )
-        return found_entities
 
 
 class TempVolumeMesh(AssetBase):

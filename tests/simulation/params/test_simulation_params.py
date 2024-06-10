@@ -156,7 +156,7 @@ def test_simulation_params_seralization(get_the_param):
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
     converted = get_the_param.preprocess(mesh_unit=10 * u.m)
-
+    # converted.to_json("converted.json")
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
     # LengthType
