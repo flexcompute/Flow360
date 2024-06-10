@@ -6,12 +6,11 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.translator.volume_mesh_translator import (
+from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from tests.simulation.conftest import AssetBase
-from tests.utils import show_dict_diff
 
 
 class TempSurfaceMesh(AssetBase):
