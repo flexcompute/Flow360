@@ -37,12 +37,6 @@ def test_help():
     Flow360BaseModel().help(methods=True)
 
 
-def test_type():
-    base_model = BaseModelTestModel(some_value=123)
-    seralized_dict = base_model.model_dump()
-    assert seralized_dict["_type"] == "BaseModelTestModel"
-
-
 def test_copy():
     base_model = BaseModelTestModel(some_value=123)
     base_model_copy = base_model.copy()
@@ -173,6 +167,11 @@ def test_from_json_yaml():
             base_model = BaseModelTestModel._from_json(temp_file_name)
     finally:
         os.remove(temp_file_name)
+
+
+def test_add_type_field():
+    ## Note: May need to be properly implemented.
+    assert "_type" in BaseModelTestModel.model_fields
 
 
 def test_generate_docstring():

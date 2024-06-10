@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from copy import deepcopy
 from typing import Any, List, Literal
 
@@ -43,12 +42,6 @@ class Flow360BaseModel(pd.BaseModel):
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
-        keys_to_remove = []
-        for property_name in model_dict.keys():
-            if re.match(r"^_[^_]", property_name):
-                keys_to_remove.append(property_name)
-        for key in keys_to_remove:
-            model_dict.pop(key)
         super().__init__(**model_dict)
 
     @classmethod
@@ -76,11 +69,8 @@ class Flow360BaseModel(pd.BaseModel):
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
+        cls._add_type_field()
         cls._generate_docstring()
-
-    @pd.computed_field
-    def _type(self) -> str:
-        return self.__class__.__name__
 
     """Sets config for all :class:`Flow360BaseModel` objects.
 
@@ -438,6 +428,19 @@ class Flow360BaseModel(pd.BaseModel):
             is_frozen = self.model_fields[key].frozen
             if is_frozen is None or is_frozen is False:
                 self.__setattr__(key, value)
+
+    @classmethod
+    def _add_type_field(cls) -> None:
+        """Automatically place "type" field with model name in the model field dictionary."""
+
+        # TODO: Check if this _type actually fulfill its goal(?)
+        tag_field = pd.fields.FieldInfo(
+            alias=TYPE_TAG_STR,
+            value=cls.__name__,
+            annotation=Literal[cls.__name__],
+            class_validators=None,
+        )
+        cls.model_fields[TYPE_TAG_STR] = tag_field
 
     @classmethod
     def _generate_docstring(cls) -> str:
