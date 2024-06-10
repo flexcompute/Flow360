@@ -25,8 +25,6 @@ class SurfaceRefinement(Flow360BaseModel):
     these defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.
     """
 
-    refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."

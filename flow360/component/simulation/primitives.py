@@ -46,8 +46,13 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
 
 
+class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+
+
 @final
-class Edge(Flow360BaseModel):
+class Edge(_EdgeEntityBase):
     """
     Edge with edge name defined in the geometry file
     """

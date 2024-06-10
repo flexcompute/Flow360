@@ -60,7 +60,7 @@ class SimulationParams(Flow360BaseModel):
 
     meshing: Optional[MeshingParams] = pd.Field(None)
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: OperatingConditionTypes = pd.Field()
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
@@ -164,5 +164,5 @@ class SimulationParams(Flow360BaseModel):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(self, mesh_unit=mesh_unit)
-        return super().preprocess(self, mesh_unit=mesh_unit)
+                return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
+        return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])

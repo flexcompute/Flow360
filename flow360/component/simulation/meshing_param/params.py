@@ -37,13 +37,15 @@ class MeshingParams(Flow360BaseModel):
     """
 
     # Volume **defaults**:
-    farfield: Literal["auto", "quasi-3d", "user-defined"] = pd.Field(
-        description="Type of farfield generation."
+    farfield: Optional[Literal["auto", "quasi-3d", "user-defined"]] = pd.Field(
+        None, description="Type of farfield generation."
     )
-    refinement_factor: pd.PositiveFloat = pd.Field(
-        description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh."
+    refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
+        None,
+        description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh.",
     )
-    gap_treatment_strength: float = pd.Field(
+    gap_treatment_strength: Optional[float] = pd.Field(
+        None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
