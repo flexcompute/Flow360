@@ -1,6 +1,7 @@
 from abc import ABCMeta
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
 
 class AssetBase(metaclass=ABCMeta):

@@ -10,6 +10,7 @@ import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
+from pydantic.alias_generators import to_camel
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.conversion import (
@@ -104,6 +105,9 @@ class Flow360BaseModel(pd.BaseModel):
         conflicting_fields=[],
         include_hash=False,
         include_defaults_in_schema=True,
+        alias_generator=pd.AliasGenerator(
+            serialization_alias=to_camel,
+        ),
     )
 
     def __setattr__(self, name, value):
@@ -251,7 +255,7 @@ class Flow360BaseModel(pd.BaseModel):
         model_dict = cls._handle_dict_with_hash(model_dict)
         return model_dict
 
-    def to_file(self, filename: str) -> None:
+    def to_file(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .json or .yaml file
 
         Parameters
@@ -265,14 +269,14 @@ class Flow360BaseModel(pd.BaseModel):
         """
 
         if ".json" in filename:
-            return self.to_json(filename=filename)
+            return self._to_json(filename=filename, **kwargs)
         if ".yaml" in filename:
-            return self.to_yaml(filename=filename)
+            return self._to_yaml(filename=filename, **kwargs)
 
         raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
-    def from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def _from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
         """Load a :class:`Flow360BaseModel` from .json file.
 
         Parameters
@@ -289,7 +293,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360BaseModel.from_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params = Flow360BaseModel._from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
         model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -316,7 +320,7 @@ class Flow360BaseModel(pd.BaseModel):
             model_dict = json.load(json_fhandle)
         return model_dict
 
-    def to_json(self, filename: str) -> None:
+    def _to_json(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .json file
 
         Parameters
@@ -326,9 +330,9 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params.to_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params._to_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        json_string = self.model_dump_json()
+        json_string = self.model_dump_json(**kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"] is True:
             model_dict["hash"] = self._calculate_hash(model_dict)
@@ -336,7 +340,7 @@ class Flow360BaseModel(pd.BaseModel):
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
 
     @classmethod
-    def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def _from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
         """Loads :class:`Flow360BaseModel` from .yaml file.
 
         Parameters
@@ -353,7 +357,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360BaseModel.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params = Flow360BaseModel._from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
         model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -380,7 +384,7 @@ class Flow360BaseModel(pd.BaseModel):
             model_dict = yaml.safe_load(yaml_in)
         return model_dict
 
-    def to_yaml(self, filename: str) -> None:
+    def _to_yaml(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .yaml file.
 
         Parameters
@@ -390,9 +394,9 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params.to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params._to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        json_string = self.model_dump_json()
+        json_string = self.model_dump_json(**kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"]:
             model_dict["hash"] = self._calculate_hash(model_dict)

@@ -144,7 +144,7 @@ def test_from_json_yaml():
         temp_file_name = temp_file.name
 
     try:
-        base_model = BaseModelTestModel.from_json(temp_file_name)
+        base_model = BaseModelTestModel._from_json(temp_file_name)
         assert base_model.some_value == 3210
     finally:
         os.remove(temp_file_name)
@@ -155,7 +155,7 @@ def test_from_json_yaml():
         temp_file_name = temp_file.name
 
     try:
-        base_model = BaseModelTestModel.from_yaml(temp_file_name)
+        base_model = BaseModelTestModel._from_yaml(temp_file_name)
         assert base_model.some_value == 3210
     finally:
         os.remove(temp_file_name)
@@ -170,7 +170,7 @@ def test_from_json_yaml():
     print(json.dumps(file_content, indent=4))
     try:
         with pytest.raises(pd.ValidationError, match=r" Input should be a valid number"):
-            base_model = BaseModelTestModel.from_json(temp_file_name)
+            base_model = BaseModelTestModel._from_json(temp_file_name)
     finally:
         os.remove(temp_file_name)
 

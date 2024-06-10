@@ -1,16 +1,19 @@
-from flow360.component.simulation.translator.surface_mesh_translator import get_surface_mesh_json
-from flow360.component.simulation.simulation_params import SimulationParams
 import pytest
-from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
-from flow360.component.simulation.meshing_param.edge_params import (
-    SurfaceEdgeRefinement,
-    HeightBasedRefinement,
-)
-from tests.simulation.conftest import AssetBase
-from flow360.component.simulation.primitives import Edge, Surface
+
 import flow360.component.simulation.units as u
-from flow360.component.simulation.unit_system import SI_unit_system, LengthType
+from flow360.component.simulation.meshing_param.edge_params import (
+    HeightBasedRefinement,
+    SurfaceEdgeRefinement,
+)
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.translator.surface_mesh_translator import (
+    get_surface_mesh_json,
+)
+from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from tests.simulation.conftest import AssetBase
 
 
 class TempGeometry(AssetBase):
@@ -73,10 +76,3 @@ def get_test_param():
             )
         )
     return param
-
-
-def test_param_to_json(get_test_param, get_geometry):
-    translated = get_surface_mesh_json(get_test_param, get_geometry.mesh_unit)
-    import json
-
-    print(json.dumps(translated, indent=4))

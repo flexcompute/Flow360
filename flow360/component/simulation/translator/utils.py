@@ -40,7 +40,7 @@ def get_simulation_param_dict(input_params: SimulationParams | str | dict, mesh_
         param = SimulationParams(**input_params)
 
     if param is not None:
-        return param.preprocess(mesh_unit, encoder = )
+        return param.preprocess(mesh_unit)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 
