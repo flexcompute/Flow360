@@ -63,7 +63,7 @@ def merge_unique_item_lists(list1: list, list2: list) -> list:
 
 
 @preprocess_input
-def get_case_json(
+def get_solver_json(
     input_params: Union[str, dict, SimulationParams],
     mesh_unit: LengthType.Positive,
 ):
@@ -95,8 +95,8 @@ def get_case_json(
 
     op = input_params.operating_condition
     translated["freestream"] = {
-        "alpha": op.alpha.to("degree").v.item(),
-        "beta": op.beta.to("degree").v.item(),
+        "alphaAngle": op.alpha.to("degree").v.item(),
+        "betaAngle": op.beta.to("degree").v.item(),
         "Mach": op.velocity_magnitude.v.item(),
         "Temperature": op.thermal_state.temperature.to("K").v.item(),
         "muRef": op.thermal_state.mu_ref(mesh_unit),
@@ -104,12 +104,30 @@ def get_case_json(
     if "reference_velocity_magnitude" in op and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
 
-    translated["timeStepping"] = to_dict(input_params.time_stepping)
+    ts = input_params.time_stepping
+    if ts.model_type == "Unsteady":
+        translated["timeStepping"] = {
+            "CFL": to_dict(ts.CFL),
+            "physicalSteps": ts.physical_steps,
+            "orderOfAccuracy": ts.order_of_accuracy,
+            "maxPseudoSteps": ts.max_pseudo_steps,
+            "timeStepSize": ts.time_step_size,
+        }
+    else:
+        translated["timeStepping"] = {
+            "CFL": to_dict(ts.CFL),
+            "physicalSteps": 1,
+            "orderOfAccuracy": ts.order_of_accuracy,
+            "maxPseudoSteps": ts.max_steps,
+            "timeStepSize": "inf",
+        }
+    to_dict(input_params.time_stepping)
 
     geometry = to_dict_without_unit(input_params.reference_geometry)
+    ml = geometry["momentLength"]
     translated["geometry"] = {
-        "momentCenter": geometry["momentCenter"],
-        "momentLength": geometry["momentLength"],
+        "momentCenter": list(geometry["momentCenter"]),
+        "momentLength": list(ml) if isinstance(ml, tuple) else [ml, ml, ml],
         "refArea": geometry["area"],
     }
 
@@ -117,6 +135,9 @@ def get_case_json(
         if isinstance(model, Fluid):
             translated["navierStokesSolver"] = to_dict(model.navier_stokes_solver)
             translated["turbulenceModelSolver"] = to_dict(model.turbulence_model_solver)
+            model_constants = translated["turbulenceModelSolver"]["modelConstants"]
+            model_constants["C_d"] = model_constants.pop("CD")
+            model_constants["C_DES"] = model_constants.pop("CDES")
         elif isinstance(model, Union[Freestream, SlipWall, SymmetryPlane, Wall]):
             for surface in model.entities.stored_entities:
                 spec = to_dict(model)
@@ -135,7 +156,6 @@ def get_case_json(
             # TODO: update time average entries
             translated["volumeOutput"]["computeTimeAverages"] = True
 
-            # "outputFields": get_output_fields(output, VolumeOutput)
         elif isinstance(output, SurfaceOutput):
             surfaces = translated["surfaceOutput"]["surfaces"]
             for surface in output.entities.stored_entities:
@@ -147,20 +167,14 @@ def get_case_json(
                 }
         elif isinstance(output, SliceOutput):
             slices = translated["sliceOutput"]["slices"]
-            # slices = to_dict(output).pop("slices")
             for slice in output.entities.items:
                 slices[slice.name] = {
                     "outputFields": merge_unique_item_lists(
                         slices.get(slice.name, {}).get("outputFields", []),
                         output.output_fields.model_dump()["items"],
                     ),
-                    "sliceOrigin": to_dict(slice)["sliceOrigin"],
-                    "sliceNormal": to_dict(slice)["sliceNormal"],
+                    "sliceOrigin": list(to_dict_without_unit(slice)["sliceOrigin"]),
+                    "sliceNormal": list(to_dict_without_unit(slice)["sliceNormal"]),
                 }
-    print(translated["geometry"])
-    print(translated["boundaries"])
-    # print(translated["volumeOutput"])
-    # print(translated["surfaceOutput"])
-    # print(translated["sliceOutput"])
 
     return translated

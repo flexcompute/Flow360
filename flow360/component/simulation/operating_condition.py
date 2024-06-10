@@ -115,9 +115,7 @@ class ThermalState(CachedModelBase):
     @pd.validate_call
     def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
         """Computes nondimensional dynamic viscosity."""
-        return (
-            (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item(),
-        )
+        return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()
 
 
 class GenericReferenceCondition(Flow360BaseModel):

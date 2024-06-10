@@ -1,23 +1,20 @@
 {
     "boundaries": {
         "1": {
-            "name": "wing",
             "type": "NoSlipWall",
             "velocityType": "relative"
         },
         "2": {
-            "name": "symmetry",
             "type": "SlipWall"
         },
         "3": {
-            "name": "freestream",
             "type": "Freestream",
             "velocityType": "relative"
         }
     },
     "freestream": {
         "Mach": 0.84,
-        "Reynolds": 14600000.0,
+        "muRef": 5.3895375771590744e-08,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
         "betaAngle": 0.0
@@ -56,7 +53,6 @@
     "sliceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
-        "outputFields": [],
         "outputFormat": "tecplot",
         "slices": {
             "sliceName_1": {
@@ -86,24 +82,20 @@
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
-        "outputFields": [],
         "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
         "surfaces": {
-            "freestream": {
+            "3": {
                 "outputFields": [
                     "nuHat"
                 ]
             },
-            "symmetry": {
+            "2": {
                 "outputFields": [
                     "nuHat"
                 ]
             },
-            "wing": {
+            "1": {
                 "outputFields": [
                     "nuHat"
                 ]
@@ -149,8 +141,6 @@
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars",
@@ -158,7 +148,6 @@
             "residualTurbulence",
             "Mach"
         ],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1
+        "outputFormat": "paraview"
     }
 }
