@@ -44,23 +44,53 @@ def get_simulation_param_dict(input_params: SimulationParams | str | dict, mesh_
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 
-def get_attribute_from_first_instance(obj_list: list, class_type, attribute_name: str):
+def get_attribute_from_first_instance(
+    obj_list: list, class_type, attribute_name: str, check_empty_entities: bool = False
+):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     for obj in obj_list:
         if isinstance(obj, class_type):
+            if check_empty_entities and obj.entities is not None:
+                continue
             return getattr(obj, attribute_name)
     return None
 
 
-def translate_setting_and_apply_to_all_entities(obj_list: list, class_type, translation_func: str):
-    """In a list loop and find the all instances matching the given type and apply translation.
-    `translation_func` shoud return a dictionary."""
-    output_dict = {}
+def translate_setting_and_apply_to_all_entities(
+    obj_list: list,
+    class_type,
+    translation_func,
+    to_list: bool = False,
+    entity_injection_func=lambda x: x,
+):
+    """Translate settings and apply them to all entities of a given type.
+
+    Args:
+        obj_list (list): A list of objects to loop through.
+        class_type: The type of objects to match.
+        translation_func (str): The function to use for translation. This function should return a dictionary.
+        to_list (bool, optional): Whether the return is a list which does not differentiate entity name or a
+        dict (default).
+
+    Returns:
+        dict: A dictionary containing the translated settings applied to all entities.
+
+    """
+    if not to_list:
+        output = {}
+    else:
+        output = []
+
     for obj in obj_list:
         if isinstance(obj, class_type):
             translated_setting = translation_func(obj)
             for entity in obj.entities.stored_entities:
-                if output_dict.get(entity.name) is None:
-                    output_dict[entity.name] = {}
-                output_dict[entity.name].update(translated_setting)
-    return output_dict
+                if not to_list:
+                    if output.get(entity.name) is None:
+                        output[entity.name] = {}
+                    output[entity.name].update(translated_setting)
+                else:
+                    setting = entity_injection_func(entity)
+                    setting.update(translated_setting)
+                    output.append(setting)
+    return output

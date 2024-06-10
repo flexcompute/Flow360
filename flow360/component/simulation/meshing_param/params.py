@@ -4,7 +4,9 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    SurfaceRefinementTypes,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     VolumeRefinementTypes,
@@ -51,12 +53,12 @@ class MeshingParams(Flow360BaseModel):
         description="Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
     )
 
-    surface_layer_growth_rate: float = pd.Field(
-        ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
-    )
+    surface_layer_growth_rate: Optional[float] = pd.Field(
+        None, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
+    )  # Conditionally optional
 
     refinements: Optional[
-        List[Union[SurfaceEdgeRefinement, SurfaceRefinement, VolumeRefinementTypes]]
+        List[Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes]]
     ] = pd.Field(
         None,
         description="Additional fine-tunning for refinements.",
