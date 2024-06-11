@@ -39,7 +39,7 @@ class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
             except:
                 pass
         else:
-            defaults = {name: field.default for name, field in self.__fields__.items()}
+            defaults = {name: field.default for name, field in self.model_fields.items()}
             defaults.pop(TYPE_TAG_STR)
             self._cached = self.__annotations__["_cached"](
                 **{**defaults, **data}, constructor="default"
