@@ -57,7 +57,7 @@ class TurbulentViscosityRatio(Flow360BaseModel):
     """
 
     type_name: Literal["TurbulentViscosityRatio"] = pd.Field("TurbulentViscosityRatio", frozen=True)
-    turbulent_viscosity_ratio: pd.NonNegativeFloat = pd.Field()
+    turbulent_viscosity_ratio: pd.PositiveFloat = pd.Field()
 
 
 class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
