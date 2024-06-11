@@ -50,6 +50,9 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     (equivalent to `ProjectAniso` in old params).
     """
 
+    refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
+        "SurfaceEdgeRefinement", frozen=True
+    )
     method: Optional[
         Union[
             AngleBasedRefinement,

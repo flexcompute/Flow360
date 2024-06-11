@@ -4,6 +4,13 @@
 import pydantic as pd
 
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.translator.solver_translator import get_solver_json
+from flow360.component.simulation.translator.surface_meshing_translator import (
+    get_surface_meshing_json,
+)
+from flow360.component.simulation.translator.volume_meshing_translator import (
+    get_volume_meshing_json,
+)
 from flow360.component.simulation.unit_system import (
     CGS_unit_system,
     SI_unit_system,
@@ -12,6 +19,7 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
+from flow360.log import log
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -65,10 +73,11 @@ def validate_model(params_as_dict, unit_system_name):
     unit_system = init_unit_system(unit_system_name)
 
     validation_errors = None
+    validated_param = None
 
     try:
         with unit_system:
-            SimulationParams(**params_as_dict)
+            validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
         # We do not care about handling / propagating the validation errors here,
@@ -92,4 +101,75 @@ def validate_model(params_as_dict, unit_system_name):
                     errors_as_list.remove(field)
                     error["loc"] = tuple(errors_as_list)
 
-    return validation_errors
+    return validated_param, validation_errors
+
+
+# pylint: disable=too-many-arguments
+def _translate_simulation_json(
+    params_as_dict,
+    unit_system_name,
+    mesh_unit,
+    existing_json=None,
+    target_name: str = None,
+    translation_func=None,
+):
+    """
+    Get JSON for surface meshing from a given simulaiton JSON.
+
+    """
+    translated_dict = None
+    param, errors = validate_model(params_as_dict, unit_system_name)
+    if errors is not None:
+        # pylint: disable=fixme
+        # TODO: Check if this looks good in terminal.
+        raise ValueError(errors)
+    if mesh_unit is None:
+        raise ValueError("Mesh unit is required for translation.")
+    try:
+        translated_dict = translation_func(param, mesh_unit)
+    except Exception as err:  # tranlsation itself is not supposed to raise any exception
+        raise ValueError(f"Failed to translate to {target_name} json: " + str(err)) from err
+    if translated_dict == {}:
+        raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
+    # pylint: disable=fixme
+    # TODO: Implement proper hashing. Currently floating point creates headache for reproducible hashing.
+    if existing_json is not None and hash(translated_dict) == existing_json["hash"]:
+        log.info(f"Translation of {target_name} is same as existing. Skipping translation.")
+        return existing_json
+    return translated_dict
+
+
+def simulation_to_surface_meshing_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+    """Get JSON for surface meshing from a given simulaiton JSON."""
+    return _translate_simulation_json(
+        params_as_dict,
+        unit_system_name,
+        mesh_unit,
+        existing_json,
+        "surface meshing",
+        get_surface_meshing_json,
+    )
+
+
+def simulation_to_volume_meshing_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+    """Get JSON for volume meshing from a given simulaiton JSON."""
+    return _translate_simulation_json(
+        params_as_dict,
+        unit_system_name,
+        mesh_unit,
+        existing_json,
+        "volume meshing",
+        get_volume_meshing_json,
+    )
+
+
+def simulation_to_case_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+    """Get JSON for case from a given simulaiton JSON."""
+    return _translate_simulation_json(
+        params_as_dict,
+        unit_system_name,
+        mesh_unit,
+        existing_json,
+        "case",
+        get_solver_json,
+    )

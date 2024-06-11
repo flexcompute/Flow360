@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Tuple, Union
+from typing import Annotated, List, Literal, Union
 
 import pydantic as pd
 
@@ -62,6 +62,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
     output_fields: UniqueAliasedStringList[SurfaceFieldNames] = pd.Field()
+    output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -77,10 +78,14 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
+    output_type: Literal["TimeAverageSurfaceOutput"] = pd.Field(
+        "TimeAverageSurfaceOutput", frozen=True
+    )
 
 
 class VolumeOutput(_AnimationAndFileFormatSettings):
     output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field()
+    output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
 
 class TimeAverageVolumeOutput(VolumeOutput):
@@ -97,32 +102,40 @@ class TimeAverageVolumeOutput(VolumeOutput):
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
+    output_type: Literal["TimeAverageVolumeOutput"] = pd.Field(
+        "TimeAverageVolumeOutput", frozen=True
+    )
 
 
 class SliceOutput(_AnimationAndFileFormatSettings):
     entities: UniqueItemList[Slice] = pd.Field(alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
+    output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
 class SurfaceIntegralOutput(_AnimationSettings):
     entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
 class ProbeOutput(_AnimationSettings):
     entities: UniqueItemList[Probe] = pd.Field(alias="probes")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
 class AeroAcousticOutput(Flow360BaseModel):
     patch_type: str = pd.Field("solid", frozen=True)
     observers: List[LengthType.Point] = pd.Field()
     write_per_surface_output: bool = pd.Field(False)
+    output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
 
 
 class UserDefinedFields(Flow360BaseModel):
@@ -131,14 +144,17 @@ class UserDefinedFields(Flow360BaseModel):
     pass
 
 
-OutputTypes = Union[
-    SurfaceOutput,
-    TimeAverageSurfaceOutput,
-    VolumeOutput,
-    TimeAverageVolumeOutput,
-    SliceOutput,
-    IsosurfaceOutput,
-    SurfaceIntegralOutput,
-    ProbeOutput,
-    AeroAcousticOutput,
+OutputTypes = Annotated[
+    Union[
+        SurfaceOutput,
+        TimeAverageSurfaceOutput,
+        VolumeOutput,
+        TimeAverageVolumeOutput,
+        SliceOutput,
+        IsosurfaceOutput,
+        SurfaceIntegralOutput,
+        ProbeOutput,
+        AeroAcousticOutput,
+    ],
+    pd.Field(discriminator="output_type"),
 ]

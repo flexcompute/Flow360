@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -11,6 +11,11 @@ from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     VolumeRefinementTypes,
 )
+
+AllowedRefinementTypes = Annotated[
+    Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
+    pd.Field(discriminator="refinement_type"),
+]
 
 
 class MeshingParams(Flow360BaseModel):
@@ -57,9 +62,7 @@ class MeshingParams(Flow360BaseModel):
         None, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )  # Conditionally optional
 
-    refinements: Optional[
-        List[Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes]]
-    ] = pd.Field(
+    refinements: Optional[List[AllowedRefinementTypes]] = pd.Field(
         None,
         description="Additional fine-tunning for refinements.",
     )  # Note: May need discriminator for performance??

@@ -25,6 +25,7 @@ class SurfaceRefinement(Flow360BaseModel):
     these defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.
     """
 
+    refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
@@ -50,6 +51,7 @@ class BoundaryLayer(Flow360BaseModel):
     have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
     """
 
+    refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     first_layer_thickness: LengthType.Positive = pd.Field(
