@@ -11,7 +11,7 @@ surface_mesh_stl = "../tests/data/surface_mesh/airplaneGeometry.stl"
 
 surface_mesh = fl.SurfaceMesh.from_file(surface_mesh_stl, name="airplane-surface-mesh-stl")
 
-surface_mesh = surface_mesh.submit(force_submit=True)
+surface_mesh = surface_mesh.submit()
 print(surface_mesh)
 print(surface_mesh.params)
 

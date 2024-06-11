@@ -2,6 +2,8 @@ import os
 
 os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
+
+fl.Env.preprod.active()
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 
 surface_mesh_stl = "../tests/data/surface_mesh/airplaneGeometry.stl"

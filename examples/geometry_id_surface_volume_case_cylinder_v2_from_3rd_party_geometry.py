@@ -10,7 +10,9 @@ from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingPara
 from flow360.examples import Cylinder3D
 
 # geometry
-geometry_draft = Geometry.from_file(Cylinder3D.geometry, name="testing-cylinder3d-3rd-party-geometry")
+geometry_draft = Geometry.from_file(
+    Cylinder3D.geometry, name="testing-cylinder3d-3rd-party-geometry"
+)
 geometry = geometry_draft.submit()
 print(geometry)
 
