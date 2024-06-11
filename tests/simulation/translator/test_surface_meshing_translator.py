@@ -10,12 +10,11 @@ from flow360.component.simulation.meshing_param.face_params import SurfaceRefine
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.translator.surface_mesh_translator import (
-    get_surface_mesh_json,
+from flow360.component.simulation.translator.surface_meshing_translator import (
+    get_surface_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from tests.simulation.conftest import AssetBase
-from tests.utils import show_dict_diff
 
 
 class TempGeometry(AssetBase):
@@ -85,7 +84,7 @@ def get_test_param():
 
 
 def test_param_to_json(get_test_param, get_geometry):
-    translated = get_surface_mesh_json(get_test_param, get_geometry.mesh_unit)
+    translated = get_surface_meshing_json(get_test_param, get_geometry.mesh_unit)
     import json
 
     # print("====TRANSLATED====\n", json.dumps(translated, indent=4))
@@ -102,5 +101,4 @@ def test_param_to_json(get_test_param, get_geometry):
         "faces": {"wing": {"maxEdgeLength": 0.15}},
     }
 
-    diff = show_dict_diff(translated, ref_dict)
-    assert list(diff) == []
+    assert sorted(translated.items()) == sorted(ref_dict.items())

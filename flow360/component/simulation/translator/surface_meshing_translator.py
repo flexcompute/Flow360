@@ -30,7 +30,7 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement):
 
 
 @preprocess_input
-def get_surface_mesh_json(input_params: SimulationParams, mesh_units):
+def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
 

@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -58,3 +58,6 @@ class BoundaryLayer(Flow360BaseModel):
     growth_rate: pd.PositiveFloat = pd.Field(
         description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported. This is a global setting in mesher.
+
+
+SurfaceRefinementTypes = Union[SurfaceRefinement, BoundaryLayer]

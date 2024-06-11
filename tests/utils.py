@@ -54,7 +54,6 @@ def show_dict_diff(dict1, dict2):
     print("diff")
     print("\n".join(diff))
     print("end of diff")
-    return diff
 
 
 def to_file_from_file_test(obj):
