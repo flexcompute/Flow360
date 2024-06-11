@@ -24,7 +24,7 @@ def test_validate_service():
         },
         "time_stepping": {
             "order_of_accuracy": 2,
-            "model_type": "Steady",
+            "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
@@ -81,7 +81,7 @@ def test_validate_error():
         },
         "time_stepping": {
             "order_of_accuracy": 2,
-            "model_type": "Steady",
+            "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
@@ -139,7 +139,7 @@ def test_validate_multiple_errors():
         },
         "time_stepping": {
             "order_of_accuracy": 2,
-            "model_type": "Steady",
+            "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },

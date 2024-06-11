@@ -44,7 +44,7 @@
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "typeName": "Compressible",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
@@ -125,12 +125,12 @@
             "maxIterations": 15
         },
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelConstants": {
+        "modelingConstants": {
             "C_DES": 0.72,
             "C_d": 8.0,
-            "modelType": "SpalartAllmarasConsts"
+            "typeName": "SpalartAllmarasConsts"
         },
-        "modelType": "SpalartAllmaras",
+        "typeName": "SpalartAllmaras",
         "orderOfAccuracy": 2,
         "quadraticConstitutiveRelation": false,
         "reconstructionGradientLimiter": 0.5,

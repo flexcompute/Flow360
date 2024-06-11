@@ -1367,33 +1367,59 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     values
     """
 
-    base_length: float = pd.Field(np.inf, target_dimension=Flow360LengthUnit)
-    base_angle: float = pd.Field(np.inf, target_dimension=Flow360AngleUnit)
-    base_mass: float = pd.Field(np.inf, target_dimension=Flow360MassUnit)
-    base_time: float = pd.Field(np.inf, target_dimension=Flow360TimeUnit)
-    base_temperature: float = pd.Field(np.inf, target_dimension=Flow360TemperatureUnit)
-    base_velocity: float = pd.Field(np.inf, target_dimension=Flow360VelocityUnit)
-    base_area: float = pd.Field(np.inf, target_dimension=Flow360AreaUnit)
-    base_force: float = pd.Field(np.inf, target_dimension=Flow360ForceUnit)
-    base_density: float = pd.Field(np.inf, target_dimension=Flow360DensityUnit)
-    base_pressure: float = pd.Field(np.inf, target_dimension=Flow360PressureUnit)
-    base_viscosity: float = pd.Field(np.inf, target_dimension=Flow360ViscosityUnit)
-    base_power: float = pd.Field(np.inf, target_dimension=Flow360PowerUnit)
-    base_moment: float = pd.Field(np.inf, target_dimension=Flow360MomentUnit)
-    base_angular_velocity: float = pd.Field(np.inf, target_dimension=Flow360AngularVelocityUnit)
-    base_heat_flux: float = pd.Field(np.inf, target_dimension=Flow360HeatFluxUnit)
-    base_heat_source: float = pd.Field(np.inf, target_dimension=Flow360HeatSourceUnit)
+    base_length: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360LengthUnit})
+    base_angle: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360AngleUnit})
+    base_mass: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360MassUnit})
+    base_time: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360TimeUnit})
+    base_temperature: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360TemperatureUnit}
+    )
+    base_velocity: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360VelocityUnit}
+    )
+    base_area: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360AreaUnit})
+    base_force: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360ForceUnit})
+    base_density: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360DensityUnit}
+    )
+    base_pressure: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360PressureUnit}
+    )
+    base_viscosity: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360ViscosityUnit}
+    )
+    base_power: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360PowerUnit})
+    base_moment: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360MomentUnit})
+    base_angular_velocity: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360AngularVelocityUnit}
+    )
+    base_heat_flux: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360HeatFluxUnit}
+    )
+    base_heat_source: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360HeatSourceUnit}
+    )
     base_specific_heat_capacity: float = pd.Field(
-        np.inf, target_dimension=Flow360SpecificHeatCapacityUnit
+        np.inf, json_schema_extra={"target_dimension": Flow360SpecificHeatCapacityUnit}
     )
     base_thermal_conductivity: float = pd.Field(
-        np.inf, target_dimension=Flow360ThermalConductivityUnit
+        np.inf, json_schema_extra={"target_dimension": Flow360ThermalConductivityUnit}
     )
-    base_inverse_area: float = pd.Field(np.inf, target_dimension=Flow360InverseAreaUnit)
-    base_inverse_length: float = pd.Field(np.inf, target_dimension=Flow360InverseLengthUnit)
-    base_mass_flow_rate: float = pd.Field(np.inf, target_dimension=Flow360MassFlowRateUnit)
-    base_specific_energy: float = pd.Field(np.inf, target_dimension=Flow360SpecificEnergyUnit)
-    base_frequency: float = pd.Field(np.inf, target_dimension=Flow360FrequencyUnit)
+    base_inverse_area: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360InverseAreaUnit}
+    )
+    base_inverse_length: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360InverseLengthUnit}
+    )
+    base_mass_flow_rate: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360MassFlowRateUnit}
+    )
+    base_specific_energy: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360SpecificEnergyUnit}
+    )
+    base_frequency: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360FrequencyUnit}
+    )
 
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
