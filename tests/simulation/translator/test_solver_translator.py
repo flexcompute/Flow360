@@ -5,8 +5,6 @@ from pathlib import Path
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.solver_numerics import (
     LinearSolver,
     NavierStokesSolver,
@@ -33,7 +31,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from tests.utils import show_dict_diff, to_file_from_file_test
 
 
 @pytest.fixture()

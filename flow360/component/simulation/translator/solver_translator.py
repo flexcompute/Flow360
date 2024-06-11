@@ -101,11 +101,11 @@ def get_solver_json(
         "Temperature": op.thermal_state.temperature.to("K").v.item(),
         "muRef": op.thermal_state.mu_ref(mesh_unit),
     }
-    if "reference_velocity_magnitude" in op.__fields__ and op.reference_velocity_magnitude:
+    if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
 
     ts = input_params.time_stepping
-    if ts.model_type == "Unsteady":
+    if ts.type_name == "Unsteady":
         translated["timeStepping"] = {
             "CFL": to_dict(ts.CFL),
             "physicalSteps": ts.physical_steps,
@@ -135,9 +135,9 @@ def get_solver_json(
         if isinstance(model, Fluid):
             translated["navierStokesSolver"] = to_dict(model.navier_stokes_solver)
             translated["turbulenceModelSolver"] = to_dict(model.turbulence_model_solver)
-            model_constants = translated["turbulenceModelSolver"]["modelConstants"]
-            model_constants["C_d"] = model_constants.pop("CD")
-            model_constants["C_DES"] = model_constants.pop("CDES")
+            modeling_constants = translated["turbulenceModelSolver"]["modelingConstants"]
+            modeling_constants["C_d"] = modeling_constants.pop("CD")
+            modeling_constants["C_DES"] = modeling_constants.pop("CDES")
         elif isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
             for surface in model.entities.stored_entities:
                 spec = to_dict(model)

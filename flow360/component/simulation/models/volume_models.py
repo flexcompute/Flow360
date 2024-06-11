@@ -51,11 +51,11 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 
 
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
-    rho: str = pd.Field(displayed="rho [non-dim]")
-    u: str = pd.Field(displayed="u [non-dim]")
-    v: str = pd.Field(displayed="v [non-dim]")
-    w: str = pd.Field(displayed="w [non-dim]")
-    p: str = pd.Field(displayed="p [non-dim]")
+    rho: str = pd.Field()
+    u: str = pd.Field()
+    v: str = pd.Field()
+    w: str = pd.Field()
+    p: str = pd.Field()
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -63,7 +63,7 @@ class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
-    temperature: str = pd.Field(displayed="T [non-dim]")
+    temperature: str = pd.Field()
 
 
 class PDEModelBase(Flow360BaseModel):
