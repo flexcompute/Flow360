@@ -59,7 +59,7 @@ class ThermalState(CachedModelBase):
     material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
     _cached: ThermalStateCache = ThermalStateCache()
 
-    # pylint: disable=no-self-argument, not-callable
+    # pylint: disable=no-self-argument, not-callable, unused-argument
     @CachedModelBase.model_constructor
     @pd.validate_call
     def from_standard_atmosphere(
