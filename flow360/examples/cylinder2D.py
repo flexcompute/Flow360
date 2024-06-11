@@ -1,12 +1,12 @@
 """
-cylinder2d example
+cylinder2D example
 """
 
 from .base_test_case import BaseTestCase
 
 
 class Cylinder2D(BaseTestCase):
-    name = "cylinder2d"
+    name = "cylinder2D"
 
     class url:
         mesh = "https://simcloud-public-1.s3.amazonaws.com/examples/cylinder/cylinder.cgns"

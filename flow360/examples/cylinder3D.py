@@ -1,5 +1,5 @@
 """
-cylinder3d example
+cylinder3D example
 """
 
 from .base_test_case import BaseTestCase

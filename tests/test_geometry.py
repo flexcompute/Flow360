@@ -21,7 +21,7 @@ def test_draft_geometry_from_file():
     with pytest.raises(ex.Flow360FileError, match="not found"):
         sm = Geometry.from_file("data/geometry/no_exist.step")
 
-    Cylinder.get_files()
-    sm = Geometry.from_file(Cylinder.geometry)
-    sm = Geometry.from_file(Cylinder.geometry)
+    Cylinder3D.get_files()
+    sm = Geometry.from_file(Cylinder3D.geometry)
+    sm = Geometry.from_file(Cylinder3D.geometry)
     assert sm

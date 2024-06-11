@@ -27,7 +27,7 @@ from .resource_base import (
 )
 from .utils import shared_account_confirm_proceed, validate_type
 from .validator import Validator
-from .volume_mesh import VolumeMeshDraft
+from .volume_mesh import VolumeMeshDraft, UGRIDEndianness
 
 
 class SurfaceMeshDownloadable(Enum):
@@ -43,7 +43,7 @@ class SurfaceMeshFileFormat(Enum):
     Surface mesh file format
     """
 
-    UGRID = "lb8.ugrid"
+    UGRID = "aflr3"
     STL = "stl"
 
     def ext(self) -> str:
@@ -52,7 +52,7 @@ class SurfaceMeshFileFormat(Enum):
         :return:
         """
         if self is SurfaceMeshFileFormat.UGRID:
-            return ".lb8.ugrid"
+            return ".ugrid"
         if self is SurfaceMeshFileFormat.STL:
             return ".stl"
         return ""
@@ -63,6 +63,7 @@ class SurfaceMeshFileFormat(Enum):
         detects mesh format from filename
         """
         ext = os.path.splitext(file)[1]
+        print("debug=== ext = " + ext)
         if ext == SurfaceMeshFileFormat.UGRID.ext():
             return SurfaceMeshFileFormat.UGRID
         if ext == SurfaceMeshFileFormat.STL.ext():
