@@ -9,7 +9,6 @@ import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
-from pydantic.alias_generators import to_camel
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.conversion import (
@@ -21,6 +20,17 @@ from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
+
+
+def custom_to_camel(string: str) -> str:
+    components = string.split("_")
+
+    camel_case_string = components[0]
+
+    for component in components[1:]:
+        camel_case_string += component[0].upper() + component[1:]
+
+    return camel_case_string
 
 
 class Conflicts(pd.BaseModel):
@@ -96,7 +106,7 @@ class Flow360BaseModel(pd.BaseModel):
         include_hash=False,
         include_defaults_in_schema=True,
         alias_generator=pd.AliasGenerator(
-            serialization_alias=to_camel,
+            serialization_alias=custom_to_camel,
         ),
     )
 

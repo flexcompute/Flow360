@@ -109,8 +109,14 @@ class ThermalState(CachedModelBase):
         """Computes dynamic viscosity."""
         # pylint: disable=fixme
         # TODO: implement
-        # return self.material.speed_of_sound(self.temperature)
+        # return self.material.dynamic_viscosity(self.temperature)
         return 1.825e-5 * u.Pa * u.s
+
+    @pd.validate_call
+    def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
+        """Computes nondimensional dynamic viscosity."""
+        # TODO: use unit system for nondimensionalization
+        return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()
 
 
 class GenericReferenceCondition(Flow360BaseModel):
@@ -163,7 +169,10 @@ class AerospaceCondition(Flow360BaseModel):
         """Constructs a `AerospaceCondition` from Mach number and thermal state."""
 
         velocity_magnitude = mach * atmosphere.speed_of_sound
-        reference_velocity_magnitude = reference_mach * atmosphere.speed_of_sound
+
+        reference_velocity_magnitude = (
+            reference_mach * atmosphere.speed_of_sound if reference_mach else None
+        )
         return cls(
             velocity_magnitude=velocity_magnitude,
             alpha=alpha,

@@ -8,7 +8,7 @@ from flow360.component.simulation.unit_system import TimeType
 
 
 def _apply_default_to_none(original, default):
-    for field_name, value in original.model_fields.items():
+    for field_name, value in original.model_dump().items():
         if value is None:
             setattr(original, field_name, default.dict()[field_name])
     return original

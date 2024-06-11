@@ -73,7 +73,7 @@ class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericSolverSettings` class"""
 
     absolute_tolerance: PositiveFloat = pd.Field(1.0e-10)
-    relative_tolerance: Optional[NonNegativeFloat] = pd.Field(None)
+    relative_tolerance: NonNegativeFloat = pd.Field(0)
     order_of_accuracy: Literal[1, 2] = pd.Field(2)
     equation_eval_frequency: PositiveInt = pd.Field(1)
     update_jacobian_frequency: PositiveInt = pd.Field(4)
@@ -247,6 +247,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
+    CFL_multiplier: PositiveFloat = pd.Field(2.0)
     model_type: str = pd.Field()
     absolute_tolerance: PositiveFloat = pd.Field(1e-8)
     equation_eval_frequency: PositiveInt = pd.Field(4)
