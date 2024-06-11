@@ -198,7 +198,7 @@ def test_simulation_to_case_json():
                     "linear_solver": {"max_iterations": 25},
                     "low_mach_preconditioner": False,
                     "max_force_jac_update_physical_steps": 0,
-                    "model_type": "Compressible",
+                    "type_name": "Compressible",
                     "numerical_dissipation_factor": 1.0,
                     "order_of_accuracy": 2,
                     "relative_tolerance": 0.0,
@@ -212,12 +212,12 @@ def test_simulation_to_case_json():
                     "grid_size_for_LES": "maxEdgeLength",
                     "linear_solver": {"max_iterations": 15},
                     "max_force_jac_update_physical_steps": 0,
-                    "model_constants": {
+                    "modeling_constants": {
                         "C_DES": 0.72,
                         "C_d": 8.0,
-                        "model_type": "SpalartAllmarasConsts",
+                        "type_name": "SpalartAllmarasConsts",
                     },
-                    "model_type": "SpalartAllmaras",
+                    "type_name": "SpalartAllmaras",
                     "order_of_accuracy": 2,
                     "quadratic_constitutive_relation": False,
                     "reconstruction_gradient_limiter": 0.5,
@@ -312,7 +312,7 @@ def test_simulation_to_case_json():
         "time_stepping": {
             "CFL": {"final": 200.0, "initial": 5.0, "ramp_steps": 40, "type": "ramp"},
             "max_steps": 2000,
-            "model_type": "Steady",
+            "type_name": "Steady",
             "order_of_accuracy": 2,
         },
         "unit_system": {"name": "SI"},
