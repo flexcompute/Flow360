@@ -112,7 +112,7 @@ def get_test_param():
 def test_param_to_json(get_test_param):
     translated = get_solver_json(get_test_param, mesh_unit=0.8059 * u.m)
     with open(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref/Flow360_om6Wing.json")
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "Flow360_om6Wing.json")
     ) as fh:
         ref_dict = json.load(fh)
 

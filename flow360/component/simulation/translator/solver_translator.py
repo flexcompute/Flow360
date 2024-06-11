@@ -138,7 +138,7 @@ def get_solver_json(
             model_constants = translated["turbulenceModelSolver"]["modelConstants"]
             model_constants["C_d"] = model_constants.pop("CD")
             model_constants["C_DES"] = model_constants.pop("CDES")
-        elif isinstance(model, Union[Freestream, SlipWall, SymmetryPlane, Wall]):
+        elif isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
             for surface in model.entities.stored_entities:
                 spec = to_dict(model)
                 spec.pop("surfaces")
