@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import json
+from collections import OrderedDict
 
 from flow360.component.simulation.simulation_params import (
     SimulationParams,  # Not required
@@ -46,6 +47,25 @@ def get_simulation_param_dict(
     if param is not None:
         return param.preprocess(validated_mesh_unit)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
+
+
+def remove_units_in_dict(input_dict):
+    unit_keys = {"value", "units"}
+    if isinstance(input_dict, dict):
+        new_dict = {}
+        if input_dict.keys() == unit_keys:
+            new_dict = input_dict["value"]
+            return new_dict
+        for key, value in input_dict.items():
+            if isinstance(value, dict) and value.keys() == unit_keys:
+                new_dict[key] = value["value"]
+            else:
+                new_dict[key] = remove_units_in_dict(value)
+        return new_dict
+    elif isinstance(input_dict, list):
+        return [remove_units_in_dict(item) for item in input_dict]
+    else:
+        return input_dict
 
 
 def get_attribute_from_first_instance(
@@ -98,3 +118,8 @@ def translate_setting_and_apply_to_all_entities(
                     setting.update(translated_setting)
                     output.append(setting)
     return output
+
+
+def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
+    combined = list1 + list2
+    return list(OrderedDict.fromkeys(combined))

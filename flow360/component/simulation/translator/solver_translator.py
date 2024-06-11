@@ -1,4 +1,3 @@
-import re
 from typing import Union
 
 from flow360.component.simulation.models.surface_models import (
@@ -17,24 +16,15 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_attribute_from_first_instance,
+    merge_unique_item_lists,
     preprocess_input,
+    remove_units_in_dict,
 )
 from flow360.component.simulation.unit_system import LengthType
 
 
-def to_dict(input_params):
+def dump_dict(input_params):
     return input_params.model_dump(by_alias=True, exclude_none=True)
-
-
-def to_dict_without_unit(input_params):
-    # TODO: implement recursion
-    unit_keys = {"value", "units"}
-    output_dict = to_dict(input_params)
-    for key, value in output_dict.items():
-        output_dict[key] = (
-            value["value"] if isinstance(value, dict) and value.keys() == unit_keys else value
-        )
-    return output_dict
 
 
 def remove_empty_keys(input_dict):
@@ -52,11 +42,6 @@ def init_output_attr_dict(obj_list, class_type):
     }
 
 
-def merge_unique_item_lists(list1: list, list2: list) -> list:
-    # TODO: implement
-    return list1 + list2
-
-
 @preprocess_input
 def get_solver_json(
     input_params: Union[str, dict, SimulationParams],
@@ -65,13 +50,49 @@ def get_solver_json(
     """
     Get the solver json from the simulation parameters.
     """
-    outputs = input_params.outputs
-    translated = {
-        "boundaries": {},
-        "volumeOutput": init_output_attr_dict(outputs, VolumeOutput),
-        "surfaceOutput": init_output_attr_dict(outputs, SurfaceOutput),
-        "sliceOutput": init_output_attr_dict(outputs, SliceOutput),
+    translated = {}
+    ##:: Step 1: Get geometry:
+    geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
+    ml = geometry["momentLength"]
+    translated["geometry"] = {
+        "momentCenter": list(geometry["momentCenter"]),
+        "momentLength": list(ml) if isinstance(ml, tuple) else [ml, ml, ml],
+        "refArea": geometry["area"],
     }
+    ##:: Step 2: Get freestream
+    op = input_params.operating_condition
+    translated["freestream"] = {
+        "alphaAngle": op.alpha.to("degree").v.item(),
+        "betaAngle": op.beta.to("degree").v.item(),
+        "Mach": op.velocity_magnitude.v.item(),
+        "Temperature": op.thermal_state.temperature.to("K").v.item(),
+        "muRef": op.thermal_state.mu_ref(mesh_unit),
+    }
+    if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
+        translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
+
+    ##:: Step 3: Get boundaries
+    translated["boundaries"] = {}
+    for model in input_params.models:
+        if isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
+            for surface in model.entities.stored_entities:
+                spec = dump_dict(model)
+                spec.pop("surfaces")
+            if isinstance(model, Wall):
+                spec.pop("useWallFunction")
+                spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
+                if model.heat_spec:
+                    spec.pop("heat_spec")
+                    # TODO: implement
+            translated["boundaries"][surface.name] = spec
+
+    ##:: Step 4: Get outputs
+    outputs = input_params.outputs
+
+    translated["volumeOutput"] = init_output_attr_dict(outputs, VolumeOutput)
+    translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
+    translated["sliceOutput"] = init_output_attr_dict(outputs, SliceOutput)
+
     translated["volumeOutput"].update(
         {
             "outputFields": get_attribute_from_first_instance(
@@ -90,65 +111,6 @@ def get_solver_json(
         }
     )
     translated["sliceOutput"].update({"slices": {}})
-
-    bd = translated["boundaries"]
-
-    op = input_params.operating_condition
-    translated["freestream"] = {
-        "alphaAngle": op.alpha.to("degree").v.item(),
-        "betaAngle": op.beta.to("degree").v.item(),
-        "Mach": op.velocity_magnitude.v.item(),
-        "Temperature": op.thermal_state.temperature.to("K").v.item(),
-        "muRef": op.thermal_state.mu_ref(mesh_unit),
-    }
-    if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
-        translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
-
-    ts = input_params.time_stepping
-    if ts.type_name == "Unsteady":
-        translated["timeStepping"] = {
-            "CFL": to_dict(ts.CFL),
-            "physicalSteps": ts.physical_steps,
-            "orderOfAccuracy": ts.order_of_accuracy,
-            "maxPseudoSteps": ts.max_pseudo_steps,
-            "timeStepSize": ts.time_step_size,
-        }
-    else:
-        translated["timeStepping"] = {
-            "CFL": to_dict(ts.CFL),
-            "physicalSteps": 1,
-            "orderOfAccuracy": ts.order_of_accuracy,
-            "maxPseudoSteps": ts.max_steps,
-            "timeStepSize": "inf",
-        }
-    to_dict(input_params.time_stepping)
-
-    geometry = to_dict_without_unit(input_params.reference_geometry)
-    ml = geometry["momentLength"]
-    translated["geometry"] = {
-        "momentCenter": list(geometry["momentCenter"]),
-        "momentLength": list(ml) if isinstance(ml, tuple) else [ml, ml, ml],
-        "refArea": geometry["area"],
-    }
-
-    for model in input_params.models:
-        if isinstance(model, Fluid):
-            translated["navierStokesSolver"] = to_dict(model.navier_stokes_solver)
-            translated["turbulenceModelSolver"] = to_dict(model.turbulence_model_solver)
-            modeling_constants = translated["turbulenceModelSolver"]["modelingConstants"]
-            modeling_constants["C_d"] = modeling_constants.pop("CD")
-            modeling_constants["C_DES"] = modeling_constants.pop("CDES")
-        elif isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
-            for surface in model.entities.stored_entities:
-                spec = to_dict(model)
-                spec.pop("surfaces")
-            if isinstance(model, Wall):
-                spec.pop("useWallFunction")
-                spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
-                if model.heat_spec:
-                    spec.pop("heat_spec")
-                    # TODO: implement
-            bd[surface.name] = spec
 
     for output in input_params.outputs:
         # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
@@ -173,8 +135,37 @@ def get_solver_json(
                         slices.get(slice.name, {}).get("outputFields", []),
                         output.output_fields.model_dump()["items"],
                     ),
-                    "sliceOrigin": list(to_dict_without_unit(slice)["sliceOrigin"]),
-                    "sliceNormal": list(to_dict_without_unit(slice)["sliceNormal"]),
+                    "sliceOrigin": list(remove_units_in_dict(dump_dict(slice))["sliceOrigin"]),
+                    "sliceNormal": list(remove_units_in_dict(dump_dict(slice))["sliceNormal"]),
                 }
+
+    ##:: Step 5: Get timeStepping
+    ts = input_params.time_stepping
+    if ts.type_name == "Unsteady":
+        translated["timeStepping"] = {
+            "CFL": dump_dict(ts.CFL),
+            "physicalSteps": ts.physical_steps,
+            "orderOfAccuracy": ts.order_of_accuracy,
+            "maxPseudoSteps": ts.max_pseudo_steps,
+            "timeStepSize": ts.time_step_size,
+        }
+    else:
+        translated["timeStepping"] = {
+            "CFL": dump_dict(ts.CFL),
+            "physicalSteps": 1,
+            "orderOfAccuracy": ts.order_of_accuracy,
+            "maxPseudoSteps": ts.max_steps,
+            "timeStepSize": "inf",
+        }
+    dump_dict(input_params.time_stepping)
+
+    ##:: Step 6: Get solver settings
+    for model in input_params.models:
+        if isinstance(model, Fluid):
+            translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
+            modeling_constants = translated["turbulenceModelSolver"]["modelingConstants"]
+            modeling_constants["C_d"] = modeling_constants.pop("CD")
+            modeling_constants["C_DES"] = modeling_constants.pop("CDES")
 
     return translated
