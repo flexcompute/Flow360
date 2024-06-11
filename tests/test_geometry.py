@@ -4,7 +4,7 @@ import pytest
 
 from flow360 import exceptions as ex
 from flow360.component.geometry import Geometry
-from flow360.examples import Cylinder
+from flow360.examples import Cylinder3D
 
 assertions = unittest.TestCase("__init__")
 
