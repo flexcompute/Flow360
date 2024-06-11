@@ -6,9 +6,9 @@ fl.Env.preprod.active()
 
 from flow360.component.geometry import Geometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
-from flow360.examples import Cylinder
+from flow360.examples import Cylinder3D
 
-geometry = Geometry.from_file(Cylinder.geometry, name="cylinder-geometry")
+geometry = Geometry.from_file(Cylinder3D.geometry, name="cylinder3d-geometry")
 geometry = geometry.submit()
 
 print(geometry)
@@ -19,7 +19,7 @@ params = fl.SurfaceMeshingParams(max_edge_length=10)
 surface_mesh = fl.SurfaceMesh.create(
     geometry_id=geometry.id,
     params=params,
-    name="cylinder-surface-mesh-from-geometry",
+    name="cylinder3d-surface-mesh-from-geometry",
 )
 surface_mesh = surface_mesh.submit(force_submit=True)
 
@@ -37,7 +37,7 @@ params = fl.VolumeMeshingParams(
 
 volume_mesh = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
-    name="cylinder-volume-mesh-from-geometry",
+    name="cylinder3d-volume-mesh-from-geometry",
     params=params,
 )
 volume_mesh = volume_mesh.submit(force_submit=True)

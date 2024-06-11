@@ -1,6 +1,5 @@
 import os
 
-os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
 
 fl.Env.preprod.active()
@@ -10,18 +9,17 @@ from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingPara
 from flow360.examples import Cylinder3D
 
 # geometry
-geometry_draft = Geometry.from_file(Cylinder.geometry, name="testing-cylinder-3rd-party-geometry")
+geometry_draft = Geometry.from_file(Cylinder3D.geometry, name="testing-cylinder3d-3rd-party-geometry")
 geometry = geometry_draft.submit()
 print(geometry)
 
 # surface mesh
-params = fl.SurfaceMeshingParams(version="v2", max_edge_length=0.5)
+params = fl.SurfaceMeshingParams(max_edge_length=0.5)
 
 surface_mesh_draft = fl.SurfaceMesh.create(
     geometry_id=geometry.id,
     params=params,
-    name="cylinder-surface-mesh-from-3rd-party-geometry-v2",
-    solver_version="mesher-24.2.1",
+    name="cylinder3d-surface-mesh-from-3rd-party-geometry-v1",
 )
 surface_mesh = surface_mesh_draft.submit()
 
@@ -29,7 +27,6 @@ print(surface_mesh)
 
 # volume mesh
 params = fl.VolumeMeshingParams(
-    version="v2",
     volume=Volume(
         first_layer_thickness=1e-4,
         growth_rate=1.2,
@@ -39,9 +36,8 @@ params = fl.VolumeMeshingParams(
 
 volume_mesh_draft = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
-    name="cylinder-volume-mesh-from-3rd-party-geometry-id-v2",
+    name="cylinder3d-volume-mesh-from-3rd-party-geometry-id-v1",
     params=params,
-    solver_version="mesher-24.2.1",
 )
 volume_mesh = volume_mesh_draft.submit()
 print(volume_mesh)
@@ -49,10 +45,10 @@ print(volume_mesh)
 # case
 params = fl.Flow360Params(Cylinder3D.case_json)
 params.boundaries = {
-    "farfield": fl.FreestreamBoundary(),
-    "unspecified": fl.NoSlipWall(),
+    "fluid/farfield": fl.FreestreamBoundary(),
+    "fluid/unspecified": fl.NoSlipWall(),
 }
 case_draft = volume_mesh.create_case(
-    "cylinder-case-from-egads-3rd-party-geometry-id-v2", params, solver_version="mesher-24.2.1"
+    "cylinder3d-case-from-egads-3rd-party-geometry-id-v1", params, solver_version="mesher-24.2.1"
 )
 case = case_draft.submit()
