@@ -27,6 +27,7 @@ def to_dict(input_params):
 
 
 def to_dict_without_unit(input_params):
+    # TODO: implement recursion
     unit_keys = {"value", "units"}
     output_dict = to_dict(input_params)
     for key, value in output_dict.items():
@@ -51,12 +52,6 @@ def init_output_attr_dict(obj_list, class_type):
     }
 
 
-def get_output_fields(obj_list, class_type):
-    return get_attribute_from_first_instance(obj_list, class_type, "output_fields").model_dump()[
-        "items"
-    ]
-
-
 def merge_unique_item_lists(list1: list, list2: list) -> list:
     # TODO: implement
     return list1 + list2
@@ -68,7 +63,7 @@ def get_solver_json(
     mesh_unit: LengthType.Positive,
 ):
     """
-    Get the surface mesh json from the simulation parameters.
+    Get the solver json from the simulation parameters.
     """
     outputs = input_params.outputs
     translated = {
@@ -78,7 +73,12 @@ def get_solver_json(
         "sliceOutput": init_output_attr_dict(outputs, SliceOutput),
     }
     translated["volumeOutput"].update(
-        {"outputFields": get_output_fields(outputs, VolumeOutput), "computeTimeAverages": False}
+        {
+            "outputFields": get_attribute_from_first_instance(
+                outputs, VolumeOutput, "output_fields"
+            ).model_dump()["items"],
+            "computeTimeAverages": False,
+        }
     )
     translated["surfaceOutput"].update(
         {
@@ -101,7 +101,7 @@ def get_solver_json(
         "Temperature": op.thermal_state.temperature.to("K").v.item(),
         "muRef": op.thermal_state.mu_ref(mesh_unit),
     }
-    if "reference_velocity_magnitude" in op and op.reference_velocity_magnitude:
+    if "reference_velocity_magnitude" in op.__fields__ and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
 
     ts = input_params.time_stepping

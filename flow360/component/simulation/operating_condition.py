@@ -109,12 +109,13 @@ class ThermalState(CachedModelBase):
         """Computes dynamic viscosity."""
         # pylint: disable=fixme
         # TODO: implement
-        # return self.material.speed_of_sound(self.temperature)
+        # return self.material.dynamic_viscosity(self.temperature)
         return 1.825e-5 * u.Pa * u.s
 
     @pd.validate_call
     def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
         """Computes nondimensional dynamic viscosity."""
+        # TODO: use unit system for nondimensionalization
         return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()
 
 
