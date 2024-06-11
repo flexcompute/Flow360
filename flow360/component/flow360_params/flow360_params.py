@@ -495,7 +495,7 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     model_type: str
     alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0, displayed="Alpha angle [deg]")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0, displayed="Beta angle [deg]")
-    turbulent_viscosity_ratio: Optional[pd.NonNegativeFloat] = pd.Field(
+    turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
     ## Legacy update pending.
@@ -1502,7 +1502,7 @@ class FreestreamLegacy(LegacyModel):
     temperature: Union[Literal[-1], pd.PositiveFloat] = pd.Field(alias="Temperature")
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulent_viscosity_ratio: Optional[pd.NonNegativeFloat] = pd.Field(
+    turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
         alias="turbulentViscosityRatio"
     )
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
