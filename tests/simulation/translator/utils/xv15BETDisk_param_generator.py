@@ -59,6 +59,7 @@ def create_param_base():
                     output_fields=["primitiveVars", "betMetrics", "qcriterion"],
                 ),
                 SurfaceOutput(
+                    surfaces=Surface(name="1"),
                     output_format="both",
                     output_fields=["primitiveVars", "Cp", "Cf", "CfVec"],
                 ),

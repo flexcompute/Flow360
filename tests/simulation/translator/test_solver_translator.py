@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 
 import pytest
 
@@ -16,10 +15,7 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.models.volume_models import Fluid
-from flow360.component.simulation.operating_condition import (
-    AerospaceCondition,
-    ThermalState,
-)
+from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
@@ -40,7 +36,7 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
 
 
 @pytest.fixture()
-def get_test_param():
+def get_om6Wing_tutorial_param():
     my_wall = Surface(name="1")
     my_symmetry_plane = Surface(name="2")
     my_freestream = Surface(name="3")
@@ -112,14 +108,18 @@ def get_test_param():
     return param
 
 
-def test_param_to_json(get_test_param):
-    translated = get_solver_json(get_test_param, mesh_unit=0.8059 * u.m)
-    with open(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "Flow360_om6Wing.json")
-    ) as fh:
+def translate_and_compare(param, mesh_unit, ref_json_file: str):
+    translated = get_solver_json(param, mesh_unit=mesh_unit)
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
 
     assert sorted(ref_dict.items()) == sorted(translated.items())
+
+
+def test_om6wing_tutorial(get_om6Wing_tutorial_param):
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
 
 
 ##::  Test with local test cases
@@ -130,10 +130,10 @@ def test_xv15_bet_disk(
     create_unsteady_hover_UDD_param,
 ):
     param = create_steady_hover_param
-    print(param.model_dump_json(indent=4, exclude_none=True))
     param = create_steady_airplane_param
-    print(param.model_dump_json(indent=4, exclude_none=True))
     param = create_unsteady_hover_param
-    print(param.model_dump_json(indent=4, exclude_none=True))
+
     param = create_unsteady_hover_UDD_param
-    print(param.model_dump_json(indent=4, exclude_none=True))
+    # translate_and_compare(
+    #     param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
+    # )

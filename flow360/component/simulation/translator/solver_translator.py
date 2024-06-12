@@ -168,4 +168,10 @@ def get_solver_json(
             modeling_constants["C_d"] = modeling_constants.pop("CD")
             modeling_constants["C_DES"] = modeling_constants.pop("CDES")
 
+    ##:: Step 7: Get user defined dynamics
+    if input_params.user_defined_dynamics is not None:
+        translated["userDefinedDynamics"] = []
+        for udd in input_params.user_defined_dynamics:
+            translated["userDefinedDynamics"].append(dump_dict(udd))
+
     return translated
