@@ -1,0 +1,37 @@
+{
+  "farfield": "auto",
+  "refinement_factor": 1.0,
+  "gap_treatment_strength": null,
+  "surface_layer_growth_rate": 1.5,
+  "refinements": [
+    {
+      "refinement_type": "BoundaryLayer",
+      "type": "aniso",
+      "entities": null,
+      "first_layer_thickness": {
+        "value": 0.001,
+        "units": "m"
+      },
+      "growth_rate": 1.2
+    },
+    {
+      "refinement_type": "SurfaceRefinement",
+      "entities": {
+        "stored_entities": [
+          {
+            "name": "wing"
+          }
+        ]
+      },
+      "max_edge_length": {
+        "value": 15.0,
+        "units": "cm"
+      },
+      "curvature_resolution_angle": {
+        "value": 10.0,
+        "units": "degree"
+      }
+    }
+  ],
+  "volume_zones": []
+}

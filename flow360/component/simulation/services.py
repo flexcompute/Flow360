@@ -3,7 +3,11 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
-from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.simulation_params import (
+    ReferenceGeometry,
+    SimulationParams,
+)
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -19,7 +23,6 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
-from flow360.log import log
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -64,6 +67,41 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
+def get_default_params(unit_system_name, length_unit) -> SimulationParams:
+    """
+    Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
+    contain empty required values. When generating default case settings:
+    - Use Model() if all fields has defaults or there are no required fields
+    - Use Model.construct() to disable validation - when there are required fields without value
+
+    Parameters
+    ----------
+    unit_system_name : str
+        The name of the unit system to use for parameter initialization.
+
+    Returns
+    -------
+    SimulationParams
+        Default parameters for Flow360 simulation.
+
+    """
+    if length_unit is not None:
+        # TODO implement handling of length_unit (geometry unit and mesh unit), # pylint: disable=fixme
+        pass
+
+    unit_system = init_unit_system(unit_system_name)
+
+    with unit_system:
+        params = SimulationParams(
+            reference_geometry=ReferenceGeometry(
+                area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
+            ),
+            models=[Fluid()],
+        )
+
+    return params
+
+
 def validate_model(params_as_dict, unit_system_name):
     """
     Validate a params dict against the pydantic model
@@ -73,6 +111,7 @@ def validate_model(params_as_dict, unit_system_name):
     unit_system = init_unit_system(unit_system_name)
 
     validation_errors = None
+    validation_warnings = None
     validated_param = None
 
     try:
@@ -101,7 +140,7 @@ def validate_model(params_as_dict, unit_system_name):
                     errors_as_list.remove(field)
                     error["loc"] = tuple(errors_as_list)
 
-    return validated_param, validation_errors
+    return validated_param, validation_errors, validation_warnings
 
 
 # pylint: disable=too-many-arguments
@@ -109,7 +148,6 @@ def _translate_simulation_json(
     params_as_dict,
     unit_system_name,
     mesh_unit,
-    existing_json=None,
     target_name: str = None,
     translation_func=None,
 ):
@@ -118,7 +156,8 @@ def _translate_simulation_json(
 
     """
     translated_dict = None
-    param, errors = validate_model(params_as_dict, unit_system_name)
+    # pylint: disable=unused-variable
+    param, errors, warnings = validate_model(params_as_dict, unit_system_name)
     if errors is not None:
         # pylint: disable=fixme
         # TODO: Check if this looks good in terminal.
@@ -133,43 +172,39 @@ def _translate_simulation_json(
         raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
     # pylint: disable=fixme
     # TODO: Implement proper hashing. Currently floating point creates headache for reproducible hashing.
-    if existing_json is not None and hash(translated_dict) == existing_json["hash"]:
-        log.info(f"Translation of {target_name} is same as existing. Skipping translation.")
-        return existing_json
-    return translated_dict
+    # pylint: disable=protected-access
+    hash_value = SimulationParams._calculate_hash(translated_dict)
+    return translated_dict, hash_value
 
 
-def simulation_to_surface_meshing_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+def simulation_to_surface_meshing_json(params_as_dict, unit_system_name, mesh_unit):
     """Get JSON for surface meshing from a given simulaiton JSON."""
     return _translate_simulation_json(
         params_as_dict,
         unit_system_name,
         mesh_unit,
-        existing_json,
         "surface meshing",
         get_surface_meshing_json,
     )
 
 
-def simulation_to_volume_meshing_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+def simulation_to_volume_meshing_json(params_as_dict, unit_system_name, mesh_unit):
     """Get JSON for volume meshing from a given simulaiton JSON."""
     return _translate_simulation_json(
         params_as_dict,
         unit_system_name,
         mesh_unit,
-        existing_json,
         "volume meshing",
         get_volume_meshing_json,
     )
 
 
-def simulation_to_case_json(params_as_dict, unit_system_name, mesh_unit, existing_json):
+def simulation_to_case_json(params_as_dict, unit_system_name, mesh_unit):
     """Get JSON for case from a given simulaiton JSON."""
     return _translate_simulation_json(
         params_as_dict,
         unit_system_name,
         mesh_unit,
-        existing_json,
         "case",
         get_solver_json,
     )

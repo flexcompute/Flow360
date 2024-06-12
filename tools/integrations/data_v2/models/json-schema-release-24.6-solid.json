@@ -1,0 +1,366 @@
+{
+  "$defs": {
+    "EntityList_GenericVolume_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, str]]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/GenericVolume"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[GenericVolume,str]",
+      "type": "object"
+    },
+    "GenericVolume": {
+      "additionalProperties": false,
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "GenericVolume",
+      "type": "object"
+    },
+    "HeatEquationInitialCondition": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype : typing.Literal['expression'] = expression\n        constants : typing.Optional[typing.Dict[str, str]] = None\n        temperature : <class 'str'>\n    ",
+      "properties": {
+        "type": {
+          "const": "expression",
+          "default": "expression",
+          "enum": [
+            "expression"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "constants": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Constants"
+        },
+        "temperature": {
+          "title": "Temperature",
+          "type": "string"
+        }
+      },
+      "required": [
+        "temperature"
+      ],
+      "title": "HeatEquationInitialCondition",
+      "type": "object"
+    },
+    "HeatEquationSolver": {
+      "additionalProperties": false,
+      "description": ":class:`HeatEquationSolver` class for setting up heat equation solver.\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-09\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_eval_frequency : <class 'int'> = 10\n        update_jacobian_frequency : <class 'int'> = 1\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=50, absolute_tolerance=1e-10, relative_tolerance=None)\n        type_name : typing.Literal['HeatEquation'] = HeatEquation\n    \n\nParameters\n----------\n\nequation_eval_frequency : PositiveInt, optional\n    Frequency at which to solve the heat equation in conjugate heat transfer simulations\n\n\nlinear_solver_config : LinearSolver, optional\n    Linear solver settings, see LinearSolver documentation.\n\nReturns\n-------\n:class:`HeatEquationSolver`\n    An instance of the component class HeatEquationSolver.\n\n\nExample\n-------\n>>> he = HeatEquationSolver(\n            equation_eval_frequency=10,\n            linear_solver_config=LinearSolver(\n                max_iterations=50,\n                absoluteTolerance=1e-10\n        )\n    )",
+      "properties": {
+        "absolute_tolerance": {
+          "default": 1e-09,
+          "exclusiveMinimum": 0.0,
+          "title": "Absolute Tolerance",
+          "type": "number"
+        },
+        "relative_tolerance": {
+          "default": 0,
+          "minimum": 0.0,
+          "title": "Relative Tolerance",
+          "type": "number"
+        },
+        "order_of_accuracy": {
+          "default": 2,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Order Of Accuracy",
+          "type": "integer"
+        },
+        "equation_eval_frequency": {
+          "default": 10,
+          "exclusiveMinimum": 0,
+          "title": "Equation Eval Frequency",
+          "type": "integer"
+        },
+        "update_jacobian_frequency": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Update Jacobian Frequency",
+          "type": "integer"
+        },
+        "max_force_jac_update_physical_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Force Jac Update Physical Steps",
+          "type": "integer"
+        },
+        "linear_solver": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/LinearSolver"
+            }
+          ],
+          "default": {
+            "maxIterations": 50,
+            "absoluteTolerance": 1e-10,
+            "relativeTolerance": null
+          }
+        },
+        "type_name": {
+          "const": "HeatEquation",
+          "default": "HeatEquation",
+          "enum": [
+            "HeatEquation"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        }
+      },
+      "title": "HeatEquationSolver",
+      "type": "object"
+    },
+    "LinearSolver": {
+      "additionalProperties": false,
+      "description": ":class:`LinearSolver` class for setting up linear solver for heat equation\n\nParameters\n----------\nmax_iterations : <class 'int'> = 30\n        absolute_tolerance : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = None\n        relative_tolerance : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = None\n    \n\nParameters\n----------\n\nmax_iterations : PositiveInt, optional\n    Maximum number of linear solver iterations, by default 50\n\nabsolute_tolerance : PositiveFloat, optional\n    The linear solver converges when the final residual of the pseudo steps below this value. Either absolute\n    tolerance or relative tolerance can be used to determine convergence, by default 1e-10\n\nrelative_tolerance :\n    The linear solver converges when the ratio of the final residual and the initial\n    residual of the pseudo step is below this value.\n\nvalidation: tolerance settings only available to HeatEquationSolver\n\nReturns\n-------\n:class:`LinearSolver`\n    An instance of the component class LinearSolver.\n\n\nExample\n-------\n>>> ls = LinearSolver(\n            max_iterations=50,\n            absoluteTolerance=1e-10\n    )",
+      "properties": {
+        "max_iterations": {
+          "default": 30,
+          "exclusiveMinimum": 0,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "absolute_tolerance": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Tolerance"
+        },
+        "relative_tolerance": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relative Tolerance"
+        }
+      },
+      "title": "LinearSolver",
+      "type": "object"
+    },
+    "SolidMaterial": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype : typing.Literal['solid'] = solid\n        name : <class 'str'>\n        thermal_conductivity : <class 'flow360.component.simulation.unit_system._Constrained'>\n        density : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        specific_heat_capacity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
+      "properties": {
+        "type": {
+          "const": "solid",
+          "default": "solid",
+          "enum": [
+            "solid"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "thermal_conductivity": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "thermal_conductivity",
+              "enum": [
+                "kg*m/(K*s**3)",
+                "cm*g/(K*s**3)",
+                "ft*lb/(K*s**3)"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Thermal Conductivity"
+        },
+        "density": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "density",
+                  "enum": [
+                    "kg/m**3",
+                    "g/cm**3",
+                    "lb/ft**3"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Density"
+        },
+        "specific_heat_capacity": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "specific_heat_capacity",
+                  "enum": [
+                    "m**2/(K*s**2)",
+                    "cm**2/(K*s**2)",
+                    "ft**2/(K*s**2)"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Specific Heat Capacity"
+        }
+      },
+      "required": [
+        "name",
+        "thermal_conductivity"
+      ],
+      "title": "SolidMaterial",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.SolidMaterial'>\n        initial_condition : typing.Optional[flow360.component.simulation.models.volume_models.HeatEquationInitialCondition] = None\n        entities : <class 'abc.EntityList[GenericVolume,str]'>\n        heat_equation_solver : <class 'flow360.component.simulation.models.solver_numerics.HeatEquationSolver'> = HeatEquationSolver(absolute_tolerance=1e-09, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=10, update_jacobian_frequency=1, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=50,, absolute_tolerance=1e-10,, relative_tolerance=None), type_name='HeatEquation')\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]] = 0\n    ",
+  "properties": {
+    "material": {
+      "$ref": "#/$defs/SolidMaterial"
+    },
+    "initial_condition": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HeatEquationInitialCondition"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "volumes": {
+      "$ref": "#/$defs/EntityList_GenericVolume_str_"
+    },
+    "heat_equation_solver": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/HeatEquationSolver"
+        }
+      ],
+      "default": {
+        "absoluteTolerance": 1e-09,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "equationEvalFrequency": 10,
+        "updateJacobianFrequency": 1,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "linearSolver": {
+          "absoluteTolerance": 1e-10,
+          "maxIterations": 50,
+          "relativeTolerance": null
+        },
+        "typeName": "HeatEquation"
+      }
+    },
+    "volumetric_heat_source": {
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "dimension": "heat_source",
+              "enum": [
+                "kg/(m*s**3)",
+                "g/(cm*s**3)",
+                "lb/(ft*s**3)"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "title": "Volumetric Heat Source"
+    }
+  },
+  "required": [
+    "material",
+    "volumes"
+  ],
+  "title": "Solid",
+  "type": "object"
+}

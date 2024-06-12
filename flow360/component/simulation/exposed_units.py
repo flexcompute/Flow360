@@ -26,4 +26,10 @@ extra_units = {
     "thermal_conductivity": [],
     "inverse_area": [],
     "inverse_length": [],
+    "angle": [],
+    "specific_energy": [],
+    "frequency": [],
+    "mass_flow_rate": [],
+    "power": [],
+    "moment": [],
 }

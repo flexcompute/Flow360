@@ -1,0 +1,192 @@
+{
+  "$defs": {
+    "Isosurface": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nname : <class 'str'>\n        field : typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'p', 'rho', 'Coefficient of pressure', 'Gradient of primitive solution', 'k and omega', 'Mach number', 'Turbulent viscosity', 'Turbulent viscosity and freestream dynamic viscosity ratio', 'Spalart-Almaras variable', 'rho, u, v, w, p (density, 3 velocities and pressure)', 'Q criterion', 'N-S residual', 'Transition residual', 'Turbulence residual', 'Entropy', 'N-S solution', 'Transition solution', 'Turbulence solution', 'Temperature', 'Vorticity', 'Wall distance', 'NumericalDissipationFactor sensor', 'Heat equation residual', 'Velocity with respect to non-inertial frame', 'Low-Mach preconditioner factor', 'Pressure', 'Density']\n        iso_value : <class 'float'>\n    Expect non-dimensional value.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "field": {
+          "enum": [
+            "Cp",
+            "gradW",
+            "kOmega",
+            "Mach",
+            "mut",
+            "mutRatio",
+            "nuHat",
+            "primitiveVars",
+            "qcriterion",
+            "residualNavierStokes",
+            "residualTransition",
+            "residualTurbulence",
+            "s",
+            "solutionNavierStokes",
+            "solutionTransition",
+            "solutionTurbulence",
+            "T",
+            "vorticity",
+            "wallDistance",
+            "numericalDissipationFactor",
+            "residualHeatSolver",
+            "VelocityRelative",
+            "lowMachPreconditionerSensor",
+            "p",
+            "rho",
+            "Coefficient of pressure",
+            "Gradient of primitive solution",
+            "k and omega",
+            "Mach number",
+            "Turbulent viscosity",
+            "Turbulent viscosity and freestream dynamic viscosity ratio",
+            "Spalart-Almaras variable",
+            "rho, u, v, w, p (density, 3 velocities and pressure)",
+            "Q criterion",
+            "N-S residual",
+            "Transition residual",
+            "Turbulence residual",
+            "Entropy",
+            "N-S solution",
+            "Transition solution",
+            "Turbulence solution",
+            "Temperature",
+            "Vorticity",
+            "Wall distance",
+            "NumericalDissipationFactor sensor",
+            "Heat equation residual",
+            "Velocity with respect to non-inertial frame",
+            "Low-Mach preconditioner factor",
+            "Pressure",
+            "Density"
+          ],
+          "title": "Field",
+          "type": "string"
+        },
+        "iso_value": {
+          "description": "Expect non-dimensional value.",
+          "title": "Iso Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "field",
+        "iso_value"
+      ],
+      "title": "Isosurface",
+      "type": "object"
+    },
+    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "enum": [
+              "Cp",
+              "gradW",
+              "kOmega",
+              "Mach",
+              "mut",
+              "mutRatio",
+              "nuHat",
+              "primitiveVars",
+              "qcriterion",
+              "residualNavierStokes",
+              "residualTransition",
+              "residualTurbulence",
+              "s",
+              "solutionNavierStokes",
+              "solutionTransition",
+              "solutionTurbulence",
+              "T",
+              "vorticity",
+              "wallDistance",
+              "numericalDissipationFactor",
+              "residualHeatSolver",
+              "VelocityRelative",
+              "lowMachPreconditionerSensor"
+            ],
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]",
+      "type": "object"
+    },
+    "UniqueItemList_Isosurface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.Isosurface]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Isosurface"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[Isosurface]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : <class 'abc.UniqueItemList[Isosurface]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]'>\n        output_type : typing.Literal['IsosurfaceOutput'] = IsosurfaceOutput\n    ",
+  "properties": {
+    "frequency": {
+      "default": -1,
+      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "minimum": -1,
+      "title": "Frequency",
+      "type": "integer"
+    },
+    "frequency_offset": {
+      "default": 0,
+      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "minimum": 0,
+      "title": "Frequency Offset",
+      "type": "integer"
+    },
+    "output_format": {
+      "default": "paraview",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "title": "Output Format",
+      "type": "string"
+    },
+    "isosurfaces": {
+      "$ref": "#/$defs/UniqueItemList_Isosurface_"
+    },
+    "output_fields": {
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___"
+    },
+    "output_type": {
+      "const": "IsosurfaceOutput",
+      "default": "IsosurfaceOutput",
+      "enum": [
+        "IsosurfaceOutput"
+      ],
+      "title": "Output Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "isosurfaces",
+    "output_fields"
+  ],
+  "title": "IsosurfaceOutput",
+  "type": "object"
+}

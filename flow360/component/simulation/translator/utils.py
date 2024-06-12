@@ -121,9 +121,10 @@ def remove_units_in_dict(input_dict):
 
 def has_instance_in_list(obj_list: list, class_type):
     """Check if a list contains an instance of a given type."""
-    for obj in obj_list:
-        if isinstance(obj, class_type):
-            return True
+    if obj_list is not None:
+        for obj in obj_list:
+            if isinstance(obj, class_type):
+                return True
     return False
 
 
@@ -131,11 +132,12 @@ def get_attribute_from_first_instance(
     obj_list: list, class_type, attribute_name: str, check_empty_entities: bool = False
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
-    for obj in obj_list:
-        if isinstance(obj, class_type):
-            if check_empty_entities and obj.entities is not None:
-                continue
-            return getattr(obj, attribute_name)
+    if obj_list is not None:
+        for obj in obj_list:
+            if isinstance(obj, class_type):
+                if check_empty_entities and obj.entities is not None:
+                    continue
+                return getattr(obj, attribute_name)
     return None
 
 

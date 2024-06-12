@@ -1,0 +1,11 @@
+{
+  "order_of_accuracy": 2,
+  "type_name": "Steady",
+  "max_steps": 123,
+  "CFL": {
+    "type": "ramp",
+    "initial": 0.0001,
+    "final": 123.0,
+    "ramp_steps": 21
+  }
+}

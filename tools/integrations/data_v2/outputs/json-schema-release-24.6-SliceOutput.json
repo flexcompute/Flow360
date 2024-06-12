@@ -1,0 +1,174 @@
+{
+  "$defs": {
+    "Slice": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nname : <class 'str'>\n        slice_normal : <class 'flow360.component.types.Axis'>\n        slice_origin : <class 'flow360.component.simulation.unit_system._VectorType'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "slice_normal": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Slice Normal"
+        },
+        "slice_origin": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Slice Origin"
+        }
+      },
+      "required": [
+        "name",
+        "slice_normal",
+        "slice_origin"
+      ],
+      "title": "Slice",
+      "type": "object"
+    },
+    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____betMetrics____betMetricsPerDisk___": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "enum": [
+              "Cp",
+              "gradW",
+              "kOmega",
+              "Mach",
+              "mut",
+              "mutRatio",
+              "nuHat",
+              "primitiveVars",
+              "qcriterion",
+              "residualNavierStokes",
+              "residualTransition",
+              "residualTurbulence",
+              "s",
+              "solutionNavierStokes",
+              "solutionTransition",
+              "solutionTurbulence",
+              "T",
+              "vorticity",
+              "wallDistance",
+              "numericalDissipationFactor",
+              "residualHeatSolver",
+              "VelocityRelative",
+              "lowMachPreconditionerSensor",
+              "betMetrics",
+              "betMetricsPerDisk"
+            ],
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]",
+      "type": "object"
+    },
+    "UniqueItemList_Slice_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.Slice]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Slice"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[Slice]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : <class 'abc.UniqueItemList[Slice]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]'>\n        output_type : typing.Literal['SliceOutput'] = SliceOutput\n    ",
+  "properties": {
+    "frequency": {
+      "default": -1,
+      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "minimum": -1,
+      "title": "Frequency",
+      "type": "integer"
+    },
+    "frequency_offset": {
+      "default": 0,
+      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "minimum": 0,
+      "title": "Frequency Offset",
+      "type": "integer"
+    },
+    "output_format": {
+      "default": "paraview",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "title": "Output Format",
+      "type": "string"
+    },
+    "slices": {
+      "$ref": "#/$defs/UniqueItemList_Slice_"
+    },
+    "output_fields": {
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____betMetrics____betMetricsPerDisk___"
+    },
+    "output_type": {
+      "const": "SliceOutput",
+      "default": "SliceOutput",
+      "enum": [
+        "SliceOutput"
+      ],
+      "title": "Output Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "slices",
+    "output_fields"
+  ],
+  "title": "SliceOutput",
+  "type": "object"
+}

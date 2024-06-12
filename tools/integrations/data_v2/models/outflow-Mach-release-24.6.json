@@ -1,0 +1,13 @@
+{
+  "type": "Outflow",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_outflow"
+      }
+    ]
+  },
+  "spec": {
+    "value": 1.0
+  }
+}

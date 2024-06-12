@@ -1,0 +1,38 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "entities": {
+    "items": [
+      {
+        "name": "inflow_integral",
+        "entities": {
+          "stored_entities": [
+            {
+              "name": "my_inflow1"
+            },
+            {
+              "name": "my_inflow2"
+            }
+          ]
+        }
+      },
+      {
+        "name": "outflow_integral",
+        "entities": {
+          "stored_entities": [
+            {
+              "name": "my_outflow"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "output_fields": {
+    "items": [
+      "primitiveVars",
+      "vorticity"
+    ]
+  },
+  "output_type": "SurfaceIntegralOutput"
+}

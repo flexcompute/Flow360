@@ -1,0 +1,65 @@
+{
+  "$defs": {
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\ntype : typing.Literal['SymmetryPlane'] = SymmetryPlane\n        entities : <class 'abc.EntityList[Surface]'>\n    ",
+  "properties": {
+    "type": {
+      "const": "SymmetryPlane",
+      "default": "SymmetryPlane",
+      "enum": [
+        "SymmetryPlane"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "surfaces": {
+      "$ref": "#/$defs/EntityList_Surface_"
+    }
+  },
+  "required": [
+    "surfaces"
+  ],
+  "title": "SymmetryPlane",
+  "type": "object"
+}

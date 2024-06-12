@@ -44,7 +44,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     """:class:`ExpressionInitialCondition` class"""
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
-    constants: Optional[Dict[str, str]] = pd.Field()
+    constants: Optional[Dict[str, str]] = pd.Field(None)
 
 
 # pylint: disable=missing-class-docstring
@@ -253,8 +253,7 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
     volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
-    # needed for GenericVolume, need to check for conflict for Box
-    axes: Optional[List[Axis]] = pd.Field(None)
+    # Note: Axes will always come from the entity
 
 
 VolumeModelTypes = Union[

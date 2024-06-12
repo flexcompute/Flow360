@@ -1,0 +1,259 @@
+{
+  "$defs": {
+    "Box": {
+      "additionalProperties": false,
+      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nname : <class 'str'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axes : typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "size": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Size"
+        },
+        "axes": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          ],
+          "title": "Axes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "center",
+        "size",
+        "axes"
+      ],
+      "title": "Box",
+      "type": "object"
+    },
+    "EntityList_GenericVolume_Box_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Box, str]]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/GenericVolume"
+                  },
+                  {
+                    "$ref": "#/$defs/Box"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[GenericVolume,Box,str]",
+      "type": "object"
+    },
+    "GenericVolume": {
+      "additionalProperties": false,
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "GenericVolume",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone\n\nParameters\n----------\nentities : typing.Optional[abc.EntityList[GenericVolume,Box,str]] = None\n        darcy_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        forchheimer_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)], NoneType] = None\n    ",
+  "properties": {
+    "volumes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityList_GenericVolume_Box_str_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "darcy_coefficient": {
+      "properties": {
+        "value": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "strictType": {
+            "type": "vector3"
+          },
+          "type": "array"
+        },
+        "units": {
+          "dimension": "inverse_area",
+          "enum": [
+            "m**(-2)",
+            "cm**(-2)",
+            "ft**(-2)"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Darcy Coefficient"
+    },
+    "forchheimer_coefficient": {
+      "properties": {
+        "value": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "strictType": {
+            "type": "vector3"
+          },
+          "type": "array"
+        },
+        "units": {
+          "dimension": "inverse_length",
+          "enum": [
+            "1/m",
+            "1/cm",
+            "1/ft"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Forchheimer Coefficient"
+    },
+    "volumetric_heat_source": {
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "dimension": "heat_source",
+              "enum": [
+                "kg/(m*s**3)",
+                "g/(cm*s**3)",
+                "lb/(ft*s**3)"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Volumetric Heat Source"
+    }
+  },
+  "required": [
+    "darcy_coefficient",
+    "forchheimer_coefficient"
+  ],
+  "title": "PorousMedium",
+  "type": "object"
+}

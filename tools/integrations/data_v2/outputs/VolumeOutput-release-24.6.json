@@ -1,0 +1,11 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "output_format": "tecplot",
+  "output_fields": {
+    "items": [
+      "Cp"
+    ]
+  },
+  "output_type": "VolumeOutput"
+}

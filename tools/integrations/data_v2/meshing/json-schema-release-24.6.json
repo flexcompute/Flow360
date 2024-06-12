@@ -1,0 +1,1074 @@
+{
+  "$defs": {
+    "AngleBasedRefinement": {
+      "additionalProperties": false,
+      "description": "Surface edge refinement by specifying curvature resolution in degrees\n\nParameters\n----------\ntype : typing.Literal['angle'] = angle\n        value : <class 'flow360.component.simulation.unit_system._AngleType'>\n    ",
+      "properties": {
+        "type": {
+          "const": "angle",
+          "default": "angle",
+          "enum": [
+            "angle"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "dimension": "angle",
+              "enum": [
+                "rad"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "AngleBasedRefinement",
+      "type": "object"
+    },
+    "AspectRatioBasedRefinement": {
+      "additionalProperties": false,
+      "description": "Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells\n\nParameters\n----------\ntype : typing.Literal['aspectRatio'] = aspectRatio\n        value : <class 'float'>\n    ",
+      "properties": {
+        "type": {
+          "const": "aspectRatio",
+          "default": "aspectRatio",
+          "enum": [
+            "aspectRatio"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "exclusiveMinimum": 0.0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "AspectRatioBasedRefinement",
+      "type": "object"
+    },
+    "AxisymmetricRefinement": {
+      "additionalProperties": false,
+      "description": "Note:\n- This basically creates the \"rotorDisks\" type of volume refinement that we used to have.\n\nParameters\n----------\nrefinement_type : typing.Literal['AxisymmetricRefinement'] = AxisymmetricRefinement\n        entities : <class 'abc.EntityList[Cylinder]'>\n        spacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \n- `enclosed_objects` is actually just a way of specifying the enclosing patches of a volume zone. Therefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this attribute at all. For example if the new class already has an entry to list all the enclosing patches.\n\n- We may provide a helper function to automatically determine what is inside the encloeud_objects list based on the mesh data. But this currently is out of scope due to the estimated efforts.",
+      "properties": {
+        "refinement_type": {
+          "const": "AxisymmetricRefinement",
+          "default": "AxisymmetricRefinement",
+          "enum": [
+            "AxisymmetricRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "entities": {
+          "$ref": "#/$defs/EntityList_Cylinder_"
+        },
+        "spacing_axial": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Axial"
+        },
+        "spacing_radial": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Radial"
+        },
+        "spacing_circumferential": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Circumferential"
+        }
+      },
+      "required": [
+        "entities",
+        "spacing_axial",
+        "spacing_radial",
+        "spacing_circumferential"
+      ],
+      "title": "AxisymmetricRefinement",
+      "type": "object"
+    },
+    "BoundaryLayer": {
+      "additionalProperties": false,
+      "description": "These affects volume meshing.\nNote:\n- We do not support per volume specification of these settings so the entities will be **obsolete** for now.\nShould we have it at all in the release?\n\nParameters\n----------\nrefinement_type : typing.Literal['BoundaryLayer'] = BoundaryLayer\n        type : typing.Literal['aniso', 'projectAnisoSpacing', 'none'] = aniso\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        first_layer_thickness : <class 'flow360.component.simulation.unit_system._Constrained'>\n    First layer thickness for volumetric anisotropic layers.\ngrowth_rate : <class 'float'> = 1.2\n    Growth rate for volume prism layers.\n\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation) before\nsubmission. This is supposed to be applied to all the matching entities. We allow this so that we do not need to\nhave dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.",
+      "properties": {
+        "refinement_type": {
+          "const": "BoundaryLayer",
+          "default": "BoundaryLayer",
+          "enum": [
+            "BoundaryLayer"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "type": {
+          "default": "aniso",
+          "enum": [
+            "aniso",
+            "projectAnisoSpacing",
+            "none"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "faces": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityList_Surface_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "first_layer_thickness": {
+          "description": "First layer thickness for volumetric anisotropic layers.",
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "First Layer Thickness"
+        },
+        "growth_rate": {
+          "default": 1.2,
+          "description": "Growth rate for volume prism layers.",
+          "exclusiveMinimum": 0.0,
+          "minimum": 1.0,
+          "title": "Growth Rate",
+          "type": "number"
+        }
+      },
+      "required": [
+        "first_layer_thickness"
+      ],
+      "title": "BoundaryLayer",
+      "type": "object"
+    },
+    "Box": {
+      "additionalProperties": false,
+      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nname : <class 'str'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axes : typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "size": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Size"
+        },
+        "axes": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          ],
+          "title": "Axes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "center",
+        "size",
+        "axes"
+      ],
+      "title": "Box",
+      "type": "object"
+    },
+    "Cylinder": {
+      "additionalProperties": false,
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nname : <class 'str'>\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "axis": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "height": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Height"
+        },
+        "inner_radius": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inner Radius"
+        },
+        "outer_radius": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Outer Radius"
+        }
+      },
+      "required": [
+        "name",
+        "axis",
+        "center",
+        "height",
+        "outer_radius"
+      ],
+      "title": "Cylinder",
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "description": "Edge with edge name defined in the geometry file\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "EntityList_Box_Cylinder_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.Box, flow360.component.simulation.primitives.Cylinder]]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Box"
+                  },
+                  {
+                    "$ref": "#/$defs/Cylinder"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Box,Cylinder]",
+      "type": "object"
+    },
+    "EntityList_Cylinder_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Cylinder]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Cylinder"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Cylinder]",
+      "type": "object"
+    },
+    "EntityList_Cylinder_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.Cylinder, flow360.component.simulation.primitives.Surface]]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Cylinder"
+                  },
+                  {
+                    "$ref": "#/$defs/Surface"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Cylinder,Surface]",
+      "type": "object"
+    },
+    "EntityList_Edge_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Edge]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Edge"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Edge]",
+      "type": "object"
+    },
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "HeightBasedRefinement": {
+      "additionalProperties": false,
+      "description": "Surface edge refinement by specifying first layer height of the anisotropic layers\n\nParameters\n----------\ntype : typing.Literal['height'] = height\n        value : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type": {
+          "const": "height",
+          "default": "height",
+          "enum": [
+            "height"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "HeightBasedRefinement",
+      "type": "object"
+    },
+    "ProjectAnisoSpacing": {
+      "additionalProperties": false,
+      "description": "Project the anisotropic spacing from neighboring faces to the edge\n\nParameters\n----------\ntype : typing.Literal['projectAnisoSpacing'] = projectAnisoSpacing\n    ",
+      "properties": {
+        "type": {
+          "const": "projectAnisoSpacing",
+          "default": "projectAnisoSpacing",
+          "enum": [
+            "projectAnisoSpacing"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "ProjectAnisoSpacing",
+      "type": "object"
+    },
+    "RotationCylinder": {
+      "additionalProperties": false,
+      "description": "This is the original SlidingInterface. This will create new volume zones\nWill add RotationSphere class in the future.\nPlease refer to\nhttps://www.notion.so/flexcompute/Python-model-design-document-78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3\n\n\nParameters\n----------\nrefinement_type : typing.Literal['AxisymmetricRefinement'] = AxisymmetricRefinement\n        entities : <class 'abc.EntityList[Cylinder]'>\n        spacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n        enclosed_objects : typing.Optional[abc.EntityList[Cylinder,Surface]] = None\n    Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc. This helps determining the volume zone boundary.",
+      "properties": {
+        "refinement_type": {
+          "const": "AxisymmetricRefinement",
+          "default": "AxisymmetricRefinement",
+          "enum": [
+            "AxisymmetricRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "entities": {
+          "$ref": "#/$defs/EntityList_Cylinder_"
+        },
+        "spacing_axial": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Axial"
+        },
+        "spacing_radial": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Radial"
+        },
+        "spacing_circumferential": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing Circumferential"
+        },
+        "enclosed_objects": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityList_Cylinder_Surface_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc. This helps determining the volume zone boundary."
+        }
+      },
+      "required": [
+        "entities",
+        "spacing_axial",
+        "spacing_radial",
+        "spacing_circumferential"
+      ],
+      "title": "RotationCylinder",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "SurfaceEdgeRefinement": {
+      "additionalProperties": false,
+      "description": "Grow anisotropic layers orthogonal to the edge.\n\nParameters\n----------\nentities : <class 'abc.EntityList[Edge]'>\n        growth_rate : typing.Optional[float] = None\n    Growth rate for surface mesh layers grown from edges.\nrefinement_type : typing.Literal['SurfaceEdgeRefinement'] = SurfaceEdgeRefinement\n        method : typing.Union[flow360.component.simulation.meshing_param.edge_params.AngleBasedRefinement, flow360.component.simulation.meshing_param.edge_params.HeightBasedRefinement, flow360.component.simulation.meshing_param.edge_params.AspectRatioBasedRefinement, flow360.component.simulation.meshing_param.edge_params.ProjectAnisoSpacing, NoneType] = None\n    \nIf `method` is None then it projects the anisotropic spacing from neighboring faces to the edge\n(equivalent to `ProjectAniso` in old params).",
+      "properties": {
+        "edges": {
+          "$ref": "#/$defs/EntityList_Edge_"
+        },
+        "growth_rate": {
+          "anyOf": [
+            {
+              "minimum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Growth rate for surface mesh layers grown from edges.",
+          "title": "Growth Rate"
+        },
+        "refinement_type": {
+          "const": "SurfaceEdgeRefinement",
+          "default": "SurfaceEdgeRefinement",
+          "enum": [
+            "SurfaceEdgeRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "angle": "#/$defs/AngleBasedRefinement",
+                  "aspectRatio": "#/$defs/AspectRatioBasedRefinement",
+                  "height": "#/$defs/HeightBasedRefinement",
+                  "projectAnisoSpacing": "#/$defs/ProjectAnisoSpacing"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/AngleBasedRefinement"
+                },
+                {
+                  "$ref": "#/$defs/HeightBasedRefinement"
+                },
+                {
+                  "$ref": "#/$defs/AspectRatioBasedRefinement"
+                },
+                {
+                  "$ref": "#/$defs/ProjectAnisoSpacing"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        }
+      },
+      "required": [
+        "edges"
+      ],
+      "title": "SurfaceEdgeRefinement",
+      "type": "object"
+    },
+    "SurfaceRefinement": {
+      "additionalProperties": false,
+      "description": "These affects surface meshing.\n\nParameters\n----------\nrefinement_type : typing.Literal['SurfaceRefinement'] = SurfaceRefinement\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        max_edge_length : <class 'flow360.component.simulation.unit_system._Constrained'>\n    Local maximum edge length for surface cells.\ncurvature_resolution_angle : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \n    Global maximum angular deviation in degrees. This value will restrict:\n    (1) The angle between a cell\u2019s normal and its underlying surface normal\n    (2) The angle between a line segment\u2019s normal and its underlying curve normal\n    \n\nNote:\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)\nbefore submission. This is supposed to be applied to all the matching entities. We allow this so that we do not\nneed to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.\n\n- For `SurfaceRefinement` we may need validation to detect if default has been set or not. This is because we need\nthese defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.",
+      "properties": {
+        "refinement_type": {
+          "const": "SurfaceRefinement",
+          "default": "SurfaceRefinement",
+          "enum": [
+            "SurfaceRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "faces": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityList_Surface_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_edge_length": {
+          "description": "Local maximum edge length for surface cells.",
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Max Edge Length"
+        },
+        "curvature_resolution_angle": {
+          "description": "\n        Global maximum angular deviation in degrees. This value will restrict:\n        (1) The angle between a cell\u2019s normal and its underlying surface normal\n        (2) The angle between a line segment\u2019s normal and its underlying curve normal\n        ",
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "angle",
+              "enum": [
+                "rad"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Curvature Resolution Angle"
+        }
+      },
+      "required": [
+        "max_edge_length",
+        "curvature_resolution_angle"
+      ],
+      "title": "SurfaceRefinement",
+      "type": "object"
+    },
+    "UniformRefinement": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nrefinement_type : typing.Literal['UniformRefinement'] = UniformRefinement\n        entities : <class 'abc.EntityList[Box,Cylinder]'>\n        spacing : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "refinement_type": {
+          "const": "UniformRefinement",
+          "default": "UniformRefinement",
+          "enum": [
+            "UniformRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "entities": {
+          "$ref": "#/$defs/EntityList_Box_Cylinder_"
+        },
+        "spacing": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Spacing"
+        }
+      },
+      "required": [
+        "entities",
+        "spacing"
+      ],
+      "title": "UniformRefinement",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Meshing parameters for volume and/or surface mesher.\n\nParameters\n----------\nfarfield : typing.Optional[typing.Literal['auto', 'quasi-3d', 'user-defined']] = auto\n    Type of farfield generation.\nrefinement_factor : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = 1\n    If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh.\ngap_treatment_strength : typing.Optional[float] = None\n    Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.\nsurface_layer_growth_rate : typing.Optional[float] = 1.2\n    Global growth rate of the anisotropic layers grown from the edges.\nrefinements : typing.List[typing.Annotated[typing.Union[flow360.component.simulation.meshing_param.edge_params.SurfaceEdgeRefinement, flow360.component.simulation.meshing_param.face_params.SurfaceRefinement, flow360.component.simulation.meshing_param.face_params.BoundaryLayer, flow360.component.simulation.meshing_param.volume_params.UniformRefinement, flow360.component.simulation.meshing_param.volume_params.AxisymmetricRefinement], FieldInfo(annotation=NoneType, required=True, discriminator='refinement_type')]] = []\n    Additional fine-tunning for refinements.\nvolume_zones : typing.List[flow360.component.simulation.meshing_param.volume_params.RotationCylinder] = []\n    Creation of new volume zones.\n\nIn `Simulation` this only contains what the user specifies. `Simulation` can derive and add more items according to other aspects of simulation. (E.g. BETDisk volume -> ZoneRefinement)\n\nMeshing related but may and maynot (user specified) need info from `Simulation`:\n1. Add rotational zones.\n2. Add default BETDisk refinement.\n\nAffects volume meshing:\n- farfield\n- refinement_factor\n- gap_treatment_strength\n- `class` BoundaryLayer\n- `class` UniformRefinement\n- `class` AxisymmetricRefinement\n- `class` RotationCylinder\n\nAffects surface meshing:\n- surface_layer_growth_rate\n- `class` SurfaceRefinement\n- `class` SurfaceEdgeRefinement",
+  "properties": {
+    "farfield": {
+      "anyOf": [
+        {
+          "enum": [
+            "auto",
+            "quasi-3d",
+            "user-defined"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "auto",
+      "description": "Type of farfield generation.",
+      "title": "Farfield"
+    },
+    "refinement_factor": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 1,
+      "description": "If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh.",
+      "title": "Refinement Factor"
+    },
+    "gap_treatment_strength": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
+      "title": "Gap Treatment Strength"
+    },
+    "surface_layer_growth_rate": {
+      "anyOf": [
+        {
+          "minimum": 1.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 1.2,
+      "description": "Global growth rate of the anisotropic layers grown from the edges.",
+      "title": "Surface Layer Growth Rate"
+    },
+    "refinements": {
+      "default": [],
+      "description": "Additional fine-tunning for refinements.",
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "AxisymmetricRefinement": "#/$defs/AxisymmetricRefinement",
+            "BoundaryLayer": "#/$defs/BoundaryLayer",
+            "SurfaceEdgeRefinement": "#/$defs/SurfaceEdgeRefinement",
+            "SurfaceRefinement": "#/$defs/SurfaceRefinement",
+            "UniformRefinement": "#/$defs/UniformRefinement"
+          },
+          "propertyName": "refinement_type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/SurfaceEdgeRefinement"
+          },
+          {
+            "$ref": "#/$defs/SurfaceRefinement"
+          },
+          {
+            "$ref": "#/$defs/BoundaryLayer"
+          },
+          {
+            "$ref": "#/$defs/UniformRefinement"
+          },
+          {
+            "$ref": "#/$defs/AxisymmetricRefinement"
+          }
+        ]
+      },
+      "title": "Refinements",
+      "type": "array"
+    },
+    "volume_zones": {
+      "default": [],
+      "description": "Creation of new volume zones.",
+      "items": {
+        "$ref": "#/$defs/RotationCylinder"
+      },
+      "title": "Volume Zones",
+      "type": "array"
+    }
+  },
+  "title": "MeshingParams",
+  "type": "object"
+}

@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_box",
+        "center": {
+          "value": [
+            1.2,
+            2.3,
+            3.4
+          ],
+          "units": "m"
+        },
+        "size": {
+          "value": [
+            1.0,
+            2.0,
+            3.0
+          ],
+          "units": "m"
+        },
+        "axes": [
+          [
+            0.6,
+            0.8,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    ]
+  },
+  "darcy_coefficient": {
+    "value": [
+      0.1,
+      2.0,
+      1.0
+    ],
+    "units": "1/(cm*m)"
+  },
+  "forchheimer_coefficient": {
+    "value": [
+      0.1,
+      2.0,
+      1.0
+    ],
+    "units": "1/ft"
+  },
+  "volumetric_heat_source": {
+    "value": 123.0,
+    "units": "lb/(ft*s**3)"
+  }
+}

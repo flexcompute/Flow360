@@ -1,0 +1,16 @@
+{
+  "type": "Outflow",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_outflow"
+      }
+    ]
+  },
+  "spec": {
+    "value": {
+      "value": 1.0,
+      "units": "lbf/ft**2"
+    }
+  }
+}

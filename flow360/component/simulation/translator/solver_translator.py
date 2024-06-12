@@ -16,6 +16,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
@@ -163,37 +164,42 @@ def get_solver_json(
         replace_dict_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
         translated["sliceOutput"].update({"slices": {}, "outputFields": []})
 
-    for output in input_params.outputs:
-        # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
-        if isinstance(output, TimeAverageVolumeOutput):
-            # pylint: disable=fixme
-            # TODO: update time average entries
-            translated["volumeOutput"]["computeTimeAverages"] = True
+    if input_params.outputs is not None:
+        for output in input_params.outputs:
+            # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
+            if isinstance(output, TimeAverageVolumeOutput):
+                # pylint: disable=fixme
+                # TODO: update time average entries
+                translated["volumeOutput"]["computeTimeAverages"] = True
 
-        elif isinstance(output, SurfaceOutput):
-            surfaces = translated["surfaceOutput"]["surfaces"]
-            for surface in output.entities.stored_entities:
-                surfaces[surface.name] = {
-                    "outputFields": merge_unique_item_lists(
-                        surfaces.get(surface.name, {}).get("outputFields", []),
-                        output.output_fields.model_dump()["items"],
-                    )
-                }
-        elif isinstance(output, SliceOutput):
-            slices = translated["sliceOutput"]["slices"]
-            for slice_item in output.entities.items:
-                slices[slice_item.name] = {
-                    "outputFields": merge_unique_item_lists(
-                        slices.get(slice_item.name, {}).get("outputFields", []),
-                        output.output_fields.model_dump()["items"],
-                    ),
-                    "sliceOrigin": list(remove_units_in_dict(dump_dict(slice_item))["sliceOrigin"]),
-                    "sliceNormal": list(remove_units_in_dict(dump_dict(slice_item))["sliceNormal"]),
-                }
+            elif isinstance(output, SurfaceOutput):
+                surfaces = translated["surfaceOutput"]["surfaces"]
+                for surface in output.entities.stored_entities:
+                    surfaces[surface.name] = {
+                        "outputFields": merge_unique_item_lists(
+                            surfaces.get(surface.name, {}).get("outputFields", []),
+                            output.output_fields.model_dump()["items"],
+                        )
+                    }
+            elif isinstance(output, SliceOutput):
+                slices = translated["sliceOutput"]["slices"]
+                for slice_item in output.entities.items:
+                    slices[slice_item.name] = {
+                        "outputFields": merge_unique_item_lists(
+                            slices.get(slice_item.name, {}).get("outputFields", []),
+                            output.output_fields.model_dump()["items"],
+                        ),
+                        "sliceOrigin": list(
+                            remove_units_in_dict(dump_dict(slice_item))["sliceOrigin"]
+                        ),
+                        "sliceNormal": list(
+                            remove_units_in_dict(dump_dict(slice_item))["sliceNormal"]
+                        ),
+                    }
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
-    if ts.type_name == "Unsteady":
+    if isinstance(ts, Unsteady):
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": ts.steps,
@@ -201,7 +207,7 @@ def get_solver_json(
             "maxPseudoSteps": ts.max_pseudo_steps,
             "timeStepSize": ts.step_size,
         }
-    else:
+    elif isinstance(ts, Steady):
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": 1,
