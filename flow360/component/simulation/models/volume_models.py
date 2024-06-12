@@ -207,7 +207,7 @@ class BETDisk(Flow360BaseModel):
     n_loading_nodes: pd.StrictInt = pd.Field(gt=0, le=1000)
     blade_line_chord: LengthType.NonNegative = pd.Field(0)
     initial_blade_direction: Optional[Axis] = pd.Field(None)
-    tip_gap: Union[LengthType.NonNegative, Literal["inf"]] = pd.Field("inf")
+    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field("inf")
     mach_numbers: List[pd.NonNegativeFloat] = pd.Field()
     reynolds_numbers: List[pd.PositiveFloat] = pd.Field()
     alphas: List[float] = pd.Field()

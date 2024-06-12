@@ -31,6 +31,12 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
+    create_steady_airplane_param,
+    create_steady_hover_param,
+    create_unsteady_hover_param,
+    create_unsteady_hover_UDD_param,
+)
 
 
 @pytest.fixture()
@@ -114,3 +120,20 @@ def test_param_to_json(get_test_param):
         ref_dict = json.load(fh)
 
     assert sorted(ref_dict.items()) == sorted(translated.items())
+
+
+##::  Test with local test cases
+def test_xv15_bet_disk(
+    create_steady_hover_param,
+    create_steady_airplane_param,
+    create_unsteady_hover_param,
+    create_unsteady_hover_UDD_param,
+):
+    param = create_steady_hover_param
+    print(param.model_dump_json(indent=4, exclude_none=True))
+    param = create_steady_airplane_param
+    print(param.model_dump_json(indent=4, exclude_none=True))
+    param = create_unsteady_hover_param
+    print(param.model_dump_json(indent=4, exclude_none=True))
+    param = create_unsteady_hover_UDD_param
+    print(param.model_dump_json(indent=4, exclude_none=True))

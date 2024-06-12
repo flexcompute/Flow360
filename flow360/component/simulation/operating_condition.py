@@ -3,6 +3,7 @@
 from typing import Optional, Tuple, Union
 
 import pydantic as pd
+from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -189,7 +190,7 @@ class AerospaceCondition(CachedModelBase):
     @pd.validate_call
     def from_mach(
         cls,
-        mach: pd.PositiveFloat,
+        mach: pd.NonNegativeFloat,
         alpha: AngleType = 0 * u.deg,
         beta: AngleType = 0 * u.deg,
         thermal_state: ThermalState = ThermalState(),
@@ -202,6 +203,7 @@ class AerospaceCondition(CachedModelBase):
         reference_velocity_magnitude = (
             reference_mach * thermal_state.speed_of_sound if reference_mach else None
         )
+
         return cls(
             velocity_magnitude=velocity_magnitude,
             alpha=alpha,
@@ -210,20 +212,31 @@ class AerospaceCondition(CachedModelBase):
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
-    # pylint: disable=no-self-argument, not-callable
-    @CachedModelBase.model_constructor
-    @pd.validate_call
-    def from_stationary(
-        cls,
-        reference_velocity_magnitude: VelocityType.Positive,
-        thermal_state: ThermalState = ThermalState(),
-    ):
-        """Constructs a `AerospaceCondition` for stationary conditions."""
-        return cls(
-            velocity_magnitude=0 * u.m / u.s,
-            thermal_state=thermal_state,
-            reference_velocity_magnitude=reference_velocity_magnitude,
-        )
+    @pd.model_validator(mode="after")
+    def check_valid_reference_velocity(self) -> Self:
+        """Ensure reference velocity is provided when freestream velocity is 0."""
+        if self.velocity_magnitude.value == 0 and self.reference_velocity_magnitude is None:
+            raise ValueError(
+                "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
+            )
+        return self
+
+    # Note: Decided to move `velocity==0 ref_velocity is not None` check to dedicated validator because user can
+    # Note: still construct by just calling AerospaceCondition()
+    # # pylint: disable=no-self-argument, not-callable
+    # @CachedModelBase.model_constructor
+    # @pd.validate_call
+    # def from_stationary(
+    #     cls,
+    #     reference_velocity_magnitude: VelocityType.Positive,
+    #     thermal_state: ThermalState = ThermalState(),
+    # ):
+    #     """Constructs a `AerospaceCondition` for stationary conditions."""
+    #     return cls(
+    #         velocity_magnitude=0 * u.m / u.s,
+    #         thermal_state=thermal_state,
+    #         reference_velocity_magnitude=reference_velocity_magnitude,
+    #     )
 
     @property
     def mach(self) -> pd.PositiveFloat:
