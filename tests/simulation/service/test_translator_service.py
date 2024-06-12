@@ -43,17 +43,15 @@ def test_simulation_to_surface_meshing_json():
         "version": "24.2.0",
     }
 
-    simulation_to_surface_meshing_json(param_data, "SI", {"value": 100.0, "units": "cm"}, None)
+    simulation_to_surface_meshing_json(param_data, "SI", {"value": 100.0, "units": "cm"})
 
     bad_param_data = deepcopy(param_data)
     bad_param_data["meshing"]["refinements"][0]["max_edge_length"]["value"] = -12.0
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_surface_meshing_json(
-            bad_param_data, "SI", {"value": 100.0, "units": "cm"}, None
-        )
+        simulation_to_surface_meshing_json(bad_param_data, "SI", {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_surface_meshing_json(param_data, "SI", None, None)
+        simulation_to_surface_meshing_json(param_data, "SI", None)
 
     # TODO:  This needs more consideration. Is it allowed/possible to translate into an empty dict?
     # with pytest.raises(
@@ -162,17 +160,15 @@ def test_simulation_to_volume_meshing_json():
         "version": "24.2.0",
     }
 
-    simulation_to_volume_meshing_json(param_data, "SI", {"value": 100.0, "units": "cm"}, None)
+    simulation_to_volume_meshing_json(param_data, "SI", {"value": 100.0, "units": "cm"})
 
     bad_param_data = deepcopy(param_data)
     bad_param_data["meshing"]["refinements"][0]["spacing"]["value"] = -12.0
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_volume_meshing_json(
-            bad_param_data, "SI", {"value": 100.0, "units": "cm"}, None
-        )
+        simulation_to_volume_meshing_json(bad_param_data, "SI", {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_volume_meshing_json(param_data, "SI", None, None)
+        simulation_to_volume_meshing_json(param_data, "SI", None)
 
 
 def test_simulation_to_case_json():
@@ -319,12 +315,12 @@ def test_simulation_to_case_json():
         "version": "24.2.0",
     }
 
-    simulation_to_case_json(param_data, "SI", {"value": 100.0, "units": "cm"}, None)
+    simulation_to_case_json(param_data, "SI", {"value": 100.0, "units": "cm"})
 
     bad_param_data = deepcopy(param_data)
     bad_param_data["reference_geometry"]["area"]["value"] = -12.0
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_case_json(bad_param_data, "SI", {"value": 100.0, "units": "cm"}, None)
+        simulation_to_case_json(bad_param_data, "SI", {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_case_json(param_data, "SI", None, None)
+        simulation_to_case_json(param_data, "SI", None)

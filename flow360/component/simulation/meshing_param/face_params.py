@@ -52,7 +52,7 @@ class BoundaryLayer(Flow360BaseModel):
     """
 
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
-    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
+    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field(default="aniso")
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."

@@ -1,13 +1,17 @@
 """Operating conditions for the simulation framework."""
 
-from typing import Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Optional, Tuple, Union, Literal
 
 import pydantic as pd
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.cached_model_base import CachedModelBase
+from flow360.component.simulation.framework.cached_model_base import (
+    _MultiConstructorModelBase,
+)
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -28,7 +32,6 @@ class ThermalStateCache(Flow360BaseModel):
     """[INTERNAL] Cache for thermal state inputs"""
 
     # pylint: disable=no-member
-    constructor: Optional[str] = None
     altitude: Optional[LengthType.Positive] = None
     temperature_offset: Optional[TemperatureType] = None
     temperature: Optional[TemperatureType.Positive] = None
@@ -36,7 +39,7 @@ class ThermalStateCache(Flow360BaseModel):
     material: Optional[FluidMaterialTypes] = None
 
 
-class ThermalState(CachedModelBase):
+class ThermalState(_MultiConstructorModelBase):
     """
     Represents the thermal state of a fluid with specific properties.
 
@@ -55,16 +58,17 @@ class ThermalState(CachedModelBase):
 
     # pylint: disable=fixme
     # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
+    type_name: Literal['ThermalState'] = pd.Field('ThermalState', frozen=True)
     temperature: TemperatureType.Positive = pd.Field(288.15 * u.K, frozen=True)
     density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
     material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
-    _cached: ThermalStateCache = ThermalStateCache()
+    private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
 
     # pylint: disable=no-self-argument, not-callable, unused-argument
-    @CachedModelBase.model_constructor
+    @_MultiConstructorModelBase.model_constructor
     @pd.validate_call
     def from_standard_atmosphere(
-        cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K
+        cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K,
     ):
         """Constructs a thermal state from the standard atmosphere model."""
         # pylint: disable=fixme
@@ -75,7 +79,7 @@ class ThermalState(CachedModelBase):
         state = cls(
             density=density,
             temperature=temperature,
-            material=Air(),
+            material=Air()
         )
 
         return state
@@ -127,7 +131,6 @@ class ThermalState(CachedModelBase):
 class GenericReferenceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for GenericReferenceCondition inputs"""
 
-    constructor: Optional[str] = None
     velocity_magnitude: Optional[VelocityType.Positive] = None
     thermal_state: Optional[ThermalState] = None
     mach: Optional[pd.PositiveFloat] = None
@@ -136,7 +139,6 @@ class GenericReferenceConditionCache(Flow360BaseModel):
 class AerospaceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for AerospaceCondition inputs"""
 
-    constructor: Optional[str] = None
     alpha: Optional[AngleType] = None
     beta: Optional[AngleType] = None
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
@@ -146,17 +148,18 @@ class AerospaceConditionCache(Flow360BaseModel):
     reference_mach: Optional[pd.PositiveFloat] = None
 
 
-class GenericReferenceCondition(CachedModelBase):
+class GenericReferenceCondition(_MultiConstructorModelBase):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
     """
 
+    type_name: Literal['GenericReferenceCondition'] = pd.Field('GenericReferenceCondition', frozen=True)
     velocity_magnitude: VelocityType.Positive
     thermal_state: ThermalState = ThermalState()
-    _cached: GenericReferenceConditionCache = GenericReferenceConditionCache()
+    private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
     # pylint: disable=no-self-argument, not-callable
-    @CachedModelBase.model_constructor
+    @_MultiConstructorModelBase.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
@@ -173,20 +176,21 @@ class GenericReferenceCondition(CachedModelBase):
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
 
-class AerospaceCondition(CachedModelBase):
+class AerospaceCondition(_MultiConstructorModelBase):
     """A specialized GenericReferenceCondition for aerospace applications."""
 
     # pylint: disable=fixme
     # TODO: valildate reference_velocity_magnitude defined if velocity_magnitude=0
+    type_name: Literal['AerospaceCondition'] = pd.Field('AerospaceCondition', frozen=True)
     alpha: AngleType = 0 * u.deg
     beta: AngleType = 0 * u.deg
     velocity_magnitude: VelocityType.NonNegative
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
-    _cached: AerospaceConditionCache = AerospaceConditionCache()
+    private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
-    @CachedModelBase.model_constructor
+    @_MultiConstructorModelBase.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
@@ -195,6 +199,7 @@ class AerospaceCondition(CachedModelBase):
         beta: AngleType = 0 * u.deg,
         thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
+        **kwargs
     ):
         """Constructs a `AerospaceCondition` from Mach number and thermal state."""
 
@@ -209,7 +214,7 @@ class AerospaceCondition(CachedModelBase):
             alpha=alpha,
             beta=beta,
             thermal_state=thermal_state,
-            reference_velocity_magnitude=reference_velocity_magnitude,
+            reference_velocity_magnitude=reference_velocity_magnitude
         )
 
     @pd.model_validator(mode="after")
@@ -223,8 +228,8 @@ class AerospaceCondition(CachedModelBase):
 
     # Note: Decided to move `velocity==0 ref_velocity is not None` check to dedicated validator because user can
     # Note: still construct by just calling AerospaceCondition()
-    # # pylint: disable=no-self-argument, not-callable
-    # @CachedModelBase.model_constructor
+    # pylint: disable=no-self-argument, not-callable
+    # @_MultiConstructorModelBase.model_constructor
     # @pd.validate_call
     # def from_stationary(
     #     cls,
