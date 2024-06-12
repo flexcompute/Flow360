@@ -3,7 +3,7 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
-from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.simulation_params import SimulationParams, ReferenceGeometry
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -62,6 +62,36 @@ def init_unit_system(unit_system_name) -> UnitSystem:
             f"Services cannot be used inside unit system context. Used: {unit_system_manager.current.system_repr()}."
         )
     return unit_system
+
+
+def get_default_params(unit_system_name) -> SimulationParams:
+    """
+    Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
+    contain empty required values. When generating default case settings:
+    - Use Model() if all fields has defaults or there are no required fields
+    - Use Model.construct() to disable validation - when there are required fields without value
+
+    Parameters
+    ----------
+    unit_system_name : str
+        The name of the unit system to use for parameter initialization.
+
+    Returns
+    -------
+    SimulationParams
+        Default parameters for Flow360 simulation.
+
+    """
+    unit_system = init_unit_system(unit_system_name)
+
+    with unit_system:
+        params = SimulationParams(
+            reference_geometry=ReferenceGeometry(
+                area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
+            )
+        )
+
+    return params
 
 
 def validate_model(params_as_dict, unit_system_name):

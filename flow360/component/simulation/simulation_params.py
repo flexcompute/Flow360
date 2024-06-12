@@ -11,7 +11,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import VolumeModelTypes
+from flow360.component.simulation.models.volume_models import VolumeModelTypes, Fluid
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import ReferenceGeometry
@@ -24,7 +24,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
+from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_for_simulation_msg
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
@@ -58,8 +58,8 @@ class SimulationParams(Flow360BaseModel):
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     version: str = pd.Field(__version__, frozen=True)
 
-    meshing: Optional[MeshingParams] = pd.Field(None)
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
+    meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
+    reference_geometry: Optional[ReferenceGeometry] = pd.Field()
     operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     #
     """
@@ -69,11 +69,11 @@ class SimulationParams(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
+    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field([Fluid()])
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
+    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(Steady())
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
     """
     Support for user defined expression?
@@ -92,7 +92,7 @@ class SimulationParams(Flow360BaseModel):
         Check existence of unit system and raise an error if it is not set or inconsistent.
         """
         if unit_system_manager.current is None:
-            raise Flow360RuntimeError(use_unit_system_msg)
+            raise Flow360RuntimeError(use_unit_system_for_simulation_msg)
         # pylint: disable=duplicate-code
         kwarg_unit_system = kwargs.pop("unit_system", None)
         if kwarg_unit_system is not None:

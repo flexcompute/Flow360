@@ -45,10 +45,10 @@ class MeshingParams(Flow360BaseModel):
 
     # Volume **defaults**:
     farfield: Optional[Literal["auto", "quasi-3d", "user-defined"]] = pd.Field(
-        None, description="Type of farfield generation."
+        default="auto", description="Type of farfield generation."
     )
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
-        None,
+        default=1,
         description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh.",
     )
     gap_treatment_strength: Optional[float] = pd.Field(
@@ -59,14 +59,14 @@ class MeshingParams(Flow360BaseModel):
     )
 
     surface_layer_growth_rate: Optional[float] = pd.Field(
-        None, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
+        1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )  # Conditionally optional
 
-    refinements: Optional[List[AllowedRefinementTypes]] = pd.Field(
-        None,
+    refinements: List[AllowedRefinementTypes] = pd.Field(
+        default=[],
         description="Additional fine-tunning for refinements.",
     )  # Note: May need discriminator for performance??
     # Will add more to the Union
-    volume_zones: Optional[List[Union[RotationCylinder]]] = pd.Field(
-        None, description="Creation of new volume zones."
+    volume_zones: List[Union[RotationCylinder]] = pd.Field(
+        default=[], description="Creation of new volume zones."
     )
