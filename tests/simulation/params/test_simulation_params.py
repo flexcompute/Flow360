@@ -90,7 +90,7 @@ def get_the_param():
                 mach=0.8,
                 alpha=30 * u.deg,
                 beta=20 * u.deg,
-                atmosphere=ThermalState(temperature=300 * u.K, density=1 * u.g / u.cm**3),
+                thermal_state=ThermalState(temperature=300 * u.K, density=1 * u.g / u.cm**3),
                 reference_mach=0.5,
             ),
             models=[
