@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -13,6 +13,7 @@ Meshing settings that applies to volumes.
 
 
 class UniformRefinement(Flow360BaseModel):
+    refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
     entities: EntityList[Box, Cylinder] = pd.Field()
     spacing: LengthType.Positive = pd.Field()
 
@@ -27,6 +28,9 @@ class AxisymmetricRefinement(Flow360BaseModel):
     - We may provide a helper function to automatically determine what is inside the encloeud_objects list based on the mesh data. But this currently is out of scope due to the estimated efforts.
     """
 
+    refinement_type: Literal["AxisymmetricRefinement"] = pd.Field(
+        "AxisymmetricRefinement", frozen=True
+    )
     entities: EntityList[Cylinder] = pd.Field()
     spacing_axial: LengthType.Positive = pd.Field()
     spacing_radial: LengthType.Positive = pd.Field()

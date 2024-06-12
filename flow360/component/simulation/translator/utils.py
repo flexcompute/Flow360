@@ -6,18 +6,22 @@ import json
 from flow360.component.simulation.simulation_params import (
     SimulationParams,  # Not required
 )
+from flow360.component.simulation.unit_system import LengthType
 
 
 def preprocess_input(func):
     @functools.wraps(func)
     def wrapper(input_params, mesh_unit, *args, **kwargs):
-        processed_input = get_simulation_param_dict(input_params, mesh_unit)
-        return func(processed_input, mesh_unit, *args, **kwargs)
+        validated_mesh_unit = LengthType.validate(mesh_unit)
+        processed_input = get_simulation_param_dict(input_params, validated_mesh_unit)
+        return func(processed_input, validated_mesh_unit, *args, **kwargs)
 
     return wrapper
 
 
-def get_simulation_param_dict(input_params: SimulationParams | str | dict, mesh_unit):
+def get_simulation_param_dict(
+    input_params: SimulationParams | str | dict, validated_mesh_unit: LengthType
+):
     """
     Get the dictionary of `SimulationParams`.
     """
@@ -40,7 +44,7 @@ def get_simulation_param_dict(input_params: SimulationParams | str | dict, mesh_
         param = SimulationParams(**input_params)
 
     if param is not None:
-        return param.preprocess(mesh_unit)
+        return param.preprocess(validated_mesh_unit)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 

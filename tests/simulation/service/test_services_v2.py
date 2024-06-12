@@ -60,7 +60,7 @@ def test_validate_service():
         "user_defined_dynamics": [],
     }
 
-    errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert errors is None
 
@@ -117,7 +117,7 @@ def test_validate_error():
         "user_defined_dynamics": [],
     }
 
-    errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert len(errors) == 1
     assert errors[0]["loc"] == ("meshing", "farfield")
@@ -175,7 +175,7 @@ def test_validate_multiple_errors():
         "user_defined_dynamics": [],
     }
 
-    errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
 
     assert len(errors) == 2
     assert errors[0]["loc"] == ("meshing", "farfield")
