@@ -104,6 +104,7 @@ def validate_model(params_as_dict, unit_system_name):
     unit_system = init_unit_system(unit_system_name)
 
     validation_errors = None
+    validation_warnings = None
     validated_param = None
 
     try:
@@ -132,7 +133,7 @@ def validate_model(params_as_dict, unit_system_name):
                     errors_as_list.remove(field)
                     error["loc"] = tuple(errors_as_list)
 
-    return validated_param, validation_errors
+    return validated_param, validation_errors, validation_warnings
 
 
 # pylint: disable=too-many-arguments
@@ -148,7 +149,7 @@ def _translate_simulation_json(
 
     """
     translated_dict = None
-    param, errors = validate_model(params_as_dict, unit_system_name)
+    param, errors, warnings = validate_model(params_as_dict, unit_system_name)
     if errors is not None:
         # pylint: disable=fixme
         # TODO: Check if this looks good in terminal.
