@@ -59,7 +59,7 @@ class SimulationParams(Flow360BaseModel):
     version: str = pd.Field(__version__, frozen=True)
 
     meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field()
+    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
     operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     #
     """
@@ -69,7 +69,7 @@ class SimulationParams(Flow360BaseModel):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field([Fluid()])
+    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field([])
     """
     Below can be mostly reused with existing models 
     """
