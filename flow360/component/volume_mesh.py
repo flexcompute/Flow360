@@ -12,6 +12,7 @@ import numpy as np
 from pydantic.v1 import Extra, Field, validator
 
 from flow360.component.compress_upload import compress_and_upload_chunks
+from flow360.flags import Flags
 
 from ..cloud.requests import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
@@ -261,7 +262,8 @@ class UGRIDEndianness(Enum):
         """
         detects endianess UGRID mesh from filename
         """
-        if VolumeMeshFileFormat.detect(file) is not VolumeMeshFileFormat.UGRID:
+        extOfFile = os.path.splitext(file)[1]
+        if extOfFile.lower() is not '.ugrid':
             return UGRIDEndianness.NONE
         basename = os.path.splitext(file)[0]
         ext = os.path.splitext(basename)[1]
@@ -419,6 +421,12 @@ class VolumeMeshDraft(ResourceDraft):
             "config": self.params.flow360_json(),
             "format": "cgns",
         }
+        if Flags.beta_features() and self.params.version is not None:
+            body["version"] = self.params.version
+
+        if Flags.beta_features() and self.params.version is not None:
+            if self.params.version == "v2":
+                body["format"] = "aflr3"
 
         if self.solver_version:
             body["solverVersion"] = self.solver_version
@@ -457,16 +465,29 @@ class VolumeMeshDraft(ResourceDraft):
         if name is None:
             name = os.path.splitext(os.path.basename(self.file_name))[0]
 
-        req = NewVolumeMeshRequest(
-            name=name,
-            file_name=remote_file_name,
-            tags=self.tags,
-            format=mesh_format.value,
-            endianness=endianness.value,
-            compression=compression.value,
-            params=self.params,
-            solver_version=self.solver_version,
-        )
+        if Flags.beta_features():
+            req = NewVolumeMeshRequest(
+                name=name,
+                file_name=remote_file_name,
+                tags=self.tags,
+                format=mesh_format.value,
+                endianness=endianness.value,
+                compression=compression.value,
+                params=self.params,
+                solver_version=self.solver_version,
+                version=self.params.version,
+            )
+        else:
+            req = NewVolumeMeshRequest(
+                name=name,
+                file_name=remote_file_name,
+                tags=self.tags,
+                format=mesh_format.value,
+                endianness=endianness.value,
+                compression=compression.value,
+                params=self.params,
+                solver_version=self.solver_version,
+            )
         resp = RestApi(VolumeMeshInterface.endpoint).post(req.dict())
         if not resp:
             return None

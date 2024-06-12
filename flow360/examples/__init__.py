@@ -3,7 +3,8 @@ from .airplane import Airplane
 from .bet_disk import BETDisk
 from .bet_line import BETLine
 from .convergence import Convergence
-from .cylinder import Cylinder
+from .cylinder2D import Cylinder2D
+from .cylinder3D import Cylinder3D
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
@@ -15,7 +16,8 @@ __all__ = [
     "BETDisk",
     "BETLine",
     "Convergence",
-    "Cylinder",
+    "Cylinder2D",
+    "Cylinder3D",
     "MonitorsAndSlices",
     "OM6wing",
     "OM6wingUserDefinedDynamics",
