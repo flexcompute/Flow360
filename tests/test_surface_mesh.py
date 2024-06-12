@@ -43,6 +43,7 @@ def test_draft_surface_mesh_from_file():
     sm = SurfaceMesh.from_file("data/surface_mesh/airplaneGeometry.stl")
     assert sm
 
+
 def test_mesh_filename_detection():
     files_correct = [
         ("sdfdlkjd/kjsdf.lb8.ugrid", ".lb8.ugrid"),
@@ -51,4 +52,3 @@ def test_mesh_filename_detection():
     for file, expected in files_correct:
         mesh_format = SurfaceMeshFileFormat.detect(file)
         assert expected == mesh_format
-

@@ -27,7 +27,7 @@ from .resource_base import (
 )
 from .utils import shared_account_confirm_proceed, validate_type
 from .validator import Validator
-from .volume_mesh import VolumeMeshDraft, UGRIDEndianness
+from .volume_mesh import VolumeMeshDraft
 
 
 class SurfaceMeshDownloadable(Enum):
