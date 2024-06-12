@@ -172,6 +172,14 @@ def get_solver_json(
     if input_params.user_defined_dynamics is not None:
         translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:
-            translated["userDefinedDynamics"].append(dump_dict(udd))
+            udd_dict = dump_dict(udd)
+            udd_dict["dynamicsName"] = udd_dict.pop("name")
+            if udd.input_boundary_patches is not None:
+                udd_dict["inputBoundaryPatches"] = []
+                for surface in udd.input_boundary_patches.stored_entities:
+                    udd_dict["inputBoundaryPatches"].append(surface.name)
+            if udd.output_target is not None:
+                udd_dict["outputTargetName"] = udd.output_target.name
+            translated["userDefinedDynamics"].append(udd_dict)
 
     return translated
