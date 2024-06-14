@@ -12,7 +12,7 @@ surface_mesh = fl.SurfaceMesh.create(
     Airplane.geometry,
     params=params,
     name="airplane-new-python-client-v2",
-    solver_version="mesher-24.2.1",
+    solver_version="mesher-24.2.2",
 )
 surface_mesh = surface_mesh.submit(force_submit=True)
 

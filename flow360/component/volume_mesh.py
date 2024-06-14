@@ -262,7 +262,7 @@ class UGRIDEndianness(Enum):
         """
         detects endianess UGRID mesh from filename
         """
-        if VolumeMeshFileFormat.detect(file) is not VolumeMeshFileFormat.UGRID:
+        if ".ugrid" not in file:
             return UGRIDEndianness.NONE
         basename = os.path.splitext(file)[0]
         ext = os.path.splitext(basename)[1]

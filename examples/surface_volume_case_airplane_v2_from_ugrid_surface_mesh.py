@@ -4,41 +4,34 @@ os.environ["FLOW360_BETA_FEATURES"] = "1"
 import flow360 as fl
 
 fl.Env.preprod.active()
-
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 from flow360.examples import Airplane
 
-# surface mesh
-params = fl.SurfaceMeshingParams(version="v2", max_edge_length=0.16)
+surface_mesh_file = "./data/airplane_simple/airplane_simple.lb8.ugrid"
 
-surface_mesh_draft = fl.SurfaceMesh.create(
-    geometry_file="data/airplane_geometry.egads",
-    params=params,
-    name="airplane-surface-mesh-from-egads-geometry-v2",
-    solver_version="mesher-24.2.2",
-)
-surface_mesh = surface_mesh_draft.submit()
+surface_mesh = fl.SurfaceMesh.from_file(surface_mesh_file, name="airplane-surface-mesh-ugrid")
+surface_mesh = surface_mesh.submit()
 
 print(surface_mesh)
 print(surface_mesh.params)
 
-# volume mesh
 params = fl.VolumeMeshingParams(
     version="v2",
     volume=Volume(
-        first_layer_thickness=1e-5,
-        growth_rate=1.2,
+        first_layer_thickness=0.001,
+        growth_rate=1.1,
+        num_boundary_layers=2,
     ),
     farfield=Farfield(type="auto"),
 )
 
-volume_mesh_draft = fl.VolumeMesh.create(
+volume_mesh = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
-    name="airplane-volume-mesh-from-egads-geometry-v2",
+    name="airplane-volume-mesh-from-ugrid",
     params=params,
     solver_version="mesher-24.2.2",
 )
-volume_mesh = volume_mesh_draft.submit()
+volume_mesh = volume_mesh.submit()
 
 # case
 params = fl.Flow360Params(Airplane.case_json)
@@ -48,5 +41,5 @@ params.boundaries = {
     "leftWing": fl.NoSlipWall(),
     "rightWing": fl.NoSlipWall(),
 }
-case_draft = volume_mesh.create_case("airplane-case-from-egads-geometry-v2", params)
+case_draft = volume_mesh.create_case("airplane-case-from-ugrid-surface-mesh-v2", params)
 case = case_draft.submit()

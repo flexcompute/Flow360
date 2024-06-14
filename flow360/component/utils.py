@@ -331,3 +331,64 @@ def remove_properties_by_name(data, name_to_remove):
     if isinstance(data, list):
         return [remove_properties_by_name(item, name_to_remove) for item in data]
     return data
+
+
+def get_mapbc_from_ugrid(ugrid):
+    """
+    return associated mapbc file name from the ugrid mesh file
+    """
+    mapbc = ugrid.replace(".lb8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".b8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".ugrid", ".mapbc")
+    return mapbc
+
+
+class MeshNameParser:
+    """
+    parse a given mesh name to handle stem, endianness, format and compression
+    """
+
+    def __init__(self, input_mesh_file):
+        mesh_file_without_compression, compression = self._parse_compression(input_mesh_file)
+        mesh_stem, endianness, format = self._parse_endianness_format(mesh_file_without_compression)
+        self.stem = mesh_stem
+        self.endianness = endianness
+        self.format = format
+        self.compression = compression
+
+    def _parse_compression(self, input_mesh_file):
+        for compression in [".gz", ".bz2", ".zst"]:
+            if input_mesh_file.endswith(compression):
+                return input_mesh_file.removesuffix(compression), compression
+        return input_mesh_file, ""
+
+    def _parse_endianness_format(self, mesh_file_without_compression):
+        stem = None
+        endianness = None
+        format = None
+        mesh_name_with_endianness, format = os.path.splitext(mesh_file_without_compression)
+        if format == ".ugrid":
+            stem, endianness = os.path.splitext(mesh_name_with_endianness)
+            if endianness not in [".lb8", ".b8"]:
+                stem = mesh_name_with_endianness
+                endianness = ""
+        else:
+            stem = mesh_name_with_endianness
+            endianness = ""
+        return stem, endianness, format
+
+    # pylint: disable=missing-function-docstring
+    def is_ugrid(self):
+        if self.format == ".ugrid":
+            return True
+        return False
+
+    # pylint: disable=missing-function-docstring
+    def is_compressed(self):
+        if self.compression != "":
+            return True
+        return False
+
+    # pylint: disable=missing-function-docstring
+    def get_mesh_name_without_compression(self):
+        return self.stem + self.endianness + self.format

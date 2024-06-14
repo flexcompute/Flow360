@@ -5,6 +5,7 @@ import pytest
 from flow360 import Accounts
 from flow360.cli.dict_utils import merge_overwrite
 from flow360.component.utils import (
+    MeshNameParser,
     is_valid_uuid,
     shared_account_confirm_proceed,
     validate_type,
@@ -70,3 +71,64 @@ def test_valid_uuid():
         is_valid_uuid(None)
 
     is_valid_uuid(None, allow_none=True)
+
+
+def test_mesh_name_parser_uncompressed_ugrid():
+    parser = MeshNameParser("testMesh.lb8.ugrid")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ".lb8"
+    assert parser.format == ".ugrid"
+    assert parser.compression == ""
+    assert parser.is_compressed() == False
+    assert parser.is_ugrid()
+
+
+def test_mesh_name_parser_ascii_ugrid():
+    parser = MeshNameParser("testMesh.ugrid")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ""
+    assert parser.format == ".ugrid"
+    assert parser.compression == ""
+    assert parser.is_compressed() == False
+    assert parser.is_ugrid()
+
+
+def test_mesh_name_parser_compressed_ugrid():
+    parser = MeshNameParser("testMesh.lb8.ugrid.bz2")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ".lb8"
+    assert parser.format == ".ugrid"
+    assert parser.compression == ".bz2"
+    assert parser.is_compressed()
+    assert parser.is_ugrid()
+    assert parser.get_mesh_name_without_compression() == "testMesh.lb8.ugrid"
+
+
+def test_mesh_name_parser_compressed_cgns():
+    parser = MeshNameParser("testMesh.cgns.bz2")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ""
+    assert parser.format == ".cgns"
+    assert parser.compression == ".bz2"
+    assert parser.is_compressed()
+    assert parser.is_ugrid() == False
+
+
+def test_mesh_name_parser_uncompressed_cgns():
+    parser = MeshNameParser("testMesh.cgns")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ""
+    assert parser.format == ".cgns"
+    assert parser.compression == ""
+    assert parser.is_compressed() == False
+    assert parser.is_ugrid() == False
+
+
+def test_mesh_name_parser_stl():
+    parser = MeshNameParser("testMesh.stl")
+    assert parser.stem == "testMesh"
+    assert parser.endianness == ""
+    assert parser.format == ".stl"
+    assert parser.compression == ""
+    assert parser.is_compressed() == False
+    assert parser.is_ugrid() == False

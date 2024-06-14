@@ -51,6 +51,6 @@ params.boundaries = {
     "fluid/unspecified": fl.NoSlipWall(),
 }
 case_draft = volume_mesh.create_case(
-    "cylinder3d-case-from-egads-3rd-party-geometry-id-v1", params, solver_version="mesher-24.2.1"
+    "cylinder3d-case-from-egads-3rd-party-geometry-id-v1", params, solver_version="mesher-24.2.2"
 )
 case = case_draft.submit()
