@@ -1,6 +1,7 @@
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from numpy import sqrt
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -9,6 +10,7 @@ from flow360.component.simulation.unit_system import (
     SpecificHeatCapacityType,
     TemperatureType,
     ThermalConductivityType,
+    VelocityType,
     ViscosityType,
 )
 
@@ -26,6 +28,17 @@ class Sutherland(Flow360BaseModel):
     reference_temperature: TemperatureType.Positive = pd.Field()
     effective_temperature: TemperatureType.Positive = pd.Field()
 
+    @pd.validate_call
+    def dynamic_viscosity_from_temperature(
+        self, temperature: TemperatureType.Positive
+    ) -> ViscosityType.Positive:
+        return (
+            self.reference_viscosity
+            * pow(temperature / self.reference_temperature, 1.5)
+            * (self.reference_temperature + self.effective_temperature)
+            / (temperature + self.effective_temperature)
+        )
+
 
 class Air(MaterialBase):
     type: Literal["air"] = pd.Field("air", frozen=True)
@@ -33,14 +46,15 @@ class Air(MaterialBase):
     dynamic_viscosity: Union[Sutherland, ViscosityType.Positive] = pd.Field(
         Sutherland(
             reference_viscosity=1.716e-5 * u.Pa * u.s,
-            reference_temperature=273 * u.K,
-            effective_temperature=111 * u.K,
+            reference_temperature=273.15 * u.K,
+            # pylint: disable=fixme
+            # TODO: validation error for effective_temperature not equal 110.4 K
+            effective_temperature=110.4 * u.K,
         )
     )
 
     @property
     def specific_heat_ratio(self) -> pd.PositiveFloat:
-        # TODO: serialize
         return 1.4
 
     @property
@@ -50,6 +64,20 @@ class Air(MaterialBase):
     @property
     def prandtl_number(self) -> pd.PositiveFloat:
         return 0.72
+
+    @pd.validate_call
+    def speed_of_sound_from_temperature(
+        self, temperature: TemperatureType.Positive
+    ) -> VelocityType.Positive:
+        return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
+
+    @pd.validate_call
+    def dynamic_viscosity_from_temperature(
+        self, temperature: TemperatureType.Positive
+    ) -> ViscosityType.Positive:
+        if isinstance(self.dynamic_viscosity, Sutherland):
+            return self.dynamic_viscosity.dynamic_viscosity_from_temperature(temperature)
+        return self.dynamic_viscosity
 
 
 class SolidMaterial(MaterialBase):

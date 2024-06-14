@@ -99,8 +99,8 @@ class ThermalState(CachedModelBase):
         """Computes speed of sound."""
         # pylint: disable=fixme
         # TODO: implement
-        # return self.material.speed_of_sound(self.temperature)
-        return 343 * u.m / u.s
+        return self.material.speed_of_sound_from_temperature(self.temperature)
+        # return 343 * u.m / u.s
 
     @property
     def pressure(self) -> PressureType.Positive:
@@ -114,8 +114,8 @@ class ThermalState(CachedModelBase):
         """Computes dynamic viscosity."""
         # pylint: disable=fixme
         # TODO: implement
-        # return self.material.dynamic_viscosity(self.temperature)
-        return 1.825e-5 * u.Pa * u.s
+        return self.material.dynamic_viscosity_from_temperature(self.temperature)
+        # return 1.825e-5 * u.Pa * u.s
 
     @pd.validate_call
     def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
