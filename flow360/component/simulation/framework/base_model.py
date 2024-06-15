@@ -546,14 +546,14 @@ class Flow360BaseModel(pd.BaseModel):
         assert mesh_unit is not None
 
         for property_name, value in self_dict.items():
-            if property_name in [COMMENTS, TYPE_TAG_STR] + exclude:
+            if property_name in [COMMENTS, TYPE_TAG_STR]:
                 continue
             loc_name = property_name
             field = self.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
 
-            if need_conversion(value):
+            if need_conversion(value) and property_name not in exclude:
                 log.debug(f"   -> need conversion for: {property_name} = {value}")
                 flow360_conv_system = unit_converter(
                     value.units.dimensions,
