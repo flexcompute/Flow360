@@ -182,6 +182,7 @@ def get_solver_json(
             if modeling_constants:
                 modeling_constants["C_d"] = modeling_constants.pop("CD", None)
                 modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
+                modeling_constants.pop("typeName", None)
 
     ##:: Step 7: Get BET and AD lists
     translated["BETDisks"], translated["ActuatorDisks"] = [], []

@@ -105,23 +105,6 @@ def compare_lists(list1, list2, float_precision=1e-10, ignore_keys=None):
     return True
 
 
-# def assert_equal(value1, value2, float_precision=1e-6, exclude={}):
-#    if isinstance(value1, dict):
-#        for key, value in value1.items():
-#            if not key in exclude:
-#                assert isinstance(value2, dict) and key in value2
-#                assert_equal(value, value2[key])
-#    elif isinstance(value1, list):
-#        #if not isinstance(value1[0], dict):
-#        #    for v1, v2 in zip(sorted(value1), sorted(value2)):
-#        #        assert_equal(v1, v2)
-#        else:
-#            for v1, v2 in zip(value1, value2):
-#                assert_equal(v1, v2)
-#    else:
-#        assert value1 == value2
-
-
 def to_file_from_file_test(obj):
     test_extentions = ["yaml", "json"]
     factory = obj.__class__
