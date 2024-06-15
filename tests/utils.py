@@ -56,6 +56,72 @@ def show_dict_diff(dict1, dict2):
     print("end of diff")
 
 
+def compare_dicts(dict1, dict2, float_precision=1e-10, ignore_keys=None):
+    if ignore_keys is None:
+        ignore_keys = set()
+
+    # Filter out the keys to be ignored
+    dict1_filtered = {k: v for k, v in dict1.items() if k not in ignore_keys}
+    dict2_filtered = {k: v for k, v in dict2.items() if k not in ignore_keys}
+
+    if dict1_filtered.keys() != dict2_filtered.keys():
+        print(f"dict keys not equal, dict1 {dict1_filtered.keys()}, dict2 {dict2_filtered.keys()}")
+        return False
+
+    for key in dict1_filtered:
+        value1 = dict1_filtered[key]
+        value2 = dict2_filtered[key]
+
+        if not compare_values(value1, value2, float_precision, ignore_keys):
+            print(f"dict value of key {key} not equal dict1 {dict1[key]}, dict2 {dict2[key]}")
+            return False
+
+    return True
+
+
+def compare_values(value1, value2, float_precision=1e-10, ignore_keys=None):
+    if isinstance(value1, float) and isinstance(value2, float):
+        return abs(value1 - value2) <= float_precision
+    elif isinstance(value1, dict) and isinstance(value2, dict):
+        return compare_dicts(value1, value2, float_precision, ignore_keys)
+    elif isinstance(value1, list) and isinstance(value2, list):
+        return compare_lists(value1, value2, float_precision, ignore_keys)
+    else:
+        return value1 == value2
+
+
+def compare_lists(list1, list2, float_precision=1e-10, ignore_keys=None):
+    if len(list1) != len(list2):
+        return False
+
+    if not isinstance(list1[0], dict):
+        list1, list2 = sorted(list1), sorted(list2)
+
+    for item1, item2 in zip(list1, list2):
+        if not compare_values(item1, item2, float_precision, ignore_keys):
+            print(f"list value not equal list1 {item1}, list2 {item2}")
+            return False
+
+    return True
+
+
+# def assert_equal(value1, value2, float_precision=1e-6, exclude={}):
+#    if isinstance(value1, dict):
+#        for key, value in value1.items():
+#            if not key in exclude:
+#                assert isinstance(value2, dict) and key in value2
+#                assert_equal(value, value2[key])
+#    elif isinstance(value1, list):
+#        #if not isinstance(value1[0], dict):
+#        #    for v1, v2 in zip(sorted(value1), sorted(value2)):
+#        #        assert_equal(v1, v2)
+#        else:
+#            for v1, v2 in zip(value1, value2):
+#                assert_equal(v1, v2)
+#    else:
+#        assert value1 == value2
+
+
 def to_file_from_file_test(obj):
     test_extentions = ["yaml", "json"]
     factory = obj.__class__

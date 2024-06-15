@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Union
 
 from flow360.component.simulation.models.surface_models import (
@@ -6,7 +7,11 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    Fluid,
+)
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
@@ -19,6 +24,8 @@ from flow360.component.simulation.translator.utils import (
     merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
+    replace_key,
+    replace_value,
 )
 from flow360.component.simulation.unit_system import LengthType
 
@@ -93,6 +100,10 @@ def get_solver_json(
     translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
     translated["sliceOutput"] = init_output_attr_dict(outputs, SliceOutput)
 
+    replace_value(translated["volumeOutput"], "outputFormat", "both", "paraview,tecplot")
+    replace_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
+    replace_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
+
     translated["volumeOutput"].update(
         {
             "outputFields": get_attribute_from_first_instance(
@@ -163,12 +174,37 @@ def get_solver_json(
     for model in input_params.models:
         if isinstance(model, Fluid):
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            replace_key(translated["navierStokesSolver"], "typeName", "modelType")
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
-            modeling_constants = translated["turbulenceModelSolver"]["modelingConstants"]
-            modeling_constants["C_d"] = modeling_constants.pop("CD")
-            modeling_constants["C_DES"] = modeling_constants.pop("CDES")
+            replace_key(translated["turbulenceModelSolver"], "typeName", "modelType")
+            modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
+            if modeling_constants:
+                modeling_constants["C_d"] = modeling_constants.pop("CD", None)
+                modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
 
-    ##:: Step 7: Get user defined dynamics
+    ##:: Step 7: Get BET and AD lists
+    translated["BETDisks"], translated["ActuatorDisks"] = [], []
+    for model in input_params.models:
+        if isinstance(model, BETDisk):
+            print(dump_dict(model).keys())
+            disk_param = remove_units_in_dict(dump_dict(model))
+            replace_key(disk_param, "machNumbers", "MachNumbers")
+            replace_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
+            volumes = disk_param.pop("volumes")
+            print(volumes.keys())
+            for v in volumes["storedEntities"]:
+                disk_i = deepcopy(disk_param)
+                disk_i["axisOfRotation"] = list(v["axis"])
+                disk_i["centerOfRotation"] = list(v["center"])
+                disk_i["radius"] = v["outerRadius"]
+                disk_i["thickness"] = v["height"]
+                translated["BETDisks"].append(disk_i)
+
+    ##:: Step 8: Get porous media
+
+    ##:: Step 9: Get heat transfer zones
+
+    ##:: Step 10: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:
         translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:

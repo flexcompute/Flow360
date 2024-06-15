@@ -49,6 +49,16 @@ def get_simulation_param_dict(
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 
+def replace_key(input_dict: dict, key_to_replace: str, replacement_key: str):
+    if key_to_replace in input_dict:
+        input_dict[replacement_key] = input_dict.pop(key_to_replace)
+
+
+def replace_value(input_dict: dict, key: str, value_to_replace, replacement_value):
+    if key in input_dict and input_dict[key] == value_to_replace:
+        input_dict[key] = replacement_value
+
+
 def remove_units_in_dict(input_dict):
     unit_keys = {"value", "units"}
     if isinstance(input_dict, dict):
