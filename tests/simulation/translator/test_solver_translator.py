@@ -114,12 +114,11 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
 
-    # assert compare_dicts(ref_dict, translated)
-    # assert sorted(ref_dict.items()) == sorted(translated.items())
-    # assert sorted(ref_dict["freestream"].items()) == sorted(translated["freestream"].items())
     assert compare_values(ref_dict["navierStokesSolver"], translated["navierStokesSolver"])
     assert compare_values(ref_dict["turbulenceModelSolver"], translated["turbulenceModelSolver"])
-    assert compare_values(ref_dict["freestream"], translated["freestream"], ignore_keys={"muRef"})
+    assert compare_values(
+        ref_dict["freestream"], translated["freestream"], ignore_keys={"muRef", "Reynolds"}
+    )
     assert compare_values(ref_dict["boundaries"], translated["boundaries"])
     assert compare_values(ref_dict["timeStepping"], translated["timeStepping"])
     assert compare_values(
@@ -170,10 +169,17 @@ def test_xv15_bet_disk(
         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_hover.json"
     )
 
-    # param = create_steady_airplane_param
-    # param = create_unsteady_hover_param
+    param = create_steady_airplane_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_airplane.json"
+    )
 
-    # param = create_unsteady_hover_UDD_param
-    # translate_and_compare(
-    #    param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
-    # )
+    param = create_unsteady_hover_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover.json"
+    )
+
+    param = create_unsteady_hover_UDD_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
+    )

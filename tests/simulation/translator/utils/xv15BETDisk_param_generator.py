@@ -105,6 +105,12 @@ def create_steady_airplane_param():
     bet_disk = createBETDiskSteady(_BET_cylinder, 26, _rpm_airplane_mode)
     params.models.append(bet_disk)
     params.time_stepping = createSteadyTimeStepping()
+    params.operating_condition = AerospaceCondition.from_mach(
+        mach=0.182,
+        alpha=-90 * u.deg,
+        thermal_state=ThermalState(),
+        reference_mach=0.54,
+    )
     return params
 
 
@@ -134,4 +140,5 @@ def create_unsteady_hover_UDD_param():
     params.models.append(bet_disk)
     params.user_defined_dynamics = [createUDDInstance()]
     params.time_stepping = createUnsteadyTimeStepping(_rpm_hover_mode)
+    params.time_stepping.steps = 800
     return params

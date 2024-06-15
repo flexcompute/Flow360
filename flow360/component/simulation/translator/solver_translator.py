@@ -20,6 +20,7 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
+    convert_tuples_to_lists,
     get_attribute_from_first_instance,
     merge_unique_item_lists,
     preprocess_input,
@@ -155,10 +156,10 @@ def get_solver_json(
     if ts.type_name == "Unsteady":
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
-            "physicalSteps": ts.physical_steps,
+            "physicalSteps": ts.steps,
             "orderOfAccuracy": ts.order_of_accuracy,
             "maxPseudoSteps": ts.max_pseudo_steps,
-            "timeStepSize": ts.time_step_size,
+            "timeStepSize": ts.step_size,
         }
     else:
         translated["timeStepping"] = {
@@ -186,16 +187,14 @@ def get_solver_json(
     translated["BETDisks"], translated["ActuatorDisks"] = [], []
     for model in input_params.models:
         if isinstance(model, BETDisk):
-            print(dump_dict(model).keys())
-            disk_param = remove_units_in_dict(dump_dict(model))
+            disk_param = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
             replace_key(disk_param, "machNumbers", "MachNumbers")
             replace_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
             volumes = disk_param.pop("volumes")
-            print(volumes.keys())
             for v in volumes["storedEntities"]:
                 disk_i = deepcopy(disk_param)
-                disk_i["axisOfRotation"] = list(v["axis"])
-                disk_i["centerOfRotation"] = list(v["center"])
+                disk_i["axisOfRotation"] = v["axis"]
+                disk_i["centerOfRotation"] = v["center"]
                 disk_i["radius"] = v["outerRadius"]
                 disk_i["thickness"] = v["height"]
                 translated["BETDisks"].append(disk_i)

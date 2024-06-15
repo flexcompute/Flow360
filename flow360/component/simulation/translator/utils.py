@@ -59,6 +59,17 @@ def replace_value(input_dict: dict, key: str, value_to_replace, replacement_valu
         input_dict[key] = replacement_value
 
 
+def convert_tuples_to_lists(input_dict):
+    if isinstance(input_dict, dict):
+        return {k: convert_tuples_to_lists(v) for k, v in input_dict.items()}
+    elif isinstance(input_dict, tuple):
+        return list(input_dict)
+    elif isinstance(input_dict, list):
+        return [convert_tuples_to_lists(item) for item in input_dict]
+    else:
+        return input_dict
+
+
 def remove_units_in_dict(input_dict):
     unit_keys = {"value", "units"}
     if isinstance(input_dict, dict):
