@@ -175,7 +175,7 @@ def _unit_object_parser(value, unyt_types: List[type]):
         if "value" in value:
             for unyt_type in unyt_types:
                 try:
-                    return unyt_type(value["value"], value["units"])
+                    return unyt_type(value["value"], value["units"], dtype=np.float64)
                 except u.exceptions.UnitParseError:
                     pass
         else:
@@ -219,9 +219,10 @@ def _unit_inference_validator(value, dim_name, is_array=False):
         unit = unit_system_manager.current[dim_name]
         if is_array:
             if all(isinstance(item, Number) for item in value):
-                return value * unit
+                float64_tuple = tuple(np.float64(item) for item in value)
+                return float64_tuple * unit
         if isinstance(value, Number):
-            return value * unit
+            return np.float64(value) * unit
     return value
 
 
@@ -259,6 +260,27 @@ def _has_dimensions_validator(value, dim):
     return value
 
 
+def _enforce_float64(unyt_obj):
+    """
+    This make sure all the values are float64 to minimize floating point errors
+    """
+    if isinstance(unyt_obj, (u.Unit, _Flow360BaseUnit)):
+        return unyt_obj
+
+    # Determine if the object is a scalar or an array and cast to float64
+    if isinstance(unyt_obj, u.unyt_array):
+        # For unyt_array, ensure all elements are float64
+        new_values = np.asarray(unyt_obj, dtype=np.float64)
+        return new_values * unyt_obj.units
+
+    if isinstance(unyt_obj, u.unyt_quantity):
+        # For unyt_quantity, ensure the value is float64
+        new_value = np.float64(unyt_obj)
+        return u.unyt_quantity(new_value, unyt_obj.units)
+
+    raise TypeError(f"arg '{unyt_obj}' is not a valid unyt object")
+
+
 class _DimensionedType(metaclass=ABCMeta):
     """
     :class: Base class for dimensioned values
@@ -280,12 +302,13 @@ class _DimensionedType(metaclass=ABCMeta):
             if cls.has_defaults:
                 value = _unit_inference_validator(value, cls.dim_name)
             value = _has_dimensions_validator(value, cls.dim)
+            value = _enforce_float64(value)
         except TypeError as err:
             details = InitErrorDetails(type="value_error", ctx={"error": err})
             raise pd.ValidationError.from_exception_data("validation error", [details])
 
         if isinstance(value, u.Unit):
-            return 1.0 * value
+            return np.float64(1.0) * value
 
         return value
 
@@ -826,7 +849,7 @@ class _Flow360BaseUnit(_DimensionedType):
         self.val = val
 
     @classmethod
-    def factory(cls, value, unit_name):
+    def factory(cls, value, unit_name, dtype=np.float64):
         """Returns specialised class object based on unit name
 
         Parameters
@@ -848,7 +871,7 @@ class _Flow360BaseUnit(_DimensionedType):
         """
         for sub_classes in _Flow360BaseUnit.__subclasses__():
             if sub_classes.unit_name == unit_name:
-                return sub_classes(value)
+                return sub_classes(dtype(value))
         raise ValueError(f"No class found for unit_name: {unit_name}")
 
     def __eq__(self, other):
