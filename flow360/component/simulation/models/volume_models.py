@@ -91,6 +91,9 @@ class Fluid(PDEModelBase):
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
     ] = pd.Field(None)
 
+    # fixme: Add support for other initial conditions
+    # TODO: Avoid scaling material section when preprocessing
+
 
 class Solid(PDEModelBase):
     """
