@@ -1,7 +1,9 @@
 import abc
 import inspect
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Literal
+from contextlib import contextmanager
+
 
 import pydantic as pd
 
@@ -9,7 +11,20 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.types import TYPE_TAG_STR
 
 
-class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+
+@contextmanager
+def _model_attribute_unlock(model, attr: str):
+    try:
+        model.model_fields[attr].frozen = False
+        yield
+    finally:
+        model.model_fields[attr].frozen = True
+
+
+
+class MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+    _constructor: Literal['default'] = pd.Field('default', frozen=True)
+
     @classmethod
     def model_constructor(cls, func: Callable) -> Callable:
         @classmethod
@@ -25,7 +40,8 @@ class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
             result._cached = result.__annotations__["_cached"](
                 **{**result._cached.model_dump(), **defaults, **kwargs}
             )
-            result._cached.constructor = func.__name__
+            with _model_attribute_unlock(result, '_constructor'):
+                result._constructor = func.__name__
             return result
 
         return wrapper
