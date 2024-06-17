@@ -1,4 +1,4 @@
-from typing import Annotated, List, Literal, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -56,7 +56,8 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings):
-    entities: EntityList[Surface] = pd.Field(alias="surfaces")
+    # TODO: entities is None --> use all surfaces. This is not implemented yet.
+    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",

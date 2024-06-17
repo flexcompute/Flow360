@@ -220,8 +220,8 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 return dict(stored_entities=None)
             else:
                 cls._valid_individual_input(input)
-                if isinstance(item, tuple(valid_types)):
-                    formated_input.append(item)
+                if isinstance(input, tuple(valid_types)):
+                    formated_input.append(input)
         return dict(stored_entities=formated_input)
 
     @pd.field_validator("stored_entities", mode="after")

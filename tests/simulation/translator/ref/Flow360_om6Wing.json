@@ -14,7 +14,7 @@
     },
     "freestream": {
         "Mach": 0.84,
-        "muRef": 5.3895375771590744e-08,
+        "muRef": 5.326121165140212e-08,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
         "betaAngle": 0.0
@@ -44,7 +44,7 @@
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "typeName": "Compressible",
+        "modelType": "Compressible",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
@@ -54,6 +54,7 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "outputFormat": "tecplot",
+        "outputFields": [],
         "slices": {
             "sliceName_1": {
                 "outputFields": [
@@ -82,8 +83,12 @@
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
+        "outputFields": [],
         "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
         "surfaces": {
             "3": {
                 "outputFields": [
@@ -127,10 +132,9 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelingConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
-            "typeName": "SpalartAllmarasConsts"
+            "C_d": 8.0
         },
-        "typeName": "SpalartAllmaras",
+        "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
         "quadraticConstitutiveRelation": false,
         "reconstructionGradientLimiter": 0.5,
@@ -141,6 +145,8 @@
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars",
@@ -148,6 +154,7 @@
             "residualTurbulence",
             "Mach"
         ],
-        "outputFormat": "paraview"
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
     }
 }

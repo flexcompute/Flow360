@@ -164,10 +164,10 @@ def test_simulation_params_unit_conversion(get_the_param):
     # AngleType
     assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
     # TimeType
-    assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.72)
+    assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.8888282)
     # TemperatureType
     assertions.assertAlmostEqual(
-        converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.37
+        converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.368
     )
     # VelocityType
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.8)
@@ -181,7 +181,7 @@ def test_simulation_params_unit_conversion(get_the_param):
         1.0005830903790088e-11,
     )
     # AngularVelocityType
-    assertions.assertAlmostEqual(converted.models[3].rotation.value.value, 0.013119533527696792)
+    assertions.assertAlmostEqual(converted.models[3].rotation.value.value, 0.01296006)
     # HeatFluxType
     assertions.assertAlmostEqual(converted.models[1].heat_spec.value.value, 2.47809322e-11)
     # HeatSourceType
@@ -194,7 +194,7 @@ def test_simulation_params_unit_conversion(get_the_param):
     )
     # HeatCapacityType
     assertions.assertAlmostEqual(
-        converted.models[5].material.specific_heat_capacity.value, 0.002549957925694226
+        converted.models[5].material.specific_heat_capacity.value, 0.00248834
     )
     # ThermalConductivityType
     assertions.assertAlmostEqual(
@@ -218,5 +218,5 @@ def test_simulation_params_unit_conversion(get_the_param):
     # FrequencyType
     assertions.assertAlmostEqual(
         converted.models[6].turbulence_quantities.specific_dissipation_rate.value,
-        29.154518950437314,
+        28.80012584,
     )
