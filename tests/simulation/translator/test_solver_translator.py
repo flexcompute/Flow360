@@ -114,7 +114,7 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
 
-    assert compare_values(ref_dict, translated, ignore_keys={"muRef", "Reynolds"})
+    assert compare_values(ref_dict, translated)
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):

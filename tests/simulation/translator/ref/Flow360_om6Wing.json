@@ -14,7 +14,7 @@
     },
     "freestream": {
         "Mach": 0.84,
-        "muRef": 5.3895375771590744e-08,
+        "muRef": 5.326121165140212e-08,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
         "betaAngle": 0.0

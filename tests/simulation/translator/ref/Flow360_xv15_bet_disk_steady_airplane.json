@@ -401,7 +401,7 @@
         "Temperature": 288.15,
         "alphaAngle": -90.0,
         "betaAngle": 0.0,
-        "muRef": 1.68e-06
+        "muRef": 1.6898901759789358e-06
     },
     "geometry": {
         "momentCenter": [

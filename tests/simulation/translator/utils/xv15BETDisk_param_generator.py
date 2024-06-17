@@ -1,7 +1,7 @@
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.material import Air
+from flow360.component.simulation.models.material import Air, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
     LinearSolver,
     NavierStokesSolver,
@@ -16,7 +16,11 @@ from flow360.component.simulation.operating_condition import (
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import imperial_unit_system
+from flow360.component.simulation.unit_system import (
+    LengthType,
+    ViscosityType,
+    imperial_unit_system,
+)
 from tests.simulation.translator.utils.xv15_bet_disk_helper import (
     createBETDiskSteady,
     createBETDiskUnsteady,
@@ -26,8 +30,19 @@ from tests.simulation.translator.utils.xv15_bet_disk_helper import (
 )
 
 
+def viscosity_from_muRef(
+    muRef: float, mesh_unit: LengthType, thermal_state: ThermalState
+) -> ViscosityType:
+    return muRef * thermal_state.density * thermal_state.speed_of_sound * mesh_unit
+
+
 def create_param_base():
     with imperial_unit_system:
+        default_thermal_state = ThermalState()
+        mesh_unit = 1 * u.inch
+        viscosity = viscosity_from_muRef(
+            1.95151e-06, mesh_unit=mesh_unit, thermal_state=default_thermal_state
+        )
         params = SimulationParams(
             reference_geometry=ReferenceGeometry(
                 moment_center=(0, 0, 0),
@@ -37,12 +52,19 @@ def create_param_base():
             operating_condition=AerospaceCondition.from_mach(
                 mach=0,
                 alpha=-90 * u.deg,
-                thermal_state=ThermalState(),
+                thermal_state=ThermalState(
+                    material=Air(
+                        dynamic_viscosity=Sutherland(
+                            reference_temperature=default_thermal_state.temperature,
+                            reference_viscosity=viscosity,
+                            effective_temperature=default_thermal_state.material.dynamic_viscosity.effective_temperature,
+                        )
+                    ),
+                ),
                 reference_mach=0.69,
             ),
             models=[
                 Fluid(
-                    material=Air(),
                     navier_stokes_solver=NavierStokesSolver(
                         absolute_tolerance=1e-10,
                         linear_solver=LinearSolver(max_iterations=25),
