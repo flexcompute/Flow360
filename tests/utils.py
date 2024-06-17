@@ -50,7 +50,6 @@ def show_dict_diff(dict1, dict2):
 
     # Generate the diff
     diff = difflib.unified_diff(dict1_lines, dict2_lines, fromfile="dict1", tofile="dict2")
-
     # Printing the diff
     print("diff")
     print("\n".join(diff))

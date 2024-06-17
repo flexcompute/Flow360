@@ -37,15 +37,12 @@ class Vector(Coordinate):
 
     # pylint: disable=unused-argument
     @classmethod
-    def __get_pydantic_json_schema__(cls, schema: CoreSchema, handler: GetJsonSchemaHandler):
-        new_schema = {
-            "type": "array",
-            "minItems": 3,
-            "maxItems": 3,
-            "items": [{"type": "number"}, {"type": "number"}, {"type": "number"}],
-        }
-
-        schema.update(new_schema)
+    def __get_pydantic_json_schema__(
+        cls, schema: CoreSchema, handler: GetJsonSchemaHandler
+    ):
+        schema = {"properties": {"value": {"type": "array"}}}
+        schema["properties"]["value"]["items"] = {"type": "number"}
+        schema["properties"]["value"]["strictType"] = {"type": "vector3"}
 
         return schema
 

@@ -46,8 +46,13 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
 
 
+class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
+    ### Warning: Please do not change this as it affects registry bucketing.
+    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+
+
 @final
-class Edge(Flow360BaseModel):
+class Edge(_EdgeEntityBase):
     """
     Edge with edge name defined in the geometry file
     """
@@ -109,7 +114,7 @@ class Cylinder(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     height: LengthType.Positive = pd.Field()
-    inner_radius: LengthType.Positive = pd.Field()
+    inner_radius: Optional[LengthType.Positive] = pd.Field(None)
     # pylint: disable=fixme
     # TODO validation outer > inner
     outer_radius: LengthType.Positive = pd.Field()

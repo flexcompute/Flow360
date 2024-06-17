@@ -1,14 +1,21 @@
-from typing import List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    SurfaceRefinementTypes,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     VolumeRefinementTypes,
 )
+
+AllowedRefinementTypes = Annotated[
+    Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
+    pd.Field(discriminator="refinement_type"),
+]
 
 
 class MeshingParams(Flow360BaseModel):
@@ -37,29 +44,29 @@ class MeshingParams(Flow360BaseModel):
     """
 
     # Volume **defaults**:
-    farfield: Literal["auto", "quasi-3d", "user-defined"] = pd.Field(
-        description="Type of farfield generation."
+    farfield: Optional[Literal["auto", "quasi-3d", "user-defined"]] = pd.Field(
+        default="auto", description="Type of farfield generation."
     )
-    refinement_factor: pd.PositiveFloat = pd.Field(
-        description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh."
+    refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
+        default=1,
+        description="If refinementFactor=r is provided all spacings in refinement regions and first layer thickness will be adjusted to generate r-times finer mesh.",
     )
-    gap_treatment_strength: float = pd.Field(
+    gap_treatment_strength: Optional[float] = pd.Field(
+        None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity. Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment. This parameter has a global impact where the anisotropic transition into the isotropic mesh. However, the impact on regions without close proximity is negligible.",
     )
 
-    surface_layer_growth_rate: float = pd.Field(
-        ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
-    )
+    surface_layer_growth_rate: Optional[float] = pd.Field(
+        1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
+    )  # Conditionally optional
 
-    refinements: Optional[
-        List[Union[SurfaceEdgeRefinement, SurfaceRefinement, VolumeRefinementTypes]]
-    ] = pd.Field(
-        None,
+    refinements: List[AllowedRefinementTypes] = pd.Field(
+        default=[],
         description="Additional fine-tunning for refinements.",
     )  # Note: May need discriminator for performance??
     # Will add more to the Union
-    volume_zones: Optional[List[Union[RotationCylinder]]] = pd.Field(
-        None, description="Creation of new volume zones."
+    volume_zones: List[RotationCylinder] = pd.Field(
+        default=[], description="Creation of new volume zones."
     )

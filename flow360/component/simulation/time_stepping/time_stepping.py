@@ -8,9 +8,9 @@ from flow360.component.simulation.unit_system import TimeType
 
 
 def _apply_default_to_none(original, default):
-    for field_name, value in original.model_fields.items():
+    for field_name, value in original.model_dump().items():
         if value is None:
-            setattr(original, field_name, default.dict()[field_name])
+            setattr(original, field_name, default.model_dump()[field_name])
     return original
 
 
@@ -86,7 +86,7 @@ class Steady(BaseTimeStepping):
     Steady time stepping component
     """
 
-    model_type: Literal["Steady"] = pd.Field("Steady", frozen=True)
+    type_name: Literal["Steady"] = pd.Field("Steady", frozen=True)
     max_steps: int = pd.Field(2000, gt=0, le=100000, description="Maximum number of pseudo steps.")
     CFL: Union[RampCFL, AdaptiveCFL] = pd.Field(
         default=AdaptiveCFL.default_steady(),
@@ -113,7 +113,7 @@ class Unsteady(BaseTimeStepping):
     Unsteady time stepping component
     """
 
-    model_type: Literal["Unsteady"] = pd.Field("Unsteady", frozen=True)
+    type_name: Literal["Unsteady"] = pd.Field("Unsteady", frozen=True)
     max_pseudo_steps: int = pd.Field(
         100, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
     )

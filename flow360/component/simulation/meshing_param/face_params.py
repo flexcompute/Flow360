@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -26,7 +26,6 @@ class SurfaceRefinement(Flow360BaseModel):
     """
 
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
@@ -52,7 +51,8 @@ class BoundaryLayer(Flow360BaseModel):
     have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
     """
 
-    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
+    refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
+    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field(default='aniso')
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
@@ -60,3 +60,6 @@ class BoundaryLayer(Flow360BaseModel):
     growth_rate: pd.PositiveFloat = pd.Field(
         description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported. This is a global setting in mesher.
+
+
+SurfaceRefinementTypes = Union[SurfaceRefinement, BoundaryLayer]

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from copy import deepcopy
 from typing import Any, List, Literal
 
@@ -21,6 +20,17 @@ from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
+
+
+def custom_to_camel(string: str) -> str:
+    components = string.split("_")
+
+    camel_case_string = components[0]
+
+    for component in components[1:]:
+        camel_case_string += component[0].upper() + component[1:]
+
+    return camel_case_string
 
 
 class Conflicts(pd.BaseModel):
@@ -42,12 +52,6 @@ class Flow360BaseModel(pd.BaseModel):
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
-        keys_to_remove = []
-        for property_name in model_dict.keys():
-            if re.match(r"^_[^_]", property_name):
-                keys_to_remove.append(property_name)
-        for key in keys_to_remove:
-            model_dict.pop(key)
         super().__init__(**model_dict)
 
     @classmethod
@@ -75,11 +79,8 @@ class Flow360BaseModel(pd.BaseModel):
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
+        cls._add_type_field()
         cls._generate_docstring()
-
-    @pd.computed_field
-    def _type(self) -> str:
-        return self.__class__.__name__
 
     """Sets config for all :class:`Flow360BaseModel` objects.
 
@@ -104,6 +105,9 @@ class Flow360BaseModel(pd.BaseModel):
         conflicting_fields=[],
         include_hash=False,
         include_defaults_in_schema=True,
+        alias_generator=pd.AliasGenerator(
+            serialization_alias=custom_to_camel,
+        ),
     )
 
     def __setattr__(self, name, value):
@@ -251,7 +255,7 @@ class Flow360BaseModel(pd.BaseModel):
         model_dict = cls._handle_dict_with_hash(model_dict)
         return model_dict
 
-    def to_file(self, filename: str) -> None:
+    def to_file(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .json or .yaml file
 
         Parameters
@@ -265,14 +269,14 @@ class Flow360BaseModel(pd.BaseModel):
         """
 
         if ".json" in filename:
-            return self.to_json(filename=filename)
+            return self._to_json(filename=filename, **kwargs)
         if ".yaml" in filename:
-            return self.to_yaml(filename=filename)
+            return self._to_yaml(filename=filename, **kwargs)
 
         raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
-    def from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def _from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
         """Load a :class:`Flow360BaseModel` from .json file.
 
         Parameters
@@ -289,7 +293,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360BaseModel.from_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params = Flow360BaseModel._from_json(filename='folder/flow360.json') # doctest: +SKIP
         """
         model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -316,7 +320,7 @@ class Flow360BaseModel(pd.BaseModel):
             model_dict = json.load(json_fhandle)
         return model_dict
 
-    def to_json(self, filename: str) -> None:
+    def _to_json(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .json file
 
         Parameters
@@ -326,9 +330,9 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params.to_json(filename='folder/flow360.json') # doctest: +SKIP
+        >>> params._to_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        json_string = self.model_dump_json()
+        json_string = self.model_dump_json(**kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"] is True:
             model_dict["hash"] = self._calculate_hash(model_dict)
@@ -336,7 +340,7 @@ class Flow360BaseModel(pd.BaseModel):
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
 
     @classmethod
-    def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
+    def _from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
         """Loads :class:`Flow360BaseModel` from .yaml file.
 
         Parameters
@@ -353,7 +357,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params = Flow360BaseModel.from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params = Flow360BaseModel._from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
         model_dict = cls._dict_from_file(filename=filename)
         return cls.model_validate(model_dict, **parse_obj_kwargs)
@@ -380,7 +384,7 @@ class Flow360BaseModel(pd.BaseModel):
             model_dict = yaml.safe_load(yaml_in)
         return model_dict
 
-    def to_yaml(self, filename: str) -> None:
+    def _to_yaml(self, filename: str, **kwargs) -> None:
         """Exports :class:`Flow360BaseModel` instance to .yaml file.
 
         Parameters
@@ -390,9 +394,9 @@ class Flow360BaseModel(pd.BaseModel):
 
         Example
         -------
-        >>> params.to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
+        >>> params._to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        json_string = self.model_dump_json()
+        json_string = self.model_dump_json(**kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"]:
             model_dict["hash"] = self._calculate_hash(model_dict)
@@ -434,6 +438,19 @@ class Flow360BaseModel(pd.BaseModel):
             is_frozen = self.model_fields[key].frozen
             if is_frozen is None or is_frozen is False:
                 self.__setattr__(key, value)
+
+    @classmethod
+    def _add_type_field(cls) -> None:
+        """Automatically place "type" field with model name in the model field dictionary."""
+
+        # TODO: Check if this _type actually fulfill its goal(?)
+        tag_field = pd.fields.FieldInfo(
+            alias=TYPE_TAG_STR,
+            value=cls.__name__,
+            annotation=Literal[cls.__name__],
+            class_validators=None,
+        )
+        cls.model_fields[TYPE_TAG_STR] = tag_field
 
     @classmethod
     def _generate_docstring(cls) -> str:
@@ -598,7 +615,10 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
-                    params, mesh_unit=mesh_unit, required_by=[*required_by, loc_name]
+                    params,
+                    mesh_unit=mesh_unit,
+                    required_by=[*required_by, loc_name],
+                    exclude=exclude,
                 )
             elif isinstance(value, list):
                 for i, item in enumerate(value):
@@ -607,6 +627,7 @@ class Flow360BaseModel(pd.BaseModel):
                             params,
                             mesh_unit=mesh_unit,
                             required_by=[*required_by, loc_name, f"{i}"],
+                            exclude=exclude,
                         )
 
         return self.__class__(**solver_values)

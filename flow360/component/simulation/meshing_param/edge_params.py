@@ -2,7 +2,6 @@ from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
@@ -30,10 +29,16 @@ class AspectRatioBasedRefinement(Flow360BaseModel):
     value: pd.PositiveFloat = pd.Field()
 
 
+class ProjectAnisoSpacing(Flow360BaseModel):
+    """Project the anisotropic spacing from neighboring faces to the edge"""
+
+    type: Literal["projectAnisoSpacing"] = pd.Field("projectAnisoSpacing", frozen=True)
+
+
 class _BaseEdgeRefinement(Flow360BaseModel):
     entities: EntityList[Edge] = pd.Field(alias="edges")
-    growth_rate: float = pd.Field(
-        description="Growth rate for volume prism layers.", ge=1
+    growth_rate: Optional[float] = pd.Field(
+        None, description="Growth rate for surface mesh layers grown from edges.", ge=1
     )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
 
 
@@ -45,6 +50,14 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     (equivalent to `ProjectAniso` in old params).
     """
 
+    refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
+        "SurfaceEdgeRefinement", frozen=True
+    )
     method: Optional[
-        Union[AngleBasedRefinement, HeightBasedRefinement, AspectRatioBasedRefinement]
+        Union[
+            AngleBasedRefinement,
+            HeightBasedRefinement,
+            AspectRatioBasedRefinement,
+            ProjectAnisoSpacing,
+        ]
     ] = pd.Field(None, discriminator="type")

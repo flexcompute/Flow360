@@ -27,8 +27,12 @@ class ThermalStateCache(Flow360BaseModel):
     """[INTERNAL] Cache for thermal state inputs"""
 
     # pylint: disable=no-member
+    constructor: Optional[str] = None
     altitude: Optional[LengthType.Positive] = None
     temperature_offset: Optional[TemperatureType] = None
+    temperature: Optional[TemperatureType.Positive] = None
+    density: Optional[DensityType.Positive] = None
+    material: Optional[FluidMaterialTypes] = None
 
 
 class ThermalState(CachedModelBase):
@@ -55,7 +59,8 @@ class ThermalState(CachedModelBase):
     material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
     _cached: ThermalStateCache = ThermalStateCache()
 
-    @classmethod
+    # pylint: disable=no-self-argument, not-callable, unused-argument
+    @CachedModelBase.model_constructor
     @pd.validate_call
     def from_standard_atmosphere(
         cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K
@@ -71,7 +76,6 @@ class ThermalState(CachedModelBase):
             temperature=temperature,
             material=Air(),
         )
-        state._cached = ThermalStateCache(altitude=altitude, temperature_offset=temperature_offset)
 
         return state
 
@@ -109,19 +113,49 @@ class ThermalState(CachedModelBase):
         """Computes dynamic viscosity."""
         # pylint: disable=fixme
         # TODO: implement
-        # return self.material.speed_of_sound(self.temperature)
+        # return self.material.dynamic_viscosity(self.temperature)
         return 1.825e-5 * u.Pa * u.s
 
+    @pd.validate_call
+    def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
+        """Computes nondimensional dynamic viscosity."""
+        # TODO: use unit system for nondimensionalization
+        return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()
 
-class GenericReferenceCondition(Flow360BaseModel):
+
+class GenericReferenceConditionCache(Flow360BaseModel):
+    """[INTERNAL] Cache for GenericReferenceCondition inputs"""
+
+    constructor: Optional[str] = None
+    velocity_magnitude: Optional[VelocityType.Positive] = None
+    thermal_state: Optional[ThermalState] = None
+    mach: Optional[pd.PositiveFloat] = None
+
+
+class AerospaceConditionCache(Flow360BaseModel):
+    """[INTERNAL] Cache for AerospaceCondition inputs"""
+
+    constructor: Optional[str] = None
+    alpha: Optional[AngleType] = None
+    beta: Optional[AngleType] = None
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = None
+    velocity_magnitude: Optional[VelocityType.NonNegative] = None
+    thermal_state: Optional[ThermalState] = pd.Field(None, alias="atmosphere")
+    mach: Optional[pd.NonNegativeFloat] = None
+    reference_mach: Optional[pd.PositiveFloat] = None
+
+
+class GenericReferenceCondition(CachedModelBase):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
     """
 
     velocity_magnitude: VelocityType.Positive
     thermal_state: ThermalState = ThermalState()
+    _cached: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
-    @classmethod
+    # pylint: disable=no-self-argument, not-callable
+    @CachedModelBase.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
@@ -138,58 +172,63 @@ class GenericReferenceCondition(Flow360BaseModel):
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
 
-class AerospaceCondition(Flow360BaseModel):
+class AerospaceCondition(CachedModelBase):
     """A specialized GenericReferenceCondition for aerospace applications."""
 
     # pylint: disable=fixme
-    # TODO: add units for angles
+    # TODO: valildate reference_velocity_magnitude defined if velocity_magnitude=0
     alpha: AngleType = 0 * u.deg
     beta: AngleType = 0 * u.deg
     velocity_magnitude: VelocityType.NonNegative
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
+    _cached: AerospaceConditionCache = AerospaceConditionCache()
 
-    # pylint: disable=too-many-arguments
-    @classmethod
+    # pylint: disable=too-many-arguments, no-self-argument, not-callable
+    @CachedModelBase.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
         mach: pd.PositiveFloat,
         alpha: AngleType = 0 * u.deg,
         beta: AngleType = 0 * u.deg,
-        atmosphere: ThermalState = ThermalState(),
+        thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
         """Constructs a `AerospaceCondition` from Mach number and thermal state."""
 
-        velocity_magnitude = mach * atmosphere.speed_of_sound
-        reference_velocity_magnitude = reference_mach * atmosphere.speed_of_sound
+        velocity_magnitude = mach * thermal_state.speed_of_sound
+
+        reference_velocity_magnitude = (
+            reference_mach * thermal_state.speed_of_sound if reference_mach else None
+        )
         return cls(
             velocity_magnitude=velocity_magnitude,
             alpha=alpha,
             beta=beta,
-            atmosphere=atmosphere,
+            thermal_state=thermal_state,
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
-    @classmethod
+    # pylint: disable=no-self-argument, not-callable
+    @CachedModelBase.model_constructor
     @pd.validate_call
     def from_stationary(
         cls,
         reference_velocity_magnitude: VelocityType.Positive,
-        atmosphere: ThermalState = ThermalState(),
+        thermal_state: ThermalState = ThermalState(),
     ):
         """Constructs a `AerospaceCondition` for stationary conditions."""
         return cls(
             velocity_magnitude=0 * u.m / u.s,
-            atmosphere=atmosphere,
+            thermal_state=thermal_state,
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
     @property
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
-        return self.velocity_magnitude / self.atmosphere.speed_of_sound
+        return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
     # pylint: disable=fixme
     # TODO:  Add after model validation that reference_velocity_magnitude is set when velocity_magnitude is 0
