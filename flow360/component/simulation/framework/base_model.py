@@ -588,7 +588,7 @@ class Flow360BaseModel(pd.BaseModel):
             Full config definition as Flow360Params.
 
         exclude: List[str] (optional)
-            List of fields to ignore on returned model.
+            List of fields to not convert to solver dimensions.
 
         required_by: List[str] (optional)
             Path to property which requires conversion.

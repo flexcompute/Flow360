@@ -49,12 +49,12 @@ def get_simulation_param_dict(
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 
-def replace_key(input_dict: dict, key_to_replace: str, replacement_key: str):
+def replace_dict_key(input_dict: dict, key_to_replace: str, replacement_key: str):
     if key_to_replace in input_dict:
         input_dict[replacement_key] = input_dict.pop(key_to_replace)
 
 
-def replace_value(input_dict: dict, key: str, value_to_replace, replacement_value):
+def replace_dict_value(input_dict: dict, key: str, value_to_replace, replacement_value):
     if key in input_dict and input_dict[key] == value_to_replace:
         input_dict[key] = replacement_value
 
@@ -87,6 +87,13 @@ def remove_units_in_dict(input_dict):
         return [remove_units_in_dict(item) for item in input_dict]
     else:
         return input_dict
+
+
+def has_instance_in_list(obj_list: list, class_type):
+    for obj in obj_list:
+        if isinstance(obj, class_type):
+            return True
+    return False
 
 
 def get_attribute_from_first_instance(

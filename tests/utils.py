@@ -56,7 +56,7 @@ def show_dict_diff(dict1, dict2):
     print("end of diff")
 
 
-def compare_dicts(dict1, dict2, float_precision=1e-10, ignore_keys=None):
+def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if ignore_keys is None:
         ignore_keys = set()
 
@@ -72,33 +72,33 @@ def compare_dicts(dict1, dict2, float_precision=1e-10, ignore_keys=None):
         value1 = dict1_filtered[key]
         value2 = dict2_filtered[key]
 
-        if not compare_values(value1, value2, float_precision, ignore_keys):
+        if not compare_values(value1, value2, atol, rtol, ignore_keys):
             print(f"dict value of key {key} not equal dict1 {dict1[key]}, dict2 {dict2[key]}")
             return False
 
     return True
 
 
-def compare_values(value1, value2, float_precision=1e-10, ignore_keys=None):
+def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if isinstance(value1, float) and isinstance(value2, float):
-        return abs(value1 - value2) <= float_precision
+        return np.isclose(value1, value2, rtol, atol)
     elif isinstance(value1, dict) and isinstance(value2, dict):
-        return compare_dicts(value1, value2, float_precision, ignore_keys)
+        return compare_dicts(value1, value2, atol, rtol, ignore_keys)
     elif isinstance(value1, list) and isinstance(value2, list):
-        return compare_lists(value1, value2, float_precision, ignore_keys)
+        return compare_lists(value1, value2, atol, rtol, ignore_keys)
     else:
         return value1 == value2
 
 
-def compare_lists(list1, list2, float_precision=1e-10, ignore_keys=None):
+def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if len(list1) != len(list2):
         return False
 
-    if not isinstance(list1[0], dict):
+    if list1 and not isinstance(list1[0], dict):
         list1, list2 = sorted(list1), sorted(list2)
 
     for item1, item2 in zip(list1, list2):
-        if not compare_values(item1, item2, float_precision, ignore_keys):
+        if not compare_values(item1, item2, atol, rtol, ignore_keys):
             print(f"list value not equal list1 {item1}, list2 {item2}")
             return False
 

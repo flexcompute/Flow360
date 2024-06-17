@@ -22,6 +22,7 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
+    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
@@ -35,12 +36,6 @@ from flow360.component.types import Axis
 
 class AngularVelocity(SingleAttributeModel):
     value: AngularVelocityType = pd.Field()
-
-
-class RotationAngleDegrees(SingleAttributeModel):
-    # pylint: disable=fixme
-    # TODO: We have units for degrees right??
-    value: pd.StrictStr = pd.Field()
 
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
@@ -92,7 +87,6 @@ class Fluid(PDEModelBase):
     ] = pd.Field(None)
 
     # fixme: Add support for other initial conditions
-    # TODO: Avoid scaling material section when preprocessing
 
 
 class Solid(PDEModelBase):
@@ -228,7 +222,7 @@ class RotatingReferenceFrame(Flow360BaseModel):
 
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
-    rotation: Union[AngularVelocity, RotationAngleDegrees] = pd.Field()
+    rotation: Union[AngularVelocity, AngleType] = pd.Field()
     parent_volume_name: Optional[Union[GenericVolume, str]] = pd.Field(None)
 
 

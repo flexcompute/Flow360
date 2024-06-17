@@ -22,11 +22,12 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_attribute_from_first_instance,
+    has_instance_in_list,
     merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
-    replace_key,
-    replace_value,
+    replace_dict_key,
+    replace_dict_value,
 )
 from flow360.component.simulation.unit_system import LengthType
 
@@ -97,32 +98,42 @@ def get_solver_json(
     ##:: Step 4: Get outputs
     outputs = input_params.outputs
 
-    translated["volumeOutput"] = init_output_attr_dict(outputs, VolumeOutput)
-    translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
-    translated["sliceOutput"] = init_output_attr_dict(outputs, SliceOutput)
+    if has_instance_in_list(outputs, VolumeOutput):
+        translated["volumeOutput"] = init_output_attr_dict(outputs, VolumeOutput)
+        replace_dict_value(translated["volumeOutput"], "outputFormat", "both", "paraview,tecplot")
+        translated["volumeOutput"].update(
+            {
+                "outputFields": get_attribute_from_first_instance(
+                    outputs, VolumeOutput, "output_fields"
+                ).model_dump()["items"],
+                "computeTimeAverages": False,
+                "animationFrequencyTimeAverageOffset": 0,
+                "animationFrequencyTimeAverage": -1,
+                "startAverageIntegrationStep": -1,
+            }
+        )
 
-    replace_value(translated["volumeOutput"], "outputFormat", "both", "paraview,tecplot")
-    replace_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
-    replace_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
+    if has_instance_in_list(outputs, SurfaceOutput):
+        translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
+        replace_dict_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
+        translated["surfaceOutput"].update(
+            {
+                "writeSingleFile": get_attribute_from_first_instance(
+                    outputs, SurfaceOutput, "write_single_file"
+                ),
+                "surfaces": {},
+                "computeTimeAverages": False,
+                "animationFrequencyTimeAverageOffset": 0,
+                "animationFrequencyTimeAverage": -1,
+                "startAverageIntegrationStep": -1,
+                "outputFields": [],
+            }
+        )
 
-    translated["volumeOutput"].update(
-        {
-            "outputFields": get_attribute_from_first_instance(
-                outputs, VolumeOutput, "output_fields"
-            ).model_dump()["items"],
-            "computeTimeAverages": False,
-        }
-    )
-    translated["surfaceOutput"].update(
-        {
-            "writeSingleFile": get_attribute_from_first_instance(
-                outputs, SurfaceOutput, "write_single_file"
-            ),
-            "surfaces": {},
-            "computeTimeAverages": False,
-        }
-    )
-    translated["sliceOutput"].update({"slices": {}})
+    if has_instance_in_list(outputs, SliceOutput):
+        translated["sliceOutput"] = init_output_attr_dict(outputs, SliceOutput)
+        replace_dict_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
+        translated["sliceOutput"].update({"slices": {}, "outputFields": []})
 
     for output in input_params.outputs:
         # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
@@ -175,9 +186,9 @@ def get_solver_json(
     for model in input_params.models:
         if isinstance(model, Fluid):
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            replace_key(translated["navierStokesSolver"], "typeName", "modelType")
+            replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
-            replace_key(translated["turbulenceModelSolver"], "typeName", "modelType")
+            replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants:
                 modeling_constants["C_d"] = modeling_constants.pop("CD", None)
@@ -185,12 +196,11 @@ def get_solver_json(
                 modeling_constants.pop("typeName", None)
 
     ##:: Step 7: Get BET and AD lists
-    translated["BETDisks"], translated["ActuatorDisks"] = [], []
     for model in input_params.models:
         if isinstance(model, BETDisk):
             disk_param = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
-            replace_key(disk_param, "machNumbers", "MachNumbers")
-            replace_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
+            replace_dict_key(disk_param, "machNumbers", "MachNumbers")
+            replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
             volumes = disk_param.pop("volumes")
             for v in volumes["storedEntities"]:
                 disk_i = deepcopy(disk_param)
@@ -198,7 +208,9 @@ def get_solver_json(
                 disk_i["centerOfRotation"] = v["center"]
                 disk_i["radius"] = v["outerRadius"]
                 disk_i["thickness"] = v["height"]
-                translated["BETDisks"].append(disk_i)
+                bet_disks = translated.get("BETDisks", [])
+                bet_disks.append(disk_i)
+                translated["BETDisks"] = bet_disks
 
     ##:: Step 8: Get porous media
 

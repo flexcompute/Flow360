@@ -54,6 +54,7 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "outputFormat": "tecplot",
+        "outputFields": [],
         "slices": {
             "sliceName_1": {
                 "outputFields": [
@@ -82,8 +83,12 @@
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
+        "outputFields": [],
         "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
         "surfaces": {
             "3": {
                 "outputFields": [
@@ -140,6 +145,8 @@
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars",
@@ -147,6 +154,7 @@
             "residualTurbulence",
             "Mach"
         ],
-        "outputFormat": "paraview"
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
     }
 }

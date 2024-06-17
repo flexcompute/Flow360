@@ -114,44 +114,7 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
 
-    assert compare_values(ref_dict["navierStokesSolver"], translated["navierStokesSolver"])
-    assert compare_values(ref_dict["turbulenceModelSolver"], translated["turbulenceModelSolver"])
-    assert compare_values(
-        ref_dict["freestream"], translated["freestream"], ignore_keys={"muRef", "Reynolds"}
-    )
-    assert compare_values(ref_dict["boundaries"], translated["boundaries"])
-    assert compare_values(ref_dict["timeStepping"], translated["timeStepping"])
-    assert compare_values(
-        ref_dict["volumeOutput"],
-        translated["volumeOutput"],
-        ignore_keys={
-            "animationFrequencyTimeAverageOffset",
-            "animationFrequencyTimeAverage",
-            "startAverageIntegrationStep",
-        },
-    )
-    assert compare_values(
-        ref_dict["surfaceOutput"],
-        translated["surfaceOutput"],
-        ignore_keys={
-            "animationFrequencyTimeAverageOffset",
-            "animationFrequencyTimeAverage",
-            "startAverageIntegrationStep",
-            "outputFields",
-        },
-    )
-    if "sliceOutput" in ref_dict:
-        assert compare_values(
-            ref_dict["sliceOutput"], translated["sliceOutput"], ignore_keys={"outputFields"}
-        )
-    if "BETDisks" in ref_dict:
-        for i, refDisk in enumerate(ref_dict["BETDisks"]):
-            assert compare_values(
-                refDisk,
-                translated["BETDisks"][i],
-                ignore_keys={"bladeLineChord"},
-                float_precision=1e-8,
-            )
+    assert compare_values(ref_dict, translated, ignore_keys={"muRef", "Reynolds"})
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
