@@ -56,6 +56,15 @@ class TempOperatingCondition(Flow360BaseModel):
     some_value: float
 
 
+
+def test_cache_base_model():
+    operating_condition = TempOperatingCondition(
+        some_value=1230,
+        thermal_state=TempThermalState(some_value=0.3),
+    )
+    assert operating_condition.thermal_state.some_value == 0.3
+
+
 @pytest.mark.usefixtures("array_equality_override")
 def test_cache_model():
     operating_condition = TempOperatingCondition(
