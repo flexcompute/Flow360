@@ -564,12 +564,6 @@ class Flow360BaseModel(pd.BaseModel):
                 # pylint: disable=no-member
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
-                print(
-                    f">>> property_name = {property_name} value.dtype = ",
-                    value.dtype,
-                    "solver_values[property_name] is ",
-                    solver_values[property_name].value.dtype,
-                )
                 log.debug(f"      converted to: {solver_values[property_name]}")
             else:
                 solver_values[property_name] = value
