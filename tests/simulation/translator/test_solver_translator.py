@@ -147,7 +147,10 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     if "BETDisks" in ref_dict:
         for i, refDisk in enumerate(ref_dict["BETDisks"]):
             assert compare_values(
-                refDisk, translated["BETDisks"][i], ignore_keys={"bladeLineChord"}
+                refDisk,
+                translated["BETDisks"][i],
+                ignore_keys={"bladeLineChord"},
+                float_precision=1e-8,
             )
 
 
