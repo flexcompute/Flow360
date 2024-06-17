@@ -43,7 +43,7 @@ class SurfaceMeshFileFormat(Enum):
     Surface mesh file format
     """
 
-    UGRID = "aflr3"
+    UGRID = "lb8.ugrid"
     STL = "stl"
 
     def ext(self) -> str:
@@ -52,7 +52,7 @@ class SurfaceMeshFileFormat(Enum):
         :return:
         """
         if self is SurfaceMeshFileFormat.UGRID:
-            return ".ugrid"
+            return ".lb8.ugrid"
         if self is SurfaceMeshFileFormat.STL:
             return ".stl"
         return ""
@@ -63,7 +63,6 @@ class SurfaceMeshFileFormat(Enum):
         detects mesh format from filename
         """
         ext = os.path.splitext(file)[1]
-        print("debug=== ext = " + ext)
         if ext == SurfaceMeshFileFormat.UGRID.ext():
             return SurfaceMeshFileFormat.UGRID
         if ext == SurfaceMeshFileFormat.STL.ext():
