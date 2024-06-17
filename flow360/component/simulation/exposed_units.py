@@ -26,4 +26,5 @@ extra_units = {
     "thermal_conductivity": [],
     "inverse_area": [],
     "inverse_length": [],
+    "angle": [],
 }
