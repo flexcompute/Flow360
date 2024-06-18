@@ -464,7 +464,7 @@ class VolumeMeshDraft(ResourceDraft):
         if name is None:
             name = os.path.splitext(os.path.basename(self.file_name))[0]
 
-        if Flags.beta_features():
+        if Flags.beta_features() and self.params is not None:
             req = NewVolumeMeshRequest(
                 name=name,
                 file_name=remote_file_name,
