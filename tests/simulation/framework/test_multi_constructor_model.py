@@ -13,8 +13,8 @@ from flow360.component.simulation.framework.cached_model_base import (
 )
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
-    ThermalState,
     AerospaceConditionCache,
+    ThermalState,
 )
 
 
@@ -62,4 +62,3 @@ def test_incomplete_model(get_aerospace_condition_default, get_aerospace_conditi
     }
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
-

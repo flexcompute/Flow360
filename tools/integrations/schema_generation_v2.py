@@ -59,14 +59,14 @@ data_folder = "data_v2"
 def merge_dicts_recursively(dict1, dict2):
     """
     Recursively merges dict2 into dict1 with overwriting existing keys.
-    
+
     Parameters
     ----------
     dict1 : dict
         The dictionary to be updated.
     dict2 : dict
         The dictionary to merge into dict1.
-    
+
     Returns
     -------
     dict
@@ -100,7 +100,14 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
     )
 
 
-def write_example(obj: Flow360BaseModel, folder_name, example_name, exclude_defaults=False, additional_fields:dict={}, exclude=None):
+def write_example(
+    obj: Flow360BaseModel,
+    folder_name,
+    example_name,
+    exclude_defaults=False,
+    additional_fields: dict = {},
+    exclude=None,
+):
     data = obj.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)
     data = merge_dicts_recursively(data, additional_fields)
     data_json = json.dumps(data, indent=2)
@@ -109,9 +116,6 @@ def write_example(obj: Flow360BaseModel, folder_name, example_name, exclude_defa
         os.path.join(here, data_folder, folder_name, f"{example_name}-{version_postfix}.json"),
         data_json,
     )
-
-
-
 
 
 my_wall_surface = Surface(name="my_wall")
@@ -227,43 +231,71 @@ with SI_unit_system:
     write_example(meshing, "meshing", "example-1")
 
 
-
-
-
-
 write_schemas(AerospaceCondition, "operating_condition")
 
 
 with SI_unit_system:
     ac = AerospaceCondition(
-        velocity_magnitude=1*u.m/u.s, 
-        alpha=1 *u.deg,
-        thermal_state=ThermalState(temperature=100*u.K, density=2))
-write_example(ac, "operating_condition", "example-1", exclude_defaults=True, additional_fields=dict(type_name="AerospaceCondition"))
+        velocity_magnitude=1 * u.m / u.s,
+        alpha=1 * u.deg,
+        thermal_state=ThermalState(temperature=100 * u.K, density=2),
+    )
+write_example(
+    ac,
+    "operating_condition",
+    "example-1",
+    exclude_defaults=True,
+    additional_fields=dict(type_name="AerospaceCondition"),
+)
 
 with SI_unit_system:
     ac = AerospaceCondition(
-        velocity_magnitude=1*u.m/u.s, 
-        thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1))
+        velocity_magnitude=1 * u.m / u.s,
+        thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1),
+    )
 
-write_example(ac, "operating_condition", "example-2", exclude_defaults=True, 
-              additional_fields=dict(type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")))
-
-
-
-with SI_unit_system:
-    ac = AerospaceCondition.from_mach(mach=0.8, alpha=1*u.deg,
-        thermal_state=ThermalState(temperature=100*u.K, density=2))
-
-write_example(ac, "operating_condition", "example-3", exclude_defaults=True, 
-              exclude=dict(velocity_magnitude=True, private_attribute_input_cache=dict(thermal_state=True)),
-              additional_fields=dict(type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")))
+write_example(
+    ac,
+    "operating_condition",
+    "example-2",
+    exclude_defaults=True,
+    additional_fields=dict(
+        type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")
+    ),
+)
 
 
 with SI_unit_system:
-    ac = AerospaceCondition.from_mach(mach=0.8, alpha=1*u.deg,
-        thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1))
+    ac = AerospaceCondition.from_mach(
+        mach=0.8, alpha=1 * u.deg, thermal_state=ThermalState(temperature=100 * u.K, density=2)
+    )
 
-write_example(ac, "operating_condition", "example-4", exclude_defaults=True,
-              exclude=dict(velocity_magnitude=True, private_attribute_input_cache=dict(thermal_state=True)),
-              additional_fields=dict(type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")))
+write_example(
+    ac,
+    "operating_condition",
+    "example-3",
+    exclude_defaults=True,
+    exclude=dict(velocity_magnitude=True, private_attribute_input_cache=dict(thermal_state=True)),
+    additional_fields=dict(
+        type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")
+    ),
+)
+
+
+with SI_unit_system:
+    ac = AerospaceCondition.from_mach(
+        mach=0.8,
+        alpha=1 * u.deg,
+        thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1),
+    )
+
+write_example(
+    ac,
+    "operating_condition",
+    "example-4",
+    exclude_defaults=True,
+    exclude=dict(velocity_magnitude=True, private_attribute_input_cache=dict(thermal_state=True)),
+    additional_fields=dict(
+        type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")
+    ),
+)

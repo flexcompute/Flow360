@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union, Literal
+from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -58,7 +58,7 @@ class ThermalState(_MultiConstructorModelBase):
 
     # pylint: disable=fixme
     # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
-    type_name: Literal['ThermalState'] = pd.Field('ThermalState', frozen=True)
+    type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
     temperature: TemperatureType.Positive = pd.Field(288.15 * u.K, frozen=True)
     density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
     material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
@@ -68,7 +68,9 @@ class ThermalState(_MultiConstructorModelBase):
     @_MultiConstructorModelBase.model_constructor
     @pd.validate_call
     def from_standard_atmosphere(
-        cls, altitude: LengthType.Positive = 0 * u.m, temperature_offset: TemperatureType = 0 * u.K,
+        cls,
+        altitude: LengthType.Positive = 0 * u.m,
+        temperature_offset: TemperatureType = 0 * u.K,
     ):
         """Constructs a thermal state from the standard atmosphere model."""
         # pylint: disable=fixme
@@ -76,11 +78,7 @@ class ThermalState(_MultiConstructorModelBase):
         density = 1.225 * u.kg / u.m**3
         temperature = 288.15 * u.K
 
-        state = cls(
-            density=density,
-            temperature=temperature,
-            material=Air()
-        )
+        state = cls(density=density, temperature=temperature, material=Air())
 
         return state
 
@@ -153,7 +151,9 @@ class GenericReferenceCondition(_MultiConstructorModelBase):
     Operating condition defines the physical (non-geometrical) reference values for the problem.
     """
 
-    type_name: Literal['GenericReferenceCondition'] = pd.Field('GenericReferenceCondition', frozen=True)
+    type_name: Literal["GenericReferenceCondition"] = pd.Field(
+        "GenericReferenceCondition", frozen=True
+    )
     velocity_magnitude: VelocityType.Positive
     thermal_state: ThermalState = ThermalState()
     private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
@@ -181,7 +181,7 @@ class AerospaceCondition(_MultiConstructorModelBase):
 
     # pylint: disable=fixme
     # TODO: valildate reference_velocity_magnitude defined if velocity_magnitude=0
-    type_name: Literal['AerospaceCondition'] = pd.Field('AerospaceCondition', frozen=True)
+    type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = 0 * u.deg
     beta: AngleType = 0 * u.deg
     velocity_magnitude: VelocityType.NonNegative
@@ -199,7 +199,7 @@ class AerospaceCondition(_MultiConstructorModelBase):
         beta: AngleType = 0 * u.deg,
         thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
-        **kwargs
+        **kwargs,
     ):
         """Constructs a `AerospaceCondition` from Mach number and thermal state."""
 
@@ -214,7 +214,7 @@ class AerospaceCondition(_MultiConstructorModelBase):
             alpha=alpha,
             beta=beta,
             thermal_state=thermal_state,
-            reference_velocity_magnitude=reference_velocity_magnitude
+            reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
     @pd.model_validator(mode="after")

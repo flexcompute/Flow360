@@ -25,7 +25,9 @@ def _model_attribute_unlock(model, attr: str):
 
 class _MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
 
-    type_name: Literal["_MultiConstructorModelBase"] = pd.Field("_MultiConstructorModelBase", frozen=True)
+    type_name: Literal["_MultiConstructorModelBase"] = pd.Field(
+        "_MultiConstructorModelBase", frozen=True
+    )
     private_attribute_constructor: str = pd.Field("default", frozen=True)
     private_attribute_input_cache: Optional[Any] = pd.Field(None, frozen=True)
 
@@ -159,9 +161,7 @@ def get_class_by_name(class_name, global_vars):
 def model_custom_constructor_parser(model_as_dict, global_vars):
     constructor_name = model_as_dict.get("private_attribute_constructor", None)
     if constructor_name is not None:
-        model_cls = get_class_by_name(
-            model_as_dict.get("type_name"), global_vars
-        )
+        model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
         input_kwargs = model_as_dict.get("private_attribute_input_cache")
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
