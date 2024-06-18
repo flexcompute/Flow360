@@ -10,14 +10,26 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.meshing_param.volume_params import (
+    RotationCylinder,
+    UniformRefinement,
+)
 from flow360.component.simulation.models.material import SolidMaterial
+from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
 from flow360.component.simulation.models.surface_models import (
+    Freestream,
     HeatFlux,
     Inflow,
+    Mach,
     MassFlowRate,
+    Outflow,
+    Periodic,
+    Pressure,
+    Rotational,
     SlipWall,
+    SymmetryPlane,
     TotalPressure,
+    Translational,
     Wall,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
@@ -26,6 +38,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
 from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     Fluid,
+    NavierStokesInitialCondition,
     PorousMedium,
     RotatingReferenceFrame,
     Solid,
@@ -34,6 +47,21 @@ from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs.outputs import (
+    AeroAcousticOutput,
+    Isosurface,
+    IsosurfaceOutput,
+    Probe,
+    ProbeOutput,
+    Slice,
+    SliceOutput,
+    SurfaceIntegralOutput,
+    SurfaceList,
+    SurfaceOutput,
+    TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
+    VolumeOutput,
+)
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -41,10 +69,19 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     ReferenceGeometry,
     Surface,
+    SurfacePair,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.time_stepping.time_stepping import (
+    RampCFL,
+    Steady,
+    Unsteady,
+)
+from flow360.component.simulation.unit_system import (
+    SI_unit_system,
+    imperial_unit_system,
+    u,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -88,15 +125,19 @@ def write_to_file(name, content):
         outfile.write(content)
 
 
-def write_schemas(type_obj: Type[Flow360BaseModel], folder_name):
+def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, file_suffix=""):
     data = type_obj.model_json_schema()
     schema = json.dumps(data, indent=2)
     name = type_obj.__name__
     if name.startswith("_"):
         name = name[1:]
     os.makedirs(os.path.join(here, data_folder, folder_name), exist_ok=True)
+    file_suffix_part = f"-{file_suffix}" if file_suffix else ""
     write_to_file(
-        os.path.join(here, data_folder, folder_name, f"json-schema-{version_postfix}.json"), schema
+        os.path.join(
+            here, data_folder, folder_name, f"json-schema-{version_postfix}{file_suffix_part}.json"
+        ),
+        schema,
     )
 
 
@@ -119,10 +160,15 @@ def write_example(
 
 
 my_wall_surface = Surface(name="my_wall")
+my_symm_plane = Surface(name="my_symmetry_plane")
 my_slip_wall_surface = Surface(name="my_slip_wall")
 my_inflow1 = Surface(name="my_inflow1")
 my_inflow2 = Surface(name="my_inflow2")
+my_outflow = Surface(name="my_outflow")
+my_fs = Surface(name="my_free_stream")
 edge = Edge(name="edge1")
+
+my_surface_pair = SurfacePair(pair=(my_wall_surface, my_slip_wall_surface))
 
 
 with SI_unit_system:
@@ -151,6 +197,15 @@ with SI_unit_system:
         refinements=[
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
+        ],
+        volume_zones=[
+            RotationCylinder(
+                entities=[my_cylinder_1],
+                spacing_axial=0.1 * u.m,
+                spacing_radial=0.12 * u.m,
+                spacing_circumferential=0.13 * u.m,
+                enclosed_objects=[my_wall_surface],
+            )
         ],
     )
     param = SimulationParams(
@@ -220,20 +275,21 @@ with SI_unit_system:
 write_example(param, "simulation_params", "example-1")
 
 
-write_schemas(ReferenceGeometry, "geometry")
+###################### reference_geometry ######################
+write_schemas(ReferenceGeometry, "reference_geometry")
 with SI_unit_system:
     g = ReferenceGeometry(moment_center=(1, 2, 3), moment_length=(4, 5, 6), area=10)
-    write_example(g, "geometry", "example-1")
+    write_example(g, "reference_geometry", "example-1")
 
 
+###################### meshing ######################
 write_schemas(MeshingParams, "meshing")
 with SI_unit_system:
     write_example(meshing, "meshing", "example-1")
 
 
+###################### operating_condition ######################
 write_schemas(AerospaceCondition, "operating_condition")
-
-
 with SI_unit_system:
     ac = AerospaceCondition(
         velocity_magnitude=1 * u.m / u.s,
@@ -253,7 +309,6 @@ with SI_unit_system:
         velocity_magnitude=1 * u.m / u.s,
         thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1),
     )
-
 write_example(
     ac,
     "operating_condition",
@@ -264,12 +319,10 @@ write_example(
     ),
 )
 
-
 with SI_unit_system:
     ac = AerospaceCondition.from_mach(
         mach=0.8, alpha=1 * u.deg, thermal_state=ThermalState(temperature=100 * u.K, density=2)
     )
-
 write_example(
     ac,
     "operating_condition",
@@ -281,14 +334,12 @@ write_example(
     ),
 )
 
-
 with SI_unit_system:
     ac = AerospaceCondition.from_mach(
         mach=0.8,
         alpha=1 * u.deg,
         thermal_state=ThermalState.from_standard_atmosphere(altitude=1000, temperature_offset=-1),
     )
-
 write_example(
     ac,
     "operating_condition",
@@ -299,3 +350,238 @@ write_example(
         type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")
     ),
 )
+
+###################### models  ######################
+with imperial_unit_system:
+    fluid_model = Fluid(
+        transition_model_solver=TransitionModelSolver(),
+        initial_condition=NavierStokesInitialCondition(rho="1;", u="1;", v="1;", w="1;", p="1;"),
+    )
+write_example(fluid_model, "models", "fluid")
+
+with imperial_unit_system:
+    solid_model = Solid(
+        volumes=[my_solid_zone],
+        material=SolidMaterial(
+            name="abc",
+            thermal_conductivity=1.0 * u.W / u.m / u.K,
+            specific_heat_capacity=1.0 * u.J / u.kg / u.K,
+            density=1.0 * u.kg / u.m**3,
+        ),
+        volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
+    )
+write_example(solid_model, "models", "solid")
+
+rotation_model = RotatingReferenceFrame(
+    volumes=[my_cylinder_1],
+    rotation=AngularVelocity(0.45 * u.deg / u.s),
+    parent_volume=GenericVolume(name="outter_volume"),
+)
+write_example(rotation_model, "models", "rotating_reference_frame")
+
+porous_model = PorousMedium(
+    volumes=[my_box],
+    darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
+    forchheimer_coefficient=(0.1, 2, 1.0) / u.ft,
+    volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
+)
+write_example(porous_model, "models", "porouse_medium")
+
+
+my_wall = Wall(
+    entities=[my_wall_surface],
+    use_wall_function=True,
+    velocity=(1.0, 1.2, 2.4) * u.ft / u.s,
+    heat_spec=HeatFlux(1.0 * u.W / u.m**2),
+)
+write_example(my_wall, "models", "wall")
+
+my_wall = SlipWall(entities=[my_slip_wall_surface])
+write_example(my_wall, "models", "slip_wall")
+
+my_fs_surface = Freestream(entities=[my_fs], velocity=("1", "2", "0"), velocity_type="absolute")
+write_example(my_fs_surface, "models", "freestream")
+
+with imperial_unit_system:
+    my_outflow_obj = Outflow(entities=[my_outflow], spec=Pressure(1))
+write_example(my_outflow_obj, "models", "outflow-Pressure")
+
+with imperial_unit_system:
+    my_outflow_obj = Outflow(entities=[my_outflow], spec=MassFlowRate(1))
+write_example(my_outflow_obj, "models", "outflow-MassFlowRate")
+
+my_outflow_obj = Outflow(entities=[my_outflow], spec=Mach(1))
+write_example(my_outflow_obj, "models", "outflow-Mach")
+
+with imperial_unit_system:
+    my_inflow_surface_1 = Inflow(
+        surfaces=[my_inflow1],
+        total_temperature=300 * u.K,
+        spec=TotalPressure(123 * u.Pa),
+        turbulence_quantities=TurbulenceQuantities(
+            turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
+        ),
+    )
+write_example(my_inflow_surface_1, "models", "inflow-TotalPressure")
+
+with imperial_unit_system:
+    my_inflow_surface_1 = Inflow(
+        surfaces=[my_inflow1],
+        total_temperature=300 * u.K,
+        spec=MassFlowRate(123),
+        turbulence_quantities=TurbulenceQuantities(
+            turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
+        ),
+    )
+write_example(my_inflow_surface_1, "models", "inflow-MassFlowRate")
+
+with imperial_unit_system:
+    my_pbc = Periodic(entity_pairs=[my_surface_pair], spec=Translational())
+write_example(my_pbc, "models", "periodic-Translational")
+
+with imperial_unit_system:
+    my_pbc = Periodic(entity_pairs=[my_surface_pair], spec=Rotational(axis_of_rotation=(0, 2, 0)))
+write_example(my_pbc, "models", "periodic-Rotational")
+
+with imperial_unit_system:
+    my_symm = SymmetryPlane(entities=[my_symm_plane])
+write_example(my_symm, "models", "symmetry_plane")
+
+
+###################### time stepping  ######################
+write_schemas(Unsteady, "time_stepping", file_suffix="unsteady")
+with imperial_unit_system:
+    unsteady_setting = Unsteady(
+        max_pseudo_steps=123,
+        steps=456,
+        step_size=2 * 0.2,
+    )
+write_example(unsteady_setting, "time_stepping", "unsteady")
+
+write_schemas(Steady, "time_stepping", file_suffix="steady")
+with imperial_unit_system:
+    steady_setting = Steady(max_steps=123, CFL=RampCFL(initial=1e-4, final=123, ramp_steps=21))
+write_example(steady_setting, "time_stepping", "steady")
+
+###################### outputs  ######################
+write_schemas(SurfaceOutput, "outputs", file_suffix="SurfaceOutput")
+with imperial_unit_system:
+    setting = SurfaceOutput(
+        entities=[my_wall_surface, my_inflow1],
+        frequency=12,
+        frequency_offset=1,
+        output_format="paraview",
+        output_fields=["nodeNormals", "yPlus"],
+    )
+write_example(setting, "outputs", "SurfaceOutput")
+
+write_schemas(SurfaceOutput, "outputs", file_suffix="TimeAverageSurfaceOutput")
+with imperial_unit_system:
+    setting = TimeAverageSurfaceOutput(
+        entities=[my_wall_surface, my_inflow1],
+        frequency=12,
+        frequency_offset=1,
+        start_step=10,
+        output_format="tecplot",
+        write_single_file=True,
+        output_fields=["nodeNormals", "yPlus"],
+    )
+write_example(setting, "outputs", "TimeAverageSurfaceOutput")
+
+write_schemas(VolumeOutput, "outputs", file_suffix="VolumeOutput")
+with imperial_unit_system:
+    setting = VolumeOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_format="tecplot",
+        output_fields=["Cp"],
+    )
+write_example(setting, "outputs", "VolumeOutput")
+
+write_schemas(TimeAverageVolumeOutput, "outputs", file_suffix="TimeAverageVolumeOutput")
+with imperial_unit_system:
+    setting = TimeAverageVolumeOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_format="tecplot",
+        output_fields=["Cp"],
+        start_step=0,
+    )
+write_example(setting, "outputs", "TimeAverageVolumeOutput")
+
+write_schemas(SliceOutput, "outputs", file_suffix="SliceOutput")
+with imperial_unit_system:
+    setting = SliceOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_format="tecplot",
+        output_fields=["Cp"],
+        slices=[
+            Slice(name="my_first_slice", slice_normal=(1, 0, 0), slice_origin=(4, 4, 2)),
+            Slice(name="my_second_slice", slice_normal=(1, 0, 1), slice_origin=(41, 14, 12)),
+        ],
+    )
+write_example(setting, "outputs", "SliceOutput")
+
+write_schemas(IsosurfaceOutput, "outputs", file_suffix="IsosurfaceOutput")
+with imperial_unit_system:
+    setting = IsosurfaceOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_format="tecplot",
+        output_fields=["primitiveVars", "vorticity"],
+        isosurfaces=[
+            Isosurface(name="my_first_iso", field="qcriterion", iso_value=1234.0),
+            Isosurface(name="my_second_iso", field="Cp", iso_value=12.0),
+        ],
+    )
+write_example(setting, "outputs", "IsosurfaceOutput")
+
+write_schemas(SurfaceIntegralOutput, "outputs", file_suffix="SurfaceIntegralOutput")
+with imperial_unit_system:
+    setting = SurfaceIntegralOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_fields=["primitiveVars", "vorticity"],
+        entities=[
+            SurfaceList(name="inflow_integral", surfaces=[my_inflow1, my_inflow2]),
+            SurfaceList(name="outflow_integral", surfaces=[my_outflow]),
+        ],
+    )
+write_example(setting, "outputs", "SurfaceIntegralOutput")
+
+write_schemas(ProbeOutput, "outputs", file_suffix="ProbeOutput")
+with imperial_unit_system:
+    setting = ProbeOutput(
+        frequency=12,
+        frequency_offset=1,
+        output_fields=["primitiveVars", "vorticity"],
+        entities=[
+            Probe(name="the_name1", locations=[(1, 2, 3), (4, 5, 6)]),
+            Probe(name="the_name2", locations=[(1, 3, 5), (2, 4, 6)]),
+        ],
+    )
+write_example(setting, "outputs", "ProbeOutput")
+
+write_schemas(AeroAcousticOutput, "outputs", file_suffix="AeroAcousticOutput")
+with imperial_unit_system:
+    setting = AeroAcousticOutput(
+        write_per_surface_output=True,
+        observers=[(1, 2, 3), (2, 4, 6)],
+    )
+write_example(setting, "outputs", "AeroAcousticOutput")
+
+
+###################### UDD  ######################
+write_schemas(UserDefinedDynamic, "UDD", file_suffix="UserDefinedDynamic")
+user_defined_dynamic = UserDefinedDynamic(
+    name="fake",
+    input_vars=["fake"],
+    constants={"ff": 123},
+    output_vars={"fake_out": "1+1"},
+    state_vars_initial_value=["0+0"],
+    update_law=["1-2"],
+    input_boundary_patches=[my_wall_surface],
+    output_target=my_cylinder_1,
+)
+write_example(user_defined_dynamic, "UDD", "UserDefinedDynamic")

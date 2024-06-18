@@ -42,7 +42,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     """:class:`ExpressionInitialCondition` class"""
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
-    constants: Optional[Dict[str, str]] = pd.Field()
+    constants: Optional[Dict[str, str]] = pd.Field(None)
 
 
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
@@ -223,7 +223,7 @@ class RotatingReferenceFrame(Flow360BaseModel):
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
     rotation: Union[AngularVelocity, AngleType] = pd.Field()
-    parent_volume_name: Optional[Union[GenericVolume, str]] = pd.Field(None)
+    parent_volume: Optional[Union[GenericVolume, Cylinder, str]] = pd.Field(None)
 
 
 class PorousMedium(Flow360BaseModel):
@@ -234,8 +234,7 @@ class PorousMedium(Flow360BaseModel):
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
     volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
-    # needed for GenericVolume, need to check for conflict for Box
-    axes: Optional[List[Axis]] = pd.Field(None)
+    # Note: Axes will always come from the entity
 
 
 VolumeModelTypes = Union[

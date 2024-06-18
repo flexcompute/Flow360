@@ -25,7 +25,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.log import log
 
 # pylint: disable=no-member
-VelocityVectorType = Union[VelocityType.Vector, Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr]]
+VelocityVectorType = Union[Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr], VelocityType.Vector]
 
 
 class ThermalStateCache(Flow360BaseModel):
@@ -199,7 +199,6 @@ class AerospaceCondition(_MultiConstructorModelBase):
         beta: AngleType = 0 * u.deg,
         thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
-        **kwargs,
     ):
         """Constructs a `AerospaceCondition` from Mach number and thermal state."""
 

@@ -328,4 +328,4 @@ tmp/
 /.vscode
 
 # test residual
-flow360/examples/cylinder/flow360mesh.json
+flow360/examples/cylinder2D/flow360mesh.json

@@ -63,6 +63,7 @@ class SurfaceMeshFileFormat(Enum):
         detects mesh format from filename
         """
         ext = os.path.splitext(file)[1]
+        print(">>> ext = ", ext)
         if ext == SurfaceMeshFileFormat.UGRID.ext():
             return SurfaceMeshFileFormat.UGRID
         if ext == SurfaceMeshFileFormat.STL.ext():
