@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.cached_model_base import (
+from flow360.component.simulation.framework.multi_constructor_model_base import (
     _MultiConstructorModelBase,
 )
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes

@@ -7,7 +7,7 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.cached_model_base import (
+from flow360.component.simulation.framework.multi_constructor_model_base import (
     _MultiConstructorModelBase,
     parse_model_dict,
 )

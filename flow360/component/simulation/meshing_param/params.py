@@ -65,7 +65,7 @@ class MeshingParams(Flow360BaseModel):
     refinements: List[AllowedRefinementTypes] = pd.Field(
         default=[],
         description="Additional fine-tunning for refinements.",
-    )  # Note: May need discriminator for performance??
+    )
     # Will add more to the Union
     volume_zones: List[RotationCylinder] = pd.Field(
         default=[], description="Creation of new volume zones."

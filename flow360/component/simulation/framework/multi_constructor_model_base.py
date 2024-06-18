@@ -9,6 +9,12 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.types import TYPE_TAG_STR
 
+# requirements for data models with custom constructors:
+# 1. data model can be saved to JSON and read back to pydantic model without problems
+# 2. data model can return data provided to custom constructor
+# 3. data model can be created from JSON that contains only custom constructor inputs - incomplete JSON
+# 4. incomplete JSON is not in a conflict with complete JSON (from point 1), such that there is no need for 2 parsers
+
 
 @contextmanager
 def _model_attribute_unlock(model, attr: str):
@@ -43,7 +49,6 @@ class _MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
                 for k, v in sig.parameters.items()
                 if v.default is not inspect.Parameter.empty
             }
-            # TODO: Maybe less private_attribute_input_cache here?
             with _model_attribute_unlock(obj, "private_attribute_input_cache"):
                 obj.private_attribute_input_cache = obj.private_attribute_input_cache.__class__(
                     # Note: obj.private_attribute_input_cache should not be included here
@@ -56,27 +61,9 @@ class _MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
                 )
             with _model_attribute_unlock(obj, "private_attribute_constructor"):
                 obj.private_attribute_constructor = func.__name__
-            # with _model_attribute_unlock(obj, "private_attribute_class_name"):
-            #     obj.private_attribute_class_name = cls.__name__
             return obj
 
         return wrapper
-
-    # @pd.model_validator(mode="after")
-    # def _popualte_when_default_constructor_used(self):
-    #     if self.private_attribute_class_name is None:
-    #         # Then we know cache was not set but the model has been constructed using __init__
-    #         # with _model_attribute_unlock(self, "private_attribute_class_name"):
-    #         #     self.private_attribute_class_name = self.__class__.__name__
-    #         with _model_attribute_unlock(self, "private_attribute_input_cache"):
-    #             non_private_fields = self.model_dump(exclude_none=True)
-    #             for field in list(non_private_fields.keys()):
-    #                 if field.startswith("private_attribute"):
-    #                     non_private_fields.pop(field)
-    #             self.private_attribute_input_cache = self.private_attribute_input_cache.__class__(
-    #                 **non_private_fields
-    #             )
-    #     return self
 
 
 ##:: Utility functions for multi-constructor models
