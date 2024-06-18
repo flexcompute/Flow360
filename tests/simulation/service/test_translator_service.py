@@ -179,6 +179,7 @@ def test_simulation_to_case_json():
     param_data = {
         "models": [
             {
+                "type": "Fluid",
                 "material": {
                     "dynamic_viscosity": {
                         "effective_temperature": {"units": "K", "value": 111.0},

@@ -9,7 +9,7 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import BETDisk, Fluid
+from flow360.component.simulation.models.volume_models import BETDisk, Fluid, Rotation
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
@@ -211,6 +211,9 @@ def get_solver_json(
             replace_dict_key(disk_param, "machNumbers", "MachNumbers")
             replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
             volumes = disk_param.pop("volumes")
+            for extra_attr in ["name", "type"]:
+                if extra_attr in disk_param:
+                    disk_param.pop(extra_attr)
             for v in volumes["storedEntities"]:
                 disk_i = deepcopy(disk_param)
                 disk_i["axisOfRotation"] = v["axis"]
@@ -221,11 +224,33 @@ def get_solver_json(
                 bet_disks.append(disk_i)
                 translated["BETDisks"] = bet_disks
 
-    ##:: Step 8: Get porous media
+    ##:: Step 8: Get rotation
+    for model in input_params.models:
+        if isinstance(model, Rotation):
+            for volume in model.entities.stored_entities:
+                volumeZone = {
+                    "modelType": "FluidDynamics",
+                    "referenceFrame": {
+                        "axisOfRotation": list(volume.axis),
+                        "centerOfRotation": list(volume.center),
+                    },
+                }
+                if model.parent_volume:
+                    volumeZone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
+                spec = dump_dict(model)["spec"]
+                if isinstance(spec, str):
+                    volumeZone["referenceFrame"]["thetaRadians"] = spec
+                elif spec.get("units", "") == "flow360_angular_velocity_unit":
+                    volumeZone["referenceFrame"]["omegaRadians"] = spec["value"]
+            volumeZones = translated.get("volumeZones", {})
+            volumeZones.update({volume.name: volumeZone})
+            translated["volumeZones"] = volumeZones
 
-    ##:: Step 9: Get heat transfer zones
+    ##:: Step 9: Get porous media
 
-    ##:: Step 10: Get user defined dynamics
+    ##:: Step 10: Get heat transfer zones
+
+    ##:: Step 11: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:
         translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:

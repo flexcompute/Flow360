@@ -23,6 +23,7 @@ class SurfaceRefinement(Flow360BaseModel):
     these defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.
     """
 
+    name: Optional[str] = pd.Field(None)
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     # pylint: disable=no-member
@@ -51,6 +52,7 @@ class BoundaryLayer(Flow360BaseModel):
     need to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
     """
 
+    name: Optional[str] = pd.Field(None)
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")

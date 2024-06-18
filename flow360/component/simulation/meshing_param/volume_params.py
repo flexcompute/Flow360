@@ -34,6 +34,7 @@ class AxisymmetricRefinement(Flow360BaseModel):
     the mesh data. But this currently is out of scope due to the estimated efforts.
     """
 
+    name: Optional[str] = pd.Field(None)
     refinement_type: Literal["AxisymmetricRefinement"] = pd.Field(
         "AxisymmetricRefinement", frozen=True
     )
@@ -52,6 +53,7 @@ class RotationCylinder(AxisymmetricRefinement):
     78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
     """
 
+    name: Optional[str] = pd.Field(None)
     enclosed_objects: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="""Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.

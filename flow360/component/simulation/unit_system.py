@@ -708,6 +708,7 @@ class _AngularVelocityType(_DimensionedType):
 
     dim = udim.angular_velocity
     dim_name = "angular_velocity"
+    has_defaults = False
 
 
 AngularVelocityType = Annotated[_AngularVelocityType, PlainSerializer(_dimensioned_type_serializer)]

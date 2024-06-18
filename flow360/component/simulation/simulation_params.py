@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -32,6 +32,10 @@ from flow360.error_messages import (
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
+
+AllowedModelTypes = Annotated[
+    Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")
+]
 
 
 class AssetCache(Flow360BaseModel):
@@ -210,7 +214,7 @@ class SimulationParams(_ParamModelBase):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
+    models: Optional[List[AllowedModelTypes]] = pd.Field(None)
     """
     Below can be mostly reused with existing models 
     """

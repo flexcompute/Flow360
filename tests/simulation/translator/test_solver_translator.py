@@ -33,6 +33,11 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     create_unsteady_hover_param,
     create_unsteady_hover_UDD_param,
 )
+from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator import (
+    create_nested_rotation_param,
+    cylinder_inner,
+    cylinder_middle,
+)
 from tests.utils import compare_values
 
 
@@ -148,4 +153,13 @@ def test_xv15_bet_disk(
     param = create_unsteady_hover_UDD_param
     translate_and_compare(
         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
+    )
+
+
+def test_xv15_bet_disk_nested_rotation(
+    create_nested_rotation_param, cylinder_inner, cylinder_middle
+):
+    param = create_nested_rotation_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_nested_rotation.json"
     )
