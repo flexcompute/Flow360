@@ -15,10 +15,18 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     _SurfaceEntityBase,
 )
+from flow360.component.simulation.simulation_params import _ParamModelBase
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.log import set_logging_level
 from tests.simulation.conftest import AssetBase
+from tests.utils import compare_to_ref
 
 set_logging_level("DEBUG")
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 class TempVolumeMesh(AssetBase):
@@ -34,7 +42,7 @@ class TempVolumeMesh(AssetBase):
             }
         elif self.fname == "volMesh-2.cgns":
             return {
-                "zones": {"zone_4": {}, "zone_5": {}, "zone_6": {}},
+                "zones": {"zone_4": {}, "zone_5": {}, "zone_6": {}, "zone_1": {}},
                 "surfaces": {"surface_3": {}, "surface_4": {}},
             }
         else:
@@ -42,9 +50,9 @@ class TempVolumeMesh(AssetBase):
 
     def _populate_registry(self):
         for zone_name in self._get_meta_data()["zones"]:
-            self._registry.register(GenericVolume(name=zone_name))
+            self.internal_registry.register(GenericVolume(name=zone_name))
         for surface_name in self._get_meta_data()["surfaces"]:
-            self._registry.register(GenericSurface(name=surface_name))
+            self.internal_registry.register(GenericSurface(name=surface_name))
 
     def __init__(self, file_name: str):
         super().__init__()
@@ -76,7 +84,7 @@ def _get_supplementary_registry(far_field_type: str):
     return _supplementary_registry
 
 
-class TempSimulationParam(Flow360BaseModel):
+class TempSimulationParam(_ParamModelBase):
 
     far_field_type: Literal["auto", "user-defined"] = pd.Field()
 
@@ -162,7 +170,7 @@ def unset_entity_type():
 
     with pytest.raises(
         NotImplementedError,
-        match=re.escape("_entity_type is not defined in the entity class."),
+        match=re.escape("private_attribute_entity_type is not defined in the entity class."),
     ):
         IncompleteEntity(name="IncompleteEntity")
 
@@ -301,10 +309,14 @@ def test_get_entities(
 
 
 def test_changing_final_attributes(my_box_zone1):
-    with pytest.raises(AttributeError, match=re.escape("Cannot modify _entity_type")):
+    with pytest.raises(
+        AttributeError, match=re.escape("Cannot modify private_attribute_entity_type")
+    ):
         my_box_zone1.entity_type = "WrongSubClass"
 
-    with pytest.raises(AttributeError, match=re.escape("Cannot modify _auto_constructed")):
+    with pytest.raises(
+        AttributeError, match=re.escape("Cannot modify private_attribute_auto_constructed")
+    ):
         my_box_zone1.auto_constructed = True
 
 
@@ -383,22 +395,22 @@ def test_duplicate_entities(my_volume_mesh1):
 
 
 def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
-
-    my_param = TempSimulationParam(
-        far_field_type="auto",
-        models=[
-            TempFluidDynamics(
-                entities=[
-                    my_cylinder1,
-                    my_cylinder1,
-                    my_cylinder1,
-                    my_volume_mesh1["*"],
-                    my_volume_mesh1["*zone*"],
-                ]
-            ),
-            TempWallBC(surfaces=[my_volume_mesh1["*"], "*", "farfield"]),
-        ],
-    )
+    with SI_unit_system:
+        my_param = TempSimulationParam(
+            far_field_type="auto",
+            models=[
+                TempFluidDynamics(
+                    entities=[
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_volume_mesh1["*"],
+                        my_volume_mesh1["*zone*"],
+                    ]
+                ),
+                TempWallBC(surfaces=[my_volume_mesh1["*"], "*", "farfield"]),
+            ],
+        )
 
     my_param.preprocess()
 
@@ -417,3 +429,53 @@ def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
     assert "surface_2" in wall_entity_names
     assert "farfield" in wall_entity_names
     assert len(wall_entity_names) == 3
+
+
+def test_multiple_param_creation_and_asset_registry(
+    my_cylinder1, my_box_zone2, my_box_zone1, my_volume_mesh1, my_volume_mesh2
+):  # Make sure that no entities from the first param are present in the second param
+    with SI_unit_system:
+        my_param1 = TempSimulationParam(
+            far_field_type="auto",
+            models=[
+                TempFluidDynamics(
+                    entities=[
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_volume_mesh1["*"],
+                    ]
+                ),
+                TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
+            ],
+        )
+    my_param1.private_attribute_asset_cache.asset_entity_registry.show()
+    assert (
+        my_param1.private_attribute_asset_cache.asset_entity_registry.entity_count() == 6
+    )  # 1 Cylinder, 3 generic zones from mesh and 2 surfaces from mesh
+    print(my_param1.private_attribute_asset_cache.asset_entity_registry.model_dump_json(indent=2))
+    compare_to_ref(
+        my_param1.private_attribute_asset_cache.asset_entity_registry,
+        "ref/entity_registry_1.json",
+        content_only=True,
+    )
+    print("......................................................")
+
+    TempFluidDynamics(entities=[my_box_zone2]),
+
+    with SI_unit_system:
+        my_param2 = TempSimulationParam(
+            far_field_type="auto",
+            models=[
+                TempFluidDynamics(
+                    entities=[
+                        my_box_zone1,
+                        my_box_zone1,
+                        my_volume_mesh1["*"],
+                        my_volume_mesh1["*zone*"],
+                    ]
+                ),
+                TempWallBC(surfaces=[my_volume_mesh2["*"], "*"]),
+            ],
+        )
+    my_param2.private_attribute_asset_cache.asset_entity_registry.show()

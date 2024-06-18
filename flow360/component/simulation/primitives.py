@@ -38,17 +38,17 @@ class Transformation(Flow360BaseModel):
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
+    private_attribute_entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
+    private_attribute_entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
 
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
 
 
 @final
@@ -59,7 +59,7 @@ class Edge(_EdgeEntityBase):
 
     # pylint: disable=invalid-name
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
 
 
 @final
@@ -68,7 +68,7 @@ class GenericVolume(_VolumeEntityBase):
     This type of entity will get auto-constructed by assets when loading metadata."""
 
     # pylint: disable=invalid-name
-    _auto_constructed: Final[bool] = True
+    private_attribute_auto_constructed: bool = pd.Field(True, frozen=True)
 
 
 @final
@@ -77,7 +77,7 @@ class GenericSurface(_SurfaceEntityBase):
     This type of entity will get auto-constructed by assets when loading metadata."""
 
     # pylint: disable=invalid-name
-    _auto_constructed: Final[bool] = True
+    private_attribute_auto_constructed: bool = pd.Field(True, frozen=True)
 
 
 @final
@@ -91,6 +91,7 @@ class Box(_VolumeEntityBase):
         axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
+    type: Literal["Box"] = pd.Field("Box")
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
@@ -110,6 +111,7 @@ class Cylinder(_VolumeEntityBase):
         outer_radius (LengthType.Positive): The outer radius of the cylinder.
     """
 
+    type: Literal["Cylinder"] = pd.Field("Cylinder")
     axis: Axis = pd.Field()
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
