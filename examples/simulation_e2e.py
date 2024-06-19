@@ -98,7 +98,6 @@ volume_mesh = volume_mesh_draft.submit()
 print(volume_mesh)
 
 # case
-case_json['turbulenceModelSolver'].pop('modelingConstants')
 params = fl.Flow360Params(**case_json, legacy_fallback=True)
 case_draft = volume_mesh.create_case(f"{prefix}-case", params, solver_version=SOLVER_VERSION)
 case = case_draft.submit()
