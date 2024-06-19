@@ -67,7 +67,7 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
-def get_default_params(unit_system_name) -> SimulationParams:
+def get_default_params(unit_system_name, length_unit) -> SimulationParams:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -152,7 +152,7 @@ def _translate_simulation_json(
 
     """
     translated_dict = None
-    param, errors, _ = validate_model(params_as_dict, unit_system_name)
+    param, errors, warnings = validate_model(params_as_dict, unit_system_name)
     if errors is not None:
         # pylint: disable=fixme
         # TODO: Check if this looks good in terminal.
@@ -167,7 +167,6 @@ def _translate_simulation_json(
         raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
     # pylint: disable=fixme
     # TODO: Implement proper hashing. Currently floating point creates headache for reproducible hashing.
-    # pylint: disable=protected-access
     hash_value = SimulationParams._calculate_hash(translated_dict)
     return translated_dict, hash_value
 
