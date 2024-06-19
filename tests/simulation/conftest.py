@@ -14,7 +14,7 @@ class AssetBase(metaclass=ABCMeta):
         """Use [] to access the registry"""
         if isinstance(key, str) == False:
             raise ValueError(f"Entity naming pattern: {key} is not a string.")
-        found_entities = self.internal_registry.find_by_name_pattern(key)
+        found_entities = self.internal_registry.find_by_naming_pattern(key)
         if found_entities == []:
             raise ValueError(
                 f"Failed to find any matching entity with {key}. Please check your input."

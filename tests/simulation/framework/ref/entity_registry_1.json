@@ -1,0 +1,68 @@
+{
+    "internal_registry": {
+        "VolumetricEntityType": [
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "name": "zone/Cylinder1",
+                "private_attribute_zone_boundaries": false,
+                "type": "Cylinder",
+                "axis": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "center": {
+                    "value": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "units": "ft"
+                },
+                "height": {
+                    "value": 11.0,
+                    "units": "cm"
+                },
+                "inner_radius": {
+                    "value": 1.0,
+                    "units": "ft"
+                },
+                "outer_radius": {
+                    "value": 2.0,
+                    "units": "ft"
+                }
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "name": "zone_1",
+                "private_attribute_zone_boundaries": false,
+                "axes": null,
+                "axis": null
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "name": "zone_2",
+                "private_attribute_zone_boundaries": false,
+                "axes": null,
+                "axis": null
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "name": "zone_3",
+                "private_attribute_zone_boundaries": false,
+                "axes": null,
+                "axis": null
+            }
+        ],
+        "SurfaceEntityType": [
+            {
+                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                "name": "surface_1"
+            },
+            {
+                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                "name": "surface_2"
+            }
+        ]
+    }
+}

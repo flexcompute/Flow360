@@ -1,4 +1,5 @@
 import re
+from copy import deepcopy
 from typing import List, Literal, Union
 
 import pydantic as pd
@@ -6,7 +7,11 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import (
+    EntityList,
+    MergeConflictError,
+    _merge_objects,
+)
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import (
     Box,
@@ -29,6 +34,11 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
+@pytest.fixture
+def array_equality_override():
+    pass  # No-op fixture to override the original one
+
+
 class TempVolumeMesh(AssetBase):
     """Mimicing the final VolumeMesh class"""
 
@@ -37,22 +47,105 @@ class TempVolumeMesh(AssetBase):
     def _get_meta_data(self):
         if self.fname == "volMesh-1.cgns":
             return {
-                "zones": {"zone_1": {}, "zone_2": {}, "zone_3": {}},
-                "surfaces": {"surface_1": {}, "surface_2": {}},
+                "zones": {
+                    "zone_1": {
+                        "boundaryNames": [
+                            "surface_1",
+                        ],
+                    },
+                    "zone_2": {
+                        "boundaryNames": [
+                            "surface_2",
+                        ],
+                    },
+                    "zone_3": {
+                        "boundaryNames": [
+                            "surface_3",
+                        ],
+                    },
+                },
+                "surfaces": {"surface_1": {}, "surface_2": {}, "surface_3": {}},
             }
         elif self.fname == "volMesh-2.cgns":
             return {
-                "zones": {"zone_4": {}, "zone_5": {}, "zone_6": {}, "zone_1": {}},
-                "surfaces": {"surface_3": {}, "surface_4": {}},
+                "zones": {
+                    "zone_4": {
+                        "boundaryNames": [
+                            "surface_4",
+                        ],
+                    },
+                    "zone_5": {
+                        "boundaryNames": [
+                            "surface_5",
+                        ],
+                    },
+                    "zone_6": {
+                        "boundaryNames": [
+                            "surface_6",
+                        ],
+                    },
+                    "zone_1": {
+                        "boundaryNames": [
+                            "surface_1",
+                        ],
+                    },
+                },
+                "surfaces": {"surface_4": {}, "surface_5": {}, "surface_6": {}, "surface_1": {}},
+            }
+        elif self.fname == "volMesh-with_interface.cgns":
+            return {
+                "zones": {
+                    "farfield": {
+                        "boundaryNames": [
+                            "farfield/farfield",
+                            "innerZone/interface",
+                        ],
+                    },
+                    "innerZone": {
+                        "boundaryNames": [
+                            "innerZone/interface",
+                            "mostinnerZone/interface",
+                        ],
+                    },
+                    "mostinnerZone": {
+                        "boundaryNames": [
+                            "mostinnerZone/interface",
+                            "my_wall_1",
+                            "my_wall_2",
+                            "my_wall_3",
+                        ],
+                    },
+                },
+                "surfaces": {
+                    "farfield/farfield": {},
+                    "innerZone/interface": {},
+                    "mostinnerZone/interface": {},
+                    "my_wall_1": {},
+                    "my_wall_2": {},
+                    "my_wall_3": {},
+                },
             }
         else:
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
-        for zone_name in self._get_meta_data()["zones"]:
-            self.internal_registry.register(GenericVolume(name=zone_name))
+        for zone_name, zone_meta in self._get_meta_data()["zones"].items():
+            all_my_boundaries = [item for item in zone_meta["boundaryNames"]]
+            self.internal_registry.register(
+                GenericVolume(
+                    name=zone_name, private_attribute_zone_boundary_names=all_my_boundaries
+                )
+            )
         for surface_name in self._get_meta_data()["surfaces"]:
-            self.internal_registry.register(GenericSurface(name=surface_name))
+            apperance = 0
+            for zone_name, zone_meta in self._get_meta_data()["zones"].items():
+                if surface_name in zone_meta["boundaryNames"]:
+                    apperance += 1
+            i_am_interface = apperance > 1
+            assert apperance > 0 and apperance < 3
+            self.internal_registry.register(
+                GenericSurface(name=surface_name, private_attribute_is_interface=i_am_interface)
+            )
 
     def __init__(self, file_name: str):
         super().__init__()
@@ -61,8 +154,9 @@ class TempVolumeMesh(AssetBase):
 
 
 class TempSurface(_SurfaceEntityBase):
-    def auto_constructed(self) -> bool:
-        return False
+    private_attribute_entity_type_name: Literal["TempSurface"] = pd.Field(
+        "TempSurface", frozen=True
+    )
 
 
 class TempFluidDynamics(Flow360BaseModel):
@@ -162,6 +256,11 @@ def my_volume_mesh2():
     return TempVolumeMesh(file_name="volMesh-2.cgns")
 
 
+@pytest.fixture
+def my_volume_mesh_with_interface():
+    return TempVolumeMesh(file_name="volMesh-with_interface.cgns")
+
+
 ##:: ---------------- Entity tests ----------------
 
 
@@ -226,8 +325,7 @@ def test_copying_entity(my_cylinder1):
 ##:: ---------------- EntityList/Registry tests ----------------
 
 
-@pytest.mark.usefixtures("array_equality_override")
-def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface1):
+def test_entities_expansion(my_cylinder1, my_box_zone1):
     # 0. No supplied registry but trying to use str
     with pytest.raises(
         ValueError,
@@ -275,16 +373,23 @@ def test_entities_expansion(my_cylinder1, my_cylinder2, my_box_zone1, my_surface
 
 
 def test_by_reference_registry(my_cylinder2):
+    my_fd = TempFluidDynamics(entities=[my_cylinder2])
+
     registry = EntityRegistry()
     registry.register(my_cylinder2)
+
+    # [Registry] External changes --> Internal
     my_cylinder2.height = 131 * u.m
-    print(
-        "Cylinder.private_attribute_registry_bucket_name = ",
-        Cylinder.model_fields["private_attribute_registry_bucket_name"].default,
-    )
-    for entity in registry.get_all_entities_of_given_type(Cylinder):
+    for entity in registry.get_all_entities_of_given_bucket(Cylinder):
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
             assert entity.height == 131 * u.m
+
+    # [Registry] Internal changes --> External
+    my_cylinder2_ref = registry.find_by_name("zone/Cylinder2")
+    my_cylinder2_ref.height = 132 * u.m
+    assert my_cylinder2.height == 132 * u.m
+
+    assert my_fd.entities.stored_entities[0].height == 132 * u.m
 
 
 def test_by_value_expansion(my_cylinder2):
@@ -306,7 +411,7 @@ def test_get_entities(
     registry.register(my_cylinder2)
     registry.register(my_box_zone1)
     registry.register(my_box_zone2)
-    all_box_entities = registry.get_all_entities_of_given_type(Box)
+    all_box_entities = registry.get_all_entities_of_given_bucket(Box)
     assert len(all_box_entities) == 4
     assert my_box_zone1 in all_box_entities
     assert my_box_zone2 in all_box_entities
@@ -315,7 +420,7 @@ def test_get_entities(
     assert my_cylinder2 in all_box_entities
 
 
-def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
+def test_entities_input_interface(my_volume_mesh1):
     # 1. Using reference of single asset entity
     expanded_entities = TempFluidDynamics(
         entities=my_volume_mesh1["zone*"]
@@ -360,33 +465,9 @@ def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
         my_volume_mesh1["asdf"]
 
 
-def test_skipped_entities(my_cylinder1, my_cylinder2):
+def test_skipped_entities():
     TempFluidDynamics()
     assert TempFluidDynamics().entities.stored_entities is None
-
-
-def test_duplicate_entities(my_volume_mesh1):
-    user_override_cylinder = Cylinder(
-        name="zone_1",
-        height=12 * u.m,
-        axis=(1, 0, 0),
-        inner_radius=1 * u.m,
-        outer_radius=2 * u.m,
-        center=(1, 2, 3) * u.m,
-    )
-
-    expanded_entities = TempFluidDynamics(
-        entities=[
-            my_volume_mesh1["zone*"],
-            user_override_cylinder,
-            user_override_cylinder,
-            user_override_cylinder,
-            my_volume_mesh1["*"],
-        ]
-    ).entities._get_expanded_entities()
-
-    assert len(expanded_entities) == 3
-    assert user_override_cylinder in expanded_entities
 
 
 def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
@@ -422,8 +503,9 @@ def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
 
     assert "surface_1" in wall_entity_names
     assert "surface_2" in wall_entity_names
+    assert "surface_3" in wall_entity_names
     assert "farfield" in wall_entity_names
-    assert len(wall_entity_names) == 3
+    assert len(wall_entity_names) == 4
 
 
 def test_multiple_param_creation_and_asset_registry(
@@ -445,14 +527,18 @@ def test_multiple_param_creation_and_asset_registry(
             ],
         )
 
-    # compare_to_ref(
-    #     # 1 Cylinder, 3 generic zones from mesh and 2 surfaces from mesh
-    #     my_param1.private_attribute_asset_cache.asset_entity_registry,
-    #     "ref/entity_registry_1.json",
-    #     content_only=True,
-    # )
+    ref_registry = EntityRegistry()
+    ref_registry.register(my_cylinder1)
+    ref_registry.register(my_volume_mesh1["zone_1"][0])
+    ref_registry.register(my_volume_mesh1["zone_2"][0])
+    ref_registry.register(my_volume_mesh1["zone_3"][0])
+    ref_registry.register(my_volume_mesh1["surface_1"][0])
+    ref_registry.register(my_volume_mesh1["surface_2"][0])
+    ref_registry.register(my_volume_mesh1["surface_3"][0])
 
-    TempFluidDynamics(entities=[my_box_zone2]),
+    assert my_param1.private_attribute_asset_cache.asset_entity_registry == ref_registry
+
+    TempFluidDynamics(entities=[my_box_zone2])  # This should not be added to the registry
 
     with SI_unit_system:
         my_param2 = TempSimulationParam(
@@ -468,18 +554,23 @@ def test_multiple_param_creation_and_asset_registry(
                 TempWallBC(surfaces=[my_volume_mesh2["*"], "*"]),
             ],
         )
-    my_param2.private_attribute_asset_cache.asset_entity_registry.show()
 
-    # 1 Box, 4 generic zones from mesh and 2 surfaces from mesh
-    # print(my_param2.private_attribute_asset_cache.asset_entity_registry.model_dump_json(indent=4))
-    # compare_to_ref(
-    #     my_param2.private_attribute_asset_cache.asset_entity_registry,
-    #     "ref/entity_registry_1.json",
-    #     content_only=True,
-    # )
+    ref_registry = EntityRegistry()
+    ref_registry.register(my_box_zone1)
+    ref_registry.register(my_volume_mesh2["zone_4"][0])
+    ref_registry.register(my_volume_mesh2["zone_5"][0])
+    ref_registry.register(my_volume_mesh2["zone_6"][0])
+    ref_registry.register(my_volume_mesh2["zone_1"][0])
+    ref_registry.register(my_volume_mesh2["surface_4"][0])
+    ref_registry.register(my_volume_mesh2["surface_5"][0])
+    ref_registry.register(my_volume_mesh2["surface_6"][0])
+    ref_registry.register(my_volume_mesh2["surface_1"][0])
+
+    assert my_param2.private_attribute_asset_cache.asset_entity_registry == ref_registry
 
 
-def test_entity_registry_serialization_and_deseralization(my_cylinder1, my_volume_mesh1):
+def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_mesh1):
+    # Make sure the changes in the entity are always reflected in the registry
     with SI_unit_system:
         my_param1 = TempSimulationParam(
             far_field_type="auto",
@@ -495,5 +586,199 @@ def test_entity_registry_serialization_and_deseralization(my_cylinder1, my_volum
                 TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
             ],
         )
+    my_cylinder1.center = (3, 2, 1) * u.m
+    my_cylinder1_ref = my_param1.private_attribute_asset_cache.asset_entity_registry.find_by_name(
+        "zone/Cylinder1"
+    )
+    assert all(my_cylinder1_ref.center == [3, 2, 1] * u.m)
 
-    the_registry = my_param1.private_attribute_asset_cache.asset_entity_registry
+
+def test_entities_merging_logic(my_volume_mesh_with_interface):
+    ##:: Scenario 1: Merge Generic with Generic
+    my_generic_base = GenericVolume(name="my_generic_volume", axis=(0, 1, 0))
+    my_generic_merged = deepcopy(my_generic_base)
+    my_generic_merged = _merge_objects(
+        my_generic_merged,
+        GenericVolume(
+            name="my_generic_volume", private_attribute_zone_boundary_names=["my_wall_1"]
+        ),
+    )
+    assert my_generic_merged.private_attribute_zone_boundary_names.items == ["my_wall_1"]
+    assert my_generic_merged.axis == (0, 1, 0)
+
+    ##:: Scenario 2: Merge Generic with Generic with conflict
+    with pytest.raises(
+        MergeConflictError,
+        match=re.escape(r"Conflict on attribute 'axis':"),
+    ):
+        my_generic_merged = deepcopy(my_generic_base)
+        my_generic_merged = _merge_objects(
+            my_generic_merged,
+            GenericVolume(name="my_generic_volume", axis=(0, 2, 1)),
+        )
+
+    ##:: Scenario 3: Merge Generic with NonGeneric
+    my_generic_merged = deepcopy(my_generic_base)
+    my_generic_merged = _merge_objects(
+        my_generic_merged,
+        Cylinder(
+            name="my_generic_volume",
+            height=11 * u.cm,
+            axis=(0, 1, 0),
+            inner_radius=1 * u.ft,
+            outer_radius=2 * u.ft,
+            center=(1, 2, 3) * u.ft,
+        ),
+    )
+    assert isinstance(my_generic_merged, Cylinder)
+    assert my_generic_merged.height == 11 * u.cm
+    assert my_generic_merged.axis == (0, 1, 0)
+    assert my_generic_merged.inner_radius == 1 * u.ft
+    assert my_generic_merged.outer_radius == 2 * u.ft
+    assert all(my_generic_merged.center == (1, 2, 3) * u.ft)
+
+    ##:: Scenario 4: Merge NonGeneric with Generic
+    # reverse the order does not change the result
+    my_generic_merged = deepcopy(my_generic_base)
+    my_generic_merged = _merge_objects(
+        Cylinder(
+            name="my_generic_volume",
+            height=11 * u.cm,
+            axis=(0, 1, 0),
+            inner_radius=1 * u.ft,
+            outer_radius=2 * u.ft,
+            center=(1, 2, 3) * u.ft,
+        ),
+        my_generic_merged,
+    )
+    assert isinstance(my_generic_merged, Cylinder)
+    assert my_generic_merged.height == 11 * u.cm
+    assert my_generic_merged.axis == (0, 1, 0)
+    assert my_generic_merged.inner_radius == 1 * u.ft
+    assert my_generic_merged.outer_radius == 2 * u.ft
+    assert all(my_generic_merged.center == (1, 2, 3) * u.ft)
+
+    ##:: Scenario 4: Merge NonGeneric with Generic with conflict
+    with pytest.raises(
+        MergeConflictError,
+        match=re.escape(r"Conflict on attribute 'axis':"),
+    ):
+        my_generic_merged = deepcopy(my_generic_base)
+        _merge_objects(
+            my_generic_merged,
+            GenericVolume(name="my_generic_volume", axis=(0, 2, 1)),
+        )
+
+    ##:: Scenario 5: Merge NonGeneric with NonGeneric
+    my_cylinder1 = Cylinder(
+        name="innerZone",
+        height=11 * u.cm,
+        axis=(1, 0, 0),
+        inner_radius=1 * u.ft,
+        outer_radius=2 * u.ft,
+        center=(1, 2, 3) * u.ft,
+    )
+
+    # Only valid if they are exactly the same
+    merged = _merge_objects(
+        my_cylinder1,
+        my_cylinder1,
+    )
+    assert merged == my_cylinder1
+
+    ##:: Scenario 6: Merge NonGeneric with NonGeneric with conflict
+    with pytest.raises(
+        MergeConflictError,
+        match=re.escape(r"Conflict on attribute 'height':"),
+    ):
+        my_generic_merged = deepcopy(my_generic_base)
+        merged = _merge_objects(
+            my_cylinder1,
+            Cylinder(
+                name="innerZone",
+                height=12 * u.cm,
+                axis=(1, 0, 0),
+                inner_radius=1 * u.ft,
+                outer_radius=2 * u.ft,
+                center=(1, 2, 3) * u.ft,
+            ),
+        )
+
+    ##:: Scenario 7: Merge NonGeneric with NonGeneric with different class
+    with pytest.raises(
+        MergeConflictError,
+        match=re.escape(r"Cannot merge objects of different class:"),
+    ):
+        my_generic_merged = deepcopy(my_generic_base)
+        merged = _merge_objects(
+            my_cylinder1,
+            Box(
+                name="innerZone",
+                axes=((-1, 0, 0), (1, 0, 0)),
+                center=(1, 2, 3) * u.mm,
+                size=(0.1, 0.01, 0.001) * u.mm,
+            ),
+        )
+
+    ##:: Scenario 8: No user specified attributes in the Generic type entities and
+    ##::             now we merge the user overload with it.
+    user_override_cylinder = Cylinder(
+        name="innerZone",
+        height=12 * u.m,
+        axis=(1, 0, 0),
+        inner_radius=1 * u.m,
+        outer_radius=2 * u.m,
+        center=(1, 2, 3) * u.m,
+    )
+
+    with SI_unit_system:
+        my_param = TempSimulationParam(
+            far_field_type="user-defined",
+            models=[
+                TempFluidDynamics(
+                    entities=[
+                        user_override_cylinder,
+                        my_volume_mesh_with_interface["*"],
+                    ]
+                ),
+                TempWallBC(surfaces=[my_volume_mesh_with_interface["*"]]),
+            ],
+        )
+
+    target_entity_param_reg = (
+        my_param.private_attribute_asset_cache.asset_entity_registry.find_by_name("innerZone")
+    )
+
+    target_entity_mesh_reg = my_volume_mesh_with_interface.internal_registry.find_by_name(
+        "innerZone"
+    )
+
+    assert (
+        len(my_param.models[0].entities._get_expanded_entities()) == 3
+    )  # 1 cylinder, 2 generic zones
+    assert isinstance(target_entity_param_reg, Cylinder)
+
+    # Note: mesh still register the original one because it was not used at all.
+    assert isinstance(target_entity_mesh_reg, GenericVolume)
+
+
+def test_entity_registry_serialization_and_deserialization():
+    # This is already tested in to_file_from_file tests in param unit test.
+    pass
+
+
+def test_update_asset_registry(my_volume_mesh_with_interface):
+    user_override_cylinder = Cylinder(
+        name="innerZone",
+        height=12 * u.m,
+        axis=(1, 0, 0),
+        inner_radius=1 * u.m,
+        outer_radius=2 * u.m,
+        center=(1, 2, 3) * u.m,
+    )
+    backup = deepcopy(my_volume_mesh_with_interface.internal_registry.find_by_name("innerZone"))
+    assert my_volume_mesh_with_interface.internal_registry.contains(backup)
+
+    my_volume_mesh_with_interface.internal_registry.replace_existing_with(user_override_cylinder)
+
+    assert my_volume_mesh_with_interface.internal_registry.contains(user_override_cylinder)

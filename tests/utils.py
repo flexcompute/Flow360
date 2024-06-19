@@ -90,6 +90,12 @@ def compare_to_ref(obj, ref_path, content_only=False):
 
 @pytest.fixture()
 def array_equality_override():
+    # Save original methods
+    original_unyt_eq = unyt.unyt_array.__eq__
+    original_unyt_ne = unyt.unyt_array.__ne__
+    original_flow360_eq = unit_system._Flow360BaseUnit.__eq__
+    original_flow360_ne = unit_system._Flow360BaseUnit.__ne__
+
     # Overload equality for unyt arrays
     def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
         if isinstance(other, unit_system._Flow360BaseUnit):
@@ -139,6 +145,15 @@ def array_equality_override():
     unyt.unyt_array.__ne__ = unyt_array_ne
     unit_system._Flow360BaseUnit.__eq__ = flow360_unit_array_eq
     unit_system._Flow360BaseUnit.__ne__ = flow360_unit_array_ne
+
+    # Yield control to the test
+    yield
+
+    # Restore original methods
+    unyt.unyt_array.__eq__ = original_unyt_eq
+    unyt.unyt_array.__ne__ = original_unyt_ne
+    unit_system._Flow360BaseUnit.__eq__ = original_flow360_eq
+    unit_system._Flow360BaseUnit.__ne__ = original_flow360_ne
 
 
 @pytest.fixture()

@@ -4,7 +4,6 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import List, Optional, Union
 
 import pydantic as pd
@@ -35,21 +34,38 @@ from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
 
-class Asset_Cache(Flow360BaseModel):
+class AssetCache(Flow360BaseModel):
     """
     Note:
     1. asset_entity_registry will be replacing/update the metadata-constructed registry of the asset when loading it.
     """
 
-    asset_entity_registry: EntityRegistry = EntityRegistry()
+    asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
+    # pylint: disable=fixme
     # TODO: Pending mesh_unit
 
 
 def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
+    """
+    Recursively registers entities within a Flow360BaseModel instance to an EntityRegistry.
+
+    This function iterates through the attributes of the given model. If an attribute is an
+    EntityList, it retrieves the expanded entities and registers each entity in the registry.
+    If an attribute is a list and contains instances of Flow360BaseModel, it recursively
+    registers the entities within those instances.
+
+    Args:
+        model (Flow360BaseModel): The model containing entities to be registered.
+        registry (EntityRegistry): The registry where entities will be registered.
+
+    Returns:
+        None
+    """
     for field in model.__dict__.values():
         if isinstance(field, EntityList):
+            # pylint: disable=protected-access
             expanded_entities = field._get_expanded_entities(
-                supplied_registry=None, expect_supplied_registry=False
+                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
             )
             for entity in expanded_entities if expanded_entities else []:
                 registry.register(entity)
@@ -67,16 +83,17 @@ class _ParamModelBase(Flow360BaseModel):
 
     version: str = pd.Field(__version__, frozen=True)
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
-    private_attribute_asset_cache: Asset_Cache = pd.Field(Asset_Cache())  # TODO: Frozen = True
-
+    private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
     model_config = pd.ConfigDict(include_hash=True)
 
     @pd.model_validator(mode="after")
     def _move_registry_to_asset_cache(self):
         """Recursively register all entities listed in EntityList to the asset cache."""
+        # pylint: disable=no-member
         self.private_attribute_asset_cache.asset_entity_registry.clear()
         recursive_register_entity_list(
-            self, self.private_attribute_asset_cache.asset_entity_registry
+            self,
+            self.private_attribute_asset_cache.asset_entity_registry,
         )  # Clear so that the next param can use this.
         return self
 

@@ -1,0 +1,72 @@
+{
+    "internal_registry": {
+        "VolumetricEntityType": [
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_auto_constructed": false,
+                "name": "zone/Box1",
+                "type": "Box",
+                "center": {
+                    "value": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "units": "mm"
+                },
+                "size": {
+                    "value": [
+                        0.1,
+                        0.01,
+                        0.001
+                    ],
+                    "units": "mm"
+                },
+                "axes": [
+                    [
+                        -1.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        1.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "zone_4"
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "zone_5"
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "zone_6"
+            },
+            {
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "zone_1"
+            }
+        ],
+        "SurfaceEntityType": [
+            {
+                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "surface_3"
+            },
+            {
+                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                "private_attribute_auto_constructed": true,
+                "name": "surface_4"
+            }
+        ]
+    }
+}
