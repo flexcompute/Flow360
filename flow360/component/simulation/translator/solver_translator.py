@@ -87,13 +87,13 @@ def get_solver_json(
             for surface in model.entities.stored_entities:
                 spec = dump_dict(model)
                 spec.pop("surfaces")
-            if isinstance(model, Wall):
-                spec.pop("useWallFunction")
-                spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
-                if model.heat_spec:
-                    spec.pop("heat_spec")
-                    # TODO: implement
-            translated["boundaries"][surface.name] = spec
+                if isinstance(model, Wall):
+                    spec.pop("useWallFunction")
+                    spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
+                    if model.heat_spec:
+                        spec.pop("heat_spec")
+                        # TODO: implement
+                translated["boundaries"][surface.name] = spec
 
     ##:: Step 4: Get outputs
     outputs = input_params.outputs
