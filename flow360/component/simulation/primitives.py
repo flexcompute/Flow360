@@ -37,18 +37,21 @@ class Transformation(Flow360BaseModel):
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
+    """All volumetric entities should inherit from this class."""
+
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
+    private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
+    private_attribute_is_volume_zone: bool = pd.Field(False, frozen=True)
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
+    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
 
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
 
 
 @final
@@ -57,9 +60,12 @@ class Edge(_EdgeEntityBase):
     Edge with edge name defined in the geometry file
     """
 
-    # pylint: disable=invalid-name
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
+
+    def auto_constructed(self) -> bool:
+        """There is only auto-constructed edge entity as of now."""
+        return True
 
 
 @final
@@ -67,8 +73,13 @@ class GenericVolume(_VolumeEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
 
-    # pylint: disable=invalid-name
-    private_attribute_auto_constructed: bool = pd.Field(True, frozen=True)
+    # TODO: May need to set auto_constructed to False when modification is registered.
+    axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
+
+    def auto_constructed(self) -> bool:
+        return self.axes is None and self.axis is None  # and self.center is None
 
 
 @final
@@ -76,8 +87,9 @@ class GenericSurface(_SurfaceEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
 
-    # pylint: disable=invalid-name
-    private_attribute_auto_constructed: bool = pd.Field(True, frozen=True)
+    def auto_constructed(self) -> bool:
+        """There is only auto-constructed GenericSurface entity as of now."""
+        return True
 
 
 @final
@@ -96,6 +108,10 @@ class Box(_VolumeEntityBase):
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
     axes: Tuple[Axis, Axis] = pd.Field()
+
+    def auto_constructed(self) -> bool:
+        """There is no auto-constructed Box entity as of now."""
+        return False
 
 
 @final
@@ -121,6 +137,10 @@ class Cylinder(_VolumeEntityBase):
     # TODO validation outer > inner
     outer_radius: LengthType.Positive = pd.Field()
 
+    def auto_constructed(self) -> bool:
+        """There is no auto-constructed Cylinder entity as of now."""
+        return False
+
 
 @final
 class Surface(_SurfaceEntityBase):
@@ -130,6 +150,9 @@ class Surface(_SurfaceEntityBase):
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
+    def auto_constructed(self) -> bool:
+        """No diff between Surface and GenericSurface for now but Surface comes from user directives."""
+        return False
 
 
 class SurfacePair(Flow360BaseModel):

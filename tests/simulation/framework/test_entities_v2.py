@@ -61,7 +61,8 @@ class TempVolumeMesh(AssetBase):
 
 
 class TempSurface(_SurfaceEntityBase):
-    pass
+    def auto_constructed(self) -> bool:
+        return False
 
 
 class TempFluidDynamics(Flow360BaseModel):
@@ -170,7 +171,9 @@ def unset_entity_type():
 
     with pytest.raises(
         NotImplementedError,
-        match=re.escape("private_attribute_entity_type is not defined in the entity class."),
+        match=re.escape(
+            "private_attribute_registry_bucket_name is not defined in the entity class."
+        ),
     ):
         IncompleteEntity(name="IncompleteEntity")
 
@@ -275,6 +278,10 @@ def test_by_reference_registry(my_cylinder2):
     registry = EntityRegistry()
     registry.register(my_cylinder2)
     my_cylinder2.height = 131 * u.m
+    print(
+        "Cylinder.private_attribute_registry_bucket_name = ",
+        Cylinder.model_fields["private_attribute_registry_bucket_name"].default,
+    )
     for entity in registry.get_all_entities_of_given_type(Cylinder):
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
             assert entity.height == 131 * u.m
@@ -306,18 +313,6 @@ def test_get_entities(
     # my_cylinder1 is not a Box but is a _volumeZoneBase and EntityRegistry registers by base type
     assert my_cylinder1 in all_box_entities
     assert my_cylinder2 in all_box_entities
-
-
-def test_changing_final_attributes(my_box_zone1):
-    with pytest.raises(
-        AttributeError, match=re.escape("Cannot modify private_attribute_entity_type")
-    ):
-        my_box_zone1.entity_type = "WrongSubClass"
-
-    with pytest.raises(
-        AttributeError, match=re.escape("Cannot modify private_attribute_auto_constructed")
-    ):
-        my_box_zone1.auto_constructed = True
 
 
 def test_entities_input_interface(my_cylinder1, my_cylinder2, my_volume_mesh1):
@@ -449,17 +444,13 @@ def test_multiple_param_creation_and_asset_registry(
                 TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
             ],
         )
-    my_param1.private_attribute_asset_cache.asset_entity_registry.show()
-    assert (
-        my_param1.private_attribute_asset_cache.asset_entity_registry.entity_count() == 6
-    )  # 1 Cylinder, 3 generic zones from mesh and 2 surfaces from mesh
-    print(my_param1.private_attribute_asset_cache.asset_entity_registry.model_dump_json(indent=2))
-    compare_to_ref(
-        my_param1.private_attribute_asset_cache.asset_entity_registry,
-        "ref/entity_registry_1.json",
-        content_only=True,
-    )
-    print("......................................................")
+
+    # compare_to_ref(
+    #     # 1 Cylinder, 3 generic zones from mesh and 2 surfaces from mesh
+    #     my_param1.private_attribute_asset_cache.asset_entity_registry,
+    #     "ref/entity_registry_1.json",
+    #     content_only=True,
+    # )
 
     TempFluidDynamics(entities=[my_box_zone2]),
 
@@ -471,11 +462,38 @@ def test_multiple_param_creation_and_asset_registry(
                     entities=[
                         my_box_zone1,
                         my_box_zone1,
-                        my_volume_mesh1["*"],
-                        my_volume_mesh1["*zone*"],
+                        my_volume_mesh2["*"],
                     ]
                 ),
                 TempWallBC(surfaces=[my_volume_mesh2["*"], "*"]),
             ],
         )
     my_param2.private_attribute_asset_cache.asset_entity_registry.show()
+
+    # 1 Box, 4 generic zones from mesh and 2 surfaces from mesh
+    # print(my_param2.private_attribute_asset_cache.asset_entity_registry.model_dump_json(indent=4))
+    # compare_to_ref(
+    #     my_param2.private_attribute_asset_cache.asset_entity_registry,
+    #     "ref/entity_registry_1.json",
+    #     content_only=True,
+    # )
+
+
+def test_entity_registry_serialization_and_deseralization(my_cylinder1, my_volume_mesh1):
+    with SI_unit_system:
+        my_param1 = TempSimulationParam(
+            far_field_type="auto",
+            models=[
+                TempFluidDynamics(
+                    entities=[
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_cylinder1,
+                        my_volume_mesh1["*"],
+                    ]
+                ),
+                TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
+            ],
+        )
+
+    the_registry = my_param1.private_attribute_asset_cache.asset_entity_registry

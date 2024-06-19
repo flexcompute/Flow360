@@ -1,12 +1,13 @@
 import re
+from typing import Any
 
 import numpy as np
 import pydantic as pd
 
-from flow360.log import log
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from typing import Any
+from flow360.log import log
 from tests.utils import compare_to_ref
+
 
 class MergeConflictError(Exception):
     pass
@@ -62,6 +63,9 @@ class EntityRegistry(Flow360BaseModel):
 
     internal_registry: dict[str, list[Any]] = pd.Field({})
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def register(self, entity, overwrite_existing: bool = False):
         """
         Registers an entity in the registry under its type.
@@ -99,7 +103,9 @@ class EntityRegistry(Flow360BaseModel):
         Returns:
             List[EntityBase]: A list of registered entities of the specified type.
         """
-        return self.internal_registry.get(entity_type.private_attribute_entity_type.default, [])
+        return self.internal_registry.get(
+            entity_type.model_fields["private_attribute_registry_bucket_name"].default, []
+        )
 
     def find_by_name_pattern(self, pattern: str):
         """

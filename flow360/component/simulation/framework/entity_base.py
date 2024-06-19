@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from typing import List, Optional, Union, get_args, get_origin
 
@@ -17,19 +17,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     Base class for dynamic entity types.
 
     Attributes:
-        private_attribute_entity_type (str): A string representing the specific type of the entity.
+        private_attribute_registry_bucket_name (str): A string representing the specific type of the entity.
                             This should be set in subclasses to differentiate between entity types.
                             Warning:
                             This controls the granularity of the registry and must be unique for each entity type and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
-        private_attribute_auto_constructed (bool):   A flag indicating whether the entity is automatically constructed
                                     by assets using their metadata. This means that the entity is not directly
                                     specified by the user and contains less information than user-defined entities.
 
         name (str): The name of the entity, used for identification and retrieval.
     """
 
-    private_attribute_entity_type: str = None
-    private_attribute_auto_constructed: bool = False
+    private_attribute_registry_bucket_name: str = None
     name: str = pd.Field(frozen=True)
 
     def __init__(self, **data):
@@ -42,7 +40,7 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         super().__init__(**data)
         if self.entity_type is None:
             raise NotImplementedError(
-                "private_attribute_entity_type is not defined in the entity class."
+                "private_attribute_registry_bucket_name is not defined in the entity class."
             )
 
     def copy(self, update=None, **kwargs) -> EntityBase:
@@ -68,19 +66,16 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     @property
     def entity_type(self) -> str:
-        return self.private_attribute_entity_type
+        return self.private_attribute_registry_bucket_name
 
     @entity_type.setter
     def entity_type(self, value: str):
-        raise AttributeError("Cannot modify private_attribute_entity_type")
+        raise AttributeError("Cannot modify private_attribute_registry_bucket_name")
 
-    @property
-    def auto_constructed(self) -> str:
-        return self.private_attribute_auto_constructed
-
-    @auto_constructed.setter
-    def auto_constructed(self, value: str):
-        raise AttributeError("Cannot modify private_attribute_auto_constructed")
+    @abstractmethod
+    def auto_constructed(self) -> bool:
+        """Whether the entity is auto-constructed by assets."""
+        pass
 
 
 class _CombinedMeta(type(Flow360BaseModel), type):
@@ -119,13 +114,18 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     for entity in expanded_entities:
         all_entities[entity.name].append(entity)
 
-    for entity_list in all_entities.values():
+    for name, entity_list in all_entities.items():
         if len(entity_list) > 1:
             for entity in entity_list:
-                if entity.private_attribute_auto_constructed and len(entity_list) > 1:
+                if entity.auto_constructed() and len(entity_list) > 1:
                     entity_list.remove(entity)
 
-        assert len(entity_list) == 1
+        if len(entity_list) != 1:
+            error_message = f"Duplicate entities found for {name}."
+            for entity in entity_list:
+                error_message += f"\n{entity}\n"
+            error_message += "Please remove duplicates."
+            raise ValueError(error_message)
 
     return [entity_list[0] for entity_list in all_entities.values()]
 
