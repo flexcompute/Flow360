@@ -61,6 +61,8 @@ def test_shared_confirm_proceed(mock_response, monkeypatch):
 def test_valid_uuid():
     is_valid_uuid("123e4567-e89b-12d3-a456-426614174000")
     is_valid_uuid("folder-123e4567-e89b-12d3-a456-426614174000")
+    is_valid_uuid("g-123e4567-e89b-12d3-a456-426614174000")
+
     with pytest.raises(Flow360ValueError):
         is_valid_uuid("not-a-valid-uuid")
 

@@ -8,6 +8,15 @@ from flow360.component.simulation.services import (
     simulation_to_volume_meshing_json,
 )
 
+from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.meshing_param.face_params import BoundaryLayer, SurfaceRefinement
+from flow360.component.simulation.primitives import Surface, ReferenceGeometry
+from flow360.component.simulation.simulation_params import SimulationParams, MeshingParams
+from flow360.component.simulation.operating_condition import AerospaceCondition
+from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.surface_models import Wall, Freestream
+
+
 
 def test_simulation_to_surface_meshing_json():
     param_data = {
@@ -324,3 +333,46 @@ def test_simulation_to_case_json():
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
         simulation_to_case_json(param_data, "SI", None)
+
+
+
+def test_simulation_to_all_translation():
+    with SI_unit_system:
+        meshing = MeshingParams(
+            surface_layer_growth_rate=1.5,
+            refinements=[
+                BoundaryLayer(first_layer_thickness=0.001),
+                SurfaceRefinement(
+                            entities=[Surface(name="wing")],
+                            max_edge_length=15 * u.cm,
+                            curvature_resolution_angle=10 * u.deg,
+                        )
+            ]
+        )
+        param = SimulationParams(
+            meshing=meshing,
+            reference_geometry=ReferenceGeometry(
+                moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2
+            ),
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100
+            ),
+            models=[
+                Fluid(),
+                Wall(
+                    entities=[Surface(name="wing")],
+                ),
+                Freestream(
+                    entities=[Surface(name="farfield")]
+                )
+            ],
+        )
+
+    params_as_dict = param.model_dump()
+    surface_json, hash = simulation_to_surface_meshing_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
+    print(surface_json)
+    volume_json, hash = simulation_to_volume_meshing_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
+    print(volume_json)
+    case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
+    print(case_json)
+

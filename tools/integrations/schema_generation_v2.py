@@ -5,7 +5,7 @@ from typing import Annotated, List, Type, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.meshing_param.edge_params import AngleBasedRefinement
+from flow360.component.simulation.meshing_param.edge_params import AngleBasedRefinement, HeightBasedRefinement, AspectRatioBasedRefinement, ProjectAnisoSpacing
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     SurfaceEdgeRefinement,
@@ -14,6 +14,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     UniformRefinement,
 )
+from flow360.component.simulation.meshing_param.face_params import BoundaryLayer, SurfaceRefinement
 from flow360.component.simulation.models.material import SolidMaterial
 from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
 from flow360.component.simulation.models.surface_models import (
@@ -31,6 +32,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    Freestream
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -87,7 +89,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
-version_postfix = "release-24.3"
+version_postfix = "release-24.6"
 
 
 data_folder = "data_v2"
@@ -197,6 +199,8 @@ with SI_unit_system:
         refinements=[
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
+            SurfaceEdgeRefinement(edges=[edge], method=HeightBasedRefinement(value=1 * u.m)),
+            SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2))
         ],
         volume_zones=[
             RotationCylinder(
@@ -274,6 +278,47 @@ with SI_unit_system:
 
 write_example(param, "simulation_params", "example-1")
 
+with SI_unit_system:
+    meshing = MeshingParams(
+        surface_layer_growth_rate=1.5,
+        refinements=[
+            BoundaryLayer(first_layer_thickness=0.001),
+            SurfaceRefinement(
+                        entities=[Surface(name="wing")],
+                        max_edge_length=15 * u.cm,
+                        curvature_resolution_angle=10 * u.deg,
+                    )
+        ]
+    )
+    param = SimulationParams(
+        meshing=meshing,
+        reference_geometry=ReferenceGeometry(
+            moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2
+        ),
+        operating_condition=AerospaceCondition(
+            velocity_magnitude=100
+        ),
+        models=[
+            Fluid(),
+            Wall(
+                entities=[Surface(name="wing")],
+            ),
+            Freestream(
+                entities=[Surface(name="farfield")]
+            )
+        ]
+    )
+
+write_example(param, "simulation_params", "example-2")
+
+
+
+
+
+
+
+
+
 
 ###################### reference_geometry ######################
 write_schemas(ReferenceGeometry, "reference_geometry")
@@ -301,7 +346,7 @@ write_example(
     "operating_condition",
     "example-1",
     exclude_defaults=True,
-    additional_fields=dict(type_name="AerospaceCondition"),
+    additional_fields=dict(type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")),
 )
 
 with SI_unit_system:

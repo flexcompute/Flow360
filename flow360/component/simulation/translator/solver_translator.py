@@ -135,32 +135,33 @@ def get_solver_json(
         replace_dict_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
         translated["sliceOutput"].update({"slices": {}, "outputFields": []})
 
-    for output in input_params.outputs:
-        # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
-        if isinstance(output, TimeAverageVolumeOutput):
-            # TODO: update time average entries
-            translated["volumeOutput"]["computeTimeAverages"] = True
+    if input_params.outputs is not None:
+        for output in input_params.outputs:
+            # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
+            if isinstance(output, TimeAverageVolumeOutput):
+                # TODO: update time average entries
+                translated["volumeOutput"]["computeTimeAverages"] = True
 
-        elif isinstance(output, SurfaceOutput):
-            surfaces = translated["surfaceOutput"]["surfaces"]
-            for surface in output.entities.stored_entities:
-                surfaces[surface.name] = {
-                    "outputFields": merge_unique_item_lists(
-                        surfaces.get(surface.name, {}).get("outputFields", []),
-                        output.output_fields.model_dump()["items"],
-                    )
-                }
-        elif isinstance(output, SliceOutput):
-            slices = translated["sliceOutput"]["slices"]
-            for slice in output.entities.items:
-                slices[slice.name] = {
-                    "outputFields": merge_unique_item_lists(
-                        slices.get(slice.name, {}).get("outputFields", []),
-                        output.output_fields.model_dump()["items"],
-                    ),
-                    "sliceOrigin": list(remove_units_in_dict(dump_dict(slice))["sliceOrigin"]),
-                    "sliceNormal": list(remove_units_in_dict(dump_dict(slice))["sliceNormal"]),
-                }
+            elif isinstance(output, SurfaceOutput):
+                surfaces = translated["surfaceOutput"]["surfaces"]
+                for surface in output.entities.stored_entities:
+                    surfaces[surface.name] = {
+                        "outputFields": merge_unique_item_lists(
+                            surfaces.get(surface.name, {}).get("outputFields", []),
+                            output.output_fields.model_dump()["items"],
+                        )
+                    }
+            elif isinstance(output, SliceOutput):
+                slices = translated["sliceOutput"]["slices"]
+                for slice in output.entities.items:
+                    slices[slice.name] = {
+                        "outputFields": merge_unique_item_lists(
+                            slices.get(slice.name, {}).get("outputFields", []),
+                            output.output_fields.model_dump()["items"],
+                        ),
+                        "sliceOrigin": list(remove_units_in_dict(dump_dict(slice))["sliceOrigin"]),
+                        "sliceNormal": list(remove_units_in_dict(dump_dict(slice))["sliceNormal"]),
+                    }
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
