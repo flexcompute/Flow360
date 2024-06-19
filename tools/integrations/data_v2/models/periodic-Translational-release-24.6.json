@@ -1,0 +1,20 @@
+{
+  "type": "Periodic",
+  "entity_pairs": {
+    "items": [
+      {
+        "pair": [
+          {
+            "name": "my_wall"
+          },
+          {
+            "name": "my_slip_wall"
+          }
+        ]
+      }
+    ]
+  },
+  "spec": {
+    "type": "Translational"
+  }
+}

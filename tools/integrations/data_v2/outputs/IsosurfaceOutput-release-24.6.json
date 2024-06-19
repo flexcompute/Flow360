@@ -1,0 +1,26 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "output_format": "tecplot",
+  "entities": {
+    "items": [
+      {
+        "name": "my_first_iso",
+        "field": "qcriterion",
+        "iso_value": 1234.0
+      },
+      {
+        "name": "my_second_iso",
+        "field": "Cp",
+        "iso_value": 12.0
+      }
+    ]
+  },
+  "output_fields": {
+    "items": [
+      "primitiveVars",
+      "vorticity"
+    ]
+  },
+  "output_type": "IsosurfaceOutput"
+}

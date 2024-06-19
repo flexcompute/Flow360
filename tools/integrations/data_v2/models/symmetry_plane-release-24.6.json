@@ -1,0 +1,10 @@
+{
+  "type": "SymmetryPlane",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_symmetry_plane"
+      }
+    ]
+  }
+}

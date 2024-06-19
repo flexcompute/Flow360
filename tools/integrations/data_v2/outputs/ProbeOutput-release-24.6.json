@@ -1,0 +1,57 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "entities": {
+    "items": [
+      {
+        "name": "the_name1",
+        "locations": [
+          {
+            "value": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "units": "ft"
+          },
+          {
+            "value": [
+              4.0,
+              5.0,
+              6.0
+            ],
+            "units": "ft"
+          }
+        ]
+      },
+      {
+        "name": "the_name2",
+        "locations": [
+          {
+            "value": [
+              1.0,
+              3.0,
+              5.0
+            ],
+            "units": "ft"
+          },
+          {
+            "value": [
+              2.0,
+              4.0,
+              6.0
+            ],
+            "units": "ft"
+          }
+        ]
+      }
+    ]
+  },
+  "output_fields": {
+    "items": [
+      "primitiveVars",
+      "vorticity"
+    ]
+  },
+  "output_type": "ProbeOutput"
+}

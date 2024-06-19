@@ -1,0 +1,213 @@
+{
+  "$defs": {
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "HeatFlux": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatFluxType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "heat_flux",
+                  "enum": [
+                    "kg/s**3",
+                    "g/s**3",
+                    "lb/s**3"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "HeatFlux",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "Temperature": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "temperature",
+                  "enum": [
+                    "K",
+                    "R"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "Temperature",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Replace Flow360Param:\n- NoSlipWall\n- IsothermalWall\n- HeatFluxWall\n- WallFunction\n- SolidIsothermalWall\n- SolidAdiabaticWall\n\n\nParameters\n----------\ntype : typing.Literal['Wall'] = Wall\n        entities : <class 'abc.EntityList[Surface]'>\n        use_wall_function : <class 'bool'> = False\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n        heat_spec : typing.Union[flow360.component.simulation.models.surface_models.HeatFlux, flow360.component.simulation.models.surface_models.Temperature, NoneType] = None\n    ",
+  "properties": {
+    "type": {
+      "const": "Wall",
+      "default": "Wall",
+      "enum": [
+        "Wall"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "surfaces": {
+      "$ref": "#/$defs/EntityList_Surface_"
+    },
+    "use_wall_function": {
+      "default": false,
+      "title": "Use Wall Function",
+      "type": "boolean"
+    },
+    "velocity": {
+      "anyOf": [
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "velocity",
+              "enum": [
+                "m/s",
+                "cm/s",
+                "ft/s"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Velocity"
+    },
+    "velocity_type": {
+      "default": "relative",
+      "enum": [
+        "absolute",
+        "relative"
+      ],
+      "title": "Velocity Type",
+      "type": "string"
+    },
+    "heat_spec": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HeatFlux"
+        },
+        {
+          "$ref": "#/$defs/Temperature"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Heat Spec"
+    }
+  },
+  "required": [
+    "surfaces"
+  ],
+  "title": "Wall",
+  "type": "object"
+}

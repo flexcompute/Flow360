@@ -1,0 +1,44 @@
+{
+  "material": {
+    "type": "solid",
+    "name": "abc",
+    "thermal_conductivity": {
+      "value": 1.0,
+      "units": "W/(K*m)"
+    },
+    "density": {
+      "value": 1.0,
+      "units": "kg/m**3"
+    },
+    "specific_heat_capacity": {
+      "value": 1.0,
+      "units": "J/(K*kg)"
+    }
+  },
+  "initial_condition": null,
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_cylinder-2"
+      }
+    ]
+  },
+  "heat_equation_solver": {
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 0.0,
+    "order_of_accuracy": 2,
+    "equation_eval_frequency": 10,
+    "update_jacobian_frequency": 1,
+    "max_force_jac_update_physical_steps": 0,
+    "linear_solver": {
+      "max_iterations": 50,
+      "absolute_tolerance": 1e-10,
+      "relative_tolerance": null
+    },
+    "type_name": "HeatEquation"
+  },
+  "volumetric_heat_source": {
+    "value": 123.0,
+    "units": "lb/(ft*s**3)"
+  }
+}

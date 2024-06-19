@@ -1,0 +1,158 @@
+{
+  "$defs": {
+    "Rotational": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype : typing.Literal['Rotational'] = Rotational\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = None\n    ",
+      "properties": {
+        "type": {
+          "const": "Rotational",
+          "default": "Rotational",
+          "enum": [
+            "Rotational"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "axis_of_rotation": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis Of Rotation"
+        }
+      },
+      "title": "Rotational",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "SurfacePair": {
+      "additionalProperties": false,
+      "description": "Represents a pair of surfaces.\n\nParameters\n----------\npair : typing.Tuple[flow360.component.simulation.primitives.Surface, flow360.component.simulation.primitives.Surface]\n    \nAttributes:\n    pair (Tuple[Surface, Surface]): A tuple containing two Surface objects representing the pair.",
+      "properties": {
+        "pair": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/Surface"
+            },
+            {
+              "$ref": "#/$defs/Surface"
+            }
+          ],
+          "title": "Pair",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pair"
+      ],
+      "title": "SurfacePair",
+      "type": "object"
+    },
+    "Translational": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype : typing.Literal['Translational'] = Translational\n    ",
+      "properties": {
+        "type": {
+          "const": "Translational",
+          "default": "Translational",
+          "enum": [
+            "Translational"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "Translational",
+      "type": "object"
+    },
+    "UniqueItemList_SurfacePair_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.primitives.SurfacePair]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SurfacePair"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[SurfacePair]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\ntype : typing.Literal['Periodic'] = Periodic\n        entity_pairs : <class 'abc.UniqueItemList[SurfacePair]'>\n        spec : typing.Union[flow360.component.simulation.models.surface_models.Translational, flow360.component.simulation.models.surface_models.Rotational]\n    ",
+  "properties": {
+    "type": {
+      "const": "Periodic",
+      "default": "Periodic",
+      "enum": [
+        "Periodic"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "surface_pairs": {
+      "$ref": "#/$defs/UniqueItemList_SurfacePair_"
+    },
+    "spec": {
+      "discriminator": {
+        "mapping": {
+          "Rotational": "#/$defs/Rotational",
+          "Translational": "#/$defs/Translational"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Translational"
+        },
+        {
+          "$ref": "#/$defs/Rotational"
+        }
+      ],
+      "title": "Spec"
+    }
+  },
+  "required": [
+    "surface_pairs",
+    "spec"
+  ],
+  "title": "Periodic",
+  "type": "object"
+}

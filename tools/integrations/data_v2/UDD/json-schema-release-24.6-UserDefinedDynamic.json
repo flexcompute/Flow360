@@ -1,0 +1,261 @@
+{
+  "$defs": {
+    "Cylinder": {
+      "additionalProperties": false,
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nname : <class 'str'>\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "axis": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "height": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Height"
+        },
+        "inner_radius": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inner Radius"
+        },
+        "outer_radius": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Outer Radius"
+        }
+      },
+      "required": [
+        "name",
+        "axis",
+        "center",
+        "height",
+        "outer_radius"
+      ],
+      "title": "Cylinder",
+      "type": "object"
+    },
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": ":class:`UserDefinedDynamic` class\n\nParameters\n----------\nname : <class 'str'>\n        input_vars : typing.List[str]\n        constants : typing.Optional[typing.Dict[str, float]] = None\n        output_vars : typing.Optional[typing.Dict[str, typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]] = None\n        state_vars_initial_value : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]\n        update_law : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]\n        input_boundary_patches : typing.Optional[abc.EntityList[Surface]] = None\n        output_target : typing.Optional[flow360.component.simulation.primitives.Cylinder] = None\n    ",
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "input_vars": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Input Vars",
+      "type": "array"
+    },
+    "constants": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Constants"
+    },
+    "output_vars": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Vars"
+    },
+    "state_vars_initial_value": {
+      "items": {
+        "type": "string"
+      },
+      "title": "State Vars Initial Value",
+      "type": "array"
+    },
+    "update_law": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Update Law",
+      "type": "array"
+    },
+    "input_boundary_patches": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityList_Surface_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "output_target": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Cylinder"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "name",
+    "input_vars",
+    "state_vars_initial_value",
+    "update_law"
+  ],
+  "title": "UserDefinedDynamic",
+  "type": "object"
+}

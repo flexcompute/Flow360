@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "SurfaceList": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nname : <class 'str'>\n        entities : <class 'abc.EntityList[Surface]'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "surfaces": {
+          "$ref": "#/$defs/EntityList_Surface_"
+        }
+      },
+      "required": [
+        "name",
+        "surfaces"
+      ],
+      "title": "SurfaceList",
+      "type": "object"
+    },
+    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "enum": [
+              "Cp",
+              "gradW",
+              "kOmega",
+              "Mach",
+              "mut",
+              "mutRatio",
+              "nuHat",
+              "primitiveVars",
+              "qcriterion",
+              "residualNavierStokes",
+              "residualTransition",
+              "residualTurbulence",
+              "s",
+              "solutionNavierStokes",
+              "solutionTransition",
+              "solutionTurbulence",
+              "T",
+              "vorticity",
+              "wallDistance",
+              "numericalDissipationFactor",
+              "residualHeatSolver",
+              "VelocityRelative",
+              "lowMachPreconditionerSensor"
+            ],
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]",
+      "type": "object"
+    },
+    "UniqueItemList_SurfaceList_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.SurfaceList]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/SurfaceList"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[SurfaceList]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\nentities : <class 'abc.UniqueItemList[SurfaceList]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]'>\n        output_type : typing.Literal['SurfaceIntegralOutput'] = SurfaceIntegralOutput\n    ",
+  "properties": {
+    "frequency": {
+      "default": -1,
+      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "minimum": -1,
+      "title": "Frequency",
+      "type": "integer"
+    },
+    "frequency_offset": {
+      "default": 0,
+      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "minimum": 0,
+      "title": "Frequency Offset",
+      "type": "integer"
+    },
+    "monitors": {
+      "$ref": "#/$defs/UniqueItemList_SurfaceList_"
+    },
+    "output_fields": {
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___"
+    },
+    "output_type": {
+      "const": "SurfaceIntegralOutput",
+      "default": "SurfaceIntegralOutput",
+      "enum": [
+        "SurfaceIntegralOutput"
+      ],
+      "title": "Output Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "monitors",
+    "output_fields"
+  ],
+  "title": "SurfaceIntegralOutput",
+  "type": "object"
+}

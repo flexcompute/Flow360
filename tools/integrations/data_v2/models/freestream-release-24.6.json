@@ -1,0 +1,17 @@
+{
+  "type": "Freestream",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_free_stream"
+      }
+    ]
+  },
+  "turbulence_quantities": null,
+  "velocity": [
+    "1",
+    "2",
+    "0"
+  ],
+  "velocity_type": "absolute"
+}

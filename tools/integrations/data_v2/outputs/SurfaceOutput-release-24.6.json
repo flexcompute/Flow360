@@ -1,0 +1,23 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "output_format": "paraview",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_wall"
+      },
+      {
+        "name": "my_inflow1"
+      }
+    ]
+  },
+  "write_single_file": false,
+  "output_fields": {
+    "items": [
+      "nodeNormals",
+      "yPlus"
+    ]
+  },
+  "output_type": "SurfaceOutput"
+}

@@ -1,0 +1,47 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "output_format": "tecplot",
+  "entities": {
+    "items": [
+      {
+        "name": "my_first_slice",
+        "slice_normal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "slice_origin": {
+          "value": [
+            4.0,
+            4.0,
+            2.0
+          ],
+          "units": "ft"
+        }
+      },
+      {
+        "name": "my_second_slice",
+        "slice_normal": [
+          0.7071067811865475,
+          0.0,
+          0.7071067811865475
+        ],
+        "slice_origin": {
+          "value": [
+            41.0,
+            14.0,
+            12.0
+          ],
+          "units": "ft"
+        }
+      }
+    ]
+  },
+  "output_fields": {
+    "items": [
+      "Cp"
+    ]
+  },
+  "output_type": "SliceOutput"
+}

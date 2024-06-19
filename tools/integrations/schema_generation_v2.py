@@ -301,12 +301,13 @@ with SI_unit_system:
         models=[
             Fluid(),
             Wall(
-                entities=[Surface(name="wing")],
+                entities=[Surface(name="fluid/rightWing"), Surface(name="fluid/leftWing"), Surface(name="fluid/fuselage")],
             ),
             Freestream(
-                entities=[Surface(name="farfield")]
+                entities=[Surface(name="fluid/farfield")]
             )
-        ]
+        ],
+        time_stepping=Steady(max_steps=700)
     )
 
 write_example(param, "simulation_params", "example-2")
@@ -397,6 +398,7 @@ write_example(
 )
 
 ###################### models  ######################
+write_schemas(Fluid, "models", 'fluid')
 with imperial_unit_system:
     fluid_model = Fluid(
         transition_model_solver=TransitionModelSolver(),
@@ -404,6 +406,8 @@ with imperial_unit_system:
     )
 write_example(fluid_model, "models", "fluid")
 
+
+write_schemas(Solid, "models", 'solid')
 with imperial_unit_system:
     solid_model = Solid(
         volumes=[my_solid_zone],
@@ -417,6 +421,7 @@ with imperial_unit_system:
     )
 write_example(solid_model, "models", "solid")
 
+write_schemas(RotatingReferenceFrame, "models", 'rotating_reference_frame')
 rotation_model = RotatingReferenceFrame(
     volumes=[my_cylinder_1],
     rotation=AngularVelocity(0.45 * u.deg / u.s),
@@ -424,6 +429,8 @@ rotation_model = RotatingReferenceFrame(
 )
 write_example(rotation_model, "models", "rotating_reference_frame")
 
+
+write_schemas(PorousMedium, "models", 'porouse_medium')
 porous_model = PorousMedium(
     volumes=[my_box],
     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
@@ -433,6 +440,7 @@ porous_model = PorousMedium(
 write_example(porous_model, "models", "porouse_medium")
 
 
+write_schemas(Wall, "models", 'wall')
 my_wall = Wall(
     entities=[my_wall_surface],
     use_wall_function=True,
@@ -441,12 +449,17 @@ my_wall = Wall(
 )
 write_example(my_wall, "models", "wall")
 
+write_schemas(SlipWall, "models", 'slip_wall')
 my_wall = SlipWall(entities=[my_slip_wall_surface])
 write_example(my_wall, "models", "slip_wall")
 
+
+write_schemas(Freestream, "models", 'freestream')
 my_fs_surface = Freestream(entities=[my_fs], velocity=("1", "2", "0"), velocity_type="absolute")
 write_example(my_fs_surface, "models", "freestream")
 
+
+write_schemas(Outflow, "models", 'outflow')
 with imperial_unit_system:
     my_outflow_obj = Outflow(entities=[my_outflow], spec=Pressure(1))
 write_example(my_outflow_obj, "models", "outflow-Pressure")
@@ -458,6 +471,8 @@ write_example(my_outflow_obj, "models", "outflow-MassFlowRate")
 my_outflow_obj = Outflow(entities=[my_outflow], spec=Mach(1))
 write_example(my_outflow_obj, "models", "outflow-Mach")
 
+
+write_schemas(Inflow, "models", 'inflow')
 with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
@@ -480,6 +495,8 @@ with imperial_unit_system:
     )
 write_example(my_inflow_surface_1, "models", "inflow-MassFlowRate")
 
+
+write_schemas(Periodic, "models", 'periodic')
 with imperial_unit_system:
     my_pbc = Periodic(entity_pairs=[my_surface_pair], spec=Translational())
 write_example(my_pbc, "models", "periodic-Translational")
@@ -488,6 +505,8 @@ with imperial_unit_system:
     my_pbc = Periodic(entity_pairs=[my_surface_pair], spec=Rotational(axis_of_rotation=(0, 2, 0)))
 write_example(my_pbc, "models", "periodic-Rotational")
 
+
+write_schemas(SymmetryPlane, "models", 'symmetry_plane')
 with imperial_unit_system:
     my_symm = SymmetryPlane(entities=[my_symm_plane])
 write_example(my_symm, "models", "symmetry_plane")

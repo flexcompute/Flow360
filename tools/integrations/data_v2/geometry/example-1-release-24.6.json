@@ -1,0 +1,22 @@
+{
+  "moment_center": {
+    "value": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "units": "m"
+  },
+  "moment_length": {
+    "value": [
+      4.0,
+      5.0,
+      6.0
+    ],
+    "units": "m"
+  },
+  "area": {
+    "value": 10.0,
+    "units": "m**2"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "type": "Wall",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_wall"
+      }
+    ]
+  },
+  "use_wall_function": true,
+  "velocity": {
+    "value": [
+      1.0,
+      1.2,
+      2.4
+    ],
+    "units": "ft/s"
+  },
+  "velocity_type": "relative",
+  "heat_spec": {
+    "value": {
+      "value": 1.0,
+      "units": "W/m**2"
+    }
+  }
+}

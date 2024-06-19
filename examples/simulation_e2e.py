@@ -14,7 +14,7 @@ from flow360.component.simulation.simulation_params import SimulationParams, Mes
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.models.surface_models import Wall, Freestream
-
+from flow360.component.simulation.time_stepping.time_stepping import Steady
 
 fl.UserConfig.set_profile('auto_test_1')
 fl.Env.dev.active()
@@ -53,6 +53,7 @@ with SI_unit_system:
                 entities=[Surface(name="fluid/farfield")]
             )
         ],
+        time_stepping=Steady(max_steps=700)
     )
 
 params_as_dict = param.model_dump()
