@@ -76,6 +76,7 @@ class Fluid(PDEModelBase):
     General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.
     """
 
+    type: Literal["Fluid"] = pd.Field("Fluid", frozen=True)
     navier_stokes_solver: NavierStokesSolver = pd.Field(NavierStokesSolver())
     turbulence_model_solver: TurbulenceModelSolverType = pd.Field(SpalartAllmaras())
     transition_model_solver: Optional[TransitionModelSolver] = pd.Field(None)
@@ -94,6 +95,8 @@ class Solid(PDEModelBase):
     General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
     """
 
+    name: Optional[str] = pd.Field(None)
+    type: Literal["Solid"] = pd.Field("Solid", frozen=True)
     entities: EntityList[GenericVolume, str] = pd.Field(alias="volumes")
 
     material: SolidMaterialTypes = pd.Field()
@@ -162,6 +165,8 @@ class ActuatorDisk(Flow360BaseModel):
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
+    name: Optional[str] = pd.Field(None)
+    type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     force_per_area: ForcePerArea = pd.Field()
@@ -195,6 +200,8 @@ class BETDisk(Flow360BaseModel):
     Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
+    name: Optional[str] = pd.Field(None)
+    type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
@@ -214,12 +221,14 @@ class BETDisk(Flow360BaseModel):
     sectional_radiuses: List[float] = pd.Field()
 
 
-class RotatingReferenceFrame(Flow360BaseModel):
+class Rotation(Flow360BaseModel):
     """Similar to Flow360Param ReferenceFrame.
     Note that `center`, `axis` can be acquired from `entity` so they are not required anymore.
     Note: Should use the unit system to convert degree or degree per second to radian and radian per second
     """
 
+    name: Optional[str] = pd.Field(None)
+    type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
     rotation: Union[AngularVelocity, AngleType] = pd.Field()
@@ -229,6 +238,8 @@ class RotatingReferenceFrame(Flow360BaseModel):
 class PorousMedium(Flow360BaseModel):
     """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
 
+    name: Optional[str] = pd.Field(None)
+    type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
     entities: Optional[EntityList[GenericVolume, Box, str]] = pd.Field(None, alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
@@ -242,6 +253,6 @@ VolumeModelTypes = Union[
     Solid,
     ActuatorDisk,
     BETDisk,
-    RotatingReferenceFrame,
+    Rotation,
     PorousMedium,
 ]

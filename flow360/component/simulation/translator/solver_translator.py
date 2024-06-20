@@ -205,6 +205,9 @@ def get_solver_json(
             replace_dict_key(disk_param, "machNumbers", "MachNumbers")
             replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
             volumes = disk_param.pop("volumes")
+            for extra_attr in ["name", "type"]:
+                if extra_attr in disk_param:
+                    disk_param.pop(extra_attr)
             for v in volumes["storedEntities"]:
                 disk_i = deepcopy(disk_param)
                 disk_i["axisOfRotation"] = v["axis"]

@@ -21,7 +21,7 @@ from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     Fluid,
     PorousMedium,
-    RotatingReferenceFrame,
+    Rotation,
     Solid,
 )
 from flow360.component.simulation.operating_condition import (
@@ -102,9 +102,7 @@ def get_the_param():
                     heat_spec=HeatFlux(1.0 * u.W / u.m**2),
                 ),
                 SlipWall(entities=[my_slip_wall_surface]),
-                RotatingReferenceFrame(
-                    volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)
-                ),
+                Rotation(volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)),
                 PorousMedium(
                     volumes=[my_box],
                     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
