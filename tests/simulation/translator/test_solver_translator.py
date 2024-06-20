@@ -27,6 +27,10 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from tests.simulation.translator.utils.porousMedia_param_generator import (
+    create_porous_media_box_param,
+    create_porous_media_volume_zone_param,
+)
 from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     create_steady_airplane_param,
     create_steady_hover_param,
@@ -164,4 +168,17 @@ def test_xv15_bet_disk_nested_rotation(
     param = create_nested_rotation_param
     translate_and_compare(
         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_nested_rotation.json"
+    )
+
+
+def test_porous_media(
+    create_porous_media_box_param,
+    create_porous_media_volume_zone_param,
+):
+    param = create_porous_media_box_param
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_box.json")
+
+    param = create_porous_media_volume_zone_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_volume_zone.json"
     )

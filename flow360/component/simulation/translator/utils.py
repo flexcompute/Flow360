@@ -132,12 +132,22 @@ def remove_units_in_dict(input_dict):
     return input_dict
 
 
+def get_combined_subclasses(cls):
+    if isinstance(cls, tuple):
+        subclasses = set()
+        for single_cls in cls:
+            subclasses.update(single_cls.__subclasses__())
+        return list(subclasses)
+    else:
+        return cls.__subclasses__()
+
+
 def is_exact_instance(obj, cls):
     """Check if an object is an instance of a class and not a subclass."""
     if not isinstance(obj, cls):
         return False
     # Check if there are any subclasses of cls
-    subclasses = cls.__subclasses__()
+    subclasses = get_combined_subclasses(cls)
     for subclass in subclasses:
         if isinstance(obj, subclass):
             return False
@@ -245,7 +255,7 @@ def translate_setting_and_apply_to_all_entities(
         output = []
 
     for obj in obj_list:
-        if is_exact_instance(obj, class_type):
+        if class_type and is_exact_instance(obj, class_type):
             translated_setting = translation_func(obj, **kwargs)
             if obj.entities is None:
                 continue
