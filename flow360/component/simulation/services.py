@@ -67,7 +67,7 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
-def get_default_params(unit_system_name) -> SimulationParams:
+def get_default_params(unit_system_name, length_unit) -> SimulationParams:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -85,6 +85,10 @@ def get_default_params(unit_system_name) -> SimulationParams:
         Default parameters for Flow360 simulation.
 
     """
+    if length_unit is not None:
+        # TODO implement handling of length_unit (geometry unit and mesh unit), # pylint: disable=fixme
+        pass
+
     unit_system = init_unit_system(unit_system_name)
 
     with unit_system:
