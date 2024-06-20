@@ -28,9 +28,6 @@ class EntityRegistry(Flow360BaseModel):
 
     internal_registry: dict[str, list[Any]] = pd.Field({})
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def register(self, entity: EntityBase):
         """
         Registers an entity in the registry under its type.
@@ -144,7 +141,6 @@ class EntityRegistry(Flow360BaseModel):
         Parameters:
             new_entity (EntityBase): The new entity to replace the existing entity with.
         """
-        # Step1: Find the entity to replace
         bucket_to_find = new_entity.entity_bucket
         if bucket_to_find not in self.internal_registry:
             return

@@ -221,7 +221,7 @@ class SimulationParams(_ParamModelBase):
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit) -> _ParamModelBase:
+    def preprocess(self, mesh_unit) -> SimulationParams:
         """TBD"""
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")

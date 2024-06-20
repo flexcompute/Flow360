@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import List, Optional, Union, get_args, get_origin
 
 import numpy as np
@@ -20,12 +20,14 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     Base class for dynamic entity types.
 
     Attributes:
-        private_attribute_registry_bucket_name (str): A string representing the specific type of the entity.
-                            This should be set in subclasses to differentiate between entity types.
-                            Warning:
-                            This controls the granularity of the registry and must be unique for each entity type and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
+        private_attribute_registry_bucket_name (str):
+            A string representing the specific type of the entity.
+            This should be set in subclasses to differentiate between entity types.
+            Warning:
+            This controls the granularity of the registry and must be unique for each entity type and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
 
-        name (str): The name of the entity instance, used for identification and retrieval.
+        name (str):
+            The name of the entity instance, used for identification and retrieval.
     """
 
     private_attribute_registry_bucket_name: str = "Invalid"
@@ -202,9 +204,6 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
             all_entities[entity.name] = []
         all_entities[entity.name].append(entity)
 
-    print(">>\n", all_entities.keys())
-    print(">>\n", [len(value) for value in all_entities.values()])
-
     for name, entity_list in all_entities.items():
         if len(entity_list) > 1:
             # step 1: find one instance that is non-generic if any
@@ -224,8 +223,6 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
                 error_message += f"\n{entity}\n"
             error_message += "Please remove duplicates."
             raise ValueError(error_message)
-    print(">>>>\n", all_entities.keys())
-    print(">>>>\n", [len(value) for value in all_entities.values()])
     return [entity_list[0] for entity_list in all_entities.values()]
 
 
@@ -361,7 +358,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             TypeError: If an entity does not match the expected type.
         Returns:
             Exapnded entities list.
-        #TODO: Do we really need supplied_registry??
         """
 
         entities = getattr(self, "stored_entities", [])
