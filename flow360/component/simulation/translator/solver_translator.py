@@ -1,5 +1,6 @@
 from copy import deepcopy
 from typing import Union
+import json
 
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -30,6 +31,7 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_value,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.flow360_params.flow360_params import Flow360Params
 
 
 def dump_dict(input_params):
@@ -196,7 +198,7 @@ def get_solver_json(
                 modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
                 modeling_constants.pop("typeName", None)
             # # removed modelingConstants temporarly as seemded not be supported now
-            # translated["turbulenceModelSolver"].pop("modelingConstants")
+            translated["turbulenceModelSolver"].pop("modelingConstants")
 
     ##:: Step 7: Get BET and AD lists
     for model in input_params.models:
@@ -236,4 +238,7 @@ def get_solver_json(
                 udd_dict["outputTargetName"] = udd.output_target.name
             translated["userDefinedDynamics"].append(udd_dict)
 
-    return translated
+    # current solver expects "user.json" so applying user.json format 
+    translated_json = Flow360Params(**translated, legacy_fallback=True).json()          
+
+    return json.loads(translated_json)
