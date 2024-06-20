@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.types import TYPE_TAG_STR
 
 
 class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
@@ -40,7 +39,6 @@ class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
                 pass
         else:
             defaults = {name: field.default for name, field in self.model_fields.items()}
-            defaults.pop(TYPE_TAG_STR)
             self._cached = self.__annotations__["_cached"](
                 **{**defaults, **data}, constructor="default"
             )

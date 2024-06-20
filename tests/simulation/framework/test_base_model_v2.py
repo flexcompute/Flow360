@@ -169,11 +169,6 @@ def test_from_json_yaml():
         os.remove(temp_file_name)
 
 
-def test_add_type_field():
-    ## Note: May need to be properly implemented.
-    assert "_type" in BaseModelTestModel.model_fields
-
-
 def test_generate_docstring():
     assert "some_value" in BaseModelTestModel.__doc__
 
