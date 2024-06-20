@@ -1,3 +1,5 @@
+"""Flow360 solver setting parameter translator."""
+
 from copy import deepcopy
 from typing import Union
 
@@ -7,11 +9,7 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import (
-    ActuatorDisk,
-    BETDisk,
-    Fluid,
-)
+from flow360.component.simulation.models.volume_models import BETDisk, Fluid
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
@@ -33,15 +31,19 @@ from flow360.component.simulation.unit_system import LengthType
 
 
 def dump_dict(input_params):
+    """Dumping param/model to dictionary."""
     return input_params.model_dump(by_alias=True, exclude_none=True)
 
 
 def remove_empty_keys(input_dict):
+    """I do not know what this is for --- Ben"""
+    # pylint: disable=fixme
     # TODO: implement
     return input_dict
 
 
 def init_output_attr_dict(obj_list, class_type):
+    """Initialize the common output attribute."""
     return {
         "animationFrequency": get_attribute_from_first_instance(obj_list, class_type, "frequency"),
         "animationFrequencyOffset": get_attribute_from_first_instance(
@@ -51,14 +53,19 @@ def init_output_attr_dict(obj_list, class_type):
     }
 
 
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals
 @preprocess_input
 def get_solver_json(
     input_params: Union[str, dict, SimulationParams],
+    # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
 ):
     """
     Get the solver json from the simulation parameters.
     """
+
     translated = {}
     ##:: Step 1: Get geometry:
     geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
@@ -84,16 +91,17 @@ def get_solver_json(
     translated["boundaries"] = {}
     for model in input_params.models:
         if isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
-            for surface in model.entities.stored_entities:
-                spec = dump_dict(model)
-                spec.pop("surfaces")
+            spec = dump_dict(model)
+            spec.pop("surfaces")
             if isinstance(model, Wall):
                 spec.pop("useWallFunction")
                 spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
                 if model.heat_spec:
                     spec.pop("heat_spec")
+                    # pylint: disable=fixme
                     # TODO: implement
-            translated["boundaries"][surface.name] = spec
+            for surface in model.entities.stored_entities:
+                translated["boundaries"][surface.name] = spec
 
     ##:: Step 4: Get outputs
     outputs = input_params.outputs
@@ -138,6 +146,7 @@ def get_solver_json(
     for output in input_params.outputs:
         # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
         if isinstance(output, TimeAverageVolumeOutput):
+            # pylint: disable=fixme
             # TODO: update time average entries
             translated["volumeOutput"]["computeTimeAverages"] = True
 
@@ -152,14 +161,14 @@ def get_solver_json(
                 }
         elif isinstance(output, SliceOutput):
             slices = translated["sliceOutput"]["slices"]
-            for slice in output.entities.items:
-                slices[slice.name] = {
+            for slice_item in output.entities.items:
+                slices[slice_item.name] = {
                     "outputFields": merge_unique_item_lists(
-                        slices.get(slice.name, {}).get("outputFields", []),
+                        slices.get(slice_item.name, {}).get("outputFields", []),
                         output.output_fields.model_dump()["items"],
                     ),
-                    "sliceOrigin": list(remove_units_in_dict(dump_dict(slice))["sliceOrigin"]),
-                    "sliceNormal": list(remove_units_in_dict(dump_dict(slice))["sliceNormal"]),
+                    "sliceOrigin": list(remove_units_in_dict(dump_dict(slice_item))["sliceOrigin"]),
+                    "sliceNormal": list(remove_units_in_dict(dump_dict(slice_item))["sliceNormal"]),
                 }
 
     ##:: Step 5: Get timeStepping
