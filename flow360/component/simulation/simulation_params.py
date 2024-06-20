@@ -9,6 +9,8 @@ from typing import List, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import VolumeModelTypes
@@ -24,75 +26,89 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
+from flow360.error_messages import (
+    unit_system_inconsistent_msg,
+    use_unit_system_for_simulation_msg,
+)
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
 
-class SimulationParams(Flow360BaseModel):
+class AssetCache(Flow360BaseModel):
     """
-        meshing (Optional[MeshingParams]): Contains all the user specified meshing parameters that either enrich or
-        modify the existing surface/volume meshing parameters from starting points.
+    Note:
+    1. asset_entity_registry will be replacing/update the metadata-constructed registry of the asset when loading it.
+    """
 
-    -----
-        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
-        will **always** overwrite global ones.
+    asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
+    # pylint: disable=fixme
+    # TODO: Pending mesh_unit
 
-        reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
-        operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
-    -----
-        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
-        necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
-        conditions.
 
-        volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
-        surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
-    -----
-        - Other configurations that are orthogonal to all previous items.
+def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
+    """
+    Recursively registers entities within a Flow360BaseModel instance to an EntityRegistry.
 
-        time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
-        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
-        ones or how volumes/surfaces are intertwined.
-        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
+    This function iterates through the attributes of the given model. If an attribute is an
+    EntityList, it retrieves the expanded entities and registers each entity in the registry.
+    If an attribute is a list and contains instances of Flow360BaseModel, it recursively
+    registers the entities within those instances.
 
-    unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
+    Args:
+        model (Flow360BaseModel): The model containing entities to be registered.
+        registry (EntityRegistry): The registry where entities will be registered.
+
+    Returns:
+        None
+    """
+    for field in model.__dict__.values():
+        if isinstance(field, EntityBase):
+            registry.register(field)
+
+        if isinstance(field, EntityList):
+            # pylint: disable=protected-access
+            expanded_entities = field._get_expanded_entities(
+                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
+            )
+            for entity in expanded_entities if expanded_entities else []:
+                registry.register(entity)
+
+        elif isinstance(field, list):
+            for item in field:
+                if isinstance(item, Flow360BaseModel):
+                    recursive_register_entity_list(item, registry)
+
+        elif isinstance(field, Flow360BaseModel):
+            recursive_register_entity_list(field, registry)
+
+
+class _ParamModelBase(Flow360BaseModel):
+    """
+    Base class that abstracts out all Param type classes in Flow360.
+    """
+
     version: str = pd.Field(__version__, frozen=True)
-
-    meshing: Optional[MeshingParams] = pd.Field(None)
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
-    #
-    """
-    meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
-    1. __getitem__ to allow [] access
-    2. __setitem__ to allow [] assignment
-    3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
-    3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
-    """
-    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
-    """
-    Below can be mostly reused with existing models 
-    """
-    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
-    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
-    """
-    Support for user defined expression?
-    If so:
-        1. Move over the expression validation functions.
-        2. Have camelCase to snake_case naming converter for consistent user experience.
-    Limitations:
-        1. No per volume zone output. (single volume output)
-    """
-    outputs: Optional[List[OutputTypes]] = pd.Field(None)
-
+    unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
+    private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
     model_config = pd.ConfigDict(include_hash=True)
+
+    @pd.model_validator(mode="after")
+    def _move_registry_to_asset_cache(self):
+        """Recursively register all entities listed in EntityList to the asset cache."""
+        # pylint: disable=no-member
+        self.private_attribute_asset_cache.asset_entity_registry.clear()
+        recursive_register_entity_list(
+            self,
+            self.private_attribute_asset_cache.asset_entity_registry,
+        )  # Clear so that the next param can use this.
+        return self
 
     def _init_check_unit_system(self, **kwargs):
         """
         Check existence of unit system and raise an error if it is not set or inconsistent.
         """
         if unit_system_manager.current is None:
-            raise Flow360RuntimeError(use_unit_system_msg)
+            raise Flow360RuntimeError(use_unit_system_for_simulation_msg)
         # pylint: disable=duplicate-code
         kwarg_unit_system = kwargs.pop("unit_system", None)
         if kwarg_unit_system is not None:
@@ -113,7 +129,7 @@ class SimulationParams(Flow360BaseModel):
         """
         if unit_system_manager.current is not None:
             raise Flow360RuntimeError(
-                "When loading params from file: SimulationParams(filename), "
+                f"When loading params from file: {self.__class__.__name__}(filename), "
                 "unit context must not be used."
             )
 
@@ -148,13 +164,67 @@ class SimulationParams(Flow360BaseModel):
         else:
             self._init_with_context(**kwargs)
 
-    def copy(self, update=None, **kwargs) -> SimulationParams:
+    def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().copy(update=update, **kwargs)
 
         return super().copy(update=update, **kwargs)
+
+
+class SimulationParams(_ParamModelBase):
+    """
+        meshing (Optional[MeshingParams]): Contains all the user specified meshing parameters that either enrich or
+        modify the existing surface/volume meshing parameters from starting points.
+
+    -----
+        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
+        will **always** overwrite global ones.
+
+        reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
+        operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
+    -----
+        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
+        necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
+        conditions.
+
+        volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
+        surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
+    -----
+        - Other configurations that are orthogonal to all previous items.
+
+        time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
+        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
+        ones or how volumes/surfaces are intertwined.
+        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
+
+    meshing: Optional[MeshingParams] = pd.Field(None)
+    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    #
+    """
+    meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
+    1. __getitem__ to allow [] access
+    2. __setitem__ to allow [] assignment
+    3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
+    3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
+    """
+    models: Optional[List[Union[VolumeModelTypes, SurfaceModelTypes]]] = pd.Field(None)
+    """
+    Below can be mostly reused with existing models 
+    """
+    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
+    """
+    Support for user defined expression?
+    If so:
+        1. Move over the expression validation functions.
+        2. Have camelCase to snake_case naming converter for consistent user experience.
+    Limitations:
+        1. No per volume zone output. (single volume output)
+    """
+    outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def preprocess(self, mesh_unit) -> SimulationParams:
