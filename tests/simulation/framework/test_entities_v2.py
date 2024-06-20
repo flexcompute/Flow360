@@ -97,28 +97,39 @@ class TempVolumeMesh(AssetBase):
                     "farfield": {
                         "boundaryNames": [
                             "farfield/farfield",
-                            "innerZone/interface",
+                            "farfield/rotIntf",
                         ],
+                        "donorInterfaceNames": ["innerZone/rotIntf-1"],
+                        "donorZoneNames": ["innerZone"],
+                        "receiverInterfaceNames": ["farfield/rotIntf"],
                     },
                     "innerZone": {
                         "boundaryNames": [
-                            "innerZone/interface",
-                            "mostinnerZone/interface",
+                            "innerZone/rotIntf-1",
+                            "innerZone/rotIntf-2",
                         ],
+                        "donorInterfaceNames": ["farFieldBlock/rotIntf", "mostinnerZone/rotIntf"],
+                        "donorZoneNames": ["farFieldBlock", "mostinnerZone"],
+                        "receiverInterfaceNames": ["innerZone/rotIntf-1", "innerZone/rotIntf-2"],
                     },
                     "mostinnerZone": {
                         "boundaryNames": [
-                            "mostinnerZone/interface",
+                            "mostinnerZone/rotIntf",
                             "my_wall_1",
                             "my_wall_2",
                             "my_wall_3",
                         ],
+                        "donorInterfaceNames": ["innerZone/rotIntf-2"],
+                        "donorZoneNames": ["innerZone"],
+                        "receiverInterfaceNames": ["mostinnerZone/rotIntf"],
                     },
                 },
                 "surfaces": {
                     "farfield/farfield": {},
-                    "innerZone/interface": {},
-                    "mostinnerZone/interface": {},
+                    "farfield/rotIntf": {},
+                    "innerZone/rotIntf-1": {},
+                    "innerZone/rotIntf-2": {},
+                    "mostinnerZone/rotIntf": {},
                     "my_wall_1": {},
                     "my_wall_2": {},
                     "my_wall_3": {},
@@ -135,17 +146,23 @@ class TempVolumeMesh(AssetBase):
                     name=zone_name, private_attribute_zone_boundary_names=all_my_boundaries
                 )
             )
+        # get interfaces
+        interfaces = set()
+        for zone_name, zone_meta in self._get_meta_data()["zones"].items():
+            for surface_name in (
+                zone_meta["donorInterfaceNames"] if "donorInterfaceNames" in zone_meta else []
+            ):
+                interfaces.add(surface_name)
+            for surface_name in (
+                zone_meta["receiverInterfaceNames"] if "receiverInterfaceNames" in zone_meta else []
+            ):
+                interfaces.add(surface_name)
+
         for surface_name in self._get_meta_data()["surfaces"]:
-            apperance = 0
-            # TODO: This check won't work with real mesh. The interface from two zones have
-            # TODO: diff zone prefix.
-            for zone_name, zone_meta in self._get_meta_data()["zones"].items():
-                if surface_name in zone_meta["boundaryNames"]:
-                    apperance += 1
-            i_am_interface = apperance > 1
-            assert apperance > 0 and apperance < 3
             self.internal_registry.register(
-                GenericSurface(name=surface_name, private_attribute_is_interface=i_am_interface)
+                GenericSurface(
+                    name=surface_name, private_attribute_is_interface=surface_name in interfaces
+                )
             )
 
     def __init__(self, file_name: str):
@@ -818,24 +835,20 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
     # output_target
     assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(my_cylinder1)
     # input_boundary_patches
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["farfield/farfield"]
-    )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["innerZone/interface"]
-    )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["mostinnerZone/interface"]
-    )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["my_wall_1"]
-    )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["my_wall_2"]
-    )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
-        my_volume_mesh_with_interface["my_wall_3"]
-    )
+    for surface_name in [
+        "farfield/farfield",
+        "farfield/rotIntf",
+        "innerZone/rotIntf-1",
+        "innerZone/rotIntf-2",
+        "mostinnerZone/rotIntf",
+        "my_wall_1",
+        "my_wall_2",
+        "my_wall_3",
+    ]:
+        assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+            my_volume_mesh_with_interface[surface_name]
+        )
+
     # parent_volume
     assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
         my_volume_mesh_with_interface["mostinnerZone"]
@@ -844,4 +857,4 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
     assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
         my_volume_mesh_with_interface["innerZone"]
     )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.entity_count() == 9
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.entity_count() == 11

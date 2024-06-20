@@ -213,7 +213,6 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
             for index, entity in enumerate(entity_list):
                 if index == base_index:
                     continue  # no merging into self
-                print("Base: ", entity_list[base_index])
                 entity_list[base_index] = _merge_objects(entity_list[base_index], entity)
                 entity_list.remove(entity)
 
