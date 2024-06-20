@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 import pytest
@@ -24,7 +24,6 @@ from flow360.component.simulation.simulation_params import _ParamModelBase
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.log import set_logging_level
 from tests.simulation.conftest import AssetBase
-from tests.utils import compare_to_ref
 
 set_logging_level("DEBUG")
 
@@ -138,6 +137,8 @@ class TempVolumeMesh(AssetBase):
             )
         for surface_name in self._get_meta_data()["surfaces"]:
             apperance = 0
+            # TODO: This check won't work with real mesh. The interface from two zones have
+            # TODO: diff zone prefix.
             for zone_name, zone_meta in self._get_meta_data()["zones"].items():
                 if surface_name in zone_meta["boundaryNames"]:
                     apperance += 1
@@ -179,11 +180,25 @@ def _get_supplementary_registry(far_field_type: str):
     return _supplementary_registry
 
 
+class TempRotation(Flow360BaseModel):
+    entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
+    parent_volume: Optional[Union[GenericVolume, str]] = pd.Field(None)
+
+
+class TempUserDefinedDynamic(Flow360BaseModel):
+    name: str = pd.Field()
+    input_boundary_patches: Optional[EntityList[GenericSurface]] = pd.Field(None)
+    output_target: Optional[Cylinder] = pd.Field(
+        None
+    )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.
+
+
 class TempSimulationParam(_ParamModelBase):
 
     far_field_type: Literal["auto", "user-defined"] = pd.Field()
 
-    models: List[Union[TempFluidDynamics, TempWallBC]] = pd.Field()
+    models: List[Union[TempFluidDynamics, TempWallBC, TempRotation]] = pd.Field()
+    udd: Optional[TempUserDefinedDynamic] = pd.Field(None)
 
     def preprocess(self):
         """
@@ -529,12 +544,12 @@ def test_multiple_param_creation_and_asset_registry(
 
     ref_registry = EntityRegistry()
     ref_registry.register(my_cylinder1)
-    ref_registry.register(my_volume_mesh1["zone_1"][0])
-    ref_registry.register(my_volume_mesh1["zone_2"][0])
-    ref_registry.register(my_volume_mesh1["zone_3"][0])
-    ref_registry.register(my_volume_mesh1["surface_1"][0])
-    ref_registry.register(my_volume_mesh1["surface_2"][0])
-    ref_registry.register(my_volume_mesh1["surface_3"][0])
+    ref_registry.register(my_volume_mesh1["zone_1"])
+    ref_registry.register(my_volume_mesh1["zone_2"])
+    ref_registry.register(my_volume_mesh1["zone_3"])
+    ref_registry.register(my_volume_mesh1["surface_1"])
+    ref_registry.register(my_volume_mesh1["surface_2"])
+    ref_registry.register(my_volume_mesh1["surface_3"])
 
     assert my_param1.private_attribute_asset_cache.asset_entity_registry == ref_registry
 
@@ -557,14 +572,14 @@ def test_multiple_param_creation_and_asset_registry(
 
     ref_registry = EntityRegistry()
     ref_registry.register(my_box_zone1)
-    ref_registry.register(my_volume_mesh2["zone_4"][0])
-    ref_registry.register(my_volume_mesh2["zone_5"][0])
-    ref_registry.register(my_volume_mesh2["zone_6"][0])
-    ref_registry.register(my_volume_mesh2["zone_1"][0])
-    ref_registry.register(my_volume_mesh2["surface_4"][0])
-    ref_registry.register(my_volume_mesh2["surface_5"][0])
-    ref_registry.register(my_volume_mesh2["surface_6"][0])
-    ref_registry.register(my_volume_mesh2["surface_1"][0])
+    ref_registry.register(my_volume_mesh2["zone_4"])
+    ref_registry.register(my_volume_mesh2["zone_5"])
+    ref_registry.register(my_volume_mesh2["zone_6"])
+    ref_registry.register(my_volume_mesh2["zone_1"])
+    ref_registry.register(my_volume_mesh2["surface_4"])
+    ref_registry.register(my_volume_mesh2["surface_5"])
+    ref_registry.register(my_volume_mesh2["surface_6"])
+    ref_registry.register(my_volume_mesh2["surface_1"])
 
     assert my_param2.private_attribute_asset_cache.asset_entity_registry == ref_registry
 
@@ -782,3 +797,51 @@ def test_update_asset_registry(my_volume_mesh_with_interface):
     my_volume_mesh_with_interface.internal_registry.replace_existing_with(user_override_cylinder)
 
     assert my_volume_mesh_with_interface.internal_registry.contains(user_override_cylinder)
+
+
+def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_mesh_with_interface):
+    with SI_unit_system:
+        my_param = TempSimulationParam(
+            far_field_type="auto",
+            models=[
+                TempRotation(
+                    entities=[my_volume_mesh_with_interface["innerZone"]],
+                    parent_volume=my_volume_mesh_with_interface["mostinnerZone"],
+                ),
+            ],
+            udd=TempUserDefinedDynamic(
+                name="pseudo",
+                input_boundary_patches=[my_volume_mesh_with_interface["*"]],
+                output_target=my_cylinder1,
+            ),
+        )
+    # output_target
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(my_cylinder1)
+    # input_boundary_patches
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["farfield/farfield"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["innerZone/interface"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["mostinnerZone/interface"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["my_wall_1"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["my_wall_2"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["my_wall_3"]
+    )
+    # parent_volume
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["mostinnerZone"]
+    )
+    # entities
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        my_volume_mesh_with_interface["innerZone"]
+    )
+    assert my_param.private_attribute_asset_cache.asset_entity_registry.entity_count() == 9

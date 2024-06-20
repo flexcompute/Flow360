@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
@@ -62,6 +62,9 @@ def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegi
         None
     """
     for field in model.__dict__.values():
+        if isinstance(field, EntityBase):
+            registry.register(field)
+
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
             expanded_entities = field._get_expanded_entities(
@@ -74,6 +77,9 @@ def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegi
             for item in field:
                 if isinstance(item, Flow360BaseModel):
                     recursive_register_entity_list(item, registry)
+
+        elif isinstance(field, Flow360BaseModel):
+            recursive_register_entity_list(field, registry)
 
 
 class _ParamModelBase(Flow360BaseModel):

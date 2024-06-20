@@ -19,4 +19,7 @@ class AssetBase(metaclass=ABCMeta):
             raise ValueError(
                 f"Failed to find any matching entity with {key}. Please check your input."
             )
+        if len(found_entities) == 1:
+            return found_entities[0]
+
         return found_entities
