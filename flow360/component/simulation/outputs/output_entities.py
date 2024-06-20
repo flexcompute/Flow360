@@ -7,7 +7,7 @@ from flow360.component.flow360_params.flow360_fields import (
     IsoSurfaceFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis

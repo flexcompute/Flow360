@@ -1,3 +1,5 @@
+"""Base classes for entity types."""
+
 from __future__ import annotations
 
 import copy
@@ -12,7 +14,7 @@ from flow360.log import log
 
 
 class MergeConflictError(Exception):
-    pass
+    """Raised when a merge conflict is detected."""
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -24,7 +26,8 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
             A string representing the specific type of the entity.
             This should be set in subclasses to differentiate between entity types.
             Warning:
-            This controls the granularity of the registry and must be unique for each entity type and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
+            This controls the granularity of the registry and must be unique for each entity type
+            and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
 
         name (str):
             The name of the entity instance, used for identification and retrieval.
@@ -64,11 +67,13 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """
         if update is None:
             raise ValueError(
-                "Change is necessary when calling .copy() as there cannot be two identical entities at the same time. Please use update parameter to change the entity attributes."
+                "Change is necessary when calling .copy() as there cannot be two identical entities at the same time. "
+                "Please use update parameter to change the entity attributes."
             )
         if "name" not in update or update["name"] == self.name:
             raise ValueError(
-                "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
+                "Copying an entity requires a new name to be specified. "
+                "Please provide a new name in the update dictionary."
             )
         return super().copy(update=update, **kwargs)
 
@@ -82,14 +87,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     @property
     def entity_bucket(self) -> str:
+        """returns the bucket to which the entity belongs."""
         return self.private_attribute_registry_bucket_name
 
     @entity_bucket.setter
     def entity_bucket(self, value: str):
+        """disallow modification of the bucket to which the entity belongs."""
         raise AttributeError("Cannot modify the bucket to which the entity belongs.")
 
     @property
     def entity_type(self) -> str:
+        """returns the entity class name."""
         return self.private_attribute_entity_type_name
 
     @entity_type.setter
@@ -131,7 +139,7 @@ def __combine_bools(input_data):
     if isinstance(input_data, bool):
         return input_data
     # If the input is a numpy ndarray, flatten it
-    elif isinstance(input_data, np.ndarray):
+    if isinstance(input_data, np.ndarray):
         input_data = input_data.ravel()
     # If the input is not a boolean or an ndarray, assume it's an iterable of booleans
     return all(input_data)
@@ -151,15 +159,18 @@ def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
             "Make sure merge is intended as the names of two entities are different."
         )
 
-    if obj_new._is_generic() == False and obj_old._is_generic() == True:
+    # pylint: disable=protected-access
+    if obj_new._is_generic() is False and obj_old._is_generic() is True:
         # swap so that obj_old is **non-generic** and obj_new is **generic**
         obj_new, obj_old = obj_old, obj_new
 
     # Check the two objects are mergeable
-    if obj_new._is_generic() == False and obj_old._is_generic() == False:
+    # pylint: disable=protected-access
+    if obj_new._is_generic() is False and obj_old._is_generic() is False:
         if obj_new.__class__ != obj_old.__class__:
             raise MergeConflictError(
-                f"Cannot merge objects of different class: {obj_old.__class__.__name__} and {obj_new.__class__.__name__}"
+                f"Cannot merge objects of different class: {obj_old.__class__.__name__} "
+                f"and {obj_new.__class__.__name__}"
             )
 
     for attr, value in obj_new.__dict__.items():
@@ -207,8 +218,10 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     for name, entity_list in all_entities.items():
         if len(entity_list) > 1:
             # step 1: find one instance that is non-generic if any
+            base_index = 0
             for base_index, entity in enumerate(entity_list):
-                if entity._is_generic() == False:
+                # pylint: disable=protected-access
+                if entity._is_generic() is False:
                     break
             for index, entity in enumerate(entity_list):
                 if index == base_index:
@@ -271,18 +284,19 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
 
     @classmethod
-    def _valid_individual_input(cls, input):
+    def _valid_individual_input(cls, input_data):
         """Validate each individual element in a list or as standalone entity."""
-        if isinstance(input, str) or isinstance(input, EntityBase):
-            return input
-        else:
-            raise ValueError(
-                f"Type({type(input)}) of input to `entities` ({input}) is not valid. Expected str or entity instance."
-            )
+        if isinstance(input_data, (str, EntityBase)):
+            return input_data
+
+        raise ValueError(
+            f"Type({type(input_data)}) of input to `entities` ({input_data}) is not valid. "
+            "Expected str or entity instance."
+        )
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input: Union[dict, list]):
+    def _format_input_to_list(cls, input_data: Union[dict, list]):
         """
         Flatten List[EntityBase] and put into stored_entities.
         """
@@ -293,12 +307,12 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         # 3. EntityBase comes from direct specification of entity in the list.
         formated_input = []
         valid_types = cls._get_valid_entity_types()
-        if isinstance(input, list):
-            if input == []:
+        if isinstance(input_data, list):
+            if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
-            for item in input:
+            for item in input_data:
                 if isinstance(item, list):  # Nested list comes from assets
-                    [cls._valid_individual_input(individual) for individual in item]
+                    _ = [cls._valid_individual_input(individual) for individual in item]
                     formated_input.extend(
                         [
                             individual
@@ -310,16 +324,17 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                     cls._valid_individual_input(item)
                     if isinstance(item, tuple(valid_types)):
                         formated_input.append(item)
-        elif isinstance(input, dict):
-            return dict(stored_entities=input["stored_entities"])
+        elif isinstance(input_data, dict):
+            return {"stored_entities": input_data["stored_entities"]}
+        # pylint: disable=no-else-return
         else:  # Single reference to an entity
-            if input is None:
-                return dict(stored_entities=None)
+            if input_data is None:
+                return {"stored_entities": None}
             else:
-                cls._valid_individual_input(input)
-                if isinstance(input, tuple(valid_types)):
-                    formated_input.append(input)
-        return dict(stored_entities=formated_input)
+                cls._valid_individual_input(input_data)
+                if isinstance(input_data, tuple(valid_types)):
+                    formated_input.append(input_data)
+        return {"stored_entities": formated_input}
 
     @pd.field_validator("stored_entities", mode="after")
     @classmethod
@@ -364,20 +379,21 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         if entities is None:
             return None
 
+        # pylint: disable=protected-access
         valid_types = self.__class__._get_valid_entity_types()
 
         expanded_entities = []
 
+        # pylint: disable=not-an-iterable
         for entity in entities:
             if isinstance(entity, str):
                 # Expand from supplied registry
                 if supplied_registry is None:
-                    if expect_supplied_registry == False:
+                    if expect_supplied_registry is False:
                         continue
-                    else:
-                        raise ValueError(
-                            f"Internal error, registry is not supplied for entity ({entity}) expansion."
-                        )
+                    raise ValueError(
+                        f"Internal error, registry is not supplied for entity ({entity}) expansion."
+                    )
                 # Expand based on naming pattern registered in the Registry
                 pattern_matched_entities = supplied_registry.find_by_naming_pattern(entity)
                 # Filter pattern matched entities by valid types
@@ -398,12 +414,14 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             raise ValueError(
                 f"Failed to find any matching entity with {entities}. Please check the input to entities."
             )
-        # TODO:  As suggested by Runda. We better prompt user what entities are actually used/expanded to avoid user input error. We need a switch to turn it on or off.
-        if create_hard_copy == True:
+        # pylint: disable=fixme
+        # TODO: As suggested by Runda. We better prompt user what entities are actually used/expanded to
+        # TODO: avoid user input error. We need a switch to turn it on or off.
+        if create_hard_copy is True:
             return copy.deepcopy(expanded_entities)
-        else:
-            return expanded_entities
+        return expanded_entities
 
+    # pylint: disable=arguments-differ
     def preprocess(self, supplied_registry=None, **kwargs):
         """
         Expand and overwrite self.stored_entities in preparation for submissin/serialization.

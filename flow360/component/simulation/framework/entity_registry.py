@@ -1,3 +1,5 @@
+"""Registry for managing and storing instances of various entity types."""
+
 import re
 from typing import Any
 
@@ -35,9 +37,12 @@ class EntityRegistry(Flow360BaseModel):
         Parameters:
             entity (EntityBase): The entity instance to register.
         """
+        # pylint: disable=unsupported-membership-test
         if entity.entity_bucket not in self.internal_registry:
+            # pylint: disable=unsupported-assignment-operation
             self.internal_registry[entity.entity_bucket] = []
 
+        # pylint: disable=unsubscriptable-object
         for existing_entity in self.internal_registry[entity.entity_bucket]:
             if existing_entity.name == entity.name:
                 # Same type and same name. Now we try to update existing entity with new values.
@@ -45,14 +50,14 @@ class EntityRegistry(Flow360BaseModel):
                     existing_entity = _merge_objects(existing_entity, entity)
                     return
                 except MergeConflictError as e:
-                    log.debug("Merge conflict: %s", e)
-                    raise ValueError(
-                        f"Entity with name '{entity.name}' and type '{entity.entity_bucket}' already exists and have different definition."
-                    )
+                    raise MergeConflictError(
+                        f"Entity with name '{entity.name}' and type '{entity.entity_bucket}' "
+                        "already exists and have different definition."
+                    ) from e
                 except Exception as e:
                     log.debug("Merge failed unexpectly: %s", e)
                     raise
-
+        # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
     def get_all_entities_of_given_bucket(self, entity_bucket):
@@ -65,6 +70,7 @@ class EntityRegistry(Flow360BaseModel):
         Returns:
             List[EntityBase]: A list of registered entities of the specified type.
         """
+        # pylint: disable=no-member
         return self.internal_registry.get(
             entity_bucket.model_fields["private_attribute_registry_bucket_name"].default, []
         )
@@ -86,6 +92,7 @@ class EntityRegistry(Flow360BaseModel):
             regex_pattern = f"^{pattern}$"  # Exact match if no '*'
 
         regex = re.compile(regex_pattern)
+        # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
         return matched_entities
@@ -93,7 +100,7 @@ class EntityRegistry(Flow360BaseModel):
     def find_by_name(self, name: str):
         """Retrieve the entity with the given name from the registry."""
         entities = self.find_by_naming_pattern(name)
-        if entities == []:
+        if not entities:
             raise ValueError(f"No entity found in registry with given name: '{name}'.")
         if len(entities) > 1:
             raise ValueError(f"Multiple entities found in registry with given name: '{name}'.")
@@ -105,6 +112,7 @@ class EntityRegistry(Flow360BaseModel):
         """
         index = 0
         print("---- Content of the registry ----")
+        # pylint: disable=no-member
         for entity_bucket, entities in self.internal_registry.items():
             print(f"    Entities of type '{entity_bucket}':")
             for entity in entities:
@@ -116,13 +124,16 @@ class EntityRegistry(Flow360BaseModel):
         """
         Clears all entities from the registry.
         """
+        # pylint: disable=no-member
         self.internal_registry.clear()
 
     def contains(self, entity: EntityBase) -> bool:
         """
         Returns True if the registry contains any entities, False otherwise.
         """
+        # pylint: disable=unsupported-membership-test
         if entity.entity_bucket in self.internal_registry:
+            # pylint: disable=unsubscriptable-object
             if entity in self.internal_registry[entity.entity_bucket]:
                 return True
         return False
@@ -130,6 +141,7 @@ class EntityRegistry(Flow360BaseModel):
     def entity_count(self) -> int:
         """Return total number of entities in the registry."""
         count = 0
+        # pylint: disable=no-member
         for list_of_entities in self.internal_registry.values():
             count += len(list_of_entities)
         return count
@@ -142,9 +154,11 @@ class EntityRegistry(Flow360BaseModel):
             new_entity (EntityBase): The new entity to replace the existing entity with.
         """
         bucket_to_find = new_entity.entity_bucket
+        # pylint: disable=unsupported-membership-test
         if bucket_to_find not in self.internal_registry:
             return
 
+        # pylint: disable=unsubscriptable-object
         for entity in self.internal_registry[bucket_to_find]:
             if entity.name == new_entity.name:
                 self.internal_registry[bucket_to_find].remove(entity)
@@ -155,4 +169,5 @@ class EntityRegistry(Flow360BaseModel):
 
     @property
     def is_empty(self):
-        return self.internal_registry == {}
+        """Return True if the registry is empty, False otherwise."""
+        return not self.internal_registry

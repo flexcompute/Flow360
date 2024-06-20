@@ -58,4 +58,4 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run pylint
-        run: poetry run pylint flow360 --rcfile .pylintrc
+        run: poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc

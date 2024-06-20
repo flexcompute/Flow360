@@ -1,3 +1,5 @@
+""" Base class for cached models. """
+
 import abc
 import inspect
 from functools import wraps
@@ -8,7 +10,10 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
+# pylint: disable=missing-function-docstring
 class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+    """Base class for cached models."""
+
     @classmethod
     def model_constructor(cls, func: Callable) -> Callable:
         @classmethod
@@ -21,9 +26,11 @@ class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
                 for k, v in sig.parameters.items()
                 if v.default is not inspect.Parameter.empty
             }
+            # pylint: disable=protected-access
             result._cached = result.__annotations__["_cached"](
                 **{**result._cached.model_dump(), **defaults, **kwargs}
             )
+            # pylint: disable=protected-access
             result._cached.constructor = func.__name__
             return result
 
@@ -35,7 +42,7 @@ class CachedModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
         if cached:
             try:
                 self._cached = self.__annotations__["_cached"].model_validate(cached)
-            except:
+            except pd.ValidationError:
                 pass
         else:
             defaults = {name: field.default for name, field in self.model_fields.items()}

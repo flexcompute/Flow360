@@ -1,9 +1,11 @@
+"""Flow360BaseModel class definition."""
+
 from __future__ import annotations
 
 import hashlib
 import json
 from copy import deepcopy
-from typing import Any, List, Literal
+from typing import Any, List
 
 import pydantic as pd
 import rich
@@ -23,6 +25,23 @@ from flow360.log import log
 
 
 def custom_to_camel(string: str) -> str:
+    """
+    Convert a snake_case string to camelCase.
+
+    This function takes a snake_case string as input and converts it to camelCase.
+    It splits the input string by underscores, capitalizes the first letter of
+    each subsequent component (after the first one), and joins them together.
+
+    Parameters:
+    string (str): The input string in snake_case format.
+
+    Returns:
+    str: The converted string in camelCase format.
+
+    Example:
+    >>> custom_to_camel("example_snake_case")
+    'exampleSnakeCase'
+    """
     components = string.split("_")
 
     camel_case_string = components[0]
@@ -81,15 +100,6 @@ class Flow360BaseModel(pd.BaseModel):
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
         cls._generate_docstring()
 
-    """Sets config for all :class:`Flow360BaseModel` objects.
-
-        Custom Configuration Options
-        ---------------------
-        require_one_of: Optional[List[str]] = []
-        conflicting_fields: Optional[List[Conflicts]] = []
-        include_hash: bool = False
-        include_defaults_in_schema: bool = True
-    """
     model_config = ConfigDict(
         ##:: Pydantic kwargs
         arbitrary_types_allowed=True,  # ?
@@ -117,6 +127,7 @@ class Flow360BaseModel(pd.BaseModel):
         super().__setattr__(name, value)
 
     @pd.model_validator(mode="before")
+    @classmethod
     def one_of(cls, values):
         """
         root validator for require one of
@@ -429,14 +440,14 @@ class Flow360BaseModel(pd.BaseModel):
         """
         additional_config = params.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in additional_config.items():
-            if self.__getattribute__(key) and not overwrite:
+            if self.key and not overwrite:
                 log.warning(
                     f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
                 )
                 continue
             is_frozen = self.model_fields[key].frozen
             if is_frozen is None or is_frozen is False:
-                self.__setattr__(key, value)
+                setattr(self, key, value)
 
     @classmethod
     def _generate_docstring(cls) -> str:
@@ -506,6 +517,7 @@ class Flow360BaseModel(pd.BaseModel):
         doc += "\n"
         cls.__doc__ = doc
 
+    # pylint: disable=too-many-arguments
     def _convert_dimensions_to_solver(
         self,
         params,
