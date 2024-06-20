@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import json
+from collections import OrderedDict
 
 from flow360.component.simulation.simulation_params import (
     SimulationParams,  # Not required
@@ -46,6 +47,53 @@ def get_simulation_param_dict(
     if param is not None:
         return param.preprocess(validated_mesh_unit)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
+
+
+def replace_dict_key(input_dict: dict, key_to_replace: str, replacement_key: str):
+    if key_to_replace in input_dict:
+        input_dict[replacement_key] = input_dict.pop(key_to_replace)
+
+
+def replace_dict_value(input_dict: dict, key: str, value_to_replace, replacement_value):
+    if key in input_dict and input_dict[key] == value_to_replace:
+        input_dict[key] = replacement_value
+
+
+def convert_tuples_to_lists(input_dict):
+    if isinstance(input_dict, dict):
+        return {k: convert_tuples_to_lists(v) for k, v in input_dict.items()}
+    elif isinstance(input_dict, tuple):
+        return list(input_dict)
+    elif isinstance(input_dict, list):
+        return [convert_tuples_to_lists(item) for item in input_dict]
+    else:
+        return input_dict
+
+
+def remove_units_in_dict(input_dict):
+    unit_keys = {"value", "units"}
+    if isinstance(input_dict, dict):
+        new_dict = {}
+        if input_dict.keys() == unit_keys:
+            new_dict = input_dict["value"]
+            return new_dict
+        for key, value in input_dict.items():
+            if isinstance(value, dict) and value.keys() == unit_keys:
+                new_dict[key] = value["value"]
+            else:
+                new_dict[key] = remove_units_in_dict(value)
+        return new_dict
+    elif isinstance(input_dict, list):
+        return [remove_units_in_dict(item) for item in input_dict]
+    else:
+        return input_dict
+
+
+def has_instance_in_list(obj_list: list, class_type):
+    for obj in obj_list:
+        if isinstance(obj, class_type):
+            return True
+    return False
 
 
 def get_attribute_from_first_instance(
@@ -98,3 +146,8 @@ def translate_setting_and_apply_to_all_entities(
                     setting.update(translated_setting)
                     output.append(setting)
     return output
+
+
+def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
+    combined = list1 + list2
+    return list(OrderedDict.fromkeys(combined))

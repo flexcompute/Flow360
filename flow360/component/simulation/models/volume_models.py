@@ -22,6 +22,7 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
+    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
@@ -35,12 +36,6 @@ from flow360.component.types import Axis
 
 class AngularVelocity(SingleAttributeModel):
     value: AngularVelocityType = pd.Field()
-
-
-class RotationAngleDegrees(SingleAttributeModel):
-    # pylint: disable=fixme
-    # TODO: We have units for degrees right??
-    value: pd.StrictStr = pd.Field()
 
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
@@ -90,6 +85,8 @@ class Fluid(PDEModelBase):
     initial_condition: Optional[
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
     ] = pd.Field(None)
+
+    # fixme: Add support for other initial conditions
 
 
 class Solid(PDEModelBase):
@@ -207,7 +204,7 @@ class BETDisk(Flow360BaseModel):
     n_loading_nodes: pd.StrictInt = pd.Field(gt=0, le=1000)
     blade_line_chord: LengthType.NonNegative = pd.Field(0)
     initial_blade_direction: Optional[Axis] = pd.Field(None)
-    tip_gap: Union[LengthType.NonNegative, Literal["inf"]] = pd.Field("inf")
+    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field("inf")
     mach_numbers: List[pd.NonNegativeFloat] = pd.Field()
     reynolds_numbers: List[pd.PositiveFloat] = pd.Field()
     alphas: List[float] = pd.Field()
@@ -225,7 +222,7 @@ class RotatingReferenceFrame(Flow360BaseModel):
 
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
-    rotation: Union[AngularVelocity, RotationAngleDegrees] = pd.Field()
+    rotation: Union[AngularVelocity, AngleType] = pd.Field()
     parent_volume_name: Optional[Union[GenericVolume, str]] = pd.Field(None)
 
 
