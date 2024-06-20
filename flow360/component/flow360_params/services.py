@@ -28,6 +28,7 @@ from flow360.component.flow360_params.unit_system import (
     unit_system_manager,
 )
 from flow360.exceptions import Flow360ConfigurationError
+from ..utils import remove_properties_with_prefix
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -126,37 +127,6 @@ def init_unit_system(unit_system_name) -> UnitSystem:
             f"Services cannot be used inside unit system context. Used: {unit_system_manager.current.system_repr()}."
         )
     return unit_system
-
-
-def remove_properties_with_prefix(data, prefix):
-    """
-    Recursively removes properties from a nested dictionary and its lists
-    whose keys start with a specified prefix.
-
-    Parameters
-    ----------
-    data : dict or list or scalar
-        The input data, which can be a nested dictionary, a list, or a scalar value.
-
-    prefix : str
-        The prefix used to filter properties. Properties with keys starting with
-        this prefix will be removed.
-
-    Returns
-    -------
-    dict or list or scalar
-        Processed data with properties removed based on the specified prefix.
-    """
-
-    if isinstance(data, dict):
-        return {
-            key: remove_properties_with_prefix(value, prefix)
-            for key, value in data.items()
-            if not key.startswith(prefix)
-        }
-    if isinstance(data, list):
-        return [remove_properties_with_prefix(item, prefix) for item in data]
-    return data
 
 
 def remove_dimensioned_type_none_leaves(data):

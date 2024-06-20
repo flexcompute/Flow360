@@ -138,15 +138,16 @@ def translate_setting_and_apply_to_all_entities(
     for obj in obj_list:
         if isinstance(obj, class_type):
             translated_setting = translation_func(obj)
-            for entity in obj.entities.stored_entities:
-                if not to_list:
-                    if output.get(entity.name) is None:
-                        output[entity.name] = {}
-                    output[entity.name].update(translated_setting)
-                else:
-                    setting = entity_injection_func(entity)
-                    setting.update(translated_setting)
-                    output.append(setting)
+            if obj.entities is not None:
+                for entity in obj.entities.stored_entities:
+                    if not to_list:
+                        if output.get(entity.name) is None:
+                            output[entity.name] = {}
+                        output[entity.name].update(translated_setting)
+                    else:
+                        setting = entity_injection_func(entity)
+                        setting.update(translated_setting)
+                        output.append(setting)
     return output
 
 

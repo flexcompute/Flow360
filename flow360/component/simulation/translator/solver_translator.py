@@ -198,7 +198,7 @@ def get_solver_json(
                 modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
                 modeling_constants.pop("typeName", None)
             # # removed modelingConstants temporarly as seemded not be supported now
-            translated["turbulenceModelSolver"].pop("modelingConstants")
+            translated["turbulenceModelSolver"].pop("modelingConstants", None)
 
     ##:: Step 7: Get BET and AD lists
     for model in input_params.models:
