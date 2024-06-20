@@ -79,7 +79,6 @@ class Flow360BaseModel(pd.BaseModel):
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
-        cls._add_type_field()
         cls._generate_docstring()
 
     """Sets config for all :class:`Flow360BaseModel` objects.
@@ -438,19 +437,6 @@ class Flow360BaseModel(pd.BaseModel):
             is_frozen = self.model_fields[key].frozen
             if is_frozen is None or is_frozen is False:
                 self.__setattr__(key, value)
-
-    @classmethod
-    def _add_type_field(cls) -> None:
-        """Automatically place "type" field with model name in the model field dictionary."""
-
-        # TODO: Check if this _type actually fulfill its goal(?)
-        tag_field = pd.fields.FieldInfo(
-            alias=TYPE_TAG_STR,
-            value=cls.__name__,
-            annotation=Literal[cls.__name__],
-            class_validators=None,
-        )
-        cls.model_fields[TYPE_TAG_STR] = tag_field
 
     @classmethod
     def _generate_docstring(cls) -> str:
