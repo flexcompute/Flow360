@@ -57,8 +57,8 @@ class BoundaryLayer(Flow360BaseModel):
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
     )
-    growth_rate: pd.PositiveFloat = pd.Field(default=1.2,
-        description="Growth rate for volume prism layers.", ge=1
+    growth_rate: pd.PositiveFloat = pd.Field(
+        default=1.2, description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported. This is a global setting in mesher.
 
 

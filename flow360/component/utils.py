@@ -67,7 +67,7 @@ def is_valid_uuid(id, allow_none=False, valid_prefixes=["folder-", "g-"]):
         if id:
             for prefix in valid_prefixes:
                 if id.startswith(prefix):
-                    id = id[len(prefix):]
+                    id = id[len(prefix) :]
                     break
         uuid.UUID(str(id))
     except ValueError as exc:

@@ -5,7 +5,16 @@ from typing import Annotated, List, Type, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.meshing_param.edge_params import AngleBasedRefinement, HeightBasedRefinement, AspectRatioBasedRefinement, ProjectAnisoSpacing
+from flow360.component.simulation.meshing_param.edge_params import (
+    AngleBasedRefinement,
+    AspectRatioBasedRefinement,
+    HeightBasedRefinement,
+    ProjectAnisoSpacing,
+)
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     SurfaceEdgeRefinement,
@@ -14,7 +23,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     UniformRefinement,
 )
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer, SurfaceRefinement
 from flow360.component.simulation.models.material import SolidMaterial
 from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
 from flow360.component.simulation.models.surface_models import (
@@ -32,7 +40,6 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
-    Freestream
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -200,7 +207,7 @@ with SI_unit_system:
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
             SurfaceEdgeRefinement(edges=[edge], method=HeightBasedRefinement(value=1 * u.m)),
-            SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2))
+            SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2)),
         ],
         volume_zones=[
             RotationCylinder(
@@ -284,41 +291,33 @@ with SI_unit_system:
         refinements=[
             BoundaryLayer(first_layer_thickness=0.001),
             SurfaceRefinement(
-                        entities=[Surface(name="wing")],
-                        max_edge_length=15 * u.cm,
-                        curvature_resolution_angle=10 * u.deg,
-                    )
-        ]
+                entities=[Surface(name="wing")],
+                max_edge_length=15 * u.cm,
+                curvature_resolution_angle=10 * u.deg,
+            ),
+        ],
     )
     param = SimulationParams(
         meshing=meshing,
         reference_geometry=ReferenceGeometry(
             moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2
         ),
-        operating_condition=AerospaceCondition(
-            velocity_magnitude=100
-        ),
+        operating_condition=AerospaceCondition(velocity_magnitude=100),
         models=[
             Fluid(),
             Wall(
-                entities=[Surface(name="fluid/rightWing"), Surface(name="fluid/leftWing"), Surface(name="fluid/fuselage")],
+                entities=[
+                    Surface(name="fluid/rightWing"),
+                    Surface(name="fluid/leftWing"),
+                    Surface(name="fluid/fuselage"),
+                ],
             ),
-            Freestream(
-                entities=[Surface(name="fluid/farfield")]
-            )
+            Freestream(entities=[Surface(name="fluid/farfield")]),
         ],
-        time_stepping=Steady(max_steps=700)
+        time_stepping=Steady(max_steps=700),
     )
 
 write_example(param, "simulation_params", "example-2")
-
-
-
-
-
-
-
-
 
 
 ###################### reference_geometry ######################
@@ -347,7 +346,9 @@ write_example(
     "operating_condition",
     "example-1",
     exclude_defaults=True,
-    additional_fields=dict(type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")),
+    additional_fields=dict(
+        type_name="AerospaceCondition", thermal_state=dict(type_name="ThermalState")
+    ),
 )
 
 with SI_unit_system:
@@ -398,7 +399,7 @@ write_example(
 )
 
 ###################### models  ######################
-write_schemas(Fluid, "models", 'fluid')
+write_schemas(Fluid, "models", "fluid")
 with imperial_unit_system:
     fluid_model = Fluid(
         transition_model_solver=TransitionModelSolver(),
@@ -407,7 +408,7 @@ with imperial_unit_system:
 write_example(fluid_model, "models", "fluid")
 
 
-write_schemas(Solid, "models", 'solid')
+write_schemas(Solid, "models", "solid")
 with imperial_unit_system:
     solid_model = Solid(
         volumes=[my_solid_zone],
@@ -421,7 +422,7 @@ with imperial_unit_system:
     )
 write_example(solid_model, "models", "solid")
 
-write_schemas(RotatingReferenceFrame, "models", 'rotating_reference_frame')
+write_schemas(RotatingReferenceFrame, "models", "rotating_reference_frame")
 rotation_model = RotatingReferenceFrame(
     volumes=[my_cylinder_1],
     rotation=AngularVelocity(0.45 * u.deg / u.s),
@@ -430,7 +431,7 @@ rotation_model = RotatingReferenceFrame(
 write_example(rotation_model, "models", "rotating_reference_frame")
 
 
-write_schemas(PorousMedium, "models", 'porouse_medium')
+write_schemas(PorousMedium, "models", "porouse_medium")
 porous_model = PorousMedium(
     volumes=[my_box],
     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
@@ -440,7 +441,7 @@ porous_model = PorousMedium(
 write_example(porous_model, "models", "porouse_medium")
 
 
-write_schemas(Wall, "models", 'wall')
+write_schemas(Wall, "models", "wall")
 my_wall = Wall(
     entities=[my_wall_surface],
     use_wall_function=True,
@@ -449,17 +450,17 @@ my_wall = Wall(
 )
 write_example(my_wall, "models", "wall")
 
-write_schemas(SlipWall, "models", 'slip_wall')
+write_schemas(SlipWall, "models", "slip_wall")
 my_wall = SlipWall(entities=[my_slip_wall_surface])
 write_example(my_wall, "models", "slip_wall")
 
 
-write_schemas(Freestream, "models", 'freestream')
+write_schemas(Freestream, "models", "freestream")
 my_fs_surface = Freestream(entities=[my_fs], velocity=("1", "2", "0"), velocity_type="absolute")
 write_example(my_fs_surface, "models", "freestream")
 
 
-write_schemas(Outflow, "models", 'outflow')
+write_schemas(Outflow, "models", "outflow")
 with imperial_unit_system:
     my_outflow_obj = Outflow(entities=[my_outflow], spec=Pressure(1))
 write_example(my_outflow_obj, "models", "outflow-Pressure")
@@ -472,7 +473,7 @@ my_outflow_obj = Outflow(entities=[my_outflow], spec=Mach(1))
 write_example(my_outflow_obj, "models", "outflow-Mach")
 
 
-write_schemas(Inflow, "models", 'inflow')
+write_schemas(Inflow, "models", "inflow")
 with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
@@ -496,7 +497,7 @@ with imperial_unit_system:
 write_example(my_inflow_surface_1, "models", "inflow-MassFlowRate")
 
 
-write_schemas(Periodic, "models", 'periodic')
+write_schemas(Periodic, "models", "periodic")
 with imperial_unit_system:
     my_pbc = Periodic(entity_pairs=[my_surface_pair], spec=Translational())
 write_example(my_pbc, "models", "periodic-Translational")
@@ -506,7 +507,7 @@ with imperial_unit_system:
 write_example(my_pbc, "models", "periodic-Rotational")
 
 
-write_schemas(SymmetryPlane, "models", 'symmetry_plane')
+write_schemas(SymmetryPlane, "models", "symmetry_plane")
 with imperial_unit_system:
     my_symm = SymmetryPlane(entities=[my_symm_plane])
 write_example(my_symm, "models", "symmetry_plane")

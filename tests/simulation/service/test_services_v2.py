@@ -9,7 +9,7 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_init_service():
-    data = services.get_default_params("SI", 'm')
+    data = services.get_default_params("SI", "m")
     print(data)
     assert data
 
