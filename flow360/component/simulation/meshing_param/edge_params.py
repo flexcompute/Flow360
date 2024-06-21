@@ -1,4 +1,6 @@
-from typing import List, Literal, Optional, Union
+"""Edge based meshing parameters for meshing."""
+
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -19,6 +21,7 @@ class HeightBasedRefinement(Flow360BaseModel):
     """Surface edge refinement by specifying first layer height of the anisotropic layers"""
 
     type: Literal["height"] = pd.Field("height", frozen=True)
+    # pylint: disable=no-member
     value: LengthType.Positive = pd.Field()
 
 

@@ -224,7 +224,7 @@ class TempSimulationParam(_ParamModelBase):
         """
         _supplementary_registry = _get_supplementary_registry(self.far_field_type)
         for model in self.models:
-            model.entities.preprocess(_supplementary_registry, mesh_unit=1 * u.m)
+            model.entities.preprocess(supplied_registry=_supplementary_registry, mesh_unit=1 * u.m)
 
         return self
 

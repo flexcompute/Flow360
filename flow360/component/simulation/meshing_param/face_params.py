@@ -1,3 +1,5 @@
+"""Face based meshing parameters for meshing."""
+
 from typing import Literal, Optional, Union
 
 import pydantic as pd
@@ -6,10 +8,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
-
-"""
-Meshing settings that applies to faces.
-"""
 
 
 class SurfaceRefinement(Flow360BaseModel):
@@ -27,9 +25,11 @@ class SurfaceRefinement(Flow360BaseModel):
 
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
+    # pylint: disable=no-member
     max_edge_length: LengthType.Positive = pd.Field(
         description="Local maximum edge length for surface cells."
     )
+    # pylint: disable=no-member
     curvature_resolution_angle: AngleType.Positive = pd.Field(
         description="""
         Global maximum angular deviation in degrees. This value will restrict:
@@ -46,17 +46,19 @@ class BoundaryLayer(Flow360BaseModel):
     - We do not support per volume specification of these settings so the entities will be **obsolete** for now.
     Should we have it at all in the release?
 
-    - `None` entities will be expanded (or just ignored and convert to global default, depending on implementation) before
-    submission. This is supposed to be applied to all the matching entities. We allow this so that we do not need to
-    have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
+    - `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)
+    before submission. This is supposed to be applied to all the matching entities. We allow this so that we do not
+    need to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.
     """
 
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
+    # pylint: disable=no-member
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers."
     )
+    # pylint: disable=no-member
     growth_rate: pd.PositiveFloat = pd.Field(
         description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported. This is a global setting in mesher.

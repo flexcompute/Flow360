@@ -1,3 +1,5 @@
+"""Volume meshing parameter translator."""
+
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
@@ -18,7 +20,7 @@ def unifrom_refinement_translator(obj: SurfaceEdgeRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def entitity_info_seralizer(entity_obj):
+def _entitity_info_seralizer(entity_obj):
     if isinstance(entity_obj, Cylinder):
         return {
             "type": "cylinder",
@@ -27,9 +29,11 @@ def entitity_info_seralizer(entity_obj):
             "axis": list(entity_obj.axis),
             "center": list(entity_obj.center.value),
         }
+    return {}
 
 
 @preprocess_input
+# pylint: disable=unused-argument
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
@@ -46,7 +50,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         UniformRefinement,
         unifrom_refinement_translator,
         to_list=True,
-        entity_injection_func=entitity_info_seralizer,
+        entity_injection_func=_entitity_info_seralizer,
     )
 
     # >> Step 3: Get volumetric global settings

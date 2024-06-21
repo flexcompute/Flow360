@@ -1,3 +1,5 @@
+"""Volume models for the simulation framework."""
+
 from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -30,10 +32,12 @@ from flow360.component.simulation.unit_system import (
     LengthType,
 )
 
+# pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
 
 
+# pylint: disable=missing-class-docstring
 class AngularVelocity(SingleAttributeModel):
     value: AngularVelocityType = pd.Field()
 
@@ -86,6 +90,7 @@ class Fluid(PDEModelBase):
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
     ] = pd.Field(None)
 
+    # pylint: disable=fixme
     # fixme: Add support for other initial conditions
 
 
@@ -104,6 +109,7 @@ class Solid(PDEModelBase):
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(None)
 
 
+# pylint: disable=duplicate-code
 class ForcePerArea(Flow360BaseModel):
     """:class:`ForcePerArea` class for setting up force per area for Actuator Disk
 
@@ -137,7 +143,7 @@ class ForcePerArea(Flow360BaseModel):
     thrust: List[float]
     circumferential: List[float]
 
-    # pylint: disable=no-self-argument
+    # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
     @classmethod
     def check_len(cls, values):
@@ -190,9 +196,11 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field()
 
 
+# pylint: disable=no-member
 class BETDisk(Flow360BaseModel):
     """Same as Flow360Param BETDisk.
-    Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
+    Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity`
+    so they are not required anymore.
     """
 
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
