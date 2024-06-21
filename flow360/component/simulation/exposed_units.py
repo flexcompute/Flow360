@@ -19,7 +19,7 @@ extra_units = {
     "pressure": [],
     "density": [],
     "viscosity": [],
-    "angular_velocity": [],
+    "angular_velocity": [u.rpm],
     "heat_flux": [],
     "heat_source": [],
     "specific_heat_capacity": [],

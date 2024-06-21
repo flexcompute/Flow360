@@ -83,6 +83,26 @@ class Mach(SingleAttributeModel):
     value: pd.NonNegativeFloat = pd.Field()
 
 
+class Translational(Flow360BaseModel):
+    """Translational periodicity"""
+
+    type: Literal["Translational"] = pd.Field("Translational", frozen=True)
+
+
+class Rotational(Flow360BaseModel):
+    """Rotational periodicity"""
+
+    type: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
+    # pylint: disable=fixme
+    # TODO: Maybe we need more precision when serializeing this one?
+    axis_of_rotation: Optional[Axis] = pd.Field(None)
+
+
+##########################################
+############# Surface models #############
+##########################################
+
+
 class Wall(BoundaryBase):
     """Replace Flow360Param:
     - NoSlipWall
@@ -93,6 +113,7 @@ class Wall(BoundaryBase):
     - SolidAdiabaticWall
     """
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
     use_wall_function: bool = pd.Field(False)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
@@ -103,6 +124,7 @@ class Wall(BoundaryBase):
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
     """Freestream"""
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["Freestream"] = pd.Field("Freestream", frozen=True)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
     velocity_type: Literal["absolute", "relative"] = pd.Field("relative")
@@ -115,6 +137,7 @@ class Outflow(BoundaryBase):
     - MassOutflow
     """
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
     spec: Union[Pressure, MassFlowRate, Mach] = pd.Field()
 
@@ -125,6 +148,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     - MassInflow
     """
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
     total_temperature: TemperatureType.Positive = pd.Field()
@@ -135,28 +159,15 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
 class SlipWall(BoundaryBase):
     """Slip wall"""
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
 
 
 class SymmetryPlane(BoundaryBase):
     """Symmetry plane"""
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-
-
-class Translational(Flow360BaseModel):
-    """Translational"""
-
-    type: Literal["Translational"] = pd.Field("Translational", frozen=True)
-
-
-class Rotational(Flow360BaseModel):
-    """Rotational"""
-
-    type: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
-    # pylint: disable=fixme
-    # TODO: Maybe we need more precision when serializeing this one?
-    axis_of_rotation: Optional[Axis] = pd.Field(None)
 
 
 class Periodic(Flow360BaseModel):
@@ -165,6 +176,7 @@ class Periodic(Flow360BaseModel):
     - RotationallyPeriodic
     """
 
+    name: Optional[str] = pd.Field(None)
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(alias="surface_pairs")
     spec: Union[Translational, Rotational] = pd.Field(discriminator="type")

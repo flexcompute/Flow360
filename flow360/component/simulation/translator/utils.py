@@ -139,12 +139,26 @@ def get_attribute_from_first_instance(
     return None
 
 
+def update_dict_recursively(a, b):
+    """
+    Recursively updates dictionary 'a' with values from dictionary 'b'.
+    If the same key contains dictionaries in both 'a' and 'b', they are merged recursively.
+    """
+    for key, value in b.items():
+        if key in a and isinstance(a[key], dict) and isinstance(value, dict):
+            # If both a[key] and b[key] are dictionaries, recurse
+            update_dict_recursively(a[key], value)
+        else:
+            # Otherwise, simply update/overwrite the value in 'a' with the value from 'b'
+            a[key] = value
+
+
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
     translation_func,
     to_list: bool = False,
-    entity_injection_func=lambda x: x,
+    entity_injection_func=lambda x: {},
 ):
     """Translate settings and apply them to all entities of a given type.
 
@@ -170,8 +184,9 @@ def translate_setting_and_apply_to_all_entities(
             for entity in obj.entities.stored_entities:
                 if not to_list:
                     if output.get(entity.name) is None:
-                        output[entity.name] = {}
-                    output[entity.name].update(translated_setting)
+                        output[entity.name] = entity_injection_func(entity)
+                    # needs to be recursive
+                    update_dict_recursively(output[entity.name], translated_setting)
                 else:
                     setting = entity_injection_func(entity)
                     setting.update(translated_setting)
