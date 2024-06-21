@@ -26,6 +26,7 @@ from flow360.component.simulation.translator.utils import (
     remove_units_in_dict,
     replace_dict_key,
     replace_dict_value,
+    translate_setting_and_apply_to_all_entities,
 )
 from flow360.component.simulation.unit_system import LengthType
 
@@ -33,13 +34,6 @@ from flow360.component.simulation.unit_system import LengthType
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
     return input_params.model_dump(by_alias=True, exclude_none=True)
-
-
-def remove_empty_keys(input_dict):
-    """I do not know what this is for --- Ben"""
-    # pylint: disable=fixme
-    # TODO: implement
-    return input_dict
 
 
 def init_output_attr_dict(obj_list, class_type):
@@ -51,6 +45,32 @@ def init_output_attr_dict(obj_list, class_type):
         ),
         "outputFormat": get_attribute_from_first_instance(obj_list, class_type, "output_format"),
     }
+
+
+def rotation_entity_info_serializer(volume):
+    """Rotation entity serializer"""
+    return {
+        "referenceFrame": {
+            "axisOfRotation": list(volume.axis),
+            "centerOfRotation": list(volume.center),
+        },
+    }
+
+
+def rotation_translator(model: Rotation):
+    """Rotation translator"""
+    volume_zone = {
+        "modelType": "FluidDynamics",
+        "referenceFrame": {},
+    }
+    if model.parent_volume:
+        volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
+    spec = dump_dict(model)["spec"]
+    if isinstance(spec, str):
+        volume_zone["referenceFrame"]["thetaRadians"] = spec
+    elif spec.get("units", "") == "flow360_angular_velocity_unit":
+        volume_zone["referenceFrame"]["omegaRadians"] = spec["value"]
+    return volume_zone
 
 
 # pylint: disable=too-many-statements
@@ -225,26 +245,18 @@ def get_solver_json(
                 translated["BETDisks"] = bet_disks
 
     ##:: Step 8: Get rotation
-    for model in input_params.models:
-        if isinstance(model, Rotation):
-            for volume in model.entities.stored_entities:
-                volumeZone = {
-                    "modelType": "FluidDynamics",
-                    "referenceFrame": {
-                        "axisOfRotation": list(volume.axis),
-                        "centerOfRotation": list(volume.center),
-                    },
-                }
-                if model.parent_volume:
-                    volumeZone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
-                spec = dump_dict(model)["spec"]
-                if isinstance(spec, str):
-                    volumeZone["referenceFrame"]["thetaRadians"] = spec
-                elif spec.get("units", "") == "flow360_angular_velocity_unit":
-                    volumeZone["referenceFrame"]["omegaRadians"] = spec["value"]
-            volumeZones = translated.get("volumeZones", {})
-            volumeZones.update({volume.name: volumeZone})
-            translated["volumeZones"] = volumeZones
+    if has_instance_in_list(input_params.models, Rotation):
+        volume_zones = translated.get("volumeZones", {})
+        volume_zones.update(
+            translate_setting_and_apply_to_all_entities(
+                input_params.models,
+                Rotation,
+                rotation_translator,
+                to_list=False,
+                entity_injection_func=rotation_entity_info_serializer,
+            )
+        )
+        translated["volumeZones"] = volume_zones
 
     ##:: Step 9: Get porous media
 

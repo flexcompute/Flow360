@@ -22,7 +22,6 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
-    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
@@ -48,6 +47,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     constants: Optional[Dict[str, str]] = pd.Field()
 
 
+# pylint: disable=missing-class-docstring
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     rho: str = pd.Field()
     u: str = pd.Field()
