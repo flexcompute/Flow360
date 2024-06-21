@@ -144,6 +144,7 @@ class Flow360BaseModel(pd.BaseModel):
         return values
 
     # pylint: disable=no-self-argument
+    # pylint: disable=duplicate-code
     @pd.model_validator(mode="before")
     def handle_conflicting_fields(cls, values):
         """

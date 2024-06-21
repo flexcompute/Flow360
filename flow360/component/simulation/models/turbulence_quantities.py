@@ -24,6 +24,7 @@ class TurbulentKineticEnergy(Flow360BaseModel):
     """
 
     type_name: Literal["TurbulentKineticEnergy"] = pd.Field("TurbulentKineticEnergy", frozen=True)
+    # pylint: disable=no-member
     turbulent_kinetic_energy: SpecificEnergyType.NonNegative = pd.Field()
 
 
@@ -47,6 +48,7 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     type_name: Literal["SpecificDissipationRate"] = pd.Field("SpecificDissipationRate", frozen=True)
+    # pylint: disable=no-member
     specific_dissipation_rate: FrequencyType.NonNegative = pd.Field()
 
 
@@ -71,6 +73,7 @@ class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     type_name: Literal["TurbulentLengthScale"] = pd.Field("TurbulentLengthScale", frozen=True)
+    # pylint: disable=no-member
     turbulent_length_scale: LengthType.Positive = pd.Field()
 
 
@@ -96,6 +99,7 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
     type_name: Literal["ModifiedTurbulentViscosity"] = pd.Field(
         "ModifiedTurbulentViscosity", frozen=True
     )
+    # pylint: disable=no-member
     modified_turbulent_viscosity: Optional[ViscosityType.Positive] = pd.Field()
 
 
@@ -163,6 +167,7 @@ class TurbulentViscosityRatioAndTurbulentLengthScale(TurbulentViscosityRatio, Tu
 
 
 # pylint: enable=missing-class-docstring
+# pylint: disable=duplicate-code
 
 TurbulenceQuantitiesType = Union[
     TurbulentViscosityRatio,
