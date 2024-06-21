@@ -26,6 +26,7 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.utils import remove_properties_by_name
+from flow360.exceptions import Flow360TranslationError
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -200,10 +201,16 @@ def _translate_simulation_json(
         raise ValueError(errors)
     if mesh_unit is None:
         raise ValueError("Mesh unit is required for translation.")
+
     try:
         translated_dict = translation_func(param, mesh_unit)
-    except Exception as err:  # tranlsation itself is not supposed to raise any exception
-        raise ValueError(f"Failed to translate to {target_name} json: " + str(err)) from err
+    except Flow360TranslationError as err:
+        raise ValueError(f"Input invalid for translating {target_name} json: " + str(err)) from err
+    except Exception as err:  # tranlsation itself is not supposed to raise any other exception
+        raise ValueError(
+            f"Unexpected error translating to {target_name} json: " + str(err)
+        ) from err
+
     if translated_dict == {}:
         raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
     # pylint: disable=fixme

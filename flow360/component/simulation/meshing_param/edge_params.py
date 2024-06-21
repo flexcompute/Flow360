@@ -57,11 +57,9 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
     )
-    method: Optional[
-        Union[
-            AngleBasedRefinement,
-            HeightBasedRefinement,
-            AspectRatioBasedRefinement,
-            ProjectAnisoSpacing,
-        ]
-    ] = pd.Field(None, discriminator="type")
+    method: Union[
+        AngleBasedRefinement,
+        HeightBasedRefinement,
+        AspectRatioBasedRefinement,
+        ProjectAnisoSpacing,
+    ] = pd.Field(discriminator="type")

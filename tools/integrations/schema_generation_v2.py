@@ -214,7 +214,7 @@ with SI_unit_system:
         ],
         volume_zones=[
             RotationCylinder(
-                entities=[my_cylinder_1],
+                entities=my_cylinder_1,
                 spacing_axial=0.1 * u.m,
                 spacing_radial=0.12 * u.m,
                 spacing_circumferential=0.13 * u.m,
