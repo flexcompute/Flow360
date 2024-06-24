@@ -234,6 +234,7 @@ class MassInflow(BoundaryWithTurbulenceQuantities):
 
     type: Literal["MassInflow"] = pd.Field("MassInflow", const=True)
     mass_flow_rate: PositiveFloat = pd.Field(alias="massFlowRate")
+    total_temperature_ratio: PositiveFloat = pd.Field(alias="totalTemperatureRatio")
     ramp_steps: Optional[PositiveInt] = pd.Field(alias="rampSteps")
 
 
