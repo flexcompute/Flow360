@@ -11,7 +11,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import VolumeModelTypes, Fluid
+from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import ReferenceGeometry
@@ -170,8 +170,7 @@ class SimulationParams(Flow360BaseModel):
                 return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
         return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
 
-
-    @pd.field_validator('models')
+    @pd.field_validator("models")
     def apply_defult_fluid_settings(cls, v):
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())

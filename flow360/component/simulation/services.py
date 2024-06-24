@@ -26,7 +26,6 @@ from flow360.component.simulation.unit_system import (
 
 from ..utils import remove_properties_by_name
 
-
 unit_system_map = {
     "SI": SI_unit_system,
     "CGS": CGS_unit_system,
@@ -158,7 +157,7 @@ def _translate_simulation_json(
     Get JSON for surface meshing from a given simulaiton JSON.
 
     """
-    params_as_dict = remove_properties_by_name(params_as_dict, '_id')
+    params_as_dict = remove_properties_by_name(params_as_dict, "_id")
 
     translated_dict = None
     # pylint: disable=unused-variable

@@ -28,6 +28,7 @@ from flow360.component.flow360_params.unit_system import (
     unit_system_manager,
 )
 from flow360.exceptions import Flow360ConfigurationError
+
 from ..utils import remove_properties_with_prefix
 
 unit_system_map = {

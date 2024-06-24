@@ -1,7 +1,8 @@
+import json
 from copy import deepcopy
 from typing import Union
-import json
 
+from flow360.component.flow360_params.flow360_params import Flow360Params
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -31,7 +32,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_value,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.flow360_params.flow360_params import Flow360Params
 
 
 def dump_dict(input_params):
@@ -238,7 +238,7 @@ def get_solver_json(
                 udd_dict["outputTargetName"] = udd.output_target.name
             translated["userDefinedDynamics"].append(udd_dict)
 
-    # current solver expects "user.json" so applying user.json format 
-    translated_json = Flow360Params(**translated, legacy_fallback=True).json()          
+    # current solver expects "user.json" so applying user.json format
+    translated_json = Flow360Params(**translated, legacy_fallback=True).json()
 
     return json.loads(translated_json)
