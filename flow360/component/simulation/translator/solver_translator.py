@@ -16,8 +16,8 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_attribute_from_first_instance,
