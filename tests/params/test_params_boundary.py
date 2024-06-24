@@ -253,9 +253,11 @@ def test_boundary_types():
     )
     assert SlidingInterfaceBoundary().type == "SlidingInterface"
     assert WallFunction().type == "WallFunction"
-    assert MassInflow(massFlowRate=1).type == "MassInflow"
+    assert MassInflow(massFlowRate=1, totalTemperatureRatio=1).type == "MassInflow"
     with pytest.raises(pd.ValidationError):
         MassInflow(massFlowRate=-1)
+    with pytest.raises(pd.ValidationError):
+        MassInflow(totalTemperatureRatio=-1)
     assert MassOutflow(massFlowRate=1).type == "MassOutflow"
     with pytest.raises(pd.ValidationError):
         MassOutflow(massFlowRate=-1)
@@ -320,6 +322,7 @@ def test_boundary_types():
     bc = MassInflow(
         name="SomeBC",
         mass_flow_rate=0.2,
+        total_temperature_ratio=0.43,
         turbulence_quantities=TurbulenceQuantities(modified_viscosity_ratio=1.2),
     )
 
@@ -328,6 +331,7 @@ def test_boundary_types():
     bc = MassInflow(
         name="SomeBC",
         mass_flow_rate=0.2,
+        total_temperature_ratio=0.43,
         turbulence_quantities=TurbulenceQuantities(turbulent_intensity=0.2),
     )
 
@@ -336,6 +340,7 @@ def test_boundary_types():
     bc = MassInflow(
         name="SomeBC",
         mass_flow_rate=0.2,
+        total_temperature_ratio=0.43,
         turbulence_quantities=TurbulenceQuantities(turbulent_kinetic_energy=12.2),
     )
 
@@ -344,6 +349,7 @@ def test_boundary_types():
     bc = MassInflow(
         name="SomeBC",
         mass_flow_rate=0.2,
+        total_temperature_ratio=0.43,
         turbulence_quantities=TurbulenceQuantities(turbulent_length_scale=1.23),
     )
 
