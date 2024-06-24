@@ -41,7 +41,7 @@ class ProjectAnisoSpacing(Flow360BaseModel):
 class _BaseEdgeRefinement(Flow360BaseModel):
     entities: EntityList[Edge] = pd.Field(alias="edges")
     growth_rate: Optional[float] = pd.Field(
-        None, description="Growth rate for volume prism layers.", ge=1
+        None, description="Growth rate for surface mesh layers grown from edges.", ge=1
     )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
 
 

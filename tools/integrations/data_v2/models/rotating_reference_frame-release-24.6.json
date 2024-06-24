@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_cylinder-1",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "center": {
+          "value": [
+            1.2,
+            2.3,
+            3.4
+          ],
+          "units": "m"
+        },
+        "height": {
+          "value": 3.0,
+          "units": "m"
+        },
+        "inner_radius": {
+          "value": 3.0,
+          "units": "m"
+        },
+        "outer_radius": {
+          "value": 5.0,
+          "units": "m"
+        }
+      }
+    ]
+  },
+  "rotation": {
+    "value": {
+      "value": 0.45,
+      "units": "degree/s"
+    }
+  },
+  "parent_volume": {
+    "name": "outter_volume"
+  }
+}

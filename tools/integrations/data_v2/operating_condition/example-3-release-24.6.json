@@ -1,0 +1,30 @@
+{
+  "private_attribute_constructor": "from_mach",
+  "private_attribute_input_cache": {
+    "alpha": {
+      "value": 1.0,
+      "units": "degree"
+    },
+    "beta": {
+      "value": 0.0,
+      "units": "degree"
+    },
+    "mach": 0.8
+  },
+  "alpha": {
+    "value": 1.0,
+    "units": "degree"
+  },
+  "thermal_state": {
+    "temperature": {
+      "value": 100.0,
+      "units": "K"
+    },
+    "density": {
+      "value": 2.0,
+      "units": "kg/m**3"
+    },
+    "type_name": "ThermalState"
+  },
+  "type_name": "AerospaceCondition"
+}

@@ -1,0 +1,150 @@
+{
+  "$defs": {
+    "Probe": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nname : <class 'str'>\n        locations : typing.List[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "locations": {
+          "items": {
+            "properties": {
+              "value": {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "strictType": {
+                  "type": "vector3"
+                },
+                "type": "array"
+              },
+              "units": {
+                "dimension": "length",
+                "enum": [
+                  "m",
+                  "cm",
+                  "ft",
+                  "mm",
+                  "inch"
+                ],
+                "type": "string"
+              }
+            }
+          },
+          "title": "Locations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "locations"
+      ],
+      "title": "Probe",
+      "type": "object"
+    },
+    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "enum": [
+              "Cp",
+              "gradW",
+              "kOmega",
+              "Mach",
+              "mut",
+              "mutRatio",
+              "nuHat",
+              "primitiveVars",
+              "qcriterion",
+              "residualNavierStokes",
+              "residualTransition",
+              "residualTurbulence",
+              "s",
+              "solutionNavierStokes",
+              "solutionTransition",
+              "solutionTurbulence",
+              "T",
+              "vorticity",
+              "wallDistance",
+              "numericalDissipationFactor",
+              "residualHeatSolver",
+              "VelocityRelative",
+              "lowMachPreconditionerSensor"
+            ],
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]",
+      "type": "object"
+    },
+    "UniqueItemList_Probe_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.Probe]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Probe"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[Probe]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\nentities : <class 'abc.UniqueItemList[Probe]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]'>\n        output_type : typing.Literal['ProbeOutput'] = ProbeOutput\n    ",
+  "properties": {
+    "frequency": {
+      "default": -1,
+      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "minimum": -1,
+      "title": "Frequency",
+      "type": "integer"
+    },
+    "frequency_offset": {
+      "default": 0,
+      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "minimum": 0,
+      "title": "Frequency Offset",
+      "type": "integer"
+    },
+    "probes": {
+      "$ref": "#/$defs/UniqueItemList_Probe_"
+    },
+    "output_fields": {
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor___"
+    },
+    "output_type": {
+      "const": "ProbeOutput",
+      "default": "ProbeOutput",
+      "enum": [
+        "ProbeOutput"
+      ],
+      "title": "Output Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "probes",
+    "output_fields"
+  ],
+  "title": "ProbeOutput",
+  "type": "object"
+}

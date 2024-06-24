@@ -57,15 +57,20 @@ def match_file_pattern(patterns, filename):
 
 
 # pylint: disable=redefined-builtin
-def is_valid_uuid(id, allow_none=False):
+def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
     """
     Checks if id is valid
     """
+    if valid_prefixes is None:
+        valid_prefixes = ["folder-", "g-"]
     if id is None and allow_none:
         return
     try:
-        if id and id.startswith("folder-"):
-            id = id[len("folder-") :]
+        if id:
+            for prefix in valid_prefixes:
+                if id.startswith(prefix):
+                    id = id[len(prefix) :]
+                    break
         uuid.UUID(str(id))
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc

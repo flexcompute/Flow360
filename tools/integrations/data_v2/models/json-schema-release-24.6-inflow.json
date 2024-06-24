@@ -1,0 +1,853 @@
+{
+  "$defs": {
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "MassFlowRate": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "value": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "mass_flow_rate",
+              "enum": [
+                "kg/s",
+                "g/s",
+                "lb/s"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "MassFlowRate",
+      "type": "object"
+    },
+    "ModifiedTurbulentViscosity": {
+      "additionalProperties": false,
+      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "properties": {
+        "type_name": {
+          "const": "ModifiedTurbulentViscosity",
+          "default": "ModifiedTurbulentViscosity",
+          "enum": [
+            "ModifiedTurbulentViscosity"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "modified_turbulent_viscosity": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "viscosity",
+                  "enum": [
+                    "Pa*s",
+                    "dyn*s/cm**2",
+                    "lbf*s/ft**2"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Modified Turbulent Viscosity"
+        }
+      },
+      "required": [
+        "modified_turbulent_viscosity"
+      ],
+      "title": "ModifiedTurbulentViscosity",
+      "type": "object"
+    },
+    "ModifiedTurbulentViscosityRatio": {
+      "additionalProperties": false,
+      "description": "modifiedTurbulentViscosityRatio : non-dimensional [`-`]\n    The ratio of modified turbulent eddy viscosity (SA) over the freestream viscosity.\n    Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosityRatio'] = ModifiedTurbulentViscosityRatio\n        modified_turbulent_viscosity_ratio : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "ModifiedTurbulentViscosityRatio",
+          "default": "ModifiedTurbulentViscosityRatio",
+          "enum": [
+            "ModifiedTurbulentViscosityRatio"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "modified_turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Modified Turbulent Viscosity Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "modified_turbulent_viscosity_ratio"
+      ],
+      "title": "ModifiedTurbulentViscosityRatio",
+      "type": "object"
+    },
+    "SpecificDissipationRateAndTurbulentKineticEnergy": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['SpecificDissipationRateAndTurbulentKineticEnergy'] = SpecificDissipationRateAndTurbulentKineticEnergy\n        turbulent_kinetic_energy : <class 'flow360.component.simulation.unit_system._Constrained'>\n        specific_dissipation_rate : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "SpecificDissipationRateAndTurbulentKineticEnergy",
+          "default": "SpecificDissipationRateAndTurbulentKineticEnergy",
+          "enum": [
+            "SpecificDissipationRateAndTurbulentKineticEnergy"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_kinetic_energy": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "specific_energy",
+              "enum": [
+                "J/kg",
+                "erg/g",
+                "ft**2/s**2"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Kinetic Energy"
+        },
+        "specific_dissipation_rate": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "frequency",
+              "enum": [
+                "Hz",
+                "1/s"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Specific Dissipation Rate"
+        }
+      },
+      "required": [
+        "turbulent_kinetic_energy",
+        "specific_dissipation_rate"
+      ],
+      "title": "SpecificDissipationRateAndTurbulentKineticEnergy",
+      "type": "object"
+    },
+    "SpecificDissipationRateAndTurbulentLengthScale": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['SpecificDissipationRateAndTurbulentLengthScale'] = SpecificDissipationRateAndTurbulentLengthScale\n        turbulent_length_scale : <class 'flow360.component.simulation.unit_system._Constrained'>\n        specific_dissipation_rate : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "SpecificDissipationRateAndTurbulentLengthScale",
+          "default": "SpecificDissipationRateAndTurbulentLengthScale",
+          "enum": [
+            "SpecificDissipationRateAndTurbulentLengthScale"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_length_scale": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Length Scale"
+        },
+        "specific_dissipation_rate": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "frequency",
+              "enum": [
+                "Hz",
+                "1/s"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Specific Dissipation Rate"
+        }
+      },
+      "required": [
+        "turbulent_length_scale",
+        "specific_dissipation_rate"
+      ],
+      "title": "SpecificDissipationRateAndTurbulentLengthScale",
+      "type": "object"
+    },
+    "SpecificDissipationRateAndTurbulentViscosityRatio": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['SpecificDissipationRateAndTurbulentViscosityRatio'] = SpecificDissipationRateAndTurbulentViscosityRatio\n        turbulent_viscosity_ratio : <class 'float'>\n        specific_dissipation_rate : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "SpecificDissipationRateAndTurbulentViscosityRatio",
+          "default": "SpecificDissipationRateAndTurbulentViscosityRatio",
+          "enum": [
+            "SpecificDissipationRateAndTurbulentViscosityRatio"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Turbulent Viscosity Ratio",
+          "type": "number"
+        },
+        "specific_dissipation_rate": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "frequency",
+              "enum": [
+                "Hz",
+                "1/s"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Specific Dissipation Rate"
+        }
+      },
+      "required": [
+        "turbulent_viscosity_ratio",
+        "specific_dissipation_rate"
+      ],
+      "title": "SpecificDissipationRateAndTurbulentViscosityRatio",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "TotalPressure": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "value": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "pressure",
+              "enum": [
+                "Pa",
+                "dyn/cm**2",
+                "lbf/ft**2"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "TotalPressure",
+      "type": "object"
+    },
+    "TurbulentIntensity": {
+      "additionalProperties": false,
+      "description": "turbulentIntensity : non-dimensional [`-`]\n    Turbulent intensity. Applicable only when using SST model.\n    This is related to turbulent kinetic energy as:\n    `turbulentKineticEnergy = 1.5*pow(U_ref * turbulentIntensity, 2)`.\n    Note the use of the freestream velocity U_ref instead of C_inf.\n\n\nParameters\n----------\ntype_name : typing.Literal['TurbulentIntensity'] = TurbulentIntensity\n        turbulent_intensity : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentIntensity",
+          "default": "TurbulentIntensity",
+          "enum": [
+            "TurbulentIntensity"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_intensity": {
+          "minimum": 0.0,
+          "title": "Turbulent Intensity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_intensity"
+      ],
+      "title": "TurbulentIntensity",
+      "type": "object"
+    },
+    "TurbulentIntensityAndSpecificDissipationRate": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentIntensityAndSpecificDissipationRate'] = TurbulentIntensityAndSpecificDissipationRate\n        specific_dissipation_rate : <class 'flow360.component.simulation.unit_system._Constrained'>\n        turbulent_intensity : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentIntensityAndSpecificDissipationRate",
+          "default": "TurbulentIntensityAndSpecificDissipationRate",
+          "enum": [
+            "TurbulentIntensityAndSpecificDissipationRate"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "specific_dissipation_rate": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "frequency",
+              "enum": [
+                "Hz",
+                "1/s"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Specific Dissipation Rate"
+        },
+        "turbulent_intensity": {
+          "minimum": 0.0,
+          "title": "Turbulent Intensity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "specific_dissipation_rate",
+        "turbulent_intensity"
+      ],
+      "title": "TurbulentIntensityAndSpecificDissipationRate",
+      "type": "object"
+    },
+    "TurbulentIntensityAndTurbulentLengthScale": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentIntensityAndTurbulentLengthScale'] = TurbulentIntensityAndTurbulentLengthScale\n        turbulent_length_scale : <class 'flow360.component.simulation.unit_system._Constrained'>\n        turbulent_intensity : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentIntensityAndTurbulentLengthScale",
+          "default": "TurbulentIntensityAndTurbulentLengthScale",
+          "enum": [
+            "TurbulentIntensityAndTurbulentLengthScale"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_length_scale": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Length Scale"
+        },
+        "turbulent_intensity": {
+          "minimum": 0.0,
+          "title": "Turbulent Intensity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_length_scale",
+        "turbulent_intensity"
+      ],
+      "title": "TurbulentIntensityAndTurbulentLengthScale",
+      "type": "object"
+    },
+    "TurbulentIntensityAndTurbulentViscosityRatio": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentIntensityAndTurbulentViscosityRatio'] = TurbulentIntensityAndTurbulentViscosityRatio\n        turbulent_viscosity_ratio : <class 'float'>\n        turbulent_intensity : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentIntensityAndTurbulentViscosityRatio",
+          "default": "TurbulentIntensityAndTurbulentViscosityRatio",
+          "enum": [
+            "TurbulentIntensityAndTurbulentViscosityRatio"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Turbulent Viscosity Ratio",
+          "type": "number"
+        },
+        "turbulent_intensity": {
+          "minimum": 0.0,
+          "title": "Turbulent Intensity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_viscosity_ratio",
+        "turbulent_intensity"
+      ],
+      "title": "TurbulentIntensityAndTurbulentViscosityRatio",
+      "type": "object"
+    },
+    "TurbulentKineticEnergy": {
+      "additionalProperties": false,
+      "description": "turbulentKineticEnergy : non-dimensional [`C_inf^2`]\n    Turbulent kinetic energy. Applicable only when using SST model.\n\n\nParameters\n----------\ntype_name : typing.Literal['TurbulentKineticEnergy'] = TurbulentKineticEnergy\n        turbulent_kinetic_energy : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentKineticEnergy",
+          "default": "TurbulentKineticEnergy",
+          "enum": [
+            "TurbulentKineticEnergy"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_kinetic_energy": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "specific_energy",
+              "enum": [
+                "J/kg",
+                "erg/g",
+                "ft**2/s**2"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Kinetic Energy"
+        }
+      },
+      "required": [
+        "turbulent_kinetic_energy"
+      ],
+      "title": "TurbulentKineticEnergy",
+      "type": "object"
+    },
+    "TurbulentLengthScale": {
+      "additionalProperties": false,
+      "description": "turbulentLengthScale : non-dimensional [`L_gridUnit`]\n    The turbulent length scale is an estimation of the size of the eddies that are modeled/not resolved.\n    Applicable only when using SST model. This is related to the turbulent kinetic energy and turbulent\n    specific dissipation rate as: `L_T = sqrt(k)/(pow(beta_0^*, 0.25)*w)` where `L_T` is turbulent length scale,\n    `k` is turbulent kinetic energy, `beta_0^*` is 0.09 and `w` is turbulent specific dissipation rate.\n    Applicable only when using SST model.\n\n\nParameters\n----------\ntype_name : typing.Literal['TurbulentLengthScale'] = TurbulentLengthScale\n        turbulent_length_scale : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentLengthScale",
+          "default": "TurbulentLengthScale",
+          "enum": [
+            "TurbulentLengthScale"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_length_scale": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Length Scale"
+        }
+      },
+      "required": [
+        "turbulent_length_scale"
+      ],
+      "title": "TurbulentLengthScale",
+      "type": "object"
+    },
+    "TurbulentLengthScaleAndTurbulentKineticEnergy": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentLengthScaleAndTurbulentKineticEnergy'] = TurbulentLengthScaleAndTurbulentKineticEnergy\n        turbulent_kinetic_energy : <class 'flow360.component.simulation.unit_system._Constrained'>\n        turbulent_length_scale : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentLengthScaleAndTurbulentKineticEnergy",
+          "default": "TurbulentLengthScaleAndTurbulentKineticEnergy",
+          "enum": [
+            "TurbulentLengthScaleAndTurbulentKineticEnergy"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_kinetic_energy": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "specific_energy",
+              "enum": [
+                "J/kg",
+                "erg/g",
+                "ft**2/s**2"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Kinetic Energy"
+        },
+        "turbulent_length_scale": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Length Scale"
+        }
+      },
+      "required": [
+        "turbulent_kinetic_energy",
+        "turbulent_length_scale"
+      ],
+      "title": "TurbulentLengthScaleAndTurbulentKineticEnergy",
+      "type": "object"
+    },
+    "TurbulentViscosityRatio": {
+      "additionalProperties": false,
+      "description": "turbulentViscosityRatio : non-dimensional [`-`]\n    The ratio of turbulent eddy viscosity over the freestream viscosity. Applicable for both SA and SST model.\n\n\nParameters\n----------\ntype_name : typing.Literal['TurbulentViscosityRatio'] = TurbulentViscosityRatio\n        turbulent_viscosity_ratio : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentViscosityRatio",
+          "default": "TurbulentViscosityRatio",
+          "enum": [
+            "TurbulentViscosityRatio"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Turbulent Viscosity Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_viscosity_ratio"
+      ],
+      "title": "TurbulentViscosityRatio",
+      "type": "object"
+    },
+    "TurbulentViscosityRatioAndTurbulentKineticEnergy": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentViscosityRatioAndTurbulentKineticEnergy'] = TurbulentViscosityRatioAndTurbulentKineticEnergy\n        turbulent_kinetic_energy : <class 'flow360.component.simulation.unit_system._Constrained'>\n        turbulent_viscosity_ratio : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentViscosityRatioAndTurbulentKineticEnergy",
+          "default": "TurbulentViscosityRatioAndTurbulentKineticEnergy",
+          "enum": [
+            "TurbulentViscosityRatioAndTurbulentKineticEnergy"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_kinetic_energy": {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "specific_energy",
+              "enum": [
+                "J/kg",
+                "erg/g",
+                "ft**2/s**2"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Kinetic Energy"
+        },
+        "turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Turbulent Viscosity Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_kinetic_energy",
+        "turbulent_viscosity_ratio"
+      ],
+      "title": "TurbulentViscosityRatioAndTurbulentKineticEnergy",
+      "type": "object"
+    },
+    "TurbulentViscosityRatioAndTurbulentLengthScale": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\ntype_name : typing.Literal['TurbulentViscosityRatioAndTurbulentLengthScale'] = TurbulentViscosityRatioAndTurbulentLengthScale\n        turbulent_length_scale : <class 'flow360.component.simulation.unit_system._Constrained'>\n        turbulent_viscosity_ratio : <class 'float'>\n    ",
+      "properties": {
+        "type_name": {
+          "const": "TurbulentViscosityRatioAndTurbulentLengthScale",
+          "default": "TurbulentViscosityRatioAndTurbulentLengthScale",
+          "enum": [
+            "TurbulentViscosityRatioAndTurbulentLengthScale"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "turbulent_length_scale": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Turbulent Length Scale"
+        },
+        "turbulent_viscosity_ratio": {
+          "exclusiveMinimum": 0.0,
+          "title": "Turbulent Viscosity Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "turbulent_length_scale",
+        "turbulent_viscosity_ratio"
+      ],
+      "title": "TurbulentViscosityRatioAndTurbulentLengthScale",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Replace Flow360Param:\n- SubsonicInflow\n- MassInflow\n\n\nParameters\n----------\ntype : typing.Literal['Inflow'] = Inflow\n        entities : <class 'abc.EntityList[Surface]'>\n        turbulence_quantities : typing.Union[flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensity, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosity, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScaleAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndSpecificDissipationRate, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentLengthScale, NoneType] = None\n        total_temperature : <class 'flow360.component.simulation.unit_system._Constrained'>\n        velocity_direction : typing.Optional[flow360.component.types.Axis] = None\n        spec : typing.Union[flow360.component.simulation.models.surface_models.TotalPressure, flow360.component.simulation.models.surface_models.MassFlowRate]\n    ",
+  "properties": {
+    "type": {
+      "const": "Inflow",
+      "default": "Inflow",
+      "enum": [
+        "Inflow"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "surfaces": {
+      "$ref": "#/$defs/EntityList_Surface_"
+    },
+    "turbulence_quantities": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TurbulentViscosityRatio"
+        },
+        {
+          "$ref": "#/$defs/TurbulentKineticEnergy"
+        },
+        {
+          "$ref": "#/$defs/TurbulentIntensity"
+        },
+        {
+          "$ref": "#/$defs/TurbulentLengthScale"
+        },
+        {
+          "$ref": "#/$defs/ModifiedTurbulentViscosityRatio"
+        },
+        {
+          "$ref": "#/$defs/ModifiedTurbulentViscosity"
+        },
+        {
+          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentKineticEnergy"
+        },
+        {
+          "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentKineticEnergy"
+        },
+        {
+          "$ref": "#/$defs/TurbulentLengthScaleAndTurbulentKineticEnergy"
+        },
+        {
+          "$ref": "#/$defs/TurbulentIntensityAndSpecificDissipationRate"
+        },
+        {
+          "$ref": "#/$defs/TurbulentIntensityAndTurbulentViscosityRatio"
+        },
+        {
+          "$ref": "#/$defs/TurbulentIntensityAndTurbulentLengthScale"
+        },
+        {
+          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentViscosityRatio"
+        },
+        {
+          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentLengthScale"
+        },
+        {
+          "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentLengthScale"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turbulence Quantities"
+    },
+    "total_temperature": {
+      "properties": {
+        "value": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "units": {
+          "dimension": "temperature",
+          "enum": [
+            "K",
+            "R"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Total Temperature"
+    },
+    "velocity_direction": {
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Velocity Direction"
+    },
+    "spec": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TotalPressure"
+        },
+        {
+          "$ref": "#/$defs/MassFlowRate"
+        }
+      ],
+      "title": "Spec"
+    }
+  },
+  "required": [
+    "surfaces",
+    "total_temperature",
+    "spec"
+  ],
+  "title": "Inflow",
+  "type": "object"
+}

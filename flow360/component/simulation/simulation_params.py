@@ -218,7 +218,7 @@ class SimulationParams(_ParamModelBase):
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(None)
+    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(Steady())
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
     """
     Support for user defined expression?

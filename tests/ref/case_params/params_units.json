@@ -2,7 +2,7 @@
   "unitSystem": {
     "name": "SI"
   },
-  "version": "24.2.0",
+  "version": "24.3.0",
   "geometry": {
     "refArea": {
       "value": 1.0,
@@ -190,5 +190,5 @@
     "relativeTolerance": 0.0,
     "updateJacobianFrequency": 4
   },
-  "hash": "4c590bef145e27eaa5557667c35d04018d8c95907b43df10879000a087f6cd88"
+  "hash": "55e7a640706be1450b788f75a7d196a89d16dedad9c4ad4949afc430909a22a2"
 }

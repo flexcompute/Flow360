@@ -1,0 +1,10 @@
+{
+  "type": "SlipWall",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_slip_wall"
+      }
+    ]
+  }
+}

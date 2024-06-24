@@ -1,0 +1,25 @@
+{
+  "type": "Periodic",
+  "entity_pairs": {
+    "items": [
+      {
+        "pair": [
+          {
+            "name": "my_wall"
+          },
+          {
+            "name": "my_slip_wall"
+          }
+        ]
+      }
+    ]
+  },
+  "spec": {
+    "type": "Rotational",
+    "axis_of_rotation": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  }
+}

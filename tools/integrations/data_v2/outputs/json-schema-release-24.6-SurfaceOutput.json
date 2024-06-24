@@ -1,0 +1,156 @@
+{
+  "$defs": {
+    "EntityList_Surface_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Surface"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Surface]",
+      "type": "object"
+    },
+    "Surface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Surface",
+      "type": "object"
+    },
+    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____CfVec____Cf____heatFlux____nodeNormals____nodeForcesPerUnitArea____yPlus____wallFunctionMetric___": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "enum": [
+              "Cp",
+              "gradW",
+              "kOmega",
+              "Mach",
+              "mut",
+              "mutRatio",
+              "nuHat",
+              "primitiveVars",
+              "qcriterion",
+              "residualNavierStokes",
+              "residualTransition",
+              "residualTurbulence",
+              "s",
+              "solutionNavierStokes",
+              "solutionTransition",
+              "solutionTurbulence",
+              "T",
+              "vorticity",
+              "wallDistance",
+              "numericalDissipationFactor",
+              "residualHeatSolver",
+              "VelocityRelative",
+              "lowMachPreconditionerSensor",
+              "CfVec",
+              "Cf",
+              "heatFlux",
+              "nodeNormals",
+              "nodeForcesPerUnitArea",
+              "yPlus",
+              "wallFunctionMetric"
+            ],
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        write_single_file : <class 'bool'> = False\n    Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.\noutput_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]'>\n        output_type : typing.Literal['SurfaceOutput'] = SurfaceOutput\n    ",
+  "properties": {
+    "frequency": {
+      "default": -1,
+      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "minimum": -1,
+      "title": "Frequency",
+      "type": "integer"
+    },
+    "frequency_offset": {
+      "default": 0,
+      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "minimum": 0,
+      "title": "Frequency Offset",
+      "type": "integer"
+    },
+    "output_format": {
+      "default": "paraview",
+      "enum": [
+        "paraview",
+        "tecplot",
+        "both"
+      ],
+      "title": "Output Format",
+      "type": "string"
+    },
+    "surfaces": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityList_Surface_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "write_single_file": {
+      "default": false,
+      "description": "Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
+      "title": "Write Single File",
+      "type": "boolean"
+    },
+    "output_fields": {
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____CfVec____Cf____heatFlux____nodeNormals____nodeForcesPerUnitArea____yPlus____wallFunctionMetric___"
+    },
+    "output_type": {
+      "const": "SurfaceOutput",
+      "default": "SurfaceOutput",
+      "enum": [
+        "SurfaceOutput"
+      ],
+      "title": "Output Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "output_fields"
+  ],
+  "title": "SurfaceOutput",
+  "type": "object"
+}

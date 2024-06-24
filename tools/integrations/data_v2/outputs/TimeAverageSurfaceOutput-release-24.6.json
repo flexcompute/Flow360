@@ -1,0 +1,24 @@
+{
+  "frequency": 12,
+  "frequency_offset": 1,
+  "output_format": "tecplot",
+  "entities": {
+    "stored_entities": [
+      {
+        "name": "my_wall"
+      },
+      {
+        "name": "my_inflow1"
+      }
+    ]
+  },
+  "write_single_file": true,
+  "output_fields": {
+    "items": [
+      "nodeNormals",
+      "yPlus"
+    ]
+  },
+  "output_type": "TimeAverageSurfaceOutput",
+  "start_step": 10
+}
