@@ -30,10 +30,19 @@ def _model_attribute_unlock(model, attr: str):
         model.model_fields[attr].frozen = True
 
 
-class _MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
+    """
+    [INTERNAL]
 
-    type_name: Literal["_MultiConstructorModelBase"] = pd.Field(
-        "_MultiConstructorModelBase", frozen=True
+    Base class for models with multiple constructors.
+
+    This class provides a mechanism to create models with multiple constructors, each having its own set
+    of parameters and default values. It stores the constructor name and input cache so the class instance
+    can be constructed from front end input.
+    """
+
+    type_name: Literal["MultiConstructorBaseModel"] = pd.Field(
+        "MultiConstructorBaseModel", frozen=True
     )
     private_attribute_constructor: str = pd.Field("default", frozen=True)
     private_attribute_input_cache: Optional[Any] = pd.Field(None, frozen=True)

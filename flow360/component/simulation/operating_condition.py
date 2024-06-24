@@ -10,7 +10,7 @@ from typing_extensions import Self
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _MultiConstructorModelBase,
+    MultiConstructorBaseModel,
 )
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes
 from flow360.component.simulation.unit_system import (
@@ -39,7 +39,7 @@ class ThermalStateCache(Flow360BaseModel):
     material: Optional[FluidMaterialTypes] = None
 
 
-class ThermalState(_MultiConstructorModelBase):
+class ThermalState(MultiConstructorBaseModel):
     """
     Represents the thermal state of a fluid with specific properties.
 
@@ -65,7 +65,7 @@ class ThermalState(_MultiConstructorModelBase):
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
 
     # pylint: disable=no-self-argument, not-callable, unused-argument
-    @_MultiConstructorModelBase.model_constructor
+    @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_standard_atmosphere(
         cls,
@@ -146,7 +146,7 @@ class AerospaceConditionCache(Flow360BaseModel):
     reference_mach: Optional[pd.PositiveFloat] = None
 
 
-class GenericReferenceCondition(_MultiConstructorModelBase):
+class GenericReferenceCondition(MultiConstructorBaseModel):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
     """
@@ -159,7 +159,7 @@ class GenericReferenceCondition(_MultiConstructorModelBase):
     private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
     # pylint: disable=no-self-argument, not-callable
-    @_MultiConstructorModelBase.model_constructor
+    @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
@@ -176,7 +176,7 @@ class GenericReferenceCondition(_MultiConstructorModelBase):
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
 
-class AerospaceCondition(_MultiConstructorModelBase):
+class AerospaceCondition(MultiConstructorBaseModel):
     """A specialized GenericReferenceCondition for aerospace applications."""
 
     # pylint: disable=fixme
@@ -190,7 +190,7 @@ class AerospaceCondition(_MultiConstructorModelBase):
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
-    @_MultiConstructorModelBase.model_constructor
+    @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_mach(
         cls,
@@ -200,7 +200,13 @@ class AerospaceCondition(_MultiConstructorModelBase):
         thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
-        """Constructs a `AerospaceCondition` from Mach number and thermal state."""
+        """
+        Constructs a `AerospaceCondition` from Mach number and thermal state.
+
+        Note:
+        Decided to move `velocity==0 ref_velocity is not None` check to dedicated validator because user can
+        still construct by just calling AerospaceCondition()
+        """
 
         velocity_magnitude = mach * thermal_state.speed_of_sound
 
@@ -224,23 +230,6 @@ class AerospaceCondition(_MultiConstructorModelBase):
                 "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
             )
         return self
-
-    # Note: Decided to move `velocity==0 ref_velocity is not None` check to dedicated validator because user can
-    # Note: still construct by just calling AerospaceCondition()
-    # pylint: disable=no-self-argument, not-callable
-    # @_MultiConstructorModelBase.model_constructor
-    # @pd.validate_call
-    # def from_stationary(
-    #     cls,
-    #     reference_velocity_magnitude: VelocityType.Positive,
-    #     thermal_state: ThermalState = ThermalState(),
-    # ):
-    #     """Constructs a `AerospaceCondition` for stationary conditions."""
-    #     return cls(
-    #         velocity_magnitude=0 * u.m / u.s,
-    #         thermal_state=thermal_state,
-    #         reference_velocity_magnitude=reference_velocity_magnitude,
-    #     )
 
     @property
     def mach(self) -> pd.PositiveFloat:
