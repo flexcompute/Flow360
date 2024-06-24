@@ -116,6 +116,8 @@ def validate_model(params_as_dict, unit_system_name):
     validation_warnings = None
     validated_param = None
 
+    params_as_dict = remove_properties_by_name(params_as_dict, "_id")
+
     try:
         with unit_system:
             validated_param = SimulationParams(**params_as_dict)
@@ -157,8 +159,6 @@ def _translate_simulation_json(
     Get JSON for surface meshing from a given simulaiton JSON.
 
     """
-    params_as_dict = remove_properties_by_name(params_as_dict, "_id")
-
     translated_dict = None
     # pylint: disable=unused-variable
     param, errors, warnings = validate_model(params_as_dict, unit_system_name)
