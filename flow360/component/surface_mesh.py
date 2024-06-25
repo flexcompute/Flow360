@@ -263,10 +263,13 @@ class SurfaceMeshDraft(ResourceDraft):
         submitted_mesh = SurfaceMesh(self.id)
 
         remote_file_name = None
+
+        file_name_to_upload = None
         if self.geometry_file is not None:
             _, ext = os.path.splitext(self.geometry_file)
             remote_file_name = f"geometry{ext}"
-            file_name_to_upload = self.geometry_file
+            
+          = self.geometry_file
         elif self.surface_mesh_file is not None:
             _, ext = os.path.splitext(self.surface_mesh_file)
             remote_file_name = f"surface_mesh{ext}"
