@@ -114,7 +114,10 @@ class GenericSurface(_SurfaceEntityBase):
 
 
 class BoxCache(Flow360BaseModel):
+    """BoxCache"""
+
     axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)
+    # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)
     size: Optional[LengthType.Point] = pd.Field(None)
     name: Optional[str] = pd.Field(None)
@@ -135,11 +138,11 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
-    # axes: Tuple[Axis, Axis] = pd.Field()
     axis_of_rotation: Axis = pd.Field()
     angle_of_rotation: AngleType = pd.Field()
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
 
+    # pylint: disable=no-self-argument, missing-function-docstring
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_axes(
@@ -153,22 +156,23 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         if not np.isclose(np.linalg.norm(z_axis), 1):
             raise ValueError("Box axes not orthogonal.")
 
-        R = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=float))
+        rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=float))
 
         # Calculate the rotation axis n
-        eigR = eig(R)
-        axis = np.real(eigR[1][:, np.where(np.isclose(eigR[0], 1))])
+        eig_rotation = eig(rotation_matrix)
+        axis = np.real(eig_rotation[1][:, np.where(np.isclose(eig_rotation[0], 1))])
         print(axis.shape)
         if axis.shape[2] > 1:  # in case of 0 rotation angle
             axis = axis[:, :, 0]
         axis = np.ndarray.flatten(axis)
 
-        angle = np.sum(abs(np.angle(eigR[0]))) / 2
+        angle = np.sum(abs(np.angle(eig_rotation[0]))) / 2
 
         # Find correct angle
-        R_test = cls._rotation_matrix_from_axis_and_angle(axis, angle)
-        angle *= -1 if np.isclose(R[0, :] @ R_test[:, 0], 1) else 1
+        matrix_test = cls._rotation_matrix_from_axis_and_angle(axis, angle)
+        angle *= -1 if np.isclose(rotation_matrix[0, :] @ matrix_test[:, 0], 1) else 1
 
+        # pylint: disable=not-callable
         return cls(
             name=name,
             center=center,
@@ -177,6 +181,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             angle_of_rotation=angle * u.rad,
         )
 
+    # pylint: disable=no-self-argument
     @classmethod
     def _rotation_matrix_from_axis_and_angle(cls, axis, angle):
         # Compute the components of the rotation matrix using Rodrigues' formula
@@ -187,12 +192,12 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         n_x, n_y, n_z = axis
 
         # Compute the skew-symmetric cross-product matrix of axis
-        K = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
+        cross_n = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
 
         # Compute the rotation matrix
-        R = np.eye(3) + sin_theta * K + one_minus_cos * np.dot(K, K)
+        rotation_matrix = np.eye(3) + sin_theta * cross_n + one_minus_cos * np.dot(cross_n, cross_n)
 
-        return R
+        return rotation_matrix
 
     @pd.model_validator(mode="after")
     def _convert_axis_and_angle_to_coordinate_axes(cls, obj):
@@ -204,9 +209,12 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             # Normalize the axis vector
             axis = axis / np.linalg.norm(axis)
 
-            R = cls._rotation_matrix_from_axis_and_angle(axis, angle)
+            rotation_matrix = cls._rotation_matrix_from_axis_and_angle(axis, angle)
 
-            obj.private_attribute_input_cache.axes = [list(R[:, 0]), list(R[:, 1])]
+            obj.private_attribute_input_cache.axes = [
+                list(rotation_matrix[:, 0]),
+                list(rotation_matrix[:, 1]),
+            ]
 
         return obj
 
