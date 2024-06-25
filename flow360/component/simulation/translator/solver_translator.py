@@ -88,6 +88,7 @@ def get_solver_json(
         if isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
             spec = dump_dict(model)
             spec.pop("surfaces")
+            spec.pop("name")
             if isinstance(model, Wall):
                 spec.pop("useWallFunction")
                 spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
