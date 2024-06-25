@@ -306,7 +306,7 @@ class _DimensionedType(metaclass=ABCMeta):
             value = _has_dimensions_validator(value, cls.dim)
             value = _enforce_float64(value)
         except TypeError as err:
-            details = InitErrorDetails(type="value_error", ctx={"error": err})
+            details = InitErrorDetails(type="value_error", ctx={"error": str(err)})
             raise pd.ValidationError.from_exception_data("validation error", [details])
 
         if isinstance(value, u.Unit):
