@@ -116,7 +116,8 @@
       },
       "5":{
         "type":"MassInflow",
-        "massFlowRate":2.0
+        "massFlowRate":2.0,
+        "totalTemperatureRatio":1.0
       }
    }
 }
