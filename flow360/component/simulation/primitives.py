@@ -5,12 +5,18 @@ Primitive type definitions for simulation entities.
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union, final
 
+import numpy as np
 import pydantic as pd
+from scipy.linalg import eig
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    MultiConstructorBaseModel,
+)
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.unit_system import AreaType, LengthType
+from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.types import Axis
 
 
@@ -107,8 +113,15 @@ class GenericSurface(_SurfaceEntityBase):
     )
 
 
+class BoxCache(Flow360BaseModel):
+    axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)
+    center: Optional[LengthType.Point] = pd.Field(None)
+    size: Optional[LengthType.Point] = pd.Field(None)
+    name: Optional[str] = pd.Field(None)
+
+
 @final
-class Box(_VolumeEntityBase):
+class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
     Represents a box in three-dimensional space.
 
@@ -122,7 +135,80 @@ class Box(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
-    axes: Tuple[Axis, Axis] = pd.Field()
+    # axes: Tuple[Axis, Axis] = pd.Field()
+    axis_of_rotation: Axis = pd.Field()
+    angle_of_rotation: AngleType = pd.Field()
+    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_axes(
+        cls, name: str, center: LengthType.Point, size: LengthType.Point, axes: Tuple[Axis, Axis]
+    ):
+        # validate
+        x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
+        x_axis /= np.linalg.norm(x_axis)
+        y_axis /= np.linalg.norm(y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+        if not np.isclose(np.linalg.norm(z_axis), 1):
+            raise ValueError("Box axes not orthogonal.")
+
+        R = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=float))
+
+        # Calculate the rotation axis n
+        eigR = eig(R)
+        axis = np.real(eigR[1][:, np.where(np.isclose(eigR[0], 1))])
+        print(axis.shape)
+        if axis.shape[2] > 1:  # in case of 0 rotation angle
+            axis = axis[:, :, 0]
+        axis = np.ndarray.flatten(axis)
+
+        angle = np.sum(abs(np.angle(eigR[0]))) / 2
+
+        # Find correct angle
+        R_test = cls._rotation_matrix_from_axis_and_angle(axis, angle)
+        angle *= -1 if np.isclose(R[0, :] @ R_test[:, 0], 1) else 1
+
+        return cls(
+            name=name,
+            center=center,
+            size=size,
+            axis_of_rotation=list(axis),
+            angle_of_rotation=angle * u.rad,
+        )
+
+    @classmethod
+    def _rotation_matrix_from_axis_and_angle(cls, axis, angle):
+        # Compute the components of the rotation matrix using Rodrigues' formula
+        cos_theta = np.cos(angle)
+        sin_theta = np.sin(angle)
+        one_minus_cos = 1 - cos_theta
+
+        n_x, n_y, n_z = axis
+
+        # Compute the skew-symmetric cross-product matrix of axis
+        K = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
+
+        # Compute the rotation matrix
+        R = np.eye(3) + sin_theta * K + one_minus_cos * np.dot(K, K)
+
+        return R
+
+    @pd.model_validator(mode="after")
+    def _convert_axis_and_angle_to_coordinate_axes(cls, obj):
+        # Ensure the axis is a numpy array
+        if not obj.private_attribute_input_cache.axes:
+            axis = np.asarray(obj.axis_of_rotation, dtype=float)
+            angle = obj.angle_of_rotation.to("rad").v.item()
+
+            # Normalize the axis vector
+            axis = axis / np.linalg.norm(axis)
+
+            R = cls._rotation_matrix_from_axis_and_angle(axis, angle)
+
+            obj.private_attribute_input_cache.axes = [list(R[:, 0]), list(R[:, 1])]
+
+        return obj
 
 
 @final
