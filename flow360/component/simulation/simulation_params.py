@@ -241,8 +241,13 @@ class SimulationParams(_ParamModelBase):
                 return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
         return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
 
+    # pylint: disable=no-self-argument
     @pd.field_validator("models")
     def apply_defult_fluid_settings(cls, v):
+        """apply default Fluid() settings if not found in models"""
+        if v is None:
+            v = []
+        assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
         return v

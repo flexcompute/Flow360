@@ -23,6 +23,7 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
+from flow360.component.utils import remove_properties_by_name
 
 unit_system_map = {
     "SI": SI_unit_system,

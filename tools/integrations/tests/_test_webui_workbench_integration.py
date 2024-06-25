@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 import flow360 as fl
 from flow360.component.simulation.meshing_param.face_params import (
@@ -11,6 +11,7 @@ from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.services import (
+    get_default_params,
     simulation_to_case_json,
     simulation_to_surface_meshing_json,
     simulation_to_volume_meshing_json,
@@ -21,9 +22,6 @@ from flow360.component.simulation.simulation_params import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.unit_system import SI_unit_system, u
-
-from flow360.component.simulation.services import get_default_params
-
 
 fl.UserConfig.set_profile("auto_test_1")
 fl.Env.dev.active()
@@ -37,7 +35,7 @@ SOLVER_VERSION = "workbench-24.6.0"
 def get_all_process_jsons(params_as_dict):
 
     surface_json, hash = simulation_to_surface_meshing_json(
-    params_as_dict, "SI", {"value": 1.0, "units": "m"}
+        params_as_dict, "SI", {"value": 1.0, "units": "m"}
     )
     print(surface_json)
     volume_json, hash = simulation_to_volume_meshing_json(
@@ -48,9 +46,6 @@ def get_all_process_jsons(params_as_dict):
     print(case_json)
 
     return surface_json, volume_json, case_json
-
-
-
 
 
 with SI_unit_system:
@@ -82,41 +77,35 @@ with SI_unit_system:
         time_stepping=Steady(max_steps=700),
     )
 
-with open('data/airplane_minimal_example_python.json', 'w') as fh:
+with open("data/airplane_minimal_example_python.json", "w") as fh:
     params_as_dict = params.model_dump()
     json.dump(params_as_dict, fh, indent=4)
 
 
 # run from params:
 surface_json, volume_json, case_json = get_all_process_jsons(params.model_dump())
-assert case_json['freestream']['Mach'] == 0.2938635365101296
+assert case_json["freestream"]["Mach"] == 0.2938635365101296
 
 
 # run from full file:
-with open('data/airplane_minimal_example_python.json') as fh:
+with open("data/airplane_minimal_example_python.json") as fh:
     params_as_dict = json.load(fh)
-    
+
 surface_json, volume_json, case_json = get_all_process_jsons(params_as_dict)
-assert case_json['freestream']['Mach'] == 0.2938635365101296
-
-
+assert case_json["freestream"]["Mach"] == 0.2938635365101296
 
 
 # run from file without defaults:
-with open('data/airplane_minimal_example_no_defaults.json') as fh:
+with open("data/airplane_minimal_example_no_defaults.json") as fh:
     params_as_dict = json.load(fh)
-    
+
 surface_json, volume_json, case_json = get_all_process_jsons(params_as_dict)
-assert case_json['freestream']['Mach'] == 0.2938635365101296
-
-
-
+assert case_json["freestream"]["Mach"] == 0.2938635365101296
 
 
 # run from file without defaults:
-with open('data/airplane_minimal_example_no_defaults_with_ids.json') as fh:
+with open("data/airplane_minimal_example_no_defaults_with_ids.json") as fh:
     params_as_dict = json.load(fh)
-    
-surface_json, volume_json, case_json = get_all_process_jsons(params_as_dict)
-assert case_json['freestream']['Mach'] == 0.2938635365101296
 
+surface_json, volume_json, case_json = get_all_process_jsons(params_as_dict)
+assert case_json["freestream"]["Mach"] == 0.2938635365101296

@@ -362,7 +362,7 @@ def test_simulation_to_all_translation():
             models=[
                 Fluid(),
                 Wall(
-                    name='wall0',
+                    name="wall0",
                     entities=[Surface(name="wing1"), Surface(name="wing2")],
                 ),
                 Freestream(entities=[Surface(name="farfield")]),

@@ -1,5 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
+import json
 from copy import deepcopy
 from typing import Union
 
