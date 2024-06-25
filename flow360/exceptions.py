@@ -87,3 +87,7 @@ class Flow360ImportError(Flow360Error):
 
 class Flow360NotImplementedError(Flow360Error):
     """Error when a functionality is not (yet) supported."""
+
+
+class Flow360TranslationError(Flow360Error):
+    """Error when translating JSONs."""

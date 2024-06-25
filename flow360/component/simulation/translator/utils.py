@@ -10,6 +10,7 @@ from flow360.component.simulation.simulation_params import (
     SimulationParams,  # Not required
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.exceptions import Flow360TranslationError
 
 
 def preprocess_input(func):
@@ -129,13 +130,13 @@ def has_instance_in_list(obj_list: list, class_type):
 
 
 def get_attribute_from_first_instance(
-    obj_list: list, class_type, attribute_name: str, check_empty_entities: bool = False
+    obj_list: list, class_type, attribute_name: str, use_empty_entities: bool = False
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
         for obj in obj_list:
             if isinstance(obj, class_type):
-                if check_empty_entities and obj.entities is not None:
+                if use_empty_entities and obj.entities is not None:
                     continue
                 return getattr(obj, attribute_name)
     return None
@@ -200,3 +201,62 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
     """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
+
+
+def get_global_setting_from_per_item_setting(
+    obj_list: list,
+    class_type,
+    attribute_name: str,
+    allow_first_instance_as_dummy: bool,
+):
+    """
+    [AI-Generated] Retrieves a global setting from the per-item settings in a list of objects.
+
+    This function searches through a list of objects to find the first instance of a given class type
+    with empty entities and retrieves a specified attribute. If no such instance is found and
+    `allow_first_instance_as_dummy` is True, it retrieves the attribute from the first instance of the class type
+    regardless of whether its entities are empty. If `allow_first_instance_as_dummy` is False and no suitable instance
+    is found, it raises a `Flow360TranslationError`.
+
+    Note: This function does not apply to SurfaceOutput situations.
+
+    Args:
+        obj_list (list):
+            A list of objects to search through.
+        class_type (type):
+            The class type of objects to match.
+        attribute_name (str):
+            The name of the attribute to retrieve.
+        allow_first_instance_as_dummy (bool, optional):
+            Whether to allow retrieving the attribute from any instance of the class
+            type if no instance with empty entities is found.
+
+    Returns:
+        The value of the specified attribute from the first matching object.
+
+    Raises:
+        Flow360TranslationError: If `allow_first_instance_as_dummy` is False and no suitable instance is found.
+    """
+
+    # Get from the first instance of `class_type` with empty entities
+    global_setting = get_attribute_from_first_instance(
+        obj_list,
+        class_type,
+        attribute_name,
+        use_empty_entities=True,
+    )
+    if global_setting is None:
+        if allow_first_instance_as_dummy is True:
+            # Assume that no global setting is needed. Just get the first instance of `class_type`
+            # This is allowed because simulation will make sure global setting is not used anywhere.
+            global_setting = get_attribute_from_first_instance(
+                obj_list,
+                class_type,
+                attribute_name,
+                use_empty_entities=False,
+            )
+        else:
+            raise Flow360TranslationError(
+                f"Global setting of {attribute_name} is required but not found in `{class_type.__name__}` instances."
+            )
+    return global_setting
