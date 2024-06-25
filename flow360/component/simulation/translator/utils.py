@@ -180,19 +180,20 @@ def translate_setting_and_apply_to_all_entities(
     else:
         output = []
 
-    for obj in obj_list:
-        if isinstance(obj, class_type):
-            translated_setting = translation_func(obj)
-            for entity in obj.entities.stored_entities:
-                if not to_list:
-                    if output.get(entity.name) is None:
-                        output[entity.name] = entity_injection_func(entity)
-                    # needs to be recursive
-                    update_dict_recursively(output[entity.name], translated_setting)
-                else:
-                    setting = entity_injection_func(entity)
-                    setting.update(translated_setting)
-                    output.append(setting)
+    if obj_list is not None:
+        for obj in obj_list:
+            if isinstance(obj, class_type):
+                translated_setting = translation_func(obj)
+                for entity in obj.entities.stored_entities:
+                    if not to_list:
+                        if output.get(entity.name) is None:
+                            output[entity.name] = entity_injection_func(entity)
+                        # needs to be recursive
+                        update_dict_recursively(output[entity.name], translated_setting)
+                    else:
+                        setting = entity_injection_func(entity)
+                        setting.update(translated_setting)
+                        output.append(setting)
     return output
 
 
