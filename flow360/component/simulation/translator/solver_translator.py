@@ -5,6 +5,9 @@ from copy import deepcopy
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     _model_attribute_unlock,
 )
+from typing import Type, Union
+
+from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -13,8 +16,17 @@ from flow360.component.simulation.models.surface_models import (
 )
 from flow360.component.simulation.models.volume_models import BETDisk, Fluid, Rotation
 from flow360.component.simulation.outputs.outputs import (
+    AeroAcousticOutput,
+    Isosurface,
+    IsosurfaceOutput,
+    Probe,
+    ProbeOutput,
+    Slice,
     SliceOutput,
+    SurfaceIntegralOutput,
+    SurfaceList,
     SurfaceOutput,
+    TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
@@ -23,12 +35,12 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady, Uns
 from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_attribute_from_first_instance,
+    get_global_setting_from_per_item_setting,
     has_instance_in_list,
     merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
-    replace_dict_value,
     translate_setting_and_apply_to_all_entities,
 )
 from flow360.component.simulation.unit_system import LengthType
@@ -39,15 +51,77 @@ def dump_dict(input_params):
     return input_params.model_dump(by_alias=True, exclude_none=True)
 
 
-def init_output_attr_dict(obj_list, class_type):
+def init_non_average_output(
+    base: dict,
+    obj_list,
+    class_type: Union[SliceOutput, IsosurfaceOutput, VolumeOutput, SurfaceOutput],
+):
+    """Initialize the common output attribute for non-average output."""
+    has_average_capability = class_type.__name__.endswith(("VolumeOutput", "SurfaceOutput"))
+    if has_average_capability:
+        base["computeTimeAverages"] = False
+
+    base["animationFrequency"] = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "frequency", allow_first_instance_as_dummy=True
+    )
+    base["animationFrequencyOffset"] = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "frequency_offset", allow_first_instance_as_dummy=True
+    )
+    return base
+
+
+def init_average_output(
+    base: dict,
+    obj_list,
+    class_type: Union[TimeAverageVolumeOutput, TimeAverageSurfaceOutput],
+):
+    """Initialize the common output attribute for average output."""
+    base["computeTimeAverages"] = True
+    base["animationFrequencyTimeAverage"] = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "frequency", allow_first_instance_as_dummy=True
+    )
+    base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "frequency_offset", allow_first_instance_as_dummy=True
+    )
+    base["startAverageIntegrationStep"] = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "start_step", allow_first_instance_as_dummy=True
+    )
+    return base
+
+
+def init_output_base(obj_list, class_type: Type):
     """Initialize the common output attribute."""
-    return {
-        "animationFrequency": get_attribute_from_first_instance(obj_list, class_type, "frequency"),
-        "animationFrequencyOffset": get_attribute_from_first_instance(
-            obj_list, class_type, "frequency_offset"
-        ),
-        "outputFormat": get_attribute_from_first_instance(obj_list, class_type, "output_format"),
-    }
+
+    base = {"outputFields": []}
+    output_format = get_global_setting_from_per_item_setting(
+        obj_list, class_type, "output_format", allow_first_instance_as_dummy=True
+    )
+    assert output_format is not None
+    if output_format == "both":
+        output_format = "paraview,tecplot"
+    base["outputFormat"] = output_format
+
+    is_average = class_type.__name__.startswith("TimeAverage")
+    if is_average:
+        base = init_average_output(base, obj_list, class_type)
+    else:
+        base = init_non_average_output(base, obj_list, class_type)
+    return base
+
+
+def add_unused_output_settings_for_comparison(output_dict: dict):
+    """
+    Add unused output settings for easier debugging/comparsions.
+    """
+    for freq_key in ["animationFrequencyTimeAverage", "animationFrequency"]:
+        if freq_key not in output_dict:
+            output_dict[freq_key] = -1
+    for offset_key in ["animationFrequencyTimeAverageOffset", "animationFrequencyOffset"]:
+        if offset_key not in output_dict:
+            output_dict[offset_key] = 0
+    if "startAverageIntegrationStep" not in output_dict:
+        output_dict["startAverageIntegrationStep"] = -1
+    return output_dict
 
 
 def rotation_entity_info_serializer(volume):
@@ -55,7 +129,7 @@ def rotation_entity_info_serializer(volume):
     return {
         "referenceFrame": {
             "axisOfRotation": list(volume.axis),
-            "centerOfRotation": list(volume.center),
+            "centerOfRotation": list(volume.center.value),
         },
     }
 
@@ -74,6 +148,225 @@ def rotation_translator(model: Rotation):
     elif spec.get("units", "") == "flow360_angular_velocity_unit":
         volume_zone["referenceFrame"]["omegaRadians"] = spec["value"]
     return volume_zone
+
+
+def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: UniqueAliasedStringList):
+    """Get merged output fields"""
+    if shared_output_fields is None:
+        return {"outputFields": output_model.output_fields.items}
+    return {
+        "outputFields": merge_unique_item_lists(
+            output_model.output_fields.items, shared_output_fields.items
+        )
+    }
+
+
+def inject_slice_info(entity: Slice):
+    """inject entity info"""
+    return {
+        "sliceOrigin": list(entity.origin.value),
+        "sliceNormal": list(entity.normal),
+    }
+
+
+def inject_isosurface_info(entity: Isosurface):
+    """inject entity info"""
+    return {
+        "surfaceField": entity.field,
+        "surfaceFieldMagnitude": entity.iso_value,
+    }
+
+
+def inject_probe_info(entity: Probe):
+    """inject entity info"""
+    return {
+        "monitor_locations": [item.value.tolist() for item in entity.locations],
+    }
+
+
+def inject_surface_list_info(entity: SurfaceList):
+    """inject entity info"""
+    # pylint: disable=fixme
+    # TODO: Let's use surface full name"""
+    return {
+        "surfaces": [surface.name for surface in entity.entities.stored_entities],
+    }
+
+
+def translate_volume_output(
+    output_params: list, volume_output_class: Union[VolumeOutput, TimeAverageVolumeOutput]
+):
+    """Translate volume output settings."""
+    volume_output = init_output_base(output_params, volume_output_class)
+    # Get outputFields
+    volume_output.update(
+        {
+            "outputFields": get_attribute_from_first_instance(
+                output_params, volume_output_class, "output_fields"
+            ).model_dump()["items"],
+        }
+    )
+    return volume_output
+
+
+def translate_surface_output(
+    output_params: list, surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput]
+):
+    """Translate surface output settings."""
+    # TODO: Add all boundaries if entities is None after retriving the global settings
+    surface_output = init_output_base(output_params, surface_output_class)
+    shared_output_fields = get_global_setting_from_per_item_setting(
+        output_params,
+        surface_output_class,
+        "output_fields",
+        allow_first_instance_as_dummy=False,
+        return_none_when_no_global_found=True,
+    )
+    surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        surface_output_class,
+        translation_func=merge_output_fields,
+        to_list=False,
+        shared_output_fields=shared_output_fields,
+    )
+    surface_output["writeSingleFile"] = get_global_setting_from_per_item_setting(
+        output_params, surface_output_class, "write_single_file", allow_first_instance_as_dummy=True
+    )
+    return surface_output
+
+
+def translate_slice_isosurface_output(
+    output_params: list,
+    output_class: Union[SliceOutput, IsosurfaceOutput],
+    entities_name_key: str,
+    injection_function,
+):
+    """Translate slice or isosurface output settings."""
+    translated_output = init_output_base(output_params, output_class)
+    shared_output_fields = get_global_setting_from_per_item_setting(
+        output_params,
+        output_class,
+        "output_fields",
+        allow_first_instance_as_dummy=False,
+        return_none_when_no_global_found=True,
+    )
+    translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        output_class,
+        translation_func=merge_output_fields,
+        to_list=False,
+        shared_output_fields=shared_output_fields,
+        entity_injection_func=injection_function,
+    )
+    return translated_output
+
+
+def translate_monitor_output(output_params: list, monitor_type, injection_function):
+    """Translate monitor output settings."""
+    translated_output = {"outputFields": []}
+    shared_output_fields = get_global_setting_from_per_item_setting(
+        output_params,
+        monitor_type,
+        "output_fields",
+        allow_first_instance_as_dummy=False,
+        return_none_when_no_global_found=True,
+    )
+    translated_output["monitors"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        monitor_type,
+        translation_func=merge_output_fields,
+        to_list=False,
+        shared_output_fields=shared_output_fields,
+        entity_injection_func=injection_function,
+    )
+    return translated_output
+
+
+def merge_monitor_output(probe_output: dict, integral_output: dict):
+    """Merge probe and surface integral output."""
+    if probe_output == {}:
+        return integral_output
+    if integral_output == {}:
+        return probe_output
+
+    for integral_output_name, integral_output_value in integral_output["monitors"].items():
+        assert integral_output_name not in probe_output["monitors"]
+        probe_output["monitors"][integral_output_name] = integral_output_value
+    return probe_output
+
+
+def translate_acoustic_output(output_params: list):
+    """Translate acoustic output settings."""
+    aeroacoustic_output = {}
+    for output in output_params:
+        if isinstance(output, AeroAcousticOutput):
+            aeroacoustic_output["observers"] = [item.value.tolist() for item in output.observers]
+            aeroacoustic_output["writePerSurfaceOutput"] = output.write_per_surface_output
+            aeroacoustic_output["patchType"] = output.patch_type
+            return aeroacoustic_output
+    return None
+
+
+# pylint: disable=too-many-branches
+def translate_output(input_params: SimulationParams, translated: dict):
+    """Translate output settings."""
+    outputs = input_params.outputs
+
+    if outputs is None:
+        return translated
+    ##:: Step1: Get translated["volumeOutput"]
+    volume_output = {}
+    volume_output_average = {}
+    if has_instance_in_list(outputs, VolumeOutput):
+        volume_output = translate_volume_output(outputs, VolumeOutput)
+    if has_instance_in_list(outputs, TimeAverageVolumeOutput):
+        volume_output_average = translate_volume_output(outputs, TimeAverageVolumeOutput)
+    # Merge
+    volume_output.update(**volume_output_average)
+    if volume_output:
+        translated["volumeOutput"] = add_unused_output_settings_for_comparison(volume_output)
+
+    ##:: Step2: Get translated["surfaceOutput"]
+    surface_output = {}
+    surface_output_average = {}
+    if has_instance_in_list(outputs, SurfaceOutput):
+        surface_output = translate_surface_output(outputs, SurfaceOutput)
+    if has_instance_in_list(outputs, TimeAverageSurfaceOutput):
+        surface_output_average = translate_surface_output(outputs, TimeAverageSurfaceOutput)
+    # Merge
+    surface_output.update(**surface_output_average)
+    if surface_output:
+        translated["surfaceOutput"] = add_unused_output_settings_for_comparison(surface_output)
+
+    ##:: Step3: Get translated["sliceOutput"]
+    if has_instance_in_list(outputs, SliceOutput):
+        translated["sliceOutput"] = translate_slice_isosurface_output(
+            outputs, SliceOutput, "slices", inject_slice_info
+        )
+
+    ##:: Step4: Get translated["isoSurfaceOutput"]
+    if has_instance_in_list(outputs, IsosurfaceOutput):
+        translated["isoSurfaceOutput"] = translate_slice_isosurface_output(
+            outputs, IsosurfaceOutput, "isoSurfaces", inject_isosurface_info
+        )
+
+    ##:: Step5: Get translated["monitorOutput"]
+    probe_output = {}
+    integral_output = {}
+    if has_instance_in_list(outputs, ProbeOutput):
+        probe_output = translate_monitor_output(outputs, ProbeOutput, inject_probe_info)
+    if has_instance_in_list(outputs, SurfaceIntegralOutput):
+        integral_output = translate_monitor_output(
+            outputs, SurfaceIntegralOutput, inject_surface_list_info
+        )
+    # Merge
+    if probe_output or integral_output:
+        translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
+
+    ##:: Step6: Get translated["aeroacousticOutput"]
+    if has_instance_in_list(outputs, AeroAcousticOutput):
+        translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+    return translated
 
 
 # pylint: disable=too-many-statements
@@ -131,90 +424,15 @@ def get_solver_json(
                 translated["boundaries"][surface.private_attribute_full_name] = spec
 
     ##:: Step 4: Get outputs
-    outputs = input_params.outputs
+    # TODO:  add a unit test for this
+    # # the below is to ensure output fields if no surfaces are defined
+    # output_fields = []
+    # surface_outputs = [obj for obj in outputs if isinstance(obj, SurfaceOutput)]
+    # if len(surface_outputs) == 1:
+    #     if surface_outputs[0].entities is None:
+    #         output_fields = surface_outputs[0].output_fields.items
 
-    if has_instance_in_list(outputs, VolumeOutput):
-        translated["volumeOutput"] = init_output_attr_dict(outputs, VolumeOutput)
-        replace_dict_value(translated["volumeOutput"], "outputFormat", "both", "paraview,tecplot")
-        translated["volumeOutput"].update(
-            {
-                "outputFields": get_attribute_from_first_instance(
-                    outputs, VolumeOutput, "output_fields"
-                ).model_dump()["items"],
-                "computeTimeAverages": False,
-                "animationFrequencyTimeAverageOffset": 0,
-                "animationFrequencyTimeAverage": -1,
-                "startAverageIntegrationStep": -1,
-            }
-        )
-
-    if has_instance_in_list(outputs, SurfaceOutput):
-        translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
-        replace_dict_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
-
-        # the below is to ensure output fields if no surfaces are defined
-        output_fields = []
-        surface_outputs = [obj for obj in outputs if isinstance(obj, SurfaceOutput)]
-        if len(surface_outputs) == 1:
-            if surface_outputs[0].entities is None:
-                output_fields = surface_outputs[0].output_fields.items
-
-        translated["surfaceOutput"].update(
-            {
-                "writeSingleFile": get_attribute_from_first_instance(
-                    outputs, SurfaceOutput, "write_single_file"
-                ),
-                "surfaces": {},
-                "computeTimeAverages": False,
-                "animationFrequencyTimeAverageOffset": 0,
-                "animationFrequencyTimeAverage": -1,
-                "startAverageIntegrationStep": -1,
-                "outputFields": output_fields,
-            }
-        )
-
-    if has_instance_in_list(outputs, SliceOutput):
-        translated["sliceOutput"] = init_output_attr_dict(outputs, SliceOutput)
-        replace_dict_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
-        translated["sliceOutput"].update({"slices": {}, "outputFields": []})
-
-    # pylint: disable=too-many-nested-blocks
-    if input_params.outputs is not None:
-        for output in input_params.outputs:
-            # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
-            if isinstance(output, TimeAverageVolumeOutput):
-                # pylint: disable=fixme
-                # TODO: update time average entries
-                translated["volumeOutput"]["computeTimeAverages"] = True
-
-            elif isinstance(output, SurfaceOutput):
-                surfaces = translated["surfaceOutput"]["surfaces"]
-                if output.entities is not None:
-                    for surface in output.entities.stored_entities:
-                        if surface.private_attribute_full_name is None:
-                            with _model_attribute_unlock(surface, "private_attribute_full_name"):
-                                surface.private_attribute_full_name = surface.name
-                        surfaces[surface.private_attribute_full_name] = {
-                            "outputFields": merge_unique_item_lists(
-                                surfaces.get(surface.name, {}).get("outputFields", []),
-                                output.output_fields.model_dump()["items"],
-                            )
-                        }
-            elif isinstance(output, SliceOutput):
-                slices = translated["sliceOutput"]["slices"]
-                for slice_item in output.entities.items:
-                    slices[slice_item.name] = {
-                        "outputFields": merge_unique_item_lists(
-                            slices.get(slice_item.name, {}).get("outputFields", []),
-                            output.output_fields.model_dump()["items"],
-                        ),
-                        "sliceOrigin": list(
-                            remove_units_in_dict(dump_dict(slice_item))["sliceOrigin"]
-                        ),
-                        "sliceNormal": list(
-                            remove_units_in_dict(dump_dict(slice_item))["sliceNormal"]
-                        ),
-                    }
+    translated = translate_output(input_params, translated)
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
@@ -224,7 +442,7 @@ def get_solver_json(
             "physicalSteps": ts.steps,
             "orderOfAccuracy": ts.order_of_accuracy,
             "maxPseudoSteps": ts.max_pseudo_steps,
-            "timeStepSize": ts.step_size,
+            "timeStepSize": ts.step_size.value.item(),
         }
     elif isinstance(ts, Steady):
         translated["timeStepping"] = {

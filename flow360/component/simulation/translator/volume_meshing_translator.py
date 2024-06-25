@@ -63,13 +63,13 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         input_params.meshing.refinements,
         BoundaryLayer,
         "first_layer_thickness",
-        check_empty_entities=True,
+        use_empty_entities=True,
     ).value.item()
     translated["volume"]["growthRate"] = get_attribute_from_first_instance(
         input_params.meshing.refinements,
         BoundaryLayer,
         "growth_rate",
-        check_empty_entities=True,
+        use_empty_entities=True,
     )
 
     return translated

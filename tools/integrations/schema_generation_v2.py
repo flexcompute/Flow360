@@ -593,8 +593,8 @@ with imperial_unit_system:
         output_format="tecplot",
         output_fields=["Cp"],
         slices=[
-            Slice(name="my_first_slice", slice_normal=(1, 0, 0), slice_origin=(4, 4, 2)),
-            Slice(name="my_second_slice", slice_normal=(1, 0, 1), slice_origin=(41, 14, 12)),
+            Slice(name="my_first_slice", normal=(1, 0, 0), origin=(4, 4, 2)),
+            Slice(name="my_second_slice", normal=(1, 0, 1), origin=(41, 14, 12)),
         ],
     )
 write_example(setting, "outputs", "SliceOutput")
