@@ -1,3 +1,5 @@
+"""Time stepping setting for simulation"""
+
 from abc import ABCMeta
 from typing import Literal, Optional, Union
 
@@ -72,14 +74,6 @@ class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
 
     order_of_accuracy: Literal[1, 2] = pd.Field(2)
 
-    #  TODO:
-    # # pylint: disable=arguments-differ
-    # def to_solver(self, params, **kwargs) -> BaseTimeStepping:
-    #     """
-    #     returns configuration object in flow360 units system
-    #     """
-    #     return super().to_solver(params, **kwargs)
-
 
 class Steady(BaseTimeStepping):
     """
@@ -88,6 +82,7 @@ class Steady(BaseTimeStepping):
 
     type_name: Literal["Steady"] = pd.Field("Steady", frozen=True)
     max_steps: int = pd.Field(2000, gt=0, le=100000, description="Maximum number of pseudo steps.")
+    # pylint: disable=duplicate-code
     CFL: Union[RampCFL, AdaptiveCFL] = pd.Field(
         default=AdaptiveCFL.default_steady(),
     )
@@ -118,7 +113,9 @@ class Unsteady(BaseTimeStepping):
         100, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
+    # pylint: disable=no-member
     step_size: TimeType.Positive = pd.Field(description="Time step size in physical step marching,")
+    # pylint: disable=duplicate-code
     CFL: Union[RampCFL, AdaptiveCFL] = pd.Field(
         default=AdaptiveCFL.default_unsteady(),
     )

@@ -1,3 +1,5 @@
+"""MultiConstructorModelBase class for Pydantic models with multiple constructors."""
+
 import abc
 import inspect
 from contextlib import contextmanager
@@ -7,7 +9,6 @@ from typing import Any, Callable, Literal, Optional
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.types import TYPE_TAG_STR
 
 # requirements for data models with custom constructors:
 # 1. data model can be saved to JSON and read back to pydantic model without problems
@@ -29,16 +30,37 @@ def _model_attribute_unlock(model, attr: str):
         model.model_fields[attr].frozen = True
 
 
-class _MultiConstructorModelBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
+    """
+    [INTERNAL]
 
-    type_name: Literal["_MultiConstructorModelBase"] = pd.Field(
-        "_MultiConstructorModelBase", frozen=True
+    Base class for models with multiple constructors.
+
+    This class provides a mechanism to create models with multiple constructors, each having its own set
+    of parameters and default values. It stores the constructor name and input cache so the class instance
+    can be constructed from front end input.
+    """
+
+    type_name: Literal["MultiConstructorBaseModel"] = pd.Field(
+        "MultiConstructorBaseModel", frozen=True
     )
     private_attribute_constructor: str = pd.Field("default", frozen=True)
     private_attribute_input_cache: Optional[Any] = pd.Field(None, frozen=True)
 
     @classmethod
     def model_constructor(cls, func: Callable) -> Callable:
+        """
+        [AI-Generated] Decorator for model constructor functions.
+
+        This method wraps a constructor function to manage default argument values and cache the inputs.
+
+        Args:
+            func (Callable): The constructor function to wrap.
+
+        Returns:
+            Callable: The wrapped constructor function.
+        """
+
         @classmethod
         @wraps(func)
         def wrapper(cls, **kwargs):
@@ -146,6 +168,7 @@ def get_class_by_name(class_name, global_vars):
 
 
 def model_custom_constructor_parser(model_as_dict, global_vars):
+    """Parse the dictionary, construct the object and return obj dict."""
     constructor_name = model_as_dict.get("private_attribute_constructor", None)
     if constructor_name is not None:
         model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
@@ -153,16 +176,15 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
             return constructor(**input_kwargs).model_dump(exclude_none=True)
-        # else:
-        #     return model_cls(**input_kwargs).model_dump(exclude_none=True)
     return model_as_dict
 
 
 def parse_model_dict(model_as_dict, global_vars) -> dict:
+    """Recursively parses the model dictionary and attempts to construct the multi-constructor object."""
     if isinstance(model_as_dict, dict):
         for key, value in model_as_dict.items():
             model_as_dict[key] = parse_model_dict(value, global_vars)
         model_as_dict = model_custom_constructor_parser(model_as_dict, global_vars)
     elif isinstance(model_as_dict, list):
-        model_as_dict = [parse_model_dict(item) for item in model_as_dict]
+        model_as_dict = [parse_model_dict(item, global_vars) for item in model_as_dict]
     return model_as_dict

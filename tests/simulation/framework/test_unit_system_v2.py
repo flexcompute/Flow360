@@ -190,7 +190,7 @@ def test_flow360_unit_arithmetic():
             pt=(1, 1, 1),
             vec=(1, 1, 1),
             ax=(1, 1, 1),
-            omega=(1, 1, 1),
+            omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
         )
     assert data == data_flow360
 
@@ -253,14 +253,13 @@ def test_unit_system():
         "p": 5,
         "r": 2,
         "mu": 3,
-        "omega": 5,
         "m_dot": 11,
         "v_sq": 123,
         "fqc": 1111,
     }
     # SI
     with u.SI_unit_system:
-        data = DataWithUnits(**input, a=1 * u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
 
         assert data.L == 1 * u.m
         assert data.m == 2 * u.kg
@@ -272,14 +271,13 @@ def test_unit_system():
         assert data.p == 5 * u.Pa
         assert data.r == 2 * u.kg / u.m**3
         assert data.mu == 3 * u.Pa * u.s
-        assert data.omega == 5 * u.rad / u.s
         assert data.m_dot == 11 * u.kg / u.s
         assert data.v_sq == 123 * u.m**2 / u.s**2
         assert data.fqc == 1111 / u.s
 
     # CGS
     with u.CGS_unit_system:
-        data = DataWithUnits(**input, a=1 * u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
 
         assert data.L == 1 * u.cm
         assert data.m == 2 * u.g
@@ -291,14 +289,13 @@ def test_unit_system():
         assert data.p == 5 * u.dyne / u.cm**2
         assert data.r == 2 * u.g / u.cm**3
         assert data.mu == 3 * u.dyn * u.s / u.cm**2
-        assert data.omega == 5 * u.rad / u.s
         assert data.m_dot == 11 * u.g / u.s
         assert data.v_sq == 123 * u.cm**2 / u.s**2
         assert data.fqc == 1111 / u.s
 
     # Imperial
     with u.imperial_unit_system:
-        data = DataWithUnits(**input, a=1 * u.degree)
+        data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
 
         assert data.L == 1 * u.ft
         assert data.m == 2 * u.lb
@@ -310,14 +307,15 @@ def test_unit_system():
         assert data.p == 5 * u.lbf / u.ft**2
         assert data.r == 2 * u.lb / u.ft**3
         assert data.mu == 3 * u.lbf * u.s / u.ft**2
-        assert data.omega == 5 * u.rad / u.s
         assert data.m_dot == 11 * u.lb / u.s
         assert data.v_sq == 123 * u.ft**2 / u.s**2
         assert data.fqc == 1111 / u.s
 
     # Flow360
     with u.flow360_unit_system:
-        data = DataWithUnits(**input, a=1 * u.flow360_angle_unit)
+        data = DataWithUnits(
+            **input, a=1 * u.flow360_angle_unit, omega=1 * u.flow360_angular_velocity_unit
+        )
 
         assert data.L == 1 * u.flow360_length_unit
         assert data.m == 2 * u.flow360_mass_unit
@@ -329,7 +327,6 @@ def test_unit_system():
         assert data.p == 5 * u.flow360_pressure_unit
         assert data.r == 2 * u.flow360_density_unit
         assert data.mu == 3 * u.flow360_viscosity_unit
-        assert data.omega == 5 * u.flow360_angular_velocity_unit
         assert data.m_dot == 11 * u.flow360_mass_flow_rate_unit
         assert data.v_sq == 123 * u.flow360_specific_energy_unit
         assert data.fqc == 1111 * u.flow360_frequency_unit
@@ -346,7 +343,7 @@ def test_unit_system():
         "p": 5,
         "r": 2,
         "mu": 3,
-        "omega": 5,
+        "omega": 1 * u.radian / u.s,
         "m_dot": 10,
         "v_sq": 0.2,
         "fqc": 123,
@@ -478,19 +475,21 @@ def test_unit_system():
 
     with u.SI_unit_system:
         # Note that for union types the first element of union that passes validation is inferred!
-        data = VectorDataWithUnits(pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm
+        )
 
         assert all(coord == 1 * u.m for coord in data.pt)
         assert all(coord == 1 * u.m / u.s for coord in data.vec)
         assert all(coord == 1 * u.m for coord in data.ax)
-        assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+        assert all(coord == 1 * u.rpm for coord in data.omega)
 
-        data = VectorDataWithUnits(pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1))
+        data = VectorDataWithUnits(pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm)
 
         assert data.pt is None
         assert all(coord == 1 * u.m / u.s for coord in data.vec)
         assert all(coord == 1 * u.m for coord in data.ax)
-        assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+        assert all(coord == 1 * u.rpm for coord in data.omega)
 
 
 def test_optionals_and_unions():

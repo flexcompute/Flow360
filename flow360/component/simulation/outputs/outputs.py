@@ -1,3 +1,10 @@
+"""Mostly the same as Flow360Param counterparts.
+Caveats:
+1. Check if we support non-average and average output specified at the same time in solver.
+(Yes but they share the same output_fields)
+2. We do not support mulitple output frequencies/file format for the same type of output.
+"""
+
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -23,12 +30,6 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import LengthType
 
-"""Mostly the same as Flow360Param counterparts.
-Caveats:
-1. Check if we support non-average and average output specified at the same time in solver. (Yes but they share the same output_fields)
-2. We do not support mulitple output frequencies/file format for the same type of output.
-"""
-
 
 class _AnimationSettings(Flow360BaseModel):
     """
@@ -38,12 +39,14 @@ class _AnimationSettings(Flow360BaseModel):
     frequency: int = pd.Field(
         default=-1,
         ge=-1,
-        description="Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+        description="""Frequency (in number of physical time steps) at which output is saved.
+        -1 is at end of simulation.""",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+        description="""Offset (in number of physical time steps) at which output animation is started.
+        0 is at beginning of simulation.""",
     )
 
 
@@ -56,11 +59,17 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings):
+    """Surface output settings."""
+
+    # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
-        description="Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
+        description="""Enable writing all surface outputs into a single file instead of one file per surface.
+        This option currently only supports Tecplot output format.
+        Will choose the value of the last instance of this option of the same output type
+        (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.""",
     )
     output_fields: UniqueAliasedStringList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
@@ -69,11 +78,13 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """
     Caveats:
-    Solver side only accept exactly the same set of output_fields (is shared) between VolumeOutput and TimeAverageVolumeOutput.
+    Solver side only accept exactly the same set of output_fields (is shared) between
+    VolumeOutput and TimeAverageVolumeOutput.
 
     Notes
     -----
-        Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
+        Old `computeTimeAverages` can be infered when user is explicitly using for
+        example `TimeAverageSurfaceOutput`.
     """
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
@@ -85,6 +96,8 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
 
 
 class VolumeOutput(_AnimationAndFileFormatSettings):
+    """Volume output settings."""
+
     output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field()
     output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
@@ -92,12 +105,14 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
 class TimeAverageVolumeOutput(VolumeOutput):
     """
     Caveats:
-    Solver side only accept exactly the same set of output_fields (is shared) between VolumeOutput and TimeAverageVolumeOutput.
+    Solver side only accept exactly the same set of output_fields (is shared)
+    between VolumeOutput and TimeAverageVolumeOutput.
     Also let's not worry about allowing entities here as it is not supported by solver anyway.
 
     Notes
     -----
-        Old `computeTimeAverages` can be infered when user is explicitly using for example `TimeAverageSurfaceOutput`.
+        Old `computeTimeAverages` can be infered when user is explicitly using for example
+        `TimeAverageSurfaceOutput`.
     """
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
@@ -109,31 +124,42 @@ class TimeAverageVolumeOutput(VolumeOutput):
 
 
 class SliceOutput(_AnimationAndFileFormatSettings):
+    """Slice output settings."""
+
     entities: UniqueItemList[Slice] = pd.Field(alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
+    """Isosurface output settings."""
+
     entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
 class SurfaceIntegralOutput(_AnimationSettings):
+    """Surface integral output settings."""
+
     entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
 class ProbeOutput(_AnimationSettings):
+    """Probe monitor output settings."""
+
     entities: UniqueItemList[Probe] = pd.Field(alias="probes")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
 class AeroAcousticOutput(Flow360BaseModel):
+    """AeroAcoustic output settings."""
+
     patch_type: str = pd.Field("solid", frozen=True)
+    # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field()
     write_per_surface_output: bool = pd.Field(False)
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
@@ -141,8 +167,6 @@ class AeroAcousticOutput(Flow360BaseModel):
 
 class UserDefinedFields(Flow360BaseModel):
     """Ignore this for now"""
-
-    pass
 
 
 OutputTypes = Annotated[

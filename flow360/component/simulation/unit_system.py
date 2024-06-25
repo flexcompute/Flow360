@@ -569,6 +569,7 @@ class _DimensionedType(metaclass=ABCMeta):
         )
 
 
+# pylint: disable=too-few-public-methods
 class _LengthType(_DimensionedType):
     """:class: LengthType"""
 
@@ -579,6 +580,7 @@ class _LengthType(_DimensionedType):
 LengthType = Annotated[_LengthType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+# pylint: disable=too-few-public-methods
 class _AngleType(_DimensionedType):
     """:class: AngleType"""
 
@@ -590,6 +592,7 @@ class _AngleType(_DimensionedType):
 AngleType = Annotated[_AngleType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+# pylint: disable=too-few-public-methods
 class _MassType(_DimensionedType):
     """:class: MassType"""
 
@@ -600,6 +603,7 @@ class _MassType(_DimensionedType):
 MassType = Annotated[_MassType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+# pylint: disable=too-few-public-methods
 class _TimeType(_DimensionedType):
     """:class: TimeType"""
 
@@ -706,6 +710,7 @@ class _AngularVelocityType(_DimensionedType):
 
     dim = udim.angular_velocity
     dim_name = "angular_velocity"
+    has_defaults = False
 
 
 AngularVelocityType = Annotated[_AngularVelocityType, PlainSerializer(_dimensioned_type_serializer)]

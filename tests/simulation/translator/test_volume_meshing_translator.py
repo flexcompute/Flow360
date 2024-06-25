@@ -33,7 +33,7 @@ class TempSurfaceMesh(AssetBase):
     def _populate_registry(self):
         self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
         for surface_name in self._get_meta_data()["surfaces"]:
-            self._registry.register(Surface(name=surface_name))
+            self.internal_registry.register(Surface(name=surface_name))
 
     def __init__(self, file_name: str):
         super().__init__()

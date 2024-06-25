@@ -3,12 +3,13 @@ Primitive type definitions for simulation entities.
 """
 
 from abc import ABCMeta
-from typing import Final, Literal, Optional, Tuple, Union, final
+from typing import Literal, Optional, Tuple, Union, final
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.unit_system import AreaType, LengthType
 from flow360.component.types import Axis
 
@@ -37,18 +38,27 @@ class Transformation(Flow360BaseModel):
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
+    """All volumetric entities should inherit from this class."""
+
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericVolumeZoneType"] = "GenericVolumeZoneType"
+    private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
+    private_attribute_zone_boundary_names: Optional[UniqueItemList[str]] = pd.Field(
+        None, frozen=True
+    )
+
+    def _is_volume_zone(self) -> bool:
+        """This is not a zone if zone boundaries are not defined. For validation usage."""
+        return self.private_attribute_zone_boundaries is not None
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericSurfaceZoneType"] = "GenericSurfaceZoneType"
+    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
 
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
 
 
 @final
@@ -57,18 +67,28 @@ class Edge(_EdgeEntityBase):
     Edge with edge name defined in the geometry file
     """
 
-    # pylint: disable=invalid-name
     ### Warning: Please do not change this as it affects registry bucketing.
-    _entity_type: Literal["GenericEdgeType"] = "GenericEdgeType"
+    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = pd.Field(
+        "EdgeEntityType", frozen=True
+    )
+    private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
 
 
 @final
 class GenericVolume(_VolumeEntityBase):
-    """Do not expose.
-    This type of entity will get auto-constructed by assets when loading metadata."""
+    """
+    Do not expose.
+    This type of entity will get auto-constructed by assets when loading metadata.
+    By design these GenericVolume entities should only contain basic connectivity/mesh information.
+    """
 
-    # pylint: disable=invalid-name
-    _auto_constructed: Final[bool] = True
+    private_attribute_entity_type_name: Literal["GenericVolume"] = pd.Field(
+        "GenericVolume", frozen=True
+    )
+    axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # pylint: disable=no-member
+    center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
 
 
 @final
@@ -76,8 +96,15 @@ class GenericSurface(_SurfaceEntityBase):
     """Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata."""
 
-    # pylint: disable=invalid-name
-    _auto_constructed: Final[bool] = True
+    private_attribute_entity_type_name: Literal["GenericSurface"] = pd.Field(
+        "GenericSurface", frozen=True
+    )
+    private_attribute_is_interface: Optional[bool] = pd.Field(
+        False,  # Mostly are not interfaces
+        frozen=True,
+        description="""This is required in GenericSurface when generated from volume mesh
+        but not required when from surface mesh meta.""",
+    )
 
 
 @final
@@ -91,6 +118,7 @@ class Box(_VolumeEntityBase):
         axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
+    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
@@ -110,6 +138,7 @@ class Cylinder(_VolumeEntityBase):
         outer_radius (LengthType.Positive): The outer radius of the cylinder.
     """
 
+    private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)
     axis: Axis = pd.Field()
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
@@ -125,6 +154,8 @@ class Surface(_SurfaceEntityBase):
     """
     Represents a boudary surface in three-dimensional space.
     """
+
+    private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.

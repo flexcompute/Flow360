@@ -1,3 +1,5 @@
+"""Surface meshing parameter translator."""
+
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -8,6 +10,7 @@ from flow360.component.simulation.translator.utils import (
 )
 
 
+# pylint: disable=invalid-name
 def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
     """
     Translate SurfaceEdgeRefinement to edges.
@@ -17,8 +20,10 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
         return {"type": "aniso", "method": "height", "value": obj.method.value.value.item()}
     if obj.method.type == "projectAnisoSpacing":
         return {"type": "projectAnisoSpacing"}
+    return None
 
 
+# pylint: disable=invalid-name
 def SurfaceRefinement_to_faces(obj: SurfaceRefinement):
     """
     Translate SurfaceRefinement to faces.
@@ -30,6 +35,7 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement):
 
 
 @preprocess_input
+# pylint: disable=unused-argument
 def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.

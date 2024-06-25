@@ -1,3 +1,5 @@
+"""Unique list classes for Simulation framework."""
+
 from collections import Counter
 from typing import Annotated, List, Union
 
@@ -31,14 +33,16 @@ class _UniqueListMeta(_CombinedMeta):
 def _validate_unique_list(v: List) -> List:
     if len(v) != len(set(v)):
         raise ValueError(
-            f"Input item to this list must be unique but {[str(item) for item, count in Counter(v).items() if count > 1]} appears multiple times."
+            "Input item to this list must be unique "
+            f"but {[str(item) for item, count in Counter(v).items() if count > 1]} appears multiple times."
         )
     return v
 
 
 class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
     """
-    A list of general type items that must be unique (uniqueness is determined by the item's __eq__ and __hash__ method).
+    A list of general type items that must be unique
+    (uniqueness is determined by the item's __eq__ and __hash__ method).
 
     We will **not** try to remove duplicate items as choice is user's preference.
     """
@@ -46,19 +50,20 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
     items: Annotated[List, {"uniqueItems": True}]
 
     @pd.field_validator("items", mode="after")
+    @classmethod
     def check_unique(cls, v):
         """Check if the items are unique after type checking"""
         return _validate_unique_list(v)
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input: Union[dict, list]):
-        if isinstance(input, list):
-            return dict(items=input)
-        elif isinstance(input, dict):
-            return dict(items=input["items"])
-        else:  # Single reference to an entity
-            return dict(items=[input])
+    def _format_input_to_list(cls, input_data: Union[dict, list]):
+        if isinstance(input_data, list):
+            return {"items": input_data}
+        if isinstance(input_data, dict):
+            return {"items": input_data["items"]}
+        # Single reference to an entity
+        return {"items": [input_data]}
 
 
 def _validate_unique_aliased_item(v: List[str]) -> List[str]:
@@ -78,18 +83,17 @@ class UniqueAliasedStringList(Flow360BaseModel, metaclass=_UniqueListMeta):
     items: Annotated[List[str], {"uniqueItems": True}]
 
     @pd.field_validator("items", mode="after")
+    @classmethod
     def deduplicate(cls, v):
-        # for item in v:
-        #     if isinstance(item, str) == False:
-        #         raise ValueError(f"Expected string for the list but got {item.__class__.__name__}.")
+        """Deduplicate the list by original name or aliased name."""
         return _validate_unique_aliased_item(v)
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input: Union[dict, list]):
-        if isinstance(input, list):
-            return dict(items=input)
-        elif isinstance(input, dict):
-            return dict(items=input["items"])
-        else:  # Single reference to an entity
-            return dict(items=[input])
+    def _format_input_to_list(cls, input_data: Union[dict, list]):
+        if isinstance(input_data, list):
+            return {"items": input_data}
+        if isinstance(input_data, dict):
+            return {"items": input_data["items"]}
+        # Single reference to an entity
+        return {"items": [input_data]}

@@ -1,5 +1,6 @@
 """
-Contains basic components(solvers) that composes the `volume` type models. Each volume model represents a physical phenomena that require a combination of solver features to model.
+Contains basic components(solvers) that composes the `volume` type models.
+Each volume model represents a physical phenomena that require a combination of solver features to model.
 
 E.g. 
 NavierStokes, turbulence and transition composes FluidDynamics `volume` type
@@ -11,7 +12,6 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import Literal, Optional, Union
 
-import numpy as np
 import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 

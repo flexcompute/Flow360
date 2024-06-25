@@ -1,4 +1,6 @@
-from typing import Dict, List, Optional, Union
+"""User defined dynamic model for SimulationParams"""
+
+from typing import Dict, List, Optional
 
 import pydantic as pd
 

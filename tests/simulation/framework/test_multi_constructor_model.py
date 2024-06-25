@@ -8,7 +8,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _MultiConstructorModelBase,
+    MultiConstructorBaseModel,
     parse_model_dict,
 )
 from flow360.component.simulation.operating_condition import (

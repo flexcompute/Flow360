@@ -24,8 +24,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 
-from ..utils import remove_properties_by_name
-
 unit_system_map = {
     "SI": SI_unit_system,
     "CGS": CGS_unit_system,

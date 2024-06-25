@@ -1,4 +1,5 @@
-import json
+"""Flow360 solver setting parameter translator."""
+
 from copy import deepcopy
 from typing import Union
 
@@ -9,11 +10,7 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import (
-    ActuatorDisk,
-    BETDisk,
-    Fluid,
-)
+from flow360.component.simulation.models.volume_models import BETDisk, Fluid, Rotation
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
@@ -21,6 +18,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_attribute_from_first_instance,
@@ -30,20 +28,18 @@ from flow360.component.simulation.translator.utils import (
     remove_units_in_dict,
     replace_dict_key,
     replace_dict_value,
+    translate_setting_and_apply_to_all_entities,
 )
 from flow360.component.simulation.unit_system import LengthType
 
 
 def dump_dict(input_params):
+    """Dumping param/model to dictionary."""
     return input_params.model_dump(by_alias=True, exclude_none=True)
 
 
-def remove_empty_keys(input_dict):
-    # TODO: implement
-    return input_dict
-
-
 def init_output_attr_dict(obj_list, class_type):
+    """Initialize the common output attribute."""
     return {
         "animationFrequency": get_attribute_from_first_instance(obj_list, class_type, "frequency"),
         "animationFrequencyOffset": get_attribute_from_first_instance(
@@ -53,14 +49,45 @@ def init_output_attr_dict(obj_list, class_type):
     }
 
 
+def rotation_entity_info_serializer(volume):
+    """Rotation entity serializer"""
+    return {
+        "referenceFrame": {
+            "axisOfRotation": list(volume.axis),
+            "centerOfRotation": list(volume.center),
+        },
+    }
+
+
+def rotation_translator(model: Rotation):
+    """Rotation translator"""
+    volume_zone = {
+        "modelType": "FluidDynamics",
+        "referenceFrame": {},
+    }
+    if model.parent_volume:
+        volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
+    spec = dump_dict(model)["spec"]
+    if isinstance(spec, str):
+        volume_zone["referenceFrame"]["thetaRadians"] = spec
+    elif spec.get("units", "") == "flow360_angular_velocity_unit":
+        volume_zone["referenceFrame"]["omegaRadians"] = spec["value"]
+    return volume_zone
+
+
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals
 @preprocess_input
 def get_solver_json(
     input_params: Union[str, dict, SimulationParams],
+    # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
 ):
     """
     Get the solver json from the simulation parameters.
     """
+
     translated = {}
     ##:: Step 1: Get geometry:
     geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
@@ -94,6 +121,7 @@ def get_solver_json(
                 spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
                 if model.heat_spec:
                     spec.pop("heat_spec")
+                    # pylint: disable=fixme
                     # TODO: implement
             for surface in model.entities.stored_entities:
                 translated["boundaries"][surface.name] = spec
@@ -142,6 +170,7 @@ def get_solver_json(
         for output in input_params.outputs:
             # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
             if isinstance(output, TimeAverageVolumeOutput):
+                # pylint: disable=fixme
                 # TODO: update time average entries
                 translated["volumeOutput"]["computeTimeAverages"] = True
 
@@ -156,19 +185,23 @@ def get_solver_json(
                     }
             elif isinstance(output, SliceOutput):
                 slices = translated["sliceOutput"]["slices"]
-                for slice in output.entities.items:
-                    slices[slice.name] = {
+                for slice_item in output.entities.items:
+                    slices[slice_item.name] = {
                         "outputFields": merge_unique_item_lists(
-                            slices.get(slice.name, {}).get("outputFields", []),
+                            slices.get(slice_item.name, {}).get("outputFields", []),
                             output.output_fields.model_dump()["items"],
                         ),
-                        "sliceOrigin": list(remove_units_in_dict(dump_dict(slice))["sliceOrigin"]),
-                        "sliceNormal": list(remove_units_in_dict(dump_dict(slice))["sliceNormal"]),
+                        "sliceOrigin": list(
+                            remove_units_in_dict(dump_dict(slice_item))["sliceOrigin"]
+                        ),
+                        "sliceNormal": list(
+                            remove_units_in_dict(dump_dict(slice_item))["sliceNormal"]
+                        ),
                     }
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
-    if ts.type_name == "Unsteady":
+    if isinstance(ts, Unsteady):
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": ts.steps,
@@ -176,7 +209,7 @@ def get_solver_json(
             "maxPseudoSteps": ts.max_pseudo_steps,
             "timeStepSize": ts.step_size,
         }
-    else:
+    elif isinstance(ts, Steady):
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": 1,
@@ -221,11 +254,25 @@ def get_solver_json(
                 bet_disks.append(disk_i)
                 translated["BETDisks"] = bet_disks
 
-    ##:: Step 8: Get porous media
+    ##:: Step 8: Get rotation
+    if has_instance_in_list(input_params.models, Rotation):
+        volume_zones = translated.get("volumeZones", {})
+        volume_zones.update(
+            translate_setting_and_apply_to_all_entities(
+                input_params.models,
+                Rotation,
+                rotation_translator,
+                to_list=False,
+                entity_injection_func=rotation_entity_info_serializer,
+            )
+        )
+        translated["volumeZones"] = volume_zones
 
-    ##:: Step 9: Get heat transfer zones
+    ##:: Step 9: Get porous media
 
-    ##:: Step 10: Get user defined dynamics
+    ##:: Step 10: Get heat transfer zones
+
+    ##:: Step 11: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:
         translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:

@@ -1,12 +1,12 @@
+"""Volume models for the simulation framework."""
+
 from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.single_attribute_base import (
-    SingleAttributeModel,
-)
+from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.models.material import (
     Air,
     FluidMaterialTypes,
@@ -22,7 +22,6 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
-    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
@@ -30,12 +29,15 @@ from flow360.component.simulation.unit_system import (
     LengthType,
 )
 
+# pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
 
 
-class AngularVelocity(SingleAttributeModel):
-    value: AngularVelocityType = pd.Field()
+class FromUserDefinedDynamics(Flow360BaseModel):
+    """Rotation is controlled by user defined dynamics"""
+
+    type: Literal["FromUserDefinedDynamics"] = pd.Field("FromUserDefinedDynamics", frozen=True)
 
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
@@ -45,6 +47,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     constants: Optional[Dict[str, str]] = pd.Field(None)
 
 
+# pylint: disable=missing-class-docstring
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     rho: str = pd.Field()
     u: str = pd.Field()
@@ -87,6 +90,7 @@ class Fluid(PDEModelBase):
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
     ] = pd.Field(None)
 
+    # pylint: disable=fixme
     # fixme: Add support for other initial conditions
 
 
@@ -107,6 +111,7 @@ class Solid(PDEModelBase):
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(None)
 
 
+# pylint: disable=duplicate-code
 class ForcePerArea(Flow360BaseModel):
     """:class:`ForcePerArea` class for setting up force per area for Actuator Disk
 
@@ -140,7 +145,7 @@ class ForcePerArea(Flow360BaseModel):
     thrust: List[float]
     circumferential: List[float]
 
-    # pylint: disable=no-self-argument
+    # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
     @classmethod
     def check_len(cls, values):
@@ -195,9 +200,11 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     drag_coeffs: Optional[List[List[List[float]]]] = pd.Field()
 
 
+# pylint: disable=no-member
 class BETDisk(Flow360BaseModel):
     """Same as Flow360Param BETDisk.
-    Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity` so they are not required anymore.
+    Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity`
+    so they are not required anymore.
     """
 
     name: Optional[str] = pd.Field(None)
@@ -231,7 +238,8 @@ class Rotation(Flow360BaseModel):
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
 
-    rotation: Union[AngularVelocity, AngleType] = pd.Field()
+    # TODO: Add test for each of the spec specification.
+    spec: Union[StringExpression, FromUserDefinedDynamics, AngularVelocityType] = pd.Field()
     parent_volume: Optional[Union[GenericVolume, Cylinder, str]] = pd.Field(None)
 
 

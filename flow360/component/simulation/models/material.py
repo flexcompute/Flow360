@@ -1,3 +1,5 @@
+"""Material classes for the simulation framework."""
+
 from typing import Literal, Optional, Union
 
 import pydantic as pd
@@ -16,14 +18,21 @@ from flow360.component.simulation.unit_system import (
 
 
 class MaterialBase(Flow360BaseModel):
-    # Basic properties required to define a material.
-    # For example: young's modulus, viscosity as an expression of temperature, etc.
-    ...
+    """
+    Basic properties required to define a material.
+    For example: young's modulus, viscosity as an expression of temperature, etc.
+    """
+
     type: str = pd.Field()
     name: str = pd.Field()
 
 
 class Sutherland(Flow360BaseModel):
+    """
+    Sutherland's law
+    """
+
+    # pylint: disable=no-member
     reference_viscosity: ViscosityType.Positive = pd.Field()
     reference_temperature: TemperatureType.Positive = pd.Field()
     effective_temperature: TemperatureType.Positive = pd.Field()
@@ -32,6 +41,7 @@ class Sutherland(Flow360BaseModel):
     def dynamic_viscosity_from_temperature(
         self, temperature: TemperatureType.Positive
     ) -> ViscosityType.Positive:
+        """dynamic viscosity"""
         return (
             self.reference_viscosity
             * pow(temperature / self.reference_temperature, 1.5)
@@ -40,7 +50,12 @@ class Sutherland(Flow360BaseModel):
         )
 
 
+# pylint: disable=no-member, missing-function-docstring
 class Air(MaterialBase):
+    """
+    Material properties for Air
+    """
+
     type: Literal["air"] = pd.Field("air", frozen=True)
     name: str = pd.Field("air")
     dynamic_viscosity: Union[Sutherland, ViscosityType.Positive] = pd.Field(
@@ -81,6 +96,10 @@ class Air(MaterialBase):
 
 
 class SolidMaterial(MaterialBase):
+    """
+    Solid material base
+    """
+
     type: Literal["solid"] = pd.Field("solid", frozen=True)
     name: str = pd.Field(frozen=True)
     thermal_conductivity: ThermalConductivityType.Positive = pd.Field(frozen=True)

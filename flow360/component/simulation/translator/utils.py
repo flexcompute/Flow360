@@ -1,3 +1,5 @@
+"""Utilities for the translator module."""
+
 from __future__ import annotations
 
 import functools
@@ -11,8 +13,11 @@ from flow360.component.simulation.unit_system import LengthType
 
 
 def preprocess_input(func):
+    """Call param preprocess() method before calling the translator."""
+
     @functools.wraps(func)
     def wrapper(input_params, mesh_unit, *args, **kwargs):
+        # pylint: disable=no-member
         validated_mesh_unit = LengthType.validate(mesh_unit)
         processed_input = get_simulation_param_dict(input_params, validated_mesh_unit)
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
@@ -36,7 +41,7 @@ def get_simulation_param_dict(
             param_dict = json.loads(input_params)
         except json.JSONDecodeError:
             # If input is a file path
-            with open(input_params, "r") as file:
+            with open(input_params, "r", encoding="utf-8") as file:
                 param_dict = json.load(file)
         if param_dict is None:
             raise ValueError(f"Invalid input <{input_params}> for translator. ")
@@ -50,27 +55,53 @@ def get_simulation_param_dict(
 
 
 def replace_dict_key(input_dict: dict, key_to_replace: str, replacement_key: str):
+    """Replace a key in a dictionary."""
     if key_to_replace in input_dict:
         input_dict[replacement_key] = input_dict.pop(key_to_replace)
 
 
 def replace_dict_value(input_dict: dict, key: str, value_to_replace, replacement_value):
+    """Replace a value in a dictionary."""
     if key in input_dict and input_dict[key] == value_to_replace:
         input_dict[key] = replacement_value
 
 
 def convert_tuples_to_lists(input_dict):
+    """
+    Recursively convert all tuples to lists in a nested dictionary.
+
+    This function traverses through all the elements in the input dictionary and
+    converts any tuples it encounters into lists. It also handles nested dictionaries
+    and lists by applying the conversion recursively.
+
+    Args:
+        input_dict (dict): The input dictionary that may contain tuples.
+
+    Returns:
+        dict: A new dictionary with all tuples converted to lists.
+
+    Examples:
+        >>> input_dict = {
+        ...     'a': (1, 2, 3),
+        ...     'b': {
+        ...         'c': (4, 5),
+        ...         'd': [6, (7, 8)]
+        ...     }
+        ... }
+        >>> convert_tuples_to_lists(input_dict)
+        {'a': [1, 2, 3], 'b': {'c': [4, 5], 'd': [6, [7, 8]]}}
+    """
     if isinstance(input_dict, dict):
         return {k: convert_tuples_to_lists(v) for k, v in input_dict.items()}
-    elif isinstance(input_dict, tuple):
+    if isinstance(input_dict, tuple):
         return list(input_dict)
-    elif isinstance(input_dict, list):
+    if isinstance(input_dict, list):
         return [convert_tuples_to_lists(item) for item in input_dict]
-    else:
-        return input_dict
+    return input_dict
 
 
 def remove_units_in_dict(input_dict):
+    """Remove units from a dimensioned value."""
     unit_keys = {"value", "units"}
     if isinstance(input_dict, dict):
         new_dict = {}
@@ -83,13 +114,13 @@ def remove_units_in_dict(input_dict):
             else:
                 new_dict[key] = remove_units_in_dict(value)
         return new_dict
-    elif isinstance(input_dict, list):
+    if isinstance(input_dict, list):
         return [remove_units_in_dict(item) for item in input_dict]
-    else:
-        return input_dict
+    return input_dict
 
 
 def has_instance_in_list(obj_list: list, class_type):
+    """Check if a list contains an instance of a given type."""
     if obj_list is not None:
         for obj in obj_list:
             if isinstance(obj, class_type):
@@ -110,12 +141,26 @@ def get_attribute_from_first_instance(
     return None
 
 
+def update_dict_recursively(a, b):
+    """
+    Recursively updates dictionary 'a' with values from dictionary 'b'.
+    If the same key contains dictionaries in both 'a' and 'b', they are merged recursively.
+    """
+    for key, value in b.items():
+        if key in a and isinstance(a[key], dict) and isinstance(value, dict):
+            # If both a[key] and b[key] are dictionaries, recurse
+            update_dict_recursively(a[key], value)
+        else:
+            # Otherwise, simply update/overwrite the value in 'a' with the value from 'b'
+            a[key] = value
+
+
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
     translation_func,
     to_list: bool = False,
-    entity_injection_func=lambda x: x,
+    entity_injection_func=lambda x: {},
 ):
     """Translate settings and apply them to all entities of a given type.
 
@@ -138,19 +183,20 @@ def translate_setting_and_apply_to_all_entities(
     for obj in obj_list:
         if isinstance(obj, class_type):
             translated_setting = translation_func(obj)
-            if obj.entities is not None:
-                for entity in obj.entities.stored_entities:
-                    if not to_list:
-                        if output.get(entity.name) is None:
-                            output[entity.name] = {}
-                        output[entity.name].update(translated_setting)
-                    else:
-                        setting = entity_injection_func(entity)
-                        setting.update(translated_setting)
-                        output.append(setting)
+            for entity in obj.entities.stored_entities:
+                if not to_list:
+                    if output.get(entity.name) is None:
+                        output[entity.name] = entity_injection_func(entity)
+                    # needs to be recursive
+                    update_dict_recursively(output[entity.name], translated_setting)
+                else:
+                    setting = entity_injection_func(entity)
+                    setting.update(translated_setting)
+                    output.append(setting)
     return output
 
 
 def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
+    """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
