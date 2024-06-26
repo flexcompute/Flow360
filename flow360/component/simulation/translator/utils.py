@@ -18,15 +18,32 @@ def preprocess_input(func):
     @functools.wraps(func)
     def wrapper(input_params, mesh_unit, *args, **kwargs):
         # pylint: disable=no-member
+        if func.__name__ == "get_solver_json":
+            preprocess_exclude = ["meshing"]
+        elif func.__name__ in ("get_surface_meshing_json", "get_volume_meshing_json"):
+            preprocess_exclude = [
+                "reference_geometry",
+                "operating_condition",
+                "models",
+                "time_stepping",
+                "user_defined_dynamics",
+                "outputs",
+            ]
+        else:
+            preprocess_exclude = []
         validated_mesh_unit = LengthType.validate(mesh_unit)
-        processed_input = get_simulation_param_dict(input_params, validated_mesh_unit)
+        processed_input = get_simulation_param_dict(
+            input_params, validated_mesh_unit, preprocess_exclude
+        )
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
 
     return wrapper
 
 
 def get_simulation_param_dict(
-    input_params: SimulationParams | str | dict, validated_mesh_unit: LengthType
+    input_params: SimulationParams | str | dict,
+    validated_mesh_unit: LengthType,
+    preprocess_exclude: list[str],
 ):
     """
     Get the dictionary of `SimulationParams`.
@@ -50,7 +67,7 @@ def get_simulation_param_dict(
         param = SimulationParams(**input_params)
 
     if param is not None:
-        return param.preprocess(validated_mesh_unit)
+        return param.preprocess(validated_mesh_unit, exclude=preprocess_exclude)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 

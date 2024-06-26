@@ -3,7 +3,6 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
-from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -99,7 +98,6 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
                 area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=1),
-            models=[Fluid()],
         )
 
     data = params.model_dump(

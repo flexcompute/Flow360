@@ -1,10 +1,7 @@
 """Flow360 solver setting parameter translator."""
 
-import json
 from copy import deepcopy
-from typing import Union
 
-from flow360.component.flow360_params.flow360_params import Flow360Params
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -81,7 +78,7 @@ def rotation_translator(model: Rotation):
 # pylint: disable=too-many-locals
 @preprocess_input
 def get_solver_json(
-    input_params: Union[str, dict, SimulationParams],
+    input_params: SimulationParams,
     # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
 ):
@@ -288,7 +285,4 @@ def get_solver_json(
                 udd_dict["outputTargetName"] = udd.output_target.name
             translated["userDefinedDynamics"].append(udd_dict)
 
-    # current solver expects "user.json" so applying user.json format
-    translated_json = Flow360Params(**translated, legacy_fallback=True).json()
-
-    return json.loads(translated_json)
+    return translated

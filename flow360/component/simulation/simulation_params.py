@@ -231,18 +231,25 @@ class SimulationParams(_ParamModelBase):
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit) -> SimulationParams:
+    def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
         """TBD"""
+
+        if exclude is None:
+            exclude = []
+
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
+                return super().preprocess(
+                    self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"]
+                )
+        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"])
 
     # pylint: disable=no-self-argument
-    @pd.field_validator("models")
+    @pd.field_validator("models", mode="after")
+    @classmethod
     def apply_defult_fluid_settings(cls, v):
         """apply default Fluid() settings if not found in models"""
         if v is None:
