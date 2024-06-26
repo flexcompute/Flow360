@@ -130,7 +130,7 @@
             "maxIterations": 15
         },
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelingConstants": {
+        "modelConstants": {
             "C_DES": 0.72,
             "C_d": 8.0
         },
