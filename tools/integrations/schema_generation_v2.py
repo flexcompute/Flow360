@@ -45,12 +45,12 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
+    BETDisk,
     Fluid,
     NavierStokesInitialCondition,
     PorousMedium,
     Rotation,
     Solid,
-    BETDisk,
 )
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,

@@ -103,7 +103,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
         )
 
     data = params.model_dump(
-        exclude_none=True, exclude=dict(operating_condition=dict(velocity_magnitude=True))
+        exclude_none=True, exclude={"operating_condition": {"velocity_magnitude": True}}
     )
 
     return data
