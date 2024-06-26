@@ -2,11 +2,40 @@
   "$defs": {
     "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nname : <class 'str'>\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Cylinder",
+          "default": "Cylinder",
+          "enum": [
+            "Cylinder"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UniqueItemList_str_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "axis": {
           "properties": {
@@ -155,8 +184,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -167,10 +214,28 @@
       ],
       "title": "Surface",
       "type": "object"
+    },
+    "UniqueItemList_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[str]",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": ":class:`UserDefinedDynamic` class\n\nParameters\n----------\nname : <class 'str'>\n        input_vars : typing.List[str]\n        constants : typing.Optional[typing.Dict[str, float]] = None\n        output_vars : typing.Optional[typing.Dict[str, typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]] = None\n        state_vars_initial_value : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]\n        update_law : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x119739b80>)]]\n        input_boundary_patches : typing.Optional[abc.EntityList[Surface]] = None\n        output_target : typing.Optional[flow360.component.simulation.primitives.Cylinder] = None\n    ",
+  "description": ":class:`UserDefinedDynamic` class\n\nParameters\n----------\nname : <class 'str'>\n        input_vars : typing.List[str]\n        constants : typing.Optional[typing.Dict[str, float]] = None\n        output_vars : typing.Optional[typing.Dict[str, typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x15890c4c0>)]]] = None\n        state_vars_initial_value : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x15890c4c0>)]]\n        update_law : typing.List[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x15890c4c0>)]]\n        input_boundary_patches : typing.Optional[abc.EntityList[Surface]] = None\n        output_target : typing.Optional[flow360.component.simulation.primitives.Cylinder] = None\n    ",
   "properties": {
     "name": {
       "title": "Name",

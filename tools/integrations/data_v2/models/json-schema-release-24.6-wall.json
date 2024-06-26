@@ -27,7 +27,7 @@
     },
     "HeatFlux": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatFluxType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "description": "Heat flux\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatFluxType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
       "properties": {
         "value": {
           "anyOf": [
@@ -62,8 +62,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -77,7 +95,7 @@
     },
     "Temperature": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "description": "Temperature\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
       "properties": {
         "value": {
           "anyOf": [
@@ -112,7 +130,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Replace Flow360Param:\n- NoSlipWall\n- IsothermalWall\n- HeatFluxWall\n- WallFunction\n- SolidIsothermalWall\n- SolidAdiabaticWall\n\n\nParameters\n----------\ntype : typing.Literal['Wall'] = Wall\n        entities : <class 'abc.EntityList[Surface]'>\n        use_wall_function : <class 'bool'> = False\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n        heat_spec : typing.Union[flow360.component.simulation.models.surface_models.HeatFlux, flow360.component.simulation.models.surface_models.Temperature, NoneType] = None\n    ",
+  "description": "Replace Flow360Param:\n- NoSlipWall\n- IsothermalWall\n- HeatFluxWall\n- WallFunction\n- SolidIsothermalWall\n- SolidAdiabaticWall\n\n\nParameters\n----------\ntype : typing.Literal['Wall'] = Wall\n        entities : <class 'abc.EntityList[Surface]'>\n        name : typing.Optional[str] = None\n        use_wall_function : <class 'bool'> = False\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n        heat_spec : typing.Union[flow360.component.simulation.models.surface_models.HeatFlux, flow360.component.simulation.models.surface_models.Temperature, NoneType] = None\n    ",
   "properties": {
     "type": {
       "const": "Wall",
@@ -125,6 +143,18 @@
     },
     "surfaces": {
       "$ref": "#/$defs/EntityList_Surface_"
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
     },
     "use_wall_function": {
       "default": false,

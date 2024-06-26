@@ -27,7 +27,7 @@
     },
     "Mach": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nvalue : <class 'float'>\n    ",
+      "description": "Mach\n\nParameters\n----------\nvalue : <class 'float'>\n    ",
       "properties": {
         "value": {
           "minimum": 0.0,
@@ -43,7 +43,7 @@
     },
     "MassFlowRate": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Mass flow rate\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -72,7 +72,7 @@
     },
     "Pressure": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Pressure\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -101,8 +101,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -116,7 +134,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Replace Flow360Param:\n- SubsonicOutflowPressure\n- SubsonicOutflowMach\n- MassOutflow\n\n\nParameters\n----------\ntype : typing.Literal['Outflow'] = Outflow\n        entities : <class 'abc.EntityList[Surface]'>\n        spec : typing.Union[flow360.component.simulation.models.surface_models.Pressure, flow360.component.simulation.models.surface_models.MassFlowRate, flow360.component.simulation.models.surface_models.Mach]\n    ",
+  "description": "Replace Flow360Param:\n- SubsonicOutflowPressure\n- SubsonicOutflowMach\n- MassOutflow\n\n\nParameters\n----------\ntype : typing.Literal['Outflow'] = Outflow\n        entities : <class 'abc.EntityList[Surface]'>\n        name : typing.Optional[str] = None\n        spec : typing.Union[flow360.component.simulation.models.surface_models.Pressure, flow360.component.simulation.models.surface_models.MassFlowRate, flow360.component.simulation.models.surface_models.Mach]\n    ",
   "properties": {
     "type": {
       "const": "Outflow",
@@ -129,6 +147,18 @@
     },
     "surfaces": {
       "$ref": "#/$defs/EntityList_Surface_"
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
     },
     "spec": {
       "anyOf": [

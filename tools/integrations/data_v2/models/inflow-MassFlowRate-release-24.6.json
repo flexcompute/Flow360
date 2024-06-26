@@ -3,6 +3,8 @@
   "entities": {
     "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+        "private_attribute_entity_type_name": "Surface",
         "name": "my_inflow1"
       }
     ]
@@ -18,6 +20,7 @@
       "units": "1/s"
     }
   },
+  "name": null,
   "total_temperature": {
     "value": 300.0,
     "units": "K"

@@ -1,6 +1,6 @@
 {
   "additionalProperties": false,
-  "description": "Parameters\n----------\npatch_type : <class 'str'> = solid\n        observers : typing.List[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]]\n        write_per_surface_output : <class 'bool'> = False\n        output_type : typing.Literal['AeroAcousticOutput'] = AeroAcousticOutput\n    ",
+  "description": "AeroAcoustic output settings.\n\nParameters\n----------\npatch_type : <class 'str'> = solid\n        observers : typing.List[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]]\n        write_per_surface_output : <class 'bool'> = False\n        output_type : typing.Literal['AeroAcousticOutput'] = AeroAcousticOutput\n    ",
   "properties": {
     "patch_type": {
       "default": "solid",

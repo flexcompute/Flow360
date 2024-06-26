@@ -27,8 +27,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -92,18 +110,18 @@
     }
   },
   "additionalProperties": false,
-  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        write_single_file : <class 'bool'> = False\n    Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.\noutput_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]'>\n        output_type : typing.Literal['SurfaceOutput'] = SurfaceOutput\n    ",
+  "description": "Surface output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        write_single_file : <class 'bool'> = False\n    Enable writing all surface outputs into a single file instead of one file per surface.\n    This option currently only supports Tecplot output format.\n    Will choose the value of the last instance of this option of the same output type\n    (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.\noutput_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]'>\n        output_type : typing.Literal['SurfaceOutput'] = SurfaceOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
-      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "description": "Frequency (in number of physical time steps) at which output is saved.\n        -1 is at end of simulation.",
       "minimum": -1,
       "title": "Frequency",
       "type": "integer"
     },
     "frequency_offset": {
       "default": 0,
-      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "description": "Offset (in number of physical time steps) at which output animation is started.\n        0 is at beginning of simulation.",
       "minimum": 0,
       "title": "Frequency Offset",
       "type": "integer"
@@ -131,7 +149,7 @@
     },
     "write_single_file": {
       "default": false,
-      "description": "Enable writing all surface outputs into a single file instead of one file per surface. This option currently only supports Tecplot output format. Will choose the value of the last instance of this option of the same output type (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
+      "description": "Enable writing all surface outputs into a single file instead of one file per surface.\n        This option currently only supports Tecplot output format.\n        Will choose the value of the last instance of this option of the same output type\n        (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
       "title": "Write Single File",
       "type": "boolean"
     },

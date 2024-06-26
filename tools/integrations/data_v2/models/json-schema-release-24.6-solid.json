@@ -34,11 +34,139 @@
     },
     "GenericVolume": {
       "additionalProperties": false,
-      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "GenericVolume",
+          "default": "GenericVolume",
+          "enum": [
+            "GenericVolume"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UniqueItemList_str_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "axes": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axes"
+        },
+        "axis": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis"
+        },
+        "center": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Center"
         }
       },
       "required": [
@@ -196,7 +324,7 @@
     },
     "SolidMaterial": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\ntype : typing.Literal['solid'] = solid\n        name : <class 'str'>\n        thermal_conductivity : <class 'flow360.component.simulation.unit_system._Constrained'>\n        density : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        specific_heat_capacity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
+      "description": "Solid material base\n\n\nParameters\n----------\ntype : typing.Literal['solid'] = solid\n        name : <class 'str'>\n        thermal_conductivity : <class 'flow360.component.simulation.unit_system._Constrained'>\n        density : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        specific_heat_capacity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
       "properties": {
         "type": {
           "const": "solid",
@@ -288,10 +416,28 @@
       ],
       "title": "SolidMaterial",
       "type": "object"
+    },
+    "UniqueItemList_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[str]",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.SolidMaterial'>\n        initial_condition : typing.Optional[flow360.component.simulation.models.volume_models.HeatEquationInitialCondition] = None\n        entities : <class 'abc.EntityList[GenericVolume,str]'>\n        heat_equation_solver : <class 'flow360.component.simulation.models.solver_numerics.HeatEquationSolver'> = HeatEquationSolver(absolute_tolerance=1e-09, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=10, update_jacobian_frequency=1, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=50,, absolute_tolerance=1e-10,, relative_tolerance=None), type_name='HeatEquation')\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]] = 0\n    ",
+  "description": "General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.SolidMaterial'>\n        initial_condition : typing.Optional[flow360.component.simulation.models.volume_models.HeatEquationInitialCondition] = None\n        name : typing.Optional[str] = None\n        type : typing.Literal['Solid'] = Solid\n        entities : <class 'abc.EntityList[GenericVolume,str]'>\n        heat_equation_solver : <class 'flow360.component.simulation.models.solver_numerics.HeatEquationSolver'> = HeatEquationSolver(absolute_tolerance=1e-09, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=10, update_jacobian_frequency=1, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=50,, absolute_tolerance=1e-10,, relative_tolerance=None), type_name='HeatEquation')\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]] = 0\n    ",
   "properties": {
     "material": {
       "$ref": "#/$defs/SolidMaterial"
@@ -306,6 +452,27 @@
         }
       ],
       "default": null
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
+    "type": {
+      "const": "Solid",
+      "default": "Solid",
+      "enum": [
+        "Solid"
+      ],
+      "title": "Type",
+      "type": "string"
     },
     "volumes": {
       "$ref": "#/$defs/EntityList_GenericVolume_str_"

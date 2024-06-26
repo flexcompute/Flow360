@@ -1,0 +1,555 @@
+{
+  "$defs": {
+    "BETDiskChord": {
+      "additionalProperties": false,
+      "description": ":class:`BETDiskChord` class\n\nParameters\n----------\nradius : typing.Optional[float] = None\n        chord : typing.Optional[float] = None\n    ",
+      "properties": {
+        "radius": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "chord": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chord"
+        }
+      },
+      "title": "BETDiskChord",
+      "type": "object"
+    },
+    "BETDiskSectionalPolar": {
+      "additionalProperties": false,
+      "description": ":class:`BETDiskSectionalPolar` class\n\nParameters\n----------\nlift_coeffs : typing.Optional[typing.List[typing.List[typing.List[float]]]]\n        drag_coeffs : typing.Optional[typing.List[typing.List[typing.List[float]]]]\n    ",
+      "properties": {
+        "lift_coeffs": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lift Coeffs"
+        },
+        "drag_coeffs": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Drag Coeffs"
+        }
+      },
+      "required": [
+        "lift_coeffs",
+        "drag_coeffs"
+      ],
+      "title": "BETDiskSectionalPolar",
+      "type": "object"
+    },
+    "BETDiskTwist": {
+      "additionalProperties": false,
+      "description": ":class:`BETDiskTwist` class\n\nParameters\n----------\nradius : typing.Optional[float] = None\n        twist : typing.Optional[float] = None\n    ",
+      "properties": {
+        "radius": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "twist": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Twist"
+        }
+      },
+      "title": "BETDiskTwist",
+      "type": "object"
+    },
+    "Cylinder": {
+      "additionalProperties": false,
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Cylinder",
+          "default": "Cylinder",
+          "enum": [
+            "Cylinder"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UniqueItemList_str_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "axis": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "height": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Height"
+        },
+        "inner_radius": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inner Radius"
+        },
+        "outer_radius": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Outer Radius"
+        }
+      },
+      "required": [
+        "name",
+        "axis",
+        "center",
+        "height",
+        "outer_radius"
+      ],
+      "title": "Cylinder",
+      "type": "object"
+    },
+    "EntityList_Cylinder_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Cylinder]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Cylinder"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Cylinder]",
+      "type": "object"
+    },
+    "UniqueItemList_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[str]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Same as Flow360Param BETDisk.\nNote that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity`\nso they are not required anymore.\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['BETDisk'] = BETDisk\n        entities : typing.Optional[abc.EntityList[Cylinder]] = None\n        rotation_direction_rule : typing.Literal['leftHand', 'rightHand'] = rightHand\n        number_of_blades : <class 'int'>\n        omega : <class 'flow360.component.simulation.unit_system._Constrained'>\n        chord_ref : <class 'flow360.component.simulation.unit_system._Constrained'>\n        n_loading_nodes : <class 'int'>\n        blade_line_chord : <class 'flow360.component.simulation.unit_system._Constrained'> = 0\n        initial_blade_direction : typing.Optional[flow360.component.types.Axis] = None\n        tip_gap : typing.Union[typing.Literal['inf'], typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = inf\n        mach_numbers : typing.List[typing.Annotated[float, Ge(ge=0)]]\n        reynolds_numbers : typing.List[typing.Annotated[float, Gt(gt=0)]]\n        alphas : typing.List[float]\n        twists : typing.List[flow360.component.simulation.models.volume_models.BETDiskTwist]\n        chords : typing.List[flow360.component.simulation.models.volume_models.BETDiskChord]\n        sectional_polars : typing.List[flow360.component.simulation.models.volume_models.BETDiskSectionalPolar]\n        sectional_radiuses : typing.List[float]\n    ",
+  "properties": {
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
+    "type": {
+      "const": "BETDisk",
+      "default": "BETDisk",
+      "enum": [
+        "BETDisk"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "volumes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityList_Cylinder_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "rotation_direction_rule": {
+      "default": "rightHand",
+      "enum": [
+        "leftHand",
+        "rightHand"
+      ],
+      "title": "Rotation Direction Rule",
+      "type": "string"
+    },
+    "number_of_blades": {
+      "exclusiveMinimum": 0,
+      "maximum": 10,
+      "title": "Number Of Blades",
+      "type": "integer"
+    },
+    "omega": {
+      "properties": {
+        "value": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "units": {
+          "dimension": "angular_velocity",
+          "enum": [
+            "rad/s",
+            "rpm"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Omega"
+    },
+    "chord_ref": {
+      "properties": {
+        "value": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "units": {
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "mm",
+            "inch"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Chord Ref"
+    },
+    "n_loading_nodes": {
+      "exclusiveMinimum": 0,
+      "maximum": 1000,
+      "title": "N Loading Nodes",
+      "type": "integer"
+    },
+    "blade_line_chord": {
+      "default": 0,
+      "properties": {
+        "value": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "units": {
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "mm",
+            "inch"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Blade Line Chord"
+    },
+    "initial_blade_direction": {
+      "anyOf": [
+        {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Initial Blade Direction"
+    },
+    "tip_gap": {
+      "anyOf": [
+        {
+          "const": "inf",
+          "enum": [
+            "inf"
+          ],
+          "type": "string"
+        },
+        {
+          "properties": {
+            "value": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "default": "inf",
+      "title": "Tip Gap"
+    },
+    "mach_numbers": {
+      "items": {
+        "minimum": 0.0,
+        "type": "number"
+      },
+      "title": "Mach Numbers",
+      "type": "array"
+    },
+    "reynolds_numbers": {
+      "items": {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+      },
+      "title": "Reynolds Numbers",
+      "type": "array"
+    },
+    "alphas": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Alphas",
+      "type": "array"
+    },
+    "twists": {
+      "items": {
+        "$ref": "#/$defs/BETDiskTwist"
+      },
+      "title": "Twists",
+      "type": "array"
+    },
+    "chords": {
+      "items": {
+        "$ref": "#/$defs/BETDiskChord"
+      },
+      "title": "Chords",
+      "type": "array"
+    },
+    "sectional_polars": {
+      "items": {
+        "$ref": "#/$defs/BETDiskSectionalPolar"
+      },
+      "title": "Sectional Polars",
+      "type": "array"
+    },
+    "sectional_radiuses": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Sectional Radiuses",
+      "type": "array"
+    }
+  },
+  "required": [
+    "number_of_blades",
+    "omega",
+    "chord_ref",
+    "n_loading_nodes",
+    "mach_numbers",
+    "reynolds_numbers",
+    "alphas",
+    "twists",
+    "chords",
+    "sectional_polars",
+    "sectional_radiuses"
+  ],
+  "title": "BETDisk",
+  "type": "object"
+}

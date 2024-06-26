@@ -3,11 +3,14 @@
   "entities": {
     "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+        "private_attribute_entity_type_name": "Surface",
         "name": "my_free_stream"
       }
     ]
   },
   "turbulence_quantities": null,
+  "name": null,
   "velocity": [
     "1",
     "2",

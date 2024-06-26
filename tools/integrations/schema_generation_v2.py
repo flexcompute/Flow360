@@ -45,12 +45,12 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
-    AngularVelocity,
     Fluid,
     NavierStokesInitialCondition,
     PorousMedium,
     Rotation,
     Solid,
+    BETDisk,
 )
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
@@ -239,7 +239,7 @@ with SI_unit_system:
                 heat_spec=HeatFlux(1.0 * u.W / u.m**2),
             ),
             SlipWall(entities=[my_slip_wall_surface]),
-            Rotation(volumes=[my_cylinder_1], rotation=AngularVelocity(0.45 * u.rad / u.s)),
+            Rotation(volumes=[my_cylinder_1], spec=0.45 * u.rad / u.s),
             PorousMedium(
                 volumes=[my_box],
                 darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
@@ -423,11 +423,13 @@ write_example(solid_model, "models", "solid")
 write_schemas(Rotation, "models", "rotation")
 rotation_model = Rotation(
     volumes=[my_cylinder_1],
-    rotation=AngularVelocity(0.45 * u.deg / u.s),
+    spec=0.45 * u.deg / u.s,
     parent_volume=GenericVolume(name="outter_volume"),
 )
 write_example(rotation_model, "models", "rotation")
 
+
+write_schemas(BETDisk, "models", "bet_disk")
 
 write_schemas(PorousMedium, "models", "porouse_medium")
 porous_model = PorousMedium(

@@ -27,8 +27,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -42,7 +60,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Parameters\n----------\ntype : typing.Literal['SymmetryPlane'] = SymmetryPlane\n        entities : <class 'abc.EntityList[Surface]'>\n    ",
+  "description": "Symmetry plane\n\nParameters\n----------\ntype : typing.Literal['SymmetryPlane'] = SymmetryPlane\n        entities : <class 'abc.EntityList[Surface]'>\n        name : typing.Optional[str] = None\n    ",
   "properties": {
     "type": {
       "const": "SymmetryPlane",
@@ -55,6 +73,18 @@
     },
     "surfaces": {
       "$ref": "#/$defs/EntityList_Surface_"
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
     }
   },
   "required": [
