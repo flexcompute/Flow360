@@ -5019,4 +5019,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "b92a26feba62ae6aebebe609ccf9c08f65f55444777cfdfe3472820a865155cf"
+content-hash = "8183c264da72dfa3dd8efda33787984f39faf3d813c90e575ef58685541bd53f"
