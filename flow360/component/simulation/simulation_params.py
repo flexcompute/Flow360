@@ -203,7 +203,7 @@ class SimulationParams(_ParamModelBase):
         ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    meshing: Optional[MeshingParams] = pd.Field(None)
+    meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
     operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
     #

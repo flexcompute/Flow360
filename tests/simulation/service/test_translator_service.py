@@ -382,7 +382,6 @@ def test_simulation_to_all_translation():
     print(case_json)
 
 
-
 def test_simulation_to_all_translation_2():
     params_as_dict = {
         "meshing": {
@@ -395,62 +394,30 @@ def test_simulation_to_all_translation_2():
                     "name": "Boundary layer refinement_0",
                     "refinement_type": "BoundaryLayer",
                     "_id": "63ed1bfe-1b1b-4092-bb9d-915da0b6c092",
-                    "first_layer_thickness": {
-                        "value": 0.001,
-                        "units": "m"
-                    },
-                    "growth_rate": 1.2
+                    "first_layer_thickness": {"value": 0.001, "units": "m"},
+                    "growth_rate": 1.2,
                 },
                 {
                     "name": "Surface refinement_1",
                     "refinement_type": "SurfaceRefinement",
                     "_id": "2d95e85c-d91b-4842-96a7-444794193956",
-                    "max_edge_length": {
-                        "value": 0.15,
-                        "units": "m"
-                    },
-                    "curvature_resolution_angle": {
-                        "value": 10,
-                        "units": "degree"
-                    }
-                }
+                    "max_edge_length": {"value": 0.15, "units": "m"},
+                    "curvature_resolution_angle": {"value": 10, "units": "degree"},
+                },
             ],
-            "volume_zones": []
+            "volume_zones": [],
         },
         "operating_condition": {
-            "velocity_magnitude": {
-                "value": 100,
-                "units": "m/s"
-            },
-            "alpha": {
-                "value": 0,
-                "units": "degree"
-            },
-            "beta": {
-                "value": 0,
-                "units": "degree"
-            }
+            "velocity_magnitude": {"value": 100, "units": "m/s"},
+            "alpha": {"value": 0, "units": "degree"},
+            "beta": {"value": 0, "units": "degree"},
         },
         "reference_geometry": {
-            "moment_center": {
-                "value": [
-                    0,
-                    0,
-                    0
-                ],
-                "units": "m"
-            },
-            "moment_length": {
-                "value": 1,
-                "units": "m"
-            },
-            "area": {
-                "value": 1,
-                "units": "m**2"
-            }
+            "moment_center": {"value": [0, 0, 0], "units": "m"},
+            "moment_length": {"value": 1, "units": "m"},
+            "area": {"value": 1, "units": "m**2"},
         },
-        "models": [
-        ],
+        "models": [],
     }
 
     surface_json, hash = simulation_to_surface_meshing_json(
@@ -463,4 +430,3 @@ def test_simulation_to_all_translation_2():
     print(volume_json)
     case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
     print(case_json)
-
