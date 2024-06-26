@@ -190,6 +190,7 @@ class GeometryDraft(ResourceDraft):
         data = {
             "geometryName": self.name,
             "tags": self.tags,
+            "format": self._get_geometry_format(),
         }
 
         if self.solver_version:
@@ -211,3 +212,17 @@ class GeometryDraft(ResourceDraft):
         submitted_geometry._complete_upload(remote_file_names)
         log.info(f"Geometry successfully submitted: {submitted_geometry.short_description()}")
         return submitted_geometry
+
+    def _get_geometry_format(self) -> str:
+        ext_set = set()
+        for geometry_file in self.file_names:
+            _, ext = os.path.splitext(geometry_file)
+            ext_set.add(ext.lower())
+        ext_to_return = None
+        if len(ext_set) == 1 and list(ext_set)[0] == ".csm":
+            ext_to_return = "csm"
+        elif len(ext_set) == 1 and list(ext_set)[0] == ".egads":
+            ext_to_return = "egads"
+        else:
+            ext_to_return = "others"
+        return ext_to_return
