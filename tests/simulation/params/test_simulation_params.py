@@ -57,11 +57,11 @@ def get_the_param():
     my_inflow1 = Surface(name="my_inflow1")
     my_inflow2 = Surface(name="my_inflow2")
     with CGS_unit_system:
-        my_box = Box(
+        my_box = Box.from_principal_axes(
             name="my_box",
             center=(1.2, 2.3, 3.4) * u.m,
             size=(1.0, 2.0, 3.0) * u.m,
-            axes=((3, 4, 0), (1, 0, 0)),
+            axes=((3, 4, 0), (0, 0, 1)),
         )
         my_cylinder_1 = Cylinder(
             name="my_cylinder-1",
