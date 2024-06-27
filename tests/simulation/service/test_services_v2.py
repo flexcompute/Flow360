@@ -140,3 +140,11 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
+
+
+def test_validate_init_data_errors():
+
+    data = services.get_default_params(unit_system_name="SI", length_unit="m")
+    _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
+    json.dumps(errors)
+    assert len(errors) == 1

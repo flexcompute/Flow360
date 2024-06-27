@@ -205,7 +205,7 @@ class SimulationParams(_ParamModelBase):
 
     meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None, discriminator='type_name')
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
