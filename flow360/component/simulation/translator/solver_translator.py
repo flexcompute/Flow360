@@ -122,7 +122,12 @@ def get_solver_json(
                     # pylint: disable=fixme
                     # TODO: implement
             for surface in model.entities.stored_entities:
-                translated["boundaries"][surface.name] = spec
+                # What about ugrid?? Does it follow zoneName/patchName convention?
+                if surface.private_attribute_parent_zone_name is None:
+                    boundary_name = surface.name
+                else:
+                    boundary_name = surface.private_attribute_parent_zone_name + "/" + surface.name
+                translated["boundaries"][boundary_name] = spec
 
     ##:: Step 4: Get outputs
     outputs = input_params.outputs

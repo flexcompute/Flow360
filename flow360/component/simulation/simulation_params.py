@@ -16,9 +16,10 @@ from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs.outputs import OutputTypes
-from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    LengthType,
     UnitSystem,
     UnitSystemType,
     unit_system_manager,
@@ -45,6 +46,7 @@ class AssetCache(Flow360BaseModel):
     """
 
     asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
+    project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
     # pylint: disable=fixme
     # TODO: Pending mesh_unit
 
@@ -86,6 +88,32 @@ def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegi
             recursive_register_entity_list(field, registry)
 
 
+def _recursive_update_zone_name_in_surface(model: Flow360BaseModel, volume_mesh_meta_data: dict):
+    """
+    Update the zone info from volume mesh
+    """
+    for field in model.__dict__.values():
+        if isinstance(field, Surface):
+            field._update_parent_zone_name(volume_mesh_meta_data)
+
+        if isinstance(field, EntityList):
+            # pylint: disable=protected-access
+            expanded_entities = field._get_expanded_entities(
+                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
+            )
+            for entity in expanded_entities if expanded_entities else []:
+                if isinstance(entity, Surface):
+                    entity._update_parent_zone_name(volume_mesh_meta_data)
+
+        elif isinstance(field, list):
+            for item in field:
+                if isinstance(item, Flow360BaseModel):
+                    _recursive_update_zone_name_in_surface(item, volume_mesh_meta_data)
+
+        elif isinstance(field, Flow360BaseModel):
+            _recursive_update_zone_name_in_surface(field, volume_mesh_meta_data)
+
+
 class _ParamModelBase(Flow360BaseModel):
     """
     Base class that abstracts out all Param type classes in Flow360.
@@ -105,6 +133,14 @@ class _ParamModelBase(Flow360BaseModel):
             self,
             self.private_attribute_asset_cache.asset_entity_registry,
         )  # Clear so that the next param can use this.
+        return self
+
+    def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
+        """
+        Update the zone info from volume mesh
+        TODO: This will be used in CasePipline
+        """
+        _recursive_update_zone_name_in_surface(self, volume_mesh_meta_data)
         return self
 
     def _init_check_unit_system(self, **kwargs):
@@ -205,7 +241,9 @@ class SimulationParams(_ParamModelBase):
 
     meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None, discriminator='type_name')
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(
+        None, discriminator="type_name"
+    )
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
