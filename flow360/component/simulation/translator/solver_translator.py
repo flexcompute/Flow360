@@ -122,7 +122,7 @@ def get_solver_json(
                     # pylint: disable=fixme
                     # TODO: implement
             for surface in model.entities.stored_entities:
-                translated["boundaries"][surface.name] = spec
+                translated["boundaries"][surface.private_attribute_full_name] = spec
 
     ##:: Step 4: Get outputs
     outputs = input_params.outputs
@@ -184,7 +184,7 @@ def get_solver_json(
                 surfaces = translated["surfaceOutput"]["surfaces"]
                 if output.entities is not None:
                     for surface in output.entities.stored_entities:
-                        surfaces[surface.name] = {
+                        surfaces[surface.private_attribute_full_name] = {
                             "outputFields": merge_unique_item_lists(
                                 surfaces.get(surface.name, {}).get("outputFields", []),
                                 output.output_fields.model_dump()["items"],

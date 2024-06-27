@@ -3,6 +3,9 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    _model_attribute_unlock,
+)
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -17,6 +20,7 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
 )
 from flow360.component.simulation.unit_system import (
     CGS_unit_system,
+    LengthType,
     SI_unit_system,
     UnitSystem,
     flow360_unit_system,
@@ -86,9 +90,6 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
         Default parameters for Flow360 simulation.
 
     """
-    if length_unit is not None:
-        # TODO implement handling of length_unit (geometry unit and mesh unit), # pylint: disable=fixme
-        pass
 
     unit_system = init_unit_system(unit_system_name)
 
@@ -99,6 +100,15 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=1),
         )
+
+    if length_unit is not None:
+        # Store the length unit so downstream services/pipelines can use it
+        # pylint: disable=fixme
+        # TODO: client does not call this. We need to start using new webAPI for that
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
+                length_unit
+            )
 
     data = params.model_dump(
         exclude_none=True, exclude={"operating_condition": {"velocity_magnitude": True}}
