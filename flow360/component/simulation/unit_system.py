@@ -178,6 +178,8 @@ def _unit_object_parser(value, unyt_types: List[type]):
                     return unyt_type(value["value"], value["units"], dtype=np.float64)
                 except u.exceptions.UnitParseError:
                     pass
+                except RuntimeError:
+                    pass
         else:
             raise TypeError(
                 f"Dimensioned type instance {value} expects a 'value' field which was not given"
@@ -304,7 +306,7 @@ class _DimensionedType(metaclass=ABCMeta):
             value = _has_dimensions_validator(value, cls.dim)
             value = _enforce_float64(value)
         except TypeError as err:
-            details = InitErrorDetails(type="value_error", ctx={"error": err})
+            details = InitErrorDetails(type="value_error", ctx={"error": str(err)})
             raise pd.ValidationError.from_exception_data("validation error", [details])
 
         if isinstance(value, u.Unit):

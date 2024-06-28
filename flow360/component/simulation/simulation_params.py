@@ -13,9 +13,9 @@ from flow360.component.simulation.framework.entity_base import EntityBase, Entit
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import VolumeModelTypes
+from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
-from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
@@ -203,9 +203,11 @@ class SimulationParams(_ParamModelBase):
         ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    meshing: Optional[MeshingParams] = pd.Field(None)
+    meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None)
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(
+        None, discriminator="type_name"
+    )
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
@@ -231,12 +233,41 @@ class SimulationParams(_ParamModelBase):
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit) -> SimulationParams:
+    def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
         """TBD"""
+
+        if exclude is None:
+            exclude = []
+
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=["thermal_state"])
+                return super().preprocess(
+                    self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"]
+                )
+        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"])
+
+    # pylint: disable=no-self-argument
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def apply_defult_fluid_settings(cls, v):
+        """apply default Fluid() settings if not found in models"""
+        if v is None:
+            v = []
+        assert isinstance(v, list)
+        if not any(isinstance(item, Fluid) for item in v):
+            v.append(Fluid())
+        return v
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def apply_defult_output_settings(cls, v):
+        """[Solver Capability Related] apply default SurfaceOutput settings if not found in outputs"""
+        if v is None:
+            v = []
+        assert isinstance(v, list)
+        if not any(isinstance(item, SurfaceOutput) for item in v):
+            v.append(SurfaceOutput(output_fields=["Cp", "yPlus", "Cf", "CfVec"]))
+        return v

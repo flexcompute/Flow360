@@ -1,8 +1,13 @@
 {
+  "name": null,
+  "type": "Rotation",
   "entities": {
     "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+        "private_attribute_entity_type_name": "Cylinder",
         "name": "my_cylinder-1",
+        "private_attribute_zone_boundary_names": null,
         "axis": [
           1.0,
           0.0,
@@ -31,13 +36,17 @@
       }
     ]
   },
-  "rotation": {
-    "value": {
-      "value": 0.45,
-      "units": "degree/s"
-    }
+  "spec": {
+    "value": 0.45,
+    "units": "degree/s"
   },
   "parent_volume": {
-    "name": "outter_volume"
+    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+    "private_attribute_entity_type_name": "GenericVolume",
+    "name": "outter_volume",
+    "private_attribute_zone_boundary_names": null,
+    "axes": null,
+    "axis": null,
+    "center": null
   }
 }

@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from flow360.component.simulation import services
@@ -99,3 +101,50 @@ def test_validate_multiple_errors():
     assert len(errors) == 2
     assert errors[0]["loc"] == ("meshing", "farfield")
     assert errors[1]["loc"] == ("reference_geometry", "area", "value")
+
+
+def test_validate_errors():
+
+    params_data = {
+        "meshing": {
+            "farfield": "auto",
+            "refinement_factor": 1,
+            "refinements": [
+                {
+                    "_id": "926a6cbd-0ddb-4051-b860-3414565e6408",
+                    "curvature_resolution_angle": 10,
+                    "max_edge_length": 0.1,
+                    "name": "Surface refinement_0",
+                    "refinement_type": "SurfaceRefinement",
+                },
+                {
+                    "_id": "3972fbbf-4af6-4ca5-a8bb-341bbcf1294b",
+                    "first_layer_thickness": 0.001,
+                    "name": "Boundary layer refinement_1",
+                    "refinement_type": "BoundaryLayer",
+                },
+            ],
+            "surface_layer_growth_rate": 1.2,
+            "volume_zones": [],
+        },
+    }
+
+    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    json.dumps(errors)
+
+
+def test_init():
+
+    data = services.get_default_params(unit_system_name="SI", length_unit="m")
+    assert data["meshing"]["farfield"] == "auto"
+    assert data["operating_condition"]["alpha"]["value"] == 0
+    assert data["operating_condition"]["alpha"]["units"] == "degree"
+    assert "velocity_magnitude" not in data["operating_condition"].keys()
+
+
+def test_validate_init_data_errors():
+
+    data = services.get_default_params(unit_system_name="SI", length_unit="m")
+    _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
+    json.dumps(errors)
+    assert len(errors) == 1

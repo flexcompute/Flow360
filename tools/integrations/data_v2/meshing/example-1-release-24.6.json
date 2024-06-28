@@ -5,6 +5,7 @@
   "surface_layer_growth_rate": 1.5,
   "refinements": [
     {
+      "name": null,
       "refinement_type": "BoundaryLayer",
       "type": "aniso",
       "entities": null,
@@ -15,10 +16,13 @@
       "growth_rate": 1.2
     },
     {
+      "name": null,
       "refinement_type": "SurfaceRefinement",
       "entities": {
         "stored_entities": [
           {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
             "name": "wing"
           }
         ]

@@ -24,6 +24,7 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from tests.utils import compare_dicts
 
 
 class DataWithUnits(pd.BaseModel):
@@ -82,6 +83,10 @@ class Flow360DataWithUnits(Flow360BaseModel):
     l: LengthType = pd.Field()
     lp: LengthType.Point = pd.Field()
     lc: LengthType.NonNegative = pd.Field()
+
+
+class ScalarOrVector(Flow360BaseModel):
+    l: Union[LengthType, LengthType.Point] = pd.Field()
 
 
 def test_unit_access():
@@ -511,6 +516,32 @@ def test_optionals_and_unions():
         t=3 * u.s,
         v=300 * u.s,
     )
+
+
+def test_scalar_or_vector():
+
+    expected_s = {"value": 1, "units": "m"}
+    expected_v = {"value": (1, 1, 1), "units": "m"}
+
+    with u.SI_unit_system:
+        m = ScalarOrVector(l=1)
+        assert compare_dicts(m.model_dump()["l"], expected_s)
+
+    with u.SI_unit_system:
+        m = ScalarOrVector(l=(1, 1, 1))
+        assert compare_dicts(m.model_dump()["l"], expected_v)
+
+    m = ScalarOrVector(l=1 * u.m)
+    assert compare_dicts(m.model_dump()["l"], expected_s)
+
+    m = ScalarOrVector(l=(1, 1, 1) * u.m)
+    assert compare_dicts(m.model_dump()["l"], expected_v)
+
+    m = ScalarOrVector(l={"value": 1, "units": "m"})
+    assert compare_dicts(m.model_dump()["l"], expected_s)
+
+    m = ScalarOrVector(l={"value": (1, 1, 1), "units": "m"})
+    assert compare_dicts(m.model_dump()["l"], expected_v)
 
 
 @pytest.mark.usefixtures("array_equality_override")

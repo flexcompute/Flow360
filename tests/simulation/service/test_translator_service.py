@@ -250,6 +250,7 @@ def test_simulation_to_case_json():
             },
         ],
         "operating_condition": {
+            "type_name": "AerospaceCondition",
             "alpha": {"units": "degree", "value": 3.06},
             "beta": {"units": "degree", "value": 0.0},
             "thermal_state": {
@@ -362,7 +363,8 @@ def test_simulation_to_all_translation():
             models=[
                 Fluid(),
                 Wall(
-                    entities=[Surface(name="wing")],
+                    name="wall0",
+                    entities=[Surface(name="wing1"), Surface(name="wing2")],
                 ),
                 Freestream(entities=[Surface(name="farfield")]),
             ],
@@ -379,3 +381,57 @@ def test_simulation_to_all_translation():
     print(volume_json)
     case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
     print(case_json)
+
+
+def test_simulation_to_all_translation_2():
+    params_as_dict = {
+        "meshing": {
+            "farfield": "auto",
+            "refinement_factor": 1,
+            "gap_treatment_strength": None,
+            "surface_layer_growth_rate": 1.2,
+            "refinements": [
+                {
+                    "name": "Boundary layer refinement_0",
+                    "refinement_type": "BoundaryLayer",
+                    "_id": "63ed1bfe-1b1b-4092-bb9d-915da0b6c092",
+                    "first_layer_thickness": {"value": 0.001, "units": "m"},
+                    "growth_rate": 1.2,
+                },
+                {
+                    "name": "Surface refinement_1",
+                    "refinement_type": "SurfaceRefinement",
+                    "_id": "2d95e85c-d91b-4842-96a7-444794193956",
+                    "max_edge_length": {"value": 0.15, "units": "m"},
+                    "curvature_resolution_angle": {"value": 10, "units": "degree"},
+                },
+            ],
+            "volume_zones": [],
+        },
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"value": 100, "units": "m/s"},
+            "alpha": {"value": 0, "units": "degree"},
+            "beta": {"value": 0, "units": "degree"},
+        },
+        "reference_geometry": {
+            "moment_center": {"value": [0, 0, 0], "units": "m"},
+            "moment_length": {"value": 1, "units": "m"},
+            "area": {"value": 1, "units": "m**2"},
+        },
+        "models": [],
+    }
+
+    surface_json, hash = simulation_to_surface_meshing_json(
+        params_as_dict, "SI", {"value": 100.0, "units": "cm"}
+    )
+    print(surface_json)
+    volume_json, hash = simulation_to_volume_meshing_json(
+        params_as_dict, "SI", {"value": 100.0, "units": "cm"}
+    )
+    print(volume_json)
+    case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
+    print(case_json)
+
+
+test_simulation_to_all_translation_2()

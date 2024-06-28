@@ -1,8 +1,41 @@
 {
+  "version": "24.3.0",
   "unit_system": {
     "name": "SI"
   },
-  "version": "24.3.0",
+  "private_attribute_asset_cache": {
+    "asset_entity_registry": {
+      "internal_registry": {
+        "SurfaceEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "wing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/rightWing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/leftWing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/fuselage"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/farfield"
+          }
+        ]
+      }
+    }
+  },
   "meshing": {
     "farfield": "auto",
     "refinement_factor": 1.0,
@@ -10,6 +43,7 @@
     "surface_layer_growth_rate": 1.5,
     "refinements": [
       {
+        "name": null,
         "refinement_type": "BoundaryLayer",
         "type": "aniso",
         "entities": null,
@@ -20,10 +54,13 @@
         "growth_rate": 1.2
       },
       {
+        "name": null,
         "refinement_type": "SurfaceRefinement",
         "entities": {
           "stored_entities": [
             {
+              "private_attribute_registry_bucket_name": "SurfaceEntityType",
+              "private_attribute_entity_type_name": "Surface",
               "name": "wing"
             }
           ]
@@ -142,6 +179,7 @@
         }
       },
       "initial_condition": null,
+      "type": "Fluid",
       "navier_stokes_solver": {
         "absolute_tolerance": 1e-10,
         "relative_tolerance": 0.0,
@@ -195,16 +233,23 @@
       "entities": {
         "stored_entities": [
           {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
             "name": "fluid/rightWing"
           },
           {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
             "name": "fluid/leftWing"
           },
           {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
             "name": "fluid/fuselage"
           }
         ]
       },
+      "name": null,
       "use_wall_function": false,
       "velocity": null,
       "velocity_type": "relative",
@@ -215,11 +260,14 @@
       "entities": {
         "stored_entities": [
           {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
             "name": "fluid/farfield"
           }
         ]
       },
       "turbulence_quantities": null,
+      "name": null,
       "velocity": null,
       "velocity_type": "relative"
     }

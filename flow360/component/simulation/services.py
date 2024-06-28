@@ -3,7 +3,7 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -23,6 +23,7 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
+from flow360.component.utils import remove_properties_by_name
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -96,10 +97,14 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             reference_geometry=ReferenceGeometry(
                 area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
             ),
-            models=[Fluid()],
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
         )
 
-    return params
+    data = params.model_dump(
+        exclude_none=True, exclude={"operating_condition": {"velocity_magnitude": True}}
+    )
+
+    return data
 
 
 def validate_model(params_as_dict, unit_system_name):
@@ -113,6 +118,8 @@ def validate_model(params_as_dict, unit_system_name):
     validation_errors = None
     validation_warnings = None
     validated_param = None
+
+    params_as_dict = remove_properties_by_name(params_as_dict, "_id")
 
     try:
         with unit_system:

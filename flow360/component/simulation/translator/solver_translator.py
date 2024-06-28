@@ -1,7 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
 from copy import deepcopy
-from typing import Union
 
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -79,7 +78,7 @@ def rotation_translator(model: Rotation):
 # pylint: disable=too-many-locals
 @preprocess_input
 def get_solver_json(
-    input_params: Union[str, dict, SimulationParams],
+    input_params: SimulationParams,
     # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
 ):
@@ -114,6 +113,7 @@ def get_solver_json(
         if isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
             spec = dump_dict(model)
             spec.pop("surfaces")
+            spec.pop("name", None)
             if isinstance(model, Wall):
                 spec.pop("useWallFunction")
                 spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
@@ -145,6 +145,14 @@ def get_solver_json(
     if has_instance_in_list(outputs, SurfaceOutput):
         translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
         replace_dict_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
+
+        # the below is to ensure output fields if no surfaces are defined
+        output_fields = []
+        surface_outputs = [obj for obj in outputs if isinstance(obj, SurfaceOutput)]
+        if len(surface_outputs) == 1:
+            if surface_outputs[0].entities is None:
+                output_fields = surface_outputs[0].output_fields.items
+
         translated["surfaceOutput"].update(
             {
                 "writeSingleFile": get_attribute_from_first_instance(
@@ -155,7 +163,7 @@ def get_solver_json(
                 "animationFrequencyTimeAverageOffset": 0,
                 "animationFrequencyTimeAverage": -1,
                 "startAverageIntegrationStep": -1,
-                "outputFields": [],
+                "outputFields": output_fields,
             }
         )
 
@@ -174,13 +182,14 @@ def get_solver_json(
 
             elif isinstance(output, SurfaceOutput):
                 surfaces = translated["surfaceOutput"]["surfaces"]
-                for surface in output.entities.stored_entities:
-                    surfaces[surface.name] = {
-                        "outputFields": merge_unique_item_lists(
-                            surfaces.get(surface.name, {}).get("outputFields", []),
-                            output.output_fields.model_dump()["items"],
-                        )
-                    }
+                if output.entities is not None:
+                    for surface in output.entities.stored_entities:
+                        surfaces[surface.name] = {
+                            "outputFields": merge_unique_item_lists(
+                                surfaces.get(surface.name, {}).get("outputFields", []),
+                                output.output_fields.model_dump()["items"],
+                            )
+                        }
             elif isinstance(output, SliceOutput):
                 slices = translated["sliceOutput"]["slices"]
                 for slice_item in output.entities.items:

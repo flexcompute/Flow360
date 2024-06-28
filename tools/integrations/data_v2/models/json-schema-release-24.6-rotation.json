@@ -1,8 +1,8 @@
 {
   "$defs": {
-    "Box": {
+    "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axes : typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -14,10 +14,10 @@
           "type": "string"
         },
         "private_attribute_entity_type_name": {
-          "const": "Box",
-          "default": "Box",
+          "const": "Cylinder",
+          "default": "Cylinder",
           "enum": [
-            "Box"
+            "Cylinder"
           ],
           "title": "Private Attribute Entity Type Name",
           "type": "string"
@@ -36,6 +36,20 @@
             }
           ],
           "default": null
+        },
+        "axis": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis"
         },
         "center": {
           "properties": {
@@ -64,18 +78,11 @@
           },
           "title": "Center"
         },
-        "size": {
+        "height": {
           "properties": {
             "value": {
-              "items": {
-                "type": "number"
-              },
-              "maxItems": 3,
-              "minItems": 3,
-              "strictType": {
-                "type": "vector3"
-              },
-              "type": "array"
+              "exclusiveMinimum": 0,
+              "type": "number"
             },
             "units": {
               "dimension": "length",
@@ -89,55 +96,70 @@
               "type": "string"
             }
           },
-          "title": "Size"
+          "title": "Height"
         },
-        "axes": {
-          "maxItems": 2,
-          "minItems": 2,
-          "prefixItems": [
+        "inner_radius": {
+          "anyOf": [
             {
               "properties": {
                 "value": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "strictType": {
-                    "type": "vector3"
-                  },
-                  "type": "array"
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
                 }
               }
             },
             {
-              "properties": {
-                "value": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "strictType": {
-                    "type": "vector3"
-                  },
-                  "type": "array"
-                }
-              }
+              "type": "null"
             }
           ],
-          "title": "Axes",
-          "type": "array"
+          "default": null,
+          "title": "Inner Radius"
+        },
+        "outer_radius": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Outer Radius"
         }
       },
       "required": [
         "name",
+        "axis",
         "center",
-        "size",
-        "axes"
+        "height",
+        "outer_radius"
       ],
-      "title": "Box",
+      "title": "Cylinder",
       "type": "object"
     },
-    "EntityList_GenericVolume_Box_str_": {
+    "EntityList_GenericVolume_Cylinder_str_": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Box, str]]]\n    ",
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Cylinder, str]]]\n    ",
       "properties": {
         "stored_entities": {
           "anyOf": [
@@ -148,7 +170,7 @@
                     "$ref": "#/$defs/GenericVolume"
                   },
                   {
-                    "$ref": "#/$defs/Box"
+                    "$ref": "#/$defs/Cylinder"
                   },
                   {
                     "type": "string"
@@ -167,7 +189,24 @@
       "required": [
         "stored_entities"
       ],
-      "title": "EntityList[GenericVolume,Box,str]",
+      "title": "EntityList[GenericVolume,Cylinder,str]",
+      "type": "object"
+    },
+    "FromUserDefinedDynamics": {
+      "additionalProperties": false,
+      "description": "Rotation is controlled by user defined dynamics\n\nParameters\n----------\ntype : typing.Literal['FromUserDefinedDynamics'] = FromUserDefinedDynamics\n    ",
+      "properties": {
+        "type": {
+          "const": "FromUserDefinedDynamics",
+          "default": "FromUserDefinedDynamics",
+          "enum": [
+            "FromUserDefinedDynamics"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "FromUserDefinedDynamics",
       "type": "object"
     },
     "GenericVolume": {
@@ -333,7 +372,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['PorousMedium'] = PorousMedium\n        entities : typing.Optional[abc.EntityList[GenericVolume,Box,str]] = None\n        darcy_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        forchheimer_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)], NoneType] = None\n    ",
+  "description": "Similar to Flow360Param ReferenceFrame.\nNote that `center`, `axis` can be acquired from `entity` so they are not required anymore.\nNote: Should use the unit system to convert degree or degree per second to radian and radian per second\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['Rotation'] = Rotation\n        entities : <class 'abc.EntityList[GenericVolume,Cylinder,str]'>\n        spec : typing.Union[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x15890c4c0>)], flow360.component.simulation.models.volume_models.FromUserDefinedDynamics, typing.Annotated[flow360.component.simulation.unit_system._AngularVelocityType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]]\n        parent_volume : typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Cylinder, str, NoneType] = None\n    ",
   "properties": {
     "name": {
       "anyOf": [
@@ -348,92 +387,50 @@
       "title": "Name"
     },
     "type": {
-      "const": "PorousMedium",
-      "default": "PorousMedium",
+      "const": "Rotation",
+      "default": "Rotation",
       "enum": [
-        "PorousMedium"
+        "Rotation"
       ],
       "title": "Type",
       "type": "string"
     },
     "volumes": {
+      "$ref": "#/$defs/EntityList_GenericVolume_Cylinder_str_"
+    },
+    "spec": {
       "anyOf": [
         {
-          "$ref": "#/$defs/EntityList_GenericVolume_Box_str_"
+          "type": "string"
         },
         {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "darcy_coefficient": {
-      "properties": {
-        "value": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 3,
-          "minItems": 3,
-          "strictType": {
-            "type": "vector3"
-          },
-          "type": "array"
+          "$ref": "#/$defs/FromUserDefinedDynamics"
         },
-        "units": {
-          "dimension": "inverse_area",
-          "enum": [
-            "m**(-2)",
-            "cm**(-2)",
-            "ft**(-2)"
-          ],
-          "type": "string"
-        }
-      },
-      "title": "Darcy Coefficient"
-    },
-    "forchheimer_coefficient": {
-      "properties": {
-        "value": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 3,
-          "minItems": 3,
-          "strictType": {
-            "type": "vector3"
-          },
-          "type": "array"
-        },
-        "units": {
-          "dimension": "inverse_length",
-          "enum": [
-            "1/m",
-            "1/cm",
-            "1/ft"
-          ],
-          "type": "string"
-        }
-      },
-      "title": "Forchheimer Coefficient"
-    },
-    "volumetric_heat_source": {
-      "anyOf": [
         {
           "properties": {
             "value": {
               "type": "number"
             },
             "units": {
-              "dimension": "heat_source",
+              "dimension": "angular_velocity",
               "enum": [
-                "kg/(m*s**3)",
-                "g/(cm*s**3)",
-                "lb/(ft*s**3)"
+                "rad/s",
+                "rpm"
               ],
               "type": "string"
             }
           }
+        }
+      ],
+      "title": "Spec"
+    },
+    "parent_volume": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GenericVolume"
+        },
+        {
+          "$ref": "#/$defs/Cylinder"
         },
         {
           "type": "string"
@@ -443,13 +440,13 @@
         }
       ],
       "default": null,
-      "title": "Volumetric Heat Source"
+      "title": "Parent Volume"
     }
   },
   "required": [
-    "darcy_coefficient",
-    "forchheimer_coefficient"
+    "volumes",
+    "spec"
   ],
-  "title": "PorousMedium",
+  "title": "Rotation",
   "type": "object"
 }

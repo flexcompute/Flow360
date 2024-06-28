@@ -27,7 +27,7 @@
     },
     "ModifiedTurbulentViscosity": {
       "additionalProperties": false,
-      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
       "properties": {
         "type_name": {
           "const": "ModifiedTurbulentViscosity",
@@ -254,8 +254,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -666,7 +684,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Parameters\n----------\ntype : typing.Literal['Freestream'] = Freestream\n        entities : <class 'abc.EntityList[Surface]'>\n        turbulence_quantities : typing.Union[flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensity, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosity, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScaleAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndSpecificDissipationRate, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentLengthScale, NoneType] = None\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n    ",
+  "description": "Freestream\n\nParameters\n----------\ntype : typing.Literal['Freestream'] = Freestream\n        entities : <class 'abc.EntityList[Surface]'>\n        turbulence_quantities : typing.Union[flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensity, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosity, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScaleAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndSpecificDissipationRate, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentLengthScale, NoneType] = None\n        name : typing.Optional[str] = None\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n    ",
   "properties": {
     "type": {
       "const": "Freestream",
@@ -733,6 +751,18 @@
       ],
       "default": null,
       "title": "Turbulence Quantities"
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
     },
     "velocity": {
       "anyOf": [

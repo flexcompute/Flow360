@@ -3,8 +3,11 @@
   "entities": {
     "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+        "private_attribute_entity_type_name": "Surface",
         "name": "my_symmetry_plane"
       }
     ]
-  }
+  },
+  "name": null
 }

@@ -2,7 +2,7 @@
   "$defs": {
     "Rotational": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\ntype : typing.Literal['Rotational'] = Rotational\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = None\n    ",
+      "description": "Rotational periodicity\n\nParameters\n----------\ntype : typing.Literal['Rotational'] = Rotational\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = None\n    ",
       "properties": {
         "type": {
           "const": "Rotational",
@@ -41,8 +41,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -81,7 +99,7 @@
     },
     "Translational": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\ntype : typing.Literal['Translational'] = Translational\n    ",
+      "description": "Translational periodicity\n\nParameters\n----------\ntype : typing.Literal['Translational'] = Translational\n    ",
       "properties": {
         "type": {
           "const": "Translational",
@@ -116,8 +134,20 @@
     }
   },
   "additionalProperties": false,
-  "description": "Parameters\n----------\ntype : typing.Literal['Periodic'] = Periodic\n        entity_pairs : <class 'abc.UniqueItemList[SurfacePair]'>\n        spec : typing.Union[flow360.component.simulation.models.surface_models.Translational, flow360.component.simulation.models.surface_models.Rotational]\n    ",
+  "description": "Replace Flow360Param:\n- TranslationallyPeriodic\n- RotationallyPeriodic\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['Periodic'] = Periodic\n        entity_pairs : <class 'abc.UniqueItemList[SurfacePair]'>\n        spec : typing.Union[flow360.component.simulation.models.surface_models.Translational, flow360.component.simulation.models.surface_models.Rotational]\n    ",
   "properties": {
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
     "type": {
       "const": "Periodic",
       "default": "Periodic",

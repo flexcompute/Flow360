@@ -27,8 +27,26 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nname : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Surface",
+          "default": "Surface",
+          "enum": [
+            "Surface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -42,7 +60,7 @@
     },
     "SurfaceList": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nname : <class 'str'>\n        entities : <class 'abc.EntityList[Surface]'>\n    ",
+      "description": "List of surfaces for integrals.\n\nParameters\n----------\nname : <class 'str'>\n        entities : <class 'abc.EntityList[Surface]'>\n    ",
       "properties": {
         "name": {
           "title": "Name",
@@ -122,18 +140,18 @@
     }
   },
   "additionalProperties": false,
-  "description": "Parameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.\nentities : <class 'abc.UniqueItemList[SurfaceList]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]'>\n        output_type : typing.Literal['SurfaceIntegralOutput'] = SurfaceIntegralOutput\n    ",
+  "description": "Surface integral output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\nentities : <class 'abc.UniqueItemList[SurfaceList]'>\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor']]'>\n        output_type : typing.Literal['SurfaceIntegralOutput'] = SurfaceIntegralOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
-      "description": "Frequency (in number of physical time steps) at which output is saved. -1 is at end of simulation.",
+      "description": "Frequency (in number of physical time steps) at which output is saved.\n        -1 is at end of simulation.",
       "minimum": -1,
       "title": "Frequency",
       "type": "integer"
     },
     "frequency_offset": {
       "default": 0,
-      "description": "Offset (in number of physical time steps) at which output animation is started. 0 is at beginning of simulation.",
+      "description": "Offset (in number of physical time steps) at which output animation is started.\n        0 is at beginning of simulation.",
       "minimum": 0,
       "title": "Frequency Offset",
       "type": "integer"

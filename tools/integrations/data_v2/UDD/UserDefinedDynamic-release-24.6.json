@@ -18,12 +18,17 @@
   "input_boundary_patches": {
     "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+        "private_attribute_entity_type_name": "Surface",
         "name": "my_wall"
       }
     ]
   },
   "output_target": {
+    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+    "private_attribute_entity_type_name": "Cylinder",
     "name": "my_cylinder-1",
+    "private_attribute_zone_boundary_names": null,
     "axis": [
       1.0,
       0.0,

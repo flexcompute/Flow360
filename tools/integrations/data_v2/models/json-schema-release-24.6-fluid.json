@@ -2,7 +2,7 @@
   "$defs": {
     "Air": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x11fa7dee0>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
+      "description": "Material properties for Air\n\n\nParameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
       "properties": {
         "type": {
           "const": "air",
@@ -665,7 +665,7 @@
     },
     "Sutherland": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nreference_viscosity : <class 'flow360.component.simulation.unit_system._Constrained'>\n        reference_temperature : <class 'flow360.component.simulation.unit_system._Constrained'>\n        effective_temperature : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Sutherland's law\n\n\nParameters\n----------\nreference_viscosity : <class 'flow360.component.simulation.unit_system._Constrained'>\n        reference_temperature : <class 'flow360.component.simulation.unit_system._Constrained'>\n        effective_temperature : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
       "properties": {
         "reference_viscosity": {
           "properties": {
@@ -812,7 +812,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.Air'> = Air(type='air', name='air', dynamic_viscosity=Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'),, reference_temperature=unyt_quantity(273.15,, 'K'),, effective_temperature=unyt_quantity(110.4,, 'K')))\n        initial_condition : typing.Union[flow360.component.simulation.models.volume_models.NavierStokesModifiedRestartSolution, flow360.component.simulation.models.volume_models.NavierStokesInitialCondition, NoneType] = None\n        navier_stokes_solver : <class 'flow360.component.simulation.models.solver_numerics.NavierStokesSolver'> = NavierStokesSolver(absolute_tolerance=1e-10, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=1, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=30,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=1.0, kappa_MUSCL=-1.0, numerical_dissipation_factor=1.0, limit_velocity=False, limit_pressure_density=False, type_name='Compressible', low_mach_preconditioner=False, low_mach_preconditioner_threshold=None)\n        turbulence_model_solver : typing.Union[flow360.component.simulation.models.solver_numerics.NoneSolver, flow360.component.simulation.models.solver_numerics.SpalartAllmaras, flow360.component.simulation.models.solver_numerics.KOmegaSST] = SpalartAllmaras(absolute_tolerance=1e-08, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=4, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=20,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=2.0, type_name='SpalartAllmaras', DDES=False, grid_size_for_LES='maxEdgeLength', reconstruction_gradient_limiter=0.5, quadratic_constitutive_relation=False, modeling_constants=SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts',, C_DES=0.72,, C_d=8.0), rotation_correction=False)\n        transition_model_solver : typing.Optional[flow360.component.simulation.models.solver_numerics.TransitionModelSolver] = None\n    ",
+  "description": "General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.Air'> = Air(type='air', name='air', dynamic_viscosity=Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'),, reference_temperature=unyt_quantity(273.15,, 'K'),, effective_temperature=unyt_quantity(110.4,, 'K')))\n        initial_condition : typing.Union[flow360.component.simulation.models.volume_models.NavierStokesModifiedRestartSolution, flow360.component.simulation.models.volume_models.NavierStokesInitialCondition, NoneType] = None\n        type : typing.Literal['Fluid'] = Fluid\n        navier_stokes_solver : <class 'flow360.component.simulation.models.solver_numerics.NavierStokesSolver'> = NavierStokesSolver(absolute_tolerance=1e-10, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=1, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=30,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=1.0, kappa_MUSCL=-1.0, numerical_dissipation_factor=1.0, limit_velocity=False, limit_pressure_density=False, type_name='Compressible', low_mach_preconditioner=False, low_mach_preconditioner_threshold=None)\n        turbulence_model_solver : typing.Union[flow360.component.simulation.models.solver_numerics.NoneSolver, flow360.component.simulation.models.solver_numerics.SpalartAllmaras, flow360.component.simulation.models.solver_numerics.KOmegaSST] = SpalartAllmaras(absolute_tolerance=1e-08, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=4, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=20,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=2.0, type_name='SpalartAllmaras', DDES=False, grid_size_for_LES='maxEdgeLength', reconstruction_gradient_limiter=0.5, quadratic_constitutive_relation=False, modeling_constants=SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts',, C_DES=0.72,, C_d=8.0), rotation_correction=False)\n        transition_model_solver : typing.Optional[flow360.component.simulation.models.solver_numerics.TransitionModelSolver] = None\n    ",
   "properties": {
     "material": {
       "allOf": [
@@ -853,6 +853,15 @@
       ],
       "default": null,
       "title": "Initial Condition"
+    },
+    "type": {
+      "const": "Fluid",
+      "default": "Fluid",
+      "enum": [
+        "Fluid"
+      ],
+      "title": "Type",
+      "type": "string"
     },
     "navier_stokes_solver": {
       "allOf": [

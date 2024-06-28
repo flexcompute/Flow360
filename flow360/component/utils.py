@@ -266,3 +266,68 @@ def process_expressions(input_expressions):
             prcessed_expressions.append(_process_string_expression(expression))
         return tuple(prcessed_expressions)
     return input_expressions
+
+
+##::  -------- dict preprocessing functions --------
+
+
+def remove_properties_with_prefix(data, prefix):
+    """
+    Recursively removes properties from a nested dictionary and its lists
+    whose keys start with a specified prefix.
+
+    Parameters
+    ----------
+    data : dict or list or scalar
+        The input data, which can be a nested dictionary, a list, or a scalar value.
+
+    prefix : str
+        The prefix used to filter properties. Properties with keys starting with
+        this prefix will be removed.
+
+    Returns
+    -------
+    dict or list or scalar
+        Processed data with properties removed based on the specified prefix.
+    """
+
+    if isinstance(data, dict):
+        return {
+            key: remove_properties_with_prefix(value, prefix)
+            for key, value in data.items()
+            if not key.startswith(prefix)
+        }
+    if isinstance(data, list):
+        return [remove_properties_with_prefix(item, prefix) for item in data]
+    return data
+
+
+def remove_properties_by_name(data, name_to_remove):
+    """
+    Recursively removes properties from a nested dictionary and its lists
+    whose keys start with a specified prefix.
+
+    Parameters
+    ----------
+    data : dict or list or scalar
+        The input data, which can be a nested dictionary, a list, or a scalar value.
+
+    name_to_remove : str
+        The name_to_remove used to filter properties. Properties with keys equal to
+        this name_to_remove will be removed.
+
+    Returns
+    -------
+    dict or list or scalar
+        Processed data with properties removed based on the specified prefix.
+    """
+
+    if isinstance(data, dict):
+        return {
+            key: remove_properties_by_name(value, name_to_remove)
+            for key, value in data.items()
+            if not key == name_to_remove
+        }
+    if isinstance(data, list):
+        return [remove_properties_by_name(item, name_to_remove) for item in data]
+    return data
