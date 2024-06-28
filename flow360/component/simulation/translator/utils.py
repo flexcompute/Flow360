@@ -207,8 +207,6 @@ def translate_setting_and_apply_to_all_entities(
                     if output.get(entity.name) is None:
                         output[entity.name] = entity_injection_func(entity)
                     # needs to be recursive
-                    print("output[entity.name]", output[entity.name])
-                    print("translated_setting", translated_setting)
                     update_dict_recursively(output[entity.name], translated_setting)
                 else:
                     setting = entity_injection_func(entity)
