@@ -1545,6 +1545,7 @@ class _PredefinedUnitSystem(UnitSystem):
     specific_energy: SpecificEnergyType = pd.Field(exclude=True)
     frequency: FrequencyType = pd.Field(exclude=True)
 
+    # pylint: disable=missing-function-docstring
     def system_repr(self):
         return self.name
 
@@ -1557,6 +1558,7 @@ class SIUnitSystem(_PredefinedUnitSystem):
     def __init__(self, verbose: bool = True, **kwargs):
         super().__init__(base_system=BaseSystemType.SI, verbose=verbose, **kwargs)
 
+    # pylint: disable=missing-function-docstring
     @classmethod
     def validate(cls, _):
         return SIUnitSystem()
@@ -1574,6 +1576,7 @@ class CGSUnitSystem(_PredefinedUnitSystem):
     def __init__(self, **kwargs):
         super().__init__(base_system=BaseSystemType.CGS, **kwargs)
 
+    # pylint: disable=missing-function-docstring
     @classmethod
     def validate(cls, _):
         return CGSUnitSystem()
@@ -1591,6 +1594,7 @@ class ImperialUnitSystem(_PredefinedUnitSystem):
     def __init__(self, **kwargs):
         super().__init__(base_system=BaseSystemType.IMPERIAL, **kwargs)
 
+    # pylint: disable=missing-function-docstring
     @classmethod
     def validate(cls, _):
         return ImperialUnitSystem()
@@ -1608,6 +1612,7 @@ class Flow360UnitSystem(_PredefinedUnitSystem):
     def __init__(self, verbose: bool = True):
         super().__init__(base_system=BaseSystemType.FLOW360, verbose=verbose)
 
+    # pylint: disable=missing-function-docstring
     @classmethod
     def validate(cls, _):
         return Flow360UnitSystem()

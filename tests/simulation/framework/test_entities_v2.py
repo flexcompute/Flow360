@@ -2,6 +2,7 @@ import re
 from copy import deepcopy
 from typing import List, Literal, Optional, Union
 
+import numpy as np
 import pydantic as pd
 import pytest
 
@@ -255,9 +256,9 @@ def my_cylinder2():
 
 @pytest.fixture
 def my_box_zone1():
-    return Box(
+    return Box.from_principal_axes(
         name="zone/Box1",
-        axes=((-1, 0, 0), (1, 0, 0)),
+        axes=((-1, 0, 0), (0, 1, 0)),
         center=(1, 2, 3) * u.mm,
         size=(0.1, 0.01, 0.001) * u.mm,
     )
@@ -265,9 +266,9 @@ def my_box_zone1():
 
 @pytest.fixture
 def my_box_zone2():
-    return Box(
+    return Box.from_principal_axes(
         name="zone/Box2",
-        axes=((-1, 0, 0), (1, 1, 0)),
+        axes=((0, 0, 1), (1, 1, 0)),
         center=(3, 2, 3) * u.um,
         size=(0.1, 0.01, 0.001) * u.um,
     )
@@ -378,17 +379,17 @@ def test_entities_expansion(my_cylinder1, my_box_zone1):
     # 2. With supplied registry and has implicit duplicates
     _supplementary_registry = EntityRegistry()
     _supplementary_registry.register(
-        Box(
+        Box.from_principal_axes(
             name="Implicitly_generated_Box_zone1",
-            axes=((-1, 0, 0), (1, 1, 0)),
+            axes=((-1, 0, 0), (0, 1, 0)),
             center=(32, 2, 3) * u.cm,
             size=(0.1, 0.01, 0.001) * u.cm,
         )
     )
     _supplementary_registry.register(
-        Box(
+        Box.from_principal_axes(
             name="Implicitly_generated_Box_zone2",
-            axes=((-1, 0, 0), (1, 1, 0)),
+            axes=((0, 0, 1), (1, 1, 0)),
             center=(31, 2, 3) * u.cm,
             size=(0.1, 0.01, 0.001) * u.cm,
         )
@@ -744,9 +745,9 @@ def test_entities_merging_logic(my_volume_mesh_with_interface):
         my_generic_merged = deepcopy(my_generic_base)
         merged = _merge_objects(
             my_cylinder1,
-            Box(
+            Box.from_principal_axes(
                 name="innerZone",
-                axes=((-1, 0, 0), (1, 0, 0)),
+                axes=((-1, 0, 0), (0, 1, 0)),
                 center=(1, 2, 3) * u.mm,
                 size=(0.1, 0.01, 0.001) * u.mm,
             ),
@@ -858,3 +859,66 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
         my_volume_mesh_with_interface["innerZone"]
     )
     assert my_param.private_attribute_asset_cache.asset_entity_registry.entity_count() == 11
+
+
+def compare_boxes(box1, box2):
+    return (
+        np.isclose(np.linalg.norm(np.cross(box1.axis_of_rotation, box2.axis_of_rotation)), 0)
+        and np.isclose(
+            np.mod(box1.angle_of_rotation.value, 2 * np.pi),
+            np.mod(box2.angle_of_rotation.value, 2 * np.pi),
+        )
+        and np.all(np.isclose(box1.center.value, box2.center.value))
+        and np.all(np.isclose(box1.size.value, box2.size.value))
+        and np.all(
+            np.isclose(
+                np.asarray(box1.private_attribute_input_cache.axes, dtype=float),
+                np.asarray(box2.private_attribute_input_cache.axes, dtype=float),
+            )
+        )
+    )
+
+
+def test_box_creation():
+    box1 = Box(
+        name="box1",
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+        axis_of_rotation=(1, 1, 0),
+        angle_of_rotation=np.pi * u.rad,
+    )
+    box2 = Box.from_principal_axes(
+        name="box2", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((0, 1, 0), (1, 0, 0))
+    )
+    assert compare_boxes(box1, box2)
+
+    box3 = Box(
+        name="box3",
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+        axis_of_rotation=(0.1, 0.5, 0.2),
+        angle_of_rotation=np.pi / 6 * u.rad,
+    )
+    box4 = Box.from_principal_axes(
+        name="box4",
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+        axes=(
+            (0.8704912236582907, 0.20490328520431558, -0.4475038248399343),
+            (-0.16024508646579513, 0.9776709006307398, 0.13594529165604813),
+        ),
+    )
+    assert compare_boxes(box3, box4)
+
+    box5 = Box.from_principal_axes(
+        name="box5", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (0, 1, 0))
+    )
+    assert np.isclose(box5.angle_of_rotation.value, 0)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Box axes not orthogonal."),
+    ):
+        box6 = Box.from_principal_axes(
+            name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
+        )
