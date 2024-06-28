@@ -2,7 +2,7 @@
   "$defs": {
     "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x16327fdc0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x137906d30>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -184,14 +184,29 @@
     },
     "ForcePerArea": {
       "additionalProperties": false,
-      "description": ":class:`ForcePerArea` class for setting up force per area for Actuator Disk\n\nParameters\n----------\nradius : typing.List[float]\n        thrust : typing.List[float]\n        circumferential : typing.List[float]\n    \nParameters\n----------\nradius : List[float]\n    Radius of the sampled locations in grid unit\n\nthrust : List[float]\n    Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.\n    It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2\n\ncircumferential : List[float]\n    Force per area in the circumferential direction, positive means the circumferential force follows the same\n    direction as axisThrust with the right hand rule. It is non-dimensional:\n                                                            circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2\n\nReturns\n-------\n:class:`ForcePerArea`\n    An instance of the component class ForcePerArea.\n\nExample\n-------\n>>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP\n\nTODO: Use dimensioned values",
+      "description": ":class:`ForcePerArea` class for setting up force per area for Actuator Disk\n\nParameters\n----------\nradius : <class 'flow360.component.simulation.unit_system._VectorType'>\n        thrust : typing.List[float]\n        circumferential : typing.List[float]\n    \nParameters\n----------\nradius : List[float]\n    Radius of the sampled locations in grid unit\n\nthrust : List[float]\n    Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.\n    It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2\n\ncircumferential : List[float]\n    Force per area in the circumferential direction, positive means the circumferential force follows the same\n    direction as axisThrust with the right hand rule. It is non-dimensional:\n                                                            circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2\n\nReturns\n-------\n:class:`ForcePerArea`\n    An instance of the component class ForcePerArea.\n\nExample\n-------\n>>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP\n\nTODO: Use dimensioned values",
       "properties": {
         "radius": {
-          "items": {
-            "type": "number"
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
           },
-          "title": "Radius",
-          "type": "array"
+          "title": "Radius"
         },
         "thrust": {
           "items": {
