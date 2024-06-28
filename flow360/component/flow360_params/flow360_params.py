@@ -59,8 +59,10 @@ from .flow360_output import (
 )
 from .initial_condition import (
     ExpressionInitialCondition,
+    ExpressionInitialConditionLegacy,
     InitialConditions,
     ModifiedRestartSolution,
+    ModifiedRestartSolutionLegacy,
 )
 from .params_base import (
     Conflicts,
@@ -1845,7 +1847,9 @@ class VolumeZonesLegacy(VolumeZones):
 
 
 InitialConditionsLegacy = Union[
-    FreestreamInitialConditionLegacy, ModifiedRestartSolution, ExpressionInitialCondition
+    FreestreamInitialConditionLegacy,
+    ModifiedRestartSolutionLegacy,
+    ExpressionInitialConditionLegacy,
 ]
 
 
@@ -1949,6 +1953,7 @@ class Flow360ParamsLegacy(LegacyModel):
         else:
             context = Flow360UnitSystem(verbose=False)
 
+        print("Params", self.initial_condition)
         with context:
             # Freestream, fluid properties, BET disks and volume zones filled beforehand.
             params.update(
@@ -1973,7 +1978,9 @@ class Flow360ParamsLegacy(LegacyModel):
                 }
             )
 
+            print("Params dict", params["initial_condition"])
             model = Flow360Params(**params)
+            print("Params model", model.initial_condition)
             return model
 
     # pylint: disable=missing-class-docstring,too-few-public-methods
