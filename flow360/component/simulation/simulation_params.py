@@ -264,7 +264,7 @@ class SimulationParams(_ParamModelBase):
     @pd.field_validator("outputs", mode="after")
     @classmethod
     def apply_defult_output_settings(cls, v):
-        """apply default SurfaceOutput settings if not found in outputs"""
+        """[Solver Capability Related] apply default SurfaceOutput settings if not found in outputs"""
         if v is None:
             v = []
         assert isinstance(v, list)
