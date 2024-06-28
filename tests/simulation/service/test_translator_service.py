@@ -250,6 +250,7 @@ def test_simulation_to_case_json():
             },
         ],
         "operating_condition": {
+            "type_name": "AerospaceCondition",
             "alpha": {"units": "degree", "value": 3.06},
             "beta": {"units": "degree", "value": 0.0},
             "thermal_state": {
@@ -408,6 +409,7 @@ def test_simulation_to_all_translation_2():
             "volume_zones": [],
         },
         "operating_condition": {
+            "type_name": "AerospaceCondition",
             "velocity_magnitude": {"value": 100, "units": "m/s"},
             "alpha": {"value": 0, "units": "degree"},
             "beta": {"value": 0, "units": "degree"},
@@ -430,3 +432,6 @@ def test_simulation_to_all_translation_2():
     print(volume_json)
     case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
     print(case_json)
+
+
+test_simulation_to_all_translation_2()

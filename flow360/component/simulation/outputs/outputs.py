@@ -63,6 +63,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
+    name: Optional[str] = pd.Field(None)
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
@@ -98,6 +99,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
 class VolumeOutput(_AnimationAndFileFormatSettings):
     """Volume output settings."""
 
+    name: Optional[str] = pd.Field(None)
     output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field()
     output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
@@ -126,6 +128,7 @@ class TimeAverageVolumeOutput(VolumeOutput):
 class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
+    name: Optional[str] = pd.Field(None)
     entities: UniqueItemList[Slice] = pd.Field(alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
@@ -134,6 +137,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
+    name: Optional[str] = pd.Field(None)
     entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
@@ -142,6 +146,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 class SurfaceIntegralOutput(_AnimationSettings):
     """Surface integral output settings."""
 
+    name: Optional[str] = pd.Field(None)
     entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
@@ -150,6 +155,7 @@ class SurfaceIntegralOutput(_AnimationSettings):
 class ProbeOutput(_AnimationSettings):
     """Probe monitor output settings."""
 
+    name: Optional[str] = pd.Field(None)
     entities: UniqueItemList[Probe] = pd.Field(alias="probes")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
@@ -158,6 +164,7 @@ class ProbeOutput(_AnimationSettings):
 class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
+    name: Optional[str] = pd.Field(None)
     patch_type: str = pd.Field("solid", frozen=True)
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field()

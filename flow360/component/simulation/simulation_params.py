@@ -15,7 +15,7 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
-from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
@@ -205,7 +205,9 @@ class SimulationParams(_ParamModelBase):
 
     meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
     reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(None, discriminator='type_name')
+    operating_condition: Optional[OperatingConditionTypes] = pd.Field(
+        None, discriminator="type_name"
+    )
     #
     """
     meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
@@ -257,4 +259,15 @@ class SimulationParams(_ParamModelBase):
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
+        return v
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def apply_defult_output_settings(cls, v):
+        """apply default SurfaceOutput settings if not found in outputs"""
+        if v is None:
+            v = []
+        assert isinstance(v, list)
+        if not any(isinstance(item, SurfaceOutput) for item in v):
+            v.append(SurfaceOutput(output_fields=["Cp", "yPlus", "Cf", "CfVec"]))
         return v

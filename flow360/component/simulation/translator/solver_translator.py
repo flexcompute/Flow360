@@ -155,7 +155,9 @@ def get_solver_json(
                 "animationFrequencyTimeAverageOffset": 0,
                 "animationFrequencyTimeAverage": -1,
                 "startAverageIntegrationStep": -1,
-                "outputFields": [],
+                "outputFields": get_attribute_from_first_instance(
+                    outputs, SurfaceOutput, "output_fields"
+                ).items,
             }
         )
 
@@ -174,13 +176,14 @@ def get_solver_json(
 
             elif isinstance(output, SurfaceOutput):
                 surfaces = translated["surfaceOutput"]["surfaces"]
-                for surface in output.entities.stored_entities:
-                    surfaces[surface.name] = {
-                        "outputFields": merge_unique_item_lists(
-                            surfaces.get(surface.name, {}).get("outputFields", []),
-                            output.output_fields.model_dump()["items"],
-                        )
-                    }
+                if output.entities is not None:
+                    for surface in output.entities.stored_entities:
+                        surfaces[surface.name] = {
+                            "outputFields": merge_unique_item_lists(
+                                surfaces.get(surface.name, {}).get("outputFields", []),
+                                output.output_fields.model_dump()["items"],
+                            )
+                        }
             elif isinstance(output, SliceOutput):
                 slices = translated["sliceOutput"]["slices"]
                 for slice_item in output.entities.items:
