@@ -145,6 +145,14 @@ def get_solver_json(
     if has_instance_in_list(outputs, SurfaceOutput):
         translated["surfaceOutput"] = init_output_attr_dict(outputs, SurfaceOutput)
         replace_dict_value(translated["surfaceOutput"], "outputFormat", "both", "paraview,tecplot")
+
+        # the below is to ensure output fields if no surfaces are defined
+        output_fields = []
+        surface_outputs = [obj for obj in outputs if isinstance(obj, SurfaceOutput)]
+        if len(surface_outputs) == 1:
+            if surface_outputs[0].entities is None:
+                output_fields = surface_outputs[0].output_fields.items
+
         translated["surfaceOutput"].update(
             {
                 "writeSingleFile": get_attribute_from_first_instance(
@@ -155,9 +163,7 @@ def get_solver_json(
                 "animationFrequencyTimeAverageOffset": 0,
                 "animationFrequencyTimeAverage": -1,
                 "startAverageIntegrationStep": -1,
-                "outputFields": get_attribute_from_first_instance(
-                    outputs, SurfaceOutput, "output_fields"
-                ).items,
+                "outputFields": output_fields,
             }
         )
 

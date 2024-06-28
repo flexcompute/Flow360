@@ -45,13 +45,13 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
     BETDisk,
     Fluid,
     NavierStokesInitialCondition,
     PorousMedium,
     Rotation,
     Solid,
-    ActuatorDisk
 )
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
@@ -432,7 +432,6 @@ write_example(rotation_model, "models", "rotation")
 
 write_schemas(BETDisk, "models", "bet_disk")
 write_schemas(ActuatorDisk, "models", "actuator_disk")
-
 
 
 write_schemas(PorousMedium, "models", "porouse_medium")
