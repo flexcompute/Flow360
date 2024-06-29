@@ -325,6 +325,10 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                     if isinstance(item, tuple(valid_types)):
                         formated_input.append(item)
         elif isinstance(input_data, dict):
+            if "stored_entities" not in input_data:
+                raise KeyError(
+                    f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
+                )
             return {"stored_entities": input_data["stored_entities"]}
         # pylint: disable=no-else-return
         else:  # Single reference to an entity
