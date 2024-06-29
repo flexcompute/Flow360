@@ -268,12 +268,6 @@ class Surface(_SurfaceEntityBase):
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
-    @pd.model_validator(mode="after")
-    def _set_default_for_full_name(self) -> Self:
-        with _model_attribute_unlock(self, "private_attribute_full_name"):
-            self.private_attribute_full_name = self.name
-        return self
-
     def _get_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
         """
         Update parent zone name once the volume mesh is done.
