@@ -42,7 +42,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     translated = {}
 
     # >>  Step 1:  Get high level settings
-    translated["farfield"] = input_params.meshing.farfield
+    translated["farfield"] = {"type": input_params.meshing.farfield}
     translated["refinementFactor"] = input_params.meshing.refinement_factor
     if input_params.meshing.gap_treatment_strength is not None:
         translated["gapTreatmentStrength"] = input_params.meshing.gap_treatment_strength
