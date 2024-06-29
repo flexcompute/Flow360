@@ -176,7 +176,7 @@ def test_simulation_to_volume_meshing_json():
     sm_json, hash = simulation_to_volume_meshing_json(
         param_data, "SI", {"value": 100.0, "units": "cm"}
     )
-    assert sm_json["farfield"] == "auto"
+    assert sm_json["farfield"]["type"] == "auto"
 
     bad_param_data = deepcopy(param_data)
     bad_param_data["meshing"]["refinements"][0]["spacing"]["value"] = -12.0

@@ -110,7 +110,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     print("====TRANSLATED====\n", json.dumps(translated, indent=4))
     ref_dict = {
         "refinementFactor": 1.45,
-        "farfield": "auto",
+        "farfield": {"type": "auto"},
         "refinement": [
             {
                 "type": "cylinder",
