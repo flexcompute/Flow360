@@ -21,7 +21,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.types import Axis
-from flow360.component.volume_mesh import VolumeMesh
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
@@ -268,6 +267,12 @@ class Surface(_SurfaceEntityBase):
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
+
+    @pd.model_validator(mode="after")
+    def _set_default_for_full_name(self) -> Self:
+        with _model_attribute_unlock(self, "private_attribute_full_name"):
+            self.private_attribute_full_name = self.name
+        return self
 
     def _get_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
         """

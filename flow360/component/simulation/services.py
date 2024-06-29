@@ -106,6 +106,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
         # pylint: disable=fixme
         # TODO: client does not call this. We need to start using new webAPI for that
         with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot,no-member
             params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
                 length_unit
             )
