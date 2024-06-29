@@ -41,8 +41,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     translated = {}
 
-    # >>  Step 1:  Get refinementFactor
+    # >>  Step 1:  Get high level settings
+    translated["farfield"] = input_params.meshing.farfield
     translated["refinementFactor"] = input_params.meshing.refinement_factor
+    if input_params.meshing.gap_treatment_strength is not None:
+        translated["gapTreatmentStrength"] = input_params.meshing.gap_treatment_strength
 
     # >> Step 2: Get volume refinements
     translated["refinement"] = translate_setting_and_apply_to_all_entities(

@@ -269,5 +269,7 @@ class SimulationParams(_ParamModelBase):
             v = []
         assert isinstance(v, list)
         if not any(isinstance(item, SurfaceOutput) for item in v):
-            v.append(SurfaceOutput(output_fields=["Cp", "yPlus", "Cf", "CfVec"]))
+            v.append(
+                SurfaceOutput(name="SurfaceOutput 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
+            )
         return v
