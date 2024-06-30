@@ -1,0 +1,555 @@
+{
+  "$defs": {
+    "Box": {
+      "additionalProperties": false,
+      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        type_name : typing.Literal['MultiConstructorBaseModel'] = MultiConstructorBaseModel\n        private_attribute_constructor : <class 'str'> = default\n        private_attribute_input_cache : <class 'flow360.component.simulation.primitives.BoxCache'> = BoxCache(axes=None, center=None, size=None, name=None)\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axis_of_rotation : <class 'flow360.component.types.Axis'>\n        angle_of_rotation : <class 'flow360.component.simulation.unit_system._AngleType'>\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Box",
+          "default": "Box",
+          "enum": [
+            "Box"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UniqueItemList_str_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type_name": {
+          "const": "MultiConstructorBaseModel",
+          "default": "MultiConstructorBaseModel",
+          "enum": [
+            "MultiConstructorBaseModel"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "private_attribute_constructor": {
+          "default": "default",
+          "title": "Private Attribute Constructor",
+          "type": "string"
+        },
+        "private_attribute_input_cache": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BoxCache"
+            }
+          ],
+          "default": {
+            "axes": null,
+            "center": null,
+            "size": null,
+            "name": null
+          }
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "size": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Size"
+        },
+        "axis_of_rotation": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis Of Rotation"
+        },
+        "angle_of_rotation": {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "dimension": "angle",
+              "enum": [
+                "rad"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Angle Of Rotation"
+        }
+      },
+      "required": [
+        "name",
+        "center",
+        "size",
+        "axis_of_rotation",
+        "angle_of_rotation"
+      ],
+      "title": "Box",
+      "type": "object"
+    },
+    "BoxCache": {
+      "additionalProperties": false,
+      "description": "BoxCache\n\nParameters\n----------\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        size : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        name : typing.Optional[str] = None\n    ",
+      "properties": {
+        "axes": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axes"
+        },
+        "center": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Center"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "title": "BoxCache",
+      "type": "object"
+    },
+    "Cylinder": {
+      "additionalProperties": false,
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Cylinder",
+          "default": "Cylinder",
+          "enum": [
+            "Cylinder"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UniqueItemList_str_"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "axis": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Axis"
+        },
+        "center": {
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "strictType": {
+                "type": "vector3"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Center"
+        },
+        "height": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Height"
+        },
+        "inner_radius": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inner Radius"
+        },
+        "outer_radius": {
+          "properties": {
+            "value": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Outer Radius"
+        }
+      },
+      "required": [
+        "name",
+        "axis",
+        "center",
+        "height",
+        "outer_radius"
+      ],
+      "title": "Cylinder",
+      "type": "object"
+    },
+    "EntityList_Box_Cylinder_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.Box, flow360.component.simulation.primitives.Cylinder]]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Box"
+                  },
+                  {
+                    "$ref": "#/$defs/Cylinder"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Box,Cylinder]",
+      "type": "object"
+    },
+    "UniqueItemList_str_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "properties": {
+        "items": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "UniqueItemList[str]",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Uniform spacing refinement.\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['UniformRefinement'] = UniformRefinement\n        entities : <class 'abc.EntityList[Box,Cylinder]'>\n        spacing : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+  "properties": {
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
+    "refinement_type": {
+      "const": "UniformRefinement",
+      "default": "UniformRefinement",
+      "enum": [
+        "UniformRefinement"
+      ],
+      "title": "Refinement Type",
+      "type": "string"
+    },
+    "entities": {
+      "$ref": "#/$defs/EntityList_Box_Cylinder_"
+    },
+    "spacing": {
+      "properties": {
+        "value": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "units": {
+          "dimension": "length",
+          "enum": [
+            "m",
+            "cm",
+            "ft",
+            "mm",
+            "inch"
+          ],
+          "type": "string"
+        }
+      },
+      "title": "Spacing"
+    }
+  },
+  "required": [
+    "entities",
+    "spacing"
+  ],
+  "title": "UniformRefinement",
+  "type": "object"
+}

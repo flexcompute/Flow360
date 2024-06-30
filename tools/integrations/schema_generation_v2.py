@@ -186,7 +186,8 @@ with SI_unit_system:
         name="my_box",
         center=(1.2, 2.3, 3.4) * u.m,
         size=(1.0, 2.0, 3.0) * u.m,
-        axes=((3, 4, 0), (1, 0, 0)),
+        axis_of_rotation=(0,0,1),
+        angle_of_rotation=0*u.degree
     )
     my_cylinder_1 = Cylinder(
         name="my_cylinder-1",
@@ -206,6 +207,7 @@ with SI_unit_system:
         surface_layer_growth_rate=1.5,
         refinements=[
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
+            UniformRefinement(entities=[my_box, my_cylinder_1], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
             SurfaceEdgeRefinement(edges=[edge], method=HeightBasedRefinement(value=1 * u.m)),
             SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2)),
@@ -330,6 +332,12 @@ with SI_unit_system:
 write_schemas(MeshingParams, "meshing")
 with SI_unit_system:
     write_example(meshing, "meshing", "example-1")
+
+
+write_schemas(UniformRefinement, "meshing", 'uniform_refinement')
+with SI_unit_system:
+    ur = UniformRefinement(entities=[my_box, my_cylinder_1], spacing=0.1 * u.m)
+    write_example(ur, "meshing", "uniform_refinement")
 
 
 ###################### operating_condition ######################
