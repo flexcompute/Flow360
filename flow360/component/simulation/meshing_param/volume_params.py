@@ -15,6 +15,7 @@ from flow360.component.simulation.unit_system import LengthType
 class UniformRefinement(Flow360BaseModel):
     """Uniform spacing refinement."""
 
+    name: Optional[str] = pd.Field(None)
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
     entities: EntityList[Box, Cylinder] = pd.Field()
     # pylint: disable=no-member
