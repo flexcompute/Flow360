@@ -29,7 +29,9 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
         for existing_boundary_name in zone_meta["boundaryNames"]:
             pattern = re.escape(zone_name) + r"/(.*)"
             match = re.search(pattern, existing_boundary_name)
-            if match.group(1) == surface_name or existing_boundary_name == surface_name:
+            if (
+                match is not None and match.group(1) == surface_name
+            ) or existing_boundary_name == surface_name:
                 return existing_boundary_name
     raise ValueError(f"Parent zone not found for surface {surface_name}.")
 
