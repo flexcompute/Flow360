@@ -2,6 +2,7 @@
 Primitive type definitions for simulation entities.
 """
 
+import re
 from abc import ABCMeta
 from typing import Literal, Optional, Tuple, Union, final
 
@@ -15,10 +16,22 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
+    _model_attribute_unlock,
 )
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.types import Axis
+
+
+def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
+    """Ideally volume_mesh_meta should be a pydantic model."""
+    for zone_name, zone_meta in volume_mesh_meta["zones"].items():
+        for existing_boundary_name in zone_meta["boundaryNames"]:
+            pattern = re.escape(zone_name) + r"/(.*)"
+            match = re.search(pattern, existing_boundary_name)
+            if match.group(1) == surface_name or existing_boundary_name == surface_name:
+                return existing_boundary_name
+    raise ValueError(f"Parent zone not found for surface {surface_name}.")
 
 
 class ReferenceGeometry(Flow360BaseModel):
@@ -250,9 +263,22 @@ class Surface(_SurfaceEntityBase):
     """
 
     private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
+    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
+
+    def _get_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
+        """
+        Update parent zone name once the volume mesh is done.
+        volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
+        """
+
+        # Note: Ideally we should have use the entity registry inside the VolumeMesh class
+        with _model_attribute_unlock(self, "private_attribute_full_name"):
+            self.private_attribute_full_name = _get_boundary_full_name(
+                self.name, volume_mesh_meta_data
+            )
 
 
 class SurfacePair(Flow360BaseModel):

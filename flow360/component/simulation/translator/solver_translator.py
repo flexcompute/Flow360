@@ -2,6 +2,9 @@
 
 from copy import deepcopy
 
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    _model_attribute_unlock,
+)
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -122,7 +125,10 @@ def get_solver_json(
                     # pylint: disable=fixme
                     # TODO: implement
             for surface in model.entities.stored_entities:
-                translated["boundaries"][surface.name] = spec
+                if surface.private_attribute_full_name is None:
+                    with _model_attribute_unlock(surface, "private_attribute_full_name"):
+                        surface.private_attribute_full_name = surface.name
+                translated["boundaries"][surface.private_attribute_full_name] = spec
 
     ##:: Step 4: Get outputs
     outputs = input_params.outputs
@@ -172,6 +178,7 @@ def get_solver_json(
         replace_dict_value(translated["sliceOutput"], "outputFormat", "both", "paraview,tecplot")
         translated["sliceOutput"].update({"slices": {}, "outputFields": []})
 
+    # pylint: disable=too-many-nested-blocks
     if input_params.outputs is not None:
         for output in input_params.outputs:
             # validation: no more than one VolumeOutput, Slice and Surface cannot have difference format etc.
@@ -184,7 +191,10 @@ def get_solver_json(
                 surfaces = translated["surfaceOutput"]["surfaces"]
                 if output.entities is not None:
                     for surface in output.entities.stored_entities:
-                        surfaces[surface.name] = {
+                        if surface.private_attribute_full_name is None:
+                            with _model_attribute_unlock(surface, "private_attribute_full_name"):
+                                surface.private_attribute_full_name = surface.name
+                        surfaces[surface.private_attribute_full_name] = {
                             "outputFields": merge_unique_item_lists(
                                 surfaces.get(surface.name, {}).get("outputFields", []),
                                 output.output_fields.model_dump()["items"],
