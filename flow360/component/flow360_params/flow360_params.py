@@ -68,8 +68,10 @@ from .flow360_output import (
 )
 from .initial_condition import (
     ExpressionInitialCondition,
+    ExpressionInitialConditionLegacy,
     InitialConditions,
     ModifiedRestartSolution,
+    ModifiedRestartSolutionLegacy,
 )
 from .params_base import (
     Conflicts,
@@ -1849,7 +1851,9 @@ class VolumeZonesLegacy(VolumeZones):
 
 
 InitialConditionsLegacy = Union[
-    FreestreamInitialConditionLegacy, ModifiedRestartSolution, ExpressionInitialCondition
+    FreestreamInitialConditionLegacy,
+    ModifiedRestartSolutionLegacy,
+    ExpressionInitialConditionLegacy,
 ]
 
 

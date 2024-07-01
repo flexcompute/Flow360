@@ -317,7 +317,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
     elif dimension == u.dimensions.inverse_length:
         base_length = get_base_length()
-        flow360_conversion_unit_system.base_inverse_area = 1 / base_length
+        flow360_conversion_unit_system.base_inverse_length = 1 / base_length
 
     elif dimension == u.dimensions.heat_source:
         base_heat_source = get_base_heat_source()

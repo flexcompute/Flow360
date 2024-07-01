@@ -5,6 +5,9 @@ import pytest
 
 import flow360 as fl
 from flow360.component.flow360_params.flow360_legacy import LinearSolverLegacy
+from flow360.component.flow360_params.initial_condition import (
+    ExpressionInitialCondition,
+)
 from flow360.component.flow360_params.updater import (
     UPDATE_MAP,
     _find_update_path,
@@ -137,6 +140,7 @@ def test_updater_from_files():
         "case_customDynamics1.json",
         "case_HeatTransfer.json",
         "case_20.json",
+        "case_boundaries.json",
     ]
 
     for file in files:
@@ -146,6 +150,9 @@ def test_updater_from_files():
 
     params = fl.Flow360Params("data/cases/case_5.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 0.5
+    assert params.initial_condition == ExpressionInitialCondition(
+        constants={"gamma": "1.4"}, rho=1, u="x", v=0, w=0, p="1/gamma"
+    )
     params = fl.Flow360Params("data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
     assert params.turbulence_model_solver.model_constants is not None
@@ -172,6 +179,15 @@ def test_updater_from_files():
     params = fl.Flow360Params("data/cases/case_18.json")
     assert params.heat_equation_solver is None
     assert params.transition_model_solver is None
+
+    params = fl.Flow360Params("data/cases/case_boundaries.json")
+    assert params.boundaries["1"].static_pressure_ratio == 0.4
+    assert params.boundaries["2"].Mach == 1.0
+    assert params.boundaries["3"].total_pressure_ratio == 1.0
+    assert params.boundaries["3"].total_temperature_ratio == 1.0
+    assert params.boundaries["4"].mass_flow_rate == 1.0
+    assert params.boundaries["5"].mass_flow_rate == 2.0
+    assert params.boundaries["5"].total_temperature_ratio == 1.0
 
 
 def test_version_update():

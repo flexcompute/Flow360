@@ -297,7 +297,7 @@ class PorousMediumBase(Flow360BaseModel):
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(alias="DarcyCoefficient")
     forchheimer_coefficient: InverseLengthType.Point = pd.Field(alias="ForchheimerCoefficient")
-    volumetric_heat_source: Optional[HeatSourceType] = pd.Field(alias="VolumetricHeatSource")
+    volumetric_heat_source: Optional[HeatSourceType] = pd.Field(alias="volumetricHeatSource")
     axes: List[Axis] = pd.Field(min_items=2, max_items=3, default=[[1, 0, 0], [0, 1, 0]])
 
     # pylint: disable=no-self-argument
