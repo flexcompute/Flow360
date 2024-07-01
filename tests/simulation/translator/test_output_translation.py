@@ -122,7 +122,10 @@ def surface_output_config_with_global_setting():
                 output_fields=["Cp"],
             ),
             SurfaceOutput(  # Local
-                entities=[Surface(name="surface11"), Surface(name="surface22")],
+                entities=[
+                    Surface(name="surface11", private_attribute_full_name="ZoneName/surface11"),
+                    Surface(name="surface22"),
+                ],
                 output_fields=["T"],
             ),
         ],
@@ -137,7 +140,7 @@ def surface_output_config_with_global_setting():
             "startAverageIntegrationStep": -1,
             "surfaces": {
                 "surface1": {"outputFields": ["Cp", "vorticity", "mutRatio"]},
-                "surface11": {"outputFields": ["T", "vorticity", "mutRatio"]},
+                "ZoneName/surface11": {"outputFields": ["T", "vorticity", "mutRatio"]},
                 "surface2": {"outputFields": ["Cp", "vorticity", "mutRatio"]},
                 "surface22": {"outputFields": ["T", "vorticity", "mutRatio"]},
                 "Wall1": {"outputFields": ["vorticity", "mutRatio"]},
@@ -221,7 +224,7 @@ def test_surface_ouput(
             "Wall1": {"type": "NoSlipWall"},
             "Wall2": {"type": "NoSlipWall"},
             "surface1": {"type": "NoSlipWall"},
-            "surface11": {"type": "NoSlipWall"},
+            "ZoneName/surface11": {"type": "NoSlipWall"},
             "surface2": {"type": "NoSlipWall"},
             "surface22": {"type": "NoSlipWall"},
         }
@@ -649,7 +652,12 @@ def surface_integral_output_config_with_global_setting():
                 entities=[
                     SurfaceList(
                         name="prb 110",
-                        entities=[Surface(name="surface1"), Surface(name="surface2")],
+                        entities=[
+                            Surface(
+                                name="surface1", private_attribute_full_name="zoneName/surface1"
+                            ),
+                            Surface(name="surface2"),
+                        ],
                     ),
                     SurfaceList(
                         name="prb 122",
@@ -663,7 +671,7 @@ def surface_integral_output_config_with_global_setting():
             "monitors": {
                 "prb 110": {
                     "outputFields": ["primitiveVars", "Cp", "T"],
-                    "surfaces": ["surface1", "surface2"],
+                    "surfaces": ["zoneName/surface1", "surface2"],
                 },
                 "prb 122": {
                     "outputFields": ["primitiveVars", "Cp", "T"],
@@ -718,7 +726,7 @@ def test_monitor_output(
             },
             "prb 110": {
                 "outputFields": ["primitiveVars", "Cp", "T"],
-                "surfaces": ["surface1", "surface2"],
+                "surfaces": ["zoneName/surface1", "surface2"],
             },
             "prb 12": {
                 "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],

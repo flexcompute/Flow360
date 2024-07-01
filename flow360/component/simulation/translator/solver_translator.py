@@ -3,9 +3,6 @@
 from copy import deepcopy
 from typing import Type, Union
 
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _model_attribute_unlock,
-)
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -185,10 +182,8 @@ def inject_probe_info(entity: Probe):
 
 def inject_surface_list_info(entity: SurfaceList):
     """inject entity info"""
-    # pylint: disable=fixme
-    # TODO: Let's use surface full name"""
     return {
-        "surfaces": [surface.name for surface in entity.entities.stored_entities],
+        "surfaces": [surface.full_name for surface in entity.entities.stored_entities],
     }
 
 
@@ -321,7 +316,6 @@ def translate_acoustic_output(output_params: list):
 # pylint: disable=too-many-branches
 def translate_output(input_params: SimulationParams, translated: dict):
     """Translate output settings."""
-    print("translated", translated)
     outputs = input_params.outputs
 
     if outputs is None:
@@ -432,10 +426,7 @@ def get_solver_json(
                     # pylint: disable=fixme
                     # TODO: implement
             for surface in model.entities.stored_entities:
-                if surface.private_attribute_full_name is None:
-                    with _model_attribute_unlock(surface, "private_attribute_full_name"):
-                        surface.private_attribute_full_name = surface.name
-                translated["boundaries"][surface.private_attribute_full_name] = spec
+                translated["boundaries"][surface.full_name] = spec
 
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
@@ -524,7 +515,7 @@ def get_solver_json(
             if udd.input_boundary_patches is not None:
                 udd_dict["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
-                    udd_dict["inputBoundaryPatches"].append(surface.name)
+                    udd_dict["inputBoundaryPatches"].append(surface.full_name)
             if udd.output_target is not None:
                 udd_dict["outputTargetName"] = udd.output_target.name
             translated["userDefinedDynamics"].append(udd_dict)

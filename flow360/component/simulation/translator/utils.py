@@ -7,14 +7,9 @@ import json
 from collections import OrderedDict
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _model_attribute_unlock,
-)
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import Surface
-from flow360.component.simulation.simulation_params import (
-    SimulationParams,  # Not required
-)
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
 
@@ -218,13 +213,9 @@ def _get_key_name(entity: EntityBase):
     if isinstance(entity, Surface):
         # Note: If the entity is a Surface/Boundary, we need to use the full name
         # Note: Ideally this should not happen if ran thorugh the casePipeline
-        if entity.private_attribute_full_name is None:
-            with _model_attribute_unlock(entity, "private_attribute_full_name"):
-                entity.private_attribute_full_name = entity.name
-        name = entity.private_attribute_full_name
-    else:
-        name = entity.name
-    return name
+        return entity.full_name
+
+    return entity.name
 
 
 def translate_setting_and_apply_to_all_entities(
