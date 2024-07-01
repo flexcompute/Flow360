@@ -146,7 +146,8 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 class SurfaceIntegralOutput(_AnimationSettings):
     """Surface integral output settings."""
 
-    entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
+    name: Optional[str] = pd.Field(None)
+    entities: Optional[UniqueItemList[SurfaceList]] = pd.Field(None, alias="monitors")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 

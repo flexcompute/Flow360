@@ -6,17 +6,17 @@ import functools
 import json
 from collections import OrderedDict
 
-from flow360.component.simulation.framework.entity_base import EntityList, EntityBase
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    _model_attribute_unlock,
+)
 from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import (
     SimulationParams,  # Not required
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
-from flow360.component.simulation.primitives import Surface
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _model_attribute_unlock,
-)
 
 
 def preprocess_input(func):
@@ -185,6 +185,7 @@ def get_attribute_from_first_instance(
                 # Route 1: Requested to look into empty-entity instances
                 if use_empty_entities and getattr(obj, "entities", None) is not None:
                     # We only look for empty entities instances
+                    # Note: This poses requirement that entity list has to be under attribute name 'entities'
                     continue
 
                 # Route 2: Allowed to look into non-empty-entity instances
@@ -329,7 +330,7 @@ def get_global_setting_from_per_item_setting(
         attribute_name,
         use_empty_entities=True,
     )
-    print("initial global setting", global_setting)
+
     if global_setting is None:
 
         if return_none_when_no_global_found is True:
@@ -344,7 +345,6 @@ def get_global_setting_from_per_item_setting(
                 attribute_name,
                 use_empty_entities=False,
             )
-            print("post global setting", global_setting)
         else:
             raise Flow360TranslationError(
                 f"Global setting of {attribute_name} is required but not found in `{class_type.__name__}` instances."

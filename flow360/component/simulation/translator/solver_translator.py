@@ -1,12 +1,11 @@
 """Flow360 solver setting parameter translator."""
 
 from copy import deepcopy
+from typing import Type, Union
 
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     _model_attribute_unlock,
 )
-from typing import Type, Union
-
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -210,10 +209,14 @@ def translate_volume_output(
 
 
 def translate_surface_output(
-    output_params: list, surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput]
+    output_params: list,
+    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    translated: dict,
 ):
     """Translate surface output settings."""
-    # TODO: Add all boundaries if entities is None after retriving the global settings
+
+    assert "boundaries" in translated  # , "Boundaries must be translated before surface output"
+
     surface_output = init_output_base(output_params, surface_output_class)
     shared_output_fields = get_global_setting_from_per_item_setting(
         output_params,
@@ -229,6 +232,14 @@ def translate_surface_output(
         to_list=False,
         shared_output_fields=shared_output_fields,
     )
+    if shared_output_fields is not None:
+        # Note: User specified shared output fields for all surfaces. We need to manually add these for surfaces
+        # Note: that did not appear in the SurfaceOutput insntances.
+        for boundary_name in translated["boundaries"].keys():
+            if boundary_name not in surface_output["surfaces"]:
+                surface_output["surfaces"][boundary_name] = {
+                    "outputFields": shared_output_fields.items
+                }
     surface_output["writeSingleFile"] = get_global_setting_from_per_item_setting(
         output_params, surface_output_class, "write_single_file", allow_first_instance_as_dummy=True
     )
@@ -310,6 +321,7 @@ def translate_acoustic_output(output_params: list):
 # pylint: disable=too-many-branches
 def translate_output(input_params: SimulationParams, translated: dict):
     """Translate output settings."""
+    print("translated", translated)
     outputs = input_params.outputs
 
     if outputs is None:
@@ -330,9 +342,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
     surface_output = {}
     surface_output_average = {}
     if has_instance_in_list(outputs, SurfaceOutput):
-        surface_output = translate_surface_output(outputs, SurfaceOutput)
+        surface_output = translate_surface_output(outputs, SurfaceOutput, translated)
     if has_instance_in_list(outputs, TimeAverageSurfaceOutput):
-        surface_output_average = translate_surface_output(outputs, TimeAverageSurfaceOutput)
+        surface_output_average = translate_surface_output(
+            outputs, TimeAverageSurfaceOutput, translated
+        )
     # Merge
     surface_output.update(**surface_output_average)
     if surface_output:
@@ -423,14 +437,7 @@ def get_solver_json(
                         surface.private_attribute_full_name = surface.name
                 translated["boundaries"][surface.private_attribute_full_name] = spec
 
-    ##:: Step 4: Get outputs
-    # TODO:  add a unit test for this
-    # # the below is to ensure output fields if no surfaces are defined
-    # output_fields = []
-    # surface_outputs = [obj for obj in outputs if isinstance(obj, SurfaceOutput)]
-    # if len(surface_outputs) == 1:
-    #     if surface_outputs[0].entities is None:
-    #         output_fields = surface_outputs[0].output_fields.items
+    ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
 

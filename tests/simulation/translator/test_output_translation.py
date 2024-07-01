@@ -3,6 +3,7 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.output_entities import Surface, SurfaceList
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -75,21 +76,21 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
     ##:: volumeOutput only
     with SI_unit_system:
         param = SimulationParams(outputs=[volume_output_config[0]])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
         param = SimulationParams(outputs=[avg_volume_output_config[0]])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(avg_volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
         param = SimulationParams(outputs=[volume_output_config[0], avg_volume_output_config[0]])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
         "volumeOutput": {
@@ -139,6 +140,8 @@ def surface_output_config_with_global_setting():
                 "surface11": {"outputFields": ["T", "vorticity", "mutRatio"]},
                 "surface2": {"outputFields": ["Cp", "vorticity", "mutRatio"]},
                 "surface22": {"outputFields": ["T", "vorticity", "mutRatio"]},
+                "Wall1": {"outputFields": ["vorticity", "mutRatio"]},
+                "Wall2": {"outputFields": ["vorticity", "mutRatio"]},
             },
             "writeSingleFile": False,
         },
@@ -213,7 +216,16 @@ def test_surface_ouput(
     ##:: surfaceOutput with global settings
     with SI_unit_system:
         param = SimulationParams(outputs=surface_output_config_with_global_setting[0])
-    translated = {}
+    translated = {
+        "boundaries": {
+            "Wall1": {"type": "NoSlipWall"},
+            "Wall2": {"type": "NoSlipWall"},
+            "surface1": {"type": "NoSlipWall"},
+            "surface11": {"type": "NoSlipWall"},
+            "surface2": {"type": "NoSlipWall"},
+            "surface22": {"type": "NoSlipWall"},
+        }
+    }
     translated = translate_output(param, translated)
     assert sorted(surface_output_config_with_global_setting[1].items()) == sorted(
         translated["surfaceOutput"].items()
@@ -222,7 +234,7 @@ def test_surface_ouput(
     ##:: surfaceOutput with No global settings
     with SI_unit_system:
         param = SimulationParams(outputs=surface_output_config_with_no_global_setting[0])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(surface_output_config_with_no_global_setting[1].items()) == sorted(
         translated["surfaceOutput"].items()
@@ -234,7 +246,7 @@ def test_surface_ouput(
             outputs=surface_output_config_with_no_global_setting[0]
             + avg_surface_output_config_with_global_setting
         )
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
         "animationFrequency": 123,
@@ -404,8 +416,8 @@ def test_slice_ouput(
     ##:: sliceOutput with global settings
     with SI_unit_system:
         param = SimulationParams(outputs=sliceoutput_config_with_global_setting[0])
-    param = param.preprocess(1.0 * u.m)
-    translated = {}
+    param = param.preprocess(1.0 * u.m, exclude=["models"])
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
     assert sorted(sliceoutput_config_with_global_setting[1].items()) == sorted(
@@ -415,8 +427,8 @@ def test_slice_ouput(
     ##:: sliceOutput with NO global settings
     with SI_unit_system:
         param = SimulationParams(outputs=sliceoutput_config_with_no_global_setting[0])
-    param = param.preprocess(1.0 * u.m)
-    translated = {}
+    param = param.preprocess(1.0 * u.m, exclude=["models"])
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
     assert sorted(sliceoutput_config_with_no_global_setting[1].items()) == sorted(
@@ -572,7 +584,7 @@ def test_isosurface_output(
     ##:: isoSurface with global settings
     with SI_unit_system:
         param = SimulationParams(outputs=isosurface_output_config_with_global_setting[0])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(isosurface_output_config_with_global_setting[1].items()) == sorted(
         translated["isoSurfaceOutput"].items()
@@ -581,7 +593,7 @@ def test_isosurface_output(
     ##:: isoSurface with NO global settings
     with SI_unit_system:
         param = SimulationParams(outputs=isosurface_output_config_with_no_global_setting[0])
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
     assert sorted(isosurface_output_config_with_no_global_setting[1].items()) == sorted(
@@ -669,9 +681,9 @@ def test_monitor_output(
     ##:: monitorOutput with global probe settings
     with SI_unit_system:
         param = SimulationParams(outputs=probe_output_config_with_global_setting[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m)
+    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(probe_output_config_with_global_setting[1].items()) == sorted(
         translated["monitorOutput"].items()
@@ -680,9 +692,9 @@ def test_monitor_output(
     ##:: surfaceIntegral with global probe settings
     with SI_unit_system:
         param = SimulationParams(outputs=surface_integral_output_config_with_global_setting[0])
-    param = param.preprocess(mesh_unit=1 * u.m)
+    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(surface_integral_output_config_with_global_setting[1].items()) == sorted(
         translated["monitorOutput"].items()
@@ -694,9 +706,9 @@ def test_monitor_output(
             outputs=surface_integral_output_config_with_global_setting[0]
             + probe_output_config_with_global_setting[0]
         )
-    param = param.preprocess(mesh_unit=1 * u.m)
+    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
-    translated = {}
+    translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
         "monitors": {
@@ -743,8 +755,8 @@ def test_acoustic_output(aeroacoustic_output_config):
     ##:: monitorOutput with global probe settings
     with SI_unit_system:
         param = SimulationParams(outputs=aeroacoustic_output_config[0])
-    translated = {}
-    param = param.preprocess(mesh_unit=1 * u.m)
+    translated = {"boundaries": {}}
+    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
