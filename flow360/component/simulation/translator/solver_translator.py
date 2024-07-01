@@ -451,6 +451,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
+    # pylint: disable=too-many-branches
     if isinstance(model, Wall):
         boundary.update(
             {
