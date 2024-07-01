@@ -157,8 +157,8 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
-    axis_of_rotation: Axis = pd.Field()
-    angle_of_rotation: AngleType = pd.Field()
+    axis_of_rotation: Optional[Axis] = pd.Field(default=(0, 0, 1))
+    angle_of_rotation: Optional[AngleType] = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
 
     # pylint: disable=no-self-argument, fixme
@@ -237,7 +237,7 @@ class Cylinder(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     height: LengthType.Positive = pd.Field()
-    inner_radius: Optional[LengthType.Positive] = pd.Field(None)
+    inner_radius: Optional[LengthType.NonNegative] = pd.Field(None)
     # pylint: disable=fixme
     # TODO validation outer > inner
     outer_radius: LengthType.Positive = pd.Field()
