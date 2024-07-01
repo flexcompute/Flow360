@@ -286,8 +286,8 @@ def test_simulation_to_case_json():
                     "items": [
                         {
                             "name": "sliceName_1",
-                            "slice_normal": [0.0, 1.0, 0.0],
-                            "slice_origin": {"units": "m", "value": [0.0, 0.56413, 0.0]},
+                            "normal": [0.0, 1.0, 0.0],
+                            "origin": {"units": "m", "value": [0.0, 0.56413, 0.0]},
                         }
                     ]
                 },

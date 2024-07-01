@@ -11,13 +11,14 @@ import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
+from unyt import unyt_quantity
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.conversion import (
     need_conversion,
     require,
     unit_converter,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -518,11 +519,11 @@ class Flow360BaseModel(pd.BaseModel):
         doc += "\n"
         cls.__doc__ = doc
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _convert_dimensions_to_solver(
         self,
         params,
-        mesh_unit: u.unyt_quantity = None,
+        mesh_unit: LengthType.Positive = None,
         exclude: List[str] = None,
         required_by: List[str] = None,
         extra: List[Any] = None,
@@ -551,7 +552,6 @@ class Flow360BaseModel(pd.BaseModel):
             field = self.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
-
             if need_conversion(value) and property_name not in exclude:
                 log.debug(f"   -> need conversion for: {property_name} = {value}")
                 flow360_conv_system = unit_converter(
@@ -564,6 +564,22 @@ class Flow360BaseModel(pd.BaseModel):
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360")
                 log.debug(f"      converted to: {solver_values[property_name]}")
+            elif isinstance(value, list) and property_name not in exclude:
+                new_value = []
+                for item in value:
+                    if need_conversion(item):
+                        flow360_conv_system = unit_converter(
+                            item.units.dimensions,
+                            mesh_unit,
+                            params=params,
+                            required_by=[*required_by, loc_name],
+                        )
+                        # pylint: disable=no-member
+                        item.units.registry = flow360_conv_system.registry
+                        new_value.append(item.in_base(unit_system="flow360"))
+                    else:
+                        new_value.append(item)
+                solver_values[property_name] = new_value
             else:
                 solver_values[property_name] = value
 
@@ -628,5 +644,7 @@ class Flow360BaseModel(pd.BaseModel):
                             required_by=[*required_by, loc_name, f"{i}"],
                             exclude=exclude,
                         )
+                    elif isinstance(item, unyt_quantity):
+                        solver_values[property_name][i] = item.in_base(unit_system="flow360")
 
         return self.__class__(**solver_values)

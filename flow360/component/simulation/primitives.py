@@ -268,7 +268,7 @@ class Surface(_SurfaceEntityBase):
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
-    def _get_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
+    def _set_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
         """
         Update parent zone name once the volume mesh is done.
         volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
@@ -279,6 +279,13 @@ class Surface(_SurfaceEntityBase):
             self.private_attribute_full_name = _get_boundary_full_name(
                 self.name, volume_mesh_meta_data
             )
+
+    @property
+    def full_name(self):
+        """Gets the full name which includes the zone name"""
+        if self.private_attribute_full_name is None:
+            return self.name
+        return self.private_attribute_full_name
 
 
 class SurfacePair(Flow360BaseModel):

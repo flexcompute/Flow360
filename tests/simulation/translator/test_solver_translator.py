@@ -88,8 +88,8 @@ def get_om6Wing_tutorial_param():
                     slices=[
                         Slice(
                             name="sliceName_1",
-                            slice_normal=(0, 1, 0),
-                            slice_origin=(0, 0.56413, 0) * u.m,
+                            normal=(0, 1, 0),
+                            origin=(0, 0.56413, 0) * u.m,
                         )
                     ],
                     output_format="tecplot",
@@ -118,7 +118,9 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     translated = get_solver_json(param, mesh_unit=mesh_unit)
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
-
+    print(">>> translated = ", translated)
+    print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
+    print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
     assert compare_values(ref_dict, translated)
 
 

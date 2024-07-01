@@ -35,9 +35,9 @@ class _OutputItemBase(Flow360BaseModel):
 class Slice(_OutputItemBase):
     """Slice output item."""
 
-    slice_normal: Axis = pd.Field()
+    normal: Axis = pd.Field()
     # pylint: disable=no-member
-    slice_origin: LengthType.Point = pd.Field()
+    origin: LengthType.Point = pd.Field()
 
 
 class Isosurface(_OutputItemBase):

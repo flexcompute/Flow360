@@ -4,7 +4,7 @@ from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRe
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    get_attribute_from_first_instance,
+    get_attribute_from_instance_list,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -51,14 +51,14 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     # 1. SurfaceRefinement
 
     # >>  Step 1:  Get maxEdgeLength
-    max_edge_length = get_attribute_from_first_instance(
+    max_edge_length = get_attribute_from_instance_list(
         input_params.meshing.refinements, SurfaceRefinement, "max_edge_length"
     ).value.item()
     translated["maxEdgeLength"] = max_edge_length
 
     # >> Step 2: Get curvatureResolutionAngle
     curvature_resolution_angle = (
-        get_attribute_from_first_instance(
+        get_attribute_from_instance_list(
             input_params.meshing.refinements, SurfaceRefinement, "curvature_resolution_angle"
         )
         .to("degree")

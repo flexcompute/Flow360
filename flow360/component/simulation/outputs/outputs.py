@@ -129,7 +129,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: UniqueItemList[Slice] = pd.Field(alias="slices")
+    entities: Optional[UniqueItemList[Slice]] = pd.Field(None, alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
@@ -138,7 +138,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
+    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
@@ -147,7 +147,7 @@ class SurfaceIntegralOutput(_AnimationSettings):
     """Surface integral output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: UniqueItemList[SurfaceList] = pd.Field(alias="monitors")
+    entities: Optional[UniqueItemList[SurfaceList]] = pd.Field(None, alias="monitors")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
@@ -156,7 +156,7 @@ class ProbeOutput(_AnimationSettings):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: UniqueItemList[Probe] = pd.Field(alias="probes")
+    entities: Optional[UniqueItemList[Probe]] = pd.Field(None, alias="probes")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
@@ -165,7 +165,7 @@ class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
     name: Optional[str] = pd.Field(None)
-    patch_type: str = pd.Field("solid", frozen=True)
+    patch_type: Literal["solid"] = pd.Field("solid", frozen=True)
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field()
     write_per_surface_output: bool = pd.Field(False)

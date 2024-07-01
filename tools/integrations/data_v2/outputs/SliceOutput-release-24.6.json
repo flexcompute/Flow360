@@ -6,12 +6,12 @@
     "items": [
       {
         "name": "my_first_slice",
-        "slice_normal": [
+        "normal": [
           1.0,
           0.0,
           0.0
         ],
-        "slice_origin": {
+        "origin": {
           "value": [
             4.0,
             4.0,
@@ -22,12 +22,12 @@
       },
       {
         "name": "my_second_slice",
-        "slice_normal": [
+        "normal": [
           0.7071067811865475,
           0.0,
           0.7071067811865475
         ],
-        "slice_origin": {
+        "origin": {
           "value": [
             41.0,
             14.0,

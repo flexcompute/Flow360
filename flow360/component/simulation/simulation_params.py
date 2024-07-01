@@ -95,7 +95,7 @@ def _recursive_update_zone_name_in_surface(model: Flow360BaseModel, volume_mesh_
     for field in model.__dict__.values():
         if isinstance(field, Surface):
             # pylint: disable=protected-access
-            field._get_boundary_full_name(volume_mesh_meta_data)
+            field._set_boundary_full_name(volume_mesh_meta_data)
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
@@ -104,7 +104,7 @@ def _recursive_update_zone_name_in_surface(model: Flow360BaseModel, volume_mesh_
             )
             for entity in expanded_entities if expanded_entities else []:
                 if isinstance(entity, Surface):
-                    entity._get_boundary_full_name(volume_mesh_meta_data)
+                    entity._set_boundary_full_name(volume_mesh_meta_data)
 
         elif isinstance(field, list):
             for item in field:

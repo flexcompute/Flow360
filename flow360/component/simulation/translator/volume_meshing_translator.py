@@ -6,7 +6,7 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    get_attribute_from_first_instance,
+    get_attribute_from_instance_list,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -59,17 +59,17 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     # >> Step 3: Get volumetric global settings
     # firstLayerThickness can be locally overridden
     translated["volume"] = {}
-    translated["volume"]["firstLayerThickness"] = get_attribute_from_first_instance(
+    translated["volume"]["firstLayerThickness"] = get_attribute_from_instance_list(
         input_params.meshing.refinements,
         BoundaryLayer,
         "first_layer_thickness",
-        check_empty_entities=True,
+        only_find_when_entities_none=True,
     ).value.item()
-    translated["volume"]["growthRate"] = get_attribute_from_first_instance(
+    translated["volume"]["growthRate"] = get_attribute_from_instance_list(
         input_params.meshing.refinements,
         BoundaryLayer,
         "growth_rate",
-        check_empty_entities=True,
+        only_find_when_entities_none=True,
     )
 
     return translated

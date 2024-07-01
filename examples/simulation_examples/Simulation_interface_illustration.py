@@ -52,15 +52,15 @@ porous_media_zone = Box(
 ##:: Output entities definition ::##
 slice_a = Slice(
     name="slice_a",
-    slice_normal=(1, 1, 0),
-    slice_origin=(0.1, 0, 0),
+    normal=(1, 1, 0),
+    origin=(0.1, 0, 0),
 )
 
 slice_b = Slice(
     name="slice_b",
     output_fields=["Cp"],
-    slice_normal=(1, 1, 1),
-    slice_origin=(0.1, 2, 0),
+    normal=(1, 1, 1),
+    origin=(0.1, 2, 0),
 )
 
 with SI_unit_system:
