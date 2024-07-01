@@ -132,7 +132,7 @@ def remove_units_in_dict(input_dict):
     return input_dict
 
 
-def is_terminal_instance(obj, cls):
+def is_exact_instance(obj, cls):
     """Check if an object is an instance of a class and not a subclass."""
     if not isinstance(obj, cls):
         return False
@@ -148,7 +148,7 @@ def has_instance_in_list(obj_list: list, class_type):
     """Check if a list contains an instance of a given type."""
     if obj_list is not None:
         for obj in obj_list:
-            if is_terminal_instance(obj, class_type):
+            if is_exact_instance(obj, class_type):
                 return True
     return False
 
@@ -158,7 +158,7 @@ def _is_last_of_type(lst, obj):
     last_index = -1
 
     for i, item in enumerate(lst):
-        if is_terminal_instance(item, current_type):
+        if is_exact_instance(item, current_type):
             last_index = i
 
     if last_index == -1:
@@ -167,18 +167,18 @@ def _is_last_of_type(lst, obj):
     return lst[last_index] == obj
 
 
-def get_attribute_from_first_instance(
-    obj_list: list, class_type, attribute_name: str, use_empty_entities: bool = False
+def get_attribute_from_instance_list(
+    obj_list: list, class_type, attribute_name: str, only_find_when_entities_none: bool = False
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
         for obj in obj_list:
             if (
-                is_terminal_instance(obj, class_type)
+                is_exact_instance(obj, class_type)
                 and getattr(obj, attribute_name, None) is not None
             ):
                 # Route 1: Requested to look into empty-entity instances
-                if use_empty_entities and getattr(obj, "entities", None) is not None:
+                if only_find_when_entities_none and getattr(obj, "entities", None) is not None:
                     # We only look for empty entities instances
                     # Note: This poses requirement that entity list has to be under attribute name 'entities'
                     continue
@@ -245,7 +245,7 @@ def translate_setting_and_apply_to_all_entities(
         output = []
 
     for obj in obj_list:
-        if is_terminal_instance(obj, class_type):
+        if is_exact_instance(obj, class_type):
             translated_setting = translation_func(obj, **kwargs)
             if obj.entities is None:
                 continue
@@ -282,7 +282,7 @@ def get_global_setting_from_per_item_setting(
     obj_list: list,
     class_type,
     attribute_name: str,
-    allow_first_instance_as_dummy: bool,
+    allow_get_from_first_instance_as_fallback: bool,
     return_none_when_no_global_found: bool = False,
 ):
     """
@@ -290,9 +290,9 @@ def get_global_setting_from_per_item_setting(
 
     This function searches through a list of objects to find the first instance of a given class type
     with empty entities and retrieves a specified attribute. If no such instance is found and
-    `allow_first_instance_as_dummy` is True, it retrieves the attribute from the first instance of the class type
-    regardless of whether its entities are empty. If `allow_first_instance_as_dummy` is False and no suitable instance
-    is found, it raises a `Flow360TranslationError`.
+    `allow_get_from_first_instance_as_fallback` is True, it retrieves the attribute from the first instance of
+    the class type regardless of whether its entities are empty. If `allow_get_from_first_instance_as_fallback`
+    is False and no suitable instance is found, it raises a `Flow360TranslationError`.
 
     Note: This function does not apply to SurfaceOutput situations.
 
@@ -303,7 +303,7 @@ def get_global_setting_from_per_item_setting(
             The class type of objects to match.
         attribute_name (str):
             The name of the attribute to retrieve.
-        allow_first_instance_as_dummy (bool, optional):
+        allow_get_from_first_instance_as_fallback (bool, optional):
             Whether to allow retrieving the attribute from any instance of the class
             type if no instance with empty entities is found.
 
@@ -311,15 +311,16 @@ def get_global_setting_from_per_item_setting(
         The value of the specified attribute from the first matching object.
 
     Raises:
-        Flow360TranslationError: If `allow_first_instance_as_dummy` is False and no suitable instance is found.
+        Flow360TranslationError: If `allow_get_from_first_instance_as_fallback` is False and no suitable
+        instance is found.
     """
 
     # Get from the first instance of `class_type` with empty entities
-    global_setting = get_attribute_from_first_instance(
+    global_setting = get_attribute_from_instance_list(
         obj_list,
         class_type,
         attribute_name,
-        use_empty_entities=True,
+        only_find_when_entities_none=True,
     )
 
     if global_setting is None:
@@ -327,14 +328,14 @@ def get_global_setting_from_per_item_setting(
         if return_none_when_no_global_found is True:
             return None
 
-        if allow_first_instance_as_dummy is True:
+        if allow_get_from_first_instance_as_fallback is True:
             # Assume that no global setting is needed. Just get the first instance of `class_type`
             # This is allowed because simulation will make sure global setting is not used anywhere.
-            global_setting = get_attribute_from_first_instance(
+            global_setting = get_attribute_from_instance_list(
                 obj_list,
                 class_type,
                 attribute_name,
-                use_empty_entities=False,
+                only_find_when_entities_none=False,
             )
         else:
             raise Flow360TranslationError(

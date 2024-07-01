@@ -98,9 +98,6 @@ class Axis(Vector):
         if vector is None:
             return None
         vector = super().validate(vector)
-        vector_norm = np.float64(0.0)
-        for element in vector:
-            vector_norm += np.float64(element) * np.float64(element)
-        vector_norm = np.sqrt(vector_norm, dtype=np.float64)
-        normalized_vector = tuple(np.float64(e) / np.float64(vector_norm) for e in vector)
+        vector_norm = np.linalg.norm(vector)
+        normalized_vector = tuple(e / vector_norm for e in vector)
         return Axis(normalized_vector)

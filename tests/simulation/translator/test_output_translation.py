@@ -306,7 +306,7 @@ def sliceoutput_config_with_global_setting():
                     Slice(
                         name="slice02",
                         normal=(4, 0, 3),
-                        origin=(6.12, 6.13, 6.14) * u.m,
+                        origin=(6.12e-2, 6.13e-2, 6.14e-2) * u.m,
                     ),
                 ],
                 output_fields=["T", "qcriterion"],
@@ -326,7 +326,7 @@ def sliceoutput_config_with_global_setting():
                 "slice02": {
                     "outputFields": ["T", "qcriterion", "primitiveVars", "wallDistance"],
                     "sliceNormal": [0.8, 0.0, 0.6],
-                    "sliceOrigin": [6.12, 6.13, 6.14],
+                    "sliceOrigin": [6.12e-2, 6.13e-2, 6.14e-2],
                 },
                 "slice10": {
                     "outputFields": ["Cp", "primitiveVars", "wallDistance"],

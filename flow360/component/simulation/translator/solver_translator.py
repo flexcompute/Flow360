@@ -29,8 +29,9 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.utils import (
+    _get_key_name,
     convert_tuples_to_lists,
-    get_attribute_from_first_instance,
+    get_attribute_from_instance_list,
     get_global_setting_from_per_item_setting,
     has_instance_in_list,
     merge_unique_item_lists,
@@ -51,6 +52,7 @@ def init_non_average_output(
     base: dict,
     obj_list,
     class_type: Union[SliceOutput, IsosurfaceOutput, VolumeOutput, SurfaceOutput],
+    has_average_capability: bool,
 ):
     """Initialize the common output attribute for non-average output."""
     has_average_capability = class_type.__name__.endswith(("VolumeOutput", "SurfaceOutput"))
@@ -58,10 +60,10 @@ def init_non_average_output(
         base["computeTimeAverages"] = False
 
     base["animationFrequency"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_first_instance_as_dummy=True
+        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
     )
     base["animationFrequencyOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_first_instance_as_dummy=True
+        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
     )
     return base
 
@@ -74,34 +76,38 @@ def init_average_output(
     """Initialize the common output attribute for average output."""
     base["computeTimeAverages"] = True
     base["animationFrequencyTimeAverage"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_first_instance_as_dummy=True
+        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
     )
     base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_first_instance_as_dummy=True
+        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
     )
     base["startAverageIntegrationStep"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "start_step", allow_first_instance_as_dummy=True
+        obj_list, class_type, "start_step", allow_get_from_first_instance_as_fallback=True
     )
     return base
 
 
-def init_output_base(obj_list, class_type: Type):
+def init_output_base(obj_list, class_type: Type, has_average_capability: bool, is_average: bool):
     """Initialize the common output attribute."""
 
     base = {"outputFields": []}
     output_format = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "output_format", allow_first_instance_as_dummy=True
+        obj_list, class_type, "output_format", allow_get_from_first_instance_as_fallback=True
     )
     assert output_format is not None
     if output_format == "both":
         output_format = "paraview,tecplot"
     base["outputFormat"] = output_format
 
-    is_average = class_type.__name__.startswith("TimeAverage")
     if is_average:
         base = init_average_output(base, obj_list, class_type)
     else:
-        base = init_non_average_output(base, obj_list, class_type)
+        base = init_non_average_output(
+            base,
+            obj_list,
+            class_type,
+            has_average_capability,
+        )
     return base
 
 
@@ -191,11 +197,16 @@ def translate_volume_output(
     output_params: list, volume_output_class: Union[VolumeOutput, TimeAverageVolumeOutput]
 ):
     """Translate volume output settings."""
-    volume_output = init_output_base(output_params, volume_output_class)
+    volume_output = init_output_base(
+        output_params,
+        volume_output_class,
+        has_average_capability=True,
+        is_average=volume_output_class is TimeAverageVolumeOutput,
+    )
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_attribute_from_first_instance(
+            "outputFields": get_attribute_from_instance_list(
                 output_params, volume_output_class, "output_fields"
             ).model_dump()["items"],
         }
@@ -212,12 +223,17 @@ def translate_surface_output(
 
     assert "boundaries" in translated  # , "Boundaries must be translated before surface output"
 
-    surface_output = init_output_base(output_params, surface_output_class)
+    surface_output = init_output_base(
+        output_params,
+        surface_output_class,
+        has_average_capability=True,
+        is_average=surface_output_class is TimeAverageSurfaceOutput,
+    )
     shared_output_fields = get_global_setting_from_per_item_setting(
         output_params,
         surface_output_class,
         "output_fields",
-        allow_first_instance_as_dummy=False,
+        allow_get_from_first_instance_as_fallback=False,
         return_none_when_no_global_found=True,
     )
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
@@ -236,7 +252,10 @@ def translate_surface_output(
                     "outputFields": shared_output_fields.items
                 }
     surface_output["writeSingleFile"] = get_global_setting_from_per_item_setting(
-        output_params, surface_output_class, "write_single_file", allow_first_instance_as_dummy=True
+        output_params,
+        surface_output_class,
+        "write_single_file",
+        allow_get_from_first_instance_as_fallback=True,
     )
     return surface_output
 
@@ -248,12 +267,14 @@ def translate_slice_isosurface_output(
     injection_function,
 ):
     """Translate slice or isosurface output settings."""
-    translated_output = init_output_base(output_params, output_class)
+    translated_output = init_output_base(
+        output_params, output_class, has_average_capability=False, is_average=False
+    )
     shared_output_fields = get_global_setting_from_per_item_setting(
         output_params,
         output_class,
         "output_fields",
-        allow_first_instance_as_dummy=False,
+        allow_get_from_first_instance_as_fallback=False,
         return_none_when_no_global_found=True,
     )
     translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
@@ -274,7 +295,7 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
         output_params,
         monitor_type,
         "output_fields",
-        allow_first_instance_as_dummy=False,
+        allow_get_from_first_instance_as_fallback=False,
         return_none_when_no_global_found=True,
     )
     translated_output["monitors"] = translate_setting_and_apply_to_all_entities(
@@ -515,7 +536,7 @@ def get_solver_json(
             if udd.input_boundary_patches is not None:
                 udd_dict["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
-                    udd_dict["inputBoundaryPatches"].append(surface.full_name)
+                    udd_dict["inputBoundaryPatches"].append(_get_key_name(surface))
             if udd.output_target is not None:
                 udd_dict["outputTargetName"] = udd.output_target.name
             translated["userDefinedDynamics"].append(udd_dict)
