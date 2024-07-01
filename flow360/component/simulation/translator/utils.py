@@ -133,13 +133,13 @@ def remove_units_in_dict(input_dict):
 
 
 def get_combined_subclasses(cls):
+    """get subclasses of cls"""
     if isinstance(cls, tuple):
         subclasses = set()
         for single_cls in cls:
             subclasses.update(single_cls.__subclasses__())
         return list(subclasses)
-    else:
-        return cls.__subclasses__()
+    return cls.__subclasses__()
 
 
 def is_exact_instance(obj, cls):

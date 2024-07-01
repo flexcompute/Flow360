@@ -447,11 +447,11 @@ def porous_media_translator(model: PorousMedium):
     return porous_medium
 
 
+# pylint: disable=too-many-branches
 def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
-    # pylint: disable=too-many-branches
     if isinstance(model, Wall):
         boundary.update(
             {
