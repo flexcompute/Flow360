@@ -131,6 +131,7 @@ def validate_model(params_as_dict, unit_system_name):
     validated_param = None
 
     params_as_dict = remove_properties_by_name(params_as_dict, "_id")
+    params_as_dict = remove_properties_by_name(params_as_dict, "hash")  #  From client
 
     try:
         with unit_system:
