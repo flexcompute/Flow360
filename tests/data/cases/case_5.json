@@ -157,5 +157,16 @@
          "final": 100,
          "rampSteps": 1000
       }
+   },
+   "initialCondition": {
+	    "type": "expression",
+	    "constants": {
+            "gamma": "1.4"
+	    },
+	    "rho": "1",
+	    "u": "x",
+	    "v": 0,
+	    "w": 0,
+	    "p": "1/gamma"
    }
 }
