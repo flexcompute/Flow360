@@ -99,26 +99,19 @@ class ThermalState(MultiConstructorBaseModel):
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
         """Computes speed of sound."""
-        # pylint: disable=fixme
-        # TODO: implement
-        return self.material.speed_of_sound_from_temperature(self.temperature)
-        # return 343 * u.m / u.s
+        return self.material.get_speed_of_sound(self.temperature)
 
     @property
     def pressure(self) -> PressureType.Positive:
         """Computes pressure."""
-        # pylint: disable=fixme
-        # TODO: implement
-        return 1.013e5 * u.Pa
+        return self.material.get_pressure(self.density, self.temperature)
 
     @property
     def dynamic_viscosity(self) -> ViscosityType.Positive:
         """Computes dynamic viscosity."""
-        # pylint: disable=fixme
-        # TODO: implement
-        return self.material.dynamic_viscosity_from_temperature(self.temperature)
-        # return 1.825e-5 * u.Pa * u.s
+        return self.material.get_dynamic_viscosity(self.temperature)
 
+    # TODO: should we make this private_attribute?
     @pd.validate_call
     def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
         """Computes nondimensional dynamic viscosity."""

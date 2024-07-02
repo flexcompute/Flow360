@@ -4,13 +4,29 @@ from copy import deepcopy
 from typing import Type, Union
 
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
+from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    HeatFlux,
+    Inflow,
+    Mach,
+    MassFlowRate,
+    Outflow,
+    Periodic,
+    Pressure,
     SlipWall,
+    SurfaceModelTypes,
     SymmetryPlane,
+    Temperature,
+    TotalPressure,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import BETDisk, Fluid, Rotation
+from flow360.component.simulation.models.volume_models import (
+    BETDisk,
+    Fluid,
+    PorousMedium,
+    Rotation,
+)
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -26,6 +42,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import Box
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.utils import (
@@ -398,6 +415,93 @@ def translate_output(input_params: SimulationParams, translated: dict):
     return translated
 
 
+def porous_media_entity_info_serializer(volume):
+    """Porous media entity serializer"""
+    if isinstance(volume, Box):
+        axes = volume.private_attribute_input_cache.axes
+        return {
+            "zoneType": "box",
+            "axes": [list(axes[0]), list(axes[1])],
+            "center": volume.center.value.tolist(),
+            "lengths": volume.size.value.tolist(),
+        }
+
+    axes = volume.axes
+    return {
+        "zoneType": "mesh",
+        "zoneName": volume.name,
+        "axes": [list(axes[0]), list(axes[1])],
+    }
+
+
+def porous_media_translator(model: PorousMedium):
+    """Porous media translator"""
+    model_dict = remove_units_in_dict(dump_dict(model))
+    porous_medium = {
+        "DarcyCoefficient": list(model_dict["darcyCoefficient"]),
+        "ForchheimerCoefficient": list(model_dict["forchheimerCoefficient"]),
+    }
+    if model.volumetric_heat_source is not None:
+        porous_medium["volumetricHeatSource"] = model_dict["volumetricHeatSource"]
+
+    return porous_medium
+
+
+# pylint: disable=too-many-branches
+def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
+    """Boundary translator"""
+    model_dict = remove_units_in_dict(dump_dict(model))
+    boundary = {}
+    if isinstance(model, Wall):
+        boundary.update(
+            {
+                "type": "WallFunction" if model.use_wall_function else "NoSlipWall",
+                "velocityType": model.velocity_type,
+            }
+        )
+        if model.velocity:
+            boundary["velocity"] = model_dict["velocity"]
+        if isinstance(model.heat_spec, Temperature):
+            boundary["temperature"] = model_dict["heatSpec"]["value"]
+        elif isinstance(model.heat_spec, HeatFlux):
+            boundary["heatFlux"] = model_dict["heatSpec"]["value"]
+    elif isinstance(model, Inflow):
+        boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
+        if model.velocity_direction:
+            boundary["velocityDirection"] = model_dict["velocityDirection"]
+        if isinstance(model.spec, TotalPressure):
+            boundary["type"] = "SubsonicInflow"
+            boundary["totalPressureRatio"] = (
+                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+            )
+        elif isinstance(model.spec, MassFlowRate):
+            boundary["type"] = "MassInflow"
+            boundary["massFlowRate"] = model_dict["spec"]["value"]
+    elif isinstance(model, Outflow):
+        if isinstance(model.spec, Pressure):
+            boundary["type"] = "SubsonicOutflowPressure"
+            boundary["staticPressureRatio"] = (
+                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+            )
+        elif isinstance(model.spec, Mach):
+            pass
+        elif isinstance(model.spec, MassFlowRate):
+            pass
+    elif isinstance(model, Periodic):
+        pass
+    elif isinstance(model, SlipWall):
+        boundary["type"] = "SlipWall"
+    elif isinstance(model, Freestream):
+        boundary.update(
+            {
+                "type": "Freestream",
+                "velocityType": model.velocity_type,
+            }
+        )
+
+    return boundary
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -414,40 +518,48 @@ def get_solver_json(
     translated = {}
     ##:: Step 1: Get geometry:
     geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
-    ml = geometry["momentLength"]
+    ml = geometry.get("momentLength", 1.0)
     translated["geometry"] = {
-        "momentCenter": list(geometry["momentCenter"]),
+        "momentCenter": list(geometry.get("momentCenter", [0.0, 0.0, 0.0])),
         "momentLength": list(ml) if isinstance(ml, tuple) else [ml, ml, ml],
-        "refArea": geometry["area"],
+        "refArea": geometry.get("area", 1.0),
     }
     ##:: Step 2: Get freestream
     op = input_params.operating_condition
     translated["freestream"] = {
-        "alphaAngle": op.alpha.to("degree").v.item(),
-        "betaAngle": op.beta.to("degree").v.item(),
+        "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.model_fields else 0,
+        "betaAngle": op.beta.to("degree").v.item() if "beta" in op.model_fields else 0,
         "Mach": op.velocity_magnitude.v.item(),
-        "Temperature": op.thermal_state.temperature.to("K").v.item(),
+        "Temperature": (
+            op.thermal_state.temperature.to("K").v.item()
+            if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
+            else -1
+        ),
         "muRef": op.thermal_state.mu_ref(mesh_unit),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
+    op_acousitc_to_static_pressure_ratio = (
+        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
+    ).value
 
     ##:: Step 3: Get boundaries
-    translated["boundaries"] = {}
-    for model in input_params.models:
-        if isinstance(model, (Freestream, SlipWall, SymmetryPlane, Wall)):
-            spec = dump_dict(model)
-            spec.pop("surfaces")
-            spec.pop("name", None)
-            if isinstance(model, Wall):
-                spec.pop("useWallFunction")
-                spec["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
-                if model.heat_spec:
-                    spec.pop("heat_spec")
-                    # pylint: disable=fixme
-                    # TODO: implement
-            for surface in model.entities.stored_entities:
-                translated["boundaries"][surface.full_name] = spec
+    # pylint: disable=duplicate-code
+    translated["boundaries"] = translate_setting_and_apply_to_all_entities(
+        input_params.models,
+        (
+            Wall,
+            SlipWall,
+            Freestream,
+            Outflow,
+            Inflow,
+            Periodic,
+            SymmetryPlane,
+        ),
+        boundary_spec_translator,
+        to_list=False,
+        op_acousitc_to_static_pressure_ratio=op_acousitc_to_static_pressure_ratio,
+    )
 
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
@@ -524,6 +636,14 @@ def get_solver_json(
         translated["volumeZones"] = volume_zones
 
     ##:: Step 9: Get porous media
+    if has_instance_in_list(input_params.models, PorousMedium):
+        translated["porousMedia"] = translate_setting_and_apply_to_all_entities(
+            input_params.models,
+            PorousMedium,
+            porous_media_translator,
+            to_list=True,
+            entity_injection_func=porous_media_entity_info_serializer,
+        )
 
     ##:: Step 10: Get heat transfer zones
 

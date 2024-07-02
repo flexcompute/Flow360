@@ -9,6 +9,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     DensityType,
+    PressureType,
     SpecificHeatCapacityType,
     TemperatureType,
     ThermalConductivityType,
@@ -38,7 +39,7 @@ class Sutherland(Flow360BaseModel):
     effective_temperature: TemperatureType.Positive = pd.Field()
 
     @pd.validate_call
-    def dynamic_viscosity_from_temperature(
+    def get_dynamic_viscosity(
         self, temperature: TemperatureType.Positive
     ) -> ViscosityType.Positive:
         """dynamic viscosity"""
@@ -81,17 +82,21 @@ class Air(MaterialBase):
         return 0.72
 
     @pd.validate_call
-    def speed_of_sound_from_temperature(
-        self, temperature: TemperatureType.Positive
-    ) -> VelocityType.Positive:
+    def get_pressure(
+        self, density: DensityType.Positive, temperature: TemperatureType.Positive
+    ) -> PressureType.Positive:
+        return density * self.gas_constant * temperature
+
+    @pd.validate_call
+    def get_speed_of_sound(self, temperature: TemperatureType.Positive) -> VelocityType.Positive:
         return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
 
     @pd.validate_call
-    def dynamic_viscosity_from_temperature(
+    def get_dynamic_viscosity(
         self, temperature: TemperatureType.Positive
     ) -> ViscosityType.Positive:
         if isinstance(self.dynamic_viscosity, Sutherland):
-            return self.dynamic_viscosity.dynamic_viscosity_from_temperature(temperature)
+            return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
         return self.dynamic_viscosity
 
 
