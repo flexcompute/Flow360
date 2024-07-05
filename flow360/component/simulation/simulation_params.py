@@ -9,17 +9,24 @@ from typing import Annotated, List, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import (
+    AssetCache,
+    _recursive_update_zone_name_in_surface_with_metadata,
+    _set_boundary_full_name_with_zone_name,
+    recursive_register_entity_list,
+)
 from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    RotationCylinder,
+)
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
 from flow360.component.simulation.operating_condition import OperatingConditionTypes
 from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
-from flow360.component.simulation.primitives import ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
-    LengthType,
     UnitSystem,
     UnitSystemType,
     unit_system_manager,
@@ -39,82 +46,6 @@ AllowedModelTypes = Annotated[
 ]
 
 
-class AssetCache(Flow360BaseModel):
-    """
-    Note:
-    1. asset_entity_registry will be replacing/update the metadata-constructed registry of the asset when loading it.
-    """
-
-    asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
-    project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
-    # pylint: disable=fixme
-    # TODO: Pending mesh_unit
-
-
-def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
-    """
-    Recursively registers entities within a Flow360BaseModel instance to an EntityRegistry.
-
-    This function iterates through the attributes of the given model. If an attribute is an
-    EntityList, it retrieves the expanded entities and registers each entity in the registry.
-    If an attribute is a list and contains instances of Flow360BaseModel, it recursively
-    registers the entities within those instances.
-
-    Args:
-        model (Flow360BaseModel): The model containing entities to be registered.
-        registry (EntityRegistry): The registry where entities will be registered.
-
-    Returns:
-        None
-    """
-    for field in model.__dict__.values():
-        if isinstance(field, EntityBase):
-            registry.register(field)
-
-        if isinstance(field, EntityList):
-            # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(
-                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
-            )
-            for entity in expanded_entities if expanded_entities else []:
-                registry.register(entity)
-
-        elif isinstance(field, list):
-            for item in field:
-                if isinstance(item, Flow360BaseModel):
-                    recursive_register_entity_list(item, registry)
-
-        elif isinstance(field, Flow360BaseModel):
-            recursive_register_entity_list(field, registry)
-
-
-def _recursive_update_zone_name_in_surface(model: Flow360BaseModel, volume_mesh_meta_data: dict):
-    """
-    Update the zone info from volume mesh
-    """
-    for field in model.__dict__.values():
-        if isinstance(field, Surface):
-            # pylint: disable=protected-access
-            field._set_boundary_full_name(volume_mesh_meta_data)
-
-        if isinstance(field, EntityList):
-            # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(
-                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
-            )
-            for entity in expanded_entities if expanded_entities else []:
-                if isinstance(entity, Surface):
-                    entity._set_boundary_full_name(volume_mesh_meta_data)
-
-        elif isinstance(field, list):
-            for item in field:
-                if isinstance(item, Flow360BaseModel):
-                    _recursive_update_zone_name_in_surface(item, volume_mesh_meta_data)
-
-        elif isinstance(field, Flow360BaseModel):
-            _recursive_update_zone_name_in_surface(field, volume_mesh_meta_data)
-
-
 class _ParamModelBase(Flow360BaseModel):
     """
     Base class that abstracts out all Param type classes in Flow360.
@@ -122,27 +53,7 @@ class _ParamModelBase(Flow360BaseModel):
 
     version: str = pd.Field(__version__, frozen=True)
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
-    private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
     model_config = pd.ConfigDict(include_hash=True)
-
-    @pd.model_validator(mode="after")
-    def _move_registry_to_asset_cache(self):
-        """Recursively register all entities listed in EntityList to the asset cache."""
-        # pylint: disable=no-member
-        self.private_attribute_asset_cache.asset_entity_registry.clear()
-        recursive_register_entity_list(
-            self,
-            self.private_attribute_asset_cache.asset_entity_registry,
-        )  # Clear so that the next param can use this.
-        return self
-
-    def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
-        """
-        Update the zone info from volume mesh
-        TODO: This will be used in CasePipline
-        """
-        _recursive_update_zone_name_in_surface(self, volume_mesh_meta_data)
-        return self
 
     def _init_check_unit_system(self, **kwargs):
         """
@@ -269,6 +180,9 @@ class SimulationParams(_ParamModelBase):
     """
     outputs: Optional[List[OutputTypes]] = pd.Field(None)
 
+    ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
+    private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
+
     # pylint: disable=arguments-differ
     def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
         """TBD"""
@@ -310,3 +224,48 @@ class SimulationParams(_ParamModelBase):
                 SurfaceOutput(name="SurfaceOutput 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
             )
         return v
+
+    @pd.model_validator(mode="after")
+    def _move_registry_to_asset_cache(self):
+        """Recursively register all entities listed in EntityList to the asset cache."""
+        # pylint: disable=no-member
+        self.private_attribute_asset_cache.asset_entity_registry.clear()
+        recursive_register_entity_list(
+            self,
+            self.private_attribute_asset_cache.asset_entity_registry,
+        )  # Clear so that the next param can use this.
+        return self
+
+    @pd.model_validator(mode="after")
+    def _update_entity_private_attrs(self):
+        """Once the SimulationParams is set, extract and upate information in entities by parsing what user specified"""
+
+        ##::1. Update full names in the Surface entities with zone names
+        # pylint: disable=no-member
+        if self.meshing is not None and self.meshing.volume_zones is not None:
+            for volume in self.meshing.volume_zones:
+                if isinstance(volume, AutomatedFarfield):
+                    _set_boundary_full_name_with_zone_name(
+                        self.private_attribute_asset_cache.asset_entity_registry,
+                        "farfield",
+                        volume.private_attribute_entity.name,
+                    )
+                    _set_boundary_full_name_with_zone_name(
+                        self.private_attribute_asset_cache.asset_entity_registry,
+                        "symmetric*",
+                        volume.private_attribute_entity.name,
+                    )
+                if isinstance(volume, RotationCylinder):
+                    # pylint: disable=fixme
+                    # TODO: Implement this
+                    pass
+
+        return self
+
+    ##:: Internal Util functions
+    def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
+        """
+        Update the zone info from volume mesh
+        """
+        _recursive_update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
+        return self

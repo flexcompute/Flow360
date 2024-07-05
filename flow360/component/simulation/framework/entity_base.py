@@ -149,43 +149,46 @@ def __combine_bools(input_data):
 
 
 def _merge_fields(obj_old, obj_new):
+    """obj_old is the higher priority object. obj_new is the lower priority object."""
     basic_types = (list, Number, str, tuple, unyt.unyt_array, unyt.unyt_quantity)
     for attr, value in obj_new.__dict__.items():
-        print(f"> Checking {attr} ")
         if attr in [
             "private_attribute_entity_type_name",
             "private_attribute_registry_bucket_name",
-            "name",
         ]:
-            # No need for checking these attributes
+            # When merging between a generic and non-generic object, these are definitely different
             continue
 
         if obj_new.__dict__[attr] is None:
-            # Ignore difference from lower priority object
+            # Ignore the None from lower priority object
             continue
 
         if attr in obj_old.__dict__:
-            old_attr = obj_old.__dict__[attr]
-            new_attr = obj_new.__dict__[attr]
-            found_conflict = __combine_bools(old_attr != value)
+            found_conflict = __combine_bools(obj_old.__dict__[attr] != value)
             if found_conflict:
-                # print(
-                #     f">> {attr} --> {old_attr}|{new_attr} --> "
-                #     f"{isinstance(old_attr,basic_types )} "
-                # )
-                if not isinstance(old_attr, basic_types) and old_attr is not None:
-                    old_attr = _merge_fields(old_attr, new_attr)
-                # Basic types, we handle explicitly
-                elif old_attr is None or (isinstance(old_attr, list) and old_attr == []):
+                if (
+                    not isinstance(obj_old.__dict__[attr], basic_types)
+                    and obj_old.__dict__[attr] is not None
+                ):
+                    # Recursive call to merge the nested objects until we reach the basic types
+                    obj_old.__dict__[attr] = _merge_fields(
+                        obj_old.__dict__[attr], obj_new.__dict__[attr]
+                    )
+
+                ##:: Basic types, we handle explicitly
+                elif obj_old.__dict__[attr] is None or (
+                    isinstance(obj_old.__dict__[attr], list) and obj_old.__dict__[attr] == []
+                ):
                     # Populate obj_old with new info from lower priority object
-                    print(f">> setting {attr} --> {value}")
-                    old_attr = value
+                    # This may need to handle empty tuple/dict etc too if the field has empty value as default
+                    obj_old.__dict__[attr] = value
                 else:
                     raise MergeConflictError(
-                        f"Conflict on attribute '{attr}': {old_attr} != {value}"
+                        f"Conflict on attribute '{attr}': {obj_old.__dict__[attr]} != {value}"
                     )
-        # for new attr from new object, we just add it to the old object.
-        obj_old.__dict__[attr] = value
+        else:
+            # for new attr from lower priority object, we just add it to the old object.
+            obj_old.__dict__[attr] = value
     return obj_old
 
 
@@ -197,7 +200,6 @@ def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
         obj_old: The original object to merge into.
         obj_new: The new object to merge into the original object.
     """
-    print("\n")
 
     if obj_new.name != obj_old.name:
         raise MergeConflictError(

@@ -75,13 +75,13 @@ class RotationCylinder(CylindricalRefinementBase):
 
     """
 
-    name: Optional[str] = pd.Field(None)
+    entity: Cylinder = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="""Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.
         This helps determining the volume zone boundary.""",
     )
-    entity: Cylinder = pd.Field()
+    private_attribute_displayed_name: Optional[str] = pd.Field(None)
 
 
 class AutomatedFarfield(Flow360BaseModel):
@@ -104,16 +104,16 @@ class AutomatedFarfield(Flow360BaseModel):
     name: Optional[str] = pd.Field(None)
     method: Literal["auto", "quasi-3d"] = pd.Field(default="auto", frozen=True)
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="automated_farfied_entity"), frozen=True
+        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True
     )
 
     def _set_up_zone_entity(self, found_rotating_zones: bool):
-        with _model_attribute_unlock(self.private_attribute_entity, "private_attribute_zone_name"):
+        with _model_attribute_unlock(self.private_attribute_entity, "name"):
             # pylint: disable=assigning-non-slot
             if found_rotating_zones:
-                self.private_attribute_entity.private_attribute_zone_name = "stationaryBlock"
+                self.private_attribute_entity.name = "stationaryBlock"
             else:
-                self.private_attribute_entity.private_attribute_zone_name = "fluid"
+                self.private_attribute_entity.name = "fluid"
 
         with _model_attribute_unlock(
             self.private_attribute_entity, "private_attribute_zone_boundary_names"

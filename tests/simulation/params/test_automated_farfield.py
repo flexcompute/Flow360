@@ -15,6 +15,11 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
+from flow360.component.simulation.outputs.output_entities import Surface, SurfaceList
+from flow360.component.simulation.outputs.outputs import (
+    SurfaceIntegralOutput,
+    SurfaceOutput,
+)
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -31,7 +36,7 @@ def test_automated_farfield_names():
             ),
         )
 
-    assert my_farfield.private_attribute_entity.private_attribute_zone_name == "fluid"
+    assert my_farfield.private_attribute_entity.name == "fluid"
     assert isinstance(
         my_farfield.private_attribute_entity.private_attribute_zone_boundary_names, UniqueStringList
     )
@@ -55,7 +60,6 @@ def test_automated_farfield_names():
                 volume_zones=[
                     my_farfield,
                     RotationCylinder(
-                        name="rotor",
                         entity=my_cylinder,
                         spacing_axial=0.1,
                         spacing_radial=0.1,
@@ -65,7 +69,7 @@ def test_automated_farfield_names():
             ),
         )
 
-    assert my_farfield.private_attribute_entity.private_attribute_zone_name == "stationaryBlock"
+    assert my_farfield.private_attribute_entity.name == "stationaryBlock"
     assert set(
         my_farfield.private_attribute_entity.private_attribute_zone_boundary_names.items
     ) == set(["farfield", "symmetric"])
@@ -146,3 +150,44 @@ def test_automated_farfield_surface_usage():
                 Freestream(name="fs", entities=my_farfield.farfield),
             ],
         )
+
+    # Test use of GhostSurface in SurfaceOutput
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield")
+        _ = SimulationParams(
+            outputs=[
+                SurfaceOutput(entities=my_farfield.farfield, output_fields=["Cp"]),
+                SurfaceIntegralOutput(
+                    entities=SurfaceList(
+                        name="prb 110",
+                        entities=[
+                            my_farfield.symmetry_planes,
+                            Surface(name="surface2"),
+                        ],
+                    ),
+                    output_fields=["Cp"],
+                ),
+            ],
+        )
+
+    # Test that the GhostSurface will have updated full name through model_validators
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
+        param = SimulationParams(
+            models=[
+                Freestream(name="fs", entities=my_farfield.farfield),
+                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_planes[1]),
+            ],
+            meshing=MeshingParams(
+                volume_zones=[
+                    my_farfield,
+                ],
+            ),
+        )
+    assert (
+        param.models[0].entities.stored_entities[0].private_attribute_full_name == "fluid/farfield"
+    )
+    assert (
+        param.models[1].entities.stored_entities[0].private_attribute_full_name
+        == "fluid/symmetric-2"
+    )

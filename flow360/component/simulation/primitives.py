@@ -73,10 +73,8 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
-        description="""Boundary names of the zone without the prepending zone name because these
-        are used to directly reference to the boundary entities which are also registered without the zone name.""",
+        description="""Boundary names of the zone WITH the prepending zone name.""",
     )
-    private_attribute_zone_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _is_volume_zone(self) -> bool:
         """This is not a zone if zone boundaries are not defined. For validation usage."""
@@ -270,7 +268,7 @@ class Surface(_SurfaceEntityBase):
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
-    def _set_boundary_full_name(self, volume_mesh_meta_data: dict) -> None:
+    def _set_boundary_full_name_from_metadata(self, volume_mesh_meta_data: dict) -> None:
         """
         Update parent zone name once the volume mesh is done.
         volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
@@ -302,10 +300,10 @@ class GhostSurface(_SurfaceEntityBase):
     - For meshing:
        - we forbid using `UnvalidatedSurface` in any surface-related features which is not supported right now anyways.
 
-    - For boundary condition:
+    - For boundary condition and post-processing:
         - Allow usage of `UnvalidatedSurface` but no validation. Solver validation will error out when finding mismatch
         between the boundary condition and the mesh meta.
-    We will prevent user using these in any surface-related features which is not supported right now anyways.
+
     """
 
     private_attribute_entity_type_name: Literal["UnvalidatedSurface"] = pd.Field(
