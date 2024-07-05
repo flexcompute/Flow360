@@ -2,7 +2,10 @@
 
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UniformRefinement,
+)
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
@@ -10,6 +13,7 @@ from flow360.component.simulation.translator.utils import (
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
+from flow360.exceptions import Flow360TranslationError
 
 
 def unifrom_refinement_translator(obj: SurfaceEdgeRefinement):
@@ -42,7 +46,16 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     translated = {}
 
     # >>  Step 1:  Get high level settings
-    translated["farfield"] = {"type": input_params.meshing.farfield}
+    # Note: None volume zones will be complained by SimulationParam
+    if input_params.meshing.volume_zones is None:
+        raise Flow360TranslationError(
+            "volume_zones cannot be None for volume meshing",
+            input_params.meshing.volume_zones,
+            ["meshing", "volume_zones"],
+        )
+    for zone in input_params.meshing.volume_zones:
+        if isinstance(zone, AutomatedFarfield):
+            translated["farfield"] = {"type": zone.method}
     translated["refinementFactor"] = input_params.meshing.refinement_factor
     if input_params.meshing.gap_treatment_strength is not None:
         translated["gapTreatmentStrength"] = input_params.meshing.gap_treatment_strength

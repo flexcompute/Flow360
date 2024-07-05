@@ -6,6 +6,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
 )
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition import AerospaceCondition
@@ -167,6 +168,17 @@ def test_simulation_to_volume_meshing_json():
                     "refinement_type": "BoundaryLayer",
                     "type": "aniso",
                 },
+            ],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
             ],
         },
         "unit_system": {"name": "SI"},
@@ -356,6 +368,7 @@ def test_simulation_to_all_translation():
                     curvature_resolution_angle=10 * u.deg,
                 ),
             ],
+            volume_zones=[AutomatedFarfield()],
         )
         param = SimulationParams(
             meshing=meshing,
@@ -389,7 +402,6 @@ def test_simulation_to_all_translation():
 def test_simulation_to_all_translation_2():
     params_as_dict = {
         "meshing": {
-            "farfield": "auto",
             "refinement_factor": 1,
             "gap_treatment_strength": None,
             "surface_layer_growth_rate": 1.2,
@@ -409,7 +421,17 @@ def test_simulation_to_all_translation_2():
                     "curvature_resolution_angle": {"value": 10, "units": "degree"},
                 },
             ],
-            "volume_zones": [],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
         },
         "operating_condition": {
             "type_name": "AerospaceCondition",
@@ -435,6 +457,3 @@ def test_simulation_to_all_translation_2():
     print(volume_json)
     case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
     print(case_json)
-
-
-test_simulation_to_all_translation_2()

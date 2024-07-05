@@ -430,26 +430,27 @@ class Flow360BaseModel(pd.BaseModel):
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
-    def append(self, params: Flow360BaseModel, overwrite: bool = False):
-        """append parametrs to the model
+    # Clashes with list append and is not used anywhere
+    # def append(self, params: Flow360BaseModel, overwrite: bool = False):
+    #     """append parametrs to the model
 
-        Parameters
-        ----------
-        params : Flow360BaseModel
-            Flow360BaseModel parameters to be appended
-        overwrite : bool, optional
-            Whether to overwrite if key exists, by default False
-        """
-        additional_config = params.model_dump(exclude_unset=True, exclude_none=True)
-        for key, value in additional_config.items():
-            if self.key and not overwrite:
-                log.warning(
-                    f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
-                )
-                continue
-            is_frozen = self.model_fields[key].frozen
-            if is_frozen is None or is_frozen is False:
-                setattr(self, key, value)
+    #     Parameters
+    #     ----------
+    #     params : Flow360BaseModel
+    #         Flow360BaseModel parameters to be appended
+    #     overwrite : bool, optional
+    #         Whether to overwrite if key exists, by default False
+    #     """
+    #     additional_config = params.model_dump(exclude_unset=True, exclude_none=True)
+    #     for key, value in additional_config.items():
+    #         if self.key and not overwrite:
+    #             log.warning(
+    #                 f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
+    #             )
+    #             continue
+    #         is_frozen = self.model_fields[key].frozen
+    #         if is_frozen is None or is_frozen is False:
+    #             setattr(self, key, value)
 
     @classmethod
     def _generate_docstring(cls) -> str:

@@ -3,9 +3,6 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    _model_attribute_unlock,
-)
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -27,6 +24,7 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.utils import remove_properties_by_name
 
 unit_system_map = {

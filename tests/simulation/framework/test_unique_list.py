@@ -101,6 +101,19 @@ def test_unique_list():
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", 1234])
 
+    # 5: Test append triggering validation
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Input item to this list must be unique but ['TempIsosurface with name: iso_1'] "
+            "appears multiple times."
+        ),
+    ):
+        temo_iso = TempIsosurfaceOutput(
+            isosurfaces=[my_iso_1], output_fields=["Cp", "wallDistance"]
+        )
+        temo_iso.isosurfaces.append(my_iso_1)
+
 
 def test_unique_list_with_surface_pair():
     surface1 = Surface(name="MySurface1")

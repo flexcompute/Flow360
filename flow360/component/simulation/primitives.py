@@ -16,10 +16,10 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
-    _model_attribute_unlock,
 )
-from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.types import Axis
 
 
@@ -33,6 +33,12 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
                 return existing_boundary_name
+    if surface_name == "symmetric":
+        # Provides more info when the symmetric boundary is not auto generated.
+        raise ValueError(
+            f"Parent zone not found for boundary: {surface_name}. "
+            + "It is likely that it was never auto generated because the condition is not met."
+        )
     raise ValueError(f"Parent zone not found for surface {surface_name}.")
 
 
@@ -64,9 +70,13 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
     ### Warning: Please do not change this as it affects registry bucketing.
     private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
-    private_attribute_zone_boundary_names: Optional[UniqueItemList[str]] = pd.Field(
-        None, frozen=True
+    private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
+        UniqueStringList(),
+        frozen=True,
+        description="""Boundary names of the zone without the prepending zone name because these
+        are used to directly reference to the boundary entities which are also registered without the zone name.""",
     )
+    private_attribute_zone_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _is_volume_zone(self) -> bool:
         """This is not a zone if zone boundaries are not defined. For validation usage."""
@@ -111,22 +121,6 @@ class GenericVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
-
-
-@final
-class GenericSurface(_SurfaceEntityBase):
-    """Do not expose.
-    This type of entity will get auto-constructed by assets when loading metadata."""
-
-    private_attribute_entity_type_name: Literal["GenericSurface"] = pd.Field(
-        "GenericSurface", frozen=True
-    )
-    private_attribute_is_interface: Optional[bool] = pd.Field(
-        False,  # Mostly are not interfaces
-        frozen=True,
-        description="""This is required in GenericSurface when generated from volume mesh
-        but not required when from surface mesh meta.""",
-    )
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):
@@ -266,6 +260,12 @@ class Surface(_SurfaceEntityBase):
 
     private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
+    private_attribute_is_interface: Optional[bool] = pd.Field(
+        None,
+        frozen=True,
+        description="""This is required when generated from volume mesh
+        but not required when from surface mesh meta.""",
+    )
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
@@ -288,6 +288,30 @@ class Surface(_SurfaceEntityBase):
         if self.private_attribute_full_name is None:
             return self.name
         return self.private_attribute_full_name
+
+
+@final
+class GhostSurface(_SurfaceEntityBase):
+    """
+    Represents a boudary surface that may or may not be generated therefore may or may not exist.
+    It depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.
+
+    For now we do not use metadata or any other information to validate (on the client side) whether the surface
+    actually exists. We will let workflow error out if the surface is not found.
+
+    - For meshing:
+       - we forbid using `UnvalidatedSurface` in any surface-related features which is not supported right now anyways.
+
+    - For boundary condition:
+        - Allow usage of `UnvalidatedSurface` but no validation. Solver validation will error out when finding mismatch
+        between the boundary condition and the mesh meta.
+    We will prevent user using these in any surface-related features which is not supported right now anyways.
+    """
+
+    private_attribute_entity_type_name: Literal["UnvalidatedSurface"] = pd.Field(
+        "UnvalidatedSurface", frozen=True
+    )
+    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
 
 class SurfacePair(Flow360BaseModel):

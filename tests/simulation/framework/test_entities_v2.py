@@ -14,11 +14,12 @@ from flow360.component.simulation.framework.entity_base import (
     _merge_objects,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
-    GenericSurface,
     GenericVolume,
+    Surface,
     _SurfaceEntityBase,
 )
 from flow360.component.simulation.simulation_params import _ParamModelBase
@@ -161,7 +162,7 @@ class TempVolumeMesh(AssetBase):
 
         for surface_name in self._get_meta_data()["surfaces"]:
             self.internal_registry.register(
-                GenericSurface(
+                Surface(
                     name=surface_name, private_attribute_is_interface=surface_name in interfaces
                 )
             )
@@ -185,7 +186,7 @@ class TempFluidDynamics(Flow360BaseModel):
 
 
 class TempWallBC(Flow360BaseModel):
-    entities: EntityList[GenericSurface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
+    entities: EntityList[Surface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
 
 
 def _get_supplementary_registry(far_field_type: str):
@@ -205,7 +206,7 @@ class TempRotation(Flow360BaseModel):
 
 class TempUserDefinedDynamic(Flow360BaseModel):
     name: str = pd.Field()
-    input_boundary_patches: Optional[EntityList[GenericSurface]] = pd.Field(None)
+    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(None)
     output_target: Optional[Cylinder] = pd.Field(
         None
     )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.

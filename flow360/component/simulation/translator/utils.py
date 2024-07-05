@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -130,28 +131,6 @@ def remove_units_in_dict(input_dict):
     if isinstance(input_dict, list):
         return [remove_units_in_dict(item) for item in input_dict]
     return input_dict
-
-
-def get_combined_subclasses(cls):
-    """get subclasses of cls"""
-    if isinstance(cls, tuple):
-        subclasses = set()
-        for single_cls in cls:
-            subclasses.update(single_cls.__subclasses__())
-        return list(subclasses)
-    return cls.__subclasses__()
-
-
-def is_exact_instance(obj, cls):
-    """Check if an object is an instance of a class and not a subclass."""
-    if not isinstance(obj, cls):
-        return False
-    # Check if there are any subclasses of cls
-    subclasses = get_combined_subclasses(cls)
-    for subclass in subclasses:
-        if isinstance(obj, subclass):
-            return False
-    return True
 
 
 def has_instance_in_list(obj_list: list, class_type):
@@ -348,7 +327,11 @@ def get_global_setting_from_per_item_setting(
                 only_find_when_entities_none=False,
             )
         else:
+            # Ideally SimulationParams should have
             raise Flow360TranslationError(
-                f"Global setting of {attribute_name} is required but not found in `{class_type.__name__}` instances."
+                f"Global setting of {attribute_name} is required but not found in"
+                f"`{class_type.__name__}` instances. \n[For developers]: This error message should not appear."
+                "SimulationParams should have caught this!!!",
+                input_value=obj_list,
             )
     return global_setting

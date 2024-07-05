@@ -3,7 +3,10 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
 from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UniformRefinement,
+)
 from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
@@ -98,6 +101,7 @@ def get_test_param():
                         type="aniso", first_layer_thickness=1.35e-06 * u.m, growth_rate=1 + 0.04
                     ),
                 ],
+                volume_zones=[AutomatedFarfield()],
             )
         )
     return param
