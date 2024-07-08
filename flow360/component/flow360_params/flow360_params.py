@@ -54,6 +54,7 @@ from .flow360_output import (
     SliceOutputLegacy,
     SurfaceOutput,
     SurfaceOutputLegacy,
+    UserDefinedField,
     VolumeOutput,
     VolumeOutputLegacy,
 )
@@ -120,6 +121,7 @@ from .validations import (
     _check_low_mach_preconditioner_output,
     _check_low_mach_preconditioner_support,
     _check_numerical_dissipation_factor_output,
+    _check_output_fields,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
@@ -1073,6 +1075,8 @@ class Flow360Params(Flow360BaseModel):
         alias="navierStokesSolver", default=NavierStokesSolver()
     )
 
+    user_defined_fields: Optional[List[UserDefinedField]] = pd.Field(alias="userDefinedFields")
+
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
             raise Flow360RuntimeError(use_unit_system_msg)
@@ -1247,6 +1251,14 @@ class Flow360Params(Flow360BaseModel):
         allow_but_remove = ["runControl", "testControl"]
         include_hash: bool = True
         exclude_on_flow360_export = ["version", "unit_system"]
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_output_fields(cls, values):
+        """
+        check that output fields are valid.
+        """
+        return _check_output_fields(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator

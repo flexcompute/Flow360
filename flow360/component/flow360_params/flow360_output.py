@@ -11,6 +11,7 @@ import pydantic.v1 as pd
 from pydantic.v1 import conlist
 
 from ..types import Axis, Coordinate, NonNegativeAndNegOneInt, PositiveAndNegOneInt
+from ..utils import process_expressions
 from .flow360_fields import (
     CommonFieldNames,
     CommonFieldNamesFull,
@@ -22,6 +23,7 @@ from .flow360_fields import (
     SurfaceFieldNamesFull,
     VolumeFieldNames,
     VolumeFieldNamesFull,
+    _distribute_shared_output_fields,
     get_field_values,
     to_short,
 )
@@ -54,21 +56,6 @@ def _filter_fields(fields, literal_filter):
     """Take two literals, keep only arguments present in the filter"""
     values = get_field_values(literal_filter)
     fields[:] = [field for field in fields if field in values]
-
-
-def _distribute_shared_output_fields(solver_values: dict, item_names: str):
-    if "output_fields" not in solver_values or solver_values["output_fields"] is None:
-        return
-    shared_fields = solver_values.pop("output_fields")
-    shared_fields = [to_short(field) for field in shared_fields]
-    if solver_values[item_names] is not None:
-        for name in solver_values[item_names].names():
-            item = solver_values[item_names][name]
-            for field in shared_fields:
-                if item.output_fields is None:
-                    item.output_fields = []
-                if field not in item.output_fields:
-                    item.output_fields.append(field)
 
 
 def _deduplicate_output_fields(solver_values: dict, item_names: str = None):
@@ -197,8 +184,11 @@ class TimeAverageAnimatedOutput(AnimatedOutput, metaclass=ABCMeta):
 class Surface(Flow360BaseModel):
     """:class:`Surface` class"""
 
-    output_fields: Optional[SurfaceOutputFields] = pd.Field(
-        alias="outputFields", displayed="Output fields", default=[]
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields",
+        displayed="Output fields",
+        default=[],
+        natively_supported=SurfaceFields,
     )
 
     # pylint: disable=too-few-public-methods
@@ -209,6 +199,8 @@ class Surface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
             )
@@ -242,7 +234,11 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     """:class:`SurfaceOutput` class"""
 
     write_single_file: Optional[bool] = pd.Field(alias="writeSingleFile", default=False)
-    output_fields: Optional[SurfaceOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields",
+        default=[],
+        natively_supported=SurfaceFields,
+    )
     surfaces: Optional[Surfaces] = pd.Field()
 
     # pylint: disable=too-few-public-methods
@@ -253,6 +249,8 @@ class SurfaceOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], SurfaceFieldNamesFull
             )
@@ -288,7 +286,9 @@ class Slice(Flow360BaseModel):
 
     slice_normal: Axis = pd.Field(alias="sliceNormal")
     slice_origin: LengthType.Point = pd.Field(alias="sliceOrigin")
-    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=SliceFields
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -298,6 +298,8 @@ class Slice(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
@@ -337,7 +339,9 @@ class _GenericSliceWrapper(Flow360BaseModel):
 class SliceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`SliceOutput` class"""
 
-    output_fields: Optional[SliceOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=SliceFields
+    )
     slices: Slices = pd.Field()
 
     # pylint: disable=too-few-public-methods
@@ -348,6 +352,8 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
@@ -366,8 +372,10 @@ class SliceOutput(Flow360BaseModel, AnimatedOutput):
 class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
     """:class:`VolumeOutput` class"""
 
-    output_fields: Optional[VolumeOutputFields] = pd.Field(
-        alias="outputFields", default=["primitiveVars", "Cp", "mut", "Mach"]
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields",
+        default=["primitiveVars", "Cp", "mut", "Mach"],
+        natively_supported=VolumeFields,
     )
 
     # pylint: disable=too-few-public-methods
@@ -378,6 +386,8 @@ class VolumeOutput(Flow360BaseModel, TimeAverageAnimatedOutput):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], VolumeFieldNamesFull
             )
@@ -420,7 +430,9 @@ class SurfaceIntegralMonitor(MonitorBase):
 
     type: Literal["surfaceIntegral"] = pd.Field("surfaceIntegral", const=True)
     surfaces: List[str] = pd.Field()
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -430,6 +442,8 @@ class SurfaceIntegralMonitor(MonitorBase):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
@@ -448,7 +462,9 @@ class ProbeMonitor(MonitorBase):
 
     type: Literal["probe"] = pd.Field("probe", const=True)
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -458,6 +474,8 @@ class ProbeMonitor(MonitorBase):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
@@ -502,7 +520,9 @@ class MonitorOutput(Flow360BaseModel):
     """:class:`MonitorOutput` class"""
 
     monitors: Monitors = pd.Field()
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -512,6 +532,9 @@ class MonitorOutput(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
+
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
@@ -539,6 +562,9 @@ class LegacyMonitor(MonitorBase):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
+
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
@@ -583,7 +609,9 @@ class MonitorOutputLegacy(LegacyModel):
     """:class:`MonitorOutputLegacy` class"""
 
     monitors: LegacyMonitors = pd.Field()
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     def update_model(self):
         new_monitors = {}
@@ -603,9 +631,11 @@ class MonitorOutputLegacy(LegacyModel):
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
 
-    surface_field: IsoSurfaceOutputField = pd.Field(alias="surfaceField")
+    surface_field: Literal[IsoSurfaceFields] = pd.Field(alias="surfaceField")
     surface_field_magnitude: float = pd.Field(alias="surfaceFieldMagnitude")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
@@ -615,6 +645,8 @@ class IsoSurface(Flow360BaseModel):
         @staticmethod
         def schema_extra(schema, model):
             """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
             _filter_fields(
                 schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
             )
@@ -657,7 +689,9 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
     """:class:`IsoSurfaceOutput` class"""
 
     iso_surfaces: IsoSurfaces = pd.Field(alias="isoSurfaces")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[str]] = pd.Field(
+        alias="outputFields", default=[], natively_supported=CommonFields
+    )
 
     # pylint: disable=arguments-differ
     def to_solver(self, params, **kwargs) -> IsoSurfaceOutput:
@@ -668,6 +702,21 @@ class IsoSurfaceOutput(Flow360BaseModel, AnimatedOutput):
             solver_values["output_format"] = "paraview,tecplot"
         _distribute_shared_output_fields(solver_values, "iso_surfaces")
         return IsoSurfaceOutput(**solver_values)
+
+    # pylint: disable=too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        """:class: Model config to cull output field shorthands"""
+
+        # pylint: disable=unused-argument
+        @staticmethod
+        def schema_extra(schema, model):
+            """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+            schema["properties"]["outputFields"].pop("natively_supported")
+
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
 
 
 class AeroacousticOutput(Flow360BaseModel):
@@ -693,6 +742,18 @@ class AeroacousticOutput(Flow360BaseModel):
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
+
+
+class UserDefinedField(Flow360BaseModel):
+    """Variable that can be used as output variables"""
+
+    name: str = pd.Field()
+    expression: str = pd.Field()
+
+    _processed_expression = pd.validator("expression", allow_reuse=True)(process_expressions)
+
+
+# Legacy models for Flow360 updater, do not expose
 
 
 class LegacyOutputFormat(pd.BaseModel, metaclass=ABCMeta):
@@ -863,9 +924,6 @@ class VolumeOutputLegacy(VolumeOutput, LegacyOutputFormat, LegacyModel):
         }
 
         return VolumeOutput.parse_obj(model)
-
-
-# Legacy models for Flow360 updater, do not expose
 
 
 class IsoSurfaceOutputLegacy(IsoSurfaceOutput, LegacyModel):

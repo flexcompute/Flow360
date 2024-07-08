@@ -86,11 +86,6 @@ def test_surface_output():
             output_fields=["Cp", "qcriterion"],
         )
 
-    with pytest.raises(pd.ValidationError):
-        output = SurfaceOutput(
-            output_fields=["invalid_field", "qcriterion"],
-        )
-
     output = SurfaceOutput(
         output_fields=["Cp", "qcriterion"],
     )
@@ -321,12 +316,6 @@ def test_volume_output():
 
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(animation_frequency=0, output_fields=["Cp", "qcriterion"])
-
-    with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(
-            animation_frequency=1,
-            output_fields=["invalid_field", "qcriterion"],
-        )
 
     output = VolumeOutput(output_fields=["Cp", "qcriterion"])
 

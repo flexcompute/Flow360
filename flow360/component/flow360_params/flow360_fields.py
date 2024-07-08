@@ -182,3 +182,18 @@ if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFul
     raise ImportError(
         "Full names and shorthands for output fields have mismatched lengths, which is not allowed"
     )
+
+
+def _distribute_shared_output_fields(solver_values: dict, item_names: str):
+    if "output_fields" not in solver_values or solver_values["output_fields"] is None:
+        return
+    shared_fields = solver_values.pop("output_fields")
+    shared_fields = [to_short(field) for field in shared_fields]
+    if solver_values[item_names] is not None:
+        for name in solver_values[item_names].names():
+            item = solver_values[item_names][name]
+            for field in shared_fields:
+                if item.output_fields is None:
+                    item.output_fields = []
+                if field not in item.output_fields:
+                    item.output_fields.append(field)
