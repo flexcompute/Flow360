@@ -78,7 +78,6 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    # @pd.model_validator(mode="after",)
     def _finalize_automated_farfield(cls, v) -> Self:
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing

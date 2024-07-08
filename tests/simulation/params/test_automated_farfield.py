@@ -45,6 +45,8 @@ def test_automated_farfield_names():
     ) == sorted(["farfield", "symmetric"])
 
     # Warning: volume_zones.append(RotationCylinder(...)) will not change the zone name
+    # because the append() will not trigger the validators. It is probably fine since we construct `SimulationParams`
+    # again in transltors anyway.
     with SI_unit_system:
         my_cylinder = Cylinder(
             name="zone/Cylinder1",

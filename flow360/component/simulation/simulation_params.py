@@ -269,7 +269,9 @@ class SimulationParams(_ParamModelBase):
     ##:: Internal Util functions
     def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
         """
-        Update the zone info from volume mesh. Will be executed in the casePipeline as part of preprocessing
+        Update the zone info from volume mesh. Will be executed in the casePipeline as part of preprocessing.
+        Some thoughts:
+        Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
         _recursive_update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)

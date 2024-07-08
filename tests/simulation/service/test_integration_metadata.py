@@ -49,7 +49,8 @@ def get_volume_mesh_metadata():
 
 
 def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
-    # Param is generated before the volume mesh metadata is available AKA the param generated the volume mesh. (Though the volume meshing params are skipped here)
+    # Param is generated before the volume mesh metadata is available AKA the param generated the volume mesh.
+    # (Though the volume meshing params are skipped here)
     with SI_unit_system:
         params = SimulationParams(
             models=[
@@ -71,8 +72,7 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
             ]
         )
     params._update_zone_info_from_volume_mesh(get_volume_mesh_metadata)
-    # params.private_attribute_asset_cache.asset_entity_registry.show()
-    #
+
     assert isinstance(
         params.private_attribute_asset_cache.asset_entity_registry.find_by_name("plateBlock"),
         Cylinder,

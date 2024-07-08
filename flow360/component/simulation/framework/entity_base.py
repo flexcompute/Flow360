@@ -148,80 +148,109 @@ def __combine_bools(input_data):
     return all(input_data)
 
 
-def _merge_fields(obj_old, obj_new):
-    """obj_old is the higher priority object. obj_new is the lower priority object."""
+def _merge_fields(field_old, field_new):
+    """
+    Merges fields from a new object (field_new) into an existing object (field_old) with higher priority.
+    It recursively handles nested objects.
+
+    Parameters:
+        field_old (EntityBase): The existing object with higher priority.
+        field_new (EntityBase): The new object with lower priority.
+
+    Returns:
+        EntityBase: The merged object.
+
+    Raises:
+        MergeConflictError: If there's a conflict between the objects that can't be resolved.
+
+    Note:
+        The function skips merging for 'private_attribute_entity_type_name' and 'private_attribute_registry_bucket_name'
+        to handle cases where the objects could be different classes in nature.
+    """
+    # Define basic types that should not be merged further but directly compared or replaced
     basic_types = (list, Number, str, tuple, unyt.unyt_array, unyt.unyt_quantity)
-    for attr, value in obj_new.__dict__.items():
-        if attr in [
-            "private_attribute_entity_type_name",
-            "private_attribute_registry_bucket_name",
-        ]:
-            # When merging between a generic and non-generic object, these are definitely different
+
+    # Iterate over all attributes and values of the new object
+    for attr, value in field_new.__dict__.items():
+        # Ignore certain private attributes meant for entity type definition
+        if attr in ["private_attribute_entity_type_name", "private_attribute_registry_bucket_name"]:
             continue
 
-        if obj_new.__dict__[attr] is None:
-            # Ignore the None from lower priority object
+        if field_new.__dict__[attr] is None:
+            # Skip merging this attribute since we always want more info.
             continue
 
-        if attr in obj_old.__dict__:
-            found_conflict = __combine_bools(obj_old.__dict__[attr] != value)
+        if attr in field_old.__dict__:
+            # Check for conflicts between old and new values
+            found_conflict = __combine_bools(field_old.__dict__[attr] != value)
             if found_conflict:
                 if (
-                    not isinstance(obj_old.__dict__[attr], basic_types)
-                    and obj_old.__dict__[attr] is not None
+                    not isinstance(field_old.__dict__[attr], basic_types)
+                    and field_old.__dict__[attr] is not None
                 ):
-                    # Recursive call to merge the nested objects until we reach the basic types
-                    obj_old.__dict__[attr] = _merge_fields(
-                        obj_old.__dict__[attr], obj_new.__dict__[attr]
+                    # Recursive merge for nested objects until reaching basic types
+                    field_old.__dict__[attr] = _merge_fields(
+                        field_old.__dict__[attr], field_new.__dict__[attr]
                     )
-
-                ##:: Basic types, we handle explicitly
-                elif obj_old.__dict__[attr] is None or (
-                    isinstance(obj_old.__dict__[attr], list) and obj_old.__dict__[attr] == []
+                elif field_old.__dict__[attr] is None or (
+                    isinstance(field_old.__dict__[attr], list) and not field_old.__dict__[attr]
                 ):
-                    # Populate obj_old with new info from lower priority object
-                    # This may need to handle empty tuple/dict etc too if the field has empty value as default
-                    obj_old.__dict__[attr] = value
+                    # Set the old value to the new value if the old value is empty
+                    field_old.__dict__[attr] = value
                 else:
+                    # Raise an error if basic types conflict and cannot be resolved
                     raise MergeConflictError(
-                        f"Conflict on attribute '{attr}': {obj_old.__dict__[attr]} != {value}"
+                        f"Conflict on attribute '{attr}': {field_old.__dict__[attr]} != {value}"
                     )
         else:
-            # for new attr from lower priority object, we just add it to the old object.
-            obj_old.__dict__[attr] = value
-    return obj_old
+            # Add new attributes from the new object to the old object
+            field_old.__dict__[attr] = value
+
+    return field_old
 
 
 def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
     """
-    Merges obj_new into obj_old, raising an exception if there are conflicts.
-    Ideally the obj_old should be a non-generic one.
+    Merges two entity objects, prioritizing the fields of the original object (obj_old) unless overridden
+    by non-generic values in the new object (obj_new). This function ensures that only compatible entities
+    are merged, raising exceptions when merge criteria are not met.
+
     Parameters:
-        obj_old: The original object to merge into.
-        obj_new: The new object to merge into the original object.
+        obj_old (EntityBase): The original object to be preserved with higher priority.
+        obj_new (EntityBase): The new object that might override or add to the fields of the original object.
+
+    Returns:
+        EntityBase: The merged entity object.
+
+    Raises:
+        MergeConflictError: Raised when the entities have different names or when they are of different types
+                            and both are non-generic, indicating that they should not be merged.
     """
 
+    # Check if the names of the entities are the same; they must be for merging to make sense
     if obj_new.name != obj_old.name:
         raise MergeConflictError(
-            "Make sure merge is intended as the names of two entities are different."
+            "Merge operation halted as the names of the entities do not match."
+            "Please ensure you are merging the correct entities."
         )
 
+    # Swap objects if the new object is non-generic and the old one is generic.
+    # This ensures that the `obj_old` always has priority in attribute preservation.
     # pylint: disable=protected-access
-    if obj_new._is_generic() is False and obj_old._is_generic() is True:
-        # swap so that obj_old is **non-generic** and obj_new is **generic**
+    if not obj_new._is_generic() and obj_old._is_generic():
         obj_new, obj_old = obj_old, obj_new
 
-    # Check the two objects are mergeable
-    # pylint: disable=protected-access
-    if obj_new._is_generic() is False and obj_old._is_generic() is False:
+    # Ensure that objects are of the same type if both are non-generic to prevent merging unrelated types
+    if not obj_new._is_generic() and not obj_old._is_generic():
         if obj_new.__class__ != obj_old.__class__:
             raise MergeConflictError(
-                f"Cannot merge objects of different class: {obj_old.__class__.__name__} "
-                f"and {obj_new.__class__.__name__}"
+                f"Cannot merge objects of different classes: {obj_old.__class__.__name__}"
+                f" and {obj_new.__class__.__name__}."
             )
-    obj_old = _merge_fields(obj_old, obj_new)
 
-    return obj_old
+    # Utilize the _merge_fields function to merge the attributes of the two objects
+    merged_object = _merge_fields(obj_old, obj_new)
+    return merged_object
 
 
 def _remove_duplicate_entities(expanded_entities: List[EntityBase]):

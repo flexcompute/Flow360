@@ -120,7 +120,9 @@ class AutomatedFarfield(Flow360BaseModel):
         ):
             # Is setting private_attribute_zone_boundary_names meaningful at all?
             # We did not include other potential boundaries like walls or sliding interfaces
-            # so it is incomplete anyways.
+            # so it is most likely incomplete.
+            # Besides in casePipeline we will overwrite private_attribute_zone_boundary_names
+            # with volume mesh metadata anyway.
             self.private_attribute_entity.private_attribute_zone_boundary_names.append("farfield")
             if self.method == "auto":
                 self.private_attribute_entity.private_attribute_zone_boundary_names.append(

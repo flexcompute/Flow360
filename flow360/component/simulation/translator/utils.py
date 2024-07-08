@@ -327,7 +327,7 @@ def get_global_setting_from_per_item_setting(
                 only_find_when_entities_none=False,
             )
         else:
-            # Ideally SimulationParams should have
+            # Ideally SimulationParams should have validation on this.
             raise Flow360TranslationError(
                 f"Global setting of {attribute_name} is required but not found in"
                 f"`{class_type.__name__}` instances. \n[For developers]: This error message should not appear."

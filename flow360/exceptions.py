@@ -42,7 +42,7 @@ class Flow360ValidationError(Flow360Error):
 class Flow360ErrorWithLocation(Exception):
     """
     Error with metadata on where the error is in the SimulationParams.
-    This is used when NOT raising inside validators but we still want something similar to pd.ValidationError.
+    This is used when NOT raising error from pydantic but we still want something similar to pd.ValidationError.
     """
 
     error_message: str
