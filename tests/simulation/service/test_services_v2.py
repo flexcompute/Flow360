@@ -17,9 +17,6 @@ def test_init_service():
 
 
 def test_validate_service():
-    from flow360.component.simulation.meshing_param.volume_params import (
-        AutomatedFarfield,
-    )
 
     params_data = {
         "meshing": {

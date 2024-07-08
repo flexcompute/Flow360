@@ -13,6 +13,7 @@ from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _recursive_update_zone_name_in_surface_with_metadata,
     _set_boundary_full_name_with_zone_name,
+    _update_zone_boundaries_with_metadata,
     recursive_register_entity_list,
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -238,7 +239,10 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def _update_entity_private_attrs(self):
-        """Once the SimulationParams is set, extract and upate information in entities by parsing what user specified"""
+        """
+        Once the SimulationParams is set, extract and upate information
+        into all used entities by parsing the params.
+        """
 
         ##::1. Update full names in the Surface entities with zone names
         # pylint: disable=no-member
@@ -265,7 +269,11 @@ class SimulationParams(_ParamModelBase):
     ##:: Internal Util functions
     def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
         """
-        Update the zone info from volume mesh
+        Update the zone info from volume mesh. Will be executed in the casePipeline as part of preprocessing
         """
+        # pylint:disable=no-member
         _recursive_update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
+        _update_zone_boundaries_with_metadata(
+            self.private_attribute_asset_cache.asset_entity_registry, volume_mesh_meta_data
+        )
         return self

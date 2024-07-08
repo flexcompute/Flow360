@@ -60,7 +60,7 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
-    def get_all_entities_of_given_bucket(self, entity_bucket):
+    def get_all_entities_of_given_bucket(self, entity_bucket) -> list[EntityBase]:
         """
         Retrieves all entities in a specified bucket.
 

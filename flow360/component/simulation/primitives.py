@@ -24,7 +24,12 @@ from flow360.component.types import Axis
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
-    """Ideally volume_mesh_meta should be a pydantic model."""
+    """Ideally volume_mesh_meta should be a pydantic model.
+
+    TODO:  Note that the same surface_name may appear in different blocks. E.g.
+    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support spliting boundary into
+    blocks but we will need to support this someday.
+    """
     for zone_name, zone_meta in volume_mesh_meta["zones"].items():
         for existing_boundary_name in zone_meta["boundaryNames"]:
             pattern = re.escape(zone_name) + r"/(.*)"

@@ -7,7 +7,8 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.framework.unique_list import UniqueStringList
+from flow360.component.simulation.primitives import Surface, _VolumeEntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
 
@@ -19,6 +20,7 @@ class AssetCache(Flow360BaseModel):
     """
 
     asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
+    # pylint: disable=no-member
     project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
 
 
@@ -63,7 +65,8 @@ def _recursive_update_zone_name_in_surface_with_metadata(
     model: Flow360BaseModel, volume_mesh_meta_data: dict
 ):
     """
-    Update the zone info from volume mesh
+    Update Surface/Boundary with zone name from volume mesh metadata.
+    TODO: Maybe no need to recursivly looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
         if isinstance(field, Surface):
@@ -88,6 +91,18 @@ def _recursive_update_zone_name_in_surface_with_metadata(
 
         elif isinstance(field, Flow360BaseModel):
             _recursive_update_zone_name_in_surface_with_metadata(field, volume_mesh_meta_data)
+
+
+def _update_zone_boundaries_with_metadata(
+    registry: EntityRegistry, volume_mesh_meta_data: dict
+) -> None:
+    """Update zone boundaries with volume mesh metadata."""
+    for volume_entity in registry.get_all_entities_of_given_bucket(_VolumeEntityBase):
+        if volume_entity.name in volume_mesh_meta_data["zones"]:
+            with _model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
+                volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
+                    items=volume_mesh_meta_data["zones"][volume_entity.name]["boundaryNames"]
+                )
 
 
 def _set_boundary_full_name_with_zone_name(

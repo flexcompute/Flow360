@@ -220,30 +220,6 @@ def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
                 f"and {obj_new.__class__.__name__}"
             )
     obj_old = _merge_fields(obj_old, obj_new)
-    # for attr, value in obj_new.__dict__.items():
-    #     if attr in [
-    #         "private_attribute_entity_type_name",
-    #         "private_attribute_registry_bucket_name",
-    #         "name",
-    #     ]:
-    #         # No need for checking these attributes
-    #         continue
-    #     if attr in obj_old.__dict__:
-    #         found_conflict = __combine_bools(obj_old.__dict__[attr] != value)
-    #         if found_conflict:
-    #             if obj_old.__dict__[attr] is None or obj_old.__dict__[attr] == []:
-    #                 # Populate obj_old with new info from lower priority object
-    #                 obj_old.__dict__[attr] = value
-    #             elif obj_new.__dict__[attr] is None:
-    #                 # Ignore difference from lower priority object
-    #                 continue
-    #             else:
-    #                 raise MergeConflictError(
-    #                     f"Conflict on attribute '{attr}': {obj_old.__dict__[attr]} != {value}"
-    #                 )
-    #     # for new attr from new object, we just add it to the old object.
-    #     if attr in obj_old.model_fields.keys():
-    #         obj_old.__dict__[attr] = value
 
     return obj_old
 
@@ -362,7 +338,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 if isinstance(item, list):  # Nested list comes from assets
                     _ = [cls._valid_individual_input(individual) for individual in item]
                     # pylint: disable=fixme
-                    # TODO: Give notice when some of the entities are not chosen due to `valid_types`?
+                    # TODO: Give notice when some of the entities are not selected due to `valid_types`?
                     entities_to_store.extend(
                         [
                             individual
