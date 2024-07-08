@@ -520,7 +520,6 @@ def _check_per_item_output_fields(output_item_obj, additional_fields: List, erro
             )
         )
         allowed_items = natively_supported + additional_fields
-        print("allowed_items: ", allowed_items)
 
         for output_field in output_item_obj.output_fields:
             if output_field not in allowed_items:
@@ -551,7 +550,6 @@ def _check_output_fields(values: dict):
         ],
         ["surfaces", "slices", "iso_surfaces", "monitors"],
     ):
-        print(f"\n>>>> Validating {output_name}")
         output_obj = values.get(output_name)
 
         if output_obj is not None:
@@ -567,6 +565,5 @@ def _check_output_fields(values: dict):
             elif (
                 getattr(output_obj, "output_fields", None) is not None
             ):  # Did not specify the collection and we add it later:
-                print(">>>> Check global output fields...")
                 _check_per_item_output_fields(output_obj, additional_fields, output_name)
     return values
