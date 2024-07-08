@@ -512,10 +512,6 @@ def _check_low_mach_preconditioner_support(values):
 
 def _check_per_item_output_fields(output_item_obj, additional_fields: List, error_prefix=""):
     if output_item_obj.output_fields is not None:
-        print(
-            ">>>>    output_item_obj.output_fields is not None = ",
-            output_item_obj.output_fields is not None,
-        )
         natively_supported = list(
             get_args(
                 output_item_obj.__fields__["output_fields"].field_info.extra.get(
@@ -523,13 +519,13 @@ def _check_per_item_output_fields(output_item_obj, additional_fields: List, erro
                 )
             )
         )
-        print("natively supports: ", natively_supported)
         allowed_items = natively_supported + additional_fields
+        print("allowed_items: ", allowed_items)
 
         for output_field in output_item_obj.output_fields:
             if output_field not in allowed_items:
                 raise ValueError(
-                    f"{error_prefix}:, {output_field} is not a valid output field name."
+                    f"{error_prefix}:, {output_field} is not valid output field name. "
                     f"Allowed inputs are {allowed_items}."
                 )
 
@@ -539,7 +535,6 @@ def _check_output_fields(values: dict):
         additional_fields = [item.name for item in values.get("user_defined_fields")]
     else:
         additional_fields = []
-    print("Input: values = ", values)
 
     # Volume Output:
     if values.get("volume_output") is not None:
@@ -556,6 +551,7 @@ def _check_output_fields(values: dict):
         ],
         ["surfaces", "slices", "iso_surfaces", "monitors"],
     ):
+        print(f"\n>>>> Validating {output_name}")
         output_obj = values.get(output_name)
 
         if output_obj is not None:
@@ -565,7 +561,6 @@ def _check_output_fields(values: dict):
                 # This function modifies the first arg
                 _distribute_shared_output_fields(output_obj_hardcopy.__dict__, collection_name)
                 for item_name in collection_obj.names():
-                    print(f">>>>    Checking {item_name}")
                     _check_per_item_output_fields(
                         collection_obj[item_name], additional_fields, output_name + "->" + item_name
                     )

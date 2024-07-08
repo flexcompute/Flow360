@@ -146,8 +146,7 @@ def get_aliases(name) -> List[str]:
     if name in full:
         i = full.index(name)
         return [name, short[i]]
-
-    raise ValueError(f"{name} is not a valid output field name.")
+    return [name, name]
 
 
 def to_short(name) -> str:
@@ -160,8 +159,7 @@ def to_short(name) -> str:
     if name in full:
         i = full.index(name)
         return short[i]
-
-    raise ValueError(f"{name} is not a valid output field name.")
+    return name
 
 
 def to_full(name) -> str:
@@ -174,8 +172,7 @@ def to_full(name) -> str:
     if name in short:
         i = short.index(name)
         return full[i]
-
-    raise ValueError(f"{name} is not a valid output field name.")
+    return name
 
 
 if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFull)):
