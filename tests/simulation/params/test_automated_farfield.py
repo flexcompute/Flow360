@@ -62,7 +62,7 @@ def test_automated_farfield_names():
                 volume_zones=[
                     my_farfield,
                     RotationCylinder(
-                        entity=my_cylinder,
+                        entities=my_cylinder,
                         spacing_axial=0.1,
                         spacing_radial=0.1,
                         spacing_circumferential=0.1,

@@ -75,7 +75,7 @@ class RotationCylinder(CylindricalRefinementBase):
 
     """
 
-    entity: Cylinder = pd.Field()
+    entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="""Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.
