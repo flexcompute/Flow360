@@ -11,10 +11,10 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
-    _recursive_update_zone_name_in_surface_with_metadata,
     _set_boundary_full_name_with_zone_name,
     _update_zone_boundaries_with_metadata,
-    recursive_register_entity_list,
+    _update_zone_name_in_surface_with_metadata,
+    register_entity_list,
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
@@ -231,7 +231,7 @@ class SimulationParams(_ParamModelBase):
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         self.private_attribute_asset_cache.asset_entity_registry.clear()
-        recursive_register_entity_list(
+        register_entity_list(
             self,
             self.private_attribute_asset_cache.asset_entity_registry,
         )  # Clear so that the next param can use this.
@@ -274,7 +274,7 @@ class SimulationParams(_ParamModelBase):
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
-        _recursive_update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
+        _update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(
             self.private_attribute_asset_cache.asset_entity_registry, volume_mesh_meta_data
         )

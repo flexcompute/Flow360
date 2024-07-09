@@ -16,7 +16,7 @@ from flow360.component.simulation.framework.entity_base import (
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
-    recursive_register_entity_list,
+    register_entity_list,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -239,7 +239,7 @@ class TempSimulationParam(_ParamModelBase):
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         self.private_attribute_asset_cache.asset_entity_registry.clear()
-        recursive_register_entity_list(
+        register_entity_list(
             self,
             self.private_attribute_asset_cache.asset_entity_registry,
         )  # Clear so that the next param can use this.
@@ -426,10 +426,10 @@ def test_by_reference_registry(my_cylinder2):
 
     registry = EntityRegistry()
     registry.register(my_cylinder2)
-
+    entities = registry.get_bucket(by_type=Cylinder).entities  # get the entities now before change
     # [Registry] External changes --> Internal
     my_cylinder2.height = 131 * u.m
-    for entity in registry.get_all_entities_of_given_bucket(Cylinder):
+    for entity in entities:
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
             assert entity.height == 131 * u.m
 
@@ -460,7 +460,7 @@ def test_get_entities(
     registry.register(my_cylinder2)
     registry.register(my_box_zone1)
     registry.register(my_box_zone2)
-    all_box_entities = registry.get_all_entities_of_given_bucket(Box)
+    all_box_entities = registry.get_bucket(by_type=Box).entities
     assert len(all_box_entities) == 4
     assert my_box_zone1 in all_box_entities
     assert my_box_zone2 in all_box_entities

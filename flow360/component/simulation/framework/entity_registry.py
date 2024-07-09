@@ -14,6 +14,20 @@ from flow360.component.simulation.framework.entity_base import (
 from flow360.log import log
 
 
+class EntityRegistryBucket:
+    """By reference, a snippet of certain collection of a EntityRegistry instance that is inside the same bucket."""
+
+    # pylint: disable=too-few-public-methods
+    def __init__(self, source_dict: dict, key: str):
+        self._source = source_dict
+        self._key = key
+
+    @property
+    def entities(self):
+        """Return all entities in the bucket."""
+        return self._source.get(self._key, [])
+
+
 class EntityRegistry(Flow360BaseModel):
     """
     A registry for managing and storing instances of various entity types.
@@ -60,19 +74,11 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
-    def get_all_entities_of_given_bucket(self, entity_bucket) -> list[EntityBase]:
-        """
-        Retrieves all entities in a specified bucket.
-
-        Parameters:
-            entity_bucket (Type[EntityBase]): The class of the entities to retrieve.
-
-        Returns:
-            List[EntityBase]: A list of registered entities of the specified type.
-        """
-        # pylint: disable=no-member
-        return self.internal_registry.get(
-            entity_bucket.model_fields["private_attribute_registry_bucket_name"].default, []
+    def get_bucket(self, by_type: EntityBase) -> EntityRegistryBucket:
+        """Get the bucket of a certain type of entity."""
+        return EntityRegistryBucket(
+            self.internal_registry,
+            by_type.model_fields["private_attribute_registry_bucket_name"].default,
         )
 
     def find_by_naming_pattern(self, pattern: str) -> list[EntityBase]:

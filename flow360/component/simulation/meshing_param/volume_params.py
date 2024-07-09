@@ -75,6 +75,7 @@ class RotationCylinder(CylindricalRefinementBase):
 
     """
 
+    name: Optional[str] = pd.Field(None)
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,

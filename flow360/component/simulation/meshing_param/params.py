@@ -83,15 +83,13 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        has_rotating_zone = False
-        for volume_zone in v:
-            if isinstance(volume_zone, RotationCylinder):
-                has_rotating_zone = True
-                break
-        for volume_zone in v:
-            if isinstance(volume_zone, AutomatedFarfield):
-                # pylint: disable=protected-access
-                volume_zone._set_up_zone_entity(has_rotating_zone)
+        has_rotating_zone = any(isinstance(volume_zone, RotationCylinder) for volume_zone in v)
+        # pylint: disable=expression-not-assigned, protected-access
+        [
+            volume_zone._set_up_zone_entity(has_rotating_zone)
+            for volume_zone in v
+            if isinstance(volume_zone, AutomatedFarfield)
+        ]
         return v
 
     @pd.field_validator("volume_zones", mode="after")
@@ -101,11 +99,7 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        has_farfield = False
-        for volume_zone in v:
-            if isinstance(volume_zone, AutomatedFarfield):
-                has_farfield = True
-                break
+        has_farfield = any(isinstance(volume_zone, AutomatedFarfield) for volume_zone in v)
         if not has_farfield:
             raise ValueError("AutomatedFarfield is required in volume_zones.")
         return v

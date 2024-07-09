@@ -24,9 +24,9 @@ class AssetCache(Flow360BaseModel):
     project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
 
 
-def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
+def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
     """
-    Recursively registers entities within a Flow360BaseModel instance to an EntityRegistry.
+    Registers entities used/occured in a Flow360BaseModel instance to an EntityRegistry.
 
     This function iterates through the attributes of the given model. If an attribute is an
     EntityList, it retrieves the expanded entities and registers each entity in the registry.
@@ -55,13 +55,13 @@ def recursive_register_entity_list(model: Flow360BaseModel, registry: EntityRegi
         elif isinstance(field, list):
             for item in field:
                 if isinstance(item, Flow360BaseModel):
-                    recursive_register_entity_list(item, registry)
+                    register_entity_list(item, registry)
 
         elif isinstance(field, Flow360BaseModel):
-            recursive_register_entity_list(field, registry)
+            register_entity_list(field, registry)
 
 
-def _recursive_update_zone_name_in_surface_with_metadata(
+def _update_zone_name_in_surface_with_metadata(
     model: Flow360BaseModel, volume_mesh_meta_data: dict
 ):
     """
@@ -85,19 +85,17 @@ def _recursive_update_zone_name_in_surface_with_metadata(
         elif isinstance(field, list):
             for item in field:
                 if isinstance(item, Flow360BaseModel):
-                    _recursive_update_zone_name_in_surface_with_metadata(
-                        item, volume_mesh_meta_data
-                    )
+                    _update_zone_name_in_surface_with_metadata(item, volume_mesh_meta_data)
 
         elif isinstance(field, Flow360BaseModel):
-            _recursive_update_zone_name_in_surface_with_metadata(field, volume_mesh_meta_data)
+            _update_zone_name_in_surface_with_metadata(field, volume_mesh_meta_data)
 
 
 def _update_zone_boundaries_with_metadata(
     registry: EntityRegistry, volume_mesh_meta_data: dict
 ) -> None:
     """Update zone boundaries with volume mesh metadata."""
-    for volume_entity in registry.get_all_entities_of_given_bucket(_VolumeEntityBase):
+    for volume_entity in registry.get_bucket(by_type=_VolumeEntityBase).entities:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
             with _model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
                 volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
