@@ -138,6 +138,19 @@ def validate_model(params_as_dict, unit_system_name):
             validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
+    # pylint: disable=broad-exception-caught
+    except Exception as err:
+        if validation_errors is None:
+            validation_errors = []
+        # Note: Ideally the definition of WorkbenchValidateWarningOrError should be on the client side?
+        validation_errors.append(
+            {
+                "type": err.__class__.__name__.lower().replace("error", "_error"),
+                "loc": ["unknown"],
+                "msg": str(err),
+                "ctx": {},
+            }
+        )
         # We do not care about handling / propagating the validation errors here,
         # just collecting them in the context and passing them downstream
 
@@ -158,6 +171,12 @@ def validate_model(params_as_dict, unit_system_name):
                     errors_as_list = list(error["loc"])
                     errors_as_list.remove(field)
                     error["loc"] = tuple(errors_as_list)
+            try:
+                for field_name, field in error["ctx"].items():
+                    error["ctx"][field_name] = str(field)
+            # pylint: disable=broad-exception-caught
+            except Exception:  # This seems to be duplicate info anyway.
+                error["ctx"] = {}
 
     return validated_param, validation_errors, validation_warnings
 
