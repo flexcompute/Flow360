@@ -138,6 +138,7 @@ def validate_model(params_as_dict, unit_system_name):
             validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
+    # pylint: disable=broad-exception-caught
     except Exception as err:
         if validation_errors is None:
             validation_errors = []
@@ -173,6 +174,7 @@ def validate_model(params_as_dict, unit_system_name):
             try:
                 for field_name, field in error["ctx"].items():
                     error["ctx"][field_name] = str(field)
+            # pylint: disable=broad-exception-caught
             except Exception:  # This seems to be duplicate info anyway.
                 error["ctx"] = {}
 
