@@ -159,7 +159,7 @@ def write_example(
     additional_fields: dict = {},
     exclude=None,
 ):
-    data = obj.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)
+    data = obj.model_dump(exclude_defaults=exclude_defaults, exclude=exclude, exclude_none=True)
     data = merge_dicts_recursively(data, additional_fields)
     data_json = json.dumps(data, indent=2)
     os.makedirs(os.path.join(here, data_folder, folder_name), exist_ok=True)
@@ -282,6 +282,10 @@ with SI_unit_system:
                 update_law=["fake"],
             )
         ],
+        outputs=[
+            ProbeOutput(probes=[Probe(name='my_probe', locations=[[1,2,3]])], output_fields=['Cp']),
+            SliceOutput(slices=[Slice(name='my_slice', normal=(0, 0, 1), origin=(0, 0, 0))], output_fields=['Cp'])
+        ]
     )
 
 write_example(param, "simulation_params", "example-1")

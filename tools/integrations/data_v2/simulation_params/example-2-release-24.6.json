@@ -39,14 +39,11 @@
   "meshing": {
     "farfield": "auto",
     "refinement_factor": 1.0,
-    "gap_treatment_strength": null,
     "surface_layer_growth_rate": 1.5,
     "refinements": [
       {
-        "name": null,
         "refinement_type": "BoundaryLayer",
         "type": "aniso",
-        "entities": null,
         "first_layer_thickness": {
           "value": 0.001,
           "units": "m"
@@ -54,7 +51,6 @@
         "growth_rate": 1.2
       },
       {
-        "name": null,
         "refinement_type": "SurfaceRefinement",
         "entities": {
           "stored_entities": [
@@ -98,15 +94,7 @@
   "operating_condition": {
     "type_name": "AerospaceCondition",
     "private_attribute_constructor": "default",
-    "private_attribute_input_cache": {
-      "alpha": null,
-      "beta": null,
-      "reference_velocity_magnitude": null,
-      "velocity_magnitude": null,
-      "thermal_state": null,
-      "mach": null,
-      "reference_mach": null
-    },
+    "private_attribute_input_cache": {},
     "alpha": {
       "value": 0.0,
       "units": "degree"
@@ -122,13 +110,7 @@
     "thermal_state": {
       "type_name": "ThermalState",
       "private_attribute_constructor": "default",
-      "private_attribute_input_cache": {
-        "altitude": null,
-        "temperature_offset": null,
-        "temperature": null,
-        "density": null,
-        "material": null
-      },
+      "private_attribute_input_cache": {},
       "temperature": {
         "value": 288.15,
         "units": "K"
@@ -155,8 +137,7 @@
           }
         }
       }
-    },
-    "reference_velocity_magnitude": null
+    }
   },
   "models": [
     {
@@ -178,7 +159,6 @@
           }
         }
       },
-      "initial_condition": null,
       "type": "Fluid",
       "navier_stokes_solver": {
         "absolute_tolerance": 1e-10,
@@ -188,9 +168,7 @@
         "update_jacobian_frequency": 4,
         "max_force_jac_update_physical_steps": 0,
         "linear_solver": {
-          "max_iterations": 30,
-          "absolute_tolerance": null,
-          "relative_tolerance": null
+          "max_iterations": 30
         },
         "CFL_multiplier": 1.0,
         "kappa_MUSCL": -1.0,
@@ -198,8 +176,7 @@
         "limit_velocity": false,
         "limit_pressure_density": false,
         "type_name": "Compressible",
-        "low_mach_preconditioner": false,
-        "low_mach_preconditioner_threshold": null
+        "low_mach_preconditioner": false
       },
       "turbulence_model_solver": {
         "absolute_tolerance": 1e-08,
@@ -209,9 +186,7 @@
         "update_jacobian_frequency": 4,
         "max_force_jac_update_physical_steps": 0,
         "linear_solver": {
-          "max_iterations": 20,
-          "absolute_tolerance": null,
-          "relative_tolerance": null
+          "max_iterations": 20
         },
         "CFL_multiplier": 2.0,
         "type_name": "SpalartAllmaras",
@@ -225,8 +200,7 @@
           "C_d": 8.0
         },
         "rotation_correction": false
-      },
-      "transition_model_solver": null
+      }
     },
     {
       "type": "Wall",
@@ -249,11 +223,8 @@
           }
         ]
       },
-      "name": null,
       "use_wall_function": false,
-      "velocity": null,
-      "velocity_type": "relative",
-      "heat_spec": null
+      "velocity_type": "relative"
     },
     {
       "type": "Freestream",
@@ -266,9 +237,6 @@
           }
         ]
       },
-      "turbulence_quantities": null,
-      "name": null,
-      "velocity": null,
       "velocity_type": "relative"
     }
   ],
@@ -284,14 +252,12 @@
       "convergence_limiting_factor": 0.25
     }
   },
-  "user_defined_dynamics": null,
   "outputs": [
     {
       "frequency": -1,
       "frequency_offset": 0,
       "output_format": "paraview",
       "name": "SurfaceOutput 1",
-      "entities": null,
       "write_single_file": false,
       "output_fields": {
         "items": [

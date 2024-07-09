@@ -11,7 +11,6 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Box",
             "name": "my_box",
-            "private_attribute_zone_boundary_names": null,
             "type_name": "MultiConstructorBaseModel",
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {
@@ -26,10 +25,7 @@
                   1.0,
                   0.0
                 ]
-              ],
-              "center": null,
-              "size": null,
-              "name": null
+              ]
             },
             "center": {
               "value": [
@@ -61,7 +57,6 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Cylinder",
             "name": "my_cylinder-1",
-            "private_attribute_zone_boundary_names": null,
             "axis": [
               1.0,
               0.0,
@@ -91,11 +86,7 @@
           {
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "GenericVolume",
-            "name": "my_cylinder-2",
-            "private_attribute_zone_boundary_names": null,
-            "axes": null,
-            "axis": null,
-            "center": null
+            "name": "my_cylinder-2"
           }
         ],
         "EdgeEntityType": [
@@ -137,7 +128,6 @@
     "surface_layer_growth_rate": 1.5,
     "refinements": [
       {
-        "name": null,
         "refinement_type": "UniformRefinement",
         "entities": {
           "stored_entities": [
@@ -145,7 +135,6 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Box",
               "name": "my_box",
-              "private_attribute_zone_boundary_names": null,
               "type_name": "MultiConstructorBaseModel",
               "private_attribute_constructor": "default",
               "private_attribute_input_cache": {
@@ -160,10 +149,7 @@
                     1.0,
                     0.0
                   ]
-                ],
-                "center": null,
-                "size": null,
-                "name": null
+                ]
               },
               "center": {
                 "value": [
@@ -199,7 +185,6 @@
         }
       },
       {
-        "name": null,
         "refinement_type": "UniformRefinement",
         "entities": {
           "stored_entities": [
@@ -207,7 +192,6 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Box",
               "name": "my_box",
-              "private_attribute_zone_boundary_names": null,
               "type_name": "MultiConstructorBaseModel",
               "private_attribute_constructor": "default",
               "private_attribute_input_cache": {
@@ -222,10 +206,7 @@
                     1.0,
                     0.0
                   ]
-                ],
-                "center": null,
-                "size": null,
-                "name": null
+                ]
               },
               "center": {
                 "value": [
@@ -257,7 +238,6 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Cylinder",
               "name": "my_cylinder-1",
-              "private_attribute_zone_boundary_names": null,
               "axis": [
                 1.0,
                 0.0,
@@ -301,8 +281,6 @@
             }
           ]
         },
-        "growth_rate": null,
-        "name": null,
         "refinement_type": "SurfaceEdgeRefinement",
         "method": {
           "type": "angle",
@@ -322,8 +300,6 @@
             }
           ]
         },
-        "growth_rate": null,
-        "name": null,
         "refinement_type": "SurfaceEdgeRefinement",
         "method": {
           "type": "height",
@@ -343,8 +319,6 @@
             }
           ]
         },
-        "growth_rate": null,
-        "name": null,
         "refinement_type": "SurfaceEdgeRefinement",
         "method": {
           "type": "aspectRatio",
@@ -354,7 +328,6 @@
     ],
     "volume_zones": [
       {
-        "name": null,
         "refinement_type": "AxisymmetricRefinement",
         "entities": {
           "stored_entities": [
@@ -362,7 +335,6 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Cylinder",
               "name": "my_cylinder-1",
-              "private_attribute_zone_boundary_names": null,
               "axis": [
                 1.0,
                 0.0,
@@ -436,15 +408,7 @@
   "operating_condition": {
     "type_name": "AerospaceCondition",
     "private_attribute_constructor": "default",
-    "private_attribute_input_cache": {
-      "alpha": null,
-      "beta": null,
-      "reference_velocity_magnitude": null,
-      "velocity_magnitude": null,
-      "thermal_state": null,
-      "mach": null,
-      "reference_mach": null
-    },
+    "private_attribute_input_cache": {},
     "alpha": {
       "value": 30.0,
       "units": "degree"
@@ -460,13 +424,7 @@
     "thermal_state": {
       "type_name": "ThermalState",
       "private_attribute_constructor": "default",
-      "private_attribute_input_cache": {
-        "altitude": null,
-        "temperature_offset": null,
-        "temperature": null,
-        "density": null,
-        "material": null
-      },
+      "private_attribute_input_cache": {},
       "temperature": {
         "value": 300.0,
         "units": "K"
@@ -493,8 +451,7 @@
           }
         }
       }
-    },
-    "reference_velocity_magnitude": null
+    }
   },
   "models": [
     {
@@ -516,7 +473,6 @@
           }
         }
       },
-      "initial_condition": null,
       "type": "Fluid",
       "navier_stokes_solver": {
         "absolute_tolerance": 1e-10,
@@ -526,9 +482,7 @@
         "update_jacobian_frequency": 4,
         "max_force_jac_update_physical_steps": 0,
         "linear_solver": {
-          "max_iterations": 30,
-          "absolute_tolerance": null,
-          "relative_tolerance": null
+          "max_iterations": 30
         },
         "CFL_multiplier": 1.0,
         "kappa_MUSCL": -1.0,
@@ -536,8 +490,7 @@
         "limit_velocity": false,
         "limit_pressure_density": false,
         "type_name": "Compressible",
-        "low_mach_preconditioner": false,
-        "low_mach_preconditioner_threshold": null
+        "low_mach_preconditioner": false
       },
       "turbulence_model_solver": {
         "absolute_tolerance": 1e-08,
@@ -547,9 +500,7 @@
         "update_jacobian_frequency": 4,
         "max_force_jac_update_physical_steps": 0,
         "linear_solver": {
-          "max_iterations": 20,
-          "absolute_tolerance": null,
-          "relative_tolerance": null
+          "max_iterations": 20
         },
         "CFL_multiplier": 2.0,
         "type_name": "SpalartAllmaras",
@@ -563,8 +514,7 @@
           "C_d": 8.0
         },
         "rotation_correction": false
-      },
-      "transition_model_solver": null
+      }
     },
     {
       "type": "Wall",
@@ -577,7 +527,6 @@
           }
         ]
       },
-      "name": null,
       "use_wall_function": true,
       "velocity": {
         "value": [
@@ -605,11 +554,9 @@
             "name": "my_slip_wall"
           }
         ]
-      },
-      "name": null
+      }
     },
     {
-      "name": null,
       "type": "Rotation",
       "entities": {
         "stored_entities": [
@@ -617,7 +564,6 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Cylinder",
             "name": "my_cylinder-1",
-            "private_attribute_zone_boundary_names": null,
             "axis": [
               1.0,
               0.0,
@@ -649,11 +595,9 @@
       "spec": {
         "value": 0.45,
         "units": "rad/s"
-      },
-      "parent_volume": null
+      }
     },
     {
-      "name": null,
       "type": "PorousMedium",
       "entities": {
         "stored_entities": [
@@ -661,7 +605,6 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Box",
             "name": "my_box",
-            "private_attribute_zone_boundary_names": null,
             "type_name": "MultiConstructorBaseModel",
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {
@@ -676,10 +619,7 @@
                   1.0,
                   0.0
                 ]
-              ],
-              "center": null,
-              "size": null,
-              "name": null
+              ]
             },
             "center": {
               "value": [
@@ -747,19 +687,13 @@
           "units": "J/(K*kg)"
         }
       },
-      "initial_condition": null,
-      "name": null,
       "type": "Solid",
       "entities": {
         "stored_entities": [
           {
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "GenericVolume",
-            "name": "my_cylinder-2",
-            "private_attribute_zone_boundary_names": null,
-            "axes": null,
-            "axis": null,
-            "center": null
+            "name": "my_cylinder-2"
           }
         ]
       },
@@ -772,8 +706,7 @@
         "max_force_jac_update_physical_steps": 0,
         "linear_solver": {
           "max_iterations": 50,
-          "absolute_tolerance": 1e-10,
-          "relative_tolerance": null
+          "absolute_tolerance": 1e-10
         },
         "type_name": "HeatEquation"
       },
@@ -804,12 +737,10 @@
           "units": "Hz"
         }
       },
-      "name": null,
       "total_temperature": {
         "value": 300.0,
         "units": "K"
       },
-      "velocity_direction": null,
       "spec": {
         "value": {
           "value": 123.0,
@@ -828,13 +759,10 @@
           }
         ]
       },
-      "turbulence_quantities": null,
-      "name": null,
       "total_temperature": {
         "value": 300.0,
         "units": "K"
       },
-      "velocity_direction": null,
       "spec": {
         "value": {
           "value": 123.0,
@@ -869,24 +797,78 @@
       "constants": {
         "ff": 123.0
       },
-      "output_vars": null,
       "state_vars_initial_value": [
         "fake;"
       ],
       "update_law": [
         "fake;"
-      ],
-      "input_boundary_patches": null,
-      "output_target": null
+      ]
     }
   ],
   "outputs": [
     {
       "frequency": -1,
       "frequency_offset": 0,
+      "entities": {
+        "items": [
+          {
+            "name": "my_probe",
+            "locations": [
+              {
+                "value": [
+                  1.0,
+                  2.0,
+                  3.0
+                ],
+                "units": "m"
+              }
+            ]
+          }
+        ]
+      },
+      "output_fields": {
+        "items": [
+          "Cp"
+        ]
+      },
+      "output_type": "ProbeOutput"
+    },
+    {
+      "frequency": -1,
+      "frequency_offset": 0,
+      "output_format": "paraview",
+      "entities": {
+        "items": [
+          {
+            "name": "my_slice",
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "origin": {
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "units": "m"
+            }
+          }
+        ]
+      },
+      "output_fields": {
+        "items": [
+          "Cp"
+        ]
+      },
+      "output_type": "SliceOutput"
+    },
+    {
+      "frequency": -1,
+      "frequency_offset": 0,
       "output_format": "paraview",
       "name": "SurfaceOutput 1",
-      "entities": null,
       "write_single_file": false,
       "output_fields": {
         "items": [
