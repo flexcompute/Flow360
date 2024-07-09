@@ -283,9 +283,14 @@ with SI_unit_system:
             )
         ],
         outputs=[
-            ProbeOutput(probes=[Probe(name='my_probe', locations=[[1,2,3]])], output_fields=['Cp']),
-            SliceOutput(slices=[Slice(name='my_slice', normal=(0, 0, 1), origin=(0, 0, 0))], output_fields=['Cp'])
-        ]
+            ProbeOutput(
+                probes=[Probe(name="my_probe", locations=[[1, 2, 3]])], output_fields=["Cp"]
+            ),
+            SliceOutput(
+                slices=[Slice(name="my_slice", normal=(0, 0, 1), origin=(0, 0, 0))],
+                output_fields=["Cp"],
+            ),
+        ],
     )
 
 write_example(param, "simulation_params", "example-1")
