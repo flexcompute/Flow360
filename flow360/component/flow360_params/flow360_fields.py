@@ -134,7 +134,7 @@ def get_field_values(field_type) -> List[str]:
     return values
 
 
-def get_aliases(name) -> List[str]:
+def get_aliases(name, raise_on_not_found=False) -> List[str]:
     """Retrieve all aliases for the given field full name or shorthand"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -146,10 +146,13 @@ def get_aliases(name) -> List[str]:
     if name in full:
         i = full.index(name)
         return [name, short[i]]
-    return [name, name]
+
+    if not raise_on_not_found:
+        return [name, name]
+    raise ValueError(f"{name} is not a valid output field name.")
 
 
-def to_short(name) -> str:
+def to_short(name, raise_on_not_found=False) -> str:
     """Retrieve shorthand equivalent of output field"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -159,10 +162,13 @@ def to_short(name) -> str:
     if name in full:
         i = full.index(name)
         return short[i]
-    return name
+
+    if not raise_on_not_found:
+        return name
+    raise ValueError(f"{name} is not a valid output field name.")
 
 
-def to_full(name) -> str:
+def to_full(name, raise_on_not_found=False) -> str:
     """Retrieve full name equivalent of output field"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -172,7 +178,10 @@ def to_full(name) -> str:
     if name in short:
         i = short.index(name)
         return full[i]
-    return name
+
+    if not raise_on_not_found:
+        return name
+    raise ValueError(f"{name} is not a valid output field name.")
 
 
 if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFull)):

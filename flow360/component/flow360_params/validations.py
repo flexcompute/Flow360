@@ -3,7 +3,7 @@ validation logic
 """
 
 from copy import deepcopy
-from typing import List, NoReturn, Optional, Tuple, get_args
+from typing import List, Literal, NoReturn, Optional, Tuple, Union, get_args, get_origin
 
 from ...log import log
 from .boundaries import (
@@ -70,7 +70,7 @@ def _check_consistency_wall_function_and_surface_output(values):
     surface_output = values.get("surface_output")
     if surface_output is not None:
         surface_output_fields = surface_output.output_fields
-    aliases = get_aliases("wallFunctionMetric")
+    aliases = get_aliases("wallFunctionMetric", raise_on_not_found=True)
     fields = surface_output_fields
     if [i for i in aliases if i in fields] and (not has_wall_function_boundary):
         raise ValueError(
@@ -511,13 +511,27 @@ def _check_low_mach_preconditioner_support(values):
 
 
 def _check_per_item_output_fields(output_item_obj, additional_fields: List, error_prefix=""):
+
+    def extract_literal_values(annotation):
+        origin = get_origin(annotation)
+        if origin is Union:
+            # Traverse each Union argument
+            results = []
+            for arg in get_args(annotation):
+                result = extract_literal_values(arg)
+                if result:
+                    results.extend(result)
+            return results
+        if origin is list or origin is List:
+            # Apply the function to the List's element type
+            return extract_literal_values(get_args(annotation)[0])
+        if origin is Literal:
+            return list(get_args(annotation))
+        return []
+
     if output_item_obj.output_fields is not None:
-        natively_supported = list(
-            get_args(
-                output_item_obj.__fields__["output_fields"].field_info.extra.get(
-                    "natively_supported", []
-                )
-            )
+        natively_supported = extract_literal_values(
+            output_item_obj.__fields__["output_fields"].annotation
         )
         allowed_items = natively_supported + additional_fields
 
