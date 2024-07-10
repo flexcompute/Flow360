@@ -16,10 +16,10 @@ from flow360.component.simulation.utils import _model_attribute_unlock
 class AssetCache(Flow360BaseModel):
     """
     Note:
-    1. asset_entity_registry will be replacing/update the metadata-constructed registry of the asset when loading it.
+    1. registry will be replacing/update the metadata-constructed registry of the asset when loading it.
     """
 
-    asset_entity_registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
+    registry: EntityRegistry = pd.Field(EntityRegistry(), frozen=True)
     # pylint: disable=no-member
     project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
 

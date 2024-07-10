@@ -4,7 +4,7 @@
     "name": "SI"
   },
   "private_attribute_asset_cache": {
-    "asset_entity_registry": {
+    "registry": {
       "internal_registry": {
         "VolumetricEntityType": [
           {

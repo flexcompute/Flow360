@@ -230,10 +230,10 @@ class SimulationParams(_ParamModelBase):
     def _move_registry_to_asset_cache(self):
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
-        self.private_attribute_asset_cache.asset_entity_registry.clear()
+        self.private_attribute_asset_cache.registry.clear()
         register_entity_list(
             self,
-            self.private_attribute_asset_cache.asset_entity_registry,
+            self.private_attribute_asset_cache.registry,
         )  # Clear so that the next param can use this.
         return self
 
@@ -250,12 +250,12 @@ class SimulationParams(_ParamModelBase):
             for volume in self.meshing.volume_zones:
                 if isinstance(volume, AutomatedFarfield):
                     _set_boundary_full_name_with_zone_name(
-                        self.private_attribute_asset_cache.asset_entity_registry,
+                        self.private_attribute_asset_cache.registry,
                         "farfield",
                         volume.private_attribute_entity.name,
                     )
                     _set_boundary_full_name_with_zone_name(
-                        self.private_attribute_asset_cache.asset_entity_registry,
+                        self.private_attribute_asset_cache.registry,
                         "symmetric*",
                         volume.private_attribute_entity.name,
                     )
@@ -276,6 +276,6 @@ class SimulationParams(_ParamModelBase):
         # pylint:disable=no-member
         _update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(
-            self.private_attribute_asset_cache.asset_entity_registry, volume_mesh_meta_data
+            self.private_attribute_asset_cache.registry, volume_mesh_meta_data
         )
         return self
