@@ -16,6 +16,7 @@ from flow360.component.flow360_params.flow360_output import (
     Surface,
     SurfaceIntegralMonitor,
     SurfaceOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.flow360_params.flow360_params import (
@@ -84,11 +85,6 @@ def test_surface_output():
         output = SurfaceOutput(
             animation_frequency_time_average=-2,
             output_fields=["Cp", "qcriterion"],
-        )
-
-    with pytest.raises(pd.ValidationError):
-        output = SurfaceOutput(
-            output_fields=["invalid_field", "qcriterion"],
         )
 
     output = SurfaceOutput(
@@ -322,12 +318,6 @@ def test_volume_output():
     with pytest.raises(pd.ValidationError):
         output = VolumeOutput(animation_frequency=0, output_fields=["Cp", "qcriterion"])
 
-    with pytest.raises(pd.ValidationError):
-        output = VolumeOutput(
-            animation_frequency=1,
-            output_fields=["invalid_field", "qcriterion"],
-        )
-
     output = VolumeOutput(output_fields=["Cp", "qcriterion"])
 
     assert output
@@ -555,3 +545,77 @@ def test_monitor_output():
                 assert {"Cp", "qcriterion", "solutionTurbulence"} == set(
                     monitor_item["output_fields"]
                 )
+
+
+def test_output_fields():
+    with flow360.SI_unit_system:
+        params = Flow360Params(
+            geometry=Geometry(mesh_unit=1),
+            volume_output=VolumeOutput(output_fields=["Cp", "qcriterion", "my_var"]),
+            surface_output=SurfaceOutput(output_fields=["primitiveVars", "my_var"]),
+            slice_output=SliceOutput(
+                output_fields=["primitiveVars", "my_var", "mutRatio"],
+                slices={
+                    "sliceName_1": flow360.Slice(
+                        slice_normal=[5, 1, 0], slice_origin=(0, 1.56413, 0), output_fields=["Mach"]
+                    ),
+                },
+            ),
+            iso_surface_output=IsoSurfaceOutput(
+                output_fields=["qcriterion", "my_var"],
+                iso_surfaces={
+                    "s1": IsoSurface(
+                        surface_field_magnitude=10.5,
+                        surface_field="qcriterion",
+                        output_fields=["Cp"],
+                    ),
+                },
+            ),
+            boundaries={},
+            freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+            user_defined_fields=[UserDefinedField(name="my_var", expression="1+1;")],
+        )
+
+        assert set(params.volume_output.output_fields) == set(["Cp", "qcriterion", "my_var"])
+        assert set(params.surface_output.output_fields) == set(["primitiveVars", "my_var"])
+        params = params.to_solver()
+        assert set(params.slice_output.slices["sliceName_1"].output_fields) == set(
+            [
+                "primitiveVars",
+                "my_var",
+                "mutRatio",
+                "Mach",
+            ]
+        )
+        assert set(params.iso_surface_output.iso_surfaces["s1"].output_fields) == set(
+            [
+                "qcriterion",
+                "my_var",
+                "Cp",
+            ]
+        )
+
+    with pytest.raises(
+        pd.ValidationError, match=r"surface_output:, prmitiveVars is not valid output field name."
+    ):
+        with flow360.SI_unit_system:
+            Flow360Params(
+                surface_output=SurfaceOutput(output_fields=["prmitiveVars", "my_var"]),
+                boundaries={},
+                freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+                user_defined_fields=[UserDefinedField(name="my_var", expression="1+1;")],
+            )
+
+    with pytest.raises(
+        pd.ValidationError, match=r"surface_output->wing:, my__var is not valid output field name."
+    ):
+        with flow360.SI_unit_system:
+            Flow360Params(
+                surface_output=SurfaceOutput(
+                    output_fields=["primitiveVars", "my__var"],
+                    surfaces={"wing": Surface(output_fields=["Cf"])},
+                ),
+                boundaries={},
+                freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
+                user_defined_fields=[UserDefinedField(name="my_var", expression="1+1;")],
+            )
