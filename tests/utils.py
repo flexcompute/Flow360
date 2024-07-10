@@ -118,6 +118,15 @@ def to_file_from_file_test(obj):
             assert obj == obj_read
 
 
+def compare_dict_to_ref(data, ref_path):
+    with open(ref_path) as fh:
+        ref_data = json.load(fh)
+    equal = sorted(data.items()) == sorted(ref_data.items())
+    if equal is False:
+        show_dict_diff(data, ref_data)
+        assert equal
+
+
 def compare_to_ref(obj, ref_path, content_only=False):
     with tempfile.TemporaryDirectory() as tmpdir:
         filename = os.path.join(tmpdir, f"file{os.path.splitext(ref_path)[1]}")
@@ -129,12 +138,7 @@ def compare_to_ref(obj, ref_path, content_only=False):
             assert os.path.splitext(ref_path)[1] == ".json"
             with open(filename) as fh:
                 a = json.load(fh)
-            with open(ref_path) as fh:
-                b = json.load(fh)
-            equal = sorted(a.items()) == sorted(b.items())
-            if equal is False:
-                show_dict_diff(a, b)
-                assert equal
+            compare_dict_to_ref(a, ref_path)
 
 
 @pytest.fixture()
