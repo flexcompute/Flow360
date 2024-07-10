@@ -480,7 +480,10 @@ def test_unit_system():
         omega={"value": [1, 1, 1], "units": "rad/s"},
     )
 
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Value error, No class found for unit_name: N \[type=value_error, input_value={'value': {'value': \[1, 2... 'wrong'}, 'units': 'N'}, input_type=dict\]",
+    ):
         data = VectorDataWithUnits(
             pt=None,
             vec={"value": {"value": [1, 2], "units": "wrong"}, "units": "N"},
