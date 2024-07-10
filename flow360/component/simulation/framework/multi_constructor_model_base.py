@@ -1,33 +1,19 @@
 """MultiConstructorModelBase class for Pydantic models with multiple constructors."""
 
+# requirements for data models with custom constructors:
+# 1. data model can be saved to JSON and read back to pydantic model without problems
+# 2. data model can return data provided to custom constructor
+# 3. data model can be created from JSON that contains only custom constructor inputs - incomplete JSON
+# 4. incomplete JSON is not in a conflict with complete JSON (from point 1), such that there is no need for 2 parsers
 import abc
 import inspect
-from contextlib import contextmanager
 from functools import wraps
 from typing import Any, Callable, Literal, Optional
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-# requirements for data models with custom constructors:
-# 1. data model can be saved to JSON and read back to pydantic model without problems
-# 2. data model can return data provided to custom constructor
-# 3. data model can be created from JSON that contains only custom constructor inputs - incomplete JSON
-# 4. incomplete JSON is not in a conflict with complete JSON (from point 1), such that there is no need for 2 parsers
-
-
-@contextmanager
-def _model_attribute_unlock(model, attr: str):
-    try:
-        # validate_assignment is set to False to allow for the attribute to be modified
-        # Otherwise, the attribute will STILL be frozen and cannot be modified
-        model.model_config["validate_assignment"] = False
-        model.model_fields[attr].frozen = False
-        yield
-    finally:
-        model.model_config["validate_assignment"] = True
-        model.model_fields[attr].frozen = True
+from flow360.component.simulation.utils import _model_attribute_unlock
 
 
 class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
@@ -89,8 +75,6 @@ class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
 
 
 ##:: Utility functions for multi-constructor models
-
-
 def get_class_method(cls, method_name):
     """
     Retrieve a class method by its name.

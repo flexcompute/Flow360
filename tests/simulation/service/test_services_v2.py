@@ -17,13 +17,24 @@ def test_init_service():
 
 
 def test_validate_service():
+
     params_data = {
         "meshing": {
-            "farfield": "auto",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
             "surface_layer_growth_rate": 1.5,
             "refinements": [],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -52,6 +63,17 @@ def test_validate_error():
             "gap_treatment_strength": 0.2,
             "surface_layer_growth_rate": 1.5,
             "refinements": [],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -81,6 +103,17 @@ def test_validate_multiple_errors():
             "gap_treatment_strength": 0.2,
             "surface_layer_growth_rate": 1.5,
             "refinements": [],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -124,8 +157,18 @@ def test_validate_errors():
                     "refinement_type": "BoundaryLayer",
                 },
             ],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
             "surface_layer_growth_rate": 1.2,
-            "volume_zones": [],
         },
     }
 
@@ -136,7 +179,6 @@ def test_validate_errors():
 def test_init():
 
     data = services.get_default_params(unit_system_name="SI", length_unit="m")
-    assert data["meshing"]["farfield"] == "auto"
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()

@@ -1,7 +1,8 @@
 """Unique list classes for Simulation framework."""
 
-from collections import Counter
-from typing import Annotated, List, Union
+from collections import Counter, OrderedDict
+from copy import deepcopy
+from typing import Annotated, Any, List, Union
 
 import pydantic as pd
 
@@ -57,13 +58,19 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list]):
+    def _format_input_to_list(cls, input_data: Union[dict, list, Any]):
         if isinstance(input_data, list):
             return {"items": input_data}
         if isinstance(input_data, dict):
             return {"items": input_data["items"]}
         # Single reference to an entity
         return {"items": [input_data]}
+
+    def append(self, obj):
+        """Append an item to `UniqueItemList`."""
+        items_copy = deepcopy(self.items)
+        items_copy.append(obj)
+        self.items = items_copy  # To trigger validation
 
 
 def _validate_unique_aliased_item(v: List[str]) -> List[str]:
@@ -90,10 +97,41 @@ class UniqueAliasedStringList(Flow360BaseModel, metaclass=_UniqueListMeta):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list]):
+    def _format_input_to_list(cls, input_data: Union[dict, list, str]):
         if isinstance(input_data, list):
             return {"items": input_data}
         if isinstance(input_data, dict):
             return {"items": input_data["items"]}
-        # Single reference to an entity
         return {"items": [input_data]}
+
+
+class UniqueStringList(Flow360BaseModel):
+    """
+    A list of string that must be unique by original name or by aliased name.
+    Expect string only and we will remove the duplicate ones.
+    """
+
+    items: List[str] = pd.Field([])
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _format_input_to_list(cls, input_data: Union[dict, list, str]):
+        if isinstance(input_data, list):
+            return {"items": input_data}
+        if isinstance(input_data, dict):
+            if input_data == {}:
+                return {"items": []}
+            return {"items": input_data["items"]}
+        return {"items": [input_data]}
+
+    @pd.field_validator("items", mode="after")
+    @classmethod
+    def ensure_unique(cls, v):
+        """Deduplicate the list"""
+        return list(OrderedDict.fromkeys(v))
+
+    def append(self, obj):
+        """Append an item to `UniqueStringList`."""
+        items_copy = deepcopy(self.items)
+        items_copy.append(obj)
+        self.items = items_copy  # To trigger validation

@@ -89,12 +89,12 @@ with SI_unit_system:
             Wall(
                 name="wall",
                 entities=[
-                    # Surface(name="rightWing"),
-                    # Surface(name="leftWing"),
-                    # Surface(name="fuselage"),
+                    Surface(name="rightWing"),
+                    Surface(name="leftWing"),
+                    Surface(name="fuselage"),
                     # geometry_meta["*Wing*"],
                     # geometry_meta["fuselage"],
-                    my_wall_BC
+                    my_wall_BC,
                 ],
             ),
             Freestream(entities=[Surface(name="farfield")]),  # To be replaced with farfield entity

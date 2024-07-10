@@ -4,6 +4,7 @@ from typing import Literal, Optional, Union
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
@@ -31,12 +32,13 @@ class SurfaceRefinement(Flow360BaseModel):
         description="Local maximum edge length for surface cells."
     )
     # pylint: disable=no-member
-    curvature_resolution_angle: AngleType.Positive = pd.Field(
+    curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
+        12 * u.deg,
         description="""
         Global maximum angular deviation in degrees. This value will restrict:
         (1) The angle between a cell’s normal and its underlying surface normal
         (2) The angle between a line segment’s normal and its underlying curve normal
-        """
+        """,
     )
 
 

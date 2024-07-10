@@ -10,7 +10,7 @@ from flow360.component.flow360_params.flow360_fields import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
@@ -52,7 +52,7 @@ class Isosurface(_OutputItemBase):
 class SurfaceList(_OutputItemBase):
     """List of surfaces for integrals."""
 
-    entities: EntityList[Surface] = pd.Field(alias="surfaces")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
 class Probe(_OutputItemBase):

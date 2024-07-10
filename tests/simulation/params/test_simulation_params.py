@@ -76,7 +76,6 @@ def get_the_param():
         )
         param = SimulationParams(
             meshing=MeshingParams(
-                farfield="auto",
                 refinement_factor=1.0,
                 gap_treatment_strength=0.5,
                 surface_layer_growth_rate=1.5,

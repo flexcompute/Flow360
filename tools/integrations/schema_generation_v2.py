@@ -20,6 +20,7 @@ from flow360.component.simulation.meshing_param.params import (
     SurfaceEdgeRefinement,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     RotationCylinder,
     UniformRefinement,
 )
@@ -201,7 +202,6 @@ with SI_unit_system:
         name="my_cylinder-2",
     )
     meshing = MeshingParams(
-        farfield="auto",
         refinement_factor=1.0,
         gap_treatment_strength=0.5,
         surface_layer_growth_rate=1.5,
@@ -218,8 +218,9 @@ with SI_unit_system:
                 spacing_axial=0.1 * u.m,
                 spacing_radial=0.12 * u.m,
                 spacing_circumferential=0.13 * u.m,
-                enclosed_objects=[my_wall_surface],
-            )
+                enclosed_entities=[my_wall_surface],
+            ),
+            AutomatedFarfield(method="auto"),
         ],
     )
     param = SimulationParams(

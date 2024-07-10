@@ -1,6 +1,6 @@
 """Custom Flow360 exceptions"""
 
-from typing import List
+from typing import Any, List
 
 from .log import log
 
@@ -37,6 +37,36 @@ class Flow360KeyError(Flow360Error):
 
 class Flow360ValidationError(Flow360Error):
     """Error when constructing FLow360 components."""
+
+
+class Flow360ErrorWithLocation(Exception):
+    """
+    Error with metadata on where the error is in the SimulationParams.
+    This is used when NOT raising error from pydantic but we still want something similar to pd.ValidationError.
+    """
+
+    error_message: str
+    input_value: Any
+    location: list[str]
+
+    def __init__(self, error_message, input_value, location: list[str] = None) -> None:
+        """Log the error message and raise"""
+        self.error_message = error_message
+        self.input_value = input_value
+        self.location = location
+        log.error(error_message)
+        super().__init__(error_message)
+
+    def __str__(self) -> str:
+        """Return a formatted string representing the error and its location."""
+        if self.location is not None:
+            error_location = "SimulationParams -> " + " -> ".join(self.location)
+            return f"At {error_location}: {self.error_message}. [input_value = {self.input_value}]."
+        return f"{self.error_message}. [input_value = {self.input_value}]."
+
+
+class Flow360TranslationError(Flow360ErrorWithLocation):
+    """Error when translating to SurfaceMeshing/VolumeMeshing/Case JSON."""
 
 
 class Flow360ConfigurationError(Flow360Error):
@@ -87,7 +117,3 @@ class Flow360ImportError(Flow360Error):
 
 class Flow360NotImplementedError(Flow360Error):
     """Error when a functionality is not (yet) supported."""
-
-
-class Flow360TranslationError(Flow360Error):
-    """Error when translating JSONs."""

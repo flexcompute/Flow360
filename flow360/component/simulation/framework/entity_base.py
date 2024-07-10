@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import copy
 from abc import ABCMeta
+from numbers import Number
 from typing import List, Optional, Union, get_args, get_origin
 
 import numpy as np
 import pydantic as pd
+import unyt
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.log import log
 
 
@@ -145,59 +148,109 @@ def __combine_bools(input_data):
     return all(input_data)
 
 
+def _merge_fields(field_old, field_new):
+    """
+    Merges fields from a new object (field_new) into an existing object (field_old) with higher priority.
+    It recursively handles nested objects.
+
+    Parameters:
+        field_old (EntityBase): The existing object with higher priority.
+        field_new (EntityBase): The new object with lower priority.
+
+    Returns:
+        EntityBase: The merged object.
+
+    Raises:
+        MergeConflictError: If there's a conflict between the objects that can't be resolved.
+
+    Note:
+        The function skips merging for 'private_attribute_entity_type_name' and 'private_attribute_registry_bucket_name'
+        to handle cases where the objects could be different classes in nature.
+    """
+    # Define basic types that should not be merged further but directly compared or replaced
+    basic_types = (list, Number, str, tuple, unyt.unyt_array, unyt.unyt_quantity)
+
+    # Iterate over all attributes and values of the new object
+    for attr, value in field_new.__dict__.items():
+        # Ignore certain private attributes meant for entity type definition
+        if attr in ["private_attribute_entity_type_name", "private_attribute_registry_bucket_name"]:
+            continue
+
+        if field_new.__dict__[attr] is None:
+            # Skip merging this attribute since we always want more info.
+            continue
+
+        if attr in field_old.__dict__:
+            # Check for conflicts between old and new values
+            found_conflict = __combine_bools(field_old.__dict__[attr] != value)
+            if found_conflict:
+                if (
+                    not isinstance(field_old.__dict__[attr], basic_types)
+                    and field_old.__dict__[attr] is not None
+                ):
+                    # Recursive merge for nested objects until reaching basic types
+                    field_old.__dict__[attr] = _merge_fields(
+                        field_old.__dict__[attr], field_new.__dict__[attr]
+                    )
+                elif field_old.__dict__[attr] is None or (
+                    isinstance(field_old.__dict__[attr], list) and not field_old.__dict__[attr]
+                ):
+                    # Set the old value to the new value if the old value is empty
+                    field_old.__dict__[attr] = value
+                else:
+                    # Raise an error if basic types conflict and cannot be resolved
+                    raise MergeConflictError(
+                        f"Conflict on attribute '{attr}': {field_old.__dict__[attr]} != {value}"
+                    )
+        else:
+            # Add new attributes from the new object to the old object
+            field_old.__dict__[attr] = value
+
+    return field_old
+
+
 def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
     """
-    Merges obj_new into obj_old, raising an exception if there are conflicts.
-    Ideally the obj_old should be a non-generic one.
+    Merges two entity objects, prioritizing the fields of the original object (obj_old) unless overridden
+    by non-generic values in the new object (obj_new). This function ensures that only compatible entities
+    are merged, raising exceptions when merge criteria are not met.
+
     Parameters:
-        obj_old: The original object to merge into.
-        obj_new: The new object to merge into the original object.
+        obj_old (EntityBase): The original object to be preserved with higher priority.
+        obj_new (EntityBase): The new object that might override or add to the fields of the original object.
+
+    Returns:
+        EntityBase: The merged entity object.
+
+    Raises:
+        MergeConflictError: Raised when the entities have different names or when they are of different types
+                            and both are non-generic, indicating that they should not be merged.
     """
 
+    # Check if the names of the entities are the same; they must be for merging to make sense
     if obj_new.name != obj_old.name:
         raise MergeConflictError(
-            "Make sure merge is intended as the names of two entities are different."
+            "Merge operation halted as the names of the entities do not match."
+            "Please ensure you are merging the correct entities."
         )
 
+    # Swap objects if the new object is non-generic and the old one is generic.
+    # This ensures that the `obj_old` always has priority in attribute preservation.
     # pylint: disable=protected-access
-    if obj_new._is_generic() is False and obj_old._is_generic() is True:
-        # swap so that obj_old is **non-generic** and obj_new is **generic**
+    if not obj_new._is_generic() and obj_old._is_generic():
         obj_new, obj_old = obj_old, obj_new
 
-    # Check the two objects are mergeable
-    # pylint: disable=protected-access
-    if obj_new._is_generic() is False and obj_old._is_generic() is False:
+    # Ensure that objects are of the same type if both are non-generic to prevent merging unrelated types
+    if not obj_new._is_generic() and not obj_old._is_generic():
         if obj_new.__class__ != obj_old.__class__:
             raise MergeConflictError(
-                f"Cannot merge objects of different class: {obj_old.__class__.__name__} "
-                f"and {obj_new.__class__.__name__}"
+                f"Cannot merge objects of different classes: {obj_old.__class__.__name__}"
+                f" and {obj_new.__class__.__name__}."
             )
 
-    for attr, value in obj_new.__dict__.items():
-        if attr in [
-            "private_attribute_entity_type_name",
-            "private_attribute_registry_bucket_name",
-            "name",
-        ]:
-            continue
-        if attr in obj_old.__dict__:
-            found_conflict = __combine_bools(obj_old.__dict__[attr] != value)
-            if found_conflict:
-                if obj_old.__dict__[attr] is None:
-                    # Populate obj_old with new info from lower priority object
-                    obj_old.__dict__[attr] = value
-                elif obj_new.__dict__[attr] is None:
-                    # Ignore difference from lower priority object
-                    continue
-                else:
-                    raise MergeConflictError(
-                        f"Conflict on attribute '{attr}': {obj_old.__dict__[attr]} != {value}"
-                    )
-        # for new attr from new object, we just add it to the old object.
-        if attr in obj_old.model_fields.keys():
-            obj_old.__dict__[attr] = value
-
-    return obj_old
+    # Utilize the _merge_fields function to merge the attributes of the two objects
+    merged_object = _merge_fields(obj_old, obj_new)
+    return merged_object
 
 
 def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
@@ -305,36 +358,49 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         #    as the user may change Param which affects implicit entities (farfield existence patch for example).
         # 2. The List[EntityBase], comes from the Assets.
         # 3. EntityBase comes from direct specification of entity in the list.
-        formated_input = []
+        entities_to_store = []
         valid_types = cls._get_valid_entity_types()
-        if isinstance(input_data, list):
+        if isinstance(input_data, list):  # A list of entities
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
             for item in input_data:
                 if isinstance(item, list):  # Nested list comes from assets
                     _ = [cls._valid_individual_input(individual) for individual in item]
-                    formated_input.extend(
+                    # pylint: disable=fixme
+                    # TODO: Give notice when some of the entities are not selected due to `valid_types`?
+                    entities_to_store.extend(
                         [
                             individual
                             for individual in item
-                            if isinstance(individual, tuple(valid_types))
+                            if is_exact_instance(individual, tuple(valid_types))
                         ]
                     )
                 else:
                     cls._valid_individual_input(item)
-                    if isinstance(item, tuple(valid_types)):
-                        formated_input.append(item)
-        elif isinstance(input_data, dict):
+                    if is_exact_instance(item, tuple(valid_types)):
+                        entities_to_store.append(item)
+        elif isinstance(input_data, dict):  # Deseralization
+            if "stored_entities" not in input_data:
+                raise KeyError(
+                    f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
+                )
             return {"stored_entities": input_data["stored_entities"]}
         # pylint: disable=no-else-return
-        else:  # Single reference to an entity
+        else:  # Single entity
             if input_data is None:
                 return {"stored_entities": None}
             else:
                 cls._valid_individual_input(input_data)
-                if isinstance(input_data, tuple(valid_types)):
-                    formated_input.append(input_data)
-        return {"stored_entities": formated_input}
+                if is_exact_instance(input_data, tuple(valid_types)):
+                    entities_to_store.append(input_data)
+
+        if not entities_to_store:
+            raise ValueError(
+                f"Can not find any valid entity of type {[valid_type.__name__ for valid_type in valid_types]}"
+                f" from the input."
+            )
+
+        return {"stored_entities": entities_to_store}
 
     @pd.field_validator("stored_entities", mode="after")
     @classmethod

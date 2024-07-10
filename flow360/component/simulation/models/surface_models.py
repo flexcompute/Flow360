@@ -17,7 +17,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantitiesType,
 )
 from flow360.component.simulation.operating_condition import VelocityVectorType
-from flow360.component.simulation.primitives import Surface, SurfacePair
+from flow360.component.simulation.primitives import GhostSurface, Surface, SurfacePair
 from flow360.component.simulation.unit_system import (
     HeatFluxType,
     MassFlowRateType,
@@ -128,6 +128,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     type: Literal["Freestream"] = pd.Field("Freestream", frozen=True)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
     velocity_type: Literal["absolute", "relative"] = pd.Field("relative")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
 class Outflow(BoundaryBase):
@@ -161,6 +162,7 @@ class SlipWall(BoundaryBase):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
 class SymmetryPlane(BoundaryBase):
@@ -168,6 +170,7 @@ class SymmetryPlane(BoundaryBase):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
 class Periodic(Flow360BaseModel):

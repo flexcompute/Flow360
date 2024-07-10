@@ -1,8 +1,9 @@
 """Meshing related parameters for volume and surface mesher."""
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
+from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
@@ -10,6 +11,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinementTypes,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     RotationCylinder,
     VolumeRefinementTypes,
 )
@@ -32,7 +34,6 @@ class MeshingParams(Flow360BaseModel):
     2. Add default BETDisk refinement.
 
     Affects volume meshing:
-    - farfield
     - refinement_factor
     - gap_treatment_strength
     - `class` BoundaryLayer
@@ -47,9 +48,6 @@ class MeshingParams(Flow360BaseModel):
     """
 
     # Volume **defaults**:
-    farfield: Optional[Literal["auto", "quasi-3d", "user-defined"]] = pd.Field(
-        default="auto", description="Type of farfield generation."
-    )
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="""If refinementFactor=r is provided all spacings in refinementregions
@@ -74,6 +72,34 @@ class MeshingParams(Flow360BaseModel):
         description="Additional fine-tunning for refinements.",
     )
     # Will add more to the Union
-    volume_zones: List[RotationCylinder] = pd.Field(
-        default=[], description="Creation of new volume zones."
+    volume_zones: Optional[List[Union[RotationCylinder, AutomatedFarfield]]] = pd.Field(
+        default=None, description="Creation of new volume zones."
     )
+
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _finalize_automated_farfield(cls, v) -> Self:
+        if v is None:
+            # User did not put anything in volume_zones so may not want to use volume meshing
+            return v
+
+        has_rotating_zone = any(isinstance(volume_zone, RotationCylinder) for volume_zone in v)
+        # pylint: disable=expression-not-assigned, protected-access
+        [
+            volume_zone._set_up_zone_entity(has_rotating_zone)
+            for volume_zone in v
+            if isinstance(volume_zone, AutomatedFarfield)
+        ]
+        return v
+
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_has_farfied(cls, v) -> Self:
+        if v is None:
+            # User did not put anything in volume_zones so may not want to use volume meshing
+            return v
+
+        has_farfield = any(isinstance(volume_zone, AutomatedFarfield) for volume_zone in v)
+        if not has_farfield:
+            raise ValueError("AutomatedFarfield is required in volume_zones.")
+        return v

@@ -27,7 +27,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
     SurfaceList,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
 
 
@@ -64,7 +64,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Surface]] = pd.Field(None, alias="surfaces")
+    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
         description="""Enable writing all surface outputs into a single file instead of one file per surface.

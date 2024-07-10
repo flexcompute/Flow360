@@ -14,11 +14,15 @@ from flow360.component.simulation.framework.entity_base import (
     _merge_objects,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import (
+    AssetCache,
+    register_entity_list,
+)
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
-    GenericSurface,
     GenericVolume,
+    Surface,
     _SurfaceEntityBase,
 )
 from flow360.component.simulation.simulation_params import _ParamModelBase
@@ -161,7 +165,7 @@ class TempVolumeMesh(AssetBase):
 
         for surface_name in self._get_meta_data()["surfaces"]:
             self.internal_registry.register(
-                GenericSurface(
+                Surface(
                     name=surface_name, private_attribute_is_interface=surface_name in interfaces
                 )
             )
@@ -185,7 +189,7 @@ class TempFluidDynamics(Flow360BaseModel):
 
 
 class TempWallBC(Flow360BaseModel):
-    entities: EntityList[GenericSurface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
+    entities: EntityList[Surface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
 
 
 def _get_supplementary_registry(far_field_type: str):
@@ -205,7 +209,7 @@ class TempRotation(Flow360BaseModel):
 
 class TempUserDefinedDynamic(Flow360BaseModel):
     name: str = pd.Field()
-    input_boundary_patches: Optional[EntityList[GenericSurface]] = pd.Field(None)
+    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(None)
     output_target: Optional[Cylinder] = pd.Field(
         None
     )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.
@@ -217,6 +221,7 @@ class TempSimulationParam(_ParamModelBase):
 
     models: List[Union[TempFluidDynamics, TempWallBC, TempRotation]] = pd.Field()
     udd: Optional[TempUserDefinedDynamic] = pd.Field(None)
+    private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     def preprocess(self):
         """
@@ -227,6 +232,17 @@ class TempSimulationParam(_ParamModelBase):
         for model in self.models:
             model.entities.preprocess(supplied_registry=_supplementary_registry, mesh_unit=1 * u.m)
 
+        return self
+
+    @pd.model_validator(mode="after")
+    def _move_registry_to_asset_cache(self):
+        """Recursively register all entities listed in EntityList to the asset cache."""
+        # pylint: disable=no-member
+        self.private_attribute_asset_cache.registry.clear()
+        register_entity_list(
+            self,
+            self.private_attribute_asset_cache.registry,
+        )  # Clear so that the next param can use this.
         return self
 
 
@@ -410,10 +426,10 @@ def test_by_reference_registry(my_cylinder2):
 
     registry = EntityRegistry()
     registry.register(my_cylinder2)
-
+    entities = registry.get_bucket(by_type=Cylinder).entities  # get the entities now before change
     # [Registry] External changes --> Internal
     my_cylinder2.height = 131 * u.m
-    for entity in registry.get_all_entities_of_given_bucket(Cylinder):
+    for entity in entities:
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
             assert entity.height == 131 * u.m
 
@@ -444,7 +460,7 @@ def test_get_entities(
     registry.register(my_cylinder2)
     registry.register(my_box_zone1)
     registry.register(my_box_zone2)
-    all_box_entities = registry.get_all_entities_of_given_bucket(Box)
+    all_box_entities = registry.get_bucket(by_type=Box).entities
     assert len(all_box_entities) == 4
     assert my_box_zone1 in all_box_entities
     assert my_box_zone2 in all_box_entities
@@ -569,7 +585,7 @@ def test_multiple_param_creation_and_asset_registry(
     ref_registry.register(my_volume_mesh1["surface_2"])
     ref_registry.register(my_volume_mesh1["surface_3"])
 
-    assert my_param1.private_attribute_asset_cache.asset_entity_registry == ref_registry
+    assert my_param1.private_attribute_asset_cache.registry == ref_registry
 
     TempFluidDynamics(entities=[my_box_zone2])  # This should not be added to the registry
 
@@ -599,7 +615,7 @@ def test_multiple_param_creation_and_asset_registry(
     ref_registry.register(my_volume_mesh2["surface_6"])
     ref_registry.register(my_volume_mesh2["surface_1"])
 
-    assert my_param2.private_attribute_asset_cache.asset_entity_registry == ref_registry
+    assert my_param2.private_attribute_asset_cache.registry == ref_registry
 
 
 def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_mesh1):
@@ -620,7 +636,7 @@ def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_me
             ],
         )
     my_cylinder1.center = (3, 2, 1) * u.m
-    my_cylinder1_ref = my_param1.private_attribute_asset_cache.asset_entity_registry.find_by_name(
+    my_cylinder1_ref = my_param1.private_attribute_asset_cache.registry.find_by_name(
         "zone/Cylinder1"
     )
     assert all(my_cylinder1_ref.center == [3, 2, 1] * u.m)
@@ -691,7 +707,7 @@ def test_entities_merging_logic(my_volume_mesh_with_interface):
     assert my_generic_merged.outer_radius == 2 * u.ft
     assert all(my_generic_merged.center == (1, 2, 3) * u.ft)
 
-    ##:: Scenario 4: Merge NonGeneric with Generic with conflict
+    # ##:: Scenario 4: Merge NonGeneric with Generic with conflict
     with pytest.raises(
         MergeConflictError,
         match=re.escape(r"Conflict on attribute 'axis':"),
@@ -740,7 +756,7 @@ def test_entities_merging_logic(my_volume_mesh_with_interface):
     ##:: Scenario 7: Merge NonGeneric with NonGeneric with different class
     with pytest.raises(
         MergeConflictError,
-        match=re.escape(r"Cannot merge objects of different class:"),
+        match=re.escape(r"Cannot merge objects of different classes: Cylinder and Box."),
     ):
         my_generic_merged = deepcopy(my_generic_base)
         merged = _merge_objects(
@@ -778,8 +794,8 @@ def test_entities_merging_logic(my_volume_mesh_with_interface):
             ],
         )
 
-    target_entity_param_reg = (
-        my_param.private_attribute_asset_cache.asset_entity_registry.find_by_name("innerZone")
+    target_entity_param_reg = my_param.private_attribute_asset_cache.registry.find_by_name(
+        "innerZone"
     )
 
     target_entity_mesh_reg = my_volume_mesh_with_interface.internal_registry.find_by_name(
@@ -834,7 +850,7 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
             ),
         )
     # output_target
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(my_cylinder1)
+    assert my_param.private_attribute_asset_cache.registry.contains(my_cylinder1)
     # input_boundary_patches
     for surface_name in [
         "farfield/farfield",
@@ -846,19 +862,19 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
         "my_wall_2",
         "my_wall_3",
     ]:
-        assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+        assert my_param.private_attribute_asset_cache.registry.contains(
             my_volume_mesh_with_interface[surface_name]
         )
 
     # parent_volume
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+    assert my_param.private_attribute_asset_cache.registry.contains(
         my_volume_mesh_with_interface["mostinnerZone"]
     )
     # entities
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.contains(
+    assert my_param.private_attribute_asset_cache.registry.contains(
         my_volume_mesh_with_interface["innerZone"]
     )
-    assert my_param.private_attribute_asset_cache.asset_entity_registry.entity_count() == 11
+    assert my_param.private_attribute_asset_cache.registry.entity_count() == 11
 
 
 def compare_boxes(box1, box2):
