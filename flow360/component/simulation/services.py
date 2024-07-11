@@ -3,6 +3,12 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    SurfaceRefinement,
+)
+from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -97,6 +103,13 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             reference_geometry=ReferenceGeometry(
                 area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
             ),
+            meshing=MeshingParams(
+                refinements=[
+                    SurfaceRefinement(name="Global surface refinement"),
+                    BoundaryLayer(name="Global Boundary layer refinement", first_layer_thickness=1),
+                ],
+                volume_zones=[AutomatedFarfield(name="farfield")],
+            ),
             operating_condition=AerospaceCondition(velocity_magnitude=1),
         )
 
@@ -111,7 +124,11 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             )
 
     data = params.model_dump(
-        exclude_none=True, exclude={"operating_condition": {"velocity_magnitude": True}}
+        exclude_none=True,
+        exclude={
+            "operating_condition": {"velocity_magnitude": True},
+            "meshing": {"refinements": {"__all__": {"first_layer_thickness": True}}},
+        },
     )
 
     return data
