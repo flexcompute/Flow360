@@ -661,6 +661,9 @@ class FreestreamFromVelocity(FreestreamBase):
         ).to_solver(params, **kwargs)
 
     def getMach(self):
+        """
+        returns the value of Freestream Mach Number
+        """
         return self.__mach
 
 
@@ -712,6 +715,9 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
         ).to_solver(params, **kwargs)
 
     def getMach(self):
+        """
+        returns the value of Freestream Mach Number
+        """
         return self.__mach
 
 
