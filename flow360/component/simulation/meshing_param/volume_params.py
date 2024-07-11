@@ -75,6 +75,7 @@ class RotationCylinder(CylindricalRefinementBase):
 
     """
 
+    type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
     name: Optional[str] = pd.Field(None)
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
@@ -102,10 +103,11 @@ class AutomatedFarfield(Flow360BaseModel):
                     Note: "user-defined" are left out due to scarce usage and will not be implemented.
     """
 
+    type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
     method: Literal["auto", "quasi-3d"] = pd.Field(default="auto", frozen=True)
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True
+        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
     )
 
     def _set_up_zone_entity(self, found_rotating_zones: bool):

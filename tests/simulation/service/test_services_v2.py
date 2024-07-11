@@ -27,6 +27,7 @@ def test_validate_service():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
@@ -66,6 +67,7 @@ def test_validate_error():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
@@ -106,6 +108,7 @@ def test_validate_multiple_errors():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
@@ -160,6 +163,7 @@ def test_validate_errors():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
