@@ -473,6 +473,24 @@ def test_unit_system():
         omega=(1, 1, 1) * u.rad / u.s,
     )
 
+    data = VectorDataWithUnits(
+        pt=None,
+        vec={"value": [1, 1, 1], "units": "N"},
+        ax={"value": [0, 0, 1], "units": "m"},
+        omega={"value": [1, 1, 1], "units": "rad/s"},
+    )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Value error, No class found for unit_name: N \[type=value_error, input_value={'value': {'value': \[1, 2... 'wrong'}, 'units': 'N'}, input_type=dict\]",
+    ):
+        data = VectorDataWithUnits(
+            pt=None,
+            vec={"value": {"value": [1, 2], "units": "wrong"}, "units": "N"},
+            ax={"value": [0, 0, 1], "units": "m"},
+            omega={"value": [1, 1, 1], "units": "rad/s"},
+        )
+
     with u.SI_unit_system:
         # Note that for union types the first element of union that passes validation is inferred!
         data = VectorDataWithUnits(

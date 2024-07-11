@@ -180,6 +180,8 @@ def _unit_object_parser(value, unyt_types: List[type]):
                     pass
                 except RuntimeError:
                     pass
+                except KeyError:
+                    pass
         else:
             raise TypeError(
                 f"Dimensioned type instance {value} expects a 'value' field which was not given"
