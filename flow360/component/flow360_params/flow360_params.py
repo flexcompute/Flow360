@@ -619,6 +619,7 @@ class FreestreamFromVelocity(FreestreamBase):
     velocity_ref: Optional[VelocityType.Positive] = pd.Field(
         alias="velocityRef", displayed="Reference velocity"
     )
+    __mach = None
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> FreestreamFromMach:
@@ -640,7 +641,7 @@ class FreestreamFromVelocity(FreestreamBase):
         ]
 
         solver_values = self._convert_dimensions_to_solver(params, extra=extra, **kwargs)
-        mach = solver_values.pop("velocity")
+        self.__mach = solver_values.pop("velocity")
         mach_ref = solver_values.pop("velocity_ref", None)
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
@@ -652,8 +653,15 @@ class FreestreamFromVelocity(FreestreamBase):
             mach_ref = mach_ref.v.item()
 
         return FreestreamFromMach(
-            Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
+            Mach=self.__mach,
+            Mach_ref=mach_ref,
+            temperature=temperature,
+            mu_ref=mu_ref,
+            **solver_values,
         ).to_solver(params, **kwargs)
+
+    def getMach(self):
+        return self.__mach
 
 
 class ZeroFreestreamFromVelocity(FreestreamBase):
@@ -666,6 +674,7 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
     velocity_ref: VelocityType.Positive = pd.Field(
         alias="velocityRef", displayed="Reference velocity"
     )
+    __mach = None
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> ZeroFreestream:
@@ -686,7 +695,7 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
             ),
         ]
         solver_values = self._convert_dimensions_to_solver(params, extra=extra, **kwargs)
-        mach = solver_values.pop("velocity")
+        self.__mach = solver_values.pop("velocity")
         mach_ref = solver_values.pop("velocity_ref", None)
         mu_ref = solver_values.pop("viscosity")
         temperature = solver_values.pop("temperature").to("K")
@@ -695,8 +704,15 @@ class ZeroFreestreamFromVelocity(FreestreamBase):
             solver_values.pop("model_type")
 
         return ZeroFreestream(
-            Mach=mach, Mach_ref=mach_ref, temperature=temperature, mu_ref=mu_ref, **solver_values
+            Mach=self.__mach,
+            Mach_ref=mach_ref,
+            temperature=temperature,
+            mu_ref=mu_ref,
+            **solver_values,
         ).to_solver(params, **kwargs)
+
+    def getMach(self):
+        return self.__mach
 
 
 FreestreamType = Union[

@@ -204,7 +204,11 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
         if self.low_mach_preconditioner:
             if self.low_mach_preconditioner_threshold is None:
-                self.low_mach_preconditioner_threshold = params.freestream.Mach
+                if hasattr(params.freestream, "Mach"):
+                    self.low_mach_preconditioner_threshold = params.freestream.Mach
+                else:
+                    self.low_mach_preconditioner_threshold = params.freestream.getMach()
+                    print(f"Mach number is {self.low_mach_preconditioner_threshold}")
 
         return super().to_solver(self, **kwargs)
 
