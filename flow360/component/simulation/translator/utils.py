@@ -207,6 +207,7 @@ def _get_key_name(entity: EntityBase):
     return entity.name
 
 
+# pylint: disable=too-many-branches
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
@@ -235,15 +236,17 @@ def translate_setting_and_apply_to_all_entities(
 
     for obj in obj_list:
         if class_type and is_exact_instance(obj, class_type):
-            translated_setting = translation_func(obj, **kwargs)
-            if obj.entities is None:
-                continue
 
             list_of_entities = []
-            if isinstance(obj.entities, EntityList):
-                list_of_entities = obj.entities.stored_entities
-            elif isinstance(obj.entities, UniqueItemList):
-                list_of_entities = obj.entities.items
+            if "entities" in obj.model_fields:
+                if obj.entities is None:
+                    continue
+                if isinstance(obj.entities, EntityList):
+                    list_of_entities = obj.entities.stored_entities
+                elif isinstance(obj.entities, UniqueItemList):
+                    list_of_entities = obj.entities.items
+
+            translated_setting = translation_func(obj, **kwargs)
 
             for entity in list_of_entities:
                 if not to_list:

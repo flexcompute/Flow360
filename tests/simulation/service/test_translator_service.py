@@ -29,7 +29,6 @@ def test_simulation_to_surface_meshing_json():
             "refinements": [
                 {
                     "curvature_resolution_angle": {"units": "degree", "value": 10.0},
-                    "entities": {"stored_entities": [{"name": "wing"}]},
                     "max_edge_length": {"units": "cm", "value": 15.0},
                     "refinement_type": "SurfaceRefinement",
                 },
@@ -364,7 +363,6 @@ def test_simulation_to_all_translation():
             refinements=[
                 BoundaryLayer(first_layer_thickness=0.001),
                 SurfaceRefinement(
-                    entities=[Surface(name="wing")],
                     max_edge_length=15 * u.cm,
                     curvature_resolution_angle=10 * u.deg,
                 ),

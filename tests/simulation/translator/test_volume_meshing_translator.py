@@ -5,9 +5,11 @@ from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    AxisymmetricRefinement,
+    RotationCylinder,
     UniformRefinement,
 )
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
@@ -59,49 +61,119 @@ def get_test_param():
             axis=(0, 1, 0),
             center=(0.7, -1.0, 0),
         )
+        rotor_disk_cylinder = Cylinder(
+            name="enclosed",
+            outer_radius=1.1,
+            height=0.15 * u.m,
+            axis=(0, 1, 0),
+            center=(0.7, -1.0, 0),
+        )
+        inner_cylinder = Cylinder(
+            name="inner",
+            outer_radius=0.75,
+            height=0.5,
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+        )
+        mid_cylinder = Cylinder(
+            name="mid",
+            outer_radius=2,
+            height=2,
+            axis=(0, 1, 0),
+            center=(0, 0, 0),
+        )
+        cylinder_2 = Cylinder(
+            name="2",
+            outer_radius=2,
+            height=2,
+            axis=(0, 1, 0),
+            center=(0, 5, 0),
+        )
+        cylinder_3 = Cylinder(
+            name="3", inner_radius=1.5, outer_radius=2, height=2, axis=(0, 1, 0), center=(0, -5, 0)
+        )
+        cylinder_outer = Cylinder(
+            name="outer",
+            inner_radius=0,
+            outer_radius=8,
+            height=6,
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+        )
         param = SimulationParams(
             meshing=MeshingParams(
                 refinement_factor=1.45,
                 refinements=[
                     UniformRefinement(
-                        entities=[base_cylinder],
+                        entities=[
+                            base_cylinder,
+                            Box.from_principal_axes(
+                                name="MyBox",
+                                center=(0, 1, 2),
+                                size=(4, 5, 6),
+                                axes=((2, 2, 0), (-2, 2, 0)),
+                            ),
+                        ],
                         spacing=7.5 * u.cm,
-                    ),
-                    UniformRefinement(
-                        entities=[
-                            base_cylinder.copy({"name": "cylinder_2", "outer_radius": 2.2 * u.m}),
-                        ],
-                        spacing=10 * u.cm,
-                    ),
-                    UniformRefinement(
-                        entities=[
-                            base_cylinder.copy({"name": "cylinder_3", "outer_radius": 3.3 * u.m}),
-                        ],
-                        spacing=0.175,
-                    ),
-                    UniformRefinement(
-                        entities=[
-                            base_cylinder.copy({"name": "cylinder_4", "outer_radius": 4.5 * u.m}),
-                        ],
-                        spacing=225 * u.mm,
-                    ),
-                    UniformRefinement(
-                        entities=[
-                            Cylinder(
-                                name="outter_cylinder",
-                                outer_radius=6.5,
-                                height=14.5 * u.m,
-                                axis=(-1, 0, 0),
-                                center=(2, -1.0, 0),
-                            )
-                        ],
-                        spacing=300 * u.mm,
                     ),
                     BoundaryLayer(
                         type="aniso", first_layer_thickness=1.35e-06 * u.m, growth_rate=1 + 0.04
                     ),
+                    AxisymmetricRefinement(
+                        entities=[rotor_disk_cylinder],
+                        spacing_axial=20 * u.cm,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20 * u.cm,
+                    ),
                 ],
-                volume_zones=[AutomatedFarfield()],
+                volume_zones=[
+                    AutomatedFarfield(),
+                    RotationCylinder(
+                        name="we_do_not_use_this_anyway",
+                        entities=inner_cylinder,
+                        spacing_axial=20 * u.cm,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20 * u.cm,
+                        enclosed_entities=[
+                            Surface(name="hub"),
+                            Surface(name="blade1"),
+                            Surface(name="blade2"),
+                            Surface(name="blade3"),
+                        ],
+                    ),
+                    RotationCylinder(
+                        entities=mid_cylinder,
+                        spacing_axial=20 * u.cm,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20 * u.cm,
+                        enclosed_entities=[inner_cylinder],
+                    ),
+                    RotationCylinder(
+                        entities=cylinder_2,
+                        spacing_axial=20 * u.cm,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20 * u.cm,
+                        enclosed_entities=[rotor_disk_cylinder],
+                    ),
+                    RotationCylinder(
+                        entities=cylinder_3,
+                        spacing_axial=20 * u.cm,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20 * u.cm,
+                    ),
+                    RotationCylinder(
+                        entities=cylinder_outer,
+                        spacing_axial=40 * u.cm,
+                        spacing_radial=0.4,
+                        spacing_circumferential=40 * u.cm,
+                        enclosed_entities=[
+                            mid_cylinder,
+                            rotor_disk_cylinder,
+                            cylinder_2,
+                            cylinder_3,
+                        ],
+                    ),
+                ],
             )
         )
     return param
@@ -115,49 +187,109 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     ref_dict = {
         "refinementFactor": 1.45,
         "farfield": {"type": "auto"},
+        "volume": {
+            "firstLayerThickness": 1.35e-06,
+            "growthRate": 1.04,
+            "gapTreatmentStrength": 0.0,
+        },
         "refinement": [
             {
                 "type": "cylinder",
                 "radius": 1.1,
                 "length": 2.0,
+                "axis": [0.0, 1.0, 0.0],
+                "center": [0.7, -1.0, 0.0],
                 "spacing": 0.075,
-                "axis": [0, 1, 0],
-                "center": [0.7, -1.0, 0],
             },
             {
-                "type": "cylinder",
-                "radius": 2.2,
-                "length": 2.0,
-                "spacing": 0.1,
-                "axis": [0, 1, 0],
-                "center": [0.7, -1.0, 0],
-            },
-            {
-                "type": "cylinder",
-                "radius": 3.3,
-                "length": 2.0,
-                "spacing": 0.175,
-                "axis": [0, 1, 0],
-                "center": [0.7, -1.0, 0],
-            },
-            {
-                "type": "cylinder",
-                "radius": 4.5,
-                "length": 2.0,
-                "spacing": 0.225,
-                "axis": [0, 1, 0],
-                "center": [0.7, -1.0, 0],
-            },
-            {
-                "type": "cylinder",
-                "radius": 6.5,
-                "length": 14.5,
-                "spacing": 0.3,
-                "axis": [-1, 0, 0],
-                "center": [2, -1.0, 0],
+                "type": "box",
+                "size": [4.0, 5.0, 6.0],
+                "center": [0.0, 1.0, 2.0],
+                "axisOfRotation": [0.0, 0.0, 1.0],
+                "angleOfRotation": 45.0,
+                "spacing": 0.075,
             },
         ],
-        "volume": {"firstLayerThickness": 1.35e-06, "growthRate": 1.04},
+        "rotorDisks": [
+            {
+                "name": "enclosed",
+                "innerRadius": 0,
+                "outerRadius": 1.1,
+                "thickness": 0.15,
+                "axisThrust": [0.0, 1.0, 0.0],
+                "center": [0.7, -1.0, 0.0],
+                "spacingAxial": 0.2,
+                "spacingRadial": 0.2,
+                "spacingCircumferential": 0.2,
+            }
+        ],
+        "slidingInterfaces": [  # comes from documentation page
+            {
+                "name": "inner",
+                "innerRadius": 0,
+                "outerRadius": 0.75,
+                "thickness": 0.5,
+                "axisOfRotation": [0.0, 0.0, 1.0],
+                "center": [0.0, 0.0, 0.0],
+                "spacingAxial": 0.2,
+                "spacingRadial": 0.2,
+                "spacingCircumferential": 0.2,
+                "enclosedObjects": ["hub", "blade1", "blade2", "blade3"],
+            },
+            {
+                "name": "mid",
+                "innerRadius": 0,
+                "outerRadius": 2.0,
+                "thickness": 2.0,
+                "axisOfRotation": [0.0, 1.0, 0.0],
+                "center": [0.0, 0.0, 0.0],
+                "spacingAxial": 0.2,
+                "spacingRadial": 0.2,
+                "spacingCircumferential": 0.2,
+                "enclosedObjects": ["slidingInterface-inner"],
+            },
+            {
+                "name": "2",
+                "innerRadius": 0,
+                "outerRadius": 2.0,
+                "thickness": 2.0,
+                "axisOfRotation": [0.0, 1.0, 0.0],
+                "center": [0.0, 5.0, 0.0],
+                "spacingAxial": 0.2,
+                "spacingRadial": 0.2,
+                "spacingCircumferential": 0.2,
+                "enclosedObjects": ["rotorDisk-enclosed"],
+            },
+            {
+                "name": "3",
+                "innerRadius": 1.5,
+                "outerRadius": 2.0,
+                "thickness": 2.0,
+                "axisOfRotation": [0.0, 1.0, 0.0],
+                "center": [0.0, -5.0, 0.0],
+                "spacingAxial": 0.2,
+                "spacingRadial": 0.2,
+                "spacingCircumferential": 0.2,
+                "enclosedObjects": [],
+            },
+            {
+                "name": "outer",
+                "innerRadius": 0.0,
+                "outerRadius": 8.0,
+                "thickness": 6.0,
+                "axisOfRotation": [1.0, 0.0, 0.0],
+                "center": [0.0, 0.0, 0.0],
+                "spacingAxial": 0.4,
+                "spacingRadial": 0.4,
+                "spacingCircumferential": 0.4,
+                "enclosedObjects": [
+                    "slidingInterface-mid",
+                    "rotorDisk-enclosed",
+                    "slidingInterface-2",
+                    "slidingInterface-3",
+                ],
+            },
+        ],
     }
 
     assert sorted(translated.items()) == sorted(ref_dict.items())

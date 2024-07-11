@@ -58,7 +58,7 @@ class MeshingParams(Flow360BaseModel):
         and first layer thickness will be adjusted to generate r-times finer mesh.""",
     )
     gap_treatment_strength: Optional[float] = pd.Field(
-        None,
+        default=0,
         ge=0,
         le=1,
         description="""Narrow gap treatment strength used when two surfaces are in close proximity.
@@ -67,7 +67,7 @@ class MeshingParams(Flow360BaseModel):
         However the impact on regions without close proximity is negligible.""",
     )
 
-    surface_layer_growth_rate: Optional[float] = pd.Field(
+    surface_layer_growth_rate: float = pd.Field(
         1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )  # Conditionally optional
 

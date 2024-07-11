@@ -72,18 +72,32 @@ class RotationCylinder(CylindricalRefinementBase):
     - `enclosed_entities` is actually just a way of specifying the enclosing patches of a volume zone.
     Therefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this
     attribute at all. For example if the new class already has an entry to list all the enclosing patches.
-
     """
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name to display in the GUI.")
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="""Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.
         This helps determining the volume zone boundary.""",
     )
-    private_attribute_displayed_name: Optional[str] = pd.Field(None)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_single_instance_in_entity_list(cls, values):
+        """
+        [CAPABILITY-LIMITATION]
+        Multiple instances in the entities is not allowed.
+        Because enclosed_entities will almost certain be different.
+        `enclosed_entities` is planned to be auto_populated in the future.
+        """
+        # pylint: disable=protected-access
+        if len(values._get_expanded_entities(expect_supplied_registry=False)) > 1:
+            raise ValueError(
+                "Only single instance is allowed in entities for each RotationCylinder."
+            )
+        return values
 
 
 class AutomatedFarfield(Flow360BaseModel):

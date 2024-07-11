@@ -67,7 +67,7 @@ class Transformation(Flow360BaseModel):
     """Used in preprocess()/translator to meshing param for volume meshing interface"""
 
     axis_of_rotation: Optional[Axis] = pd.Field()
-    angle_of_rotation: Optional[float] = pd.Field()
+    angle_of_rotation: Optional[AngleType] = pd.Field()
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):

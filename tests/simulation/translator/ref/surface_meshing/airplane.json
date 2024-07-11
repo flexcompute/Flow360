@@ -1,0 +1,28 @@
+{
+    "maxEdgeLength": 1.0,
+    "faces": {
+        "Inner_Wing": {
+            "maxEdgeLength": 1.5
+        },
+        "Stab_mirrored": {
+            "maxEdgeLength": 0.5
+        },
+        "Outer_Wing_mirrored": {
+            "maxEdgeLength": 0.7
+        },
+        "Stab": {
+            "maxEdgeLength": 0.5
+        },
+        "Fin": {
+            "maxEdgeLength": 0.5
+        },
+        "Outer_Wing": {
+            "maxEdgeLength": 0.7
+        },
+        "Inner_Wing_mirrored": {
+            "maxEdgeLength": 1.5
+        }
+    },
+    "curvatureResolutionAngle": 15.0,
+    "growthRate": 1.2
+}
