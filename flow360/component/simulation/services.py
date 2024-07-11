@@ -106,7 +106,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             meshing=MeshingParams(
                 refinements=[
                     SurfaceRefinement(name="Global surface refinement"),
-                    BoundaryLayer(name="Boudary layer", first_layer_thickness=1),
+                    BoundaryLayer(name="Global Boundary layer refinement", first_layer_thickness=1),
                 ],
                 volume_zones=[AutomatedFarfield(name="farfield")],
             ),
