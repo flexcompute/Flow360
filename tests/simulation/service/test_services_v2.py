@@ -190,5 +190,8 @@ def test_validate_init_data_errors():
 
     data = services.get_default_params(unit_system_name="SI", length_unit="m")
     _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
-    json.dumps(errors)
-    assert len(errors) == 3
+    assert len(errors) == 2
+    assert errors[0]["loc"][-1] == "first_layer_thickness"
+    assert errors[0]["type"] == "missing"
+    assert errors[1]["loc"][-1] == "velocity_magnitude"
+    assert errors[1]["type"] == "missing"

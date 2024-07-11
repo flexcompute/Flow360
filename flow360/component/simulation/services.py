@@ -105,7 +105,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             ),
             meshing=MeshingParams(
                 refinements=[
-                    SurfaceRefinement(name="Surface refinement", max_edge_length=1),
+                    SurfaceRefinement(name="Global surface refinement"),
                     BoundaryLayer(name="Boudary layer", first_layer_thickness=1),
                 ],
                 volume_zones=[AutomatedFarfield(name="farfield")],
@@ -127,9 +127,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
         exclude_none=True,
         exclude={
             "operating_condition": {"velocity_magnitude": True},
-            "meshing": {
-                "refinements": {"__all__": {"max_edge_length": True, "first_layer_thickness": True}}
-            },
+            "meshing": {"refinements": {"__all__": {"first_layer_thickness": True}}},
         },
     )
 
