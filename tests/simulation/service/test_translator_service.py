@@ -172,6 +172,7 @@ def test_simulation_to_volume_meshing_json():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
@@ -424,6 +425,7 @@ def test_simulation_to_all_translation_2():
             "volume_zones": [
                 {
                     "method": "auto",
+                    "type": "AutomatedFarfield",
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",

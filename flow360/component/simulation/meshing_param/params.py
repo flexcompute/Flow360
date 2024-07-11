@@ -16,9 +16,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     VolumeRefinementTypes,
 )
 
-AllowedRefinementTypes = Annotated[
+RefinementTypes = Annotated[
     Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
     pd.Field(discriminator="refinement_type"),
+]
+
+VolumeZonesTypes = Annotated[
+    Union[RotationCylinder, AutomatedFarfield], pd.Field(discriminator="type")
 ]
 
 
@@ -67,12 +71,12 @@ class MeshingParams(Flow360BaseModel):
         1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )  # Conditionally optional
 
-    refinements: List[AllowedRefinementTypes] = pd.Field(
+    refinements: List[RefinementTypes] = pd.Field(
         default=[],
         description="Additional fine-tunning for refinements.",
     )
     # Will add more to the Union
-    volume_zones: Optional[List[Union[RotationCylinder, AutomatedFarfield]]] = pd.Field(
+    volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
     )
 
