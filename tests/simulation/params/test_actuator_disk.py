@@ -1,10 +1,9 @@
 import pytest
 
-from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
 from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, u
-
 
 
 def test_actuator_disk():

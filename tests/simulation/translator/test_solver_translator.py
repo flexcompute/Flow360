@@ -27,12 +27,12 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from tests.simulation.translator.utils.actuator_disk_param_generator import (
+    actuator_disk_create_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
-)
-from tests.simulation.translator.utils.actuator_disk_param_generator import (
-    actuator_disk_create_param,
 )
 from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     create_steady_airplane_param,
@@ -131,68 +131,63 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str):
     assert compare_values(ref_dict, translated)
 
 
-# def test_om6wing_tutorial(get_om6Wing_tutorial_param):
-#     translate_and_compare(
-#         get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
-#     )
+def test_om6wing_tutorial(get_om6Wing_tutorial_param):
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
 
 
-# ##::  Test with local test cases
-# def test_xv15_bet_disk(
-#     create_steady_hover_param,
-#     create_steady_airplane_param,
-#     create_unsteady_hover_param,
-#     create_unsteady_hover_UDD_param,
-# ):
-#     param = create_steady_hover_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_hover.json"
-#     )
+##::  Test with local test cases
+def test_xv15_bet_disk(
+    create_steady_hover_param,
+    create_steady_airplane_param,
+    create_unsteady_hover_param,
+    create_unsteady_hover_UDD_param,
+):
+    param = create_steady_hover_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_hover.json"
+    )
 
-#     param = create_steady_airplane_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_airplane.json"
-#     )
+    param = create_steady_airplane_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_steady_airplane.json"
+    )
 
-#     param = create_unsteady_hover_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover.json"
-#     )
+    param = create_unsteady_hover_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover.json"
+    )
 
-#     param = create_unsteady_hover_UDD_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
-#     )
-
-
-# def test_xv15_bet_disk_nested_rotation(
-#     create_nested_rotation_param, cylinder_inner, cylinder_middle
-# ):
-#     param = create_nested_rotation_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_nested_rotation.json"
-#     )
+    param = create_unsteady_hover_UDD_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_unsteady_hover_UDD.json"
+    )
 
 
-# def test_porous_media(
-#     create_porous_media_box_param,
-#     create_porous_media_volume_zone_param,
-# ):
-#     param = create_porous_media_box_param
-#     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_box.json")
+def test_xv15_bet_disk_nested_rotation(
+    create_nested_rotation_param, cylinder_inner, cylinder_middle
+):
+    param = create_nested_rotation_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.inch, ref_json_file="Flow360_xv15_bet_disk_nested_rotation.json"
+    )
 
-#     param = create_porous_media_volume_zone_param
-#     translate_and_compare(
-#         param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_volume_zone.json"
-#     )
+
+def test_porous_media(
+    create_porous_media_box_param,
+    create_porous_media_volume_zone_param,
+):
+    param = create_porous_media_box_param
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_box.json")
+
+    param = create_porous_media_volume_zone_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_volume_zone.json"
+    )
 
 
 def test_actuator_disk_translation(actuator_disk_create_param):
     param = actuator_disk_create_param
     print(param)
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")
-
-
-
-
-test_actuator_disk_translation(actuator_disk_create_param())

@@ -1,24 +1,13 @@
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.material import Air, Sutherland
-from flow360.component.simulation.models.solver_numerics import (
-    LinearSolver,
-    NavierStokesSolver,
-    NoneSolver,
-)
 from flow360.component.simulation.models.surface_models import Freestream
-from flow360.component.simulation.models.volume_models import BETDisk, Fluid, ForcePerArea, ActuatorDisk
-from flow360.component.simulation.operating_condition import (
-    AerospaceCondition,
-    ThermalState,
-)
-from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
+from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
+from flow360.component.simulation.operating_condition import AerospaceCondition
 from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import (
-    imperial_unit_system,
-)
+from flow360.component.simulation.unit_system import imperial_unit_system
+
 
 @pytest.fixture
 def actuator_disk_create_param():
@@ -34,13 +23,14 @@ def actuator_disk_create_param():
             height=3.0,
             outer_radius=5.0,
         )
-        
+
         params = SimulationParams(
             operating_condition=AerospaceCondition.from_mach(
                 mach=0,
                 alpha=-90 * u.deg,
                 reference_mach=0.69,
             ),
+            reference_geometry=ReferenceGeometry(),
             models=[
                 ActuatorDisk(volumes=[my_cylinder_1], force_per_area=fpa),
                 Freestream(entities=Surface(name="1")),
@@ -48,5 +38,3 @@ def actuator_disk_create_param():
         )
 
     return params
-
-
