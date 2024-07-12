@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import json
 from collections import OrderedDict
+from typing import Union
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -142,15 +143,45 @@ def has_instance_in_list(obj_list: list, class_type):
     return False
 
 
+def _is_last_of_type(lst, obj):
+    current_type = type(obj)
+    last_index = -1
+
+    for i, item in enumerate(lst):
+        if is_exact_instance(item, current_type):
+            last_index = i
+
+    if last_index == -1:
+        return False  # The type of obj does not exist in the list
+
+    return lst[last_index] == obj
+
+
+def getattr_by_path(obj, path: Union[str, list], *args):
+    """Get attribute by path from a list"""
+    # If path is a string, return the attribute directly
+    if isinstance(path, str):
+        return getattr(obj, path, *args)
+
+    # If path is a list, iterate through each attribute name
+    for attr in path:
+        obj = getattr(obj, attr)
+
+    return obj
+
+
 def get_attribute_from_instance_list(
-    obj_list: list, class_type, attribute_name: str, only_find_when_entities_none: bool = False
+    obj_list: list,
+    class_type,
+    attribute_name: (str, list),
+    only_find_when_entities_none: bool = False,
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
         for obj in obj_list:
             if (
                 is_exact_instance(obj, class_type)
-                and getattr(obj, attribute_name, None) is not None
+                and getattr_by_path(obj, attribute_name, None) is not None
             ):
                 # Route 1: Requested to look into empty-entity instances
                 if only_find_when_entities_none and getattr(obj, "entities", None) is not None:
@@ -162,7 +193,7 @@ def get_attribute_from_instance_list(
                 # Then we return the first non-None value.
                 # Previously we return the value that is non-default.
                 # But this is deemed not intuitive and very hard to implement.
-                return getattr(obj, attribute_name)
+                return getattr_by_path(obj, attribute_name)
     return None
 
 
@@ -188,13 +219,15 @@ def _get_key_name(entity: EntityBase):
     return entity.name
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-arguments, too-many-locals
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
     translation_func,
     to_list: bool = False,
-    entity_injection_func=lambda x: {},
+    entity_injection_func=lambda x, **kwargs: {},
+    pass_translated_setting_to_entity_injection=False,
+    custom_output_dict_entries=False,
     **kwargs,
 ):
     """Translate settings and apply them to all entities of a given type.
@@ -215,6 +248,20 @@ def translate_setting_and_apply_to_all_entities(
     else:
         output = []
 
+    translation_func_prefix = "translation_func_"
+    translation_func_kwargs = {
+        k[len(translation_func_prefix) :]: v
+        for k, v in kwargs.items()
+        if k.startswith(translation_func_prefix)
+    }
+    entity_injection_prefix = "entity_injection_"
+    entity_injection_kwargs = {
+        k[len(entity_injection_prefix) :]: v
+        for k, v in kwargs.items()
+        if k.startswith(entity_injection_prefix)
+    }
+
+    # pylint: disable=too-many-nested-blocks
     for obj in obj_list:
         if class_type and is_exact_instance(obj, class_type):
 
@@ -226,20 +273,30 @@ def translate_setting_and_apply_to_all_entities(
                     list_of_entities = obj.entities.stored_entities
                 elif isinstance(obj.entities, UniqueItemList):
                     list_of_entities = obj.entities.items
+            elif "entity_pairs" in obj.model_fields:
+                list_of_entities = obj.entity_pairs.items
 
-            translated_setting = translation_func(obj, **kwargs)
+            translated_setting = translation_func(obj, **translation_func_kwargs)
+
+            if pass_translated_setting_to_entity_injection:
+                entity_injection_kwargs["translated_setting"] = translated_setting
 
             for entity in list_of_entities:
                 if not to_list:
                     # Generate a $name:{$value} dict
-                    key_name = _get_key_name(entity)
-                    if output.get(key_name) is None:
-                        output[key_name] = entity_injection_func(entity)
-                    update_dict_recursively(output[key_name], translated_setting)
+                    if custom_output_dict_entries:
+                        output.update(entity_injection_func(entity, **entity_injection_kwargs))
+                    else:
+                        key_name = _get_key_name(entity)
+                        if output.get(key_name) is None:
+                            output[key_name] = entity_injection_func(
+                                entity, **entity_injection_kwargs
+                            )
+                        update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
                     # Note: Surface/Boundary logic should be handeled in the entity_injection_func
-                    setting = entity_injection_func(entity)
+                    setting = entity_injection_func(entity, **entity_injection_kwargs)
                     setting.update(translated_setting)
                     output.append(setting)
     return output

@@ -396,8 +396,7 @@
     ],
     "boundaries": {
         "1": {
-            "type": "Freestream",
-            "velocityType": "relative"
+            "type": "Freestream"
         }
     },
     "freestream": {

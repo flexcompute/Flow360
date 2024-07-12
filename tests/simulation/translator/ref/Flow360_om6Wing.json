@@ -1,15 +1,13 @@
 {
     "boundaries": {
         "1": {
-            "type": "NoSlipWall",
-            "velocityType": "relative"
+            "type": "NoSlipWall"
         },
         "2": {
             "type": "SlipWall"
         },
         "3": {
-            "type": "Freestream",
-            "velocityType": "relative"
+            "type": "Freestream"
         }
     },
     "freestream": {

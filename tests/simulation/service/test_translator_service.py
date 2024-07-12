@@ -216,7 +216,7 @@ def test_simulation_to_case_json():
                 "navier_stokes_solver": {
                     "CFL_multiplier": 1.0,
                     "absolute_tolerance": 1e-10,
-                    "equation_eval_frequency": 1,
+                    "equation_evaluation_frequency": 1,
                     "kappa_MUSCL": -1.0,
                     "limit_pressure_density": False,
                     "limit_velocity": False,
@@ -233,7 +233,7 @@ def test_simulation_to_case_json():
                     "CFL_multiplier": 2.0,
                     "DDES": False,
                     "absolute_tolerance": 1e-08,
-                    "equation_eval_frequency": 4,
+                    "equation_evaluation_frequency": 4,
                     "grid_size_for_LES": "maxEdgeLength",
                     "linear_solver": {"max_iterations": 15},
                     "max_force_jac_update_physical_steps": 0,
@@ -255,14 +255,12 @@ def test_simulation_to_case_json():
                 "entities": {"stored_entities": [{"name": "1"}]},
                 "type": "Wall",
                 "use_wall_function": False,
-                "velocity_type": "relative",
                 "velocity": {"value": [0, 1, 2], "units": "m/s"},
             },
             {"entities": {"stored_entities": [{"name": "2"}]}, "type": "SlipWall"},
             {
                 "entities": {"stored_entities": [{"name": "3"}]},
                 "type": "Freestream",
-                "velocity_type": "relative",
             },
         ],
         "operating_condition": {

@@ -1,0 +1,202 @@
+{
+    "boundaries": {
+        "fluid/farfield": {
+            "type": "Freestream"
+        },
+        "fluid/slipWall": {
+            "type": "SlipWall"
+        },
+        "solid-1/adiabatic-1": {
+            "type": "SolidAdiabaticWall"
+        },
+        "solid-1/isothermal-1": {
+            "temperature": 1.214645,
+            "type": "SolidIsothermalWall"
+        },
+        "solid-2/adiabatic-2": {
+            "type": "SolidAdiabaticWall"
+        },
+        "solid-2/isothermal-2": {
+            "temperature": 1.214645,
+            "type": "SolidIsothermalWall"
+        },
+        "solid-3/adiabatic-3": {
+            "type": "SolidAdiabaticWall"
+        },
+        "solid-4/adiabatic-4": {
+            "type": "SolidAdiabaticWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.01,
+        "muRef": 0.00025,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0
+    },
+    "heatEquationSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-09,
+        "equationEvalFrequency": 20,
+        "linearSolver": {
+            "absoluteTolerance": 1e-15,
+            "maxIterations": 100
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 1
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 50
+        },
+        "lowMachPreconditioner": true,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 0.01,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "fluid/farfield": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "fluid/slipWall": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-1/adiabatic-1": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-1/isothermal-1": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-2/adiabatic-2": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-2/isothermal-2": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-3/adiabatic-3": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            },
+            "solid-4/adiabatic-4": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux",
+                    "lowMachPreconditionerSensor"
+                ]
+            }
+        },
+        "writeSingleFile": false
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 50.0,
+            "initial": 1.0,
+            "rampSteps": 100,
+            "type": "ramp"
+        },
+        "maxPseudoSteps": 10000,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [
+            "primitiveVars",
+            "residualNavierStokes",
+            "T"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    },
+    "volumeZones": {
+        "solid-1": {
+            "modelType": "HeatTransfer",
+            "thermalConductivity": 0.00239367
+        },
+        "solid-2": {
+            "modelType": "HeatTransfer",
+            "thermalConductivity": 0.00239367
+        },
+        "solid-3": {
+            "modelType": "HeatTransfer",
+            "thermalConductivity": 0.00239367,
+            "volumetricHeatSource": 0.001
+        },
+        "solid-4": {
+            "modelType": "HeatTransfer",
+            "thermalConductivity": 0.0239367,
+            "volumetricHeatSource": 0.001
+        }
+    }
+}

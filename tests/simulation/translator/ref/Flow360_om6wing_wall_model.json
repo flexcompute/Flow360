@@ -1,16 +1,39 @@
 {
     "boundaries": {
         "1": {
-            "type": "Freestream"
+            "name": "wing",
+            "type": "WallFunction",
+            "velocityType": "relative"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream",
+            "velocityType": "relative"
         }
     },
     "freestream": {
-        "Mach": 0.0,
-        "MachRef": 0.69,
+        "Mach": 0.84,
+        "Reynolds": 14600000.0,
         "Temperature": 288.15,
-        "alphaAngle": -90.0,
-        "betaAngle": 0.0,
-        "muRef": 4.292321046986497e-08
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
+    },
+    "geometry": {
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            0.801672958512342,
+            0.801672958512342,
+            0.801672958512342
+        ],
+        "refArea": 1.1529999999999987
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -20,7 +43,7 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 30
+            "maxIterations": 25
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
@@ -40,12 +63,19 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "1": {
+            "freestream": {
                 "outputFields": [
-                    "Cp",
-                    "yPlus",
-                    "Cf",
-                    "CfVec"
+                    "nuHat"
+                ]
+            },
+            "symmetry": {
+                "outputFields": [
+                    "nuHat"
+                ]
+            },
+            "wing": {
+                "outputFields": [
+                    "nuHat"
                 ]
             }
         },
@@ -53,11 +83,10 @@
     },
     "timeStepping": {
         "CFL": {
-            "convergenceLimitingFactor": 0.25,
-            "max": 10000.0,
-            "maxRelativeChange": 1.0,
-            "min": 0.1,
-            "type": "adaptive"
+            "final": 200.0,
+            "initial": 5.0,
+            "rampSteps": 40,
+            "type": "ramp"
         },
         "maxPseudoSteps": 2000,
         "orderOfAccuracy": 2,
@@ -71,12 +100,13 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 20
+            "maxIterations": 15
         },
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0
+            "C_d": 8.0,
+            "modelType": "SpalartAllmarasConsts"
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -86,16 +116,19 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "actuatorDisks": [
-        {
-            "center":[0.0, 0.0, 0.0],
-            "axisThrust":[0.0,0.0,1.0],
-            "thickness": 0.01,
-            "forcePerArea":{
-            "radius":[0.01, 0.05, 0.1],
-                "thrust":[0.001, 0.02, 0],
-                "circumferential":[-0.0001, -0.003, 0]
-            }
-        }
-    ]
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [
+            "primitiveVars",
+            "residualNavierStokes",
+            "residualTurbulence",
+            "Mach"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    }
 }

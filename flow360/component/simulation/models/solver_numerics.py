@@ -23,7 +23,7 @@ from flow360.component.simulation.framework.base_model import (
 # from .time_stepping import UnsteadyTimeStepping
 
 HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
-HEAT_EQUATION_EVAL_FREQUENCY_STEADY = 10
+HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
 
 
 class LinearSolver(Flow360BaseModel):
@@ -75,9 +75,7 @@ class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     absolute_tolerance: PositiveFloat = pd.Field(1.0e-10)
     relative_tolerance: NonNegativeFloat = pd.Field(0)
     order_of_accuracy: Literal[1, 2] = pd.Field(2)
-    equation_eval_frequency: PositiveInt = pd.Field(1)
-    update_jacobian_frequency: PositiveInt = pd.Field(4)
-    max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
+    equation_evaluation_frequency: PositiveInt = pd.Field(1)
     linear_solver: LinearSolver = pd.Field(LinearSolver())
 
 
@@ -107,7 +105,7 @@ class NavierStokesSolver(GenericSolverSettings):
     update_jacobian_frequency :
         Frequency at which the jacobian is updated.
 
-    equation_eval_frequency :
+    equation_evaluation_frequency :
         Frequency at which to update the compressible NS equation in loosely-coupled simulations
 
     max_force_jac_update_physical_steps :
@@ -160,6 +158,9 @@ class NavierStokesSolver(GenericSolverSettings):
 
     low_mach_preconditioner: bool = pd.Field(False)
     low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(None)
+
+    update_jacobian_frequency: PositiveInt = pd.Field(4)
+    max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
 
 
 class SpalartAllmarasModelConstants(Flow360BaseModel):
@@ -250,12 +251,14 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     CFL_multiplier: PositiveFloat = pd.Field(2.0)
     type_name: str = pd.Field()
     absolute_tolerance: PositiveFloat = pd.Field(1e-8)
-    equation_eval_frequency: PositiveInt = pd.Field(4)
+    equation_evaluation_frequency: PositiveInt = pd.Field(4)
     DDES: bool = pd.Field(False)
     grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field("maxEdgeLength")
     reconstruction_gradient_limiter: pd.confloat(ge=0, le=2) = pd.Field(1.0)
     quadratic_constitutive_relation: bool = pd.Field(False)
     modeling_constants: Optional[TurbulenceModelConstants] = pd.Field(discriminator="type_name")
+    update_jacobian_frequency: PositiveInt = pd.Field(4)
+    max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
 
@@ -295,7 +298,7 @@ class HeatEquationSolver(GenericSolverSettings):
     Parameters
     ----------
 
-    equation_eval_frequency : PositiveInt, optional
+    equation_evaluation_frequency : PositiveInt, optional
         Frequency at which to solve the heat equation in conjugate heat transfer simulations
 
 
@@ -311,7 +314,7 @@ class HeatEquationSolver(GenericSolverSettings):
     Example
     -------
     >>> he = HeatEquationSolver(
-                equation_eval_frequency=10,
+                equation_evaluation_frequency=10,
                 linear_solver_config=LinearSolver(
                     max_iterations=50,
                     absoluteTolerance=1e-10
@@ -320,9 +323,9 @@ class HeatEquationSolver(GenericSolverSettings):
     """
 
     type_name: Literal["HeatEquation"] = pd.Field("HeatEquation", frozen=True)
-    update_jacobian_frequency: PositiveInt = pd.Field(1)
     absolute_tolerance: PositiveFloat = pd.Field(1e-9)
-    equation_eval_frequency: PositiveInt = pd.Field(10)
+    equation_evaluation_frequency: PositiveInt = pd.Field(10)
+    order_of_accuracy: Literal[2] = pd.Field(2)
 
     linear_solver: LinearSolver = pd.Field(
         LinearSolver(max_iterations=50, absolute_tolerance=1e-10)
@@ -351,8 +354,10 @@ class TransitionModelSolver(GenericSolverSettings):
         "AmplificationFactorTransport", frozen=True
     )
     absolute_tolerance: PositiveFloat = pd.Field(1e-7)
-    equation_eval_frequency: PositiveInt = pd.Field(4)
+    equation_evaluation_frequency: PositiveInt = pd.Field(4)
     turbulence_intensity_percent: pd.confloat(ge=0.03, le=2.5) = pd.Field(1.0)
     N_crit: pd.confloat(ge=1, le=11) = pd.Field(8.15)
+    update_jacobian_frequency: PositiveInt = pd.Field(4)
+    max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))

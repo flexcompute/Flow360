@@ -210,7 +210,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         rotation_cylinder_translator,
         to_list=True,
         entity_injection_func=rotation_cylinder_entity_injector,
-        rotor_disk_names=rotor_disk_names,
+        translation_func_rotor_disk_names=rotor_disk_names,
     )
     if sliding_interfaces:
         translated["slidingInterfaces"] = sliding_interfaces
