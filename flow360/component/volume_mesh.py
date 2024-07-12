@@ -42,7 +42,12 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import shared_account_confirm_proceed, validate_type, zstd_compress
+from .utils import (
+    MeshNameParser,
+    shared_account_confirm_proceed,
+    validate_type,
+    zstd_compress,
+)
 from .validator import Validator
 
 try:
@@ -262,13 +267,12 @@ class UGRIDEndianness(Enum):
         """
         detects endianess UGRID mesh from filename
         """
-        if ".ugrid" not in file:
+        name_parser = MeshNameParser(file)
+        if not name_parser.is_ugrid():
             return UGRIDEndianness.NONE
-        basename = os.path.splitext(file)[0]
-        ext = os.path.splitext(basename)[1]
-        if ext == UGRIDEndianness.LITTLE.ext():
+        if name_parser.is_little_endianness():
             return UGRIDEndianness.LITTLE
-        if ext == UGRIDEndianness.BIG.ext():
+        if name_parser.is_big_endianness():
             return UGRIDEndianness.BIG
         raise Flow360RuntimeError(f"Unknown endianness for file {file}")
 

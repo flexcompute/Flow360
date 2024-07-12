@@ -62,7 +62,7 @@ def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
     Checks if id is valid
     """
     if valid_prefixes is None:
-        valid_prefixes = ["folder-", "g-"]
+        valid_prefixes = ["folder-", "g-", "geo-", "sm-", "vm-", "c-"]
     if id is None and allow_none:
         return
     try:
@@ -367,9 +367,9 @@ class MeshNameParser:
         endianness = None
         format = None
         mesh_name_with_endianness, format = os.path.splitext(mesh_file_without_compression)
-        if format == ".ugrid":
+        if format.lower() == ".ugrid":
             stem, endianness = os.path.splitext(mesh_name_with_endianness)
-            if endianness not in [".lb8", ".b8"]:
+            if endianness.lower() not in [".lb8", ".b8"]:
                 stem = mesh_name_with_endianness
                 endianness = ""
         else:
@@ -379,7 +379,19 @@ class MeshNameParser:
 
     # pylint: disable=missing-function-docstring
     def is_ugrid(self):
-        if self.format == ".ugrid":
+        if self.format.lower() == ".ugrid":
+            return True
+        return False
+
+    # pylint: disable=missing-function-docstring
+    def is_little_endianness(self):
+        if self.is_ugrid() and self.endianness.lower() == ".lb8":
+            return True
+        return False
+
+    # pylint: disable=missing-function-docstring
+    def is_big_endianness(self):
+        if self.is_ugrid() and self.endianness.lower() == ".b8":
             return True
         return False
 

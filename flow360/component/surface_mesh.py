@@ -18,6 +18,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
+from .geometry import Geometry
 from .interfaces import SurfaceMeshInterface
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .resource_base import (
@@ -211,7 +212,7 @@ class SurfaceMeshDraft(ResourceDraft):
         return self._surface_mesh_file
 
     # pylint: disable=protected-access
-    def _submit_from_geometry(self, progress_callback=None, force_submit: bool = False):
+    def _submit_from_geometry(self, force_submit: bool = False):
         if not force_submit:
             self.validator_api(self.params, solver_version=self.solver_version)
 
@@ -228,12 +229,18 @@ class SurfaceMeshDraft(ResourceDraft):
             if self.params is not None and self.params.version == "v2":
                 stem = SURFACE_MESH_NAME_STEM_V2
 
+        geometry_id = self.geometry_id
+        if self.geometry_file is not None:
+            geometry_draft = Geometry.from_file(self.geometry_file, name="geometry-" + name)
+            geometry = geometry_draft.submit()
+            geometry_id = geometry.id
+
         if Flags.beta_features():
             req = NewSurfaceMeshRequest(
                 name=name,
                 stem=stem,
                 tags=self.tags,
-                geometry_id=self.geometry_id,
+                geometry_id=geometry_id,
                 config=self.params.flow360_json(),
                 mesh_format=mesh_format.value,
                 endianness=endianness.value,
@@ -246,7 +253,7 @@ class SurfaceMeshDraft(ResourceDraft):
                 name=name,
                 stem=stem,
                 tags=self.tags,
-                geometry_id=self.geometry_id,
+                geometry_id=geometry_id,
                 config=self.params.flow360_json(),
                 mesh_format=mesh_format.value,
                 endianness=endianness.value,
@@ -257,15 +264,6 @@ class SurfaceMeshDraft(ResourceDraft):
         info = SurfaceMeshMeta(**resp)
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
-
-        if self.geometry_file is not None:
-            _, ext = os.path.splitext(self.geometry_file)
-            remote_file_name = f"geometry{ext}"
-            file_name_to_upload = self.geometry_file
-            submitted_mesh._upload_file(
-                remote_file_name, file_name_to_upload, progress_callback=progress_callback
-            )
-            submitted_mesh._complete_upload(remote_file_name)
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
 
@@ -355,7 +353,7 @@ class SurfaceMeshDraft(ResourceDraft):
             raise Flow360ValueError("User aborted resource submit.")
 
         if self.geometry_id is not None or self.geometry_file is not None:
-            return self._submit_from_geometry(progress_callback, force_submit=force_submit)
+            return self._submit_from_geometry(force_submit=force_submit)
         if self.surface_mesh_file is not None:
             return self._submit_upload_mesh(progress_callback)
 

@@ -31,17 +31,17 @@ class Flow360Requests(pd.BaseModel):
 class NewSurfaceMeshRequest(Flow360Requests):
     """request for new surface mesh"""
 
-    name: str = pd.Field(alias="name")
-    stem: str = pd.Field(alias="stem")
-    tags: Optional[List[str]] = pd.Field(alias="tags")
+    name: str = pd.Field()
+    stem: str = pd.Field()
+    tags: Optional[List[str]] = pd.Field()
     geometry_id: Optional[str] = pd.Field(alias="geometryId")
-    config: Optional[str] = pd.Field(alias="config")
+    config: Optional[str] = pd.Field()
     mesh_format: Literal["aflr3", "cgns", "stl"] = pd.Field(alias="meshFormat")
     endianness: Optional[Literal["little", "big"]] = pd.Field(alias="meshEndianness")
     compression: Optional[Literal["gz", "bz2", "zst"]] = pd.Field(alias="meshCompression")
     solver_version: Optional[str] = pd.Field(alias="solverVersion")
     if Flags.beta_features():
-        version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")
+        version: Optional[Literal["v1", "v2"]] = pd.Field(default="v1")
 
 
 class NewVolumeMeshRequest(Flow360Requests):
