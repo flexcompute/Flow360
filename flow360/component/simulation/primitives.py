@@ -89,6 +89,26 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
     private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
+
+    def _set_boundary_full_name_from_metadata(self, volume_mesh_meta_data: dict) -> None:
+        """
+        Update parent zone name once the volume mesh is done.
+        volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
+        """
+
+        # Note: Ideally we should have use the entity registry inside the VolumeMesh class
+        with _model_attribute_unlock(self, "private_attribute_full_name"):
+            self.private_attribute_full_name = _get_boundary_full_name(
+                self.name, volume_mesh_meta_data
+            )
+
+    @property
+    def full_name(self):
+        """Gets the full name which includes the zone name"""
+        if self.private_attribute_full_name is None:
+            return self.name
+        return self.private_attribute_full_name
 
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
@@ -178,7 +198,11 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_principal_axes(
-        cls, name: str, center: LengthType.Point, size: LengthType.Point, axes: Tuple[Axis, Axis]
+        cls,
+        name: str,
+        center: LengthType.Point,
+        size: LengthType.Point,
+        axes: Tuple[Axis, Axis],
     ):
         """
         Construct box from principal axes
@@ -262,7 +286,6 @@ class Surface(_SurfaceEntityBase):
     """
 
     private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
-    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
     private_attribute_is_interface: Optional[bool] = pd.Field(
         None,
         frozen=True,
@@ -272,25 +295,6 @@ class Surface(_SurfaceEntityBase):
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
-
-    def _set_boundary_full_name_from_metadata(self, volume_mesh_meta_data: dict) -> None:
-        """
-        Update parent zone name once the volume mesh is done.
-        volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
-        """
-
-        # Note: Ideally we should have use the entity registry inside the VolumeMesh class
-        with _model_attribute_unlock(self, "private_attribute_full_name"):
-            self.private_attribute_full_name = _get_boundary_full_name(
-                self.name, volume_mesh_meta_data
-            )
-
-    @property
-    def full_name(self):
-        """Gets the full name which includes the zone name"""
-        if self.private_attribute_full_name is None:
-            return self.name
-        return self.private_attribute_full_name
 
 
 @final
@@ -303,18 +307,17 @@ class GhostSurface(_SurfaceEntityBase):
     actually exists. We will let workflow error out if the surface is not found.
 
     - For meshing:
-       - we forbid using `UnvalidatedSurface` in any surface-related features which is not supported right now anyways.
+       - we forbid using `GhostSurface` in any surface-related features which is not supported right now anyways.
 
     - For boundary condition and post-processing:
-        - Allow usage of `UnvalidatedSurface` but no validation. Solver validation will error out when finding mismatch
+        - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch
         between the boundary condition and the mesh meta.
 
     """
 
-    private_attribute_entity_type_name: Literal["UnvalidatedSurface"] = pd.Field(
-        "UnvalidatedSurface", frozen=True
+    private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
+        "GhostSurface", frozen=True
     )
-    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
 
 class SurfacePair(Flow360BaseModel):

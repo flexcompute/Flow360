@@ -9,12 +9,7 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.models.volume_models import Rotation
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-    GenericVolume,
-    Surface,
-)
+from flow360.component.simulation.primitives import Cylinder, GhostSurface, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 
@@ -68,7 +63,7 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
                 ),
                 SlipWall(entities=[Surface(name="slipWall")]),
                 Wall(entities=[Surface(name="noSlipWall")]),
-                Freestream(entities=[Surface(name="farField")]),
+                Freestream(entities=[GhostSurface(name="farField")]),
             ]
         )
     params._update_zone_info_from_volume_mesh(get_volume_mesh_metadata)
