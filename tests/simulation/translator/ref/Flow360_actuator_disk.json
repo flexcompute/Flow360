@@ -13,19 +13,6 @@
         "betaAngle": 0.0,
         "muRef": 4.292321046986497e-08
     },
-    "geometry": {
-        "momentCenter": [
-            0.0,
-            0.0,
-            0.0
-        ],
-        "momentLength": [
-            1.0,
-            1.0,
-            1.0
-        ],
-        "refArea": 1.0
-    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,

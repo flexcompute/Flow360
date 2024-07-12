@@ -517,13 +517,19 @@ def get_solver_json(
 
     translated = {}
     ##:: Step 1: Get geometry:
-    geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
-    ml = geometry.get("momentLength", 1.0)
-    translated["geometry"] = {
-        "momentCenter": list(geometry.get("momentCenter", [0.0, 0.0, 0.0])),
-        "momentLength": list(ml) if isinstance(ml, tuple) else [ml, ml, ml],
-        "refArea": geometry.get("area", 1.0),
-    }
+    if input_params.reference_geometry:
+        geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
+        translated["geometry"] = {}
+        if input_params.reference_geometry.area is not None:
+            translated["geometry"]["refArea"] = geometry["area"]
+        if input_params.reference_geometry.moment_center is not None:
+            translated["geometry"]["momentCenter"] = list(geometry["momentCenter"])
+        if input_params.reference_geometry.moment_length is not None:
+            ml = geometry["momentLength"]
+            translated["geometry"]["momentLength"] = (
+                list(ml) if isinstance(ml, tuple) else [ml, ml, ml]
+            )
+
     ##:: Step 2: Get freestream
     op = input_params.operating_condition
     translated["freestream"] = {

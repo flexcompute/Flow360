@@ -4,7 +4,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.models.surface_models import Freestream
 from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
 from flow360.component.simulation.operating_condition import AerospaceCondition
-from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import imperial_unit_system
 
@@ -30,7 +30,6 @@ def actuator_disk_create_param():
                 alpha=-90 * u.deg,
                 reference_mach=0.69,
             ),
-            reference_geometry=ReferenceGeometry(),
             models=[
                 ActuatorDisk(volumes=[my_cylinder_1], force_per_area=fpa),
                 Freestream(entities=Surface(name="1")),

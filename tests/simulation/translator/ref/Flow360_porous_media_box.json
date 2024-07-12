@@ -27,17 +27,6 @@
         "betaAngle": 0.0
     },
     "geometry": {
-        "momentCenter": [
-            0,
-            0,
-            0
-        ],
-        "momentLength": [
-            1.0,
-            1.0,
-            1.0
-        ],
-        "refArea": 1.0
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
