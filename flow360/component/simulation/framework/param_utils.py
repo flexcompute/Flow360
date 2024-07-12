@@ -109,8 +109,16 @@ def _update_zone_boundaries_with_metadata(
 def _set_boundary_full_name_with_zone_name(
     registry: EntityRegistry, naming_pattern: str, give_zone_name: str
 ) -> None:
-    """Get the entity registry."""
+    """Set the full name of surfaces that does not have full name spcified."""
     if registry.find_by_naming_pattern(naming_pattern):
         for surface in registry.find_by_naming_pattern(naming_pattern):
+            if surface.private_attribute_full_name is not None:
+                # This indicates that full name has been set by mesh metadata because that and this are the
+                # only two places we set the full name.
+                # meshmeta data takes precedence as it is the most reliable source.
+                # Note: Currently automated farfield assumes zone name to be "fluid" but the other mesher has "1".
+                # Note: We need to figure out how to handle this. Otherwise this may result in wrong
+                # Note: zone name getting prepended.
+                continue
             with _model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
