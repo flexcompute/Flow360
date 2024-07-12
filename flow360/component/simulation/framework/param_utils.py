@@ -8,7 +8,10 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.unique_list import UniqueStringList
-from flow360.component.simulation.primitives import Surface, _VolumeEntityBase
+from flow360.component.simulation.primitives import (
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
 
@@ -69,7 +72,7 @@ def _update_zone_name_in_surface_with_metadata(
     TODO: Maybe no need to recursivly looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
-        if isinstance(field, Surface):
+        if isinstance(field, _SurfaceEntityBase):
             # pylint: disable=protected-access
             field._set_boundary_full_name_from_metadata(volume_mesh_meta_data)
 
@@ -79,7 +82,7 @@ def _update_zone_name_in_surface_with_metadata(
                 supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
             )
             for entity in expanded_entities if expanded_entities else []:
-                if isinstance(entity, Surface):
+                if isinstance(entity, _SurfaceEntityBase):
                     entity._set_boundary_full_name_from_metadata(volume_mesh_meta_data)
 
         elif isinstance(field, list):
