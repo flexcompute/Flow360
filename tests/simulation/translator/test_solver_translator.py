@@ -27,6 +27,9 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from tests.simulation.translator.utils.actuator_disk_param_generator import (
+    actuator_disk_create_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
@@ -182,3 +185,9 @@ def test_porous_media(
     translate_and_compare(
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_porous_media_volume_zone.json"
     )
+
+
+def test_actuator_disk_translation(actuator_disk_create_param):
+    param = actuator_disk_create_param
+    print(param)
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")

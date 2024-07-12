@@ -27,6 +27,7 @@ from flow360.component.simulation.unit_system import (
     InverseAreaType,
     InverseLengthType,
     LengthType,
+    PressureType,
 )
 
 # pylint: disable=fixme
@@ -117,14 +118,14 @@ class ForcePerArea(Flow360BaseModel):
 
     Parameters
     ----------
-    radius : List[float]
+    radius : LengthType.Array
         Radius of the sampled locations in grid unit
 
-    thrust : List[float]
+    thrust : PressureType.Array
         Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.
         It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2
 
-    circumferential : List[float]
+    circumferential : PressureType.Array
         Force per area in the circumferential direction, positive means the circumferential force follows the same
         direction as axisThrust with the right hand rule. It is non-dimensional:
                                                                 circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2
@@ -141,9 +142,9 @@ class ForcePerArea(Flow360BaseModel):
     TODO: Use dimensioned values
     """
 
-    radius: List[float]
-    thrust: List[float]
-    circumferential: List[float]
+    radius: LengthType.Array  # pylint: disable=no-member
+    thrust: PressureType.Array  # pylint: disable=no-member
+    circumferential: PressureType.Array  # pylint: disable=no-member
 
     # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
@@ -170,11 +171,10 @@ class ActuatorDisk(Flow360BaseModel):
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
+    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
+    force_per_area: ForcePerArea = pd.Field()
     name: Optional[str] = pd.Field(None)
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
-    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
-
-    force_per_area: ForcePerArea = pd.Field()
 
 
 class BETDiskTwist(Flow360BaseModel):
