@@ -142,9 +142,9 @@ class ForcePerArea(Flow360BaseModel):
     TODO: Use dimensioned values
     """
 
-    radius: LengthType.Array
-    thrust: PressureType.Array
-    circumferential: PressureType.Array
+    radius: LengthType.Array  # pylint: disable=no-member
+    thrust: PressureType.Array  # pylint: disable=no-member
+    circumferential: PressureType.Array  # pylint: disable=no-member
 
     # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
