@@ -118,14 +118,14 @@ class ForcePerArea(Flow360BaseModel):
 
     Parameters
     ----------
-    radius : List[LengthType]
+    radius : LengthType.Array
         Radius of the sampled locations in grid unit
 
-    thrust : List[PressureType]
+    thrust : PressureType.Array
         Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.
         It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2
 
-    circumferential : List[PressureType]
+    circumferential : PressureType.Array
         Force per area in the circumferential direction, positive means the circumferential force follows the same
         direction as axisThrust with the right hand rule. It is non-dimensional:
                                                                 circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2
