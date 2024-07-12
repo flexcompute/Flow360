@@ -3,24 +3,32 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.surface_models import Freestream
 from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
-from flow360.component.simulation.operating_condition import AerospaceCondition
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.operating_condition import (
+    AerospaceCondition,
+    ThermalState,
+)
+from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import imperial_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system
 
 
 @pytest.fixture
 def actuator_disk_create_param():
-
-    with imperial_unit_system:
-        fpa = ForcePerArea(radius=[0, 1, 2, 4], thrust=[1, 1, 2, 2], circumferential=[1, 1, 3, 4])
+    with SI_unit_system:
+        ts = ThermalState()
+        acoustics_pressure = ts.density * ts.speed_of_sound**2
+        fpa = ForcePerArea(
+            radius=[0.01, 0.05, 0.1],
+            thrust=[0.001, 0.02, 0] * acoustics_pressure,
+            circumferential=[-0.0001, -0.003, 0] * acoustics_pressure,
+        )
         assert fpa
 
         my_cylinder_1 = Cylinder(
             name="my_cylinder-1",
-            axis=(5, 0, 0),
-            center=(1.2, 2.3, 3.4),
-            height=3.0,
+            axis=(0, 0, 1.0),
+            center=(0.0, 0.0, 0.0),
+            height=0.01,
             outer_radius=5.0,
         )
 

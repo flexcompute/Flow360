@@ -1,6 +1,5 @@
 """Flow360 solver setting parameter translator."""
 
-from copy import deepcopy
 from typing import Type, Union
 
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
@@ -22,6 +21,7 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
     BETDisk,
     Fluid,
     PorousMedium,
@@ -447,6 +447,48 @@ def porous_media_translator(model: PorousMedium):
     return porous_medium
 
 
+def bet_disk_entity_info_serializer(volume):
+    """BET disk entity serializer"""
+    v = convert_tuples_to_lists(remove_units_in_dict(dump_dict(volume)))
+    return {
+        "axisOfRotation": v["axis"],
+        "centerOfRotation": v["center"],
+        "radius": v["outerRadius"],
+        "thickness": v["height"],
+    }
+
+
+def bet_disk_translator(model: BETDisk):
+    """BET disk translator"""
+    disk_param = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
+    replace_dict_key(disk_param, "machNumbers", "MachNumbers")
+    replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
+    disk_param.pop("volumes")
+    for extra_attr in ["name", "type"]:
+        if extra_attr in disk_param:
+            disk_param.pop(extra_attr)
+    return disk_param
+
+
+def actuator_disk_entity_info_serializer(volume):
+    """Actuator disk entity serializer"""
+    v = convert_tuples_to_lists(remove_units_in_dict(dump_dict(volume)))
+    return {
+        "axisThrust": v["axis"],
+        "center": v["center"],
+        "thickness": v["height"],
+    }
+
+
+def actuator_disk_translator(model: ActuatorDisk):
+    """Actuator disk translator"""
+    return {
+        "forcePerArea": convert_tuples_to_lists(
+            remove_units_in_dict(dump_dict(model.force_per_area))
+        )
+    }
+
+
 # pylint: disable=too-many-branches
 def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
     """Boundary translator"""
@@ -608,24 +650,23 @@ def get_solver_json(
                 ].pop("modelingConstants")
 
     ##:: Step 7: Get BET and AD lists
-    for model in input_params.models:
-        if isinstance(model, BETDisk):
-            disk_param = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
-            replace_dict_key(disk_param, "machNumbers", "MachNumbers")
-            replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
-            volumes = disk_param.pop("volumes")
-            for extra_attr in ["name", "type"]:
-                if extra_attr in disk_param:
-                    disk_param.pop(extra_attr)
-            for v in volumes["storedEntities"]:
-                disk_i = deepcopy(disk_param)
-                disk_i["axisOfRotation"] = v["axis"]
-                disk_i["centerOfRotation"] = v["center"]
-                disk_i["radius"] = v["outerRadius"]
-                disk_i["thickness"] = v["height"]
-                bet_disks = translated.get("BETDisks", [])
-                bet_disks.append(disk_i)
-                translated["BETDisks"] = bet_disks
+    if has_instance_in_list(input_params.models, BETDisk):
+        translated["BETDisks"] = translate_setting_and_apply_to_all_entities(
+            input_params.models,
+            BETDisk,
+            bet_disk_translator,
+            to_list=True,
+            entity_injection_func=bet_disk_entity_info_serializer,
+        )
+
+    if has_instance_in_list(input_params.models, ActuatorDisk):
+        translated["actuatorDisks"] = translate_setting_and_apply_to_all_entities(
+            input_params.models,
+            ActuatorDisk,
+            actuator_disk_translator,
+            to_list=True,
+            entity_injection_func=actuator_disk_entity_info_serializer,
+        )
 
     ##:: Step 8: Get rotation
     if has_instance_in_list(input_params.models, Rotation):
