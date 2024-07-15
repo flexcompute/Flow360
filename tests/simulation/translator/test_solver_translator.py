@@ -189,5 +189,4 @@ def test_porous_media(
 
 def test_actuator_disk_translation(actuator_disk_create_param):
     param = actuator_disk_create_param
-    print(param)
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")
