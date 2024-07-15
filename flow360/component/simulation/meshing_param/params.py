@@ -12,7 +12,9 @@ from flow360.component.simulation.meshing_param.face_params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    AxisymmetricRefinement,
     RotationCylinder,
+    UniformRefinement,
     VolumeRefinementTypes,
 )
 from flow360.component.simulation.primitives import Cylinder
@@ -140,7 +142,7 @@ class MeshingParams(Flow360BaseModel):
                     ].default
 
         for refinement in self.refinements if self.refinements is not None else []:
-            if isinstance(refinement, VolumeRefinementTypes):
+            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
                 # pylint: disable=protected-access
                 for cylinder in [
                     item
