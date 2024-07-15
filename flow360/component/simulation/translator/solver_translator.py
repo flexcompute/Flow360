@@ -159,7 +159,7 @@ def rotation_translator(model: Rotation):
         "modelType": "FluidDynamics",
         "referenceFrame": {},
     }
-    if model.parent_volume:
+    if model.parent_volume is not None:
         volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
     spec = dump_dict(model)["spec"]
     if isinstance(spec, str):
@@ -459,7 +459,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
                 "velocityType": model.velocity_type,
             }
         )
-        if model.velocity:
+        if model.velocity is not None:
             boundary["velocity"] = model_dict["velocity"]
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
@@ -467,7 +467,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
-        if model.velocity_direction:
+        if model.velocity_direction is not None:
             boundary["velocityDirection"] = model_dict["velocityDirection"]
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
@@ -593,7 +593,7 @@ def get_solver_json(
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
-            if modeling_constants:
+            if modeling_constants is not None:
                 modeling_constants["C_d"] = modeling_constants.pop("CD", None)
                 modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
                 modeling_constants.pop("typeName", None)

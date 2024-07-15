@@ -256,6 +256,7 @@ def test_simulation_to_case_json():
                 "type": "Wall",
                 "use_wall_function": False,
                 "velocity_type": "relative",
+                "velocity": {"value": [0, 1, 2], "units": "m/s"},
             },
             {"entities": {"stored_entities": [{"name": "2"}]}, "type": "SlipWall"},
             {
