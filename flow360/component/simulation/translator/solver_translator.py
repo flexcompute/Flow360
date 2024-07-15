@@ -460,13 +460,25 @@ def bet_disk_entity_info_serializer(volume):
 
 def bet_disk_translator(model: BETDisk):
     """BET disk translator"""
-    disk_param = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
-    replace_dict_key(disk_param, "machNumbers", "MachNumbers")
-    replace_dict_key(disk_param, "reynoldsNumbers", "ReynoldsNumbers")
-    disk_param.pop("volumes")
-    for extra_attr in ["name", "type"]:
-        if extra_attr in disk_param:
-            disk_param.pop(extra_attr)
+    model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
+    disk_param = {
+        "rotationDirectionRule": model_dict["rotationDirectionRule"],
+        "numberOfBlades": model_dict["numberOfBlades"],
+        "omega": model_dict["omega"],
+        "chordRef": model_dict["chordRef"],
+        "nLoadingNodes": model_dict["nLoadingNodes"],
+        "bladeLineChord": model_dict["bladeLineChord"],
+        "twists": model_dict["twists"],
+        "chords": model_dict["chords"],
+        "sectionalPolars": model_dict["sectionalPolars"],
+        "sectionalRadiuses": model_dict["sectionalRadiuses"],
+        "alphas": model_dict["alphas"],
+        "MachNumbers": model_dict["machNumbers"],
+        "ReynoldsNumbers": model_dict["reynoldsNumbers"],
+        "tipGap": model_dict["tipGap"],
+    }
+    if "initialBladeDirection" in model_dict:
+        disk_param["initialBladeDirection"] = model_dict["initialBladeDirection"]
     return disk_param
 
 
