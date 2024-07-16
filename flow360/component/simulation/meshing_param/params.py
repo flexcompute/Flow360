@@ -123,8 +123,12 @@ class MeshingParams(Flow360BaseModel):
 
             def __setitem__(self, key, value):
                 if key in self:
+                    if self[key] != value:
+                        raise ValueError(
+                            f"The same cylinder named `{key}` is used in both {self[key]} and {value}."
+                        )
                     raise ValueError(
-                        f"The same cylinder named `{key}` is used in both {self[key]} and {value}."
+                        f"The cylinder named `{key}` is used multiple times in {value}."
                     )
                 super().__setitem__(key, value)
 
