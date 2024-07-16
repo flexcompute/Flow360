@@ -118,10 +118,14 @@ def surface_output_config_with_global_setting():
                 output_fields=["vorticity", "mutRatio"],
             ),
             SurfaceOutput(  # Local
+                frequency=11,
+                frequency_offset=21,
                 entities=[Surface(name="surface1"), Surface(name="surface2")],
                 output_fields=["Cp"],
             ),
             SurfaceOutput(  # Local
+                frequency=11,
+                frequency_offset=21,
                 entities=[
                     Surface(name="surface11", private_attribute_full_name="ZoneName/surface11"),
                     Surface(name="surface22"),
@@ -159,12 +163,15 @@ def surface_output_config_with_no_global_setting():
                 entities=[Surface(name="surface1"), Surface(name="surface2")],
                 output_fields=["Cp"],
                 output_format="tecplot",
+                frequency=123,
+                frequency_offset=321,
             ),
             SurfaceOutput(  # Local
                 entities=[Surface(name="surface11"), Surface(name="surface22")],
                 frequency=123,
                 frequency_offset=321,
                 output_fields=["T"],
+                output_format="tecplot",
             ),
         ],
         {
@@ -361,6 +368,9 @@ def sliceoutput_config_with_no_global_setting():
                     ),
                 ],
                 output_fields=["Cp"],
+                frequency=33,
+                frequency_offset=22,
+                output_format="tecplot",
             ),
             SliceOutput(  # Local
                 entities=[
@@ -529,6 +539,9 @@ def isosurface_output_config_with_no_global_setting():
                     ),
                 ],
                 output_fields=["Cp"],
+                frequency=332,
+                frequency_offset=222,
+                output_format="paraview",
             ),
             IsosurfaceOutput(  # Local
                 entities=[

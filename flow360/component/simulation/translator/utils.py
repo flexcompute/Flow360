@@ -142,20 +142,6 @@ def has_instance_in_list(obj_list: list, class_type):
     return False
 
 
-def _is_last_of_type(lst, obj):
-    current_type = type(obj)
-    last_index = -1
-
-    for i, item in enumerate(lst):
-        if is_exact_instance(item, current_type):
-            last_index = i
-
-    if last_index == -1:
-        return False  # The type of obj does not exist in the list
-
-    return lst[last_index] == obj
-
-
 def get_attribute_from_instance_list(
     obj_list: list, class_type, attribute_name: str, only_find_when_entities_none: bool = False
 ):
@@ -173,13 +159,9 @@ def get_attribute_from_instance_list(
                     continue
 
                 # Route 2: Allowed to look into non-empty-entity instances
-                default_value = obj.model_fields[attribute_name].default
-                field_value = getattr(obj, attribute_name)
-                is_last_item = _is_last_of_type(obj_list, obj)
-
-                if (field_value == default_value) and (is_last_item is False):
-                    # We skip defaults as much as possible
-                    continue
+                # Then we return the first non-None value.
+                # Previously we return the value that is non-default.
+                # But this is deemed not intuitive and very hard to implement.
                 return getattr(obj, attribute_name)
     return None
 
