@@ -479,7 +479,7 @@ class Geometry(Flow360BaseModel):
     mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
 
     if Flags.beta_features():
-        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh")
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
@@ -495,6 +495,9 @@ class Geometry(Flow360BaseModel):
             self.moment_length = (1.0, 1.0, 1.0) * units.flow360_length_unit
         if self.mesh_unit is None:
             self.mesh_unit = 1 * units.flow360_length_unit
+        if Flags.beta_features():
+            if self.decomposed_mesh is None:
+                self.decomposed_mesh = False
 
         return super().to_solver(params, exclude=["mesh_unit"], **kwargs)
 
@@ -1489,12 +1492,18 @@ class GeometryLegacy(Geometry, LegacyModel):
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 
+    if Flags.beta_features():
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
+
     def update_model(self) -> Flow360BaseModel:
         model = {
             "momentCenter": self.moment_center,
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
+        if Flags.beta_features():
+            model.update({"decomposedMesh": self.decomposed_mesh})
+
         # pylint: disable=unsubscriptable-object
         if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
