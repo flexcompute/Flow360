@@ -18,6 +18,7 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Temperature,
     TotalPressure,
+    Translational,
     Wall,
 )
 from flow360.component.simulation.models.volume_models import (
@@ -26,6 +27,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     PorousMedium,
     Rotation,
+    Solid,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -42,7 +44,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.primitives import Box, SurfacePair
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.utils import (
@@ -58,6 +60,7 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.exceptions import Flow360TranslationError
 
 
 def dump_dict(input_params):
@@ -258,7 +261,7 @@ def translate_surface_output(
         surface_output_class,
         translation_func=merge_output_fields,
         to_list=False,
-        shared_output_fields=shared_output_fields,
+        translation_func_shared_output_fields=shared_output_fields,
     )
     if shared_output_fields is not None:
         # Note: User specified shared output fields for all surfaces. We need to manually add these for surfaces
@@ -299,7 +302,7 @@ def translate_slice_isosurface_output(
         output_class,
         translation_func=merge_output_fields,
         to_list=False,
-        shared_output_fields=shared_output_fields,
+        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
     )
     return translated_output
@@ -320,7 +323,7 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
         monitor_type,
         translation_func=merge_output_fields,
         to_list=False,
-        shared_output_fields=shared_output_fields,
+        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
     )
     return translated_output
@@ -501,18 +504,65 @@ def actuator_disk_translator(model: ActuatorDisk):
     }
 
 
+def get_solid_zone_boundaries(volume, solid_zone_boundaries: set):
+    """Store solid zone boundaries in a set"""
+    if volume.private_attribute_zone_boundary_names is not None:
+        for boundary in volume.private_attribute_zone_boundary_names.items:
+            solid_zone_boundaries.add(boundary)
+    else:
+        raise Flow360TranslationError(
+            f"boundary_name is required but not found in"
+            f"`{volume.__name__}` instances in Solid model. \n[For developers]: This error message should not appear."
+            "SimulationParams should have caught this!!!",
+            input_value=volume,
+            location=["models"],
+        )
+
+    return {}
+
+
+def heat_transfer_volume_zone_translator(model: Solid):
+    """Heat transfer volume zone translator"""
+    model_dict = remove_units_in_dict(dump_dict(model))
+    volume_zone = {
+        "modelType": "HeatTransfer",
+        "thermalConductivity": model_dict["material"]["thermalConductivity"],
+    }
+    if model.volumetric_heat_source:
+        volume_zone["volumetricHeatSource"] = model_dict["volumetricHeatSource"]
+    if model.material.specific_heat_capacity and model.material.density:
+        volume_zone["heatCapacity"] = model_dict["density"] * model_dict["specificHeatCapacity"]
+    return volume_zone
+
+
+def boundary_entity_info_serializer(entity, translated_setting, solid_zone_boundaries):
+    """Boundary entity info serializer"""
+    output = {}
+    if isinstance(entity, SurfacePair):
+        key1 = _get_key_name(entity.pair[0])
+        key2 = _get_key_name(entity.pair[1])
+        output[key1] = {**translated_setting, "pairedPatchName": key2}
+        output[key2] = translated_setting
+    else:
+        key_name = _get_key_name(entity)
+        output = {key_name: {**translated_setting}}
+        if key_name in solid_zone_boundaries:
+            if "temperature" in translated_setting:
+                output[key_name]["type"] = "SolidIsothermalWall"
+            elif "heatFlux" in translated_setting:
+                output[key_name]["type"] = "SolidIsofluxWall"
+            else:
+                output[key_name]["type"] = "SolidAdiabaticWall"
+    return output
+
+
 # pylint: disable=too-many-branches
 def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
     if isinstance(model, Wall):
-        boundary.update(
-            {
-                "type": "WallFunction" if model.use_wall_function else "NoSlipWall",
-                "velocityType": model.velocity_type,
-            }
-        )
+        boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
             boundary["velocity"] = model_dict["velocity"]
         if isinstance(model.heat_spec, Temperature):
@@ -542,16 +592,15 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         elif isinstance(model.spec, MassFlowRate):
             pass
     elif isinstance(model, Periodic):
-        pass
+        boundary["type"] = (
+            "TranslationallyPeriodic"
+            if isinstance(model.spec, Translational)
+            else "RotationallyPeriodic"
+        )
     elif isinstance(model, SlipWall):
         boundary["type"] = "SlipWall"
     elif isinstance(model, Freestream):
-        boundary.update(
-            {
-                "type": "Freestream",
-                "velocityType": model.velocity_type,
-            }
-        )
+        boundary["type"] = "Freestream"
 
     return boundary
 
@@ -603,28 +652,6 @@ def get_solver_json(
         op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
     ).value
 
-    ##:: Step 3: Get boundaries
-    # pylint: disable=duplicate-code
-    translated["boundaries"] = translate_setting_and_apply_to_all_entities(
-        input_params.models,
-        (
-            Wall,
-            SlipWall,
-            Freestream,
-            Outflow,
-            Inflow,
-            Periodic,
-            SymmetryPlane,
-        ),
-        boundary_spec_translator,
-        to_list=False,
-        op_acousitc_to_static_pressure_ratio=op_acousitc_to_static_pressure_ratio,
-    )
-
-    ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
-
-    translated = translate_output(input_params, translated)
-
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
     if isinstance(ts, Unsteady):
@@ -645,12 +672,22 @@ def get_solver_json(
         }
     dump_dict(input_params.time_stepping)
 
-    ##:: Step 6: Get solver settings
+    ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
         if isinstance(model, Fluid):
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
+            replace_dict_key(
+                translated["navierStokesSolver"],
+                "equationEvaluationFrequency",
+                "equationEvalFrequency",
+            )
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
+            replace_dict_key(
+                translated["turbulenceModelSolver"],
+                "equationEvaluationFrequency",
+                "equationEvalFrequency",
+            )
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
@@ -660,6 +697,8 @@ def get_solver_json(
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+            if model.initial_condition:
+                translated["initialCondition"] = dump_dict(model.initial_condition)
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):
@@ -705,6 +744,97 @@ def get_solver_json(
         )
 
     ##:: Step 10: Get heat transfer zones
+    solid_zone_boundaries = set()
+    if has_instance_in_list(input_params.models, Solid):
+        translated["heatEquationSolver"] = {
+            "equationEvalFrequency": get_attribute_from_instance_list(
+                input_params.models,
+                Solid,
+                ["heat_equation_solver", "equation_evaluation_frequency"],
+            ),
+            "linearSolver": {
+                "maxIterations": get_attribute_from_instance_list(
+                    input_params.models,
+                    Solid,
+                    ["heat_equation_solver", "linear_solver", "max_iterations"],
+                ),
+            },
+            "absoluteTolerance": get_attribute_from_instance_list(
+                input_params.models,
+                Solid,
+                ["heat_equation_solver", "absolute_tolerance"],
+            ),
+            "relativeTolerance": get_attribute_from_instance_list(
+                input_params.models,
+                Solid,
+                ["heat_equation_solver", "relative_tolerance"],
+            ),
+            "orderOfAccuracy": get_attribute_from_instance_list(
+                input_params.models,
+                Solid,
+                ["heat_equation_solver", "order_of_accuracy"],
+            ),
+            "CFLMultiplier": 1.0,
+            "updateJacobianFrequency": 1,
+            "maxForceJacUpdatePhysicalSteps": 0,
+        }
+        linear_solver_absolute_tolerance = get_attribute_from_instance_list(
+            input_params.models,
+            Solid,
+            ["heat_equation_solver", "linear_solver", "absolute_tolerance"],
+        )
+        linear_solver_relative_tolerance = get_attribute_from_instance_list(
+            input_params.models,
+            Solid,
+            ["heat_equation_solver", "linear_solver", "relative_tolerance"],
+        )
+        if linear_solver_absolute_tolerance:
+            translated["heatEquationSolver"]["linearSolver"][
+                "absoluteTolerance"
+            ] = linear_solver_absolute_tolerance
+        if linear_solver_relative_tolerance:
+            translated["heatEquationSolver"]["linearSolver"][
+                "relativeTolerance"
+            ] = linear_solver_relative_tolerance
+
+        volume_zones = translated.get("volumeZones", {})
+        volume_zones.update(
+            translate_setting_and_apply_to_all_entities(
+                input_params.models,
+                Solid,
+                heat_transfer_volume_zone_translator,
+                to_list=False,
+                entity_injection_func=get_solid_zone_boundaries,
+                entity_injection_solid_zone_boundaries=solid_zone_boundaries,
+            )
+        )
+        translated["volumeZones"] = volume_zones
+
+    ##:: Step 3: Get boundaries (to be run after volume zones are initialized)
+    # pylint: disable=duplicate-code
+    translated["boundaries"] = translate_setting_and_apply_to_all_entities(
+        input_params.models,
+        (
+            Wall,
+            SlipWall,
+            Freestream,
+            Outflow,
+            Inflow,
+            Periodic,
+            SymmetryPlane,
+        ),
+        boundary_spec_translator,
+        to_list=False,
+        entity_injection_func=boundary_entity_info_serializer,
+        pass_translated_setting_to_entity_injection=True,
+        custom_output_dict_entries=True,
+        translation_func_op_acousitc_to_static_pressure_ratio=op_acousitc_to_static_pressure_ratio,
+        entity_injection_solid_zone_boundaries=solid_zone_boundaries,
+    )
+
+    ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
+
+    translated = translate_output(input_params, translated)
 
     ##:: Step 11: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:

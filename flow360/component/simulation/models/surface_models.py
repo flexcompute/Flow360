@@ -117,7 +117,6 @@ class Wall(BoundaryBase):
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
     use_wall_function: bool = pd.Field(False)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
-    velocity_type: Literal["absolute", "relative"] = pd.Field("relative")
     heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(None)
 
 
@@ -127,7 +126,6 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     name: Optional[str] = pd.Field(None)
     type: Literal["Freestream"] = pd.Field("Freestream", frozen=True)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
-    velocity_type: Literal["absolute", "relative"] = pd.Field("relative")
     entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 

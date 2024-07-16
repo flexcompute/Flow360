@@ -30,9 +30,16 @@ from flow360.component.simulation.unit_system import SI_unit_system
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
+from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
+    create_conjugate_heat_transfer_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
+)
+from tests.simulation.translator.utils.vortex_propagation_generator import (
+    create_periodic_euler_vortex_param,
+    create_vortex_propagation_param,
 )
 from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     create_steady_airplane_param,
@@ -121,14 +128,14 @@ def get_om6Wing_tutorial_param():
     return param
 
 
-def translate_and_compare(param, mesh_unit, ref_json_file: str):
+def translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10):
     translated = get_solver_json(param, mesh_unit=mesh_unit)
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     print(">>> translated = ", translated)
     print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
     print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(ref_dict, translated)
+    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
@@ -190,3 +197,24 @@ def test_porous_media(
 def test_actuator_disk_translation(actuator_disk_create_param):
     param = actuator_disk_create_param
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")
+
+
+def test_conjugate_heat_transfer(
+    create_conjugate_heat_transfer_param,
+):
+    param = create_conjugate_heat_transfer_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_CHT_three_cylinders.json", atol=1e-6
+    )
+
+
+def test_vortex_propagation(create_vortex_propagation_param):
+    param = create_vortex_propagation_param
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_vortex_propagation.json")
+
+
+def test_periodic_euler_vortex(create_periodic_euler_vortex_param):
+    param = create_periodic_euler_vortex_param
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_periodic_euler_vortex.json"
+    )

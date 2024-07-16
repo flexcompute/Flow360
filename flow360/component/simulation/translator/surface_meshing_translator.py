@@ -139,7 +139,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         input_params.meshing.refinements,
         SurfaceRefinement,
         translation_func=SurfaceRefinement_to_faces,
-        global_max_edge_length=global_max_edge_length,
+        translation_func_global_max_edge_length=global_max_edge_length,
     )
     if face_config != {}:
         translated["faces"] = face_config

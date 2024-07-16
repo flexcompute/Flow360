@@ -34,14 +34,14 @@ class Sutherland(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    reference_viscosity: ViscosityType.Positive = pd.Field()
+    reference_viscosity: ViscosityType.NonNegative = pd.Field()
     reference_temperature: TemperatureType.Positive = pd.Field()
     effective_temperature: TemperatureType.Positive = pd.Field()
 
     @pd.validate_call
     def get_dynamic_viscosity(
         self, temperature: TemperatureType.Positive
-    ) -> ViscosityType.Positive:
+    ) -> ViscosityType.NonNegative:
         """dynamic viscosity"""
         return (
             self.reference_viscosity
@@ -59,7 +59,7 @@ class Air(MaterialBase):
 
     type: Literal["air"] = pd.Field("air", frozen=True)
     name: str = pd.Field("air")
-    dynamic_viscosity: Union[Sutherland, ViscosityType.Positive] = pd.Field(
+    dynamic_viscosity: Union[Sutherland, ViscosityType.NonNegative] = pd.Field(
         Sutherland(
             reference_viscosity=1.716e-5 * u.Pa * u.s,
             reference_temperature=273.15 * u.K,
@@ -94,7 +94,7 @@ class Air(MaterialBase):
     @pd.validate_call
     def get_dynamic_viscosity(
         self, temperature: TemperatureType.Positive
-    ) -> ViscosityType.Positive:
+    ) -> ViscosityType.NonNegative:
         if isinstance(self.dynamic_viscosity, Sutherland):
             return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
         return self.dynamic_viscosity
