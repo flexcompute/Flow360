@@ -14,6 +14,7 @@ import pydantic.v1 as pd
 from typing_extensions import Literal
 
 from flow360 import units
+from flow360.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
@@ -476,6 +477,9 @@ class Geometry(Flow360BaseModel):
     ##Note: moment_length does not allow negative components I failed to enforce that here after attempts
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
+
+    if Flags.beta_features():
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
