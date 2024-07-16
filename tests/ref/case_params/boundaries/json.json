@@ -1,14 +1,12 @@
 {
     "fluid/ fuselage": {
-        "type": "NoSlipWall",
-        "velocityType": "relative"
+        "type": "NoSlipWall"
     },
     "fluid/leftWing": {
         "Temperature": 1.0,
         "type": "SolidIsothermalWall"
     },
     "fluid/rightWing": {
-        "type": "NoSlipWall",
-        "velocityType": "relative"
+        "type": "NoSlipWall"
     }
 }

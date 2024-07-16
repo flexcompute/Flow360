@@ -385,7 +385,6 @@ class _IsoSurfaceOutput(fl.IsoSurfaceOutput):
 
 
 class _Boundaries(fl.Boundaries):
-
     class SchemaConfig(Flow360BaseModel.SchemaConfig):
         optional_objects = ["anyOf/properties/turbulenceQuantities"]
         field_properties = {

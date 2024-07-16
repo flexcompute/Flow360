@@ -24,13 +24,11 @@
         0.0008162876014170267,
         0.0016325752028340534,
         0.0024488628042510802
-      ],
-      "velocityType": "relative"
+      ]
     },
     "3": {
       "type": "Freestream",
-      "name": "freestream",
-      "velocityType": "relative"
+      "name": "freestream"
     }
   },
   "timeStepping": {
