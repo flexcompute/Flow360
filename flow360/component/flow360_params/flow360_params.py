@@ -1390,6 +1390,9 @@ class GeometryLegacy(Geometry, LegacyModel):
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 
+    if Flags.beta_features():
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
+
     def update_model(self) -> Flow360BaseModel:
         model = {
             "momentCenter": self.moment_center,
