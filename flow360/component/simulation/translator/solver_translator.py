@@ -512,9 +512,10 @@ def get_solid_zone_boundaries(volume, solid_zone_boundaries: set):
     else:
         raise Flow360TranslationError(
             f"boundary_name is required but not found in"
-            f"`{volume.__name__}` instances. \n[For developers]: This error message should not appear."
+            f"`{volume.__name__}` instances in Solid model. \n[For developers]: This error message should not appear."
             "SimulationParams should have caught this!!!",
             input_value=volume,
+            location=["models"],
         )
 
     return {}
