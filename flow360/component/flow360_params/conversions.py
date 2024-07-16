@@ -238,7 +238,9 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         base_temperature = get_base_temperature()
         base_length = get_base_length()
 
-        base_thermal_conductivity = base_density * base_velocity**3 * base_length / base_temperature
+        base_thermal_conductivity = (
+            base_density * base_velocity**3 * base_length / base_temperature
+        )
 
         return base_thermal_conductivity
 

@@ -500,7 +500,9 @@ class MonitorsResultModel(ResultTarGZModel):
                         self._monitor_names.append(name)
                         self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
                         # pylint: disable=protected-access
-                        self._monitors[name]._download_method = (
+                        self._monitors[
+                            name
+                        ]._download_method = (
                             self._download_method
                         )  # pylint: disable=protected-access
 
