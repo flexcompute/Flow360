@@ -503,6 +503,9 @@ class Geometry(Flow360BaseModel):
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
 
+    if Flags.beta_features():
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
+
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
         """
