@@ -4,7 +4,7 @@ Turbulence quantities parameters
 
 # pylint: disable=unused-import
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, Annotated
 
 import pydantic as pd
 
@@ -169,22 +169,25 @@ class TurbulentViscosityRatioAndTurbulentLengthScale(TurbulentViscosityRatio, Tu
 # pylint: enable=missing-class-docstring
 # pylint: disable=duplicate-code
 
-TurbulenceQuantitiesType = Union[
-    TurbulentViscosityRatio,
-    TurbulentKineticEnergy,
-    TurbulentIntensity,
-    TurbulentLengthScale,
-    ModifiedTurbulentViscosityRatio,
-    ModifiedTurbulentViscosity,
-    SpecificDissipationRateAndTurbulentKineticEnergy,
-    TurbulentViscosityRatioAndTurbulentKineticEnergy,
-    TurbulentLengthScaleAndTurbulentKineticEnergy,
-    TurbulentIntensityAndSpecificDissipationRate,
-    TurbulentIntensityAndTurbulentViscosityRatio,
-    TurbulentIntensityAndTurbulentLengthScale,
-    SpecificDissipationRateAndTurbulentViscosityRatio,
-    SpecificDissipationRateAndTurbulentLengthScale,
-    TurbulentViscosityRatioAndTurbulentLengthScale,
+TurbulenceQuantitiesType = Annotated[
+    Union[
+        TurbulentViscosityRatio,
+        TurbulentKineticEnergy,
+        TurbulentIntensity,
+        TurbulentLengthScale,
+        ModifiedTurbulentViscosityRatio,
+        ModifiedTurbulentViscosity,
+        SpecificDissipationRateAndTurbulentKineticEnergy,
+        TurbulentViscosityRatioAndTurbulentKineticEnergy,
+        TurbulentLengthScaleAndTurbulentKineticEnergy,
+        TurbulentIntensityAndSpecificDissipationRate,
+        TurbulentIntensityAndTurbulentViscosityRatio,
+        TurbulentIntensityAndTurbulentLengthScale,
+        SpecificDissipationRateAndTurbulentViscosityRatio,
+        SpecificDissipationRateAndTurbulentLengthScale,
+        TurbulentViscosityRatioAndTurbulentLengthScale,
+    ],
+    pd.Field(discriminator="type_name"),
 ]
 
 
