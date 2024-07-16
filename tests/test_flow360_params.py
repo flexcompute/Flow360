@@ -179,7 +179,6 @@ def test_update_from_multiple_files():
     assert params
 
     to_file_from_file_test(params)
-    print(params)
 
     compare_to_ref(params, "ref/case_params/params.yaml")
     compare_to_ref(params, "ref/case_params/params.json", content_only=True)

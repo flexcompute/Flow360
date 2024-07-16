@@ -117,7 +117,6 @@ def test_case_boundary():
                 }
                 """
             )
-            print(param)
 
         param = Flow360Params.parse_raw(
             """

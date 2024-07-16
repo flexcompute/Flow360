@@ -2,14 +2,12 @@ boundaries:
     '1':
         name: wing
         type: NoSlipWall
-        velocityType: relative
     '2':
         name: symmetry
         type: SlipWall
     '3':
         name: freestream
         type: Freestream
-        velocityType: relative
 freestream:
     alphaAngle: 3.06
     betaAngle: 0.0
@@ -21,7 +19,7 @@ geometry:
     refArea:
         units: 2*m**2
         value: 1.0
-hash: a53580abf4c987dea96533b79558f1d65d26e33fbe9a200e2e163ec2be23c318
+hash: 3afed312c82678a3ccb35e19f97304a2d753fbd3d9b0e8c2caac495d81325468
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10

@@ -17,7 +17,6 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_initial_condition():
-
     ic = ExpressionInitialCondition(rho="x*y", u="x+y", v="x-y", w="z+x+y", p="x/y")
     assert ic
     assert ic.type == "expression"
