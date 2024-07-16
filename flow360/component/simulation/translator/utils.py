@@ -173,13 +173,9 @@ def get_attribute_from_instance_list(
                     continue
 
                 # Route 2: Allowed to look into non-empty-entity instances
-                default_value = obj.model_fields[attribute_name].default
-                field_value = getattr(obj, attribute_name)
-                is_last_item = _is_last_of_type(obj_list, obj)
-
-                if (field_value == default_value) and (is_last_item is False):
-                    # We skip defaults as much as possible
-                    continue
+                # Then we return the first non-None value.
+                # Previously we return the value that is non-default.
+                # But this is deemed not intuitive and very hard to implement.
                 return getattr(obj, attribute_name)
     return None
 
