@@ -142,20 +142,6 @@ def has_instance_in_list(obj_list: list, class_type):
     return False
 
 
-def _is_last_of_type(lst, obj):
-    current_type = type(obj)
-    last_index = -1
-
-    for i, item in enumerate(lst):
-        if is_exact_instance(item, current_type):
-            last_index = i
-
-    if last_index == -1:
-        return False  # The type of obj does not exist in the list
-
-    return lst[last_index] == obj
-
-
 def get_attribute_from_instance_list(
     obj_list: list, class_type, attribute_name: str, only_find_when_entities_none: bool = False
 ):
