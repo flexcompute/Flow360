@@ -73,9 +73,6 @@ class NoSlipWall(Boundary):
 
     type: Literal["NoSlipWall"] = pd.Field("NoSlipWall", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
-        default="relative", alias="velocityType"
-    )
 
     _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
@@ -97,9 +94,6 @@ class FreestreamBoundary(BoundaryWithTurbulenceQuantities):
 
     type: Literal["Freestream"] = pd.Field("Freestream", const=True)
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
-        default="relative", alias="velocityType"
-    )
 
     _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
@@ -222,9 +216,6 @@ class WallFunction(Boundary):
     type: Literal["WallFunction"] = pd.Field("WallFunction", const=True)
 
     velocity: Optional[BoundaryVelocityType] = pd.Field(alias="Velocity")
-    velocity_type: Optional[Literal["absolute", "relative"]] = pd.Field(
-        default="relative", alias="velocityType"
-    )
 
     _processed_velocity = pd.validator("velocity", allow_reuse=True)(process_expressions)
 
