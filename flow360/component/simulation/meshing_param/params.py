@@ -12,9 +12,12 @@ from flow360.component.simulation.meshing_param.face_params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    AxisymmetricRefinement,
     RotationCylinder,
+    UniformRefinement,
     VolumeRefinementTypes,
 )
+from flow360.component.simulation.primitives import Cylinder
 
 RefinementTypes = Annotated[
     Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
@@ -98,7 +101,7 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_volume_zones_has_farfied(cls, v) -> Self:
+    def _check_volume_zones_has_farfied(cls, v):
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
@@ -107,3 +110,48 @@ class MeshingParams(Flow360BaseModel):
         if not has_farfield:
             raise ValueError("AutomatedFarfield is required in volume_zones.")
         return v
+
+    @pd.model_validator(mode="after")
+    def _check_no_reused_cylinder(self) -> Self:
+        """
+        Check that the RoatatoinCylinder, AxisymmetricRefinement, and UniformRefinement
+        do not share the same cylinder.
+        """
+
+        class CylinderUsageMap(dict):
+            """A customized dict to store the cylinder name and its usage."""
+
+            def __setitem__(self, key, value):
+                if key in self:
+                    if self[key] != value:
+                        raise ValueError(
+                            f"The same cylinder named `{key}` is used in both {self[key]} and {value}."
+                        )
+                    raise ValueError(
+                        f"The cylinder named `{key}` is used multiple times in {value}."
+                    )
+                super().__setitem__(key, value)
+
+        cylinder_name_to_usage_map = CylinderUsageMap()
+        for volume_zone in self.volume_zones if self.volume_zones is not None else []:
+            if isinstance(volume_zone, RotationCylinder):
+                # pylint: disable=protected-access
+                for cylinder in [
+                    item
+                    for item in volume_zone.entities._get_expanded_entities()
+                    if isinstance(item, Cylinder)
+                ]:
+                    cylinder_name_to_usage_map[cylinder.name] = RotationCylinder.model_fields[
+                        "type"
+                    ].default
+
+        for refinement in self.refinements if self.refinements is not None else []:
+            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+                # pylint: disable=protected-access
+                for cylinder in [
+                    item
+                    for item in refinement.entities._get_expanded_entities()
+                    if isinstance(item, Cylinder)
+                ]:
+                    cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type
+        return self
