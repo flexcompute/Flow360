@@ -149,7 +149,7 @@ class ForcePerArea(Flow360BaseModel):
     # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
     @classmethod
-    def check_len(cls, values):
+    def validate_consistent_array_length(cls, values):
         radius, thrust, circumferential = (
             values.get("radius"),
             values.get("thrust"),
@@ -157,10 +157,8 @@ class ForcePerArea(Flow360BaseModel):
         )
         if len(radius) != len(thrust) or len(radius) != len(circumferential):
             raise ValueError(
-                f"length of radius, thrust, circumferential must be the same, \
-                but got: len(radius)={len(radius)}, \
-                         len(thrust)={len(thrust)}, \
-                         len(circumferential)={len(circumferential)}"
+                "length of radius, thrust, circumferential must be the same, but got: "
+                + f"len(radius)={len(radius)}, len(thrust)={len(thrust)}, len(circumferential)={len(circumferential)}"
             )
 
         return values

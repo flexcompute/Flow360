@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
@@ -22,10 +24,22 @@ def test_actuator_disk():
         ad = ActuatorDisk(volumes=[my_cylinder_1], force_per_area=fpa)
         assert ad
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "length of radius, thrust, circumferential must be the same, but got: "
+                + "len(radius)=3, len(thrust)=2, len(circumferential)=2"
+            ),
+        ):
             fpa = ForcePerArea(radius=[0, 1, 3], thrust=[1, 1], circumferential=[1, 1])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "length of radius, thrust, circumferential must be the same, but got: "
+            + "len(radius)=3, len(thrust)=2, len(circumferential)=2"
+        ),
+    ):
         fpa = ForcePerArea(
             radius=[0, 1, 3] * u.m, thrust=[1, 1] * u.Pa, circumferential=[1, 1] * u.Pa
         )
