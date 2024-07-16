@@ -45,9 +45,9 @@ class DataWithUnitsConstrained(pd.BaseModel):
     v: VelocityType.NonNegative = pd.Field()
     A: AreaType.Positive = pd.Field()
     F: ForceType.NonPositive = pd.Field()
-    p: Union[
-        PressureType.Constrained(ge=5, lt=9), PressureType.Constrained(ge=10, lt=12)
-    ] = pd.Field()
+    p: Union[PressureType.Constrained(ge=5, lt=9), PressureType.Constrained(ge=10, lt=12)] = (
+        pd.Field()
+    )
     r: DensityType = pd.Field()
     mu: ViscosityType.Constrained(ge=2) = pd.Field()
     omega: AngularVelocityType.NonNegative = pd.Field()
