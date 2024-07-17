@@ -22,6 +22,21 @@ from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
 from .volume_zones import HeatTransferVolumeZone
 
 
+def _ignore_velocity_type_in_boundaries(values):
+    """values here is actually json dict."""
+    for obj in values.values():
+
+        if "velocityType" in obj:
+            bc_type = obj.get("type", "")
+            log.warning(
+                f"Specifying velocityType for boundary condition {bc_type} is no longer supported."
+                "The boundary velocity type must now always be prescribed relative to to the inertial reference frame."
+            )
+        if isinstance(obj, dict):
+            obj.pop("velocityType", None)
+    return values
+
+
 def _check_tri_quad_boundaries(values):
     boundaries = values.get("boundaries")
     boundary_names = []
