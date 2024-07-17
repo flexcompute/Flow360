@@ -1,23 +1,18 @@
 {
     "boundaries": {
         "1": {
-            "name": "wing",
-            "type": "WallFunction",
-            "velocityType": "relative"
+            "type": "WallFunction"
         },
         "2": {
-            "name": "symmetry",
             "type": "SlipWall"
         },
         "3": {
-            "name": "freestream",
-            "type": "Freestream",
-            "velocityType": "relative"
+            "type": "Freestream"
         }
     },
     "freestream": {
         "Mach": 0.84,
-        "Reynolds": 14600000.0,
+        "muRef": 5.326121165140212e-08,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
         "betaAngle": 0.0
@@ -63,17 +58,17 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "freestream": {
+            "1": {
                 "outputFields": [
                     "nuHat"
                 ]
             },
-            "symmetry": {
+            "2": {
                 "outputFields": [
                     "nuHat"
                 ]
             },
-            "wing": {
+            "3": {
                 "outputFields": [
                     "nuHat"
                 ]
@@ -105,8 +100,7 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
-            "modelType": "SpalartAllmarasConsts"
+            "C_d": 8.0
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
