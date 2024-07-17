@@ -747,6 +747,21 @@ class UserDefinedField(Flow360BaseModel):
     _processed_expression = pd.validator("expression", allow_reuse=True)(process_expressions)
 
 
+class UserDefinedFieldLegacy(LegacyModel):
+    """Variable that can be used as output variables"""
+
+    name: str = pd.Field()
+    expression: str = pd.Field()
+
+    def update_model(self):
+        model = {
+            "name": self.name,
+            "expression": self.expression,
+        }
+
+        return UserDefinedField.parse_obj(model)
+
+
 # Legacy models for Flow360 updater, do not expose
 
 
