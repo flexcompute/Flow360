@@ -102,7 +102,7 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityList[GenericVolume, str] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume] = pd.Field(alias="volumes")
 
     material: SolidMaterialTypes = pd.Field()
 
@@ -236,11 +236,11 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume, Cylinder] = pd.Field(alias="volumes")
 
     # TODO: Add test for each of the spec specification.
     spec: Union[StringExpression, FromUserDefinedDynamics, AngularVelocityType] = pd.Field()
-    parent_volume: Optional[Union[GenericVolume, Cylinder, str]] = pd.Field(None)
+    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(None)
 
 
 class PorousMedium(Flow360BaseModel):
@@ -248,7 +248,7 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: Optional[EntityList[GenericVolume, Box, str]] = pd.Field(None, alias="volumes")
+    entities: Optional[EntityList[GenericVolume, Box]] = pd.Field(None, alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
