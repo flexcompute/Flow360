@@ -259,7 +259,6 @@ def _has_dimensions_validator(value, dim):
     """
     Checks if value has expected dimension and raises TypeError
     """
-    print("\n>>> value = ", value, " dim = ", dim)
     if not _has_dimensions(value, dim):
         raise TypeError(f"arg '{value}' does not match {dim}")
     return value
