@@ -25,10 +25,12 @@ from .volume_zones import HeatTransferVolumeZone
 def _ignore_velocity_type_in_boundaries(values):
     """values here is actually json dict."""
     for boundary_name, obj in values.items():
+
         if "velocityType" in obj:
+            bcType = obj.get("type", "")
             log.warning(
-                f"In {boundary_name}: 'velocityType' is no longer supported and will be ignored."
-                "Inertial frame velocity is used."
+                f"Specifying velocityType for boundary condition {bcType} is no longer supported."
+                "The boundary velocity type must now always be prescribed relative to to the inertial reference frame."
             )
         if isinstance(obj, dict):
             obj.pop("velocityType", None)
