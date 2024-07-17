@@ -4,7 +4,7 @@ Turbulence quantities parameters
 
 # pylint: disable=unused-import
 from abc import ABCMeta
-from typing import Literal, Optional, Union, Annotated
+from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
 
