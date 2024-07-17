@@ -1491,12 +1491,18 @@ class GeometryLegacy(Geometry, LegacyModel):
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 
+    if Flags.beta_features():
+        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
+
     def update_model(self) -> Flow360BaseModel:
         model = {
             "momentCenter": self.moment_center,
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
+        if Flags.beta_features():
+            model.update({"decomposedMesh": self.decomposed_mesh})
+
         # pylint: disable=unsubscriptable-object
         if self.comments is not None and self.comments.get("meshUnit") is not None:
             unit = u.unyt_quantity(1, self.comments["meshUnit"])
