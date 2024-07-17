@@ -125,6 +125,7 @@ from .validations import (
     _check_output_fields,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
+    _ignore_velocity_type_in_boundaries,
 )
 from .volume_zones import (
     FluidDynamicsVolumeZone,
@@ -404,6 +405,7 @@ class Boundaries(Flow360SortableBaseModel):
         ValidationError
             When boundary is incorrect
         """
+        values = _ignore_velocity_type_in_boundaries(values)
         return _self_named_property_validator(
             values, _GenericBoundaryWrapper, msg="is not any of supported boundary types."
         )

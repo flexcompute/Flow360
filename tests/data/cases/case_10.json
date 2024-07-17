@@ -68,7 +68,8 @@
    },
    "boundaries": {
       "stationaryField/farfield": {
-         "type": "Freestream"
+         "type": "Freestream", 
+         "velocityType": "relative"
       },
       "stationaryField/rotationInterface": {
          "type": "SlidingInterface"
