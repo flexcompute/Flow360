@@ -27,7 +27,8 @@ def _ignore_velocity_type_in_boundaries(values):
     for boundary_name, obj in values.items():
         if "velocityType" in obj:
             log.warning(
-                f"In {boundary_name}: 'velocityType' is no longer supported and will be ignored. Inertial frame velocity is used."
+                f"In {boundary_name}: 'velocityType' is no longer supported and will be ignored."
+                "Inertial frame velocity is used."
             )
         if isinstance(obj, dict):
             obj.pop("velocityType", None)
