@@ -1,55 +1,81 @@
 {
-    "geometry" : {
-        "refArea" : 1.15315084119231,
-        "momentCenter" : [0.0, 0.0, 0.0],
-        "momentLength" : [1.47602, 0.801672958512342, 1.47602]
+    "geometry": {
+        "refArea": 1.15315084119231,
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.47602,
+            0.801672958512342,
+            1.47602
+        ]
     },
-    "volumeOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "outputFields": ["primitiveVars", "Mach"]
+    "volumeOutput": {
+        "outputFormat": "tecplot",
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Mach",
+            "hmmm"
+        ]
     },
-    "surfaceOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "outputFields": ["primitiveVars", "Cp", "Cf"]
+    "surfaceOutput": {
+        "outputFormat": "tecplot",
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Cp",
+            "Cf",
+            "uhh"
+        ]
     },
-    "navierStokesSolver" : {
-        "absoluteTolerance" : 1e-10,
-        "kappaMUSCL" : -1.0
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "kappaMUSCL": -1.0
     },
-    "turbulenceModelSolver" : {
-        "modelType" : "SpalartAllmaras",
-        "absoluteTolerance" : 1e-8
+    "turbulenceModelSolver": {
+        "modelType": "SpalartAllmaras",
+        "absoluteTolerance": 1e-8
     },
-    "freestream" :
-    {
-        "Reynolds" : 14.6e6,
-        "Mach" : 0.84,
-        "Temperature" : 288.15,
-        "alphaAngle" : 3.06,
-        "betaAngle" : 0.0
+    "freestream": {
+        "Reynolds": 14.6e6,
+        "Mach": 0.84,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
     },
-    "boundaries" : {
-        "1" : {
-		    "type" : "NoSlipWall",
-            "name" : "wing"
-		},
-		"2" : {
-			"type" : "SlipWall",
-            "name" : "symmetry"
-		},
-		"3" : {
-			"type" : "Freestream",
-            "name" : "freestream"
-		}
-    },
-    "timeStepping" : {                                                              
-        "maxPseudoSteps" : 500,
-        "CFL" : {                                                                   
-            "initial" : 5,                                                          
-            "final": 200,                                                           
-            "rampSteps" : 40                                                        
+    "boundaries": {
+        "1": {
+            "type": "NoSlipWall",
+            "name": "wing"
+        },
+        "2": {
+            "type": "SlipWall",
+            "name": "symmetry"
+        },
+        "3": {
+            "type": "Freestream",
+            "name": "freestream"
         }
-    }
+    },
+    "timeStepping": {
+        "maxPseudoSteps": 500,
+        "CFL": {
+            "initial": 5,
+            "final": 200,
+            "rampSteps": 40
+        }
+    },
+    "userDefinedFields": [
+        {
+            "name": "uhh",
+            "expression": "sin(0.2)+primitiveVars[1]"
+        },
+        {
+            "name": "hmmm",
+            "expression": "cos(0.2)+Cp"
+        }
+    ]
 }

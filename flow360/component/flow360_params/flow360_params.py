@@ -56,6 +56,7 @@ from .flow360_output import (
     SurfaceOutput,
     SurfaceOutputLegacy,
     UserDefinedField,
+    UserDefinedFieldLegacy,
     VolumeOutput,
     VolumeOutputLegacy,
 )
@@ -1913,6 +1914,10 @@ class Flow360ParamsLegacy(LegacyModel):
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
+    user_defined_fields: Optional[List[UserDefinedFieldLegacy]] = pd.Field(
+        alias="userDefinedFields"
+    )
+
     def _has_key(self, target, model_dict: dict):
         for key, value in model_dict.items():
             if key == target:
@@ -1996,6 +2001,7 @@ class Flow360ParamsLegacy(LegacyModel):
                     "iso_surface_output": try_update(self.iso_surface_output),
                     "monitor_output": try_update(self.monitor_output),
                     "aeroacoustic_output": self.aeroacoustic_output,
+                    "user_defined_fields": try_update(self.user_defined_fields),
                 }
             )
 
