@@ -33,6 +33,9 @@ from tests.simulation.translator.utils.actuator_disk_param_generator import (
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
+from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
+    create_om6wing_wall_model_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
@@ -52,11 +55,6 @@ from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator
     cylinder_inner,
     cylinder_middle,
 )
-
-from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
-    create_om6wing_wall_model_param,
-)
-
 from tests.utils import compare_values
 
 
