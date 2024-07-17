@@ -52,6 +52,11 @@ from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator
     cylinder_inner,
     cylinder_middle,
 )
+
+from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
+    create_om6wing_wall_model_param,
+)
+
 from tests.utils import compare_values
 
 
@@ -217,4 +222,11 @@ def test_periodic_euler_vortex(create_periodic_euler_vortex_param):
     param = create_periodic_euler_vortex_param
     translate_and_compare(
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_periodic_euler_vortex.json"
+    )
+
+
+def test_om6wing_wall_model(create_om6wing_wall_model_param):
+    param = create_om6wing_wall_model_param
+    translate_and_compare(
+        param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6wing_wall_model.json", atol=1e-12
     )
