@@ -6,14 +6,7 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.flow360_params import (
-    FreestreamFromMach,
-    FreestreamFromMachReynolds,
-    FreestreamFromVelocity,
-    ZeroFreestream,
-    ZeroFreestreamFromVelocity,
-)
-from tests.utils import to_file_from_file_test
+from flow360.component.flow360_params.flow360_params import FreestreamFromVelocity
 
 assertions = unittest.TestCase("__init__")
 
