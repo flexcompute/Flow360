@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "24.2.4",
+    "version": "24.2.5",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -157,5 +157,5 @@
         },
         "modelType": "Compressible"
     },
-    "hash": "0540ccd71a11ab1a4537911cbf573d56006a46ead1e84c07370438f7c1412a28"
+    "hash": "248ca6b263206006e818457d2ae31ab8d2b4d1ff8c8bb2ffe4fc67855efaaa83"
 }

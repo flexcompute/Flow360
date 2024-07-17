@@ -1396,12 +1396,6 @@ class GeometryLegacy(Geometry, LegacyModel):
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if self.comments is not None and self.comments.get("meshUnit") is not None:
-            unit = u.unyt_quantity(1, self.comments["meshUnit"])
-            model["meshUnit"] = unit
-            try_add_unit(model, "momentCenter", model["meshUnit"])
-            try_add_unit(model, "momentLength", model["meshUnit"])
-            try_add_unit(model, "refArea", model["meshUnit"] ** 2)
 
         return Geometry.parse_obj(model)
 
@@ -1477,80 +1471,20 @@ class FreestreamLegacy(LegacyModel):
         try_set(model["field"], "turbulenceQuantities", self.turbulence_quantities)
 
         # Set velocity
-        if self.comments is not None:
-            if self.comments.get("freestreamMeterPerSecond") is not None:
-                # pylint: disable=no-member
-                velocity = self.comments["freestreamMeterPerSecond"] * u.m / u.s
-                try_set(model["field"], "velocity", velocity)
-            elif (
-                self.comments.get("speedOfSoundMeterPerSecond") is not None
-                and self.Mach is not None
-            ):
-                # pylint: disable=no-member
-                velocity = self.comments["speedOfSoundMeterPerSecond"] * self.Mach * u.m / u.s
-                try_set(model["field"], "velocity", velocity)
+        try_set(model["field"], "Reynolds", self.Reynolds)
+        try_set(model["field"], "muRef", self.mu_ref)
+        try_set(model["field"], "temperature", self.temperature)
+        try_set(model["field"], "Mach", self.Mach)
+        try_set(model["field"], "MachRef", self.Mach_Ref)
 
-            # Set velocity_ref
-            velocity = model["field"].get("velocity")
-            if velocity is not None:
-                if velocity == 0:
-                    model["field"]["modelType"] = "ZeroVelocity"
-                    model["field"]["velocity"] = 0
-                else:
-                    model["field"]["modelType"] = "FromVelocity"
-
-                if (
-                    self.comments.get("speedOfSoundMeterPerSecond") is not None
-                    and self.Mach_Ref is not None
-                ):
-                    velocity_ref = (
-                        # pylint: disable=no-member
-                        self.comments["speedOfSoundMeterPerSecond"]
-                        * self.Mach_Ref
-                        * u.m
-                        / u.s
-                    )
-                    try_set(model["field"], "velocityRef", velocity_ref)
-                else:
-                    model["field"]["velocityRef"] = None
+        if self.Mach is not None and self.Mach == 0:
+            model["field"]["modelType"] = "ZeroMach"
+        elif self.Reynolds is not None:
+            model["field"]["modelType"] = "FromMachReynolds"
         else:
-            try_set(model["field"], "Reynolds", self.Reynolds)
-            try_set(model["field"], "muRef", self.mu_ref)
-            try_set(model["field"], "temperature", self.temperature)
-            try_set(model["field"], "Mach", self.Mach)
-            try_set(model["field"], "MachRef", self.Mach_Ref)
-
-            if self.Mach is not None and self.Mach == 0:
-                model["field"]["modelType"] = "ZeroMach"
-            elif self.Reynolds is not None:
-                model["field"]["modelType"] = "FromMachReynolds"
-            else:
-                model["field"]["modelType"] = "FromMach"
+            model["field"]["modelType"] = "FromMach"
 
         return _FreestreamTempModel.parse_obj(model).field
-
-    def extract_fluid_properties(self) -> Optional[Flow360BaseModel]:
-        """Extract fluid properties from the freestream comments"""
-
-        class _FluidPropertiesTempModel(pd.BaseModel):
-            """Helper class used to create
-            the correct fluid properties from dict data"""
-
-            field: FluidPropertyType = pd.Field()
-
-        model = {"field": {}}
-
-        # pylint: disable=no-member
-        try_set(model["field"], "temperature", self.temperature * u.K)
-
-        if self.comments is not None and self.comments.get("densityKgPerCubicMeter"):
-            # pylint: disable=no-member
-            density = self.comments["densityKgPerCubicMeter"] * u.kg / u.m**3
-            try_set(model["field"], "density", density)
-        else:
-            return None
-
-        return _FluidPropertiesTempModel.parse_obj(model).field
 
 
 class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
@@ -1582,14 +1516,6 @@ class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
 
         steady_state = isinstance(time_step, str) and time_step == "inf"
 
-        if (
-            steady_state
-            and self.comments is not None
-            and self.comments.get("timeStepSizeInSeconds") is not None
-        ):
-            step_unit = u.unyt_quantity(self.comments["timeStepSizeInSeconds"], "s")
-            try_add_unit(model["field"], "timeStepSize", step_unit)
-
         if steady_state and model["field"]["physicalSteps"] == 1:
             model["field"]["modelType"] = "Steady"
         else:
@@ -1619,16 +1545,6 @@ class SlidingInterfaceLegacy(SlidingInterface, LegacyModel):
         try_set(model["referenceFrame"], "omegaDegrees", self.omega_degrees)
         try_set(model["referenceFrame"], "thetaRadians", self.theta_radians)
         try_set(model["referenceFrame"], "thetaDegrees", self.theta_degrees)
-
-        if self.comments is not None and self.comments.get("rpm") is not None:
-            # pylint: disable=no-member
-            omega = self.comments["rpm"] * u.rpm
-            try_set(model["referenceFrame"], "omega", omega)
-
-            if model["referenceFrame"].get("omegaRadians") is not None:
-                del model["referenceFrame"]["omegaRadians"]
-            if model["referenceFrame"].get("omegaDegrees") is not None:
-                del model["referenceFrame"]["omegaDegrees"]
 
         options = ["OmegaRadians", "OmegaDegrees", "Expression", "Dynamic", "ReferenceFrame"]
 
@@ -1762,19 +1678,23 @@ class Flow360ParamsLegacy(LegacyModel):
                     return True
         return False
 
-    def _is_web_ui_generated(self, fluid_properties, freestream):
-        return (
-            fluid_properties is not None
-            and freestream is not None
-            and isinstance(freestream, FreestreamFromVelocity)
-        )
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def check_empty_solver(cls, values):
+        """
+        Skip heatEquationSolver/transitionModelSolver if it is empty dict in JSON
+        """
+        for item in ["transitionModelSolver", "heatEquationSolver"]:
+            solver = values.get(item, {})
+            if not solver:
+                values[item] = None
+        return values
 
     def update_model(self) -> Flow360BaseModel:
         params = {}
 
         if self.freestream is not None:
             params["freestream"] = try_update(self.freestream)
-            params["fluid_properties"] = self.freestream.extract_fluid_properties()
 
         if self.bet_disks is not None:
             disks = []
@@ -1796,12 +1716,7 @@ class Flow360ParamsLegacy(LegacyModel):
         elif self.volume_zones is not None:
             params["volume_zones"] = self.volume_zones
 
-        if self._is_web_ui_generated(params.get("fluid_properties"), params.get("freestream")):
-            context = SIUnitSystem(verbose=False)
-        else:
-            context = Flow360UnitSystem(verbose=False)
-
-        with context:
+        with Flow360UnitSystem(verbose=False):
             # Freestream, fluid properties, BET disks and volume zones filled beforehand.
             params.update(
                 {
