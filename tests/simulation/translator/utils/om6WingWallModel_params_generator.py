@@ -7,25 +7,29 @@ from flow360.component.simulation.models.solver_numerics import (
     NavierStokesSolver,
     SpalartAllmaras,
 )
-from flow360.component.simulation.models.surface_models import Freestream, Wall, SlipWall
-
+from flow360.component.simulation.models.surface_models import (
+    Freestream,
+    SlipWall,
+    Wall,
+)
 from flow360.component.simulation.models.volume_models import (
     BETDisk,
     Fluid,
     NavierStokesInitialCondition,
 )
-
-from flow360.component.simulation.operating_condition import AerospaceCondition, ThermalState
+from flow360.component.simulation.operating_condition import (
+    AerospaceCondition,
+    ThermalState,
+)
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.unit_system import (
     LengthType,
-    ViscosityType,
     SI_unit_system,
+    ViscosityType,
 )
-
-from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 
 
 @pytest.fixture
