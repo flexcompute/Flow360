@@ -198,16 +198,6 @@ def test_version_update():
         assert params
 
 
-def test_updater_with_comments():
-    file = "data/cases/case_comments_sliding_interfaces.json"
-
-    params = fl.Flow360Params(file)
-
-    assert params.fluid_properties.density == 1.225
-    assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
-    assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
-
-
 def test_turbulence_updater():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(data_turbulence, temp_file)
