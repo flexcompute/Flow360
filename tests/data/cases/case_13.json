@@ -31,6 +31,87 @@
             "uhh"
         ]
     },
+    "sliceOutput": {
+        "outputFormat": "paraview",
+        "slices": [
+            {
+                "sliceName": "mid_Height",
+                "sliceNormal": [
+                    0,
+                    0,
+                    1
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0.5
+                ],
+                "outputFields": [
+                    "uhh",
+                    "Cp"
+                ]
+            }
+        ],
+        "primitiveVars": true,
+        "Mach": true,
+        "animationFrequency": 5
+    },
+    "isoSurfaceOutput": {
+        "animationFrequency": -1,
+        "outputFormat": "tecplot",
+        "isoSurfaces": {
+            "newKey": {
+                "surfaceField": "Mach",
+                "surfaceFieldMagnitude": 0.25,
+                "outputFields": [
+                    "Mach",
+                    "hmmm"
+                ]
+            }
+        }
+    },
+    "monitorOutput": {
+        "monitors": {
+            "newKey": {
+                "type": "surfaceIntegral",
+                "surfaces": [
+                    "fluid/rightWing"
+                ],
+                "outputFields": [
+                    "hmmm"
+                ]
+            },
+            "Group1": {
+                "type": "probe",
+                "monitorLocations": [
+                    [
+                        0.12,
+                        0.34,
+                        0.262
+                    ],
+                    [
+                        2,
+                        0.01,
+                        0.03
+                    ],
+                    [
+                        3,
+                        0.01,
+                        0.04
+                    ],
+                    [
+                        4,
+                        0.01,
+                        0.04
+                    ]
+                ],
+                "outputFields": [
+                    "primitiveVars",
+                    "uhh"
+                ]
+            }
+        }
+    },
     "navierStokesSolver": {
         "absoluteTolerance": 1e-10,
         "kappaMUSCL": -1.0

@@ -37,9 +37,8 @@
 	},
 	"sliceOutput": {
 		"outputFormat": "paraview",
-		"slices": [
-			{
-				"sliceName": "sliceTest",
+		"slices": {
+			"sliceTest": {
 				"sliceNormal": [
 					0,
 					1,
@@ -49,9 +48,12 @@
 					0.7165,
 					0.27772,
 					0.0179426
+				],
+				"outputFields": [
+					"aggg"
 				]
 			}
-		]
+		}
 	},
 	"navierStokesSolver": {
 		"tolerance": 1e-9,
@@ -94,5 +96,11 @@
 			"final": 100,
 			"rampSteps": 5
 		}
-	}
+	},
+	"userDefinedFields": [
+		{
+			"name": "aggg",
+			"expression": "sin(0.2)+primitiveVars[1]"
+		}
+	]
 }
