@@ -12,13 +12,11 @@
     "boundaries": {
         "3": {
             "type": "Freestream",
-            "name": "freestream",
-            "velocityType": "relative"
+            "name": "freestream"
         },
         "1": {
             "type": "NoSlipWall",
-            "name": "wing",
-            "velocityType": "relative"
+            "name": "wing"
         },
         "2": {
             "type": "SlipWall",
@@ -28,34 +26,16 @@
     "timeStepping": {
         "maxPseudoSteps": 2000,
         "orderOfAccuracy": 2,
-        "modelType": "Steady",
-        "physicalSteps": 1,
-        "timeStepSize": "inf",
         "CFL": {
             "type": "adaptive",
             "min": 0.1,
             "max": 10000.0,
             "maxRelativeChange": 1.0,
             "convergenceLimitingFactor": 0.25
-        }
-    },
-    "navierStokesSolver": {
-        "absoluteTolerance": 1e-10,
-        "relativeTolerance": 0.0,
-        "orderOfAccuracy": 2,
-        "CFLMultiplier": 1.0,
-        "updateJacobianFrequency": 4,
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "kappaMUSCL": -1.0,
-        "equationEvalFrequency": 1,
-        "numericalDissipationFactor": 1.0,
-        "limitVelocity": false,
-        "limitPressureDensity": false,
-        "linearSolver": {
-            "maxIterations": 30
         },
-        "lowMachPreconditioner": false,
-        "modelType": "Compressible"
+        "modelType": "Steady",
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
     },
     "freestream": {
         "modelType": "FromVelocity",
@@ -80,14 +60,22 @@
             "primitiveVars"
         ],
         "surfaces": {
-            "symmetry": {
-                "outputFields": [ "T", "heatFlux" ]
-            },
             "freestream": {
-                "outputFields": [ "Cp", "Mach" ]
+                "outputFields": [
+                    "Cp",
+                    "Mach"
+                ]
+            },
+            "symmetry": {
+                "outputFields": [
+                    "T",
+                    "heatFlux"
+                ]
             },
             "wing": {
-                "outputFields": [ "CfVec" ]
+                "outputFields": [
+                    "CfVec"
+                ]
             }
         }
     },
@@ -112,43 +100,61 @@
             "Cp"
         ],
         "slices": {
-            "x0": {
-                "sliceNormal": [
-                    1,
-                    0,
-                    0
-                ],
-                "sliceOrigin": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "outputFields": [
-                    "Mach"
-                ]
-            },
             "y1": {
                 "sliceNormal": [
-                    0,
-                    1,
-                    0
+                    0.0,
+                    1.0,
+                    0.0
                 ],
                 "sliceOrigin": {
                     "value": [
-                        2.0,
-                        1.0,
-                        0.0
+                        2,
+                        1,
+                        0
                     ],
                     "units": "flow360_length_unit"
                 },
                 "outputFields": [
                     "T"
                 ]
+            },
+            "x0": {
+                "sliceNormal": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "sliceOrigin": {
+                    "value": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "units": "flow360_length_unit"
+                },
+                "outputFields": [
+                    "Mach"
+                ]
             }
         }
     },
-    "hash": "a53580abf4c987dea96533b79558f1d65d26e33fbe9a200e2e163ec2be23c318"
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "CFLMultiplier": 1.0,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "kappaMUSCL": -1.0,
+        "equationEvalFrequency": 1,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "linearSolver": {
+            "maxIterations": 30
+        },
+        "modelType": "Compressible",
+        "lowMachPreconditioner": false
+    },
+    "hash": "3afed312c82678a3ccb35e19f97304a2d753fbd3d9b0e8c2caac495d81325468"
 }

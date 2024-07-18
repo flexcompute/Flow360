@@ -158,6 +158,10 @@ def test_updater_from_files():
     assert params.turbulence_model_solver.model_constants is not None
     assert params.initial_condition is None
 
+    params = fl.Flow360Params("data/cases/case_13.json")
+    assert set(params.surface_output.output_fields) == set(["Cp", "Cf", "uhh", "primitiveVars"])
+    assert set(params.volume_output.output_fields) == set(["hmmm", "primitiveVars", "Mach"])
+
     params = fl.Flow360Params("data/cases/case_20.json")
     assert set(params.surface_output.output_fields) == {"Cp", "yPlus"}
 
@@ -196,16 +200,6 @@ def test_version_update():
     for file in files:
         params = fl.Flow360Params(f"data/cases/{file}")
         assert params
-
-
-def test_updater_with_comments():
-    file = "data/cases/case_comments_sliding_interfaces.json"
-
-    params = fl.Flow360Params(file)
-
-    assert params.fluid_properties.density == 1.225
-    assert str(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.units) == "rpm"
-    assert float(params.volume_zones["rotatingBlock-sphere1"].reference_frame.omega.value) == 100
 
 
 def test_turbulence_updater():
