@@ -160,7 +160,12 @@ def test_updater_from_files():
 
     params = fl.Flow360Params("data/cases/case_13.json")
     assert set(params.surface_output.output_fields) == {"Cp", "Cf", "uhh", "primitiveVars"}
-    assert set(params.volume_output.output_fields) == {"hmmm", "primitiveVars", "Mach"}
+    assert set(params.volume_output.output_fields) == {
+        "hmmm",
+        "primitiveVars",
+        "Mach",
+        "SpalartAllmaras_DDES",
+    }
     assert set(params.slice_output.slices["mid_Height"].output_fields) == {"uhh", "Cp"}
     assert set(params.iso_surface_output.iso_surfaces["newKey"].output_fields) == {"Mach", "hmmm"}
     assert set(params.monitor_output.monitors["newKey"].output_fields) == {"hmmm"}
