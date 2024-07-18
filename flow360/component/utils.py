@@ -62,7 +62,7 @@ def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
     Checks if id is valid
     """
     if valid_prefixes is None:
-        valid_prefixes = ["folder-", "g-"]
+        valid_prefixes = ["folder-", "g-","geo-"]
     if id is None and allow_none:
         return
     try:
