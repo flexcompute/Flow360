@@ -5,6 +5,7 @@ Volume mesh component
 from __future__ import annotations
 
 import os.path
+import time
 from enum import Enum
 from typing import Iterator, List, Optional, Union
 
@@ -16,6 +17,7 @@ from flow360.flags import Flags
 
 from ..cloud.requests import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import (
     Flow360CloudFileError,
     Flow360FileError,
@@ -39,6 +41,7 @@ from .resource_base import (
     Flow360Resource,
     Flow360ResourceBaseModel,
     Flow360ResourceListBase,
+    Flow360Status,
     ResourceDraft,
 )
 from .types import COMMENTS
@@ -537,7 +540,9 @@ class VolumeMeshDraft(ResourceDraft):
             raise Flow360ValueError("User aborted resource submit.")
 
         if self.file_name is not None:
-            return self._submit_upload_mesh(progress_callback)
+            volume_mesh = self._submit_upload_mesh(progress_callback)
+            volume_mesh.fetch_metadata()
+            return volume_mesh
 
         if self.surface_mesh_id is not None and self.name is not None and self.params is not None:
             return self._submit_from_surface(force_submit=force_submit)
@@ -607,6 +612,26 @@ class VolumeMesh(Flow360Resource):
         returns mesh no_slip_walls
         """
         return self.info.boundaries
+
+    def fetch_metadata(self):
+        """
+        Fetch mesh metadata for SimulationParams validation
+        """
+        print("<<<<<<<<< downloading meta data")
+        # while not self.status == Flow360Status.UPLOADED:
+        #     time.sleep(10)
+        while self.status != Flow360Status.ERROR:
+            try:
+                self._download_file(
+                    "metadata/meshMetaData.json",
+                    to_file="meshMetaData.json",
+                    to_folder=".",
+                    overwrite=True,
+                    progress_callback=None,
+                )
+                break
+            except CloudFileNotFoundError:
+                time.sleep(1)
 
     # pylint: disable=too-many-arguments,R0801
     def download_file(
@@ -691,7 +716,9 @@ class VolumeMesh(Flow360Resource):
         :param mesh_id:
         :return:
         """
-        return cls(mesh_id)
+        volume_mesh = cls(mesh_id)
+        volume_mesh.fetch_metadata()
+        return volume_mesh
 
     def _get_file_extention(self):
         compression = self.info.compression
