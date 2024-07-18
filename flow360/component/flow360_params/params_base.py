@@ -98,6 +98,8 @@ def _self_named_property_validator(values: dict, validator: Type[BaseModel], msg
             continue
         try:
             values[key] = validator(v=v).v
+        except pd.ValidationError as exc:
+            raise exc
         except Exception as exc:
             raise ValueError(f"{v} (type={type(v)}) {msg}") from exc
     return values
