@@ -549,7 +549,9 @@ class LegacyMonitor(MonitorBase):
     """:class:`LegacyMonitor` class"""
 
     monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
-    output_fields: Optional[CommonOutputFields] = pd.Field(alias="outputFields", default=[])
+    output_fields: Optional[List[Union[CommonFields, str]]] = pd.Field(
+        alias="outputFields", default=[]
+    )
 
     # pylint: disable=too-few-public-methods
     class Config(Flow360BaseModel.Config):
