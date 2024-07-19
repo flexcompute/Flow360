@@ -29,7 +29,6 @@ from .utils import (
     CompressionFormat,
     MeshFileFormat,
     MeshNameParser,
-    UGRIDEndianness,
     get_mapbc_from_ugrid,
     shared_account_confirm_proceed,
     validate_type,
@@ -104,20 +103,12 @@ class SurfaceMeshDraft(ResourceDraft):
 
     def _validate(self):
         if self.geometry_id is not None:
-            self._validate_geometry_id()
+            pass
         elif self.surface_mesh_file is not None:
             self._validate_surface_mesh()
         else:
             raise Flow360ValueError(
                 "One of geometry_id and surface_mesh_file has to be given to create a surface mesh."
-            )
-
-    def _validate_geometry_id(self):
-        if self.name is None:
-            raise Flow360ValueError("Surface mesh created from geometry id must be given a name.")
-        if self.params is None:
-            raise Flow360ValueError(
-                "params must be specified if geometry_id is used to create a surface mesh."
             )
 
     def _validate_surface_mesh(self):
@@ -182,11 +173,11 @@ class SurfaceMeshDraft(ResourceDraft):
         if name is None:
             name = os.path.splitext(os.path.basename(self.surface_mesh_file))[0]
 
-        original_compression, file_name_no_compression = CompressionFormat.detect(
-            self.surface_mesh_file
-        )
-        mesh_format = MeshFileFormat.detect(file_name_no_compression)
-        endianness = UGRIDEndianness.detect(file_name_no_compression)
+        mesh_parser = MeshNameParser(self.surface_mesh_file)
+        original_compression = mesh_parser.compression
+        mesh_format = mesh_parser.format
+        endianness = mesh_parser.endianness
+        file_name_no_compression = mesh_parser.file_name_no_compression
 
         compression = (
             original_compression
@@ -199,8 +190,8 @@ class SurfaceMeshDraft(ResourceDraft):
             stem=SURFACE_MESH_NAME_STEM_V2,
             tags=self.tags,
             mesh_format=mesh_format.value,
-            endianness=endianness,
-            compression=compression,
+            endianness=endianness.value,
+            compression=compression.value,
             solver_version=self.solver_version,
         )
 
@@ -209,7 +200,9 @@ class SurfaceMeshDraft(ResourceDraft):
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
 
-        remote_file_name = f"{SURFACE_MESH_NAME_STEM_V2}{endianness}{mesh_format}{compression}"
+        remote_file_name = (
+            f"{SURFACE_MESH_NAME_STEM_V2}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        )
 
         # upload self.surface_mesh_file
         if (
@@ -395,9 +388,9 @@ class SurfaceMesh(Flow360Resource):
     @classmethod
     def create(
         cls,
-        geometry_id: str = None,
-        params: SurfaceMeshingParams = None,
-        name: str = None,
+        name: str,
+        params: SurfaceMeshingParams,
+        geometry_id: str,
         tags: List[str] = None,
         solver_version: str = None,
     ) -> SurfaceMeshDraft:
@@ -405,10 +398,12 @@ class SurfaceMesh(Flow360Resource):
 
         Parameters
         ----------
+        name : str
+            _description_
         params : SurfaceMeshingParams
             _description_
-        name : str, optional
-            _description_, by default None
+        geometry_id : str
+            _description_
         tags : List[str], optional
             _description_, by default None
         solver_version : str, optional

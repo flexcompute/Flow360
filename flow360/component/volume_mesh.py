@@ -45,6 +45,7 @@ from .types import COMMENTS
 from .utils import (
     CompressionFormat,
     MeshFileFormat,
+    MeshNameParser,
     UGRIDEndianness,
     shared_account_confirm_proceed,
     validate_type,
@@ -298,6 +299,14 @@ class VolumeMeshDraft(ResourceDraft):
                 )
             self.params = params.copy(deep=True)
 
+        if file_name is not None:
+            mesh_parser = MeshNameParser(file_name)
+            if not mesh_parser.is_valid_volume_mesh():
+                raise Flow360ValueError(
+                    f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
+                    f"Supported: [{MeshFileFormat.STL.ext()},{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
+                )
+
         if name is None and file_name is not None:
             name = os.path.splitext(os.path.basename(file_name))[0]
 
@@ -345,9 +354,11 @@ class VolumeMeshDraft(ResourceDraft):
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
-        original_compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
-        mesh_format = MeshFileFormat.detect(file_name_no_compression)
-        endianness = UGRIDEndianness.detect(file_name_no_compression)
+        mesh_parser = MeshNameParser(self.file_name)
+        mesh_format = mesh_parser.format
+        original_compression = mesh_parser.compression
+        endianness = mesh_parser.endianness
+
         if mesh_format is MeshFileFormat.CGNS:
             remote_file_name = "volumeMesh"
         else:
@@ -357,7 +368,9 @@ class VolumeMeshDraft(ResourceDraft):
             if original_compression != CompressionFormat.NONE
             else self.compress_method
         )
-        remote_file_name = f"{remote_file_name}{endianness}{mesh_format}{compression}"
+        remote_file_name = (
+            f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        )
 
         name = self.name
         if name is None:
@@ -369,8 +382,8 @@ class VolumeMeshDraft(ResourceDraft):
                 file_name=remote_file_name,
                 tags=self.tags,
                 format=mesh_format.value,
-                endianness=endianness,
-                compression=compression,
+                endianness=endianness.value,
+                compression=compression.value,
                 params=self.params,
                 solver_version=self.solver_version,
                 version=self.params.version,
@@ -381,8 +394,8 @@ class VolumeMeshDraft(ResourceDraft):
                 file_name=remote_file_name,
                 tags=self.tags,
                 format=mesh_format.value,
-                endianness=endianness,
-                compression=compression,
+                endianness=endianness.value,
+                compression=compression.value,
                 params=self.params,
                 solver_version=self.solver_version,
             )
@@ -592,12 +605,6 @@ class VolumeMesh(Flow360Resource):
         """
         return cls(mesh_id)
 
-    def _get_file_extention(self):
-        compression = self.info.compression
-        mesh_format = self.info.mesh_format
-        endianness = self.info.endianness
-        return f"{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
-
     def _remote_file_name(self):
         """
         mesh filename on cloud
@@ -605,9 +612,8 @@ class VolumeMesh(Flow360Resource):
 
         remote_file_name = None
         for file in self.get_download_file_list():
-            _, file_name_no_compression = CompressionFormat.detect(file["fileName"])
             try:
-                MeshFileFormat.detect(file_name_no_compression)
+                MeshNameParser(file["fileName"])
                 remote_file_name = file["fileName"]
             except Flow360RuntimeError:
                 continue
@@ -690,7 +696,7 @@ class VolumeMesh(Flow360Resource):
         cls,
         name: str,
         params: VolumeMeshingParams,
-        surface_mesh_id,
+        surface_mesh_id: str,
         tags: List[str] = None,
         solver_version=None,
     ) -> VolumeMeshDraft:

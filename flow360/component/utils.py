@@ -469,9 +469,31 @@ class MeshNameParser:
     """
 
     def __init__(self, input_mesh_file):
-        self.compression, self.file_name_no_compression = CompressionFormat.detect(input_mesh_file)
-        self.format = MeshFileFormat.detect(self.file_name_no_compression)
-        self.endianness = UGRIDEndianness.detect(self.file_name_no_compression)
+        self._compression, self._file_name_no_compression = CompressionFormat.detect(
+            input_mesh_file
+        )
+        self._format = MeshFileFormat.detect(self._file_name_no_compression)
+        self._endianness = UGRIDEndianness.detect(self._file_name_no_compression)
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def compression(self):
+        return self._compression
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def file_name_no_compression(self):
+        return self._file_name_no_compression
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def format(self):
+        return self._format
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def endianness(self):
+        return self._endianness
 
     # pylint: disable=missing-function-docstring
     def is_ugrid(self):
