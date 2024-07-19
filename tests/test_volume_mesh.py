@@ -8,11 +8,9 @@ from flow360.component.flow360_params.flow360_params import (
     FreestreamFromMach,
     MeshBoundary,
 )
+from flow360.component.utils import CompressionFormat, MeshFileFormat, UGRIDEndianness
 from flow360.component.volume_mesh import (
-    CompressionFormat,
-    UGRIDEndianness,
     VolumeMesh,
-    VolumeMeshFileFormat,
     VolumeMeshMeta,
     get_boundaries_from_file,
     get_no_slip_walls,

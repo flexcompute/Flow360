@@ -36,7 +36,7 @@ class NewSurfaceMeshRequest(Flow360Requests):
     tags: Optional[List[str]] = pd.Field()
     geometry_id: Optional[str] = pd.Field(alias="geometryId")
     config: Optional[str] = pd.Field()
-    mesh_format: Literal["aflr3", "cgns", "stl"] = pd.Field(alias="meshFormat")
+    mesh_format: Optional[Literal["aflr3", "cgns", "stl"]] = pd.Field(alias="meshFormat")
     endianness: Optional[Literal["little", "big"]] = pd.Field(alias="meshEndianness")
     compression: Optional[Literal["gz", "bz2", "zst"]] = pd.Field(alias="meshCompression")
     solver_version: Optional[str] = pd.Field(alias="solverVersion")
