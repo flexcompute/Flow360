@@ -500,12 +500,8 @@ class MeshNameParser:
         return self.format is MeshFileFormat.UGRID
 
     # pylint: disable=missing-function-docstring
-    def is_little_endianness(self):
-        return self.endianness is UGRIDEndianness.LITTLE
-
-    # pylint: disable=missing-function-docstring
-    def is_big_endianness(self):
-        return self.endianness is UGRIDEndianness.BIG
+    def is_compressed(self):
+        return self.compression is not CompressionFormat.NONE
 
     # pylint: disable=missing-function-docstring
     def is_valid_surface_mesh(self):

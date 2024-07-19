@@ -356,18 +356,19 @@ class VolumeMeshDraft(ResourceDraft):
 
         mesh_parser = MeshNameParser(self.file_name)
         mesh_format = mesh_parser.format
-        original_compression = mesh_parser.compression
         endianness = mesh_parser.endianness
+        original_compression = mesh_parser.compression
 
-        if mesh_format is MeshFileFormat.CGNS:
-            remote_file_name = "volumeMesh"
-        else:
-            remote_file_name = "mesh"
         compression = (
             original_compression
             if original_compression != CompressionFormat.NONE
             else self.compress_method
         )
+
+        if mesh_format is MeshFileFormat.CGNS:
+            remote_file_name = "volumeMesh"
+        else:
+            remote_file_name = "mesh"
         remote_file_name = (
             f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
         )

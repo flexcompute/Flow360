@@ -83,6 +83,7 @@ def test_mesh_name_parser_uncompressed_ugrid():
     assert parser.format == MeshFileFormat.UGRID
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid()
+    assert not parser.is_compressed()
 
 
 def test_mesh_name_parser_ascii_ugrid():
@@ -92,6 +93,7 @@ def test_mesh_name_parser_ascii_ugrid():
     assert parser.format == MeshFileFormat.UGRID
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid()
+    assert not parser.is_compressed()
 
 
 def test_mesh_name_parser_ascii_compressed_ugrid():
@@ -101,6 +103,7 @@ def test_mesh_name_parser_ascii_compressed_ugrid():
     assert parser.format == MeshFileFormat.UGRID
     assert parser.compression == CompressionFormat.ZST
     assert parser.is_ugrid()
+    assert parser.is_compressed()
 
 
 def test_mesh_name_parser_compressed_ugrid():
@@ -110,6 +113,7 @@ def test_mesh_name_parser_compressed_ugrid():
     assert parser.format == MeshFileFormat.UGRID
     assert parser.compression == CompressionFormat.BZ2
     assert parser.is_ugrid()
+    assert parser.is_compressed()
 
 
 def test_mesh_name_parser_compressed_cgns():
@@ -119,6 +123,7 @@ def test_mesh_name_parser_compressed_cgns():
     assert parser.format == MeshFileFormat.CGNS
     assert parser.compression == CompressionFormat.BZ2
     assert parser.is_ugrid() == False
+    assert parser.is_compressed()
 
 
 def test_mesh_name_parser_uncompressed_cgns():
@@ -128,6 +133,7 @@ def test_mesh_name_parser_uncompressed_cgns():
     assert parser.format == MeshFileFormat.CGNS
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid() == False
+    assert not parser.is_compressed()
 
 
 def test_mesh_name_parser_stl():
@@ -137,6 +143,7 @@ def test_mesh_name_parser_stl():
     assert parser.format == MeshFileFormat.STL
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid() == False
+    assert not parser.is_compressed()
 
 
 def test_mesh_name_parser_compressed_stl():
@@ -146,3 +153,6 @@ def test_mesh_name_parser_compressed_stl():
     assert parser.format == MeshFileFormat.STL
     assert parser.compression == CompressionFormat.BZ2
     assert parser.is_ugrid() == False
+    assert parser.is_valid_surface_mesh()
+    assert not parser.is_valid_volume_mesh()
+    assert parser.is_compressed()
