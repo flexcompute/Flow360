@@ -16,7 +16,7 @@ from flow360.component.volume_mesh import (
     get_no_slip_walls,
     validate_cgns,
 )
-from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
+from flow360.exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValueError
 from tests.data.volume_mesh_list import volume_mesh_list_raw
 
 from .utils import compare_to_ref, to_file_from_file_test
@@ -108,20 +108,19 @@ def test_mesh_filename_detection():
 
     for file, expected in files_correct:
         cmp, filename = CompressionFormat.detect(file)
-        mesh_format = VolumeMeshFileFormat.detect(filename)
+        mesh_format = MeshFileFormat.detect(filename)
         endianess = UGRIDEndianness.detect(filename)
         assert expected == f"{endianess.ext()}{mesh_format.ext()}{cmp.ext()}"
 
     file = "sdfdlkjd/kjsdf.cgns.ad"
     cmp, filename = CompressionFormat.detect(file)
-    with pytest.raises(Flow360RuntimeError):
-        mesh_format = VolumeMeshFileFormat.detect(filename)
+    with pytest.raises(Flow360FileError):
+        mesh_format = MeshFileFormat.detect(filename)
 
     file = "sdfdlkjd/kjsdf.ugrid"
     cmp, filename = CompressionFormat.detect(file)
-    mesh_format = VolumeMeshFileFormat.detect(filename)
-    with pytest.raises(Flow360RuntimeError):
-        endianess = UGRIDEndianness.detect(filename)
+    mesh_format = MeshFileFormat.detect(filename)
+    endianess = UGRIDEndianness.detect(filename)
 
 
 def test_volume_mesh_list_with_incorrect_data():

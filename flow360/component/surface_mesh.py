@@ -122,7 +122,7 @@ class SurfaceMeshDraft(ResourceDraft):
 
     def _validate_surface_mesh(self):
         mesh_parser = MeshNameParser(self.surface_mesh_file)
-        if mesh_parser.format not in [".stl", ".ugrid", ".cgns"]:
+        if not mesh_parser.is_valid_surface_mesh():
             raise Flow360ValueError(
                 f"Unsupported surface mesh file extensions: {mesh_parser.format}. Supported: [stl,ugrid,cgns]."
             )

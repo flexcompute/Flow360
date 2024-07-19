@@ -14,7 +14,12 @@ import zstandard as zstd
 from ..accounts_utils import Accounts
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
-from ..exceptions import Flow360RuntimeError, Flow360TypeError, Flow360ValueError
+from ..exceptions import (
+    Flow360FileError,
+    Flow360RuntimeError,
+    Flow360TypeError,
+    Flow360ValueError,
+)
 from ..log import log
 
 SUPPORTED_GEOMETRY_FILE_PATTERNS = [
@@ -378,7 +383,7 @@ class MeshFileFormat(Enum):
             return MeshFileFormat.CGNS
         if ext == MeshFileFormat.STL.ext():
             return MeshFileFormat.STL
-        raise Flow360RuntimeError(f"Unsupported file format {file}")
+        raise Flow360FileError(f"Unsupported file format {file}")
 
 
 class UGRIDEndianness(Enum):
@@ -414,6 +419,8 @@ class UGRIDEndianness(Enum):
             return UGRIDEndianness.LITTLE
         if ext == UGRIDEndianness.BIG.ext():
             return UGRIDEndianness.BIG
+        if ext == UGRIDEndianness.NONE.ext():
+            return UGRIDEndianness.NONE
         raise Flow360RuntimeError(f"Unknown endianness for file {file}")
 
 
@@ -458,17 +465,13 @@ class CompressionFormat(Enum):
 
 class MeshNameParser:
     """
-    parse a given mesh name to handle stem, endianness, format and compression
+    parse a given mesh name to handle endianness, format and compression
     """
 
     def __init__(self, input_mesh_file):
         self.compression, self.file_name_no_compression = CompressionFormat.detect(input_mesh_file)
         self.format = MeshFileFormat.detect(self.file_name_no_compression)
         self.endianness = UGRIDEndianness.detect(self.file_name_no_compression)
-
-    # pylint: disable=missing-function-docstring
-    def get_mesh_name_without_compression(self):
-        return self.file_name_no_compression
 
     # pylint: disable=missing-function-docstring
     def is_ugrid(self):
@@ -481,12 +484,6 @@ class MeshNameParser:
     # pylint: disable=missing-function-docstring
     def is_big_endianness(self):
         return self.endianness is UGRIDEndianness.BIG
-
-    # pylint: disable=missing-function-docstring
-    # def is_compressed(self):
-    #    if self.compression != "":
-    #        return True
-    #    return False
 
     # pylint: disable=missing-function-docstring
     def is_valid_surface_mesh(self):
