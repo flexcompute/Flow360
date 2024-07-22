@@ -2,7 +2,7 @@
   "$defs": {
     "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -27,15 +27,15 @@
           "type": "string"
         },
         "private_attribute_zone_boundary_names": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/$defs/UniqueItemList_str_"
-            },
-            {
-              "type": "null"
+              "$ref": "#/$defs/UniqueStringList"
             }
           ],
-          "default": null
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
         },
         "axis": {
           "properties": {
@@ -103,7 +103,7 @@
             {
               "properties": {
                 "value": {
-                  "exclusiveMinimum": 0,
+                  "minimum": 0,
                   "type": "number"
                 },
                 "units": {
@@ -184,28 +184,69 @@
     },
     "ForcePerArea": {
       "additionalProperties": false,
-      "description": ":class:`ForcePerArea` class for setting up force per area for Actuator Disk\n\nParameters\n----------\nradius : typing.List[float]\n        thrust : typing.List[float]\n        circumferential : typing.List[float]\n    \nParameters\n----------\nradius : List[float]\n    Radius of the sampled locations in grid unit\n\nthrust : List[float]\n    Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.\n    It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2\n\ncircumferential : List[float]\n    Force per area in the circumferential direction, positive means the circumferential force follows the same\n    direction as axisThrust with the right hand rule. It is non-dimensional:\n                                                            circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2\n\nReturns\n-------\n:class:`ForcePerArea`\n    An instance of the component class ForcePerArea.\n\nExample\n-------\n>>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP\n\nTODO: Use dimensioned values",
+      "description": ":class:`ForcePerArea` class for setting up force per area for Actuator Disk\n\nParameters\n----------\nradius : <class 'flow360.component.simulation.unit_system._VectorType'>\n        thrust : <class 'flow360.component.simulation.unit_system._VectorType'>\n        circumferential : <class 'flow360.component.simulation.unit_system._VectorType'>\n    \nParameters\n----------\nradius : LengthType.Array\n    Radius of the sampled locations in grid unit\n\nthrust : PressureType.Array\n    Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.\n    It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2\n\ncircumferential : PressureType.Array\n    Force per area in the circumferential direction, positive means the circumferential force follows the same\n    direction as axisThrust with the right hand rule. It is non-dimensional:\n                                                            circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2\n\nReturns\n-------\n:class:`ForcePerArea`\n    An instance of the component class ForcePerArea.\n\nExample\n-------\n>>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP\n\nTODO: Use dimensioned values",
       "properties": {
         "radius": {
-          "items": {
-            "type": "number"
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "length",
+              "enum": [
+                "m",
+                "cm",
+                "ft",
+                "mm",
+                "inch"
+              ],
+              "type": "string"
+            }
           },
-          "title": "Radius",
-          "type": "array"
+          "title": "Radius"
         },
         "thrust": {
-          "items": {
-            "type": "number"
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "pressure",
+              "enum": [
+                "Pa",
+                "dyn/cm**2",
+                "lbf/ft**2"
+              ],
+              "type": "string"
+            }
           },
-          "title": "Thrust",
-          "type": "array"
+          "title": "Thrust"
         },
         "circumferential": {
-          "items": {
-            "type": "number"
+          "properties": {
+            "value": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "units": {
+              "dimension": "pressure",
+              "enum": [
+                "Pa",
+                "dyn/cm**2",
+                "lbf/ft**2"
+              ],
+              "type": "string"
+            }
           },
-          "title": "Circumferential",
-          "type": "array"
+          "title": "Circumferential"
         }
       },
       "required": [
@@ -216,11 +257,12 @@
       "title": "ForcePerArea",
       "type": "object"
     },
-    "UniqueItemList_str_": {
+    "UniqueStringList": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "description": "A list of string that must be unique by original name or by aliased name.\nExpect string only and we will remove the duplicate ones.\n\n\nParameters\n----------\nitems : typing.List[str] = []\n    ",
       "properties": {
         "items": {
+          "default": [],
           "items": {
             "type": "string"
           },
@@ -228,16 +270,27 @@
           "type": "array"
         }
       },
-      "required": [
-        "items"
-      ],
-      "title": "UniqueItemList[str]",
+      "title": "UniqueStringList",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Same as Flow360Param ActuatorDisks.\nNote that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['ActuatorDisk'] = ActuatorDisk\n        entities : typing.Optional[abc.EntityList[Cylinder]] = None\n        force_per_area : <class 'flow360.component.simulation.models.volume_models.ForcePerArea'>\n    ",
+  "description": "Same as Flow360Param ActuatorDisks.\nNote that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.\n\n\nParameters\n----------\nentities : typing.Optional[abc.EntityList[Cylinder]] = None\n        force_per_area : <class 'flow360.component.simulation.models.volume_models.ForcePerArea'>\n        name : typing.Optional[str] = None\n        type : typing.Literal['ActuatorDisk'] = ActuatorDisk\n    ",
   "properties": {
+    "volumes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EntityList_Cylinder_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "force_per_area": {
+      "$ref": "#/$defs/ForcePerArea"
+    },
     "name": {
       "anyOf": [
         {
@@ -258,20 +311,6 @@
       ],
       "title": "Type",
       "type": "string"
-    },
-    "volumes": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/EntityList_Cylinder_"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "force_per_area": {
-      "$ref": "#/$defs/ForcePerArea"
     }
   },
   "required": [

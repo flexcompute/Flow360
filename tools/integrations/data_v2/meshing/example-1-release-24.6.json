@@ -1,14 +1,11 @@
 {
-  "farfield": "auto",
   "refinement_factor": 1.0,
-  "gap_treatment_strength": null,
+  "gap_treatment_strength": 0.0,
   "surface_layer_growth_rate": 1.5,
   "refinements": [
     {
-      "name": null,
       "refinement_type": "BoundaryLayer",
       "type": "aniso",
-      "entities": null,
       "first_layer_thickness": {
         "value": 0.001,
         "units": "m"
@@ -16,7 +13,6 @@
       "growth_rate": 1.2
     },
     {
-      "name": null,
       "refinement_type": "SurfaceRefinement",
       "entities": {
         "stored_entities": [
@@ -36,6 +32,5 @@
         "units": "degree"
       }
     }
-  ],
-  "volume_zones": []
+  ]
 }

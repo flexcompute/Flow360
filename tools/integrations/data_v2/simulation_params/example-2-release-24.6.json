@@ -3,42 +3,9 @@
   "unit_system": {
     "name": "SI"
   },
-  "private_attribute_asset_cache": {
-    "registry": {
-      "internal_registry": {
-        "SurfaceEntityType": [
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "wing"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "fluid/rightWing"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "fluid/leftWing"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "fluid/fuselage"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "fluid/farfield"
-          }
-        ]
-      }
-    }
-  },
   "meshing": {
-    "farfield": "auto",
     "refinement_factor": 1.0,
+    "gap_treatment_strength": 0.0,
     "surface_layer_growth_rate": 1.5,
     "refinements": [
       {
@@ -70,8 +37,7 @@
           "units": "degree"
         }
       }
-    ],
-    "volume_zones": []
+    ]
   },
   "reference_geometry": {
     "moment_center": {
@@ -164,9 +130,7 @@
         "absolute_tolerance": 1e-10,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
-        "equation_eval_frequency": 1,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
+        "equation_evaluation_frequency": 1,
         "linear_solver": {
           "max_iterations": 30
         },
@@ -176,15 +140,15 @@
         "limit_velocity": false,
         "limit_pressure_density": false,
         "type_name": "Compressible",
-        "low_mach_preconditioner": false
+        "low_mach_preconditioner": false,
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0
       },
       "turbulence_model_solver": {
         "absolute_tolerance": 1e-08,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
-        "equation_eval_frequency": 4,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
+        "equation_evaluation_frequency": 4,
         "linear_solver": {
           "max_iterations": 20
         },
@@ -199,6 +163,8 @@
           "C_DES": 0.72,
           "C_d": 8.0
         },
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0,
         "rotation_correction": false
       }
     },
@@ -223,8 +189,7 @@
           }
         ]
       },
-      "use_wall_function": false,
-      "velocity_type": "relative"
+      "use_wall_function": false
     },
     {
       "type": "Freestream",
@@ -236,8 +201,7 @@
             "name": "fluid/farfield"
           }
         ]
-      },
-      "velocity_type": "relative"
+      }
     }
   ],
   "time_stepping": {
@@ -269,5 +233,38 @@
       },
       "output_type": "SurfaceOutput"
     }
-  ]
+  ],
+  "private_attribute_asset_cache": {
+    "registry": {
+      "internal_registry": {
+        "SurfaceEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "wing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/rightWing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/leftWing"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/fuselage"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "fluid/farfield"
+          }
+        ]
+      }
+    }
+  }
 }

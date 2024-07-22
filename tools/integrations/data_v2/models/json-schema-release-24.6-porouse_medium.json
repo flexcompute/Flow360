@@ -2,7 +2,7 @@
   "$defs": {
     "Box": {
       "additionalProperties": false,
-      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axes : typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\ntype_name : typing.Literal['MultiConstructorBaseModel'] = MultiConstructorBaseModel\n        private_attribute_constructor : <class 'str'> = default\n        private_attribute_input_cache : <class 'flow360.component.simulation.primitives.BoxCache'> = BoxCache(axes=None, center=None, size=None, name=None)\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = (0, 0, 1)\n        angle_of_rotation : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._AngleType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = 0 degree\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -27,15 +27,42 @@
           "type": "string"
         },
         "private_attribute_zone_boundary_names": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/$defs/UniqueItemList_str_"
-            },
-            {
-              "type": "null"
+              "$ref": "#/$defs/UniqueStringList"
             }
           ],
-          "default": null
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
+        },
+        "type_name": {
+          "const": "MultiConstructorBaseModel",
+          "default": "MultiConstructorBaseModel",
+          "enum": [
+            "MultiConstructorBaseModel"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        },
+        "private_attribute_constructor": {
+          "default": "default",
+          "title": "Private Attribute Constructor",
+          "type": "string"
+        },
+        "private_attribute_input_cache": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BoxCache"
+            }
+          ],
+          "default": {
+            "axes": null,
+            "center": null,
+            "size": null,
+            "name": null
+          }
         },
         "center": {
           "properties": {
@@ -91,10 +118,8 @@
           },
           "title": "Size"
         },
-        "axes": {
-          "maxItems": 2,
-          "minItems": 2,
-          "prefixItems": [
+        "axis_of_rotation": {
+          "anyOf": [
             {
               "properties": {
                 "value": {
@@ -109,35 +134,182 @@
               }
             },
             {
-              "properties": {
-                "value": {
-                  "items": {
-                    "type": "number"
-                  },
-                  "strictType": {
-                    "type": "vector3"
-                  },
-                  "type": "array"
-                }
-              }
+              "type": "null"
             }
           ],
-          "title": "Axes",
-          "type": "array"
+          "default": [
+            0,
+            0,
+            1
+          ],
+          "title": "Axis Of Rotation"
+        },
+        "angle_of_rotation": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "angle",
+                  "enum": [
+                    "rad"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Angle Of Rotation"
         }
       },
       "required": [
         "name",
         "center",
-        "size",
-        "axes"
+        "size"
       ],
       "title": "Box",
       "type": "object"
     },
-    "EntityList_GenericVolume_Box_str_": {
+    "BoxCache": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Box, str]]]\n    ",
+      "description": "BoxCache\n\nParameters\n----------\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        size : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        name : typing.Optional[str] = None\n    ",
+      "properties": {
+        "axes": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axes"
+        },
+        "center": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Center"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "title": "BoxCache",
+      "type": "object"
+    },
+    "EntityList_GenericVolume_Box_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Box]]]\n    ",
       "properties": {
         "stored_entities": {
           "anyOf": [
@@ -149,9 +321,6 @@
                   },
                   {
                     "$ref": "#/$defs/Box"
-                  },
-                  {
-                    "type": "string"
                   }
                 ]
               },
@@ -167,12 +336,12 @@
       "required": [
         "stored_entities"
       ],
-      "title": "EntityList[GenericVolume,Box,str]",
+      "title": "EntityList[GenericVolume,Box]",
       "type": "object"
     },
     "GenericVolume": {
       "additionalProperties": false,
-      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -197,15 +366,15 @@
           "type": "string"
         },
         "private_attribute_zone_boundary_names": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/$defs/UniqueItemList_str_"
-            },
-            {
-              "type": "null"
+              "$ref": "#/$defs/UniqueStringList"
             }
           ],
-          "default": null
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
         },
         "axes": {
           "anyOf": [
@@ -313,11 +482,12 @@
       "title": "GenericVolume",
       "type": "object"
     },
-    "UniqueItemList_str_": {
+    "UniqueStringList": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "description": "A list of string that must be unique by original name or by aliased name.\nExpect string only and we will remove the duplicate ones.\n\n\nParameters\n----------\nitems : typing.List[str] = []\n    ",
       "properties": {
         "items": {
+          "default": [],
           "items": {
             "type": "string"
           },
@@ -325,15 +495,12 @@
           "type": "array"
         }
       },
-      "required": [
-        "items"
-      ],
-      "title": "UniqueItemList[str]",
+      "title": "UniqueStringList",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['PorousMedium'] = PorousMedium\n        entities : typing.Optional[abc.EntityList[GenericVolume,Box,str]] = None\n        darcy_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        forchheimer_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)], NoneType] = None\n    ",
+  "description": "Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['PorousMedium'] = PorousMedium\n        entities : typing.Optional[abc.EntityList[GenericVolume,Box]] = None\n        darcy_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        forchheimer_coefficient : <class 'flow360.component.simulation.unit_system._VectorType'>\n        volumetric_heat_source : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatSourceType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)], NoneType] = None\n    ",
   "properties": {
     "name": {
       "anyOf": [
@@ -359,7 +526,7 @@
     "volumes": {
       "anyOf": [
         {
-          "$ref": "#/$defs/EntityList_GenericVolume_Box_str_"
+          "$ref": "#/$defs/EntityList_GenericVolume_Box_"
         },
         {
           "type": "null"

@@ -1,6 +1,6 @@
 {
   "$defs": {
-    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____betMetrics____betMetricsPerDisk___": {
+    "UniqueAliasedStringList_Literal_": {
       "additionalProperties": false,
       "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]\n    ",
       "properties": {
@@ -42,12 +42,12 @@
       "required": [
         "items"
       ],
-      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]",
+      "title": "UniqueAliasedStringList[Literal]",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Volume output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        output_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk']]'>\n        output_type : typing.Literal['VolumeOutput'] = VolumeOutput\n    ",
+  "description": "Volume output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        name : typing.Optional[str] = None\n        output_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['VolumeOutput'] = VolumeOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
@@ -73,8 +73,20 @@
       "title": "Output Format",
       "type": "string"
     },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
     "output_fields": {
-      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____betMetrics____betMetricsPerDisk___"
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal_"
     },
     "output_type": {
       "const": "VolumeOutput",

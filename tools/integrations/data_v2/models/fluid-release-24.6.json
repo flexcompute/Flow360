@@ -19,7 +19,6 @@
   },
   "initial_condition": {
     "type": "expression",
-    "constants": null,
     "rho": "1;",
     "u": "1;",
     "v": "1;",
@@ -31,13 +30,9 @@
     "absolute_tolerance": 1e-10,
     "relative_tolerance": 0.0,
     "order_of_accuracy": 2,
-    "equation_eval_frequency": 1,
-    "update_jacobian_frequency": 4,
-    "max_force_jac_update_physical_steps": 0,
+    "equation_evaluation_frequency": 1,
     "linear_solver": {
-      "max_iterations": 30,
-      "absolute_tolerance": null,
-      "relative_tolerance": null
+      "max_iterations": 30
     },
     "CFL_multiplier": 1.0,
     "kappa_MUSCL": -1.0,
@@ -46,19 +41,16 @@
     "limit_pressure_density": false,
     "type_name": "Compressible",
     "low_mach_preconditioner": false,
-    "low_mach_preconditioner_threshold": null
+    "update_jacobian_frequency": 4,
+    "max_force_jac_update_physical_steps": 0
   },
   "turbulence_model_solver": {
     "absolute_tolerance": 1e-08,
     "relative_tolerance": 0.0,
     "order_of_accuracy": 2,
-    "equation_eval_frequency": 4,
-    "update_jacobian_frequency": 4,
-    "max_force_jac_update_physical_steps": 0,
+    "equation_evaluation_frequency": 4,
     "linear_solver": {
-      "max_iterations": 20,
-      "absolute_tolerance": null,
-      "relative_tolerance": null
+      "max_iterations": 20
     },
     "CFL_multiplier": 2.0,
     "type_name": "SpalartAllmaras",
@@ -71,22 +63,22 @@
       "C_DES": 0.72,
       "C_d": 8.0
     },
+    "update_jacobian_frequency": 4,
+    "max_force_jac_update_physical_steps": 0,
     "rotation_correction": false
   },
   "transition_model_solver": {
     "absolute_tolerance": 1e-07,
     "relative_tolerance": 0.0,
     "order_of_accuracy": 2,
-    "equation_eval_frequency": 4,
-    "update_jacobian_frequency": 4,
-    "max_force_jac_update_physical_steps": 0,
+    "equation_evaluation_frequency": 4,
     "linear_solver": {
-      "max_iterations": 20,
-      "absolute_tolerance": null,
-      "relative_tolerance": null
+      "max_iterations": 20
     },
     "type_name": "AmplificationFactorTransport",
     "turbulence_intensity_percent": 1.0,
-    "N_crit": 8.15
+    "N_crit": 8.15,
+    "update_jacobian_frequency": 4,
+    "max_force_jac_update_physical_steps": 0
   }
 }

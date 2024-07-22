@@ -3,126 +3,7 @@
   "unit_system": {
     "name": "SI"
   },
-  "private_attribute_asset_cache": {
-    "registry": {
-      "internal_registry": {
-        "VolumetricEntityType": [
-          {
-            "private_attribute_registry_bucket_name": "VolumetricEntityType",
-            "private_attribute_entity_type_name": "Box",
-            "name": "my_box",
-            "type_name": "MultiConstructorBaseModel",
-            "private_attribute_constructor": "default",
-            "private_attribute_input_cache": {
-              "axes": [
-                [
-                  1.0,
-                  0.0,
-                  0.0
-                ],
-                [
-                  0.0,
-                  1.0,
-                  0.0
-                ]
-              ]
-            },
-            "center": {
-              "value": [
-                1.2,
-                2.3,
-                3.4
-              ],
-              "units": "m"
-            },
-            "size": {
-              "value": [
-                1.0,
-                2.0,
-                3.0
-              ],
-              "units": "m"
-            },
-            "axis_of_rotation": [
-              0.0,
-              0.0,
-              1.0
-            ],
-            "angle_of_rotation": {
-              "value": 0.0,
-              "units": "degree"
-            }
-          },
-          {
-            "private_attribute_registry_bucket_name": "VolumetricEntityType",
-            "private_attribute_entity_type_name": "Cylinder",
-            "name": "my_cylinder-1",
-            "axis": [
-              1.0,
-              0.0,
-              0.0
-            ],
-            "center": {
-              "value": [
-                1.2,
-                2.3,
-                3.4
-              ],
-              "units": "m"
-            },
-            "height": {
-              "value": 3.0,
-              "units": "m"
-            },
-            "inner_radius": {
-              "value": 3.0,
-              "units": "m"
-            },
-            "outer_radius": {
-              "value": 5.0,
-              "units": "m"
-            }
-          },
-          {
-            "private_attribute_registry_bucket_name": "VolumetricEntityType",
-            "private_attribute_entity_type_name": "GenericVolume",
-            "name": "my_cylinder-2"
-          }
-        ],
-        "EdgeEntityType": [
-          {
-            "private_attribute_registry_bucket_name": "EdgeEntityType",
-            "private_attribute_entity_type_name": "Edge",
-            "name": "edge1"
-          }
-        ],
-        "SurfaceEntityType": [
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "my_wall"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "my_slip_wall"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "my_inflow1"
-          },
-          {
-            "private_attribute_registry_bucket_name": "SurfaceEntityType",
-            "private_attribute_entity_type_name": "Surface",
-            "name": "my_inflow2"
-          }
-        ]
-      }
-    }
-  },
   "meshing": {
-    "farfield": "auto",
     "refinement_factor": 1.0,
     "gap_treatment_strength": 0.5,
     "surface_layer_growth_rate": 1.5,
@@ -135,6 +16,9 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Box",
               "name": "my_box",
+              "private_attribute_zone_boundary_names": {
+                "items": []
+              },
               "type_name": "MultiConstructorBaseModel",
               "private_attribute_constructor": "default",
               "private_attribute_input_cache": {
@@ -192,6 +76,9 @@
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Box",
               "name": "my_box",
+              "private_attribute_zone_boundary_names": {
+                "items": []
+              },
               "type_name": "MultiConstructorBaseModel",
               "private_attribute_constructor": "default",
               "private_attribute_input_cache": {
@@ -237,7 +124,10 @@
             {
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Cylinder",
-              "name": "my_cylinder-1",
+              "name": "my_cylinder-2",
+              "private_attribute_zone_boundary_names": {
+                "items": []
+              },
               "axis": [
                 1.0,
                 0.0,
@@ -328,13 +218,28 @@
     ],
     "volume_zones": [
       {
-        "refinement_type": "AxisymmetricRefinement",
+        "spacing_axial": {
+          "value": 0.1,
+          "units": "m"
+        },
+        "spacing_radial": {
+          "value": 0.12,
+          "units": "m"
+        },
+        "spacing_circumferential": {
+          "value": 0.13,
+          "units": "m"
+        },
+        "type": "RotationCylinder",
         "entities": {
           "stored_entities": [
             {
               "private_attribute_registry_bucket_name": "VolumetricEntityType",
               "private_attribute_entity_type_name": "Cylinder",
               "name": "my_cylinder-1",
+              "private_attribute_zone_boundary_names": {
+                "items": []
+              },
               "axis": [
                 1.0,
                 0.0,
@@ -363,19 +268,7 @@
             }
           ]
         },
-        "spacing_axial": {
-          "value": 0.1,
-          "units": "m"
-        },
-        "spacing_radial": {
-          "value": 0.12,
-          "units": "m"
-        },
-        "spacing_circumferential": {
-          "value": 0.13,
-          "units": "m"
-        },
-        "enclosed_objects": {
+        "enclosed_entities": {
           "stored_entities": [
             {
               "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -384,6 +277,10 @@
             }
           ]
         }
+      },
+      {
+        "type": "AutomatedFarfield",
+        "method": "auto"
       }
     ]
   },
@@ -478,9 +375,7 @@
         "absolute_tolerance": 1e-10,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
-        "equation_eval_frequency": 1,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
+        "equation_evaluation_frequency": 1,
         "linear_solver": {
           "max_iterations": 30
         },
@@ -490,15 +385,15 @@
         "limit_velocity": false,
         "limit_pressure_density": false,
         "type_name": "Compressible",
-        "low_mach_preconditioner": false
+        "low_mach_preconditioner": false,
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0
       },
       "turbulence_model_solver": {
         "absolute_tolerance": 1e-08,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
-        "equation_eval_frequency": 4,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
+        "equation_evaluation_frequency": 4,
         "linear_solver": {
           "max_iterations": 20
         },
@@ -513,6 +408,8 @@
           "C_DES": 0.72,
           "C_d": 8.0
         },
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0,
         "rotation_correction": false
       }
     },
@@ -536,7 +433,6 @@
         ],
         "units": "ft/s"
       },
-      "velocity_type": "relative",
       "heat_spec": {
         "value": {
           "value": 1.0,
@@ -564,6 +460,9 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Cylinder",
             "name": "my_cylinder-1",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            },
             "axis": [
               1.0,
               0.0,
@@ -605,6 +504,9 @@
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "Box",
             "name": "my_box",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            },
             "type_name": "MultiConstructorBaseModel",
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {
@@ -693,7 +595,10 @@
           {
             "private_attribute_registry_bucket_name": "VolumetricEntityType",
             "private_attribute_entity_type_name": "GenericVolume",
-            "name": "my_cylinder-2"
+            "name": "my_cylinder-2",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            }
           }
         ]
       },
@@ -701,9 +606,7 @@
         "absolute_tolerance": 1e-09,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
-        "equation_eval_frequency": 10,
-        "update_jacobian_frequency": 1,
-        "max_force_jac_update_physical_steps": 0,
+        "equation_evaluation_frequency": 10,
         "linear_solver": {
           "max_iterations": 50,
           "absolute_tolerance": 1e-10
@@ -880,5 +783,168 @@
       },
       "output_type": "SurfaceOutput"
     }
-  ]
+  ],
+  "private_attribute_asset_cache": {
+    "registry": {
+      "internal_registry": {
+        "VolumetricEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+            "private_attribute_entity_type_name": "Box",
+            "name": "my_box",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            },
+            "type_name": "MultiConstructorBaseModel",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+              "axes": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  1.0,
+                  0.0
+                ]
+              ]
+            },
+            "center": {
+              "value": [
+                1.2,
+                2.3,
+                3.4
+              ],
+              "units": "m"
+            },
+            "size": {
+              "value": [
+                1.0,
+                2.0,
+                3.0
+              ],
+              "units": "m"
+            },
+            "axis_of_rotation": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "angle_of_rotation": {
+              "value": 0.0,
+              "units": "degree"
+            }
+          },
+          {
+            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+            "private_attribute_entity_type_name": "Cylinder",
+            "name": "my_cylinder-2",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            },
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "center": {
+              "value": [
+                1.2,
+                2.3,
+                3.4
+              ],
+              "units": "m"
+            },
+            "height": {
+              "value": 3.0,
+              "units": "m"
+            },
+            "inner_radius": {
+              "value": 3.0,
+              "units": "m"
+            },
+            "outer_radius": {
+              "value": 5.0,
+              "units": "m"
+            }
+          },
+          {
+            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+            "private_attribute_entity_type_name": "Cylinder",
+            "name": "my_cylinder-1",
+            "private_attribute_zone_boundary_names": {
+              "items": []
+            },
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "center": {
+              "value": [
+                1.2,
+                2.3,
+                3.4
+              ],
+              "units": "m"
+            },
+            "height": {
+              "value": 3.0,
+              "units": "m"
+            },
+            "inner_radius": {
+              "value": 3.0,
+              "units": "m"
+            },
+            "outer_radius": {
+              "value": 5.0,
+              "units": "m"
+            }
+          },
+          {
+            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+            "private_attribute_entity_type_name": "GenericVolume",
+            "name": "stationaryBlock",
+            "private_attribute_zone_boundary_names": {
+              "items": [
+                "farfield",
+                "symmetric"
+              ]
+            }
+          }
+        ],
+        "EdgeEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "EdgeEntityType",
+            "private_attribute_entity_type_name": "Edge",
+            "name": "edge1"
+          }
+        ],
+        "SurfaceEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "my_wall"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "my_slip_wall"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "my_inflow1"
+          },
+          {
+            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+            "private_attribute_entity_type_name": "Surface",
+            "name": "my_inflow2"
+          }
+        ]
+      }
+    }
+  }
 }

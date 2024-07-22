@@ -60,10 +60,19 @@
       "title": "AspectRatioBasedRefinement",
       "type": "object"
     },
-    "AxisymmetricRefinement": {
+    "AutomatedFarfield": {
       "additionalProperties": false,
-      "description": "Note:\n- This basically creates the \"rotorDisks\" type of volume refinement that we used to have.\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['AxisymmetricRefinement'] = AxisymmetricRefinement\n        entities : <class 'abc.EntityList[Cylinder]'>\n        spacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \n- `enclosed_objects` is actually just a way of specifying the enclosing patches of a volume zone.\nTherefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this\nattribute at all. For example if the new class already has an entry to list all the enclosing patches.\n\n- We may provide a helper function to automatically determine what is inside the encloeud_objects list based on\nthe mesh data. But this currently is out of scope due to the estimated efforts.",
+      "description": "    - auto: The mesher will Sphere or semi-sphere will be generated based on the bounding box of the geometry\n\n    Parameters\n    ----------\n    type : typing.Literal['AutomatedFarfield'] = AutomatedFarfield\n            name : typing.Optional[str] = None\n            method : typing.Literal['auto', 'quasi-3d'] = auto\n            private_attribute_entity : <class 'flow360.component.simulation.primitives.GenericVolume'> = GenericVolume(, , , , , , , , private_attribute_registry_bucket_name:, VolumetricEntityType\n, , , , , , , , private_attribute_entity_type_name:, GenericVolume\n, , , , , , , , name:, __farfield_zone_name_not_properly_set_yet\n, , , , , , , , private_attribute_zone_boundary_names:, items=[]\n, , , , , , , , axes:, None\n, , , , , , , , axis:, None\n, , , , , , , , center:, None)\n        \n        - Full sphere if min{Y} < 0 and max{Y} > 0\n\n        - +Y semi sphere if min{Y} = 0 and max{Y} > 0\n\n        - -Y semi sphere if min{Y} < 0 and max{Y} = 0\n\n    - quasi-3d: Thin disk will be generated for quasi 3D cases.\n                Both sides of the farfield disk will be treated as \u201csymmetric plane\u201d.\n\n    - user-defined: The farfield shape is provided by the user in ESP.\n                    Note: \"user-defined\" are left out due to scarce usage and will not be implemented.\n    ",
       "properties": {
+        "type": {
+          "const": "AutomatedFarfield",
+          "default": "AutomatedFarfield",
+          "enum": [
+            "AutomatedFarfield"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
         "name": {
           "anyOf": [
             {
@@ -76,18 +85,41 @@
           "default": null,
           "title": "Name"
         },
-        "refinement_type": {
-          "const": "AxisymmetricRefinement",
-          "default": "AxisymmetricRefinement",
+        "method": {
+          "default": "auto",
           "enum": [
-            "AxisymmetricRefinement"
+            "auto",
+            "quasi-3d"
           ],
-          "title": "Refinement Type",
+          "title": "Method",
           "type": "string"
         },
-        "entities": {
-          "$ref": "#/$defs/EntityList_Cylinder_"
-        },
+        "private_attribute_entity": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/GenericVolume"
+            }
+          ],
+          "default": {
+            "privateAttributeRegistryBucketName": "VolumetricEntityType",
+            "privateAttributeEntityTypeName": "GenericVolume",
+            "name": "__farfield_zone_name_not_properly_set_yet",
+            "privateAttributeZoneBoundaryNames": {
+              "items": []
+            },
+            "axes": null,
+            "axis": null,
+            "center": null
+          }
+        }
+      },
+      "title": "AutomatedFarfield",
+      "type": "object"
+    },
+    "AxisymmetricRefinement": {
+      "additionalProperties": false,
+      "description": "Note:\n- This basically creates the \"rotorDisks\" type of volume refinement that we used to have.\n\nParameters\n----------\nspacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n        name : typing.Optional[str] = None\n        refinement_type : typing.Literal['AxisymmetricRefinement'] = AxisymmetricRefinement\n        entities : <class 'abc.EntityList[Cylinder]'>\n    \n\n\n- We may provide a helper function to automatically determine what is inside the encloeud_objects list based on\nthe mesh data. But this currently is out of scope due to the estimated efforts.",
+      "properties": {
         "spacing_axial": {
           "properties": {
             "value": {
@@ -147,20 +179,44 @@
             }
           },
           "title": "Spacing Circumferential"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "refinement_type": {
+          "const": "AxisymmetricRefinement",
+          "default": "AxisymmetricRefinement",
+          "enum": [
+            "AxisymmetricRefinement"
+          ],
+          "title": "Refinement Type",
+          "type": "string"
+        },
+        "entities": {
+          "$ref": "#/$defs/EntityList_Cylinder_"
         }
       },
       "required": [
-        "entities",
         "spacing_axial",
         "spacing_radial",
-        "spacing_circumferential"
+        "spacing_circumferential",
+        "entities"
       ],
       "title": "AxisymmetricRefinement",
       "type": "object"
     },
     "BoundaryLayer": {
       "additionalProperties": false,
-      "description": "These affects volume meshing.\nNote:\n- We do not support per volume specification of these settings so the entities will be **obsolete** for now.\nShould we have it at all in the release?\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['BoundaryLayer'] = BoundaryLayer\n        type : typing.Literal['aniso', 'projectAnisoSpacing', 'none'] = aniso\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        first_layer_thickness : <class 'flow360.component.simulation.unit_system._Constrained'>\n    First layer thickness for volumetric anisotropic layers.\ngrowth_rate : <class 'float'> = 1.2\n    Growth rate for volume prism layers.\n\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)\nbefore submission. This is supposed to be applied to all the matching entities. We allow this so that we do not\nneed to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.",
+      "description": "These affects volume meshing.\nNote:\n- We do not support per volume specification of these settings so the entities will be **obsolete** for now.\nShould we have it at all in the release?\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['BoundaryLayer'] = BoundaryLayer\n        type : typing.Literal['aniso', 'projectAnisoSpacing', 'none'] = aniso\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        first_layer_thickness : <class 'flow360.component.simulation.unit_system._Constrained'>\n    First layer thickness for volumetric anisotropic layers.\ngrowth_rate : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = None\n    Growth rate for volume prism layers.\n\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)\nbefore submission. This is supposed to be applied to all the matching entities. We allow this so that we do not\nneed to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.",
       "properties": {
         "name": {
           "anyOf": [
@@ -226,12 +282,19 @@
           "title": "First Layer Thickness"
         },
         "growth_rate": {
-          "default": 1.2,
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "minimum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
           "description": "Growth rate for volume prism layers.",
-          "exclusiveMinimum": 0.0,
-          "minimum": 1.0,
-          "title": "Growth Rate",
-          "type": "number"
+          "title": "Growth Rate"
         }
       },
       "required": [
@@ -242,7 +305,7 @@
     },
     "Box": {
       "additionalProperties": false,
-      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        type_name : typing.Literal['MultiConstructorBaseModel'] = MultiConstructorBaseModel\n        private_attribute_constructor : <class 'str'> = default\n        private_attribute_input_cache : <class 'flow360.component.simulation.primitives.BoxCache'> = BoxCache(axes=None, center=None, size=None, name=None)\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axis_of_rotation : <class 'flow360.component.types.Axis'>\n        angle_of_rotation : <class 'flow360.component.simulation.unit_system._AngleType'>\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
+      "description": "Represents a box in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Box'] = Box\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\ntype_name : typing.Literal['MultiConstructorBaseModel'] = MultiConstructorBaseModel\n        private_attribute_constructor : <class 'str'> = default\n        private_attribute_input_cache : <class 'flow360.component.simulation.primitives.BoxCache'> = BoxCache(axes=None, center=None, size=None, name=None)\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        size : <class 'flow360.component.simulation.unit_system._VectorType'>\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = (0, 0, 1)\n        angle_of_rotation : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._AngleType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = 0 degree\n    \nAttributes:\n    center (LengthType.Point): The coordinates of the center of the box.\n    size (LengthType.Point): The dimensions of the box (length, width, height).\n    axes (Tuple[Axis, Axis]]): The axes of the box.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -267,15 +330,15 @@
           "type": "string"
         },
         "private_attribute_zone_boundary_names": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/$defs/UniqueItemList_str_"
-            },
-            {
-              "type": "null"
+              "$ref": "#/$defs/UniqueStringList"
             }
           ],
-          "default": null
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
         },
         "type_name": {
           "const": "MultiConstructorBaseModel",
@@ -359,48 +422,65 @@
           "title": "Size"
         },
         "axis_of_rotation": {
-          "properties": {
-            "value": {
-              "items": {
-                "type": "number"
-              },
-              "strictType": {
-                "type": "vector3"
-              },
-              "type": "array"
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "type": "null"
             }
-          },
+          ],
+          "default": [
+            0,
+            0,
+            1
+          ],
           "title": "Axis Of Rotation"
         },
         "angle_of_rotation": {
-          "properties": {
-            "value": {
-              "type": "number"
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "angle",
+                  "enum": [
+                    "rad"
+                  ],
+                  "type": "string"
+                }
+              }
             },
-            "units": {
-              "dimension": "angle",
-              "enum": [
-                "rad"
-              ],
-              "type": "string"
+            {
+              "type": "null"
             }
-          },
+          ],
           "title": "Angle Of Rotation"
         }
       },
       "required": [
         "name",
         "center",
-        "size",
-        "axis_of_rotation",
-        "angle_of_rotation"
+        "size"
       ],
       "title": "Box",
       "type": "object"
     },
     "BoxCache": {
       "additionalProperties": false,
-      "description": "BoxCache\n\nParameters\n----------\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        size : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        name : typing.Optional[str] = None\n    ",
+      "description": "BoxCache\n\nParameters\n----------\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        size : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        name : typing.Optional[str] = None\n    ",
       "properties": {
         "axes": {
           "anyOf": [
@@ -532,7 +612,7 @@
     },
     "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : typing.Optional[abc.UniqueItemList[str]] = None\n        axis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x126968f70>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -557,15 +637,15 @@
           "type": "string"
         },
         "private_attribute_zone_boundary_names": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/$defs/UniqueItemList_str_"
-            },
-            {
-              "type": "null"
+              "$ref": "#/$defs/UniqueStringList"
             }
           ],
-          "default": null
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
         },
         "axis": {
           "properties": {
@@ -633,7 +713,7 @@
             {
               "properties": {
                 "value": {
-                  "exclusiveMinimum": 0,
+                  "minimum": 0,
                   "type": "number"
                 },
                 "units": {
@@ -859,6 +939,149 @@
       "title": "EntityList[Surface]",
       "type": "object"
     },
+    "GenericVolume": {
+      "additionalProperties": false,
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "VolumetricEntityType",
+          "default": "VolumetricEntityType",
+          "enum": [
+            "VolumetricEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "GenericVolume",
+          "default": "GenericVolume",
+          "enum": [
+            "GenericVolume"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_zone_boundary_names": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/UniqueStringList"
+            }
+          ],
+          "default": {
+            "items": []
+          },
+          "description": "Boundary names of the zone WITH the prepending zone name."
+        },
+        "axes": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "value": {
+                      "items": {
+                        "type": "number"
+                      },
+                      "strictType": {
+                        "type": "vector3"
+                      },
+                      "type": "array"
+                    }
+                  }
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axes"
+        },
+        "axis": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis"
+        },
+        "center": {
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "strictType": {
+                    "type": "vector3"
+                  },
+                  "type": "array"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Center"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "GenericVolume",
+      "type": "object"
+    },
     "HeightBasedRefinement": {
       "additionalProperties": false,
       "description": "Surface edge refinement by specifying first layer height of the anisotropic layers\n\nParameters\n----------\ntype : typing.Literal['height'] = height\n        value : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
@@ -918,32 +1141,8 @@
     },
     "RotationCylinder": {
       "additionalProperties": false,
-      "description": "This is the original SlidingInterface. This will create new volume zones\nWill add RotationSphere class in the future.\nPlease refer to\nhttps://www.notion.so/flexcompute/Python-model-design-document-\n78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['AxisymmetricRefinement'] = AxisymmetricRefinement\n        entities : <class 'abc.EntityList[Cylinder]'>\n        spacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n        enclosed_objects : typing.Optional[abc.EntityList[Cylinder,Surface]] = None\n    Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.\n    This helps determining the volume zone boundary.",
+      "description": "This is the original SlidingInterface. This will create new volume zones\nWill add RotationSphere class in the future.\nPlease refer to\nhttps://www.notion.so/flexcompute/Python-model-design-document-\n78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3\n\nParameters\n----------\nspacing_axial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_radial : <class 'flow360.component.simulation.unit_system._Constrained'>\n        spacing_circumferential : <class 'flow360.component.simulation.unit_system._Constrained'>\n        type : typing.Literal['RotationCylinder'] = RotationCylinder\n        name : typing.Optional[str] = None\n    Name to display in the GUI.\nentities : <class 'abc.EntityList[Cylinder]'>\n        enclosed_entities : typing.Optional[abc.EntityList[Cylinder,Surface]] = None\n    Entities enclosed by this sliding interface. Can be faces, boxes and/or other cylinders etc.\n    This helps determining the volume zone boundary.\n\n- `enclosed_entities` is actually just a way of specifying the enclosing patches of a volume zone.\nTherefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this\nattribute at all. For example if the new class already has an entry to list all the enclosing patches.",
       "properties": {
-        "name": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Name"
-        },
-        "refinement_type": {
-          "const": "AxisymmetricRefinement",
-          "default": "AxisymmetricRefinement",
-          "enum": [
-            "AxisymmetricRefinement"
-          ],
-          "title": "Refinement Type",
-          "type": "string"
-        },
-        "entities": {
-          "$ref": "#/$defs/EntityList_Cylinder_"
-        },
         "spacing_axial": {
           "properties": {
             "value": {
@@ -1004,7 +1203,32 @@
           },
           "title": "Spacing Circumferential"
         },
-        "enclosed_objects": {
+        "type": {
+          "const": "RotationCylinder",
+          "default": "RotationCylinder",
+          "enum": [
+            "RotationCylinder"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name to display in the GUI.",
+          "title": "Name"
+        },
+        "entities": {
+          "$ref": "#/$defs/EntityList_Cylinder_"
+        },
+        "enclosed_entities": {
           "anyOf": [
             {
               "$ref": "#/$defs/EntityList_Cylinder_Surface_"
@@ -1018,17 +1242,17 @@
         }
       },
       "required": [
-        "entities",
         "spacing_axial",
         "spacing_radial",
-        "spacing_circumferential"
+        "spacing_circumferential",
+        "entities"
       ],
       "title": "RotationCylinder",
       "type": "object"
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n        private_attribute_is_interface : typing.Optional[bool] = None\n    This is required when generated from volume mesh\n    but not required when from surface mesh meta.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "SurfaceEntityType",
@@ -1051,6 +1275,31 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        },
+        "private_attribute_is_interface": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This is required when generated from volume mesh\n        but not required when from surface mesh meta.",
+          "title": "Private Attribute Is Interface"
         }
       },
       "required": [
@@ -1061,7 +1310,7 @@
     },
     "SurfaceEdgeRefinement": {
       "additionalProperties": false,
-      "description": "Grow anisotropic layers orthogonal to the edge.\n\nParameters\n----------\nentities : <class 'abc.EntityList[Edge]'>\n        growth_rate : typing.Optional[float] = None\n    Growth rate for surface mesh layers grown from edges.\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['SurfaceEdgeRefinement'] = SurfaceEdgeRefinement\n        method : typing.Union[flow360.component.simulation.meshing_param.edge_params.AngleBasedRefinement, flow360.component.simulation.meshing_param.edge_params.HeightBasedRefinement, flow360.component.simulation.meshing_param.edge_params.AspectRatioBasedRefinement, flow360.component.simulation.meshing_param.edge_params.ProjectAnisoSpacing, NoneType] = None\n    \nIf `method` is None then it projects the anisotropic spacing from neighboring faces to the edge\n(equivalent to `ProjectAniso` in old params).",
+      "description": "Grow anisotropic layers orthogonal to the edge.\n\nParameters\n----------\nentities : <class 'abc.EntityList[Edge]'>\n        growth_rate : typing.Optional[float] = None\n    Growth rate for surface mesh layers grown from edges.\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['SurfaceEdgeRefinement'] = SurfaceEdgeRefinement\n        method : typing.Union[flow360.component.simulation.meshing_param.edge_params.AngleBasedRefinement, flow360.component.simulation.meshing_param.edge_params.HeightBasedRefinement, flow360.component.simulation.meshing_param.edge_params.AspectRatioBasedRefinement, flow360.component.simulation.meshing_param.edge_params.ProjectAnisoSpacing]\n    \nIf `method` is None then it projects the anisotropic spacing from neighboring faces to the edge\n(equivalent to `ProjectAniso` in old params).",
       "properties": {
         "edges": {
           "$ref": "#/$defs/EntityList_Edge_"
@@ -1102,49 +1351,42 @@
           "type": "string"
         },
         "method": {
-          "anyOf": [
+          "discriminator": {
+            "mapping": {
+              "angle": "#/$defs/AngleBasedRefinement",
+              "aspectRatio": "#/$defs/AspectRatioBasedRefinement",
+              "height": "#/$defs/HeightBasedRefinement",
+              "projectAnisoSpacing": "#/$defs/ProjectAnisoSpacing"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
             {
-              "discriminator": {
-                "mapping": {
-                  "angle": "#/$defs/AngleBasedRefinement",
-                  "aspectRatio": "#/$defs/AspectRatioBasedRefinement",
-                  "height": "#/$defs/HeightBasedRefinement",
-                  "projectAnisoSpacing": "#/$defs/ProjectAnisoSpacing"
-                },
-                "propertyName": "type"
-              },
-              "oneOf": [
-                {
-                  "$ref": "#/$defs/AngleBasedRefinement"
-                },
-                {
-                  "$ref": "#/$defs/HeightBasedRefinement"
-                },
-                {
-                  "$ref": "#/$defs/AspectRatioBasedRefinement"
-                },
-                {
-                  "$ref": "#/$defs/ProjectAnisoSpacing"
-                }
-              ]
+              "$ref": "#/$defs/AngleBasedRefinement"
             },
             {
-              "type": "null"
+              "$ref": "#/$defs/HeightBasedRefinement"
+            },
+            {
+              "$ref": "#/$defs/AspectRatioBasedRefinement"
+            },
+            {
+              "$ref": "#/$defs/ProjectAnisoSpacing"
             }
           ],
-          "default": null,
           "title": "Method"
         }
       },
       "required": [
-        "edges"
+        "edges",
+        "method"
       ],
       "title": "SurfaceEdgeRefinement",
       "type": "object"
     },
     "SurfaceRefinement": {
       "additionalProperties": false,
-      "description": "These affects surface meshing.\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['SurfaceRefinement'] = SurfaceRefinement\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        max_edge_length : <class 'flow360.component.simulation.unit_system._Constrained'>\n    Local maximum edge length for surface cells.\ncurvature_resolution_angle : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \n    Global maximum angular deviation in degrees. This value will restrict:\n    (1) The angle between a cell\u2019s normal and its underlying surface normal\n    (2) The angle between a line segment\u2019s normal and its underlying curve normal\n    \n\nNote:\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)\nbefore submission. This is supposed to be applied to all the matching entities. We allow this so that we do not\nneed to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.\n\n- For `SurfaceRefinement` we may need validation to detect if default has been set or not. This is because we need\nthese defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.",
+      "description": "These affects surface meshing.\n\nParameters\n----------\nname : typing.Optional[str] = None\n        refinement_type : typing.Literal['SurfaceRefinement'] = SurfaceRefinement\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        max_edge_length : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n    Local maximum edge length for surface cells.\ncurvature_resolution_angle : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n    \n    Global maximum angular deviation in degrees. This value will restrict:\n    (1) The angle between a cell\u2019s normal and its underlying surface normal\n    (2) The angle between a line segment\u2019s normal and its underlying curve normal\n    This can not be overridden per face. The default is 12 degrees.\n    \n\nNote:\n- `None` entities will be expanded (or just ignored and convert to global default, depending on implementation)\nbefore submission. This is supposed to be applied to all the matching entities. We allow this so that we do not\nneed to have dedicated field for global settings. This is also consistent with the `FluidDynamics` class' design.\n\n- For `SurfaceRefinement` we may need validation to detect if default has been set or not. This is because we need\nthese defaults so that the when face name is not present, what config we ues. Depending on how we go down the road.",
       "properties": {
         "name": {
           "anyOf": [
@@ -1179,48 +1421,60 @@
           "default": null
         },
         "max_edge_length": {
-          "description": "Local maximum edge length for surface cells.",
-          "properties": {
-            "value": {
-              "exclusiveMinimum": 0,
-              "type": "number"
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "length",
+                  "enum": [
+                    "m",
+                    "cm",
+                    "ft",
+                    "mm",
+                    "inch"
+                  ],
+                  "type": "string"
+                }
+              }
             },
-            "units": {
-              "dimension": "length",
-              "enum": [
-                "m",
-                "cm",
-                "ft",
-                "mm",
-                "inch"
-              ],
-              "type": "string"
+            {
+              "type": "null"
             }
-          },
+          ],
+          "default": null,
+          "description": "Local maximum edge length for surface cells.",
           "title": "Max Edge Length"
         },
         "curvature_resolution_angle": {
-          "description": "\n        Global maximum angular deviation in degrees. This value will restrict:\n        (1) The angle between a cell\u2019s normal and its underlying surface normal\n        (2) The angle between a line segment\u2019s normal and its underlying curve normal\n        ",
-          "properties": {
-            "value": {
-              "exclusiveMinimum": 0,
-              "type": "number"
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "units": {
+                  "dimension": "angle",
+                  "enum": [
+                    "rad"
+                  ],
+                  "type": "string"
+                }
+              }
             },
-            "units": {
-              "dimension": "angle",
-              "enum": [
-                "rad"
-              ],
-              "type": "string"
+            {
+              "type": "null"
             }
-          },
+          ],
+          "default": null,
+          "description": "\n        Global maximum angular deviation in degrees. This value will restrict:\n        (1) The angle between a cell\u2019s normal and its underlying surface normal\n        (2) The angle between a line segment\u2019s normal and its underlying curve normal\n        This can not be overridden per face. The default is 12 degrees.\n        ",
           "title": "Curvature Resolution Angle"
         }
       },
-      "required": [
-        "max_edge_length",
-        "curvature_resolution_angle"
-      ],
       "title": "SurfaceRefinement",
       "type": "object"
     },
@@ -1280,11 +1534,12 @@
       "title": "UniformRefinement",
       "type": "object"
     },
-    "UniqueItemList_str_": {
+    "UniqueStringList": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nitems : typing.List[str]\n    ",
+      "description": "A list of string that must be unique by original name or by aliased name.\nExpect string only and we will remove the duplicate ones.\n\n\nParameters\n----------\nitems : typing.List[str] = []\n    ",
       "properties": {
         "items": {
+          "default": [],
           "items": {
             "type": "string"
           },
@@ -1292,34 +1547,13 @@
           "type": "array"
         }
       },
-      "required": [
-        "items"
-      ],
-      "title": "UniqueItemList[str]",
+      "title": "UniqueStringList",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Meshing parameters for volume and/or surface mesher.\n\nParameters\n----------\nfarfield : typing.Optional[typing.Literal['auto', 'quasi-3d', 'user-defined']] = auto\n    Type of farfield generation.\nrefinement_factor : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = 1\n    If refinementFactor=r is provided all spacings in refinementregions\n    and first layer thickness will be adjusted to generate r-times finer mesh.\ngap_treatment_strength : typing.Optional[float] = None\n    Narrow gap treatment strength used when two surfaces are in close proximity.\n    Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment.\n    This parameter has a global impact where the anisotropic transition into the isotropic mesh.\n    However the impact on regions without close proximity is negligible.\nsurface_layer_growth_rate : typing.Optional[float] = 1.2\n    Global growth rate of the anisotropic layers grown from the edges.\nrefinements : typing.List[typing.Annotated[typing.Union[flow360.component.simulation.meshing_param.edge_params.SurfaceEdgeRefinement, flow360.component.simulation.meshing_param.face_params.SurfaceRefinement, flow360.component.simulation.meshing_param.face_params.BoundaryLayer, flow360.component.simulation.meshing_param.volume_params.UniformRefinement, flow360.component.simulation.meshing_param.volume_params.AxisymmetricRefinement], FieldInfo(annotation=NoneType, required=True, discriminator='refinement_type')]] = []\n    Additional fine-tunning for refinements.\nvolume_zones : typing.List[flow360.component.simulation.meshing_param.volume_params.RotationCylinder] = []\n    Creation of new volume zones.\n\nIn `Simulation` this only contains what the user specifies. `Simulation` can derive and add more items according\nto other aspects of simulation. (E.g. BETDisk volume -> ZoneRefinement)\n\nMeshing related but may and maynot (user specified) need info from `Simulation`:\n1. Add rotational zones.\n2. Add default BETDisk refinement.\n\nAffects volume meshing:\n- farfield\n- refinement_factor\n- gap_treatment_strength\n- `class` BoundaryLayer\n- `class` UniformRefinement\n- `class` AxisymmetricRefinement\n- `class` RotationCylinder\n\nAffects surface meshing:\n- surface_layer_growth_rate\n- `class` SurfaceRefinement\n- `class` SurfaceEdgeRefinement",
+  "description": "Meshing parameters for volume and/or surface mesher.\n\nParameters\n----------\nrefinement_factor : typing.Optional[typing.Annotated[float, Gt(gt=0)]] = 1\n    If refinementFactor=r is provided all spacings in refinementregions\n    and first layer thickness will be adjusted to generate r-times finer mesh.\ngap_treatment_strength : typing.Optional[float] = 0\n    Narrow gap treatment strength used when two surfaces are in close proximity.\n    Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment.\n    This parameter has a global impact where the anisotropic transition into the isotropic mesh.\n    However the impact on regions without close proximity is negligible.\nsurface_layer_growth_rate : <class 'float'> = 1.2\n    Global growth rate of the anisotropic layers grown from the edges.\nrefinements : typing.List[typing.Annotated[typing.Union[flow360.component.simulation.meshing_param.edge_params.SurfaceEdgeRefinement, flow360.component.simulation.meshing_param.face_params.SurfaceRefinement, flow360.component.simulation.meshing_param.face_params.BoundaryLayer, flow360.component.simulation.meshing_param.volume_params.UniformRefinement, flow360.component.simulation.meshing_param.volume_params.AxisymmetricRefinement], FieldInfo(annotation=NoneType, required=True, discriminator='refinement_type')]] = []\n    Additional fine-tunning for refinements.\nvolume_zones : typing.Optional[typing.List[typing.Annotated[typing.Union[flow360.component.simulation.meshing_param.volume_params.RotationCylinder, flow360.component.simulation.meshing_param.volume_params.AutomatedFarfield], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]] = None\n    Creation of new volume zones.\n\nIn `Simulation` this only contains what the user specifies. `Simulation` can derive and add more items according\nto other aspects of simulation. (E.g. BETDisk volume -> ZoneRefinement)\n\nMeshing related but may and maynot (user specified) need info from `Simulation`:\n1. Add rotational zones.\n2. Add default BETDisk refinement.\n\nAffects volume meshing:\n- refinement_factor\n- gap_treatment_strength\n- `class` BoundaryLayer\n- `class` UniformRefinement\n- `class` AxisymmetricRefinement\n- `class` RotationCylinder\n\nAffects surface meshing:\n- surface_layer_growth_rate\n- `class` SurfaceRefinement\n- `class` SurfaceEdgeRefinement",
   "properties": {
-    "farfield": {
-      "anyOf": [
-        {
-          "enum": [
-            "auto",
-            "quasi-3d",
-            "user-defined"
-          ],
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": "auto",
-      "description": "Type of farfield generation.",
-      "title": "Farfield"
-    },
     "refinement_factor": {
       "anyOf": [
         {
@@ -1345,23 +1579,16 @@
           "type": "null"
         }
       ],
-      "default": null,
+      "default": 0,
       "description": "Narrow gap treatment strength used when two surfaces are in close proximity.\n        Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment.\n        This parameter has a global impact where the anisotropic transition into the isotropic mesh.\n        However the impact on regions without close proximity is negligible.",
       "title": "Gap Treatment Strength"
     },
     "surface_layer_growth_rate": {
-      "anyOf": [
-        {
-          "minimum": 1.0,
-          "type": "number"
-        },
-        {
-          "type": "null"
-        }
-      ],
       "default": 1.2,
       "description": "Global growth rate of the anisotropic layers grown from the edges.",
-      "title": "Surface Layer Growth Rate"
+      "minimum": 1.0,
+      "title": "Surface Layer Growth Rate",
+      "type": "number"
     },
     "refinements": {
       "default": [],
@@ -1399,13 +1626,34 @@
       "type": "array"
     },
     "volume_zones": {
-      "default": [],
+      "anyOf": [
+        {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "AutomatedFarfield": "#/$defs/AutomatedFarfield",
+                "RotationCylinder": "#/$defs/RotationCylinder"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RotationCylinder"
+              },
+              {
+                "$ref": "#/$defs/AutomatedFarfield"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
       "description": "Creation of new volume zones.",
-      "items": {
-        "$ref": "#/$defs/RotationCylinder"
-      },
-      "title": "Volume Zones",
-      "type": "array"
+      "title": "Volume Zones"
     }
   },
   "title": "MeshingParams",

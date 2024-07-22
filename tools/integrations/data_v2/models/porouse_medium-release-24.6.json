@@ -1,5 +1,4 @@
 {
-  "name": null,
   "type": "PorousMedium",
   "entities": {
     "stored_entities": [
@@ -7,7 +6,25 @@
         "private_attribute_registry_bucket_name": "VolumetricEntityType",
         "private_attribute_entity_type_name": "Box",
         "name": "my_box",
-        "private_attribute_zone_boundary_names": null,
+        "private_attribute_zone_boundary_names": {
+          "items": []
+        },
+        "type_name": "MultiConstructorBaseModel",
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {
+          "axes": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ]
+          ]
+        },
         "center": {
           "value": [
             1.2,
@@ -24,18 +41,15 @@
           ],
           "units": "m"
         },
-        "axes": [
-          [
-            0.6,
-            0.8,
-            0.0
-          ],
-          [
-            1.0,
-            0.0,
-            0.0
-          ]
-        ]
+        "axis_of_rotation": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "angle_of_rotation": {
+          "value": 0.0,
+          "units": "degree"
+        }
       }
     ]
   },
