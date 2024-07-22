@@ -9,12 +9,9 @@
       }
     ]
   },
-  "turbulence_quantities": null,
-  "name": null,
   "velocity": [
     "1",
     "2",
     "0"
-  ],
-  "velocity_type": "absolute"
+  ]
 }

@@ -1,14 +1,21 @@
 {
   "$defs": {
-    "EntityList_Surface_": {
+    "EntityList_Surface_GhostSurface_": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.Surface, flow360.component.simulation.primitives.GhostSurface]]]\n    ",
       "properties": {
         "stored_entities": {
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/Surface"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Surface"
+                  },
+                  {
+                    "$ref": "#/$defs/GhostSurface"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -22,12 +29,57 @@
       "required": [
         "stored_entities"
       ],
-      "title": "EntityList[Surface]",
+      "title": "EntityList[Surface,GhostSurface]",
+      "type": "object"
+    },
+    "GhostSurface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface that may or may not be generated therefore may or may not exist.\nIt depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['GhostSurface'] = GhostSurface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n    \nFor now we do not use metadata or any other information to validate (on the client side) whether the surface\nactually exists. We will let workflow error out if the surface is not found.\n\n- For meshing:\n   - we forbid using `GhostSurface` in any surface-related features which is not supported right now anyways.\n\n- For boundary condition and post-processing:\n    - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch\n    between the boundary condition and the mesh meta.",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "GhostSurface",
+          "default": "GhostSurface",
+          "enum": [
+            "GhostSurface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "GhostSurface",
       "type": "object"
     },
     "ModifiedTurbulentViscosity": {
       "additionalProperties": false,
-      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]]\n    ",
       "properties": {
         "type_name": {
           "const": "ModifiedTurbulentViscosity",
@@ -254,7 +306,7 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n        private_attribute_is_interface : typing.Optional[bool] = None\n    This is required when generated from volume mesh\n    but not required when from surface mesh meta.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "SurfaceEntityType",
@@ -277,6 +329,31 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        },
+        "private_attribute_is_interface": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This is required when generated from volume mesh\n        but not required when from surface mesh meta.",
+          "title": "Private Attribute Is Interface"
         }
       },
       "required": [
@@ -684,7 +761,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Freestream\n\nParameters\n----------\ntype : typing.Literal['Freestream'] = Freestream\n        entities : <class 'abc.EntityList[Surface]'>\n        turbulence_quantities : typing.Union[flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensity, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosity, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScaleAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndSpecificDissipationRate, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentLengthScale, NoneType] = None\n        name : typing.Optional[str] = None\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        velocity_type : typing.Literal['absolute', 'relative'] = relative\n    ",
+  "description": "Freestream\n\nParameters\n----------\ntype : typing.Literal['Freestream'] = Freestream\n        entities : <class 'abc.EntityList[Surface,GhostSurface]'>\n        turbulence_quantities : typing.Optional[typing.Annotated[typing.Union[flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensity, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.ModifiedTurbulentViscosity, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentLengthScaleAndTurbulentKineticEnergy, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndSpecificDissipationRate, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.TurbulentIntensityAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentViscosityRatio, flow360.component.simulation.models.turbulence_quantities.SpecificDissipationRateAndTurbulentLengthScale, flow360.component.simulation.models.turbulence_quantities.TurbulentViscosityRatioAndTurbulentLengthScale], FieldInfo(annotation=NoneType, required=True, discriminator='type_name')]] = None\n        name : typing.Optional[str] = None\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n    ",
   "properties": {
     "type": {
       "const": "Freestream",
@@ -696,54 +773,78 @@
       "type": "string"
     },
     "surfaces": {
-      "$ref": "#/$defs/EntityList_Surface_"
+      "$ref": "#/$defs/EntityList_Surface_GhostSurface_"
     },
     "turbulence_quantities": {
       "anyOf": [
         {
-          "$ref": "#/$defs/TurbulentViscosityRatio"
-        },
-        {
-          "$ref": "#/$defs/TurbulentKineticEnergy"
-        },
-        {
-          "$ref": "#/$defs/TurbulentIntensity"
-        },
-        {
-          "$ref": "#/$defs/TurbulentLengthScale"
-        },
-        {
-          "$ref": "#/$defs/ModifiedTurbulentViscosityRatio"
-        },
-        {
-          "$ref": "#/$defs/ModifiedTurbulentViscosity"
-        },
-        {
-          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentKineticEnergy"
-        },
-        {
-          "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentKineticEnergy"
-        },
-        {
-          "$ref": "#/$defs/TurbulentLengthScaleAndTurbulentKineticEnergy"
-        },
-        {
-          "$ref": "#/$defs/TurbulentIntensityAndSpecificDissipationRate"
-        },
-        {
-          "$ref": "#/$defs/TurbulentIntensityAndTurbulentViscosityRatio"
-        },
-        {
-          "$ref": "#/$defs/TurbulentIntensityAndTurbulentLengthScale"
-        },
-        {
-          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentViscosityRatio"
-        },
-        {
-          "$ref": "#/$defs/SpecificDissipationRateAndTurbulentLengthScale"
-        },
-        {
-          "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentLengthScale"
+          "discriminator": {
+            "mapping": {
+              "ModifiedTurbulentViscosity": "#/$defs/ModifiedTurbulentViscosity",
+              "ModifiedTurbulentViscosityRatio": "#/$defs/ModifiedTurbulentViscosityRatio",
+              "SpecificDissipationRateAndTurbulentKineticEnergy": "#/$defs/SpecificDissipationRateAndTurbulentKineticEnergy",
+              "SpecificDissipationRateAndTurbulentLengthScale": "#/$defs/SpecificDissipationRateAndTurbulentLengthScale",
+              "SpecificDissipationRateAndTurbulentViscosityRatio": "#/$defs/SpecificDissipationRateAndTurbulentViscosityRatio",
+              "TurbulentIntensity": "#/$defs/TurbulentIntensity",
+              "TurbulentIntensityAndSpecificDissipationRate": "#/$defs/TurbulentIntensityAndSpecificDissipationRate",
+              "TurbulentIntensityAndTurbulentLengthScale": "#/$defs/TurbulentIntensityAndTurbulentLengthScale",
+              "TurbulentIntensityAndTurbulentViscosityRatio": "#/$defs/TurbulentIntensityAndTurbulentViscosityRatio",
+              "TurbulentKineticEnergy": "#/$defs/TurbulentKineticEnergy",
+              "TurbulentLengthScale": "#/$defs/TurbulentLengthScale",
+              "TurbulentLengthScaleAndTurbulentKineticEnergy": "#/$defs/TurbulentLengthScaleAndTurbulentKineticEnergy",
+              "TurbulentViscosityRatio": "#/$defs/TurbulentViscosityRatio",
+              "TurbulentViscosityRatioAndTurbulentKineticEnergy": "#/$defs/TurbulentViscosityRatioAndTurbulentKineticEnergy",
+              "TurbulentViscosityRatioAndTurbulentLengthScale": "#/$defs/TurbulentViscosityRatioAndTurbulentLengthScale"
+            },
+            "propertyName": "type_name"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TurbulentViscosityRatio"
+            },
+            {
+              "$ref": "#/$defs/TurbulentKineticEnergy"
+            },
+            {
+              "$ref": "#/$defs/TurbulentIntensity"
+            },
+            {
+              "$ref": "#/$defs/TurbulentLengthScale"
+            },
+            {
+              "$ref": "#/$defs/ModifiedTurbulentViscosityRatio"
+            },
+            {
+              "$ref": "#/$defs/ModifiedTurbulentViscosity"
+            },
+            {
+              "$ref": "#/$defs/SpecificDissipationRateAndTurbulentKineticEnergy"
+            },
+            {
+              "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentKineticEnergy"
+            },
+            {
+              "$ref": "#/$defs/TurbulentLengthScaleAndTurbulentKineticEnergy"
+            },
+            {
+              "$ref": "#/$defs/TurbulentIntensityAndSpecificDissipationRate"
+            },
+            {
+              "$ref": "#/$defs/TurbulentIntensityAndTurbulentViscosityRatio"
+            },
+            {
+              "$ref": "#/$defs/TurbulentIntensityAndTurbulentLengthScale"
+            },
+            {
+              "$ref": "#/$defs/SpecificDissipationRateAndTurbulentViscosityRatio"
+            },
+            {
+              "$ref": "#/$defs/SpecificDissipationRateAndTurbulentLengthScale"
+            },
+            {
+              "$ref": "#/$defs/TurbulentViscosityRatioAndTurbulentLengthScale"
+            }
+          ]
         },
         {
           "type": "null"
@@ -812,15 +913,6 @@
       ],
       "default": null,
       "title": "Velocity"
-    },
-    "velocity_type": {
-      "default": "relative",
-      "enum": [
-        "absolute",
-        "relative"
-      ],
-      "title": "Velocity Type",
-      "type": "string"
     }
   },
   "required": [

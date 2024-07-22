@@ -2,7 +2,7 @@
   "$defs": {
     "Air": {
       "additionalProperties": false,
-      "description": "Material properties for Air\n\n\nParameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x15c0edee0>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
+      "description": "Material properties for Air\n\n\nParameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
       "properties": {
         "type": {
           "const": "air",
@@ -26,7 +26,7 @@
             {
               "properties": {
                 "value": {
-                  "exclusiveMinimum": 0,
+                  "minimum": 0,
                   "type": "number"
                 },
                 "units": {
@@ -63,7 +63,7 @@
     },
     "KOmegaSST": {
       "additionalProperties": false,
-      "description": ":class:`KOmegaSST` class\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-08\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_eval_frequency : <class 'int'> = 4\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 2.0\n        type_name : typing.Literal['kOmegaSST'] = kOmegaSST\n        DDES : <class 'bool'> = False\n        grid_size_for_LES : typing.Literal['maxEdgeLength', 'meanEdgeLength'] = maxEdgeLength\n        reconstruction_gradient_limiter : <class 'float'> = 1.0\n        quadratic_constitutive_relation : <class 'bool'> = False\n        modeling_constants : <class 'flow360.component.simulation.models.solver_numerics.KOmegaSSTModelConstants'> = KOmegaSSTModelConstants(type_name='kOmegaSSTConsts', C_DES1=0.78, C_DES2=0.61, C_d1=20.0, C_d2=3.0)\n    ",
+      "description": ":class:`KOmegaSST` class\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-08\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_evaluation_frequency : <class 'int'> = 4\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 2.0\n        type_name : typing.Literal['kOmegaSST'] = kOmegaSST\n        DDES : <class 'bool'> = False\n        grid_size_for_LES : typing.Literal['maxEdgeLength', 'meanEdgeLength'] = maxEdgeLength\n        reconstruction_gradient_limiter : <class 'float'> = 1.0\n        quadratic_constitutive_relation : <class 'bool'> = False\n        modeling_constants : <class 'flow360.component.simulation.models.solver_numerics.KOmegaSSTModelConstants'> = KOmegaSSTModelConstants(type_name='kOmegaSSTConsts', C_DES1=0.78, C_DES2=0.61, C_d1=20.0, C_d2=3.0)\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n    ",
       "properties": {
         "absolute_tolerance": {
           "default": 1e-08,
@@ -86,22 +86,10 @@
           "title": "Order Of Accuracy",
           "type": "integer"
         },
-        "equation_eval_frequency": {
+        "equation_evaluation_frequency": {
           "default": 4,
           "exclusiveMinimum": 0,
-          "title": "Equation Eval Frequency",
-          "type": "integer"
-        },
-        "update_jacobian_frequency": {
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "title": "Update Jacobian Frequency",
-          "type": "integer"
-        },
-        "max_force_jac_update_physical_steps": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Max Force Jac Update Physical Steps",
+          "title": "Equation Evaluation Frequency",
           "type": "integer"
         },
         "linear_solver": {
@@ -170,6 +158,18 @@
             "CD1": 20.0,
             "CD2": 3.0
           }
+        },
+        "update_jacobian_frequency": {
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "title": "Update Jacobian Frequency",
+          "type": "integer"
+        },
+        "max_force_jac_update_physical_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Force Jac Update Physical Steps",
+          "type": "integer"
         }
       },
       "title": "KOmegaSST",
@@ -376,7 +376,7 @@
     },
     "NavierStokesSolver": {
       "additionalProperties": false,
-      "description": ":class:`NavierStokesSolver` class for setting up compressible Navier-Stokes solver\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-10\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_eval_frequency : <class 'int'> = 1\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=30, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 1.0\n        kappa_MUSCL : <class 'float'> = -1\n        numerical_dissipation_factor : <class 'float'> = 1\n        limit_velocity : <class 'bool'> = False\n        limit_pressure_density : <class 'bool'> = False\n        type_name : typing.Literal['Compressible'] = Compressible\n        low_mach_preconditioner : <class 'bool'> = False\n        low_mach_preconditioner_threshold : typing.Optional[typing.Annotated[float, Ge(ge=0)]] = None\n    \nParameters\n----------\n\nabsolute_tolerance :\n    Tolerance for the NS residual, below which the solver goes to the next physical step\n\nrelative_tolerance :\n    Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is\n    defined as the ratio of the current pseudoStep\u2019s residual to the maximum residual present in the first\n    10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and\n    only absoluteTolerance is used as the convergence criterion\n\nCFL_multiplier :\n    Factor to the CFL definitions defined in \u201ctimeStepping\u201d section\n\nkappa_MUSCL :\n    Kappa for the MUSCL scheme, range from [-1, 1], with 1 being unstable. The default value of -1 leads to a 2nd\n    order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is\n    recommended for low subsonic flows leading to reduced dissipation\n\nupdate_jacobian_frequency :\n    Frequency at which the jacobian is updated.\n\nequation_eval_frequency :\n    Frequency at which to update the compressible NS equation in loosely-coupled simulations\n\nmax_force_jac_update_physical_steps :\n    When which physical steps, the jacobian matrix is updated every pseudo step\n\norder_of_accuracy :\n    Order of accuracy in space\n\nlimit_velocity :\n    Limiter for velocity\n\nlimit_pressure_density :\n    Limiter for pressure and density\n\nnumerical_dissipation_factor :\n    A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.\n    The recommended starting value for most low-dissipation runs is 0.2\n\nlinear_solver:\n    Linear solver settings\n\nlow_mach_preconditioner:\n    Uses preconditioning for accelerating low Mach number flows.\n\nlow_mach_preconditioner_threshold:\n    For flow regions with Mach numbers smaller than threshold, the input Mach number to the preconditioner is\n    assumed to be the threshold value if it is smaller than the threshold.\n    The default value for the threshold is the freestream Mach number.\n\nReturns\n-------\n:class:`NavierStokesSolver`\n    An instance of the component class NavierStokesSolver.\n\nExample\n-------\n>>> ns = NavierStokesSolver(absolute_tolerance=1e-10)",
+      "description": ":class:`NavierStokesSolver` class for setting up compressible Navier-Stokes solver\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-10\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_evaluation_frequency : <class 'int'> = 1\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=30, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 1.0\n        kappa_MUSCL : <class 'float'> = -1\n        numerical_dissipation_factor : <class 'float'> = 1\n        limit_velocity : <class 'bool'> = False\n        limit_pressure_density : <class 'bool'> = False\n        type_name : typing.Literal['Compressible'] = Compressible\n        low_mach_preconditioner : <class 'bool'> = False\n        low_mach_preconditioner_threshold : typing.Optional[typing.Annotated[float, Ge(ge=0)]] = None\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n    \nParameters\n----------\n\nabsolute_tolerance :\n    Tolerance for the NS residual, below which the solver goes to the next physical step\n\nrelative_tolerance :\n    Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is\n    defined as the ratio of the current pseudoStep\u2019s residual to the maximum residual present in the first\n    10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and\n    only absoluteTolerance is used as the convergence criterion\n\nCFL_multiplier :\n    Factor to the CFL definitions defined in \u201ctimeStepping\u201d section\n\nkappa_MUSCL :\n    Kappa for the MUSCL scheme, range from [-1, 1], with 1 being unstable. The default value of -1 leads to a 2nd\n    order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is\n    recommended for low subsonic flows leading to reduced dissipation\n\nupdate_jacobian_frequency :\n    Frequency at which the jacobian is updated.\n\nequation_evaluation_frequency :\n    Frequency at which to update the compressible NS equation in loosely-coupled simulations\n\nmax_force_jac_update_physical_steps :\n    When which physical steps, the jacobian matrix is updated every pseudo step\n\norder_of_accuracy :\n    Order of accuracy in space\n\nlimit_velocity :\n    Limiter for velocity\n\nlimit_pressure_density :\n    Limiter for pressure and density\n\nnumerical_dissipation_factor :\n    A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.\n    The recommended starting value for most low-dissipation runs is 0.2\n\nlinear_solver:\n    Linear solver settings\n\nlow_mach_preconditioner:\n    Uses preconditioning for accelerating low Mach number flows.\n\nlow_mach_preconditioner_threshold:\n    For flow regions with Mach numbers smaller than threshold, the input Mach number to the preconditioner is\n    assumed to be the threshold value if it is smaller than the threshold.\n    The default value for the threshold is the freestream Mach number.\n\nReturns\n-------\n:class:`NavierStokesSolver`\n    An instance of the component class NavierStokesSolver.\n\nExample\n-------\n>>> ns = NavierStokesSolver(absolute_tolerance=1e-10)",
       "properties": {
         "absolute_tolerance": {
           "default": 1e-10,
@@ -399,22 +399,10 @@
           "title": "Order Of Accuracy",
           "type": "integer"
         },
-        "equation_eval_frequency": {
+        "equation_evaluation_frequency": {
           "default": 1,
           "exclusiveMinimum": 0,
-          "title": "Equation Eval Frequency",
-          "type": "integer"
-        },
-        "update_jacobian_frequency": {
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "title": "Update Jacobian Frequency",
-          "type": "integer"
-        },
-        "max_force_jac_update_physical_steps": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Max Force Jac Update Physical Steps",
+          "title": "Equation Evaluation Frequency",
           "type": "integer"
         },
         "linear_solver": {
@@ -485,6 +473,18 @@
           ],
           "default": null,
           "title": "Low Mach Preconditioner Threshold"
+        },
+        "update_jacobian_frequency": {
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "title": "Update Jacobian Frequency",
+          "type": "integer"
+        },
+        "max_force_jac_update_physical_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Force Jac Update Physical Steps",
+          "type": "integer"
         }
       },
       "title": "NavierStokesSolver",
@@ -509,7 +509,7 @@
     },
     "SpalartAllmaras": {
       "additionalProperties": false,
-      "description": ":class:`SpalartAllmaras` class\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-08\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_eval_frequency : <class 'int'> = 4\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 2.0\n        type_name : typing.Literal['SpalartAllmaras'] = SpalartAllmaras\n        DDES : <class 'bool'> = False\n        grid_size_for_LES : typing.Literal['maxEdgeLength', 'meanEdgeLength'] = maxEdgeLength\n        reconstruction_gradient_limiter : typing.Optional[typing.Annotated[float, None, Interval(gt=None, ge=0, lt=None, le=2), None, None]] = 0.5\n        quadratic_constitutive_relation : <class 'bool'> = False\n        modeling_constants : typing.Optional[flow360.component.simulation.models.solver_numerics.SpalartAllmarasModelConstants] = SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts', C_DES=0.72, C_d=8.0)\n        rotation_correction : <class 'bool'> = False\n    ",
+      "description": ":class:`SpalartAllmaras` class\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-08\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_evaluation_frequency : <class 'int'> = 4\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        CFL_multiplier : <class 'float'> = 2.0\n        type_name : typing.Literal['SpalartAllmaras'] = SpalartAllmaras\n        DDES : <class 'bool'> = False\n        grid_size_for_LES : typing.Literal['maxEdgeLength', 'meanEdgeLength'] = maxEdgeLength\n        reconstruction_gradient_limiter : typing.Optional[typing.Annotated[float, None, Interval(gt=None, ge=0, lt=None, le=2), None, None]] = 0.5\n        quadratic_constitutive_relation : <class 'bool'> = False\n        modeling_constants : typing.Optional[flow360.component.simulation.models.solver_numerics.SpalartAllmarasModelConstants] = SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts', C_DES=0.72, C_d=8.0)\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        rotation_correction : <class 'bool'> = False\n    ",
       "properties": {
         "absolute_tolerance": {
           "default": 1e-08,
@@ -532,22 +532,10 @@
           "title": "Order Of Accuracy",
           "type": "integer"
         },
-        "equation_eval_frequency": {
+        "equation_evaluation_frequency": {
           "default": 4,
           "exclusiveMinimum": 0,
-          "title": "Equation Eval Frequency",
-          "type": "integer"
-        },
-        "update_jacobian_frequency": {
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "title": "Update Jacobian Frequency",
-          "type": "integer"
-        },
-        "max_force_jac_update_physical_steps": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Max Force Jac Update Physical Steps",
+          "title": "Equation Evaluation Frequency",
           "type": "integer"
         },
         "linear_solver": {
@@ -625,6 +613,18 @@
             "CD": 8.0
           }
         },
+        "update_jacobian_frequency": {
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "title": "Update Jacobian Frequency",
+          "type": "integer"
+        },
+        "max_force_jac_update_physical_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Force Jac Update Physical Steps",
+          "type": "integer"
+        },
         "rotation_correction": {
           "default": false,
           "title": "Rotation Correction",
@@ -670,7 +670,7 @@
         "reference_viscosity": {
           "properties": {
             "value": {
-              "exclusiveMinimum": 0,
+              "minimum": 0,
               "type": "number"
             },
             "units": {
@@ -730,7 +730,7 @@
     },
     "TransitionModelSolver": {
       "additionalProperties": false,
-      "description": ":class:`TransitionModelSolver` class for setting up transition model solver\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-07\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_eval_frequency : <class 'int'> = 4\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        type_name : typing.Literal['AmplificationFactorTransport'] = AmplificationFactorTransport\n        turbulence_intensity_percent : <class 'float'> = 1.0\n        N_crit : <class 'float'> = 8.15\n    \nParameters\n----------\n\n(...)\n\nReturns\n-------\n:class:`TransitionModelSolver`\n    An instance of the component class TransitionModelSolver.\n\nExample\n-------\n>>> ts = TransitionModelSolver(absolute_tolerance=1e-10)",
+      "description": ":class:`TransitionModelSolver` class for setting up transition model solver\n\nParameters\n----------\nabsolute_tolerance : <class 'float'> = 1e-07\n        relative_tolerance : <class 'float'> = 0\n        order_of_accuracy : typing.Literal[1, 2] = 2\n        equation_evaluation_frequency : <class 'int'> = 4\n        linear_solver : <class 'flow360.component.simulation.models.solver_numerics.LinearSolver'> = LinearSolver(max_iterations=20, absolute_tolerance=None, relative_tolerance=None)\n        type_name : typing.Literal['AmplificationFactorTransport'] = AmplificationFactorTransport\n        turbulence_intensity_percent : <class 'float'> = 1.0\n        N_crit : <class 'float'> = 8.15\n        update_jacobian_frequency : <class 'int'> = 4\n        max_force_jac_update_physical_steps : <class 'int'> = 0\n    \nParameters\n----------\n\n(...)\n\nReturns\n-------\n:class:`TransitionModelSolver`\n    An instance of the component class TransitionModelSolver.\n\nExample\n-------\n>>> ts = TransitionModelSolver(absolute_tolerance=1e-10)",
       "properties": {
         "absolute_tolerance": {
           "default": 1e-07,
@@ -753,22 +753,10 @@
           "title": "Order Of Accuracy",
           "type": "integer"
         },
-        "equation_eval_frequency": {
+        "equation_evaluation_frequency": {
           "default": 4,
           "exclusiveMinimum": 0,
-          "title": "Equation Eval Frequency",
-          "type": "integer"
-        },
-        "update_jacobian_frequency": {
-          "default": 4,
-          "exclusiveMinimum": 0,
-          "title": "Update Jacobian Frequency",
-          "type": "integer"
-        },
-        "max_force_jac_update_physical_steps": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Max Force Jac Update Physical Steps",
+          "title": "Equation Evaluation Frequency",
           "type": "integer"
         },
         "linear_solver": {
@@ -805,6 +793,18 @@
           "minimum": 1.0,
           "title": "N Crit",
           "type": "number"
+        },
+        "update_jacobian_frequency": {
+          "default": 4,
+          "exclusiveMinimum": 0,
+          "title": "Update Jacobian Frequency",
+          "type": "integer"
+        },
+        "max_force_jac_update_physical_steps": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Force Jac Update Physical Steps",
+          "type": "integer"
         }
       },
       "title": "TransitionModelSolver",
@@ -812,7 +812,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.Air'> = Air(type='air', name='air', dynamic_viscosity=Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'),, reference_temperature=unyt_quantity(273.15,, 'K'),, effective_temperature=unyt_quantity(110.4,, 'K')))\n        initial_condition : typing.Union[flow360.component.simulation.models.volume_models.NavierStokesModifiedRestartSolution, flow360.component.simulation.models.volume_models.NavierStokesInitialCondition, NoneType] = None\n        type : typing.Literal['Fluid'] = Fluid\n        navier_stokes_solver : <class 'flow360.component.simulation.models.solver_numerics.NavierStokesSolver'> = NavierStokesSolver(absolute_tolerance=1e-10, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=1, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=30,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=1.0, kappa_MUSCL=-1.0, numerical_dissipation_factor=1.0, limit_velocity=False, limit_pressure_density=False, type_name='Compressible', low_mach_preconditioner=False, low_mach_preconditioner_threshold=None)\n        turbulence_model_solver : typing.Union[flow360.component.simulation.models.solver_numerics.NoneSolver, flow360.component.simulation.models.solver_numerics.SpalartAllmaras, flow360.component.simulation.models.solver_numerics.KOmegaSST] = SpalartAllmaras(absolute_tolerance=1e-08, relative_tolerance=0.0, order_of_accuracy=2, equation_eval_frequency=4, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, linear_solver=LinearSolver(max_iterations=20,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=2.0, type_name='SpalartAllmaras', DDES=False, grid_size_for_LES='maxEdgeLength', reconstruction_gradient_limiter=0.5, quadratic_constitutive_relation=False, modeling_constants=SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts',, C_DES=0.72,, C_d=8.0), rotation_correction=False)\n        transition_model_solver : typing.Optional[flow360.component.simulation.models.solver_numerics.TransitionModelSolver] = None\n    ",
+  "description": "General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.\n\n\nParameters\n----------\nmaterial : <class 'flow360.component.simulation.models.material.Air'> = Air(type='air', name='air', dynamic_viscosity=Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'),, reference_temperature=unyt_quantity(273.15,, 'K'),, effective_temperature=unyt_quantity(110.4,, 'K')))\n        initial_condition : typing.Union[flow360.component.simulation.models.volume_models.NavierStokesModifiedRestartSolution, flow360.component.simulation.models.volume_models.NavierStokesInitialCondition, NoneType] = None\n        type : typing.Literal['Fluid'] = Fluid\n        navier_stokes_solver : <class 'flow360.component.simulation.models.solver_numerics.NavierStokesSolver'> = NavierStokesSolver(absolute_tolerance=1e-10, relative_tolerance=0.0, order_of_accuracy=2, equation_evaluation_frequency=1, linear_solver=LinearSolver(max_iterations=30,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=1.0, kappa_MUSCL=-1.0, numerical_dissipation_factor=1.0, limit_velocity=False, limit_pressure_density=False, type_name='Compressible', low_mach_preconditioner=False, low_mach_preconditioner_threshold=None, update_jacobian_frequency=4, max_force_jac_update_physical_steps=0)\n        turbulence_model_solver : typing.Union[flow360.component.simulation.models.solver_numerics.NoneSolver, flow360.component.simulation.models.solver_numerics.SpalartAllmaras, flow360.component.simulation.models.solver_numerics.KOmegaSST] = SpalartAllmaras(absolute_tolerance=1e-08, relative_tolerance=0.0, order_of_accuracy=2, equation_evaluation_frequency=4, linear_solver=LinearSolver(max_iterations=20,, absolute_tolerance=None,, relative_tolerance=None), CFL_multiplier=2.0, type_name='SpalartAllmaras', DDES=False, grid_size_for_LES='maxEdgeLength', reconstruction_gradient_limiter=0.5, quadratic_constitutive_relation=False, modeling_constants=SpalartAllmarasModelConstants(type_name='SpalartAllmarasConsts',, C_DES=0.72,, C_d=8.0), update_jacobian_frequency=4, max_force_jac_update_physical_steps=0, rotation_correction=False)\n        transition_model_solver : typing.Optional[flow360.component.simulation.models.solver_numerics.TransitionModelSolver] = None\n    ",
   "properties": {
     "material": {
       "allOf": [
@@ -873,9 +873,7 @@
         "absoluteTolerance": 1e-10,
         "relativeTolerance": 0.0,
         "orderOfAccuracy": 2,
-        "equationEvalFrequency": 1,
-        "updateJacobianFrequency": 4,
-        "maxForceJacUpdatePhysicalSteps": 0,
+        "equationEvaluationFrequency": 1,
         "linearSolver": {
           "absoluteTolerance": null,
           "maxIterations": 30,
@@ -888,7 +886,9 @@
         "limitPressureDensity": false,
         "typeName": "Compressible",
         "lowMachPreconditioner": false,
-        "lowMachPreconditionerThreshold": null
+        "lowMachPreconditionerThreshold": null,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0
       }
     },
     "turbulence_model_solver": {
@@ -907,9 +907,7 @@
         "absoluteTolerance": 1e-08,
         "relativeTolerance": 0.0,
         "orderOfAccuracy": 2,
-        "equationEvalFrequency": 4,
-        "updateJacobianFrequency": 4,
-        "maxForceJacUpdatePhysicalSteps": 0,
+        "equationEvaluationFrequency": 4,
         "linearSolver": {
           "absoluteTolerance": null,
           "maxIterations": 20,
@@ -926,6 +924,8 @@
           "CDES": 0.72,
           "typeName": "SpalartAllmarasConsts"
         },
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
         "rotationCorrection": false
       },
       "title": "Turbulence Model Solver"

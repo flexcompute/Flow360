@@ -20,12 +20,10 @@
       "units": "1/s"
     }
   },
-  "name": null,
   "total_temperature": {
     "value": 300.0,
     "units": "K"
   },
-  "velocity_direction": null,
   "spec": {
     "value": {
       "value": 123.0,

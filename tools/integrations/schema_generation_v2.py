@@ -198,6 +198,7 @@ with SI_unit_system:
         inner_radius=3.0 * u.m,
         outer_radius=5.0 * u.m,
     )
+    my_cylinder_2 = my_cylinder_1.copy(update={"name": "my_cylinder-2"})
     my_solid_zone = GenericVolume(
         name="my_cylinder-2",
     )
@@ -207,7 +208,7 @@ with SI_unit_system:
         surface_layer_growth_rate=1.5,
         refinements=[
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
-            UniformRefinement(entities=[my_box, my_cylinder_1], spacing=0.1 * u.m),
+            UniformRefinement(entities=[my_box, my_cylinder_2], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
             SurfaceEdgeRefinement(edges=[edge], method=HeightBasedRefinement(value=1 * u.m)),
             SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2)),
@@ -477,7 +478,7 @@ write_example(my_wall, "models", "slip_wall")
 
 
 write_schemas(Freestream, "models", "freestream")
-my_fs_surface = Freestream(entities=[my_fs], velocity=("1", "2", "0"), velocity_type="absolute")
+my_fs_surface = Freestream(entities=[my_fs], velocity=("1", "2", "0"))
 write_example(my_fs_surface, "models", "freestream")
 
 

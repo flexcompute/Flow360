@@ -41,7 +41,7 @@
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n        private_attribute_is_interface : typing.Optional[bool] = None\n    This is required when generated from volume mesh\n    but not required when from surface mesh meta.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "SurfaceEntityType",
@@ -64,6 +64,31 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        },
+        "private_attribute_is_interface": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This is required when generated from volume mesh\n        but not required when from surface mesh meta.",
+          "title": "Private Attribute Is Interface"
         }
       },
       "required": [

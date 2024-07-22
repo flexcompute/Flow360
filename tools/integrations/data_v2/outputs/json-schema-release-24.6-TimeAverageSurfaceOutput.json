@@ -1,14 +1,21 @@
 {
   "$defs": {
-    "EntityList_Surface_": {
+    "EntityList_Surface_GhostSurface_": {
       "additionalProperties": false,
-      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.primitives.Surface]]\n    ",
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[typing.Union[flow360.component.simulation.primitives.Surface, flow360.component.simulation.primitives.GhostSurface]]]\n    ",
       "properties": {
         "stored_entities": {
           "anyOf": [
             {
               "items": {
-                "$ref": "#/$defs/Surface"
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Surface"
+                  },
+                  {
+                    "$ref": "#/$defs/GhostSurface"
+                  }
+                ]
               },
               "type": "array"
             },
@@ -22,12 +29,57 @@
       "required": [
         "stored_entities"
       ],
-      "title": "EntityList[Surface]",
+      "title": "EntityList[Surface,GhostSurface]",
+      "type": "object"
+    },
+    "GhostSurface": {
+      "additionalProperties": false,
+      "description": "Represents a boudary surface that may or may not be generated therefore may or may not exist.\nIt depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['GhostSurface'] = GhostSurface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n    \nFor now we do not use metadata or any other information to validate (on the client side) whether the surface\nactually exists. We will let workflow error out if the surface is not found.\n\n- For meshing:\n   - we forbid using `GhostSurface` in any surface-related features which is not supported right now anyways.\n\n- For boundary condition and post-processing:\n    - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch\n    between the boundary condition and the mesh meta.",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SurfaceEntityType",
+          "default": "SurfaceEntityType",
+          "enum": [
+            "SurfaceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "GhostSurface",
+          "default": "GhostSurface",
+          "enum": [
+            "GhostSurface"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "GhostSurface",
       "type": "object"
     },
     "Surface": {
       "additionalProperties": false,
-      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n    ",
+      "description": "Represents a boudary surface in three-dimensional space.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SurfaceEntityType'] = SurfaceEntityType\n        private_attribute_entity_type_name : typing.Literal['Surface'] = Surface\n        name : <class 'str'>\n        private_attribute_full_name : typing.Optional[str] = None\n        private_attribute_is_interface : typing.Optional[bool] = None\n    This is required when generated from volume mesh\n    but not required when from surface mesh meta.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "SurfaceEntityType",
@@ -50,6 +102,31 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "private_attribute_full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Attribute Full Name"
+        },
+        "private_attribute_is_interface": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "This is required when generated from volume mesh\n        but not required when from surface mesh meta.",
+          "title": "Private Attribute Is Interface"
         }
       },
       "required": [
@@ -58,7 +135,7 @@
       "title": "Surface",
       "type": "object"
     },
-    "UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____CfVec____Cf____heatFlux____nodeNormals____nodeForcesPerUnitArea____yPlus____wallFunctionMetric___": {
+    "UniqueAliasedStringList_Literal_": {
       "additionalProperties": false,
       "description": "Parameters\n----------\nitems : typing.List[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]\n    ",
       "properties": {
@@ -105,12 +182,12 @@
       "required": [
         "items"
       ],
-      "title": "UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]",
+      "title": "UniqueAliasedStringList[Literal]",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Surface output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        entities : typing.Optional[abc.EntityList[Surface]] = None\n        write_single_file : <class 'bool'> = False\n    Enable writing all surface outputs into a single file instead of one file per surface.\n    This option currently only supports Tecplot output format.\n    Will choose the value of the last instance of this option of the same output type\n    (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.\noutput_fields : <class 'abc.UniqueAliasedStringList[typing.Literal['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric']]'>\n        output_type : typing.Literal['SurfaceOutput'] = SurfaceOutput\n    ",
+  "description": "Surface output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        name : typing.Optional[str] = None\n        entities : typing.Optional[abc.EntityList[Surface,GhostSurface]] = None\n        write_single_file : <class 'bool'> = False\n    Enable writing all surface outputs into a single file instead of one file per surface.\n    This option currently only supports Tecplot output format.\n    Will choose the value of the last instance of this option of the same output type\n    (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.\noutput_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['SurfaceOutput'] = SurfaceOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
@@ -136,10 +213,22 @@
       "title": "Output Format",
       "type": "string"
     },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
     "surfaces": {
       "anyOf": [
         {
-          "$ref": "#/$defs/EntityList_Surface_"
+          "$ref": "#/$defs/EntityList_Surface_GhostSurface_"
         },
         {
           "type": "null"
@@ -154,7 +243,7 @@
       "type": "boolean"
     },
     "output_fields": {
-      "$ref": "#/$defs/UniqueAliasedStringList_Literal__Cp____gradW____kOmega____Mach____mut____mutRatio____nuHat____primitiveVars____qcriterion____residualNavierStokes____residualTransition____residualTurbulence____s____solutionNavierStokes____solutionTransition____solutionTurbulence____T____vorticity____wallDistance____numericalDissipationFactor____residualHeatSolver____VelocityRelative____lowMachPreconditionerSensor____CfVec____Cf____heatFlux____nodeNormals____nodeForcesPerUnitArea____yPlus____wallFunctionMetric___"
+      "$ref": "#/$defs/UniqueAliasedStringList_Literal_"
     },
     "output_type": {
       "const": "SurfaceOutput",
