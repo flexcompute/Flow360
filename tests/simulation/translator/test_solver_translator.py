@@ -40,6 +40,9 @@ from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
 )
+from tests.simulation.translator.utils.symmetryBC_params_generator import (
+    create_symmetryBC_param,
+)
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
     create_vortex_propagation_param,
@@ -228,3 +231,8 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
     translate_and_compare(
         param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6wing_wall_model.json", atol=1e-12
     )
+
+
+def test_symmetryBC(create_symmetryBC_param):
+    param = create_symmetryBC_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_symmetryBC.json")

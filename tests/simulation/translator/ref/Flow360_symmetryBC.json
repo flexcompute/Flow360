@@ -1,0 +1,108 @@
+{
+    "freestream": {
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "Mach": 0.19999999999999998,
+        "Temperature": 288.15,
+        "muRef": 4.292519319815165e-08
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 5000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 35
+        },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-09,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "gridSizeForLES": "maxEdgeLength",
+        "reconstructionGradientLimiter": 0.5,
+        "quadraticConstitutiveRelation": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "rotationCorrection": false,
+        "equationEvalFrequency": 4,
+        "modelType": "SpalartAllmaras",
+        "modelConstants": {
+            "C_d": 8.0,
+            "C_DES": 0.72
+        }
+    },
+    "boundaries": {
+        "fluid/wall": {
+            "type": "NoSlipWall"
+        },
+        "fluid/symmetry": {
+            "type": "SymmetryPlane"
+        },
+        "fluid/farfield": {
+            "type": "Freestream"
+        }
+    },
+    "volumeOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "Mach",
+            "gradW"
+        ],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "fluid/wall": {
+                "outputFields": [
+                    "primitiveVars",
+                    "Cp",
+                    "Cf",
+                    "yPlus"
+                ]
+            }
+        },
+        "writeSingleFile": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    }
+}

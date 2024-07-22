@@ -601,6 +601,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "SlipWall"
     elif isinstance(model, Freestream):
         boundary["type"] = "Freestream"
+    elif isinstance(model, SymmetryPlane):
+        boundary["type"] = "SymmetryPlane"
 
     return boundary
 
