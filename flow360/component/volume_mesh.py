@@ -304,7 +304,7 @@ class VolumeMeshDraft(ResourceDraft):
             if not mesh_parser.is_valid_volume_mesh():
                 raise Flow360ValueError(
                     f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
-                    f"Supported: [{MeshFileFormat.STL.ext()},{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
+                    f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
                 )
 
         if name is None and file_name is not None:
