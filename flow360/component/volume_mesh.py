@@ -9,7 +9,8 @@ from enum import Enum
 from typing import Iterator, List, Optional, Union
 
 import numpy as np
-from pydantic.v1 import Extra, Field, validator
+import pydantic as pd
+from pydantic import Field
 
 from flow360.component.compress_upload import compress_and_upload_chunks
 from flow360.flags import Flags
@@ -312,7 +313,7 @@ class CompressionFormat(Enum):
 
 
 # pylint: disable=E0213
-class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
+class VolumeMeshMeta(Flow360ResourceBaseModel, extra="allow"):
     """
     VolumeMeshMeta component
     """
@@ -328,21 +329,21 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     compression: CompressionFormat = Field(alias="meshCompression")
     boundaries: Union[List, None]
 
-    @validator("mesh_params", pre=True)
+    @pd.field_validator("mesh_params", mode="before")
     def init_mesh_params(cls, value):
         """
         validator for mesh_params
         """
         return params_generic_validator(value, Flow360MeshParams)
 
-    @validator("endianness", pre=True)
+    @pd.field_validator("endianness", mode="before")
     def init_endianness(cls, value):
         """
         validator for endianess
         """
         return UGRIDEndianness(value) or UGRIDEndianness.NONE
 
-    @validator("compression", pre=True)
+    @pd.field_validator("compression", mode="before")
     def init_compression(cls, value):
         """
         validator for compression
