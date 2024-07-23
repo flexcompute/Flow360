@@ -28,8 +28,8 @@ from .resource_base import (
 from .utils import (
     CompressionFormat,
     MeshFileFormat,
-    UGRIDEndianness,
     MeshNameParser,
+    UGRIDEndianness,
     get_mapbc_from_ugrid,
     shared_account_confirm_proceed,
     validate_type,
