@@ -1,5 +1,6 @@
 """Output for simulation."""
 
+from abc import ABCMeta
 from typing import List, Literal
 
 import pydantic as pd
@@ -9,7 +10,7 @@ from flow360.component.flow360_params.flow360_fields import (
     IsoSurfaceFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
@@ -32,9 +33,18 @@ class _OutputItemBase(Flow360BaseModel):
         return f"{self.__class__.__name__} with name: {self.name}"
 
 
-class Slice(_OutputItemBase):
+class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
+    private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
+
+
+class _ProbeEntityBase(EntityBase, metaclass=ABCMeta):
+    private_attribute_registry_bucket_name: Literal["ProbeEntityType"] = "ProbeEntityType"
+
+
+class Slice(_SliceEntityBase):
     """Slice output item."""
 
+    private_attribute_entity_type_name: Literal["Slice"] = pd.Field("Slice", frozen=True)
     normal: Axis = pd.Field()
     # pylint: disable=no-member
     origin: LengthType.Point = pd.Field()
@@ -55,8 +65,9 @@ class SurfaceList(_OutputItemBase):
     entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
-class Probe(_OutputItemBase):
+class Probe(_ProbeEntityBase):
     """Probe monitor"""
 
+    private_attribute_entity_type_name: Literal["Probe"] = pd.Field("Probe", frozen=True)
     # pylint: disable=no-member
     locations: List[LengthType.Point] = pd.Field()
