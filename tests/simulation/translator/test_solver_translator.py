@@ -33,6 +33,10 @@ from tests.simulation.translator.utils.actuator_disk_param_generator import (
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
+from tests.simulation.translator.utils.NestedCylindersSRF_param_generator import (
+    create_NestedCylindersSRF_param,
+    rotation_cylinder,
+)
 from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
     create_om6wing_wall_model_param,
 )
@@ -245,3 +249,10 @@ def test_symmetryBC(create_symmetryBC_param):
 def test_XV15HoverMRF(create_XV15HoverMRF_param, rotation_cylinder):
     param = create_XV15HoverMRF_param
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_XV15HoverMRF.json")
+
+
+def test_NestedCylindersSRF(create_NestedCylindersSRF_param, rotation_cylinder):
+    param = create_NestedCylindersSRF_param
+    translate_and_compare(
+        param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_NestedCylindersSRF.json"
+    )

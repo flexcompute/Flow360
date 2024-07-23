@@ -564,7 +564,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     if isinstance(model, Wall):
         boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
-            boundary["velocity"] = model_dict["velocity"]
+            boundary["velocity"] = list(model_dict["velocity"])
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
