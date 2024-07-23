@@ -23,7 +23,7 @@ surface_mesh_draft = fl.SurfaceMesh.create(
     geometry_id=geometry.id,
     params=params,
     name="airplane-surface-mesh-from-geometry-id-v2",
-    solver_version="mesher-24.2.1",
+    solver_version="mesher-24.2.2",
 )
 surface_mesh = surface_mesh_draft.submit()
 
@@ -43,7 +43,7 @@ volume_mesh_draft = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
     name="airplane-volume-mesh-from-geometry-id-v2",
     params=params,
-    solver_version="mesher-24.2.1",
+    solver_version="mesher-24.2.2",
 )
 volume_mesh = volume_mesh_draft.submit()
 print(volume_mesh)

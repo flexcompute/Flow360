@@ -5,6 +5,7 @@ Utility functions
 import os
 import re
 import uuid
+from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
 
@@ -13,7 +14,12 @@ import zstandard as zstd
 from ..accounts_utils import Accounts
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
-from ..exceptions import Flow360TypeError, Flow360ValueError
+from ..exceptions import (
+    Flow360FileError,
+    Flow360RuntimeError,
+    Flow360TypeError,
+    Flow360ValueError,
+)
 from ..log import log
 
 SUPPORTED_GEOMETRY_FILE_PATTERNS = [
@@ -62,7 +68,7 @@ def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
     Checks if id is valid
     """
     if valid_prefixes is None:
-        valid_prefixes = ["folder-", "g-"]
+        valid_prefixes = ["folder-", "g-", "geo-", "sm-", "vm-", "c-"]
     if id is None and allow_none:
         return
     try:
@@ -331,3 +337,176 @@ def remove_properties_by_name(data, name_to_remove):
     if isinstance(data, list):
         return [remove_properties_by_name(item, name_to_remove) for item in data]
     return data
+
+
+def get_mapbc_from_ugrid(ugrid):
+    """
+    return associated mapbc file name from the ugrid mesh file
+    """
+    mapbc = ugrid.replace(".lb8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".b8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".ugrid", ".mapbc")
+    return mapbc
+
+
+class MeshFileFormat(Enum):
+    """
+    Mesh file format
+    """
+
+    UGRID = "aflr3"
+    CGNS = "cgns"
+    STL = "stl"
+
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is MeshFileFormat.UGRID:
+            return ".ugrid"
+        if self is MeshFileFormat.CGNS:
+            return ".cgns"
+        if self is MeshFileFormat.STL:
+            return ".stl"
+        return ""
+
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects mesh format from filename
+        """
+        ext = os.path.splitext(file)[1].lower()
+        if ext == MeshFileFormat.UGRID.ext():
+            return MeshFileFormat.UGRID
+        if ext == MeshFileFormat.CGNS.ext():
+            return MeshFileFormat.CGNS
+        if ext == MeshFileFormat.STL.ext():
+            return MeshFileFormat.STL
+        raise Flow360FileError(f"Unsupported file format {file}")
+
+
+class UGRIDEndianness(Enum):
+    """
+    UGRID endianness
+    """
+
+    LITTLE = "little"
+    BIG = "big"
+    NONE = None
+
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is UGRIDEndianness.LITTLE:
+            return ".lb8"
+        if self is UGRIDEndianness.BIG:
+            return ".b8"
+        return ""
+
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects endianess UGRID mesh from filename
+        """
+        if MeshFileFormat.detect(file) is not MeshFileFormat.UGRID:
+            return UGRIDEndianness.NONE
+        basename = os.path.splitext(file)[0]
+        ext = os.path.splitext(basename)[1]
+        if ext == UGRIDEndianness.LITTLE.ext():
+            return UGRIDEndianness.LITTLE
+        if ext == UGRIDEndianness.BIG.ext():
+            return UGRIDEndianness.BIG
+        if ext == UGRIDEndianness.NONE.ext():
+            return UGRIDEndianness.NONE
+        raise Flow360RuntimeError(f"Unknown endianness for file {file}")
+
+
+class CompressionFormat(Enum):
+    """
+    Volume mesh file format
+    """
+
+    GZ = "gz"
+    BZ2 = "bz2"
+    ZST = "zst"
+    NONE = None
+
+    def ext(self) -> str:
+        """
+        Get the extention for a file name.
+        :return:
+        """
+        if self is CompressionFormat.GZ:
+            return ".gz"
+        if self is CompressionFormat.BZ2:
+            return ".bz2"
+        if self is CompressionFormat.ZST:
+            return ".zst"
+        return ""
+
+    @classmethod
+    def detect(cls, file: str):
+        """
+        detects compression from filename
+        """
+        file_name, ext = os.path.splitext(file)
+        ext = ext.lower()
+        if ext == CompressionFormat.GZ.ext():
+            return CompressionFormat.GZ, file_name
+        if ext == CompressionFormat.BZ2.ext():
+            return CompressionFormat.BZ2, file_name
+        if ext == CompressionFormat.ZST.ext():
+            return CompressionFormat.ZST, file_name
+        return CompressionFormat.NONE, file
+
+
+class MeshNameParser:
+    """
+    parse a given mesh name to handle endianness, format and compression
+    """
+
+    def __init__(self, input_mesh_file):
+        self._compression, self._file_name_no_compression = CompressionFormat.detect(
+            input_mesh_file
+        )
+        self._format = MeshFileFormat.detect(self._file_name_no_compression)
+        self._endianness = UGRIDEndianness.detect(self._file_name_no_compression)
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def compression(self):
+        return self._compression
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def file_name_no_compression(self):
+        return self._file_name_no_compression
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def format(self):
+        return self._format
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def endianness(self):
+        return self._endianness
+
+    # pylint: disable=missing-function-docstring
+    def is_ugrid(self):
+        return self.format is MeshFileFormat.UGRID
+
+    # pylint: disable=missing-function-docstring
+    def is_compressed(self):
+        return self.compression is not CompressionFormat.NONE
+
+    # pylint: disable=missing-function-docstring
+    def is_valid_surface_mesh(self):
+        return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS, MeshFileFormat.STL]
+
+    # pylint: disable=missing-function-docstring
+    def is_valid_volume_mesh(self):
+        return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]

@@ -4,7 +4,6 @@ Surface mesh component
 
 from __future__ import annotations
 
-import operator
 import os
 from enum import Enum
 from typing import Iterator, List, Union
@@ -13,8 +12,9 @@ import pydantic.v1 as pd
 
 from flow360.flags import Flags
 
+from ..cloud.requests import NewSurfaceMeshRequest
 from ..cloud.rest_api import RestApi
-from ..exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValueError
+from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
 from .interfaces import SurfaceMeshInterface
@@ -25,9 +25,20 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .utils import shared_account_confirm_proceed, validate_type
+from .utils import (
+    CompressionFormat,
+    MeshFileFormat,
+    MeshNameParser,
+    get_mapbc_from_ugrid,
+    shared_account_confirm_proceed,
+    validate_type,
+    zstd_compress,
+)
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
+
+SURFACE_MESH_NAME_STEM_V1 = "surfaceMesh"
+SURFACE_MESH_NAME_STEM_V2 = "surface_mesh"
 
 
 class SurfaceMeshDownloadable(Enum):
@@ -38,38 +49,6 @@ class SurfaceMeshDownloadable(Enum):
     CONFIG_JSON = "config.json"
 
 
-class SurfaceMeshFileFormat(Enum):
-    """
-    Surface mesh file format
-    """
-
-    UGRID = "lb8.ugrid"
-    STL = "stl"
-
-    def ext(self) -> str:
-        """
-        Get the extention for a file name.
-        :return:
-        """
-        if self is SurfaceMeshFileFormat.UGRID:
-            return ".lb8.ugrid"
-        if self is SurfaceMeshFileFormat.STL:
-            return ".stl"
-        return ""
-
-    @classmethod
-    def detect(cls, file: str):
-        """
-        detects mesh format from filename
-        """
-        ext = os.path.splitext(file)[1]
-        if ext == SurfaceMeshFileFormat.UGRID.ext():
-            return SurfaceMeshFileFormat.UGRID
-        if ext == SurfaceMeshFileFormat.STL.ext():
-            return SurfaceMeshFileFormat.STL
-        raise Flow360RuntimeError(f"Unsupported file format {file}")
-
-
 # pylint: disable=E0213
 class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
     """
@@ -77,7 +56,7 @@ class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
     """
 
     params: Union[SurfaceMeshingParams, None, dict] = pd.Field(alias="config")
-    mesh_format: Union[SurfaceMeshFileFormat, None]
+    mesh_format: Union[MeshFileFormat, None]
 
     @pd.validator("params", pre=True)
     def init_params(cls, value):
@@ -102,7 +81,6 @@ class SurfaceMeshDraft(ResourceDraft):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        geometry_file: str = None,
         geometry_id: str = None,
         surface_mesh_file: str = None,
         params: SurfaceMeshingParams = None,
@@ -110,7 +88,6 @@ class SurfaceMeshDraft(ResourceDraft):
         tags: List[str] = None,
         solver_version=None,
     ):
-        self._geometry_file = geometry_file
         self._geometry_id = geometry_id
         self._surface_mesh_file = surface_mesh_file
         self.name = name
@@ -118,71 +95,31 @@ class SurfaceMeshDraft(ResourceDraft):
         self.solver_version = solver_version
         self._id = None
         self.params = params
+        self.compress_method = CompressionFormat.ZST
         self._validate()
         if params is not None:
             self.params = params.copy(deep=True)
         ResourceDraft.__init__(self)
 
     def _validate(self):
-        if self.geometry_file is not None:
-            self._validate_geometry_file()
-        elif self.geometry_id is not None:
-            self._validate_geometry_id()
+        if self.geometry_id is not None:
+            pass
         elif self.surface_mesh_file is not None:
             self._validate_surface_mesh()
         else:
             raise Flow360ValueError(
-                "One of geometry_file, geometry_id and surface_mesh_file has to be given to create a surface mesh."
-            )
-
-        num_of_none = operator.countOf(
-            [self.geometry_file, self.geometry_id, self.surface_mesh_file], None
-        )
-        if num_of_none != 2:
-            raise Flow360ValueError(
-                "One of geometry_file, geometry_id and surface_mesh_file has to be given to create a surface mesh."
-            )
-
-        if self.geometry_file is not None or self.geometry_id is not None:
-            if self.params is None:
-                raise Flow360ValueError(
-                    "params must be specified if either geometry_file or geometry_id is used to create a surface mesh."
-                )
-
-    def _validate_geometry_id(self):
-        if self.name is None:
-            raise Flow360ValueError("Surface mesh created from geometry id must be given a name.")
-
-    # pylint: disable=consider-using-f-string
-    def _validate_geometry_file(self):
-        _, ext = os.path.splitext(self.geometry_file)
-        if ext not in [".csm", ".egads"]:
-            raise Flow360ValueError(
-                f"Unsupported geometry file extensions: {ext}. Supported: [csm, egads]."
-            )
-
-        if not os.path.exists(self.geometry_file):
-            raise Flow360FileError(f"{self.geometry_file} not found.")
-
-        if not isinstance(self.params, SurfaceMeshingParams):
-            raise Flow360ValueError(
-                f"params must be of type: SurfaceMeshingParams, got {self.params}, type={type(self.params)} instead."
+                "One of geometry_id and surface_mesh_file has to be given to create a surface mesh."
             )
 
     def _validate_surface_mesh(self):
-        _, ext = os.path.splitext(self.surface_mesh_file)
-        if ext not in [".stl"]:
+        mesh_parser = MeshNameParser(self.surface_mesh_file)
+        if not mesh_parser.is_valid_surface_mesh():
             raise Flow360ValueError(
-                f"Unsupported surface mesh file extensions: {ext}. Supported: [stl]."
+                f"Unsupported surface mesh file extensions: {mesh_parser.format}. Supported: [stl,ugrid,cgns]."
             )
 
         if not os.path.exists(self.surface_mesh_file):
             raise Flow360FileError(f"{self.surface_mesh_file} not found.")
-
-    @property
-    def geometry_file(self) -> str:
-        """geometry file"""
-        return self._geometry_file
 
     @property
     def geometry_id(self) -> str:
@@ -194,18 +131,106 @@ class SurfaceMeshDraft(ResourceDraft):
         """surface mesh file"""
         return self._surface_mesh_file
 
-    def _get_mesh_format(self) -> Union[None, SurfaceMeshFileFormat]:
-        mesh_format = None
-        if self.surface_mesh_file is not None:
-            mesh_format = SurfaceMeshFileFormat.detect(self.surface_mesh_file)
-        elif (
-            (self.geometry_file is not None or self.geometry_id is not None)
-            and Flags.beta_features()
-            and self.params is not None
-            and self.params.version == "v2"
+    # pylint: disable=protected-access
+    def _submit_from_geometry_id(self, force_submit: bool = False):
+        if not force_submit:
+            self.validator_api(self.params, solver_version=self.solver_version)
+
+        stem = SURFACE_MESH_NAME_STEM_V1
+        if Flags.beta_features():
+            if self.params is not None and self.params.version == "v2":
+                stem = SURFACE_MESH_NAME_STEM_V2
+
+        if Flags.beta_features():
+            req = NewSurfaceMeshRequest(
+                name=self.name,
+                stem=stem,
+                tags=self.tags,
+                geometry_id=self.geometry_id,
+                config=self.params.flow360_json(),
+                solver_version=self.solver_version,
+                version=self.params.version,
+            )
+        else:
+            req = NewSurfaceMeshRequest(
+                name=self.name,
+                stem=stem,
+                tags=self.tags,
+                geometry_id=self.geometry_id,
+                config=self.params.flow360_json(),
+                solver_version=self.solver_version,
+            )
+        resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
+        info = SurfaceMeshMeta(**resp)
+        self._id = info.id
+        submitted_mesh = SurfaceMesh(self.id)
+        log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
+        return submitted_mesh
+
+    # pylint: disable=protected-access, too-many-locals
+    def _submit_upload_mesh(self, progress_callback=None):
+        name = self.name
+        if name is None:
+            name = os.path.splitext(os.path.basename(self.surface_mesh_file))[0]
+
+        mesh_parser = MeshNameParser(self.surface_mesh_file)
+        original_compression = mesh_parser.compression
+        mesh_format = mesh_parser.format
+        endianness = mesh_parser.endianness
+        file_name_no_compression = mesh_parser.file_name_no_compression
+
+        compression = (
+            original_compression
+            if original_compression != CompressionFormat.NONE
+            else self.compress_method
+        )
+
+        req = NewSurfaceMeshRequest(
+            name=name,
+            stem=SURFACE_MESH_NAME_STEM_V2,
+            tags=self.tags,
+            mesh_format=mesh_format.value,
+            endianness=endianness.value,
+            compression=compression.value,
+            solver_version=self.solver_version,
+        )
+
+        resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
+        info = SurfaceMeshMeta(**resp)
+        self._id = info.id
+        submitted_mesh = SurfaceMesh(self.id)
+
+        remote_file_name = (
+            f"{SURFACE_MESH_NAME_STEM_V2}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        )
+
+        # upload self.surface_mesh_file
+        if (
+            original_compression == CompressionFormat.NONE
+            and self.compress_method == CompressionFormat.ZST
         ):
-            mesh_format = SurfaceMeshFileFormat.UGRID
-        return mesh_format
+            compressed_file_name = zstd_compress(self.surface_mesh_file)
+            submitted_mesh._upload_file(
+                remote_file_name, compressed_file_name, progress_callback=progress_callback
+            )
+            os.remove(compressed_file_name)
+        else:
+            submitted_mesh._upload_file(
+                remote_file_name, self.surface_mesh_file, progress_callback=progress_callback
+            )
+        submitted_mesh._complete_upload(remote_file_name)
+        # upload mapbc file if it exists in the same directory
+        if mesh_format == MeshFileFormat.UGRID:
+            local_mapbc_file = get_mapbc_from_ugrid(file_name_no_compression)
+            if os.path.exists(local_mapbc_file):
+                remote_mapbc_file = f"{SURFACE_MESH_NAME_STEM_V2}.mapbc"
+                submitted_mesh._upload_file(
+                    remote_mapbc_file, local_mapbc_file, progress_callback=progress_callback
+                )
+                submitted_mesh._complete_upload(remote_mapbc_file)
+                log.info(f"The {local_mapbc_file} is found and successfully submitted")
+        log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
+        return submitted_mesh
 
     # pylint: disable=protected-access, too-many-branches
     def submit(self, progress_callback=None, force_submit: bool = False) -> SurfaceMesh:
@@ -223,64 +248,18 @@ class SurfaceMeshDraft(ResourceDraft):
         """
 
         self._validate()
-        name = self.name
-        if name is None:
-            if self.geometry_file is not None:
-                name = os.path.splitext(os.path.basename(self.geometry_file))[0]
-            elif self.surface_mesh_file is not None:
-                name = os.path.splitext(os.path.basename(self.surface_mesh_file))[0]
-        self.name = name
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
-        data = {
-            "name": self.name,
-            "tags": self.tags,
-        }
-        if self.params is not None:
-            data["config"] = self.params.flow360_json()
-
-        if self.solver_version:
-            data["solverVersion"] = self.solver_version
-
         if self.geometry_id is not None:
-            data["geometryId"] = self.geometry_id
+            return self._submit_from_geometry_id(force_submit=force_submit)
+        if self.surface_mesh_file is not None:
+            return self._submit_upload_mesh(progress_callback)
 
-        if self.params is not None and not force_submit:
-            self.validator_api(self.params, solver_version=self.solver_version)
-
-        if Flags.beta_features() and self.params is not None and self.params.version is not None:
-            data["version"] = self.params.version
-
-        mesh_format = self._get_mesh_format()
-        if mesh_format is not None:
-            data["meshFormat"] = mesh_format.value
-
-        resp = RestApi(SurfaceMeshInterface.endpoint).post(data)
-        info = SurfaceMeshMeta(**resp)
-        self._id = info.id
-        submitted_mesh = SurfaceMesh(self.id)
-
-        remote_file_name = None
-
-        file_name_to_upload = None
-        if self.geometry_file is not None:
-            _, ext = os.path.splitext(self.geometry_file)
-            remote_file_name = f"geometry{ext}"
-            file_name_to_upload = self.geometry_file
-        elif self.surface_mesh_file is not None:
-            _, ext = os.path.splitext(self.surface_mesh_file)
-            remote_file_name = f"surface_mesh{ext}"
-            file_name_to_upload = self.surface_mesh_file
-
-        if remote_file_name is not None:
-            submitted_mesh._upload_file(
-                remote_file_name, file_name_to_upload, progress_callback=progress_callback
-            )
-            submitted_mesh._complete_upload(remote_file_name)
-        log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
-        return submitted_mesh
+        raise Flow360ValueError(
+            "You must provide surface mesh file for upload or geometry Id or geometry file with meshing parameters."
+        )
 
     @classmethod
     def validator_api(cls, params: SurfaceMeshingParams, solver_version=None):
@@ -409,10 +388,9 @@ class SurfaceMesh(Flow360Resource):
     @classmethod
     def create(
         cls,
-        geometry_file: str = None,
-        geometry_id: str = None,
-        params: SurfaceMeshingParams = None,
-        name: str = None,
+        name: str,
+        params: SurfaceMeshingParams,
+        geometry_id: str,
         tags: List[str] = None,
         solver_version: str = None,
     ) -> SurfaceMeshDraft:
@@ -420,12 +398,12 @@ class SurfaceMesh(Flow360Resource):
 
         Parameters
         ----------
-        geometry_file : str
+        name : str
             _description_
         params : SurfaceMeshingParams
             _description_
-        name : str, optional
-            _description_, by default None
+        geometry_id : str
+            _description_
         tags : List[str], optional
             _description_, by default None
         solver_version : str, optional
@@ -437,7 +415,6 @@ class SurfaceMesh(Flow360Resource):
             _description_
         """
         new_surface_mesh = SurfaceMeshDraft(
-            geometry_file=geometry_file,
             geometry_id=geometry_id,
             params=params,
             name=name,

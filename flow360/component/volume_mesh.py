@@ -42,7 +42,15 @@ from .resource_base import (
     ResourceDraft,
 )
 from .types import COMMENTS
-from .utils import shared_account_confirm_proceed, validate_type, zstd_compress
+from .utils import (
+    CompressionFormat,
+    MeshFileFormat,
+    MeshNameParser,
+    UGRIDEndianness,
+    shared_account_confirm_proceed,
+    validate_type,
+    zstd_compress,
+)
 from .validator import Validator
 
 try:
@@ -205,112 +213,6 @@ class VolumeMeshDownloadable(Enum):
     CONFIG_JSON = "config.json"
 
 
-class VolumeMeshFileFormat(Enum):
-    """
-    Volume mesh file format
-    """
-
-    UGRID = "aflr3"
-    CGNS = "cgns"
-
-    def ext(self) -> str:
-        """
-        Get the extention for a file name.
-        :return:
-        """
-        if self is VolumeMeshFileFormat.UGRID:
-            return ".ugrid"
-        if self is VolumeMeshFileFormat.CGNS:
-            return ".cgns"
-        return ""
-
-    @classmethod
-    def detect(cls, file: str):
-        """
-        detects mesh format from filename
-        """
-        ext = os.path.splitext(file)[1]
-        if ext == VolumeMeshFileFormat.UGRID.ext():
-            return VolumeMeshFileFormat.UGRID
-        if ext == VolumeMeshFileFormat.CGNS.ext():
-            return VolumeMeshFileFormat.CGNS
-        raise Flow360RuntimeError(f"Unsupported file format {file}")
-
-
-class UGRIDEndianness(Enum):
-    """
-    UGRID endianness
-    """
-
-    LITTLE = "little"
-    BIG = "big"
-    NONE = None
-
-    def ext(self) -> str:
-        """
-        Get the extention for a file name.
-        :return:
-        """
-        if self is UGRIDEndianness.LITTLE:
-            return ".lb8"
-        if self is UGRIDEndianness.BIG:
-            return ".b8"
-        return ""
-
-    @classmethod
-    def detect(cls, file: str):
-        """
-        detects endianess UGRID mesh from filename
-        """
-        if VolumeMeshFileFormat.detect(file) is not VolumeMeshFileFormat.UGRID:
-            return UGRIDEndianness.NONE
-        basename = os.path.splitext(file)[0]
-        ext = os.path.splitext(basename)[1]
-        if ext == UGRIDEndianness.LITTLE.ext():
-            return UGRIDEndianness.LITTLE
-        if ext == UGRIDEndianness.BIG.ext():
-            return UGRIDEndianness.BIG
-        raise Flow360RuntimeError(f"Unknown endianness for file {file}")
-
-
-class CompressionFormat(Enum):
-    """
-    Volume mesh file format
-    """
-
-    GZ = "gz"
-    BZ2 = "bz2"
-    ZST = "zst"
-    NONE = None
-
-    def ext(self) -> str:
-        """
-        Get the extention for a file name.
-        :return:
-        """
-        if self is CompressionFormat.GZ:
-            return ".gz"
-        if self is CompressionFormat.BZ2:
-            return ".bz2"
-        if self is CompressionFormat.ZST:
-            return ".zst"
-        return ""
-
-    @classmethod
-    def detect(cls, file: str):
-        """
-        detects compression from filename
-        """
-        file_name, ext = os.path.splitext(file)
-        if ext == CompressionFormat.GZ.ext():
-            return CompressionFormat.GZ, file_name
-        if ext == CompressionFormat.BZ2.ext():
-            return CompressionFormat.BZ2, file_name
-        if ext == CompressionFormat.ZST.ext():
-            return CompressionFormat.ZST, file_name
-        return CompressionFormat.NONE, file
-
-
 # pylint: disable=E0213
 class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     """
@@ -322,7 +224,7 @@ class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
     created_at: str = Field(alias="meshAddTime")
     surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
     mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
-    mesh_format: Union[VolumeMeshFileFormat, None] = Field(alias="meshFormat")
+    mesh_format: Union[MeshFileFormat, None] = Field(alias="meshFormat")
     file_name: Union[str, None] = Field(alias="fileName")
     endianness: UGRIDEndianness = Field(alias="meshEndianness")
     compression: CompressionFormat = Field(alias="meshCompression")
@@ -397,6 +299,14 @@ class VolumeMeshDraft(ResourceDraft):
                 )
             self.params = params.copy(deep=True)
 
+        if file_name is not None:
+            mesh_parser = MeshNameParser(file_name)
+            if not mesh_parser.is_valid_volume_mesh():
+                raise Flow360ValueError(
+                    f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
+                    f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
+                )
+
         if name is None and file_name is not None:
             name = os.path.splitext(os.path.basename(file_name))[0]
 
@@ -444,18 +354,21 @@ class VolumeMeshDraft(ResourceDraft):
     def _submit_upload_mesh(self, progress_callback=None):
         assert os.path.exists(self.file_name)
 
-        original_compression, file_name_no_compression = CompressionFormat.detect(self.file_name)
-        mesh_format = VolumeMeshFileFormat.detect(file_name_no_compression)
-        endianness = UGRIDEndianness.detect(file_name_no_compression)
-        if mesh_format is VolumeMeshFileFormat.CGNS:
-            remote_file_name = "volumeMesh"
-        else:
-            remote_file_name = "mesh"
+        mesh_parser = MeshNameParser(self.file_name)
+        mesh_format = mesh_parser.format
+        endianness = mesh_parser.endianness
+        original_compression = mesh_parser.compression
+
         compression = (
             original_compression
             if original_compression != CompressionFormat.NONE
             else self.compress_method
         )
+
+        if mesh_format is MeshFileFormat.CGNS:
+            remote_file_name = "volumeMesh"
+        else:
+            remote_file_name = "mesh"
         remote_file_name = (
             f"{remote_file_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
         )
@@ -693,12 +606,6 @@ class VolumeMesh(Flow360Resource):
         """
         return cls(mesh_id)
 
-    def _get_file_extention(self):
-        compression = self.info.compression
-        mesh_format = self.info.mesh_format
-        endianness = self.info.endianness
-        return f"{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
-
     def _remote_file_name(self):
         """
         mesh filename on cloud
@@ -706,9 +613,8 @@ class VolumeMesh(Flow360Resource):
 
         remote_file_name = None
         for file in self.get_download_file_list():
-            _, file_name_no_compression = CompressionFormat.detect(file["fileName"])
             try:
-                VolumeMeshFileFormat.detect(file_name_no_compression)
+                MeshNameParser(file["fileName"])
                 remote_file_name = file["fileName"]
             except Flow360RuntimeError:
                 continue
@@ -791,7 +697,7 @@ class VolumeMesh(Flow360Resource):
         cls,
         name: str,
         params: VolumeMeshingParams,
-        surface_mesh_id,
+        surface_mesh_id: str,
         tags: List[str] = None,
         solver_version=None,
     ) -> VolumeMeshDraft:

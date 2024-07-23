@@ -28,6 +28,22 @@ class Flow360Requests(pd.BaseModel):
         allow_population_by_field_name = True
 
 
+class NewSurfaceMeshRequest(Flow360Requests):
+    """request for new surface mesh"""
+
+    name: str = pd.Field()
+    stem: str = pd.Field()
+    tags: Optional[List[str]] = pd.Field()
+    geometry_id: Optional[str] = pd.Field(alias="geometryId")
+    config: Optional[str] = pd.Field()
+    mesh_format: Optional[Literal["aflr3", "cgns", "stl"]] = pd.Field(alias="meshFormat")
+    endianness: Optional[Literal["little", "big"]] = pd.Field(alias="meshEndianness")
+    compression: Optional[Literal["gz", "bz2", "zst"]] = pd.Field(alias="meshCompression")
+    solver_version: Optional[str] = pd.Field(alias="solverVersion")
+    if Flags.beta_features():
+        version: Optional[Literal["v1", "v2"]] = pd.Field(default="v1")
+
+
 class NewVolumeMeshRequest(Flow360Requests):
     """request for new volume mesh"""
 

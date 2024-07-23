@@ -23,7 +23,7 @@ surface_mesh_draft = fl.SurfaceMesh.create(
     geometry_id=geometry.id,
     params=params,
     name="cylinder3d-surface-mesh-from-3rd-party-geometry-v2",
-    solver_version="mesher-24.2.1",
+    solver_version="mesher-24.2.2",
 )
 surface_mesh = surface_mesh_draft.submit()
 
@@ -43,7 +43,7 @@ volume_mesh_draft = fl.VolumeMesh.create(
     surface_mesh_id=surface_mesh.id,
     name="cylinder3d-volume-mesh-from-3rd-party-geometry-id-v2",
     params=params,
-    solver_version="mesher-24.2.1",
+    solver_version="mesher-24.2.2",
 )
 volume_mesh = volume_mesh_draft.submit()
 print(volume_mesh)
@@ -55,6 +55,6 @@ params.boundaries = {
     "unspecified": fl.NoSlipWall(),
 }
 case_draft = volume_mesh.create_case(
-    "cylinder3d-case-from-egads-3rd-party-geometry-id-v2", params, solver_version="mesher-24.2.1"
+    "cylinder3d-case-from-egads-3rd-party-geometry-id-v2", params, solver_version="mesher-24.2.2"
 )
 case = case_draft.submit()
