@@ -28,6 +28,7 @@ from .resource_base import (
 from .utils import (
     CompressionFormat,
     MeshFileFormat,
+    UGRIDEndianness,
     MeshNameParser,
     get_mapbc_from_ugrid,
     shared_account_confirm_proceed,
@@ -147,6 +148,8 @@ class SurfaceMeshDraft(ResourceDraft):
                 stem=stem,
                 tags=self.tags,
                 geometry_id=self.geometry_id,
+                mesh_format=MeshFileFormat.UGRID.value,
+                endianness=UGRIDEndianness.LITTLE.value,
                 config=self.params.flow360_json(),
                 solver_version=self.solver_version,
                 version=self.params.version,
