@@ -24,7 +24,7 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
 
 
 @pytest.fixture
-def rotation_cylinder():
+def srf_cylinder():
     return Cylinder(
         name="blk-1",
         center=(0, 0, -1.32392) * u.m,
@@ -36,7 +36,7 @@ def rotation_cylinder():
 
 
 @pytest.fixture
-def create_NestedCylindersSRF_param(rotation_cylinder):
+def create_NestedCylindersSRF_param(srf_cylinder):
     inner_wall = Surface(name="blk-1/Cylinder")
     outer_wall = Surface(name="blk-1/OuterWall")
     my_freestream = Surface(name="blk-1/InletOutlet")
@@ -71,7 +71,7 @@ def create_NestedCylindersSRF_param(rotation_cylinder):
                 Wall(surfaces=[inner_wall], use_wall_function=False),
                 Wall(surfaces=[outer_wall], use_wall_function=False, velocity=[0.0, 0.0, 0.0]),
                 Freestream(entities=[my_freestream]),
-                Rotation(entities=[rotation_cylinder], spec=812.31 * u.rpm),
+                Rotation(entities=[srf_cylinder], spec=812.31 * u.rpm),
             ],
             time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=2000),
             outputs=[
