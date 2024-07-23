@@ -33,6 +33,9 @@ from tests.simulation.translator.utils.actuator_disk_param_generator import (
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
+from tests.simulation.translator.utils.heatFluxCylinder_param_generator import (
+    create_heat_flux_cylinder_param,
+)
 from tests.simulation.translator.utils.NestedCylindersSRF_param_generator import (
     create_NestedCylindersSRF_param,
     srf_cylinder,
@@ -256,3 +259,8 @@ def test_NestedCylindersSRF(create_NestedCylindersSRF_param, srf_cylinder):
     translate_and_compare(
         param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_NestedCylindersSRF.json"
     )
+
+
+def test_heatFluxCylinder(create_heat_flux_cylinder_param):
+    param = create_heat_flux_cylinder_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_heatFluxCylinder.json")
