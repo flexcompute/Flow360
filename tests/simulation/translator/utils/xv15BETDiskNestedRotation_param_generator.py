@@ -74,7 +74,7 @@ def create_nested_rotation_param(cylinder_inner, cylinder_middle):
         / params.operating_condition.thermal_state.speed_of_sound
     )
     rotation_middle = Rotation(
-        volumes=[cylinder_middle],
+        entities=[cylinder_middle],
         spec=str(omega_middle.v.item()) + "*t",
     )
     params.models += [bet_disk, rotation_inner, rotation_middle]

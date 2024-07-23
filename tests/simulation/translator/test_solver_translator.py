@@ -40,7 +40,7 @@ from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
 )
-from tests.simulation.translator.utils.symmetryBC_params_generator import (
+from tests.simulation.translator.utils.symmetryBC_param_generator import (
     create_symmetryBC_param,
 )
 from tests.simulation.translator.utils.vortex_propagation_generator import (
@@ -57,6 +57,10 @@ from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator
     create_nested_rotation_param,
     cylinder_inner,
     cylinder_middle,
+)
+from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
+    create_XV15HoverMRF_param,
+    rotation_cylinder,
 )
 from tests.utils import compare_values
 
@@ -236,3 +240,8 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
 def test_symmetryBC(create_symmetryBC_param):
     param = create_symmetryBC_param
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_symmetryBC.json")
+
+
+def test_XV15HoverMRF(create_XV15HoverMRF_param, rotation_cylinder):
+    param = create_XV15HoverMRF_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_XV15HoverMRF.json")
