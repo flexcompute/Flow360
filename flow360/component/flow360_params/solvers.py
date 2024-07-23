@@ -5,7 +5,7 @@ Flow360 solvers parameters
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pydantic.v1 as pd
@@ -194,6 +194,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="lowMachPreconditioner")
     low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
         alias="lowMachPreconditionerThreshold"
+    )
+    low_dissipation_control_factors: Optional[List[float]] = pd.Field(
+        default=[], alias="lowDissipationControlFactors"
     )
 
     # pylint: disable=arguments-differ,invalid-name
@@ -573,6 +576,7 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "limitVelocity": self.limit_velocity,
             "limitPressureDensity": self.limit_pressure_density,
             "numericalDissipationFactor": self.numerical_dissipation_factor,
+            "lowDissipationControlFactors": self.low_dissipation_control_factors,
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:

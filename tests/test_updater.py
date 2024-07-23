@@ -158,6 +158,9 @@ def test_updater_from_files():
     assert params.turbulence_model_solver.model_constants is not None
     assert params.initial_condition is None
 
+    params = fl.Flow360Params("data/cases/case_18.json")
+    assert set(params.navier_stokes_solver.low_dissipation_control_factors) == {0.0, 1.0, 2.0, 3.0}
+
     params = fl.Flow360Params("data/cases/case_13.json")
     assert set(params.surface_output.output_fields) == {"Cp", "Cf", "uhh", "primitiveVars"}
     assert set(params.volume_output.output_fields) == {

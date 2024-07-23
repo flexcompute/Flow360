@@ -139,6 +139,7 @@
     "numericalDissipationFactor": 1.0,
     "orderOfAccuracy": 2,
     "relativeTolerance": 0.0,
-    "updateJacobianFrequency": 4
+    "updateJacobianFrequency": 4,
+    "lowDissipationControlFactors": []
   }
 }
