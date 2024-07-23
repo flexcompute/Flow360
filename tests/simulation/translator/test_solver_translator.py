@@ -43,6 +43,9 @@ from tests.simulation.translator.utils.NestedCylindersSRF_param_generator import
 from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
     create_om6wing_wall_model_param,
 )
+from tests.simulation.translator.utils.plateASI_param_generator import (
+    create_plateASI_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
@@ -264,3 +267,8 @@ def test_NestedCylindersSRF(create_NestedCylindersSRF_param, srf_cylinder):
 def test_heatFluxCylinder(create_heat_flux_cylinder_param):
     param = create_heat_flux_cylinder_param
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_heatFluxCylinder.json")
+
+
+def test_plateASI(create_plateASI_param):
+    param = create_plateASI_param
+    translate_and_compare(param, mesh_unit=0.1016 * u.m, ref_json_file="Flow360_plateASI.json")

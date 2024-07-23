@@ -850,6 +850,12 @@ def get_solver_json(
                     udd_dict["inputBoundaryPatches"].append(_get_key_name(surface))
             if udd.output_target is not None:
                 udd_dict["outputTargetName"] = udd.output_target.name
+                if udd.output_target.axis is not None:
+                    udd_dict["outputTarget"]["axis"] = list(udd.output_target.axis)
+                if udd.output_target.center is not None:
+                    udd_dict["outputTarget"]["center"]["value"] = list(
+                        udd_dict["outputTarget"]["center"]["value"]
+                    )
             translated["userDefinedDynamics"].append(udd_dict)
 
     return translated
