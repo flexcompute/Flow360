@@ -294,7 +294,7 @@ def test_simulation_to_case_json():
             },
             {
                 "entities": {
-                    "items": [
+                    "stored_entities": [
                         {
                             "name": "sliceName_1",
                             "normal": [0.0, 1.0, 0.0],

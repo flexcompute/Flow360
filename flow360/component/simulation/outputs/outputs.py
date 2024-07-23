@@ -129,7 +129,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[Slice]] = pd.Field(None, alias="slices")
+    entities: Optional[EntityList[Slice]] = pd.Field(None, alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
@@ -156,7 +156,7 @@ class ProbeOutput(_AnimationSettings):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[Probe]] = pd.Field(None, alias="probes")
+    entities: Optional[EntityList[Probe]] = pd.Field(None, alias="probes")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
