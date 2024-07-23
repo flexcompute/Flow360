@@ -18,7 +18,8 @@
         "outputFields": [
             "primitiveVars",
             "Mach",
-            "hmmm"
+            "hmmm",
+            "SpalartAllmaras_DDES"
         ]
     },
     "surfaceOutput": {
