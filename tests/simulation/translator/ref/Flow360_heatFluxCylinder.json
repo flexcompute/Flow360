@@ -1,0 +1,162 @@
+{
+    "geometry": {
+        "refArea": 20.0,
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "freestream": {
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "Mach": 0.09999999999999999,
+        "Temperature": 288.15,
+        "muRef": 0.005
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "ramp",
+            "initial": 100.0,
+            "final": 100.0,
+            "rampSteps": 5
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 1000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
+    "boundaries": {
+        "fluid/inlet": {
+            "type": "Freestream"
+        },
+        "fluid/outlet": {
+            "type": "Freestream"
+        },
+        "fluid/top": {
+            "type": "Freestream"
+        },
+        "fluid/bottom": {
+            "type": "Freestream"
+        },
+        "fluid/periodic_0_l": {
+            "type": "SlipWall"
+        },
+        "fluid/periodic_0_r": {
+            "type": "SlipWall"
+        },
+        "fluid/wall": {
+            "type": "NoSlipWall",
+            "heatFlux": -0.001
+        }
+    },
+    "volumeOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "residualNavierStokes",
+            "T"
+        ],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "fluid/inlet": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/outlet": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/top": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/bottom": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/periodic_0_l": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/periodic_0_r": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            },
+            "fluid/wall": {
+                "outputFields": [
+                    "Cp",
+                    "primitiveVars",
+                    "T",
+                    "heatFlux"
+                ]
+            }
+        },
+        "writeSingleFile": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    }
+}

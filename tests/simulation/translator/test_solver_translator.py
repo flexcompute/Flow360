@@ -33,12 +33,25 @@ from tests.simulation.translator.utils.actuator_disk_param_generator import (
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
+from tests.simulation.translator.utils.heatFluxCylinder_param_generator import (
+    create_heat_flux_cylinder_param,
+)
+from tests.simulation.translator.utils.NestedCylindersSRF_param_generator import (
+    create_NestedCylindersSRF_param,
+    srf_cylinder,
+)
 from tests.simulation.translator.utils.om6WingWallModel_params_generator import (
     create_om6wing_wall_model_param,
+)
+from tests.simulation.translator.utils.plateASI_param_generator import (
+    create_plateASI_param,
 )
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
+)
+from tests.simulation.translator.utils.symmetryBC_param_generator import (
+    create_symmetryBC_param,
 )
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
@@ -54,6 +67,10 @@ from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator
     create_nested_rotation_param,
     cylinder_inner,
     cylinder_middle,
+)
+from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
+    create_XV15HoverMRF_param,
+    rotation_cylinder,
 )
 from tests.utils import compare_values
 
@@ -228,3 +245,30 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
     translate_and_compare(
         param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6wing_wall_model.json", atol=1e-12
     )
+
+
+def test_symmetryBC(create_symmetryBC_param):
+    param = create_symmetryBC_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_symmetryBC.json")
+
+
+def test_XV15HoverMRF(create_XV15HoverMRF_param, rotation_cylinder):
+    param = create_XV15HoverMRF_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_XV15HoverMRF.json")
+
+
+def test_NestedCylindersSRF(create_NestedCylindersSRF_param, srf_cylinder):
+    param = create_NestedCylindersSRF_param
+    translate_and_compare(
+        param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_NestedCylindersSRF.json"
+    )
+
+
+def test_heatFluxCylinder(create_heat_flux_cylinder_param):
+    param = create_heat_flux_cylinder_param
+    translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_heatFluxCylinder.json")
+
+
+def test_plateASI(create_plateASI_param):
+    param = create_plateASI_param
+    translate_and_compare(param, mesh_unit=0.1016 * u.m, ref_json_file="Flow360_plateASI.json")

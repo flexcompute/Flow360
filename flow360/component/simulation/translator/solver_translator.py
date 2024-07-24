@@ -564,7 +564,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     if isinstance(model, Wall):
         boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
-            boundary["velocity"] = model_dict["velocity"]
+            boundary["velocity"] = list(model_dict["velocity"])
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
@@ -601,6 +601,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "SlipWall"
     elif isinstance(model, Freestream):
         boundary["type"] = "Freestream"
+    elif isinstance(model, SymmetryPlane):
+        boundary["type"] = "SymmetryPlane"
 
     return boundary
 
@@ -691,9 +693,9 @@ def get_solver_json(
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
-                modeling_constants["C_d"] = modeling_constants.pop("CD", None)
-                modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
-                modeling_constants.pop("typeName", None)
+                if modeling_constants.pop("typeName", None) == "SpalartAllmarasConsts":
+                    modeling_constants["C_d"] = modeling_constants.pop("CD", None)
+                    modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
@@ -848,6 +850,12 @@ def get_solver_json(
                     udd_dict["inputBoundaryPatches"].append(_get_key_name(surface))
             if udd.output_target is not None:
                 udd_dict["outputTargetName"] = udd.output_target.name
+                if udd.output_target.axis is not None:
+                    udd_dict["outputTarget"]["axis"] = list(udd.output_target.axis)
+                if udd.output_target.center is not None:
+                    udd_dict["outputTarget"]["center"]["value"] = list(
+                        udd_dict["outputTarget"]["center"]["value"]
+                    )
             translated["userDefinedDynamics"].append(udd_dict)
 
     return translated
