@@ -757,7 +757,13 @@
 		"linearIterations": 30,
 		"kappaMUSCL": -1,
 		"orderOfAccuracy": 2,
-		"numericalDissipationFactor": 0.2
+		"numericalDissipationFactor": 0.2,
+		"lowDissipationControlFactors": [
+			0,
+			1,
+			2,
+			3
+		]
 	},
 	"turbulenceModelSolver": {
 		"modelType": "None"
