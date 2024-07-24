@@ -165,10 +165,15 @@ def rotation_translator(model: Rotation):
     if model.parent_volume is not None:
         volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
     spec = dump_dict(model)["spec"]
-    if isinstance(spec, str):
-        volume_zone["referenceFrame"]["thetaRadians"] = spec
-    elif spec.get("units", "") == "flow360_angular_velocity_unit":
-        volume_zone["referenceFrame"]["omegaRadians"] = spec["value"]
+    if spec is not None:
+        spec_value = spec.get("value", None)
+        if isinstance(spec_value, str):
+            volume_zone["referenceFrame"]["thetaRadians"] = spec_value
+        elif (
+            spec_value is not None
+            and spec_value.get("units", "") == "flow360_angular_velocity_unit"
+        ):
+            volume_zone["referenceFrame"]["omegaRadians"] = spec_value["value"]
     return volume_zone
 
 

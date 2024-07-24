@@ -18,6 +18,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
     Fluid,
     PorousMedium,
     Rotation,
@@ -100,7 +101,7 @@ def get_the_param():
                     heat_spec=HeatFlux(1.0 * u.W / u.m**2),
                 ),
                 SlipWall(entities=[my_slip_wall_surface]),
-                Rotation(volumes=[my_cylinder_1], spec=0.45 * u.rad / u.s),
+                Rotation(volumes=[my_cylinder_1], spec=AngularVelocity(0.45 * u.rad / u.s)),
                 PorousMedium(
                     volumes=[my_box],
                     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
@@ -177,7 +178,7 @@ def test_simulation_params_unit_conversion(get_the_param):
         1.0005830903790088e-11,
     )
     # AngularVelocityType
-    assertions.assertAlmostEqual(converted.models[3].spec.value, 0.01296006)
+    assertions.assertAlmostEqual(converted.models[3].spec.value.value, 0.01296006)
     # HeatFluxType
     assertions.assertAlmostEqual(converted.models[1].heat_spec.value.value, 2.47809322e-11)
     # HeatSourceType
