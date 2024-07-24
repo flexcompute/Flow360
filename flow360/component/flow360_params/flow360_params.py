@@ -67,6 +67,7 @@ from .flow360_output import (
     IsoSurfaceOutputLegacy,
     IsoSurfaces,
     MonitorOutput,
+    MonitorOutputLegacy,
     Monitors,
     ProbeMonitor,
     SliceOutput,
@@ -75,6 +76,8 @@ from .flow360_output import (
     SurfaceOutput,
     SurfaceOutputLegacy,
     Surfaces,
+    UserDefinedField,
+    UserDefinedFieldLegacy,
     VolumeOutput,
     VolumeOutputLegacy,
 )
@@ -150,6 +153,7 @@ from .validations import (
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
     _check_numerical_dissipation_factor_output,
+    _check_output_fields,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
@@ -981,7 +985,7 @@ class UserDefinedDynamic(Flow360BaseModel):
     output_target_name: Optional[str] = pd.Field(alias="outputTargetName")
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
 class Flow360Params(Flow360BaseModel):
     """
     Flow360 solver parameters
@@ -1026,6 +1030,8 @@ class Flow360Params(Flow360BaseModel):
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
 
     navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(alias="navierStokesSolver")
+
+    user_defined_fields: Optional[List[UserDefinedField]] = pd.Field(alias="userDefinedFields")
 
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
@@ -1198,6 +1204,14 @@ class Flow360Params(Flow360BaseModel):
         allow_but_remove = ["runControl", "testControl"]
         include_hash: bool = True
         exclude_on_flow360_export = ["version", "unit_system"]
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_output_fields(cls, values):
+        """
+        check that output fields are valid.
+        """
+        return _check_output_fields(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
@@ -1673,10 +1687,14 @@ class Flow360ParamsLegacy(LegacyModel):
         alias="userDefinedDynamics"
     )
     # Needs decoupling from current model
-    monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
+    monitor_output: Optional[MonitorOutputLegacy] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+
+    user_defined_fields: Optional[List[UserDefinedFieldLegacy]] = pd.Field(
+        alias="userDefinedFields"
+    )
 
     def _has_key(self, target, model_dict: dict):
         for key, value in model_dict.items():
@@ -1744,8 +1762,9 @@ class Flow360ParamsLegacy(LegacyModel):
                     "volume_output": try_update(self.volume_output),
                     "slice_output": try_update(self.slice_output),
                     "iso_surface_output": try_update(self.iso_surface_output),
-                    "monitor_output": self.monitor_output,
+                    "monitor_output": try_update(self.monitor_output),
                     "aeroacoustic_output": self.aeroacoustic_output,
+                    "user_defined_fields": try_update(self.user_defined_fields),
                 }
             )
 

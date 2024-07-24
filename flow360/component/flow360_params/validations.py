@@ -2,7 +2,8 @@
 validation logic
 """
 
-from typing import NoReturn, Optional, Tuple
+from copy import deepcopy
+from typing import List, Literal, NoReturn, Optional, Tuple, Union, get_args, get_origin
 
 from ...log import log
 from .boundaries import (
@@ -13,7 +14,7 @@ from .boundaries import (
     TranslationallyPeriodic,
     WallFunction,
 )
-from .flow360_fields import get_aliases
+from .flow360_fields import _distribute_shared_output_fields, get_aliases
 from .initial_condition import ExpressionInitialCondition
 from .params_utils import get_all_output_fields
 from .solvers import IncompressibleNavierStokesSolver
@@ -69,7 +70,7 @@ def _check_consistency_wall_function_and_surface_output(values):
     surface_output = values.get("surface_output")
     if surface_output is not None:
         surface_output_fields = surface_output.output_fields
-    aliases = get_aliases("wallFunctionMetric")
+    aliases = get_aliases("wallFunctionMetric", raise_on_not_found=True)
     fields = surface_output_fields
     if [i for i in aliases if i in fields] and (not has_wall_function_boundary):
         raise ValueError(
@@ -473,4 +474,77 @@ def _check_numerical_dissipation_factor_output(values):
             raise ValueError(
                 "Numerical dissipation factor output requested but low dissipation mode is not enabled"
             )
+    return values
+
+
+def _check_per_item_output_fields(output_item_obj, additional_fields: List, error_prefix=""):
+
+    def extract_literal_values(annotation):
+        origin = get_origin(annotation)
+        if origin is Union:
+            # Traverse each Union argument
+            results = []
+            for arg in get_args(annotation):
+                result = extract_literal_values(arg)
+                if result:
+                    results.extend(result)
+            return results
+        if origin is list or origin is List:
+            # Apply the function to the List's element type
+            return extract_literal_values(get_args(annotation)[0])
+        if origin is Literal:
+            return list(get_args(annotation))
+        return []
+
+    if output_item_obj.output_fields is not None:
+        natively_supported = extract_literal_values(
+            output_item_obj.__fields__["output_fields"].annotation
+        )
+        allowed_items = natively_supported + additional_fields
+
+        for output_field in output_item_obj.output_fields:
+            if output_field not in allowed_items:
+                raise ValueError(
+                    f"{error_prefix}:, {output_field} is not valid output field name. "
+                    f"Allowed inputs are {allowed_items}."
+                )
+
+
+def _check_output_fields(values: dict):
+    if values.get("user_defined_fields") is not None:
+        additional_fields = [item.name for item in values.get("user_defined_fields")]
+    else:
+        additional_fields = []
+
+    # Volume Output:
+    if values.get("volume_output") is not None:
+        _check_per_item_output_fields(
+            values.get("volume_output"), additional_fields, "volume_output"
+        )
+
+    for output_name, collection_name in zip(
+        [
+            "surface_output",
+            "slice_output",
+            "iso_surface_output",
+            "monitor_output",
+        ],
+        ["surfaces", "slices", "iso_surfaces", "monitors"],
+    ):
+        output_obj = values.get(output_name)
+
+        if output_obj is not None:
+            output_obj_hardcopy = deepcopy(output_obj)
+            collection_obj = getattr(output_obj_hardcopy, collection_name, None)
+            if collection_obj is not None:
+                # This function modifies the first arg
+                _distribute_shared_output_fields(output_obj_hardcopy.__dict__, collection_name)
+                for item_name in collection_obj.names():
+                    _check_per_item_output_fields(
+                        collection_obj[item_name], additional_fields, output_name + "->" + item_name
+                    )
+            elif (
+                getattr(output_obj, "output_fields", None) is not None
+            ):  # Did not specify the collection and we add it later:
+                _check_per_item_output_fields(output_obj, additional_fields, output_name)
     return values
