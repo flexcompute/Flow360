@@ -7,6 +7,9 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.single_attribute_base import (
+    SingleAttributeModel,
+)
 from flow360.component.simulation.models.material import (
     Air,
     FluidMaterialTypes,
@@ -35,10 +38,24 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.types import Axis
 
 
+class AngleExpression(SingleAttributeModel):
+    """Angle expression for Rotation"""
+
+    type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
+    value: StringExpression = pd.Field()
+
+
+class AngularVelocity(SingleAttributeModel):
+    """Angular velocity for Rotation"""
+
+    type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
+    value: AngularVelocityType = pd.Field()
+
+
 class FromUserDefinedDynamics(Flow360BaseModel):
     """Rotation is controlled by user defined dynamics"""
 
-    type: Literal["FromUserDefinedDynamics"] = pd.Field("FromUserDefinedDynamics", frozen=True)
+    type_name: Literal["FromUserDefinedDynamics"] = pd.Field("FromUserDefinedDynamics", frozen=True)
 
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
@@ -237,7 +254,9 @@ class Rotation(Flow360BaseModel):
     entities: EntityList[GenericVolume, Cylinder] = pd.Field(alias="volumes")
 
     # TODO: Add test for each of the spec specification.
-    spec: Union[StringExpression, FromUserDefinedDynamics, AngularVelocityType] = pd.Field()
+    spec: Union[AngleExpression, FromUserDefinedDynamics, AngularVelocity] = pd.Field(
+        discriminator="type_name"
+    )
     parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(None)
 
 
