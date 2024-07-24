@@ -74,6 +74,8 @@ from .flow360_output import (
     SurfaceOutput,
     SurfaceOutputLegacy,
     Surfaces,
+    UserDefinedField,
+    UserDefinedFieldLegacy,
     VolumeOutput,
     VolumeOutputLegacy,
 )
@@ -149,6 +151,7 @@ from .validations import (
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
     _check_numerical_dissipation_factor_output,
+    _check_output_fields,
     _check_periodic_boundary_mapping,
     _check_tri_quad_boundaries,
 )
@@ -1023,6 +1026,8 @@ class Flow360Params(Flow360BaseModel):
 
     navier_stokes_solver: Optional[NavierStokesSolverType] = pd.Field(alias="navierStokesSolver")
 
+    user_defined_fields: Optional[List[UserDefinedField]] = pd.Field(alias="userDefinedFields")
+
     def _init_check_unit_system(self, **kwargs):
         if unit_system_manager.current is None:
             raise Flow360RuntimeError(use_unit_system_msg)
@@ -1194,6 +1199,14 @@ class Flow360Params(Flow360BaseModel):
         allow_but_remove = ["runControl", "testControl"]
         include_hash: bool = True
         exclude_on_flow360_export = ["version", "unit_system"]
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_output_fields(cls, values):
+        """
+        check that output fields are valid.
+        """
+        return _check_output_fields(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
@@ -1668,6 +1681,10 @@ class Flow360ParamsLegacy(LegacyModel):
     volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
+
+    user_defined_fields: Optional[List[UserDefinedFieldLegacy]] = pd.Field(
+        alias="userDefinedFields"
+    )
 
     def _has_key(self, target, model_dict: dict):
         for key, value in model_dict.items():

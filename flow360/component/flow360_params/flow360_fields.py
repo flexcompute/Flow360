@@ -27,6 +27,7 @@ CommonFieldNamesFull = Literal[
     "NumericalDissipationFactor sensor",
     "Heat equation residual",
     "Velocity with respect to non-inertial frame",
+    "Low-Mach preconditioner factor",
 ]
 
 CommonFieldNames = Literal[
@@ -52,6 +53,7 @@ CommonFieldNames = Literal[
     "numericalDissipationFactor",
     "residualHeatSolver",
     "VelocityRelative",
+    "lowMachPreconditionerSensor",
 ]
 
 SurfaceFieldNamesFull = Literal[
@@ -76,19 +78,11 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
 ]
 
-VolumeFieldNamesFull = Literal[
-    CommonFieldNamesFull,
-    "BET Metrics",
-    "BET Metrics per Disk",
-    "SpalartAllmaras_DDES",
-    "kOmegaSST_DDES",
-]
+VolumeFieldNamesFull = Literal[CommonFieldNamesFull, "BET Metrics", "BET Metrics per Disk"]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
 
-VolumeFieldNames = Literal[
-    CommonFieldNames, "betMetrics", "betMetricsPerDisk", "SpalartAllmaras_DDES", "kOmegaSST_DDES"
-]
+VolumeFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
 
 SliceFieldNames = VolumeFieldNames
 
@@ -140,7 +134,7 @@ def get_field_values(field_type) -> List[str]:
     return values
 
 
-def get_aliases(name) -> List[str]:
+def get_aliases(name, raise_on_not_found=False) -> List[str]:
     """Retrieve all aliases for the given field full name or shorthand"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -153,10 +147,12 @@ def get_aliases(name) -> List[str]:
         i = full.index(name)
         return [name, short[i]]
 
+    if not raise_on_not_found:
+        return [name, name]
     raise ValueError(f"{name} is not a valid output field name.")
 
 
-def to_short(name) -> str:
+def to_short(name, raise_on_not_found=False) -> str:
     """Retrieve shorthand equivalent of output field"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -167,10 +163,12 @@ def to_short(name) -> str:
         i = full.index(name)
         return short[i]
 
+    if not raise_on_not_found:
+        return name
     raise ValueError(f"{name} is not a valid output field name.")
 
 
-def to_full(name) -> str:
+def to_full(name, raise_on_not_found=False) -> str:
     """Retrieve full name equivalent of output field"""
     short = get_field_values(AllFieldNames)
     full = get_field_values(AllFieldNamesFull)
@@ -181,6 +179,8 @@ def to_full(name) -> str:
         i = short.index(name)
         return full[i]
 
+    if not raise_on_not_found:
+        return name
     raise ValueError(f"{name} is not a valid output field name.")
 
 
@@ -188,3 +188,18 @@ if len(get_field_values(AllFieldNames)) != len(get_field_values(AllFieldNamesFul
     raise ImportError(
         "Full names and shorthands for output fields have mismatched lengths, which is not allowed"
     )
+
+
+def _distribute_shared_output_fields(solver_values: dict, item_names: str):
+    if "output_fields" not in solver_values or solver_values["output_fields"] is None:
+        return
+    shared_fields = solver_values.pop("output_fields")
+    shared_fields = [to_short(field) for field in shared_fields]
+    if solver_values[item_names] is not None:
+        for name in solver_values[item_names].names():
+            item = solver_values[item_names][name]
+            for field in shared_fields:
+                if item.output_fields is None:
+                    item.output_fields = []
+                if field not in item.output_fields:
+                    item.output_fields.append(field)
