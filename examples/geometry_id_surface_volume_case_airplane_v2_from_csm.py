@@ -54,5 +54,7 @@ params.boundaries = {
     "leftWing": fl.NoSlipWall(),
     "rightWing": fl.NoSlipWall(),
 }
-case_draft = volume_mesh.create_case("airplane-case-from-csm-geometry-id-v2", params)
+case_draft = volume_mesh.create_case(
+    "airplane-case-from-csm-geometry-id-v2", params, solver_version="mesher-24.2.2"
+)
 case = case_draft.submit()
