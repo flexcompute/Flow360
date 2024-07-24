@@ -66,6 +66,7 @@ from .flow360_output import (
     IsoSurfaceOutputLegacy,
     IsoSurfaces,
     MonitorOutput,
+    MonitorOutputLegacy,
     Monitors,
     ProbeMonitor,
     SliceOutput,
@@ -1677,7 +1678,7 @@ class Flow360ParamsLegacy(LegacyModel):
         alias="userDefinedDynamics"
     )
     # Needs decoupling from current model
-    monitor_output: Optional[MonitorOutput] = pd.Field(alias="monitorOutput")
+    monitor_output: Optional[MonitorOutputLegacy] = pd.Field(alias="monitorOutput")
     volume_zones: Optional[VolumeZonesLegacy] = pd.Field(alias="volumeZones")
     # Needs decoupling from current model
     aeroacoustic_output: Optional[AeroacousticOutput] = pd.Field(alias="aeroacousticOutput")
@@ -1752,8 +1753,9 @@ class Flow360ParamsLegacy(LegacyModel):
                     "volume_output": try_update(self.volume_output),
                     "slice_output": try_update(self.slice_output),
                     "iso_surface_output": try_update(self.iso_surface_output),
-                    "monitor_output": self.monitor_output,
+                    "monitor_output": try_update(self.monitor_output),
                     "aeroacoustic_output": self.aeroacoustic_output,
+                    "user_defined_fields": try_update(self.user_defined_fields),
                 }
             )
 

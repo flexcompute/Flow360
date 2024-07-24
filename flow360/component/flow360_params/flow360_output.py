@@ -499,6 +499,87 @@ class MonitorOutput(Flow360BaseModel):
         return MonitorOutput(**solver_values)
 
 
+class LegacyMonitor(MonitorBase):
+    """:class:`LegacyMonitor` class"""
+
+    monitor_locations: List[Coordinate] = pd.Field(alias="monitorLocations")
+    output_fields: Optional[List[Union[CommonFields, str]]] = pd.Field(
+        alias="outputFields", default=[]
+    )
+
+    # pylint: disable=too-few-public-methods
+    class Config(Flow360BaseModel.Config):
+        """:class: Model config to cull output field shorthands"""
+
+        # pylint: disable=unused-argument
+        @staticmethod
+        def schema_extra(schema, model):
+            """Remove output field shorthands from schema"""
+            schema["properties"]["outputFields"]["items"]["enum"] = []
+
+            _filter_fields(
+                schema["properties"]["outputFields"]["items"]["enum"], CommonFieldNamesFull
+            )
+
+    # pylint: disable=arguments-differ
+    def to_solver(self, params, **kwargs) -> ProbeMonitor:
+        solver_model = super().to_solver(params, **kwargs)
+        solver_values = solver_model.__dict__
+        fields = solver_values.pop("output_fields")
+        fields = [to_short(field) for field in fields]
+        return ProbeMonitor(**solver_values, output_fields=fields)
+
+
+LegacyMonitorType = Union[SurfaceIntegralMonitor, ProbeMonitor, LegacyMonitor]
+
+
+class _GenericLegacyMonitorWrapper(Flow360BaseModel):
+    """:class:`_GenericLegacyMonitorWrapper` class"""
+
+    v: LegacyMonitorType
+
+
+class LegacyMonitors(Flow360SortableBaseModel):
+    """:class:`LegacyMonitors` class"""
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return list(get_args(_GenericLegacyMonitorWrapper.__fields__["v"].type_))
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def validate_monitor(cls, values):
+        """
+        root validator
+        """
+        return _self_named_property_validator(
+            values, _GenericLegacyMonitorWrapper, msg="is not any of supported monitor types."
+        )
+
+
+class MonitorOutputLegacy(LegacyModel):
+    """:class:`MonitorOutputLegacy` class"""
+
+    monitors: LegacyMonitors = pd.Field()
+    output_fields: Optional[List[Union[CommonFields, str]]] = pd.Field(
+        alias="outputFields", default=[]
+    )
+
+    def update_model(self):
+        new_monitors = {}
+        # pylint: disable=no-member,unsubscriptable-object
+        for monitor_name in self.monitors.names():
+            if isinstance(self.monitors[monitor_name], LegacyMonitor):
+                self.monitors[monitor_name].type = "probe"
+            else:
+                new_monitors[monitor_name] = self.monitors[monitor_name]
+        model = {
+            "monitors": new_monitors,
+            "output_fields": self.output_fields,
+        }
+        return MonitorOutput.parse_obj(model)
+
+
 class IsoSurface(Flow360BaseModel):
     """:class:`IsoSurface` class"""
 

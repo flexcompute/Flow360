@@ -145,6 +145,10 @@ def test_updater_from_files():
     params = fl.Flow360Params(f"data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
 
+    params = fl.Flow360Params("data/cases/case_13.json")
+    assert set(params.surface_output.output_fields) == set(["Cp", "Cf", "uhh", "primitiveVars"])
+    assert set(params.volume_output.output_fields) == set(["hmmm", "primitiveVars", "Mach"])
+
 
 def test_version_update():
     files = ["test_version_b16.json"]
