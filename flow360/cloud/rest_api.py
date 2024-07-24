@@ -48,3 +48,9 @@ class RestApi:
         Resource delete
         """
         return http.delete(path or self._url(method))
+    
+    def patch(self, json, path=None, method=None):
+        """
+        Resource patch
+        """
+        return http.patch(path or self._url(method), json=json)

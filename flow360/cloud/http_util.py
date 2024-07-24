@@ -71,8 +71,12 @@ def http_interceptor(func):
             raise Flow360WebNotFoundError(f"Web {args[1]}: Not found error: {resp.json()}")
 
         if resp.status_code == 200:
-            result = resp.json()
-            return result.get("data")
+            try:
+                result = resp.json()
+                return result.get("data")
+            except ValueError:
+                # Handle the case where the response does not contain JSON data
+                return None
 
         raise Flow360WebError(f"Web {args[1]}: Unexpected response error: {resp.status_code}")
 
@@ -139,6 +143,16 @@ class Http:
         :return:
         """
         return self.session.delete(Env.current.get_real_url(path), auth=api_key_auth)
+
+    @http_interceptor
+    def patch(self, path: str, json=None):
+        """
+        Patch the resource.
+        :param path:
+        :param json:
+        :return:
+        """
+        return self.session.patch(Env.current.get_real_url(path), json=json, auth=api_key_auth)
 
 
 http = Http(requests.Session())
