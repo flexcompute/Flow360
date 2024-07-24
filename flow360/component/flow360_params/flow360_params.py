@@ -26,7 +26,9 @@ import pydantic as pd
 from pydantic import StrictStr
 from typing_extensions import Literal
 
-from flow360 import Flags, units
+from flow360 import units
+from flow360.flags import Flags
+
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
 from ...exceptions import (
