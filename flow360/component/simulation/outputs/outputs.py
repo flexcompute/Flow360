@@ -156,7 +156,7 @@ class ProbeOutput(_AnimationSettings):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[ProbeGroup]] = pd.Field(None, alias="probe groups")
+    entities: Optional[EntityList[ProbeGroup]] = pd.Field(None, alias="probe_groups")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
