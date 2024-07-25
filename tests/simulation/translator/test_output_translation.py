@@ -9,7 +9,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    Probe,
+    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -626,11 +626,11 @@ def probe_output_config_with_global_setting():
             ),
             ProbeOutput(  # Local
                 entities=[
-                    Probe(
+                    ProbeGroup(
                         name="prb 10",
                         locations=[[1, 1.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
                     ),
-                    Probe(
+                    ProbeGroup(
                         name="prb 12",
                         locations=[[10, 10.02, 10.03] * u.cm],
                     ),

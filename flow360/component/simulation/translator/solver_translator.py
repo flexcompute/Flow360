@@ -33,7 +33,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    Probe,
+    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -204,7 +204,7 @@ def inject_isosurface_info(entity: Isosurface):
     }
 
 
-def inject_probe_info(entity: Probe):
+def inject_probe_info(entity: ProbeGroup):
     """inject entity info"""
     return {
         "monitor_locations": [item.value.tolist() for item in entity.locations],

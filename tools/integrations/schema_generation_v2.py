@@ -62,7 +62,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    Probe,
+    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -286,7 +286,7 @@ with SI_unit_system:
         ],
         outputs=[
             ProbeOutput(
-                probes=[Probe(name="my_probe", locations=[[1, 2, 3]])], output_fields=["Cp"]
+                probes=[ProbeGroup(name="my_probe", locations=[[1, 2, 3]])], output_fields=["Cp"]
             ),
             SliceOutput(
                 slices=[Slice(name="my_slice", normal=(0, 0, 1), origin=(0, 0, 0))],
@@ -644,8 +644,8 @@ with imperial_unit_system:
         frequency_offset=1,
         output_fields=["primitiveVars", "vorticity"],
         entities=[
-            Probe(name="the_name1", locations=[(1, 2, 3), (4, 5, 6)]),
-            Probe(name="the_name2", locations=[(1, 3, 5), (2, 4, 6)]),
+            ProbeGroup(name="the_name1", locations=[(1, 2, 3), (4, 5, 6)]),
+            ProbeGroup(name="the_name2", locations=[(1, 3, 5), (2, 4, 6)]),
         ],
     )
 write_example(setting, "outputs", "ProbeOutput")
