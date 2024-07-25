@@ -55,11 +55,14 @@ def http_interceptor(func):
         # Extend some capabilities of func
         log.debug(f"call: {func.__name__}({args}, {kwargs})")
 
+        ignore_request_error = kwargs.pop("ignore_request_error", False)
         resp = func(*args, **kwargs)
 
         log.debug(f"response: {resp}")
 
-        if resp.status_code == 400:
+        if resp.status_code == 400:  # Custom error handling for 400
+            if ignore_request_error:  # defer the error handling to the caller
+                return resp.json()
             raise Flow360WebError(f"Web {args[1]}: Bad request error: {resp.json()['error']}")
 
         if resp.status_code == 401:
@@ -116,7 +119,7 @@ class Http:
         )
 
     @http_interceptor
-    def post(self, path: str, json=None):
+    def post(self, path: str, json=None, ignore_request_error=False):
         """
         Create the resource.
         :param path:

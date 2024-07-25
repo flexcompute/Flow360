@@ -222,7 +222,7 @@ def _translate_simulation_json(
     try:
         translated_dict = translation_func(param, mesh_unit)
     except Flow360TranslationError as err:
-        raise ValueError(f"Input invalid for translating {target_name} json: " + str(err)) from err
+        raise ValueError(str(err)) from err
     except Exception as err:  # tranlsation itself is not supposed to raise any other exception
         raise ValueError(
             f"Unexpected error translating to {target_name} json: " + str(err)

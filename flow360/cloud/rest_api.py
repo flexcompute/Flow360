@@ -31,11 +31,13 @@ class RestApi:
         """
         return http.get(path or self._url(method), json=json, params=params)
 
-    def post(self, json, path=None, method=None):
+    def post(self, json, path=None, method=None, ignore_request_error=False):
         """
         Resource post
         """
-        return http.post(path or self._url(method), json=json)
+        return http.post(
+            path or self._url(method), json=json, ignore_request_error=ignore_request_error
+        )
 
     def put(self, json, path=None, method=None):
         """
@@ -48,7 +50,7 @@ class RestApi:
         Resource delete
         """
         return http.delete(path or self._url(method))
-    
+
     def patch(self, json, path=None, method=None):
         """
         Resource patch
