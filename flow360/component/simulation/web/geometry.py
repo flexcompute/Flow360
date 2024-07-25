@@ -20,8 +20,8 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.interfaces import GeometryInterface
 from flow360.component.simulation.web.resource_base import (
+    AssetMetaBaseModel,
     Flow360Resource,
-    Flow360ResourceBaseModel,
     ResourceDraft,
 )
 from flow360.component.surface_mesh import SurfaceMesh
@@ -36,7 +36,7 @@ from flow360.log import log
 
 
 # pylint: disable=R0801
-class GeometryMeta(Flow360ResourceBaseModel):
+class GeometryMeta(AssetMetaBaseModel):
     """
     GeometryMeta component
     """

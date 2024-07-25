@@ -1,4 +1,4 @@
-"""Base class of resource/asset (geometry, surface mesh and volume mesh)"""
+"""Base class of resource/asset (geometry, surface mesh, volume mesh and case)"""
 
 from __future__ import annotations
 
@@ -17,17 +17,19 @@ from flow360.component.simulation.web.interfaces import (
     ProjectInterface,
 )
 from flow360.component.simulation.web.resource_base import (
+    AssetMetaBaseModel,
     Flow360Resource,
-    Flow360ResourceBaseModel,
     ResourceDraft,
 )
 from flow360.component.utils import validate_type
 
+TIMEOUT_MINUTES = 60
 
 class AssetBase(metaclass=ABCMeta):
+    """Base class for resource asset"""
 
     _interface: type[BaseInterface] = None
-    _info_type_class: type[Flow360ResourceBaseModel] = None
+    _meta_class: type[AssetMetaBaseModel] = None
     _draft_class: type[ResourceDraft] = None
 
     @abstractmethod
@@ -39,7 +41,7 @@ class AssetBase(metaclass=ABCMeta):
     def __init__(self, id: str):
         self._web = Flow360Resource(
             interface=self._interface,
-            info_type_class=self._info_type_class,
+            meta_class=self._meta_class,
             id=id,
         )
         self._retrieve_metadata()
@@ -51,14 +53,16 @@ class AssetBase(metaclass=ABCMeta):
         self.solver_version = solver_version
 
     @classmethod
-    def _from_meta(cls, meta: Flow360ResourceBaseModel):
-        validate_type(meta, "meta", cls._info_type_class)
+    # pylint: disable=protected-access
+    def _from_meta(cls, meta: AssetMetaBaseModel):
+        validate_type(meta, "meta", cls._meta_class)
         resource = cls(id=meta.id)
         resource._web._set_meta(meta)
         return resource
 
     @property
-    def info(self) -> Flow360ResourceBaseModel:
+    def info(self) -> AssetMetaBaseModel:
+        """Return the metadata of the resource"""
         return self._web.info
 
     @classmethod
@@ -67,10 +71,11 @@ class AssetBase(metaclass=ABCMeta):
 
     @classmethod
     def _meta_class(cls):
-        return cls._info_type_class
+        return cls._meta_class
 
     @classmethod
     def from_cloud(cls, id: str):
+        """Create asset with the given ID"""
         return cls(id)
 
     @classmethod
@@ -90,6 +95,7 @@ class AssetBase(metaclass=ABCMeta):
         """
         if isinstance(file_names, str):
             file_names = [file_names]
+        #pylint: disable=not-callable
         return cls._draft_class(
             file_names=file_names,
             name=name,
@@ -147,10 +153,9 @@ class AssetBase(metaclass=ABCMeta):
             }
         )
         destination_obj = destination.from_cloud(destination_id)
-        if async_mode == False:
+        if async_mode is False:
             start_time = time.time()
-            while destination_obj.status.is_final() == False:
-                TIMEOUT_MINUTES = 60
+            while destination_obj.status.is_final() is False:
                 if time.time() - start_time > TIMEOUT_MINUTES * 60:
                     raise TimeoutError(
                         "Timeout: Process did not finish within the specified timeout period"

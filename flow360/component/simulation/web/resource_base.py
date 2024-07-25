@@ -66,7 +66,7 @@ class Flow360Status(Enum):
         return False
 
 
-class Flow360ResourceBaseModel(pd.BaseModel):
+class AssetMetaBaseModel(pd.BaseModel):
     """
     Flow360 base Model
     """
@@ -160,11 +160,11 @@ class Flow360Resource(RestApi):
     """
 
     # pylint: disable=redefined-builtin
-    def __init__(self, interface: BaseInterface, info_type_class, id=None):
+    def __init__(self, interface: BaseInterface, meta_class, id=None):
         is_valid_uuid(id, allow_none=False)
         self._resource_type = interface.resource_type
         self.s3_transfer_method = interface.s3_transfer_method
-        self.info_type_class = info_type_class
+        self.meta_class = meta_class
         self._info = None
         self.logs = RemoteResourceLogs(self)
         super().__init__(endpoint=interface.endpoint, id=id)
@@ -181,12 +181,12 @@ class Flow360Resource(RestApi):
         """
         return self.id is not None
 
-    def _set_meta(self, meta: Flow360ResourceBaseModel):
+    def _set_meta(self, meta: AssetMetaBaseModel):
         """
         set metadata info for resource
         """
         if self._info is None:
-            validate_type(meta, "meta", self.info_type_class)
+            validate_type(meta, "meta", self.meta_class)
             self._info = meta
         else:
             raise Flow360RuntimeError(
@@ -199,16 +199,16 @@ class Flow360Resource(RestApi):
             "This is abstract method. Needs to be implemented by specialised class."
         )
 
-    def get_info(self, force=False) -> Flow360ResourceBaseModel:
+    def get_info(self, force=False) -> AssetMetaBaseModel:
         """
         returns metadata info for resource
         """
         if self._info is None or force:
-            self._info = self.info_type_class(**self.get())
+            self._info = self.meta_class(**self.get())
         return self._info
 
     @property
-    def info(self) -> Flow360ResourceBaseModel:
+    def info(self) -> AssetMetaBaseModel:
         """
         returns metadata info for resource
         """
