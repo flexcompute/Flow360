@@ -26,6 +26,7 @@ from flow360.log import log
 
 TIMEOUT_MINUTES = 60
 
+
 class AssetBase(metaclass=ABCMeta):
     """Base class for resource asset"""
 
@@ -96,7 +97,7 @@ class AssetBase(metaclass=ABCMeta):
         """
         if isinstance(file_names, str):
             file_names = [file_names]
-        #pylint: disable=not-callable
+        # pylint: disable=not-callable
         return cls._draft_class(
             file_names=file_names,
             name=name,
