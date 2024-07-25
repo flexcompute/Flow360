@@ -8,7 +8,11 @@ from flow360.component.simulation.models.solver_numerics import (
     NavierStokesSolver,
 )
 from flow360.component.simulation.models.surface_models import Freestream, Wall
-from flow360.component.simulation.models.volume_models import Fluid, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
+    Fluid,
+    Rotation,
+)
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
     ThermalState,
@@ -73,7 +77,7 @@ def create_XV15HoverMRF_param(rotation_cylinder):
                 ),
                 Wall(surfaces=[my_wall], use_wall_function=False),
                 Freestream(entities=[my_freestream]),
-                Rotation(entities=[rotation_cylinder], spec=600.106 * u.rpm),
+                Rotation(entities=[rotation_cylinder], spec=AngularVelocity(600.106 * u.rpm)),
             ],
             time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=4000),
             outputs=[

@@ -2,7 +2,11 @@ import pytest
 from numpy import pi
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.volume_models import Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
+    AngularVelocity,
+    Rotation,
+)
 from flow360.component.simulation.primitives import Cylinder
 from tests.simulation.translator.utils.xv15_bet_disk_helper import (
     createBETDiskUnsteady,
@@ -60,7 +64,7 @@ def create_nested_rotation_param(cylinder_inner, cylinder_middle):
     bet_disk = createBETDiskUnsteady(_BET_cylinder, 10, rpm_bet)
     rotation_inner = Rotation(
         volumes=[cylinder_inner],
-        spec=rpm_inner * u.rpm,
+        spec=AngularVelocity(rpm_inner * u.rpm),
         parent_volume=cylinder_middle,
     )
     omega_middle = (
@@ -75,7 +79,7 @@ def create_nested_rotation_param(cylinder_inner, cylinder_middle):
     )
     rotation_middle = Rotation(
         entities=[cylinder_middle],
-        spec=str(omega_middle.v.item()) + "*t",
+        spec=AngleExpression(str(omega_middle.v.item()) + "*t"),
     )
     params.models += [bet_disk, rotation_inner, rotation_middle]
     params.time_stepping = createUnsteadyTimeStepping(rpm_bet - rpm_inner - rpm_middle)

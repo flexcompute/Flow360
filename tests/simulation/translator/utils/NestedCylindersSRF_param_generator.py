@@ -8,7 +8,11 @@ from flow360.component.simulation.models.solver_numerics import (
     NoneSolver,
 )
 from flow360.component.simulation.models.surface_models import Freestream, Wall
-from flow360.component.simulation.models.volume_models import Fluid, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
+    Fluid,
+    Rotation,
+)
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
     ThermalState,
@@ -71,7 +75,7 @@ def create_NestedCylindersSRF_param(srf_cylinder):
                 Wall(surfaces=[inner_wall], use_wall_function=False),
                 Wall(surfaces=[outer_wall], use_wall_function=False, velocity=[0.0, 0.0, 0.0]),
                 Freestream(entities=[my_freestream]),
-                Rotation(entities=[srf_cylinder], spec=812.31 * u.rpm),
+                Rotation(entities=[srf_cylinder], spec=AngularVelocity(812.31 * u.rpm)),
             ],
             time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=2000),
             outputs=[

@@ -46,12 +46,14 @@ class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
 class HeatFlux(SingleAttributeModel):
     """Heat flux"""
 
+    type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
     value: Union[HeatFluxType, pd.StrictStr] = pd.Field()
 
 
 class Temperature(SingleAttributeModel):
     """Temperature"""
 
+    type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
     value: Union[TemperatureType.Positive, pd.StrictStr] = pd.Field()
 
@@ -59,6 +61,7 @@ class Temperature(SingleAttributeModel):
 class TotalPressure(SingleAttributeModel):
     """Total pressure"""
 
+    type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field()
 
@@ -66,6 +69,7 @@ class TotalPressure(SingleAttributeModel):
 class Pressure(SingleAttributeModel):
     """Pressure"""
 
+    type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field()
 
@@ -73,6 +77,7 @@ class Pressure(SingleAttributeModel):
 class MassFlowRate(SingleAttributeModel):
     """Mass flow rate"""
 
+    type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
     # pylint: disable=no-member
     value: MassFlowRateType.NonNegative = pd.Field()
 
@@ -80,19 +85,20 @@ class MassFlowRate(SingleAttributeModel):
 class Mach(SingleAttributeModel):
     """Mach"""
 
+    type_name: Literal["Mach"] = pd.Field("Mach", frozen=True)
     value: pd.NonNegativeFloat = pd.Field()
 
 
 class Translational(Flow360BaseModel):
     """Translational periodicity"""
 
-    type: Literal["Translational"] = pd.Field("Translational", frozen=True)
+    type_name: Literal["Translational"] = pd.Field("Translational", frozen=True)
 
 
 class Rotational(Flow360BaseModel):
     """Rotational periodicity"""
 
-    type: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
+    type_name: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
     # pylint: disable=fixme
     # TODO: Maybe we need more precision when serializeing this one?
     axis_of_rotation: Optional[Axis] = pd.Field(None)
@@ -117,7 +123,7 @@ class Wall(BoundaryBase):
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
     use_wall_function: bool = pd.Field(False)
     velocity: Optional[VelocityVectorType] = pd.Field(None)
-    heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(None)
+    heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(None, discriminator="type_name")
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
@@ -138,7 +144,7 @@ class Outflow(BoundaryBase):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
-    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field()
+    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(discriminator="type_name")
 
 
 class Inflow(BoundaryBaseWithTurbulenceQuantities):
@@ -152,7 +158,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     # pylint: disable=no-member
     total_temperature: TemperatureType.Positive = pd.Field()
     velocity_direction: Optional[Axis] = pd.Field(None)
-    spec: Union[TotalPressure, MassFlowRate] = pd.Field()
+    spec: Union[TotalPressure, MassFlowRate] = pd.Field(discriminator="type_name")
 
 
 class SlipWall(BoundaryBase):
@@ -180,7 +186,7 @@ class Periodic(Flow360BaseModel):
     name: Optional[str] = pd.Field(None)
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(alias="surface_pairs")
-    spec: Union[Translational, Rotational] = pd.Field(discriminator="type")
+    spec: Union[Translational, Rotational] = pd.Field(discriminator="type_name")
 
 
 SurfaceModelTypes = Union[

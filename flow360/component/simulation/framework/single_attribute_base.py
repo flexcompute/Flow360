@@ -13,5 +13,6 @@ class SingleAttributeModel(Flow360BaseModel, metaclass=abc.ABCMeta):
 
     value: Any = pd.Field()
 
-    def __init__(self, value: Any):
+    # pylint: disable=unused-argument
+    def __init__(self, value: Any, type_name=None):
         super().__init__(value=value)
