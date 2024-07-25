@@ -126,7 +126,7 @@ class ResourceDraft(metaclass=ABCMeta):
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
         if not UserConfig.is_suppress_submit_warning():
-            log.warning(error_messages.submit_reminder(self.__class__.__name__))
+            log.info(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
     def id(self):

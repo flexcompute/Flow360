@@ -161,6 +161,6 @@ class AssetBase(metaclass=ABCMeta):
                     raise TimeoutError(
                         "Timeout: Process did not finish within the specified timeout period"
                     )
-                time.sleep(5)
                 log.info("Waiting for the process to finish...")
+                time.sleep(30)
         return destination_obj

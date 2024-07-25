@@ -28,5 +28,5 @@ with SI_unit_system:
             volume_zones=[AutomatedFarfield()],
         ),
     )
-# geometry.generate_surface_mesh(params=params, async_mode=False)
-geometry.generate_volume_mesh(params=params, async_mode=False)
+geometry.generate_surface_mesh(params=params, async_mode=False)
+# geometry.generate_volume_mesh(params=params, async_mode=False)
