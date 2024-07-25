@@ -23,7 +23,7 @@ from flow360.component.simulation.framework.unique_list import (
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
-    Probe,
+    ProbeGroup,
     Slice,
     SurfaceList,
 )
@@ -156,7 +156,7 @@ class ProbeOutput(_AnimationSettings):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Probe]] = pd.Field(None, alias="probes")
+    entities: Optional[EntityList[ProbeGroup]] = pd.Field(None, alias="probe_groups")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 

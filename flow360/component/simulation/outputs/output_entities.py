@@ -37,7 +37,7 @@ class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
 
 
-class _ProbeEntityBase(EntityBase, metaclass=ABCMeta):
+class _ProbeGroupEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["ProbeEntityType"] = "ProbeEntityType"
 
 
@@ -65,9 +65,12 @@ class SurfaceList(_OutputItemBase):
     entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
-class Probe(_ProbeEntityBase):
-    """Probe monitor"""
+class ProbeGroup(_ProbeGroupEntityBase):
+    """A group of coordinates that are used to probe the solution."""
 
-    private_attribute_entity_type_name: Literal["Probe"] = pd.Field("Probe", frozen=True)
+    private_attribute_entity_type_name: Literal["ProbeGroup"] = pd.Field("ProbeGroup", frozen=True)
     # pylint: disable=no-member
     locations: List[LengthType.Point] = pd.Field()
+
+    def from_csv_file(self):
+        """Load group of probe coordinates from csv file."""
