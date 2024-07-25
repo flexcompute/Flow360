@@ -22,8 +22,8 @@ with SI_unit_system:
     params = SimulationParams(
         meshing=MeshingParams(
             refinements=[
-                SurfaceRefinement(max_edge_length=0.2),
-                BoundaryLayer(first_layer_thickness=0.2),
+                SurfaceRefinement(max_edge_length=0.8),
+                BoundaryLayer(first_layer_thickness=0.8),
             ],
             volume_zones=[AutomatedFarfield()],
         ),

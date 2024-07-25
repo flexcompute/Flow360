@@ -22,6 +22,7 @@ from flow360.component.simulation.web.resource_base import (
     ResourceDraft,
 )
 from flow360.component.utils import validate_type
+from flow360.log import log
 
 TIMEOUT_MINUTES = 60
 
@@ -161,4 +162,5 @@ class AssetBase(metaclass=ABCMeta):
                         "Timeout: Process did not finish within the specified timeout period"
                     )
                 time.sleep(5)
+                log.info("Waiting for the process to finish...")
         return destination_obj
