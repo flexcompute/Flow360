@@ -15,17 +15,17 @@ from typing import List, Optional, Union
 
 import pydantic.v1 as pd
 
+from flow360 import error_messages
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.webbrowser import open_browser
 from flow360.component.interfaces import BaseInterface
+from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
 from flow360.user_config import UserConfig
-from flow360.utils import is_valid_uuid, validate_type
-
-from .. import error_messages
 
 
+# pylint: disable=R0801
 class Flow360Status(Enum):
     """
     Flow360Status component

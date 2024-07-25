@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from flow360.cloud.s3_utils import S3TransferType
 
 
+# pylint: disable=R0801
 class BaseInterface(BaseModel):
     """
     Basic interface for endpoint definition.

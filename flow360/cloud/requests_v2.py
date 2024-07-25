@@ -1,15 +1,11 @@
 """Requests module"""
 
-from typing import List, Optional, Union
+from typing import List
 
 import pydantic as pd
 from typing_extensions import Literal
 
-from flow360.flags import Flags
-
-from ..component.flow360_params.flow360_params import Flow360MeshParams
-
-length_unit_type = Literal["m", "mm", "cm", "inch", "ft"]
+LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
 
 
 class Flow360Requests(pd.BaseModel):
@@ -31,6 +27,8 @@ class Flow360Requests(pd.BaseModel):
 
 
 class GeometryFileMeta(pd.BaseModel):
+    """File information for geometry."""
+
     name: str = pd.Field(description="geometry file name")
     type: Literal["main", "dependency"] = pd.Field(description="geometry hierarchy")
 

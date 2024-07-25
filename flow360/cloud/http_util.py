@@ -119,6 +119,7 @@ class Http:
         )
 
     @http_interceptor
+    # pylint: disable=unused-argument
     def post(self, path: str, json=None, ignore_request_error=False):
         """
         Create the resource.

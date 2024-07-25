@@ -38,15 +38,7 @@ CaseInterface = BaseInterface(
 GeometryInterface = BaseInterface(
     resource_type="Geometry",
     s3_transfer_method=S3TransferType.GEOMETRY,
-    endpoint="v2/geometries",
-)
-
-ProjectInterface = BaseInterface(
-    resource_type="projects", s3_transfer_method=None, endpoint="v2/projects"
-)
-
-DraftInterface = BaseInterface(
-    resource_type="drafts", s3_transfer_method=None, endpoint="v2/drafts"
+    endpoint="geometries",
 )
 
 FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None, endpoint="folders")
