@@ -1,7 +1,7 @@
 import pytest
 
 from flow360.component.case import Case, CaseMeta
-from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
+from flow360.component.resource_base_v1 import Flow360ResourceBaseModel, Flow360Status
 from flow360.exceptions import Flow360RuntimeError
 
 

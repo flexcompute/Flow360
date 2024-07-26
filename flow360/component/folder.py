@@ -13,7 +13,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360ValueError
 from ..log import log
 from .interfaces_v1 import FolderInterface
-from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
+from .resource_base_v1 import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
 from .utils import shared_account_confirm_proceed, validate_type
 
 

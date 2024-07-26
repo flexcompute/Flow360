@@ -6,7 +6,7 @@ import bz2
 import concurrent.futures
 import os
 
-from flow360.component.resource_base import Flow360Resource
+from flow360.component.resource_base_v1 import Flow360Resource
 
 from ..cloud.utils import _get_progress, _S3Action
 

@@ -35,7 +35,7 @@ from .flow360_params.flow360_params import (
 from .flow360_params.params_base import params_generic_validator
 from .interfaces_v1 import VolumeMeshInterface
 from .meshing.params import VolumeMeshingParams
-from .resource_base import (
+from .resource_base_v1 import (
     Flow360Resource,
     Flow360ResourceBaseModel,
     Flow360ResourceListBase,

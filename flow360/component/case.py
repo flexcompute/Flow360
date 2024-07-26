@@ -19,7 +19,7 @@ from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .folder import Folder
 from .interfaces_v1 import CaseInterface, FolderInterface, VolumeMeshInterface
-from .resource_base import (
+from .resource_base_v1 import (
     Flow360Resource,
     Flow360ResourceBaseModel,
     Flow360ResourceListBase,
