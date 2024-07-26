@@ -11,12 +11,12 @@ from typing import List, Union
 from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.web.interfaces import (
+from flow360.component.interfaces import (
     BaseInterface,
     DraftInterface,
     ProjectInterface,
 )
-from flow360.component.simulation.web.resource_base import (
+from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,

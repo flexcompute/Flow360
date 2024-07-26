@@ -19,7 +19,7 @@ from flow360.component.case import Case
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.interfaces import GeometryInterface
-from flow360.component.simulation.web.resource_base import (
+from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
