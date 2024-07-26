@@ -14,5 +14,7 @@ class SingleAttributeModel(Flow360BaseModel, metaclass=abc.ABCMeta):
     value: Any = pd.Field()
 
     # pylint: disable=unused-argument
-    def __init__(self, value: Any, type_name=None):
+    def __init__(self, value: Any = None, type_name=None):
+        if value is None:
+            raise ValueError(f"Value must be provided for {self.__class__.__name__}.")
         super().__init__(value=value)

@@ -381,6 +381,7 @@ def test_simulation_to_all_translation():
                     entities=[Surface(name="wing1"), Surface(name="wing2")],
                 ),
                 Freestream(entities=[Surface(name="farfield")]),
+                Rotation(),
             ],
         )
 
@@ -444,6 +445,188 @@ def test_simulation_to_all_translation_2():
             "area": {"value": 1, "units": "m**2"},
         },
         "models": [],
+    }
+
+    surface_json, hash = simulation_to_surface_meshing_json(
+        params_as_dict, "SI", {"value": 100.0, "units": "cm"}
+    )
+    print(surface_json)
+    volume_json, hash = simulation_to_volume_meshing_json(
+        params_as_dict, "SI", {"value": 100.0, "units": "cm"}
+    )
+    print(volume_json)
+    case_json, hash = simulation_to_case_json(params_as_dict, "SI", {"value": 100.0, "units": "cm"})
+    print(case_json)
+
+
+def test_simulation_to_all_translation_3():
+    params_as_dict = {
+        "version": "24.3.0",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "refinement_factor": 1,
+            "gap_treatment_strength": 0,
+            "surface_layer_growth_rate": 1.2,
+            "refinements": [
+                {
+                    "name": "Global surface refinement",
+                    "refinement_type": "SurfaceRefinement",
+                    "curvature_resolution_angle": {"value": 12, "units": "degree"},
+                    "_id": "9ffea779-5d9e-4dc4-8939-3898f3e94d50",
+                },
+                {
+                    "name": "Global Boundary layer refinement",
+                    "refinement_type": "BoundaryLayer",
+                    "type": "aniso",
+                    "growth_rate": 1.2,
+                    "_id": "a5f84a75-00aa-4fc9-afb7-c73e1f832424",
+                    "first_layer_thickness": {"value": 0.001, "units": "m"},
+                },
+            ],
+            "volume_zones": [
+                {
+                    "type": "AutomatedFarfield",
+                    "name": "farfield",
+                    "method": "auto",
+                    "_id": "847f1192-9593-406e-8253-66b550262f8c",
+                }
+            ],
+        },
+        "reference_geometry": {
+            "moment_center": {"value": [0, 0, 0], "units": "m"},
+            "moment_length": {"value": [1, 1, 1], "units": "m"},
+            "area": {"value": 1, "units": "m**2"},
+        },
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"value": 100, "units": "m/s"},
+            "alpha": {"value": 0, "units": "degree"},
+            "beta": {"value": 0, "units": "degree"},
+        },
+        "models": [
+            {
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {"value": 0.00001716, "units": "Pa*s"},
+                        "reference_temperature": {"value": 273.15, "units": "K"},
+                        "effective_temperature": {"value": 110.4, "units": "K"},
+                    },
+                },
+                "type": "Fluid",
+                "navier_stokes_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "relative_tolerance": 0,
+                    "order_of_accuracy": 2,
+                    "equation_evaluation_frequency": 1,
+                    "update_jacobian_frequency": 4,
+                    "max_force_jac_update_physical_steps": 0,
+                    "linear_solver": {"max_iterations": 30},
+                    "CFL_multiplier": 1,
+                    "kappa_MUSCL": -1,
+                    "numerical_dissipation_factor": 1,
+                    "limit_velocity": False,
+                    "limit_pressure_density": False,
+                    "type_name": "Compressible",
+                    "low_mach_preconditioner": False,
+                },
+                "turbulence_model_solver": {
+                    "type_name": "kOmegaSST",
+                    "absolute_tolerance": 1e-8,
+                    "relative_tolerance": 0,
+                    "DDES": False,
+                    "quadratic_constitutive_relation": False,
+                },
+                "transition_model_solver": {
+                    "absolute_tolerance": 1e-7,
+                    "relative_tolerance": 0,
+                    "turbulence_intensity_percent": 1,
+                    "N_crit": 8.15,
+                    "type_name": "AmplificationFactorTransport",
+                },
+            },
+            {
+                "name": "Rotation 2",
+                "type": "Rotation",
+                "_id": "30806206-7246-48cf-a3af-fd636f6ecde0",
+                "volumes": {
+                    "stored_entities": [
+                        {
+                            "_id": "b54f6c69-8583-4776-a9e6-876e9f0f72f3",
+                            "name": "Cylinder 3",
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_entity_type_name": "Cylinder",
+                            "axis": [0, 0, 1],
+                            "center": {"value": [0, 0, 0], "units": "m"},
+                            "height": {"value": 1, "units": "m"},
+                            "inner_radius": 0,
+                            "outer_radius": 1,
+                        }
+                    ]
+                },
+                "spec": {"type_name": "FromUserDefinedDynamics"},
+            },
+        ],
+        "time_stepping": {
+            "max_steps": 12,
+            "type_name": "Steady",
+            "order_of_accuracy": 2,
+            "CFL": {
+                "min": 0.1,
+                "max": 10000,
+                "max_relative_change": 1,
+                "convergence_limiting_factor": 0.25,
+                "type": "adaptive",
+            },
+        },
+        "private_attribute_asset_cache": {
+            "registry": {
+                "internal_registry": {
+                    "VolumetricEntityType": [
+                        {
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_entity_type_name": "GenericVolume",
+                            "name": "fluid",
+                            "private_attribute_zone_boundary_names": {
+                                "items": ["farfield", "symmetric"]
+                            },
+                        }
+                    ]
+                }
+            },
+            "project_length_unit": {"value": 1, "units": "m"},
+        },
+        "user_defined_dynamics": [
+            {
+                "name": "dynamics 1",
+                "_id": "8adbed0e-d90d-4b20-9b79-13f46963a9dc",
+                "input_vars": ["fake"],
+                "constants": {"ff": 123},
+                "output_vars": {"fake_out": "1+1;"},
+                "state_vars_initial_value": ["0+0;"],
+                "update_law": ["1-2;"],
+                "input_boundary_patches": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "my_wall",
+                        }
+                    ]
+                },
+                "output_target": {
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_entity_type_name": "Cylinder",
+                    "name": "my_cylinder-1",
+                    "axis": [1, 0, 0],
+                    "center": {"value": [1.2, 2.3, 3.4], "units": "m"},
+                    "height": {"value": 3, "units": "m"},
+                    "inner_radius": {"value": 3, "units": "m"},
+                    "outer_radius": {"value": 5, "units": "m"},
+                },
+            }
+        ],
     }
 
     surface_json, hash = simulation_to_surface_meshing_json(
