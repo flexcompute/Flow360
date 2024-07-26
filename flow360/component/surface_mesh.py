@@ -12,7 +12,7 @@ import pydantic.v1 as pd
 
 from flow360.flags import Flags
 
-from ..cloud.requests import NewSurfaceMeshRequest
+from ..cloud.requests_v1 import NewSurfaceMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log

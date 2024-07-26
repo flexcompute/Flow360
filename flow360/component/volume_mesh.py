@@ -14,7 +14,7 @@ from pydantic.v1 import Extra, Field, validator
 from flow360.component.compress_upload import compress_and_upload_chunks
 from flow360.flags import Flags
 
-from ..cloud.requests import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
+from ..cloud.requests_v1 import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import (
     Flow360CloudFileError,
