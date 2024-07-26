@@ -33,7 +33,7 @@ from .flow360_params.flow360_params import (
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
-from .interfaces import VolumeMeshInterface
+from .interfaces_v1 import VolumeMeshInterface
 from .meshing.params import VolumeMeshingParams
 from .resource_base import (
     Flow360Resource,

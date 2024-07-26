@@ -17,7 +17,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
-from .interfaces import SurfaceMeshInterface
+from .interfaces_v1 import SurfaceMeshInterface
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .resource_base import (
     Flow360Resource,

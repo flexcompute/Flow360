@@ -12,7 +12,7 @@ from ..cloud.requests_v1 import MoveFolderItem, MoveToFolderRequest, NewFolderRe
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360ValueError
 from ..log import log
-from .interfaces import FolderInterface
+from .interfaces_v1 import FolderInterface
 from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
 from .utils import shared_account_confirm_proceed, validate_type
 

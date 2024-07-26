@@ -10,7 +10,7 @@ from typing import List, Union
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
-from .interfaces import GeometryInterface
+from .interfaces_v1 import GeometryInterface
 from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
 from .utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
