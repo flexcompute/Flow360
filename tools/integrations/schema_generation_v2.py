@@ -9,7 +9,6 @@ from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
     HeightBasedRefinement,
-    ProjectAnisoSpacing,
 )
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -47,6 +46,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
+    AngularVelocity,
     BETDisk,
     Fluid,
     NavierStokesInitialCondition,
@@ -244,7 +244,7 @@ with SI_unit_system:
                 heat_spec=HeatFlux(1.0 * u.W / u.m**2),
             ),
             SlipWall(entities=[my_slip_wall_surface]),
-            Rotation(volumes=[my_cylinder_1], spec=0.45 * u.rad / u.s),
+            Rotation(volumes=[my_cylinder_1], spec=AngularVelocity(0.45 * u.rad / u.s)),
             PorousMedium(
                 volumes=[my_box],
                 darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
@@ -286,7 +286,8 @@ with SI_unit_system:
         ],
         outputs=[
             ProbeOutput(
-                probes=[ProbeGroup(name="my_probe", locations=[[1, 2, 3]])], output_fields=["Cp"]
+                probe_groups=[ProbeGroup(name="my_probe", locations=[[1, 2, 3]])],
+                output_fields=["Cp"],
             ),
             SliceOutput(
                 slices=[Slice(name="my_slice", normal=(0, 0, 1), origin=(0, 0, 0))],
@@ -443,7 +444,7 @@ write_example(solid_model, "models", "solid")
 write_schemas(Rotation, "models", "rotation")
 rotation_model = Rotation(
     volumes=[my_cylinder_1],
-    spec=0.45 * u.deg / u.s,
+    spec=AngularVelocity(0.45 * u.deg / u.s),
     parent_volume=GenericVolume(name="outter_volume"),
 )
 write_example(rotation_model, "models", "rotation")

@@ -437,7 +437,8 @@
         "value": {
           "value": 1.0,
           "units": "W/m**2"
-        }
+        },
+        "type_name": "HeatFlux"
       }
     },
     {
@@ -492,8 +493,11 @@
         ]
       },
       "spec": {
-        "value": 0.45,
-        "units": "rad/s"
+        "value": {
+          "value": 0.45,
+          "units": "rad/s"
+        },
+        "type_name": "AngularVelocity"
       }
     },
     {
@@ -648,7 +652,8 @@
         "value": {
           "value": 123.0,
           "units": "Pa"
-        }
+        },
+        "type_name": "TotalPressure"
       }
     },
     {
@@ -670,7 +675,8 @@
         "value": {
           "value": 123.0,
           "units": "lb/s"
-        }
+        },
+        "type_name": "MassFlowRate"
       }
     }
   ],
@@ -713,8 +719,10 @@
       "frequency": -1,
       "frequency_offset": 0,
       "entities": {
-        "items": [
+        "stored_entities": [
           {
+            "private_attribute_registry_bucket_name": "ProbeEntityType",
+            "private_attribute_entity_type_name": "ProbeGroup",
             "name": "my_probe",
             "locations": [
               {
@@ -741,8 +749,10 @@
       "frequency_offset": 0,
       "output_format": "paraview",
       "entities": {
-        "items": [
+        "stored_entities": [
           {
+            "private_attribute_registry_bucket_name": "SliceEntityType",
+            "private_attribute_entity_type_name": "Slice",
             "name": "my_slice",
             "normal": [
               0.0,
@@ -942,6 +952,43 @@
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
             "private_attribute_entity_type_name": "Surface",
             "name": "my_inflow2"
+          }
+        ],
+        "ProbeEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "ProbeEntityType",
+            "private_attribute_entity_type_name": "ProbeGroup",
+            "name": "my_probe",
+            "locations": [
+              {
+                "value": [
+                  1.0,
+                  2.0,
+                  3.0
+                ],
+                "units": "m"
+              }
+            ]
+          }
+        ],
+        "SliceEntityType": [
+          {
+            "private_attribute_registry_bucket_name": "SliceEntityType",
+            "private_attribute_entity_type_name": "Slice",
+            "name": "my_slice",
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "origin": {
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "units": "m"
+            }
           }
         ]
       }

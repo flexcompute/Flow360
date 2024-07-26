@@ -1,9 +1,52 @@
 {
   "$defs": {
-    "Probe": {
+    "EntityList_ProbeGroup_": {
       "additionalProperties": false,
-      "description": "Probe monitor\n\nParameters\n----------\nname : <class 'str'>\n        locations : typing.List[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.outputs.output_entities.ProbeGroup]]\n    ",
       "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ProbeGroup"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[ProbeGroup]",
+      "type": "object"
+    },
+    "ProbeGroup": {
+      "additionalProperties": false,
+      "description": "A group of coordinates that are used to probe the solution.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['ProbeEntityType'] = ProbeEntityType\n        private_attribute_entity_type_name : typing.Literal['ProbeGroup'] = ProbeGroup\n        name : <class 'str'>\n        locations : typing.List[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "ProbeEntityType",
+          "default": "ProbeEntityType",
+          "enum": [
+            "ProbeEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "ProbeGroup",
+          "default": "ProbeGroup",
+          "enum": [
+            "ProbeGroup"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -43,7 +86,7 @@
         "name",
         "locations"
       ],
-      "title": "Probe",
+      "title": "ProbeGroup",
       "type": "object"
     },
     "UniqueAliasedStringList_Literal_": {
@@ -88,28 +131,10 @@
       ],
       "title": "UniqueAliasedStringList[Literal]",
       "type": "object"
-    },
-    "UniqueItemList_Probe_": {
-      "additionalProperties": false,
-      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.Probe]\n    ",
-      "properties": {
-        "items": {
-          "items": {
-            "$ref": "#/$defs/Probe"
-          },
-          "title": "Items",
-          "type": "array"
-        }
-      },
-      "required": [
-        "items"
-      ],
-      "title": "UniqueItemList[Probe]",
-      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Probe monitor output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\nname : typing.Optional[str] = None\n        entities : typing.Optional[abc.UniqueItemList[Probe]] = None\n        output_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['ProbeOutput'] = ProbeOutput\n    ",
+  "description": "Probe monitor output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\nname : typing.Optional[str] = None\n        entities : typing.Optional[abc.EntityList[ProbeGroup]] = None\n        output_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['ProbeOutput'] = ProbeOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
@@ -137,10 +162,10 @@
       "default": null,
       "title": "Name"
     },
-    "probes": {
+    "probe_groups": {
       "anyOf": [
         {
-          "$ref": "#/$defs/UniqueItemList_Probe_"
+          "$ref": "#/$defs/EntityList_ProbeGroup_"
         },
         {
           "type": "null"

@@ -10,6 +10,7 @@
     ]
   },
   "spec": {
-    "value": 1.0
+    "value": 1.0,
+    "type_name": "Mach"
   }
 }

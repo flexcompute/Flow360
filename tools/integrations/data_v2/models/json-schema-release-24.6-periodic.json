@@ -2,15 +2,15 @@
   "$defs": {
     "Rotational": {
       "additionalProperties": false,
-      "description": "Rotational periodicity\n\nParameters\n----------\ntype : typing.Literal['Rotational'] = Rotational\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = None\n    ",
+      "description": "Rotational periodicity\n\nParameters\n----------\ntype_name : typing.Literal['Rotational'] = Rotational\n        axis_of_rotation : typing.Optional[flow360.component.types.Axis] = None\n    ",
       "properties": {
-        "type": {
+        "type_name": {
           "const": "Rotational",
           "default": "Rotational",
           "enum": [
             "Rotational"
           ],
-          "title": "Type",
+          "title": "Type Name",
           "type": "string"
         },
         "axis_of_rotation": {
@@ -124,15 +124,15 @@
     },
     "Translational": {
       "additionalProperties": false,
-      "description": "Translational periodicity\n\nParameters\n----------\ntype : typing.Literal['Translational'] = Translational\n    ",
+      "description": "Translational periodicity\n\nParameters\n----------\ntype_name : typing.Literal['Translational'] = Translational\n    ",
       "properties": {
-        "type": {
+        "type_name": {
           "const": "Translational",
           "default": "Translational",
           "enum": [
             "Translational"
           ],
-          "title": "Type",
+          "title": "Type Name",
           "type": "string"
         }
       },
@@ -191,7 +191,7 @@
           "Rotational": "#/$defs/Rotational",
           "Translational": "#/$defs/Translational"
         },
-        "propertyName": "type"
+        "propertyName": "type_name"
       },
       "oneOf": [
         {

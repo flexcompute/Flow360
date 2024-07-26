@@ -1,8 +1,68 @@
 {
   "$defs": {
+    "AngleExpression": {
+      "additionalProperties": false,
+      "description": "Angle expression for Rotation\n\nParameters\n----------\nvalue : <class 'str'>\n        type_name : typing.Literal['AngleExpression'] = AngleExpression\n    ",
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "type_name": {
+          "const": "AngleExpression",
+          "default": "AngleExpression",
+          "enum": [
+            "AngleExpression"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "AngleExpression",
+      "type": "object"
+    },
+    "AngularVelocity": {
+      "additionalProperties": false,
+      "description": "Angular velocity for Rotation\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._AngularVelocityType'>\n        type_name : typing.Literal['AngularVelocity'] = AngularVelocity\n    ",
+      "properties": {
+        "value": {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "units": {
+              "dimension": "angular_velocity",
+              "enum": [
+                "rad/s",
+                "rpm"
+              ],
+              "type": "string"
+            }
+          },
+          "title": "Value"
+        },
+        "type_name": {
+          "const": "AngularVelocity",
+          "default": "AngularVelocity",
+          "enum": [
+            "AngularVelocity"
+          ],
+          "title": "Type Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "AngularVelocity",
+      "type": "object"
+    },
     "Cylinder": {
       "additionalProperties": false,
-      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
+      "description": "Represents a cylinder in three-dimensional space.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['Cylinder'] = Cylinder\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxis : <class 'flow360.component.types.Axis'>\n        center : <class 'flow360.component.simulation.unit_system._VectorType'>\n        height : <class 'flow360.component.simulation.unit_system._Constrained'>\n        inner_radius : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')]] = None\n        outer_radius : <class 'flow360.component.simulation.unit_system._Constrained'>\n    \nAttributes:\n    axis (Axis): The axis of the cylinder.\n    center (LengthType.Point): The center point of the cylinder.\n    height (LengthType.Postive): The height of the cylinder.\n    inner_radius (LengthType.Positive): The inner radius of the cylinder.\n    outer_radius (LengthType.Positive): The outer radius of the cylinder.",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -191,15 +251,15 @@
     },
     "FromUserDefinedDynamics": {
       "additionalProperties": false,
-      "description": "Rotation is controlled by user defined dynamics\n\nParameters\n----------\ntype : typing.Literal['FromUserDefinedDynamics'] = FromUserDefinedDynamics\n    ",
+      "description": "Rotation is controlled by user defined dynamics\n\nParameters\n----------\ntype_name : typing.Literal['FromUserDefinedDynamics'] = FromUserDefinedDynamics\n    ",
       "properties": {
-        "type": {
+        "type_name": {
           "const": "FromUserDefinedDynamics",
           "default": "FromUserDefinedDynamics",
           "enum": [
             "FromUserDefinedDynamics"
           ],
-          "title": "Type",
+          "title": "Type Name",
           "type": "string"
         }
       },
@@ -208,7 +268,7 @@
     },
     "GenericVolume": {
       "additionalProperties": false,
-      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
+      "description": "Do not expose.\nThis type of entity will get auto-constructed by assets when loading metadata.\nBy design these GenericVolume entities should only contain basic connectivity/mesh information.\n\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['VolumetricEntityType'] = VolumetricEntityType\n        private_attribute_entity_type_name : typing.Literal['GenericVolume'] = GenericVolume\n        name : <class 'str'>\n        private_attribute_zone_boundary_names : <class 'flow360.component.simulation.framework.unique_list.UniqueStringList'> = UniqueStringList(items=[])\n    Boundary names of the zone WITH the prepending zone name.\naxes : typing.Optional[typing.Tuple[flow360.component.types.Axis, flow360.component.types.Axis]] = None\n        axis : typing.Optional[flow360.component.types.Axis] = None\n        center : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')]] = None\n    ",
       "properties": {
         "private_attribute_registry_bucket_name": {
           "const": "VolumetricEntityType",
@@ -367,7 +427,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Similar to Flow360Param ReferenceFrame.\nNote that `center`, `axis` can be acquired from `entity` so they are not required anymore.\nNote: Should use the unit system to convert degree or degree per second to radian and radian per second\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['Rotation'] = Rotation\n        entities : <class 'abc.EntityList[GenericVolume,Cylinder]'>\n        spec : typing.Union[typing.Annotated[str, AfterValidator(func=<function process_expressions at 0x7fbdc0c31cf0>)], flow360.component.simulation.models.volume_models.FromUserDefinedDynamics, typing.Annotated[flow360.component.simulation.unit_system._AngularVelocityType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]]\n        parent_volume : typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Cylinder, NoneType] = None\n    ",
+  "description": "Similar to Flow360Param ReferenceFrame.\nNote that `center`, `axis` can be acquired from `entity` so they are not required anymore.\nNote: Should use the unit system to convert degree or degree per second to radian and radian per second\n\n\nParameters\n----------\nname : typing.Optional[str] = None\n        type : typing.Literal['Rotation'] = Rotation\n        entities : <class 'abc.EntityList[GenericVolume,Cylinder]'>\n        spec : typing.Union[flow360.component.simulation.models.volume_models.AngleExpression, flow360.component.simulation.models.volume_models.FromUserDefinedDynamics, flow360.component.simulation.models.volume_models.AngularVelocity]\n        parent_volume : typing.Union[flow360.component.simulation.primitives.GenericVolume, flow360.component.simulation.primitives.Cylinder, NoneType] = None\n    ",
   "properties": {
     "name": {
       "anyOf": [
@@ -394,27 +454,23 @@
       "$ref": "#/$defs/EntityList_GenericVolume_Cylinder_"
     },
     "spec": {
-      "anyOf": [
+      "discriminator": {
+        "mapping": {
+          "AngleExpression": "#/$defs/AngleExpression",
+          "AngularVelocity": "#/$defs/AngularVelocity",
+          "FromUserDefinedDynamics": "#/$defs/FromUserDefinedDynamics"
+        },
+        "propertyName": "type_name"
+      },
+      "oneOf": [
         {
-          "type": "string"
+          "$ref": "#/$defs/AngleExpression"
         },
         {
           "$ref": "#/$defs/FromUserDefinedDynamics"
         },
         {
-          "properties": {
-            "value": {
-              "type": "number"
-            },
-            "units": {
-              "dimension": "angular_velocity",
-              "enum": [
-                "rad/s",
-                "rpm"
-              ],
-              "type": "string"
-            }
-          }
+          "$ref": "#/$defs/AngularVelocity"
         }
       ],
       "title": "Spec"

@@ -13,6 +13,7 @@
     "value": {
       "value": 1.0,
       "units": "lb/s"
-    }
+    },
+    "type_name": "MassFlowRate"
   }
 }

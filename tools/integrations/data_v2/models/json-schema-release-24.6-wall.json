@@ -27,7 +27,7 @@
     },
     "HeatFlux": {
       "additionalProperties": false,
-      "description": "Heat flux\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatFluxType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "description": "Heat flux\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._HeatFluxType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n        type_name : typing.Literal['HeatFlux'] = HeatFlux\n    ",
       "properties": {
         "value": {
           "anyOf": [
@@ -52,6 +52,15 @@
             }
           ],
           "title": "Value"
+        },
+        "type_name": {
+          "const": "HeatFlux",
+          "default": "HeatFlux",
+          "enum": [
+            "HeatFlux"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -120,7 +129,7 @@
     },
     "Temperature": {
       "additionalProperties": false,
-      "description": "Temperature\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n    ",
+      "description": "Temperature\n\nParameters\n----------\nvalue : typing.Union[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')], typing.Annotated[str, Strict(strict=True)]]\n        type_name : typing.Literal['Temperature'] = Temperature\n    ",
       "properties": {
         "value": {
           "anyOf": [
@@ -145,6 +154,15 @@
             }
           ],
           "title": "Value"
+        },
+        "type_name": {
+          "const": "Temperature",
+          "default": "Temperature",
+          "enum": [
+            "Temperature"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -155,7 +173,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Replace Flow360Param:\n- NoSlipWall\n- IsothermalWall\n- HeatFluxWall\n- WallFunction\n- SolidIsothermalWall\n- SolidAdiabaticWall\n\n\nParameters\n----------\ntype : typing.Literal['Wall'] = Wall\n        entities : <class 'abc.EntityList[Surface]'>\n        name : typing.Optional[str] = None\n        use_wall_function : <class 'bool'> = False\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        heat_spec : typing.Union[flow360.component.simulation.models.surface_models.HeatFlux, flow360.component.simulation.models.surface_models.Temperature, NoneType] = None\n    ",
+  "description": "Replace Flow360Param:\n- NoSlipWall\n- IsothermalWall\n- HeatFluxWall\n- WallFunction\n- SolidIsothermalWall\n- SolidAdiabaticWall\n\n\nParameters\n----------\ntype : typing.Literal['Wall'] = Wall\n        entities : <class 'abc.EntityList[Surface]'>\n        name : typing.Optional[str] = None\n        use_wall_function : <class 'bool'> = False\n        velocity : typing.Union[typing.Tuple[typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)], typing.Annotated[str, Strict(strict=True)]], typing.Annotated[flow360.component.simulation.unit_system._VectorType, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')], NoneType] = None\n        heat_spec : typing.Union[flow360.component.simulation.models.surface_models.HeatFlux, flow360.component.simulation.models.surface_models.Temperature, NoneType] = None\n    ",
   "properties": {
     "type": {
       "const": "Wall",
@@ -238,10 +256,21 @@
     "heat_spec": {
       "anyOf": [
         {
-          "$ref": "#/$defs/HeatFlux"
-        },
-        {
-          "$ref": "#/$defs/Temperature"
+          "discriminator": {
+            "mapping": {
+              "HeatFlux": "#/$defs/HeatFlux",
+              "Temperature": "#/$defs/Temperature"
+            },
+            "propertyName": "type_name"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/HeatFlux"
+            },
+            {
+              "$ref": "#/$defs/Temperature"
+            }
+          ]
         },
         {
           "type": "null"

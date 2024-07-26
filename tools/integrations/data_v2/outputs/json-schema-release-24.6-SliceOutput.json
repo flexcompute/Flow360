@@ -1,9 +1,52 @@
 {
   "$defs": {
+    "EntityList_Slice_": {
+      "additionalProperties": false,
+      "description": "Parameters\n----------\nstored_entities : typing.Optional[typing.List[flow360.component.simulation.outputs.output_entities.Slice]]\n    ",
+      "properties": {
+        "stored_entities": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Slice"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Stored Entities"
+        }
+      },
+      "required": [
+        "stored_entities"
+      ],
+      "title": "EntityList[Slice]",
+      "type": "object"
+    },
     "Slice": {
       "additionalProperties": false,
-      "description": "Slice output item.\n\nParameters\n----------\nname : <class 'str'>\n        normal : <class 'flow360.component.types.Axis'>\n        origin : <class 'flow360.component.simulation.unit_system._VectorType'>\n    ",
+      "description": "Slice output item.\n\nParameters\n----------\nprivate_attribute_registry_bucket_name : typing.Literal['SliceEntityType'] = SliceEntityType\n        private_attribute_entity_type_name : typing.Literal['Slice'] = Slice\n        name : <class 'str'>\n        normal : <class 'flow360.component.types.Axis'>\n        origin : <class 'flow360.component.simulation.unit_system._VectorType'>\n    ",
       "properties": {
+        "private_attribute_registry_bucket_name": {
+          "const": "SliceEntityType",
+          "default": "SliceEntityType",
+          "enum": [
+            "SliceEntityType"
+          ],
+          "title": "Private Attribute Registry Bucket Name",
+          "type": "string"
+        },
+        "private_attribute_entity_type_name": {
+          "const": "Slice",
+          "default": "Slice",
+          "enum": [
+            "Slice"
+          ],
+          "title": "Private Attribute Entity Type Name",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -102,28 +145,10 @@
       ],
       "title": "UniqueAliasedStringList[Literal]",
       "type": "object"
-    },
-    "UniqueItemList_Slice_": {
-      "additionalProperties": false,
-      "description": "Parameters\n----------\nitems : typing.List[flow360.component.simulation.outputs.output_entities.Slice]\n    ",
-      "properties": {
-        "items": {
-          "items": {
-            "$ref": "#/$defs/Slice"
-          },
-          "title": "Items",
-          "type": "array"
-        }
-      },
-      "required": [
-        "items"
-      ],
-      "title": "UniqueItemList[Slice]",
-      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Slice output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        name : typing.Optional[str] = None\n        entities : typing.Optional[abc.UniqueItemList[Slice]] = None\n        output_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['SliceOutput'] = SliceOutput\n    ",
+  "description": "Slice output settings.\n\nParameters\n----------\nfrequency : <class 'int'> = -1\n    Frequency (in number of physical time steps) at which output is saved.\n    -1 is at end of simulation.\nfrequency_offset : <class 'int'> = 0\n    Offset (in number of physical time steps) at which output animation is started.\n    0 is at beginning of simulation.\noutput_format : typing.Literal['paraview', 'tecplot', 'both'] = paraview\n        name : typing.Optional[str] = None\n        entities : typing.Optional[abc.EntityList[Slice]] = None\n        output_fields : <class 'abc.UniqueAliasedStringList[Literal]'>\n        output_type : typing.Literal['SliceOutput'] = SliceOutput\n    ",
   "properties": {
     "frequency": {
       "default": -1,
@@ -164,7 +189,7 @@
     "slices": {
       "anyOf": [
         {
-          "$ref": "#/$defs/UniqueItemList_Slice_"
+          "$ref": "#/$defs/EntityList_Slice_"
         },
         {
           "type": "null"

@@ -13,6 +13,7 @@
     "value": {
       "value": 1.0,
       "units": "lbf/ft**2"
-    }
+    },
+    "type_name": "Pressure"
   }
 }

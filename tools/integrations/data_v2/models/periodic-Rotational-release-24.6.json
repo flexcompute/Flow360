@@ -19,7 +19,7 @@
     ]
   },
   "spec": {
-    "type": "Rotational",
+    "type_name": "Rotational",
     "axis_of_rotation": [
       0.0,
       1.0,

@@ -2,7 +2,7 @@
   "$defs": {
     "Air": {
       "additionalProperties": false,
-      "description": "Material properties for Air\n\n\nParameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
+      "description": "Material properties for Air\n\n\nParameters\n----------\ntype : typing.Literal['air'] = air\n        name : <class 'str'> = air\n        dynamic_viscosity : typing.Union[flow360.component.simulation.models.material.Sutherland, typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')]] = Sutherland(reference_viscosity=unyt_quantity(1.716e-05,, 'Pa*s'), reference_temperature=unyt_quantity(273.15,, 'K'), effective_temperature=unyt_quantity(110.4,, 'K'))\n    ",
       "properties": {
         "type": {
           "const": "air",

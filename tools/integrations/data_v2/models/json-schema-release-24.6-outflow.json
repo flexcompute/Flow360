@@ -27,12 +27,21 @@
     },
     "Mach": {
       "additionalProperties": false,
-      "description": "Mach\n\nParameters\n----------\nvalue : <class 'float'>\n    ",
+      "description": "Mach\n\nParameters\n----------\nvalue : <class 'float'>\n        type_name : typing.Literal['Mach'] = Mach\n    ",
       "properties": {
         "value": {
           "minimum": 0.0,
           "title": "Value",
           "type": "number"
+        },
+        "type_name": {
+          "const": "Mach",
+          "default": "Mach",
+          "enum": [
+            "Mach"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -43,7 +52,7 @@
     },
     "MassFlowRate": {
       "additionalProperties": false,
-      "description": "Mass flow rate\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Mass flow rate\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n        type_name : typing.Literal['MassFlowRate'] = MassFlowRate\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -62,6 +71,15 @@
             }
           },
           "title": "Value"
+        },
+        "type_name": {
+          "const": "MassFlowRate",
+          "default": "MassFlowRate",
+          "enum": [
+            "MassFlowRate"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -72,7 +90,7 @@
     },
     "Pressure": {
       "additionalProperties": false,
-      "description": "Pressure\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Pressure\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n        type_name : typing.Literal['Pressure'] = Pressure\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -91,6 +109,15 @@
             }
           },
           "title": "Value"
+        },
+        "type_name": {
+          "const": "Pressure",
+          "default": "Pressure",
+          "enum": [
+            "Pressure"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -186,7 +213,15 @@
       "title": "Name"
     },
     "spec": {
-      "anyOf": [
+      "discriminator": {
+        "mapping": {
+          "Mach": "#/$defs/Mach",
+          "MassFlowRate": "#/$defs/MassFlowRate",
+          "Pressure": "#/$defs/Pressure"
+        },
+        "propertyName": "type_name"
+      },
+      "oneOf": [
         {
           "$ref": "#/$defs/Pressure"
         },

@@ -28,6 +28,7 @@
     "value": {
       "value": 123.0,
       "units": "Pa"
-    }
+    },
+    "type_name": "TotalPressure"
   }
 }

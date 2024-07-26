@@ -19,6 +19,6 @@
     ]
   },
   "spec": {
-    "type": "Translational"
+    "type_name": "Translational"
   }
 }

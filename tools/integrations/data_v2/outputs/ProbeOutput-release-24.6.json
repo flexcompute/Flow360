@@ -2,8 +2,10 @@
   "frequency": 12,
   "frequency_offset": 1,
   "entities": {
-    "items": [
+    "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "ProbeEntityType",
+        "private_attribute_entity_type_name": "ProbeGroup",
         "name": "the_name1",
         "locations": [
           {
@@ -25,6 +27,8 @@
         ]
       },
       {
+        "private_attribute_registry_bucket_name": "ProbeEntityType",
+        "private_attribute_entity_type_name": "ProbeGroup",
         "name": "the_name2",
         "locations": [
           {

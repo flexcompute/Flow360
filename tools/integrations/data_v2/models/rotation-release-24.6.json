@@ -38,8 +38,11 @@
     ]
   },
   "spec": {
-    "value": 0.45,
-    "units": "degree/s"
+    "value": {
+      "value": 0.45,
+      "units": "degree/s"
+    },
+    "type_name": "AngularVelocity"
   },
   "parent_volume": {
     "private_attribute_registry_bucket_name": "VolumetricEntityType",

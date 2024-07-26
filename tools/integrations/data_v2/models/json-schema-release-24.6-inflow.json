@@ -27,7 +27,7 @@
     },
     "MassFlowRate": {
       "additionalProperties": false,
-      "description": "Mass flow rate\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Mass flow rate\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n        type_name : typing.Literal['MassFlowRate'] = MassFlowRate\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -46,6 +46,15 @@
             }
           },
           "title": "Value"
+        },
+        "type_name": {
+          "const": "MassFlowRate",
+          "default": "MassFlowRate",
+          "enum": [
+            "MassFlowRate"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -56,7 +65,7 @@
     },
     "ModifiedTurbulentViscosity": {
       "additionalProperties": false,
-      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fbdbd484670>, return_type=PydanticUndefined, when_used='always')]]\n    ",
+      "description": "modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]\n    The modified turbulent eddy viscosity (SA). Applicable only when using SA model.\n\n\nParameters\n----------\ntype_name : typing.Literal['ModifiedTurbulentViscosity'] = ModifiedTurbulentViscosity\n        modified_turbulent_viscosity : typing.Optional[typing.Annotated[flow360.component.simulation.unit_system._Constrained, PlainSerializer(func=<function _dimensioned_type_serializer at 0x7fda343dcee0>, return_type=PydanticUndefined, when_used='always')]]\n    ",
       "properties": {
         "type_name": {
           "const": "ModifiedTurbulentViscosity",
@@ -341,7 +350,7 @@
     },
     "TotalPressure": {
       "additionalProperties": false,
-      "description": "Total pressure\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n    ",
+      "description": "Total pressure\n\nParameters\n----------\nvalue : <class 'flow360.component.simulation.unit_system._Constrained'>\n        type_name : typing.Literal['TotalPressure'] = TotalPressure\n    ",
       "properties": {
         "value": {
           "properties": {
@@ -360,6 +369,15 @@
             }
           },
           "title": "Value"
+        },
+        "type_name": {
+          "const": "TotalPressure",
+          "default": "TotalPressure",
+          "enum": [
+            "TotalPressure"
+          ],
+          "title": "Type Name",
+          "type": "string"
         }
       },
       "required": [
@@ -911,7 +929,14 @@
       "title": "Velocity Direction"
     },
     "spec": {
-      "anyOf": [
+      "discriminator": {
+        "mapping": {
+          "MassFlowRate": "#/$defs/MassFlowRate",
+          "TotalPressure": "#/$defs/TotalPressure"
+        },
+        "propertyName": "type_name"
+      },
+      "oneOf": [
         {
           "$ref": "#/$defs/TotalPressure"
         },

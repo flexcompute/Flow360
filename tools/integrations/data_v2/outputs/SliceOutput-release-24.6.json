@@ -3,8 +3,10 @@
   "frequency_offset": 1,
   "output_format": "tecplot",
   "entities": {
-    "items": [
+    "stored_entities": [
       {
+        "private_attribute_registry_bucket_name": "SliceEntityType",
+        "private_attribute_entity_type_name": "Slice",
         "name": "my_first_slice",
         "normal": [
           1.0,
@@ -21,6 +23,8 @@
         }
       },
       {
+        "private_attribute_registry_bucket_name": "SliceEntityType",
+        "private_attribute_entity_type_name": "Slice",
         "name": "my_second_slice",
         "normal": [
           0.7071067811865475,
