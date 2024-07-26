@@ -141,7 +141,7 @@ class AssetBase(metaclass=ABCMeta):
         run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
             json={"upTo": destination.__name__, "useInHouse": True},
             method="run",
-            ignore_request_error=True,
+            deferred_400_error_handling=True,
         )
 
         if "error" in run_response:

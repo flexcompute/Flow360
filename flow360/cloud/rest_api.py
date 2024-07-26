@@ -31,12 +31,14 @@ class RestApi:
         """
         return http.get(path or self._url(method), json=json, params=params)
 
-    def post(self, json, path=None, method=None, ignore_request_error=False):
+    def post(self, json, path=None, method=None, deferred_400_error_handling=False):
         """
         Resource post
         """
         return http.post(
-            path or self._url(method), json=json, ignore_request_error=ignore_request_error
+            path or self._url(method),
+            json=json,
+            deferred_400_error_handling=deferred_400_error_handling,
         )
 
     def put(self, json, path=None, method=None):

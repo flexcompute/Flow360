@@ -32,7 +32,7 @@ from flow360.component.volume_mesh import VolumeMesh
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
-HEARBEAT_INTERVAL = 15
+HEARTBEAT_INTERVAL = 15
 
 
 def _post_upload_heartbeat(info):
@@ -41,11 +41,11 @@ def _post_upload_heartbeat(info):
         RestApi("v2/heartbeats/uploading").post(
             {
                 "resourceId": info["resourceId"],
-                "heartbeatInterval": HEARBEAT_INTERVAL,
+                "heartbeatInterval": HEARTBEAT_INTERVAL,
                 "resourceType": info["resourceType"],
             }
         )
-        time.sleep(HEARBEAT_INTERVAL)
+        time.sleep(HEARTBEAT_INTERVAL)
 
 
 # pylint: disable=R0801
