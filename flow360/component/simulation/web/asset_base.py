@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from typing import List, Union
 
-from flow360.cloud.requests_v2 import LengthUnitType
+from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.interfaces import (

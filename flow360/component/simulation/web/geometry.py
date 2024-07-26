@@ -9,7 +9,7 @@ from typing import List, Union
 
 import pydantic.v1 as pd
 
-from flow360.cloud.requests_v2 import (
+from flow360.cloud.requests import (
     GeometryFileMeta,
     LengthUnitType,
     NewGeometryRequest,
