@@ -5,25 +5,23 @@ Geometry component
 from __future__ import annotations
 
 import os
+import threading
+import time
 from typing import List, Union
 
 import pydantic.v1 as pd
 
-from flow360.cloud.requests import (
-    GeometryFileMeta,
-    LengthUnitType,
-    NewGeometryRequest,
-)
+from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
@@ -33,6 +31,21 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
+
+HEARBEAT_INTERVAL = 15
+
+
+def _post_upload_heartbeat(info):
+    """Keep letting the server know that the uploading is still in progress."""
+    while not info["stop"]:
+        RestApi("v2/heartbeats/uploading").post(
+            {
+                "resourceId": info["resourceId"],
+                "heartbeatInterval": HEARBEAT_INTERVAL,
+                "resourceType": info["resourceType"],
+            }
+        )
+        time.sleep(HEARBEAT_INTERVAL)
 
 
 # pylint: disable=R0801
@@ -147,12 +160,17 @@ class GeometryDraft(ResourceDraft):
 
         ##:: upload geometry files
         geometry = Geometry(info.id)
+        heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+        heartbeat_thread = threading.Thread(target=_post_upload_heartbeat, args=(heartbeat_info,))
+        heartbeat_thread.start()
         for file_path in self.file_names:
-            file_name = os.path.basename(file_path)
             geometry._web._upload_file(
-                remote_file_name=file_name, file_name=file_path, progress_callback=progress_callback
+                remote_file_name=os.path.basename(file_path),
+                file_name=file_path,
+                progress_callback=progress_callback,
             )
-
+        heartbeat_info["stop"] = True
+        heartbeat_thread.join()
         ##:: kick off pipeline
         RestApi(GeometryInterface.endpoint, id=geometry._web.id).patch(
             {"action": "Success"}, method="files"

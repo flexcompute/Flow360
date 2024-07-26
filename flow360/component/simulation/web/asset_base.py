@@ -10,21 +10,25 @@ from typing import List, Union
 
 from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.interfaces import (
-    BaseInterface,
-    DraftInterface,
-    ProjectInterface,
-)
+from flow360.component.interfaces import BaseInterface, DraftInterface, ProjectInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import validate_type
 from flow360.log import log
 
 TIMEOUT_MINUTES = 60
+
+
+def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
+    RestApi(ProjectInterface.endpoint, id=project_id).get(
+        method="path", params={"itemId": item_id, "itemType": item_type}
+    )
+    # pylint: disable=fixme
+    # TODO: check all status on the given path
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -162,6 +166,7 @@ class AssetBase(metaclass=ABCMeta):
                     raise TimeoutError(
                         "Timeout: Process did not finish within the specified timeout period"
                     )
+                _check_project_path_status(self.project_id, self._web.id, self.__class__.__name__)
                 log.info("Waiting for the process to finish...")
-                time.sleep(30)
+                time.sleep(10)
         return destination_obj

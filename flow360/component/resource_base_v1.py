@@ -18,10 +18,10 @@ import pydantic.v1 as pd
 from .. import error_messages
 from ..cloud.rest_api import RestApi
 from ..cloud.webbrowser import open_browser
-from .interfaces_v1 import BaseInterface
 from ..exceptions import Flow360RuntimeError
 from ..log import LogLevel, log
 from ..user_config import UserConfig
+from .interfaces_v1 import BaseInterface
 from .utils import is_valid_uuid, validate_type
 
 
