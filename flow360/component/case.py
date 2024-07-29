@@ -19,9 +19,9 @@ from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .folder import Folder
 from .interfaces_v1 import CaseInterface, FolderInterface, VolumeMeshInterface
-from .resource_base_v1 import (
+from .resource_base import (
+    AssetMetaBaseModel,
     Flow360Resource,
-    Flow360ResourceBaseModel,
     Flow360ResourceListBase,
     Flow360Status,
     ResourceDraft,
@@ -127,7 +127,7 @@ class CaseBase:
         return Case.create(name, params, parent_case=self, tags=tags)
 
 
-class CaseMeta(Flow360ResourceBaseModel):
+class CaseMeta(AssetMetaBaseModel):
     """
     CaseMeta data component
     """
@@ -296,7 +296,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         volume_mesh_id = volume_mesh_id or self.other_case.volume_mesh_id
 
         if self.solver_version is None:
-            volume_mesh_info = Flow360ResourceBaseModel(
+            volume_mesh_info = AssetMetaBaseModel(
                 **RestApi(VolumeMeshInterface.endpoint, id=volume_mesh_id).get()
             )
             self.solver_version = volume_mesh_info.solver_version
@@ -382,7 +382,7 @@ class Case(CaseBase, Flow360Resource):
     def __init__(self, id: str):
         super().__init__(
             interface=CaseInterface,
-            info_type_class=CaseMeta,
+            meta_class=CaseMeta,
             id=id,
         )
 

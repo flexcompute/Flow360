@@ -19,9 +19,9 @@ from ..log import log
 from .flow360_params.params_base import params_generic_validator
 from .interfaces_v1 import SurfaceMeshInterface
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
-from .resource_base_v1 import (
+from .resource_base import (
+    AssetMetaBaseModel,
     Flow360Resource,
-    Flow360ResourceBaseModel,
     Flow360ResourceListBase,
     ResourceDraft,
 )
@@ -51,7 +51,7 @@ class SurfaceMeshDownloadable(Enum):
 
 
 # pylint: disable=E0213
-class SurfaceMeshMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
+class SurfaceMeshMeta(AssetMetaBaseModel, extra=pd.Extra.allow):
     """
     SurfaceMeshMeta component
     """
@@ -281,7 +281,7 @@ class SurfaceMesh(Flow360Resource):
     def __init__(self, id: str):
         super().__init__(
             interface=SurfaceMeshInterface,
-            info_type_class=SurfaceMeshMeta,
+            meta_class=SurfaceMeshMeta,
             id=id,
         )
         self._params = None

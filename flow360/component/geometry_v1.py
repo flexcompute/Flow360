@@ -11,7 +11,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .interfaces_v1 import GeometryInterface
-from .resource_base_v1 import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
+from .resource_base import AssetMetaBaseModel, Flow360Resource, ResourceDraft
 from .utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
@@ -29,7 +29,7 @@ class Geometry(Flow360Resource):
     def __init__(self, id: str):
         super().__init__(
             interface=GeometryInterface,
-            info_type_class=GeometryMeta,
+            meta_class=GeometryMeta,
             id=id,
         )
         self._params = None
@@ -100,7 +100,7 @@ class Geometry(Flow360Resource):
         )
 
 
-class GeometryMeta(Flow360ResourceBaseModel):
+class GeometryMeta(AssetMetaBaseModel):
     """
     GeometryMeta component
     """
