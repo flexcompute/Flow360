@@ -155,7 +155,7 @@ class GeometryDraft(ResourceDraft):
         )
 
         ##:: Create new Geometry resource and project
-        resp = RestApi(GeometryInterface.endpoint).post(req.model_dump(by_alias=True))
+        resp = RestApi(GeometryInterface.endpoint).post(req.dict())
         info = GeometryMeta(**resp)
 
         ##:: upload geometry files
