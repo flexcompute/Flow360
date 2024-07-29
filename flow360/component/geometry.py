@@ -101,7 +101,9 @@ class GeometryDraft(ResourceDraft):
                 "name field is required if more than one geometry files are provided."
             )
         if self.length_unit not in LengthUnitType.__args__:
-            raise Flow360ValueError(f"specified length_unit : {self.length_unit} is invalid.")
+            raise Flow360ValueError(
+                f"specified length_unit : {self.length_unit} is invalid. Valid options are: {list(LengthUnitType.__args__)}"
+            )
 
     @property
     def file_names(self) -> List[str]:
