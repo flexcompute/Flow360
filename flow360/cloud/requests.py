@@ -113,14 +113,14 @@ class MoveToFolderRequest(Flow360Requests):
 
 
 class GeometryFileMeta(pd.BaseModel):
-    """File information for geometry."""
+    """[Simulation V2] File information for geometry."""
 
     name: str = pd.Field(description="geometry file name")
     type: Literal["main", "dependency"] = pd.Field(description="geometry hierarchy")
 
 
 class NewGeometryRequest(Flow360Requests):
-    """Creates new project and a new geometry resource."""
+    """[Simulation V2] Creates new project and a new geometry resource."""
 
     name: str = pd.Field(description="project name")
     solver_version: str = pd.Field(
