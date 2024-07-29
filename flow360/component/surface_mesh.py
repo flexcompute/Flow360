@@ -17,7 +17,7 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
 from .flow360_params.params_base import params_generic_validator
-from .interfaces_v1 import SurfaceMeshInterface
+from .interfaces import SurfaceMeshInterface
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from .resource_base import (
     AssetMetaBaseModel,
@@ -350,6 +350,7 @@ class SurfaceMesh(Flow360Resource):
         """
         return SurfaceMeshMeta
 
+    # pylint: disable=arguments-differ
     def _complete_upload(self, remote_file_name):
         """
         Complete surface mesh upload

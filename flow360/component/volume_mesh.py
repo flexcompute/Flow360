@@ -33,7 +33,7 @@ from .flow360_params.flow360_params import (
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
-from .interfaces_v1 import VolumeMeshInterface
+from .interfaces import VolumeMeshInterface
 from .meshing.params import VolumeMeshingParams
 from .resource_base import (
     AssetMetaBaseModel,
@@ -571,6 +571,7 @@ class VolumeMesh(Flow360Resource):
             overwrite=overwrite,
         )
 
+    # pylint: disable=arguments-differ
     def _complete_upload(self, remote_file_name):
         """
         Complete volume mesh upload

@@ -62,22 +62,66 @@ def match_file_pattern(patterns, filename):
     return False
 
 
+def _valid_resource_id(resource_id):
+    """
+    returns:
+    1. Whether the resource_id is valid
+    2. the prefix of the resource_id
+    3. the uuid part of the resource_id
+    """
+    if isinstance(resource_id, str) is False:
+        raise ValueError(f"resource_id must be a string, but got {type(resource_id)}")
+
+    pattern = re.compile(
+        r"""
+        ^                      # Start of the string
+        (?:(?P<prefix>         # Start of the optional prefix group
+        [0-9a-zA-Z\-]{1,16}    # Prefix: 1 to 16 characters, alphanumeric or dash
+        )-)?
+        (?P<uuid>              # Start of the UUID group
+        [0-9a-fA-F]{8}-        # 8 hex digits, followed by a dash
+        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
+        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
+        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
+        [0-9a-fA-F]{12}        # 12 hex digits
+        )$
+    """,
+        re.VERBOSE,
+    )
+
+    match = pattern.match(resource_id)
+    if not match:
+        return False, None, None
+
+    try:
+        prefix = match.group("prefix") or ""
+        extracted_uuid = match.group("uuid")
+        uuid.UUID(f"{extracted_uuid}")
+    except ValueError:
+        return False, None, None
+
+    return True, prefix, extracted_uuid
+
+
 # pylint: disable=redefined-builtin
-def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
+def is_valid_uuid(id, allow_none=False):
     """
     Checks if id is valid
     """
-    if valid_prefixes is None:
-        valid_prefixes = ["folder-", "g-", "geo-", "sm-", "vm-", "c-", "prj-", "dft-"]
-    if id is None and allow_none:
-        return
+
+    if id is None:
+        if allow_none is True:
+            return
+        raise Flow360ValueError("None is not a valid id.")
+
     try:
-        if id:
-            for prefix in valid_prefixes:
-                if id.startswith(prefix):
-                    id = id[len(prefix) :]
-                    break
-        uuid.UUID(str(id))
+        is_valid, prefix, extracted_uuid = _valid_resource_id(id)
+        if is_valid is False:
+            raise ValueError(f"{id} is not a valid UUID.")
+        log.debug(
+            f"Validating id: {id}, is_valid: {is_valid}, prefix: {prefix}, extracted_uuid: {extracted_uuid}"
+        )
+        uuid.UUID(str(extracted_uuid))
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 

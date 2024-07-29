@@ -10,7 +10,7 @@ from typing import List, Union
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360FileError, Flow360ValueError
 from ..log import log
-from .interfaces_v1 import GeometryInterface
+from .interfaces import GeometryInterface
 from .resource_base import AssetMetaBaseModel, Flow360Resource, ResourceDraft
 from .utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
@@ -56,6 +56,7 @@ class Geometry(Flow360Resource):
         """
         return GeometryMeta
 
+    # pylint: disable=arguments-differ
     def _complete_upload(self, remote_file_names: List[str]):
         """
         Complete geometry files upload

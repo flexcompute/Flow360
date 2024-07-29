@@ -385,6 +385,12 @@ class Flow360Resource(RestApi):
         """
         open_browser(f"{self._interface().endpoint}/{self.id}")
 
+    def _complete_upload(self):
+        """
+        [Simulation V2 API] Inform the server that the upload is complete. This kicks off the following pipeline.
+        """
+        self.patch({"action": "Success"}, method="files")
+
 
 def is_object_cloud_resource(resource: Flow360Resource):
     """

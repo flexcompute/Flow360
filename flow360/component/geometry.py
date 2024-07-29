@@ -36,7 +36,10 @@ HEARTBEAT_INTERVAL = 15
 
 
 def _post_upload_heartbeat(info):
-    """Keep letting the server know that the uploading is still in progress."""
+    """
+    Keep letting the server know that the uploading is still in progress.
+    Server marks resource as failed if no heartbeat is received for 3 `heartbeatInterval`s.
+    """
     while not info["stop"]:
         RestApi("v2/heartbeats/uploading").post(
             {
@@ -102,7 +105,8 @@ class GeometryDraft(ResourceDraft):
             )
         if self.length_unit not in LengthUnitType.__args__:
             raise Flow360ValueError(
-                f"specified length_unit : {self.length_unit} is invalid. Valid options are: {list(LengthUnitType.__args__)}"
+                f"specified length_unit : {self.length_unit} is invalid. "
+                f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
     @property
@@ -163,10 +167,11 @@ class GeometryDraft(ResourceDraft):
         ##:: upload geometry files
         geometry = Geometry(info.id)
         heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+        # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=_post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
         for file_path in self.file_names:
-            geometry._web._upload_file(
+            geometry._webapi._upload_file(
                 remote_file_name=os.path.basename(file_path),
                 file_name=file_path,
                 progress_callback=progress_callback,
@@ -174,9 +179,7 @@ class GeometryDraft(ResourceDraft):
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
         ##:: kick off pipeline
-        RestApi(GeometryInterface.endpoint, id=geometry._web.id).patch(
-            {"action": "Success"}, method="files"
-        )
+        geometry._webapi._complete_upload()
         log.info("Geometry successfully submitted.")
         return geometry
 
@@ -189,7 +192,7 @@ class Geometry(AssetBase):
     _interface = GeometryInterface
     _info_type_class = GeometryMeta
     _draft_class = GeometryDraft
-    _web: Flow360Resource = None
+    _webapi: Flow360Resource = None
 
     @classmethod
     def from_file(
@@ -202,7 +205,7 @@ class Geometry(AssetBase):
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, name, tags, length_unit)
 
-    def _retrieve_metadata(self):
+    def _get_metadata(self):
         # get the metadata when initializing the object (blocking)
         # My next PR
         pass

@@ -38,22 +38,24 @@ class AssetBase(metaclass=ABCMeta):
     _interface: type[BaseInterface] = None
     _meta_class: type[AssetMetaBaseModel] = None
     _draft_class: type[ResourceDraft] = None
+    id: str
 
     @abstractmethod
-    def _retrieve_metadata(self) -> None:
+    def _get_metadata(self) -> None:
         # get the metadata when initializing the object (blocking)
         pass
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
-        self._web = Flow360Resource(
+        self._webapi = Flow360Resource(
             interface=self._interface,
             meta_class=self._meta_class,
             id=id,
         )
-        self._retrieve_metadata()
+        self.id = id
+        self._get_metadata()
         # get the project id according to resource id
-        resp = RestApi(self._interface.endpoint, id=id).get()
+        resp = self._webapi.get()
         project_id = resp["projectId"]
         solver_version = resp["solverVersion"]
         self.project_id = project_id
@@ -64,13 +66,13 @@ class AssetBase(metaclass=ABCMeta):
     def _from_meta(cls, meta: AssetMetaBaseModel):
         validate_type(meta, "meta", cls._meta_class)
         resource = cls(id=meta.id)
-        resource._web._set_meta(meta)
+        resource._webapi._set_meta(meta)
         return resource
 
     @property
     def info(self) -> AssetMetaBaseModel:
         """Return the metadata of the resource"""
-        return self._web.info
+        return self._webapi.info
 
     @classmethod
     def _interface(cls):
@@ -120,7 +122,11 @@ class AssetBase(metaclass=ABCMeta):
         Generate surface mesh with given simulation params.
         async_mode: if True, returns SurfaceMesh object immediately, otherwise waits for the meshing to finish.
         """
-        assert isinstance(params, SimulationParams), "params must be a SimulationParams object."
+        if not isinstance(params, SimulationParams):
+            raise ValueError(
+                f"params argument must be a SimulationParams object but is of type {type(params)}"
+            )
+
         ##-- Get the latest draft of the project:
         draft_id = RestApi(ProjectInterface.endpoint, id=self.project_id).get()["lastOpenDraftId"]
         if draft_id is None:  # No saved online session
@@ -129,7 +135,7 @@ class AssetBase(metaclass=ABCMeta):
                 {
                     "name": "Client " + datetime.now().strftime("%m-%d %H:%M:%S"),
                     "projectId": self.project_id,
-                    "sourceItemId": self._web.id,
+                    "sourceItemId": self.id,
                     "sourceItemType": "Geometry",
                     "solverVersion": self.solver_version,
                     "forkCase": False,
@@ -148,7 +154,7 @@ class AssetBase(metaclass=ABCMeta):
             # Error found when translating/runing the simulation
             detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
             log.error(f"Failure detail: {detailed_error}")
-            raise RuntimeError(f"Failure detail: {detailed_error}")
+            raise RuntimeError(f"Failure detail: {detailed_error}") from err
 
         destination_id = run_response["id"]
         ##-- Patch project
@@ -166,7 +172,7 @@ class AssetBase(metaclass=ABCMeta):
                     raise TimeoutError(
                         "Timeout: Process did not finish within the specified timeout period"
                     )
-                _check_project_path_status(self.project_id, self._web.id, self.__class__.__name__)
+                _check_project_path_status(self.project_id, self.id, self.__class__.__name__)
                 log.info("Waiting for the process to finish...")
                 time.sleep(10)
         return destination_obj
