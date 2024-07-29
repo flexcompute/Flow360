@@ -18,6 +18,7 @@ from flow360.component.resource_base import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import validate_type
+from flow360.exceptions import Flow360WebError
 from flow360.log import log
 
 TIMEOUT_MINUTES = 60
@@ -138,17 +139,16 @@ class AssetBase(metaclass=ABCMeta):
         req = {"data": params.model_dump_json(), "type": "simulation", "version": ""}
         RestApi(DraftInterface.endpoint, id=draft_id).post(json=req, method="simulation/file")
         ##-- Kick off draft run:
-        run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
-            json={"upTo": destination.__name__, "useInHouse": True},
-            method="run",
-            deferred_400_error_handling=True,
-        )
-
-        if "error" in run_response:
+        try:
+            run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
+                json={"upTo": destination.__name__, "useInHouse": True},
+                method="run",
+            )
+        except Flow360WebError as err:
             # Error found when translating/runing the simulation
-            print(run_response)
-            detailed_error = json.loads(run_response.json()["detail"])["detail"]
-            raise RuntimeError(f"Run failed: {detailed_error}")
+            detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
+            log.error(f"Failure detail: {detailed_error}")
+            raise RuntimeError(f"Failure detail: {detailed_error}")
 
         destination_id = run_response["id"]
         ##-- Patch project

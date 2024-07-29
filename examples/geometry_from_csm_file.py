@@ -22,9 +22,10 @@ with SI_unit_system:
         meshing=MeshingParams(
             refinements=[
                 SurfaceRefinement(max_edge_length=0.8),
-                BoundaryLayer(first_layer_thickness=0.8),
+                # BoundaryLayer(first_layer_thickness=0.8),
             ],
             volume_zones=[AutomatedFarfield()],
         ),
     )
-geometry.generate_surface_mesh(params=params, async_mode=False)
+# geometry.generate_surface_mesh(params=params, async_mode=False)
+geometry.generate_volume_mesh(params=params, async_mode=False)
