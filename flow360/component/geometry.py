@@ -13,22 +13,18 @@ import pydantic.v1 as pd
 
 from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
-from flow360.component.case import Case
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
     shared_account_confirm_proceed,
 )
-from flow360.component.volume_mesh import VolumeMesh
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -216,15 +212,3 @@ class Geometry(AssetBase):
         # get the metadata when initializing the object (blocking)
         # My next PR
         pass
-
-    def generate_surface_mesh(self, params: SimulationParams, async_mode: bool = True):
-        """generate surface mesh from the geometry"""
-        return self.run(params, SurfaceMesh, async_mode)
-
-    def generate_volume_mesh(self, params: SimulationParams, async_mode: bool = True):
-        """generate volume mesh from the geometry"""
-        return self.run(params, VolumeMesh, async_mode)
-
-    def run_case(self, params: SimulationParams, async_mode: bool = True):
-        """run case from the geometry"""
-        return self.run(params, Case, async_mode)
