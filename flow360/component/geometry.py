@@ -210,7 +210,7 @@ class Geometry(AssetBase):
         tags: List[str] = None,
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(file_names, name, solver_version, tags, length_unit)
+        return super().from_file(file_names, name, solver_version, length_unit, tags)
 
     def _get_metadata(self):
         # get the metadata when initializing the object (blocking)
