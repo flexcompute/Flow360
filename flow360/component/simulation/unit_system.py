@@ -344,6 +344,8 @@ class _DimensionedType(metaclass=ABCMeta):
                     str(_CGS_system[cls.dim_name]),
                     str(_imperial_system[cls.dim_name]),
                 ]
+                if cls.dim_name == "temperature":
+                    print("temperature units = ", units)
 
                 units += [str(unit) for unit in extra_units[cls.dim_name]]
                 units = list(dict.fromkeys(units))
