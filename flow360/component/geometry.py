@@ -200,7 +200,7 @@ class Geometry(AssetBase):
     _webapi: Flow360Resource = None
 
     @classmethod
-    #pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
     def from_file(
         cls,
         file_names: Union[List[str], str],
