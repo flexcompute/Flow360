@@ -35,7 +35,7 @@ def _check_project_path_status(project_id: str, item_id: str, item_type: str) ->
 class AssetBase(metaclass=ABCMeta):
     """Base class for resource asset"""
 
-    _interface: type[BaseInterface] = None
+    _interface_class: type[BaseInterface] = None
     _meta_class: type[AssetMetaBaseModel] = None
     _draft_class: type[ResourceDraft] = None
     id: str
@@ -48,7 +48,7 @@ class AssetBase(metaclass=ABCMeta):
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         self._webapi = Flow360Resource(
-            interface=self._interface,
+            interface=self._interface_class,
             meta_class=self._meta_class,
             id=id,
         )
@@ -76,7 +76,7 @@ class AssetBase(metaclass=ABCMeta):
 
     @classmethod
     def _interface(cls):
-        return cls._interface
+        return cls._interface_class
 
     @classmethod
     def _meta_class(cls):

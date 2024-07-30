@@ -194,7 +194,7 @@ class Geometry(AssetBase):
     Geometry component for workbench (simulation V2)
     """
 
-    _interface = GeometryInterface
+    _interface_class = GeometryInterface
     _info_type_class = GeometryMeta
     _draft_class = GeometryDraft
     _webapi: Flow360Resource = None
