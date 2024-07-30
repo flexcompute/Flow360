@@ -70,13 +70,15 @@ class GeometryDraft(ResourceDraft):
         self,
         file_names: List[str],
         name: str = None,
-        tags: List[str] = None,
+        solver_version: str = None,
         length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
     ):
         self._file_names = file_names
         self.name = name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
+        self.solver_version = solver_version
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -109,6 +111,9 @@ class GeometryDraft(ResourceDraft):
                 f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
+        if self.solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
+
     @property
     def file_names(self) -> List[str]:
         """geometry file"""
@@ -116,7 +121,7 @@ class GeometryDraft(ResourceDraft):
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
-    def submit(self, solver_version, description="", progress_callback=None) -> Geometry:
+    def submit(self, description="", progress_callback=None) -> Geometry:
         """
         Submit geometry to cloud and create a new project
 
@@ -144,7 +149,7 @@ class GeometryDraft(ResourceDraft):
         # The first geometry is assumed to be the main one.
         req = NewGeometryRequest(
             name=self.name,
-            solver_version=solver_version,
+            solver_version=self.solver_version,
             tags=self.tags,
             files=[
                 GeometryFileMeta(
@@ -195,15 +200,17 @@ class Geometry(AssetBase):
     _webapi: Flow360Resource = None
 
     @classmethod
+    #pylint: disable=too-many-arguments
     def from_file(
         cls,
         file_names: Union[List[str], str],
         name: str = None,
-        tags: List[str] = None,
+        solver_version: str = None,
         length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(file_names, name, tags, length_unit)
+        return super().from_file(file_names, name, solver_version, tags, length_unit)
 
     def _get_metadata(self):
         # get the metadata when initializing the object (blocking)

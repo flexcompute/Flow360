@@ -13,10 +13,9 @@ from flow360.examples import Airplane
 fl.Env.dev.active()
 
 geometry_draft = Geometry.from_file(
-    Airplane.geometry,
-    name="testing-airplane-csm-geometry",
+    Airplane.geometry, name="testing-airplane-csm-geometry", solver_version="workbench-24.7"
 )
-geometry = geometry_draft.submit(solver_version="workbench-24.7")
+geometry = geometry_draft.submit()
 with SI_unit_system:
     params = SimulationParams(
         meshing=MeshingParams(

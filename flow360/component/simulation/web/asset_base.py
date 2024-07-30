@@ -88,12 +88,14 @@ class AssetBase(metaclass=ABCMeta):
         return cls(id)
 
     @classmethod
+    # pylint: disable=too-many-arguments
     def from_file(
         cls,
         file_names: Union[List[str], str],
         name: str = None,
-        tags: List[str] = None,
+        solver_version: str = None,
         length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
     ):
         """
         Create asset draft from files
@@ -108,6 +110,7 @@ class AssetBase(metaclass=ABCMeta):
         return cls._draft_class(
             file_names=file_names,
             name=name,
+            solver_version=solver_version,
             tags=tags,
             length_unit=length_unit,
         )
