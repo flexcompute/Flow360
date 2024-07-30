@@ -33,3 +33,8 @@ extra_units = {
     "power": [],
     "moment": [],
 }
+
+## In case we want to dictate the ordering in schema (for prettier presentation)
+ordered_complete_units = {
+    "length": [u.m, u.cm, u.mm, u.ft, u.inch],
+}

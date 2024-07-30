@@ -331,16 +331,22 @@ class _DimensionedType(metaclass=ABCMeta):
 
             # Local import to prevent exposing mappings to the user
             # pylint: disable=import-outside-toplevel
-            from flow360.component.simulation.exposed_units import extra_units
+            from flow360.component.simulation.exposed_units import (
+                extra_units,
+                ordered_complete_units,
+            )
 
-            units = [
-                str(_SI_system[cls.dim_name]),
-                str(_CGS_system[cls.dim_name]),
-                str(_imperial_system[cls.dim_name]),
-            ]
+            if cls.dim_name in ordered_complete_units:
+                units = [str(unit) for unit in ordered_complete_units[cls.dim_name]]
+            else:
+                units = [
+                    str(_SI_system[cls.dim_name]),
+                    str(_CGS_system[cls.dim_name]),
+                    str(_imperial_system[cls.dim_name]),
+                ]
 
-            units += [str(unit) for unit in extra_units[cls.dim_name]]
-            units = list(dict.fromkeys(units))
+                units += [str(unit) for unit in extra_units[cls.dim_name]]
+                units = list(dict.fromkeys(units))
             schema["properties"]["units"]["enum"] = units
 
             schema = handler.resolve_ref_schema(schema)
