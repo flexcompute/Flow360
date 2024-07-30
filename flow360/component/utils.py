@@ -4,7 +4,6 @@ Utility functions
 
 import os
 import re
-import uuid
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -62,45 +61,30 @@ def match_file_pattern(patterns, filename):
     return False
 
 
-def _valid_resource_id(resource_id):
+def _valid_resource_id(resource_id) -> bool:
     """
-    returns:
+    Returns:
     1. Whether the resource_id is valid
-    2. the prefix of the resource_id
-    3. the uuid part of the resource_id
+    2. The content of the resource_id
     """
-    if isinstance(resource_id, str) is False:
+    if not isinstance(resource_id, str):
         raise ValueError(f"resource_id must be a string, but got {type(resource_id)}")
 
     pattern = re.compile(
         r"""
-        ^                      # Start of the string
-        (?:(?P<prefix>         # Start of the optional prefix group
-        [0-9a-zA-Z\-]{1,16}    # Prefix: 1 to 16 characters, alphanumeric or dash
-        )-)?
-        (?P<uuid>              # Start of the UUID group
-        [0-9a-fA-F]{8}-        # 8 hex digits, followed by a dash
-        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
-        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
-        [0-9a-fA-F]{4}-        # 4 hex digits, followed by a dash
-        [0-9a-fA-F]{12}        # 12 hex digits
-        )$
-    """,
+        ^                     # Start of the string
+        (?P<content>          # Start of the content group
+        [0-9a-zA-Z,-]{16,}    # Content: at least 16 characters, alphanumeric, comma, or dash
+        )$                    # End of the string
+        """,
         re.VERBOSE,
     )
 
     match = pattern.match(resource_id)
     if not match:
-        return False, None, None
+        return False
 
-    try:
-        prefix = match.group("prefix") or ""
-        extracted_uuid = match.group("uuid")
-        uuid.UUID(f"{extracted_uuid}")
-    except ValueError:
-        return False, None, None
-
-    return True, prefix, extracted_uuid
+    return True
 
 
 # pylint: disable=redefined-builtin
@@ -115,13 +99,9 @@ def is_valid_uuid(id, allow_none=False):
         raise Flow360ValueError("None is not a valid id.")
 
     try:
-        is_valid, prefix, extracted_uuid = _valid_resource_id(id)
+        is_valid = _valid_resource_id(id)
         if is_valid is False:
             raise ValueError(f"{id} is not a valid UUID.")
-        log.debug(
-            f"Validating id: {id}, is_valid: {is_valid}, prefix: {prefix}, extracted_uuid: {extracted_uuid}"
-        )
-        uuid.UUID(str(extracted_uuid))
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 

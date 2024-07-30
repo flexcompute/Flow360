@@ -66,10 +66,10 @@ def test_valid_uuid():
     is_valid_uuid("123e4567-e89b-12d3-a456-426614174000")
     is_valid_uuid("folder-123e4567-e89b-12d3-a456-426614174000")
     is_valid_uuid("g-123e4567-e89b-12d3-a456-426614174000")
-    is_valid_uuid("16-length-prefix-123e4567-e89b-12d3-a456-426614174000")
+    is_valid_uuid("long-length-prefix-123e4567-e89b-12d3-a456-426614174000")
 
     with pytest.raises(Flow360ValueError):
-        is_valid_uuid("not-a-valid-uuid")
+        is_valid_uuid("too-short-uuid")
 
     with pytest.raises(Flow360ValueError):
         is_valid_uuid(None)
