@@ -21,7 +21,7 @@
     "volume_zones": [
       {
         "type": "AutomatedFarfield",
-        "name": "farfield",
+        "name": "Farfield",
         "method": "auto"
       }
     ]
