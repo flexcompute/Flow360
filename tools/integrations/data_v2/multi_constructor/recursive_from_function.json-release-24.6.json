@@ -1,0 +1,29 @@
+{
+  "type_name": "AerospaceCondition",
+  "private_attribute_constructor": "from_mach",
+  "private_attribute_input_cache": {
+    "alpha": {
+      "value": 5.0,
+      "units": "degree"
+    },
+    "beta": {
+      "value": 0.0,
+      "units": "degree"
+    },
+    "thermal_state": {
+      "type_name": "ThermalState",
+      "private_attribute_constructor": "from_standard_atmosphere",
+      "private_attribute_input_cache": {
+        "altitude": {
+          "value": 1000.0,
+          "units": "m"
+        },
+        "temperature_offset": {
+          "value": 0.0,
+          "units": "K"
+        }
+      }
+    },
+    "mach": 0.8
+  }
+}

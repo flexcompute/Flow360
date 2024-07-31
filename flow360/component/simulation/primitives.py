@@ -167,6 +167,7 @@ def rotation_matrix_from_axis_and_angle(axis, angle):
 class BoxCache(Flow360BaseModel):
     """BoxCache"""
 
+    # `axes` will always exist as it needs to be used. So `axes` is more like a storage than input cache.
     axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)
@@ -185,12 +186,13 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
+    type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field()
     size: LengthType.Point = pd.Field()
-    axis_of_rotation: Optional[Axis] = pd.Field(default=(0, 0, 1))
-    angle_of_rotation: Optional[AngleType] = pd.Field(default=0 * u.degree)
+    axis_of_rotation: Axis = pd.Field(default=(0, 0, 1))
+    angle_of_rotation: AngleType = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
 
     # pylint: disable=no-self-argument, fixme
