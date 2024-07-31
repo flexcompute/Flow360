@@ -1,15 +1,20 @@
 {
   "version": "24.3.0",
-  "unit_system": { "name": "SI" },
+  "unit_system": {
+    "name": "SI"
+  },
   "meshing": {
-    "gap_treatment_strength": 0.0,
     "refinement_factor": 1.0,
+    "gap_treatment_strength": 0.0,
     "surface_layer_growth_rate": 1.2,
     "refinements": [
       {
         "name": "Global surface refinement",
         "refinement_type": "SurfaceRefinement",
-        "curvature_resolution_angle": { "value": 12.0, "units": "degree" }
+        "curvature_resolution_angle": {
+          "value": 12.0,
+          "units": "degree"
+        }
       },
       {
         "name": "Global Boundary layer refinement",
@@ -27,29 +32,67 @@
     ]
   },
   "reference_geometry": {
-    "moment_center": { "value": [0.0, 0.0, 0.0], "units": "m" },
-    "moment_length": { "value": [1.0, 1.0, 1.0], "units": "m" },
-    "area": { "value": 1.0, "units": "m**2" }
+    "moment_center": {
+      "value": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "units": "m"
+    },
+    "moment_length": {
+      "value": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "units": "m"
+    },
+    "area": {
+      "value": 1.0,
+      "units": "m**2"
+    }
   },
   "operating_condition": {
     "type_name": "AerospaceCondition",
     "private_attribute_constructor": "default",
     "private_attribute_input_cache": {},
-    "alpha": { "value": 0.0, "units": "degree" },
-    "beta": { "value": 0.0, "units": "degree" },
+    "alpha": {
+      "value": 0.0,
+      "units": "degree"
+    },
+    "beta": {
+      "value": 0.0,
+      "units": "degree"
+    },
     "thermal_state": {
       "type_name": "ThermalState",
       "private_attribute_constructor": "default",
       "private_attribute_input_cache": {},
-      "temperature": { "value": 288.15, "units": "K" },
-      "density": { "value": 1.225, "units": "kg/m**3" },
+      "temperature": {
+        "value": 288.15,
+        "units": "K"
+      },
+      "density": {
+        "value": 1.225,
+        "units": "kg/m**3"
+      },
       "material": {
         "type": "air",
         "name": "air",
         "dynamic_viscosity": {
-          "reference_viscosity": { "value": 1.716e-5, "units": "Pa*s" },
-          "reference_temperature": { "value": 273.15, "units": "K" },
-          "effective_temperature": { "value": 110.4, "units": "K" }
+          "reference_viscosity": {
+            "value": 1.716e-05,
+            "units": "Pa*s"
+          },
+          "reference_temperature": {
+            "value": 273.15,
+            "units": "K"
+          },
+          "effective_temperature": {
+            "value": 110.4,
+            "units": "K"
+          }
         }
       }
     }
@@ -60,9 +103,18 @@
         "type": "air",
         "name": "air",
         "dynamic_viscosity": {
-          "reference_viscosity": { "value": 1.716e-5, "units": "Pa*s" },
-          "reference_temperature": { "value": 273.15, "units": "K" },
-          "effective_temperature": { "value": 110.4, "units": "K" }
+          "reference_viscosity": {
+            "value": 1.716e-05,
+            "units": "Pa*s"
+          },
+          "reference_temperature": {
+            "value": 273.15,
+            "units": "K"
+          },
+          "effective_temperature": {
+            "value": 110.4,
+            "units": "K"
+          }
         }
       },
       "type": "Fluid",
@@ -71,25 +123,27 @@
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
         "equation_evaluation_frequency": 1,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
-        "linear_solver": { "max_iterations": 30 },
+        "linear_solver": {
+          "max_iterations": 30
+        },
         "CFL_multiplier": 1.0,
         "kappa_MUSCL": -1.0,
         "numerical_dissipation_factor": 1.0,
         "limit_velocity": false,
         "limit_pressure_density": false,
         "type_name": "Compressible",
-        "low_mach_preconditioner": false
+        "low_mach_preconditioner": false,
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0
       },
       "turbulence_model_solver": {
-        "absolute_tolerance": 1e-8,
+        "absolute_tolerance": 1e-08,
         "relative_tolerance": 0.0,
         "order_of_accuracy": 2,
         "equation_evaluation_frequency": 4,
-        "update_jacobian_frequency": 4,
-        "max_force_jac_update_physical_steps": 0,
-        "linear_solver": { "max_iterations": 20 },
+        "linear_solver": {
+          "max_iterations": 20
+        },
         "CFL_multiplier": 2.0,
         "type_name": "SpalartAllmaras",
         "DDES": false,
@@ -101,6 +155,8 @@
           "C_DES": 0.72,
           "C_d": 8.0
         },
+        "update_jacobian_frequency": 4,
+        "max_force_jac_update_physical_steps": 0,
         "rotation_correction": false
       }
     }
@@ -124,25 +180,15 @@
       "output_format": "paraview",
       "name": "SurfaceOutput 1",
       "write_single_file": false,
-      "output_fields": { "items": ["Cp", "yPlus", "Cf", "CfVec"] },
+      "output_fields": {
+        "items": [
+          "Cp",
+          "yPlus",
+          "Cf",
+          "CfVec"
+        ]
+      },
       "output_type": "SurfaceOutput"
     }
-  ],
-  "private_attribute_asset_cache": {
-    "registry": {
-      "internal_registry": {
-        "VolumetricEntityType": [
-          {
-            "private_attribute_registry_bucket_name": "VolumetricEntityType",
-            "private_attribute_entity_type_name": "GenericVolume",
-            "name": "fluid",
-            "private_attribute_zone_boundary_names": {
-              "items": ["farfield", "symmetric"]
-            }
-          }
-        ]
-      }
-    },
-    "project_length_unit": { "value": 1.0, "units": "m" }
-  }
+  ]
 }

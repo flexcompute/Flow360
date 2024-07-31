@@ -28,8 +28,8 @@ class SurfaceRefinement(Flow360BaseModel):
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     # pylint: disable=no-member
-    max_edge_length: Optional[LengthType.Positive] = pd.Field(
-        None, description="Local maximum edge length for surface cells."
+    max_edge_length: LengthType.Positive = pd.Field(
+        description="Local maximum edge length for surface cells."
     )
     # pylint: disable=no-member
     curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
