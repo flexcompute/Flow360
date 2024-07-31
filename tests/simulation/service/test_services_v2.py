@@ -199,7 +199,9 @@ def test_init():
 
 def test_validate_init_data_errors():
 
-    data = services.get_default_params(unit_system_name="SI", length_unit="m")
+    data = services.get_default_params(
+        unit_system_name="SI", length_unit="m", root_item_type="Geometry"
+    )
     _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
     assert len(errors) == 3
     assert errors[0]["loc"][-1] == "max_edge_length"
@@ -208,3 +210,11 @@ def test_validate_init_data_errors():
     assert errors[1]["type"] == "missing"
     assert errors[2]["loc"][-1] == "velocity_magnitude"
     assert errors[2]["type"] == "missing"
+
+    data = services.get_default_params(
+        unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
+    )
+    _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
+    assert len(errors) == 1
+    assert errors[0]["loc"][-1] == "velocity_magnitude"
+    assert errors[0]["type"] == "missing"
