@@ -26,9 +26,9 @@ def _check_project_path_status(project_id: str, item_id: str, item_type: str) ->
 
 
 def _run(
-    starting_point: AssetBase,
+    source_asset: AssetBase,
     params: SimulationParams,
-    destination: type[AssetBase],
+    target_asset: type[AssetBase],
     async_mode: bool = True,
 ) -> AssetBase:
     """
@@ -41,7 +41,7 @@ def _run(
         )
 
     ##-- Get the latest draft of the project:
-    draft_id = RestApi(ProjectInterface.endpoint, id=starting_point.project_id).get()[
+    draft_id = RestApi(ProjectInterface.endpoint, id=source_asset.project_id).get()[
         "lastOpenDraftId"
     ]
     if draft_id is None:  # No saved online session
@@ -49,10 +49,10 @@ def _run(
         draft_id = RestApi(DraftInterface.endpoint).post(
             {
                 "name": "Client " + datetime.now().strftime("%m-%d %H:%M:%S"),
-                "projectId": starting_point.project_id,
-                "sourceItemId": starting_point.id,
+                "projectId": source_asset.project_id,
+                "sourceItemId": source_asset.id,
                 "sourceItemType": "Geometry",
-                "solverVersion": starting_point.solver_version,
+                "solverVersion": source_asset.solver_version,
                 "forkCase": False,
             }
         )["id"]
@@ -62,7 +62,7 @@ def _run(
     ##-- Kick off draft run:
     try:
         run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
-            json={"upTo": destination.__name__, "useInHouse": True},
+            json={"upTo": target_asset.__name__, "useInHouse": True},
             method="run",
         )
     except Flow360WebError as err:
@@ -73,13 +73,13 @@ def _run(
 
     destination_id = run_response["id"]
     ##-- Patch project
-    RestApi(ProjectInterface.endpoint, id=starting_point.project_id).patch(
+    RestApi(ProjectInterface.endpoint, id=source_asset.project_id).patch(
         json={
             "lastOpenItemId": destination_id,
-            "lastOpenItemType": destination.__name__,
+            "lastOpenItemType": target_asset.__name__,
         }
     )
-    destination_obj = destination.from_cloud(destination_id)
+    destination_obj = target_asset.from_cloud(destination_id)
     if async_mode is False:
         start_time = time.time()
         while destination_obj.status.is_final() is False:
@@ -88,7 +88,7 @@ def _run(
                     "Timeout: Process did not finish within the specified timeout period"
                 )
             _check_project_path_status(
-                starting_point.project_id, starting_point.id, starting_point.__class__.__name__
+                source_asset.project_id, source_asset.id, source_asset.__class__.__name__
             )
             log.info("Waiting for the process to finish...")
             time.sleep(10)
@@ -96,19 +96,19 @@ def _run(
 
 
 def generate_surface_mesh(
-    starting_point: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
 ):
     """generate surface mesh from the geometry"""
-    return _run(starting_point, params, SurfaceMesh, async_mode)
+    return _run(source_asset, params, SurfaceMesh, async_mode)
 
 
 def generate_volume_mesh(
-    starting_point: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
 ):
     """generate volume mesh from the geometry"""
-    return _run(starting_point, params, VolumeMesh, async_mode)
+    return _run(source_asset, params, VolumeMesh, async_mode)
 
 
-def run_case(starting_point: AssetBase, params: SimulationParams, async_mode: bool = True):
+def run_case(source_asset: AssetBase, params: SimulationParams, async_mode: bool = True):
     """run case from the geometry"""
-    return _run(starting_point, params, Case, async_mode)
+    return _run(source_asset, params, Case, async_mode)
