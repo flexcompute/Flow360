@@ -3,11 +3,12 @@
 
 from typing import Union
 
-from pydantic.v1 import BaseModel
+from pydantic import BaseModel
 
-from ..cloud.s3_utils import S3TransferType
+from flow360.cloud.s3_utils import S3TransferType
 
 
+# pylint: disable=R0801
 class BaseInterface(BaseModel):
     """
     Basic interface for endpoint definition.
@@ -38,7 +39,15 @@ CaseInterface = BaseInterface(
 GeometryInterface = BaseInterface(
     resource_type="Geometry",
     s3_transfer_method=S3TransferType.GEOMETRY,
-    endpoint="geometries",
+    endpoint="v2/geometries",
+)
+
+ProjectInterface = BaseInterface(
+    resource_type="projects", s3_transfer_method=None, endpoint="v2/projects"
+)
+
+DraftInterface = BaseInterface(
+    resource_type="drafts", s3_transfer_method=None, endpoint="v2/drafts"
 )
 
 FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None, endpoint="folders")

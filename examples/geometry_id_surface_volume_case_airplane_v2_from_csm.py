@@ -5,7 +5,7 @@ import flow360 as fl
 
 fl.Env.preprod.active()
 
-from flow360.component.geometry import Geometry
+from flow360.component.geometry_v1 import Geometry
 from flow360.component.meshing.params import Farfield, Volume, VolumeMeshingParams
 from flow360.examples import Airplane
 

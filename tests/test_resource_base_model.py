@@ -1,7 +1,7 @@
 import pytest
 
 from flow360.component.case import Case, CaseMeta
-from flow360.component.resource_base import Flow360ResourceBaseModel, Flow360Status
+from flow360.component.resource_base import AssetMetaBaseModel, Flow360Status
 from flow360.exceptions import Flow360RuntimeError
 
 
@@ -26,27 +26,25 @@ def test_status():
 
 
 def test_base_model():
-    model = Flow360ResourceBaseModel(
+    model = AssetMetaBaseModel(
         status="uploaded", name="name", userId="userId", deleted=True, id="0"
     )
     assert model.status.is_final()
 
-    model = Flow360ResourceBaseModel(
+    model = AssetMetaBaseModel(
         status="completed", name="name", userId="userId", deleted=True, id="0"
     )
     assert model.status.is_final()
 
-    model = Flow360ResourceBaseModel(
-        status="running", name="name", userId="userId", deleted=True, id="0"
-    )
+    model = AssetMetaBaseModel(status="running", name="name", userId="userId", deleted=True, id="0")
     assert not model.status.is_final()
 
-    model = Flow360ResourceBaseModel.parse_obj(
+    model = AssetMetaBaseModel.parse_obj(
         {"status": "completed", "name": "name", "userId": "userId", "deleted": True, "id": "0"}
     )
     assert model.status.is_final()
 
-    model = Flow360ResourceBaseModel.parse_obj(
+    model = AssetMetaBaseModel.parse_obj(
         {"status": "running", "name": "name", "userId": "userId", "deleted": True, "id": "0"}
     )
     assert not model.status.is_final()

@@ -5,111 +5,55 @@ Geometry component
 from __future__ import annotations
 
 import os
+import threading
+import time
 from typing import List, Union
 
-from ..cloud.rest_api import RestApi
-from ..exceptions import Flow360FileError, Flow360ValueError
-from ..log import log
-from .interfaces import GeometryInterface
-from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
-from .utils import (
+import pydantic.v1 as pd
+
+from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
+from flow360.cloud.rest_api import RestApi
+from flow360.component.interfaces import GeometryInterface
+from flow360.component.resource_base import (
+    AssetMetaBaseModel,
+    Flow360Resource,
+    ResourceDraft,
+)
+from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
     shared_account_confirm_proceed,
-    validate_type,
 )
+from flow360.exceptions import Flow360FileError, Flow360ValueError
+from flow360.log import log
+
+HEARTBEAT_INTERVAL = 15
 
 
-class Geometry(Flow360Resource):
+def _post_upload_heartbeat(info):
     """
-    Geometry component
+    Keep letting the server know that the uploading is still in progress.
+    Server marks resource as failed if no heartbeat is received for 3 `heartbeatInterval`s.
     """
-
-    # pylint: disable=redefined-builtin
-    def __init__(self, id: str):
-        super().__init__(
-            interface=GeometryInterface,
-            info_type_class=GeometryMeta,
-            id=id,
+    while not info["stop"]:
+        RestApi("v2/heartbeats/uploading").post(
+            {
+                "resourceId": info["resourceId"],
+                "heartbeatInterval": HEARTBEAT_INTERVAL,
+                "resourceType": info["resourceType"],
+            }
         )
-        self._params = None
-
-    @classmethod
-    def _from_meta(cls, meta: GeometryMeta):
-        validate_type(meta, "meta", GeometryMeta)
-        geometry = cls(id=meta.id)
-        geometry._set_meta(meta)
-        return geometry
-
-    @property
-    def info(self) -> GeometryMeta:
-        return super().info
-
-    @classmethod
-    def _interface(cls):
-        return GeometryInterface
-
-    @classmethod
-    def _meta_class(cls):
-        """
-        returns geometry meta info class: GeometryMeta
-        """
-        return GeometryMeta
-
-    def _complete_upload(self, remote_file_names: List[str]):
-        """
-        Complete geometry files upload
-        :return:
-        """
-        remote_file_names_as_string = ",".join(remote_file_names).rstrip(",")
-        resp = self.post({}, method=f"completeUpload?fileNames={remote_file_names_as_string}")
-        self._info = GeometryMeta(**resp)
-
-    @classmethod
-    def from_cloud(cls, geometry_id: str):
-        """
-        Get geometry from cloud
-        :param geometry_id:
-        :return:
-        """
-        return cls(geometry_id)
-
-    @classmethod
-    def from_file(
-        cls,
-        file_names: Union[List[str], str],
-        name: str = None,
-        tags: List[str] = None,
-        solver_version=None,
-    ):
-        """
-        Create geometry from geometry files
-        :param file_names:
-        :param name:
-        :param tags:
-        :param solver_version:
-        :return:
-        """
-        if isinstance(file_names, str):
-            file_names = [file_names]
-        return GeometryDraft(
-            file_names=file_names,
-            name=name,
-            tags=tags,
-            solver_version=solver_version,
-        )
+        time.sleep(HEARTBEAT_INTERVAL)
 
 
-class GeometryMeta(Flow360ResourceBaseModel):
+# pylint: disable=R0801
+class GeometryMeta(AssetMetaBaseModel):
     """
     GeometryMeta component
     """
 
-    def to_geometry(self) -> Geometry:
-        """
-        returns Geometry object from geometry meta info
-        """
-        return Geometry(self.id)
+    project_id: str = pd.Field(alias="projectId")
 
 
 class GeometryDraft(ResourceDraft):
@@ -122,14 +66,15 @@ class GeometryDraft(ResourceDraft):
         self,
         file_names: List[str],
         name: str = None,
+        solver_version: str = None,
+        length_unit: LengthUnitType = "m",
         tags: List[str] = None,
-        solver_version=None,
     ):
         self._file_names = file_names
         self.name = name
-        self.tags = tags
+        self.tags = tags if tags is not None else []
+        self.length_unit = length_unit
         self.solver_version = solver_version
-        self._id = None
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -156,6 +101,14 @@ class GeometryDraft(ResourceDraft):
             raise Flow360ValueError(
                 "name field is required if more than one geometry files are provided."
             )
+        if self.length_unit not in LengthUnitType.__args__:
+            raise Flow360ValueError(
+                f"specified length_unit : {self.length_unit} is invalid. "
+                f"Valid options are: {list(LengthUnitType.__args__)}"
+            )
+
+        if self.solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
 
     @property
     def file_names(self) -> List[str]:
@@ -164,11 +117,14 @@ class GeometryDraft(ResourceDraft):
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
-    def submit(self, progress_callback=None) -> Geometry:
-        """submit geometry to cloud
+    def submit(self, description="", progress_callback=None) -> Geometry:
+        """
+        Submit geometry to cloud and create a new project
 
         Parameters
         ----------
+        description : str, optional
+            description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
 
@@ -186,28 +142,73 @@ class GeometryDraft(ResourceDraft):
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
+        # The first geometry is assumed to be the main one.
+        req = NewGeometryRequest(
+            name=self.name,
+            solver_version=self.solver_version,
+            tags=self.tags,
+            files=[
+                GeometryFileMeta(
+                    name=os.path.basename(file_path),
+                    type="main" if item_index == 0 else "dependency",
+                )
+                for item_index, file_path in enumerate(self.file_names)
+            ],
+            # pylint: disable=fixme
+            # TODO: remove hardcoding
+            parent_folder_id="ROOT.FLOW360",
+            length_unit=self.length_unit,
+            description=description,
+        )
 
-        data = {
-            "geometryName": self.name,
-            "tags": self.tags,
-        }
-
-        if self.solver_version:
-            data["solverVersion"] = self.solver_version
-
-        resp = RestApi(GeometryInterface.endpoint).post(data)
+        ##:: Create new Geometry resource and project
+        resp = RestApi(GeometryInterface.endpoint).post(req.dict())
         info = GeometryMeta(**resp)
-        self._id = info.id
-        submitted_geometry = Geometry(self.id)
 
-        remote_file_names = []
-        for geometry_file in self.file_names:
-            remote_file_name = os.path.basename(geometry_file)
-            file_name_to_upload = geometry_file
-            submitted_geometry._upload_file(
-                remote_file_name, file_name_to_upload, progress_callback=progress_callback
+        ##:: upload geometry files
+        geometry = Geometry(info.id)
+        heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+        # Keep posting the heartbeat to keep server patient about uploading.
+        heartbeat_thread = threading.Thread(target=_post_upload_heartbeat, args=(heartbeat_info,))
+        heartbeat_thread.start()
+        for file_path in self.file_names:
+            geometry._webapi._upload_file(
+                remote_file_name=os.path.basename(file_path),
+                file_name=file_path,
+                progress_callback=progress_callback,
             )
-            remote_file_names.append(remote_file_name)
-        submitted_geometry._complete_upload(remote_file_names)
-        log.info(f"Geometry successfully submitted: {submitted_geometry.short_description()}")
-        return submitted_geometry
+        heartbeat_info["stop"] = True
+        heartbeat_thread.join()
+        ##:: kick off pipeline
+        geometry._webapi._complete_upload()
+        log.info("Geometry successfully submitted.")
+        return geometry
+
+
+class Geometry(AssetBase):
+    """
+    Geometry component for workbench (simulation V2)
+    """
+
+    _interface_class = GeometryInterface
+    _info_type_class = GeometryMeta
+    _draft_class = GeometryDraft
+    _webapi: Flow360Resource = None
+
+    @classmethod
+    # pylint: disable=too-many-arguments
+    def from_file(
+        cls,
+        file_names: Union[List[str], str],
+        name: str = None,
+        solver_version: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ) -> GeometryDraft:
+        # For type hint only but proper fix is to fully abstract the Draft class too.
+        return super().from_file(file_names, name, solver_version, length_unit, tags)
+
+    def _get_metadata(self):
+        # get the metadata when initializing the object (blocking)
+        # My next PR
+        pass

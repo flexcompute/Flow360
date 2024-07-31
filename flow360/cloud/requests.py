@@ -9,6 +9,8 @@ from flow360.flags import Flags
 
 from ..component.flow360_params.flow360_params import Flow360MeshParams
 
+LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
+
 
 class Flow360Requests(pd.BaseModel):
     """
@@ -26,6 +28,9 @@ class Flow360Requests(pd.BaseModel):
         """config"""
 
         allow_population_by_field_name = True
+
+
+###==== V1 API Payload definition ===###
 
 
 class NewSurfaceMeshRequest(Flow360Requests):
@@ -102,3 +107,29 @@ class MoveToFolderRequest(Flow360Requests):
 
     dest_folder_id: str = pd.Field(alias="destFolderId")
     items: List[Union[MoveCaseItem, MoveFolderItem]] = pd.Field()
+
+
+###==== V2 API Payload definition ===###
+
+
+class GeometryFileMeta(pd.BaseModel):
+    """[Simulation V2] File information for geometry."""
+
+    name: str = pd.Field(description="geometry file name")
+    type: Literal["main", "dependency"] = pd.Field(description="geometry hierarchy")
+
+
+class NewGeometryRequest(Flow360Requests):
+    """[Simulation V2] Creates new project and a new geometry resource."""
+
+    name: str = pd.Field(description="project name")
+    solver_version: str = pd.Field(
+        alias="solverVersion", description="solver version used for the project"
+    )
+    tags: List[str] = pd.Field(default=[], description="project tags")
+    files: List[GeometryFileMeta] = pd.Field(description="list of files")
+    parent_folder_id: str = pd.Field(alias="parentFolderId", default="ROOT.FLOW360")
+    length_unit: Literal["m", "mm", "cm", "inch", "ft"] = pd.Field(
+        alias="lengthUnit", description="project length unit"
+    )
+    description: str = pd.Field(default="", description="project description")

@@ -36,8 +36,8 @@ from .flow360_params.params_base import params_generic_validator
 from .interfaces import VolumeMeshInterface
 from .meshing.params import VolumeMeshingParams
 from .resource_base import (
+    AssetMetaBaseModel,
     Flow360Resource,
-    Flow360ResourceBaseModel,
     Flow360ResourceListBase,
     ResourceDraft,
 )
@@ -214,7 +214,7 @@ class VolumeMeshDownloadable(Enum):
 
 
 # pylint: disable=E0213
-class VolumeMeshMeta(Flow360ResourceBaseModel, extra=Extra.allow):
+class VolumeMeshMeta(AssetMetaBaseModel, extra=Extra.allow):
     """
     VolumeMeshMeta component
     """
@@ -480,7 +480,7 @@ class VolumeMesh(Flow360Resource):
     def __init__(self, id: str):
         super().__init__(
             interface=VolumeMeshInterface,
-            info_type_class=VolumeMeshMeta,
+            meta_class=VolumeMeshMeta,
             id=id,
         )
         self.__mesh_params = None
@@ -571,6 +571,7 @@ class VolumeMesh(Flow360Resource):
             overwrite=overwrite,
         )
 
+    # pylint: disable=arguments-differ
     def _complete_upload(self, remote_file_name):
         """
         Complete volume mesh upload

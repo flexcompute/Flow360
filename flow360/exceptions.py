@@ -94,6 +94,12 @@ class Flow360CloudFileError(Flow360Error):
 class Flow360WebError(Flow360Error):
     """Error with the webAPI."""
 
+    auxiliary_json: dict
+
+    def __init__(self, message: str = None, auxiliary_json: dict = None):
+        super().__init__(message)
+        self.auxiliary_json = auxiliary_json
+
 
 class Flow360WebNotFoundError(Flow360Error):
     """Error with the webAPI."""

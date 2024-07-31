@@ -15,16 +15,17 @@ from typing import List, Optional, Union
 
 import pydantic.v1 as pd
 
-from .. import error_messages
-from ..cloud.rest_api import RestApi
-from ..cloud.webbrowser import open_browser
-from ..component.interfaces import BaseInterface
-from ..exceptions import Flow360RuntimeError
-from ..log import LogLevel, log
-from ..user_config import UserConfig
-from .utils import is_valid_uuid, validate_type
+from flow360 import error_messages
+from flow360.cloud.rest_api import RestApi
+from flow360.cloud.webbrowser import open_browser
+from flow360.component.interfaces import BaseInterface
+from flow360.component.utils import is_valid_uuid, validate_type
+from flow360.exceptions import Flow360RuntimeError
+from flow360.log import LogLevel, log
+from flow360.user_config import UserConfig
 
 
+# pylint: disable=R0801
 class Flow360Status(Enum):
     """
     Flow360Status component
@@ -65,7 +66,7 @@ class Flow360Status(Enum):
         return False
 
 
-class Flow360ResourceBaseModel(pd.BaseModel):
+class AssetMetaBaseModel(pd.BaseModel):
     """
     Flow360 base Model
     """
@@ -125,7 +126,7 @@ class ResourceDraft(metaclass=ABCMeta):
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
         if not UserConfig.is_suppress_submit_warning():
-            log.warning(error_messages.submit_reminder(self.__class__.__name__))
+            log.info(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
     def id(self):
@@ -159,11 +160,11 @@ class Flow360Resource(RestApi):
     """
 
     # pylint: disable=redefined-builtin
-    def __init__(self, interface: BaseInterface, info_type_class, id=None):
+    def __init__(self, interface: BaseInterface, meta_class, id=None):
         is_valid_uuid(id, allow_none=False)
         self._resource_type = interface.resource_type
         self.s3_transfer_method = interface.s3_transfer_method
-        self.info_type_class = info_type_class
+        self.meta_class = meta_class
         self._info = None
         self.logs = RemoteResourceLogs(self)
         super().__init__(endpoint=interface.endpoint, id=id)
@@ -180,12 +181,12 @@ class Flow360Resource(RestApi):
         """
         return self.id is not None
 
-    def _set_meta(self, meta: Flow360ResourceBaseModel):
+    def _set_meta(self, meta: AssetMetaBaseModel):
         """
         set metadata info for resource
         """
         if self._info is None:
-            validate_type(meta, "meta", self.info_type_class)
+            validate_type(meta, "meta", self.meta_class)
             self._info = meta
         else:
             raise Flow360RuntimeError(
@@ -198,16 +199,16 @@ class Flow360Resource(RestApi):
             "This is abstract method. Needs to be implemented by specialised class."
         )
 
-    def get_info(self, force=False) -> Flow360ResourceBaseModel:
+    def get_info(self, force=False) -> AssetMetaBaseModel:
         """
         returns metadata info for resource
         """
         if self._info is None or force:
-            self._info = self.info_type_class(**self.get())
+            self._info = self.meta_class(**self.get())
         return self._info
 
     @property
-    def info(self) -> Flow360ResourceBaseModel:
+    def info(self) -> AssetMetaBaseModel:
         """
         returns metadata info for resource
         """
@@ -383,6 +384,12 @@ class Flow360Resource(RestApi):
         Open resource in browser
         """
         open_browser(f"{self._interface().endpoint}/{self.id}")
+
+    def _complete_upload(self):
+        """
+        [Simulation V2 API] Inform the server that the upload is complete. This kicks off the following pipeline.
+        """
+        self.patch({"action": "Success"}, method="files")
 
 
 def is_object_cloud_resource(resource: Flow360Resource):

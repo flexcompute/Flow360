@@ -26,7 +26,7 @@ from flow360.component.simulation.unit_system import SI_unit_system, u
 fl.UserConfig.set_profile("auto_test_1")
 fl.Env.dev.active()
 
-from flow360.component.geometry import Geometry
+from flow360.component.geometry_v1 import Geometry
 from flow360.examples import Airplane
 
 SOLVER_VERSION = "workbench-24.6.0"

@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 from flow360 import exceptions as ex
-from flow360.component.geometry_v1 import Geometry
+from flow360.component.geometry import Geometry
 from flow360.examples import Cylinder3D
 
 assertions = unittest.TestCase("__init__")
@@ -22,6 +22,11 @@ def test_draft_geometry_from_file():
         sm = Geometry.from_file("data/geometry/no_exist.step")
 
     Cylinder3D.get_files()
-    sm = Geometry.from_file(Cylinder3D.geometry)
-    sm = Geometry.from_file(Cylinder3D.geometry)
-    assert sm
+    sm = Geometry.from_file(
+        Cylinder3D.geometry,
+        name="my_geo",
+        solver_version="Mock_version-99.9.9",
+        length_unit="cm",
+    )
+    assert sm.name == "my_geo"
+    assert sm.length_unit == "cm"

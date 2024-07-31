@@ -4,7 +4,6 @@ Utility functions
 
 import os
 import re
-import uuid
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -62,22 +61,47 @@ def match_file_pattern(patterns, filename):
     return False
 
 
+def _valid_resource_id(resource_id) -> bool:
+    """
+    Returns:
+    1. Whether the resource_id is valid
+    2. The content of the resource_id
+    """
+    if not isinstance(resource_id, str):
+        raise ValueError(f"resource_id must be a string, but got {type(resource_id)}")
+
+    pattern = re.compile(
+        r"""
+        ^                     # Start of the string
+        (?P<content>          # Start of the content group
+        [0-9a-zA-Z,-]{16,}    # Content: at least 16 characters, alphanumeric, comma, or dash
+        )$                    # End of the string
+        """,
+        re.VERBOSE,
+    )
+
+    match = pattern.match(resource_id)
+    if not match:
+        return False
+
+    return True
+
+
 # pylint: disable=redefined-builtin
-def is_valid_uuid(id, allow_none=False, valid_prefixes=None):
+def is_valid_uuid(id, allow_none=False):
     """
     Checks if id is valid
     """
-    if valid_prefixes is None:
-        valid_prefixes = ["folder-", "g-", "geo-", "sm-", "vm-", "c-"]
-    if id is None and allow_none:
-        return
+
+    if id is None:
+        if allow_none is True:
+            return
+        raise Flow360ValueError("None is not a valid id.")
+
     try:
-        if id:
-            for prefix in valid_prefixes:
-                if id.startswith(prefix):
-                    id = id[len(prefix) :]
-                    break
-        uuid.UUID(str(id))
+        is_valid = _valid_resource_id(id)
+        if is_valid is False:
+            raise ValueError(f"{id} is not a valid UUID.")
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 
