@@ -37,5 +37,5 @@ extra_units = {
 ## In case we want to dictate the ordering in schema (for prettier presentation)
 ordered_complete_units = {
     "length": [u.m, u.cm, u.mm, u.ft, u.inch],
-    "temperature": [u.K, u.degC, u.degF, u.R],
+    "temperature": [u.K, "degC", "degF", u.R],  # Cannot use u.degC since it __str__() to "\u00b0C"
 }
