@@ -23,6 +23,9 @@ from flow360.component.simulation.models.solver_numerics import (
     TransitionModelSolver,
     TurbulenceModelSolverType,
 )
+from flow360.component.simulation.models.validation.validation_BETDisk import (
+    _check_bet_disk_initial_blade_direction,
+)
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
     AngularVelocityType,
@@ -241,6 +244,11 @@ class BETDisk(Flow360BaseModel):
     chords: List[BETDiskChord] = pd.Field()
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field()
     sectional_radiuses: List[float] = pd.Field()
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk_initial_blade_direction(self):
+        """validate initial blade direction in BET disks"""
+        return _check_bet_disk_initial_blade_direction(self)
 
 
 class Rotation(Flow360BaseModel):
