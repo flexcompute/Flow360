@@ -97,8 +97,7 @@ class TempGeometry(AssetBase):
 
 
 @pytest.fixture()
-def om6wing_tutorial_non_empty_entities():
-    # TODO: Test empty entities
+def om6wing_tutorial_global_plus_local_override():
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         param = SimulationParams(
@@ -106,6 +105,7 @@ def om6wing_tutorial_non_empty_entities():
                 surface_layer_growth_rate=1.07,
                 refinements=[
                     SurfaceRefinement(
+                        max_edge_length=15 * u.cm,
                         curvature_resolution_angle=10 * u.deg,
                     ),
                     SurfaceRefinement(
@@ -132,7 +132,7 @@ def get_om6wing_geometry():
 
 
 @pytest.fixture()
-def om6wing_tutorial_empty_entities():
+def om6wing_tutorial_global_only():
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         param = SimulationParams(
@@ -257,15 +257,15 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
 
 
 def test_om6wing_tutorial(
-    get_om6wing_geometry, om6wing_tutorial_non_empty_entities, om6wing_tutorial_empty_entities
+    get_om6wing_geometry, om6wing_tutorial_global_plus_local_override, om6wing_tutorial_global_only
 ):
     _translate_and_compare(
-        om6wing_tutorial_non_empty_entities,
+        om6wing_tutorial_global_plus_local_override,
         get_om6wing_geometry.mesh_unit,
         "om6wing_tutorial_ignore_global.json",
     )
     _translate_and_compare(
-        om6wing_tutorial_empty_entities,
+        om6wing_tutorial_global_only,
         get_om6wing_geometry.mesh_unit,
         "om6wing_tutorial_use_global.json",
     )

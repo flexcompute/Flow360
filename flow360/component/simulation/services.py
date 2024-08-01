@@ -1,6 +1,8 @@
 """Simulation services module."""
 
 # pylint: disable=duplicate-code
+from typing import Literal
+
 import pydantic as pd
 
 from flow360.component.simulation.meshing_param.face_params import (
@@ -77,7 +79,9 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
-def get_default_params(unit_system_name, length_unit) -> SimulationParams:
+def get_default_params(
+    unit_system_name, length_unit, root_item_type: Literal["Geometry", "VolumeMesh"]
+) -> SimulationParams:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -97,7 +101,7 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
     """
 
     unit_system = init_unit_system(unit_system_name)
-
+    dummy_value = 0.1
     with unit_system:
         params = SimulationParams(
             reference_geometry=ReferenceGeometry(
@@ -105,12 +109,16 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             ),
             meshing=MeshingParams(
                 refinements=[
-                    SurfaceRefinement(name="Global surface refinement"),
-                    BoundaryLayer(name="Global Boundary layer refinement", first_layer_thickness=1),
+                    SurfaceRefinement(
+                        name="Global surface refinement", max_edge_length=dummy_value
+                    ),
+                    BoundaryLayer(
+                        name="Global Boundary layer refinement", first_layer_thickness=dummy_value
+                    ),
                 ],
-                volume_zones=[AutomatedFarfield(name="farfield")],
+                volume_zones=[AutomatedFarfield(name="Farfield")],
             ),
-            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            operating_condition=AerospaceCondition(velocity_magnitude=dummy_value),
         )
 
     if length_unit is not None:
@@ -122,16 +130,31 @@ def get_default_params(unit_system_name, length_unit) -> SimulationParams:
             params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
                 length_unit
             )
-
-    data = params.model_dump(
-        exclude_none=True,
-        exclude={
-            "operating_condition": {"velocity_magnitude": True},
-            "meshing": {"refinements": {"__all__": {"first_layer_thickness": True}}},
-        },
+    if root_item_type == "Geometry":
+        return params.model_dump(
+            exclude_none=True,
+            exclude={
+                "operating_condition": {"velocity_magnitude": True},
+                "private_attribute_asset_cache": {"registry": True},
+                "meshing": {
+                    "refinements": {
+                        "__all__": {"first_layer_thickness": True, "max_edge_length": True}
+                    }
+                },
+            },
+        )
+    if root_item_type == "VolumeMesh":
+        return params.model_dump(
+            exclude_none=True,
+            exclude={
+                "operating_condition": {"velocity_magnitude": True},
+                "private_attribute_asset_cache": {"registry": True},
+                "meshing": True,
+            },
+        )
+    raise ValueError(
+        f"Unknown root item type: {root_item_type}. Expected one of Geometry or VolumeMesh"
     )
-
-    return data
 
 
 def validate_model(params_as_dict, unit_system_name):

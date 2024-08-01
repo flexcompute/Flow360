@@ -612,3 +612,8 @@ def test_unit_system_init():
     print(us)
     print(u.SI_unit_system)
     assert us == u.SI_unit_system
+
+
+def test_custom_unit_string_deserialization():
+    assert u.unyt.unyt_quantity(1, "degC") == 1 * u.degC
+    assert u.unyt.unyt_quantity(2, "degF") == 2 * u.degF
