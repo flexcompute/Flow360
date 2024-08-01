@@ -35,6 +35,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.validations import _check_bet_disk
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -223,6 +224,11 @@ class SimulationParams(_ParamModelBase):
                 SurfaceOutput(name="SurfaceOutput 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
             )
         return v
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk(self):
+        """validate BET disks"""
+        return _check_bet_disk(self)
 
     @pd.model_validator(mode="after")
     def _move_registry_to_asset_cache(self):
