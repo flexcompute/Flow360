@@ -614,7 +614,7 @@ def test_multiple_param_creation_and_asset_registry(
     ref_registry.register(my_volume_mesh2["surface_5"])
     ref_registry.register(my_volume_mesh2["surface_6"])
     ref_registry.register(my_volume_mesh2["surface_1"])
-
+    print(ref_registry)
     assert my_param2.private_attribute_asset_cache.registry == ref_registry
 
 

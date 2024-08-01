@@ -32,8 +32,6 @@ from ...log import log
 from ..types import COMMENTS, TYPE_TAG_STR
 from .conversions import need_conversion, require, unit_converter
 
-SUPPORTED_SOLVER_VERSION = "release-23.3.2.0"
-
 
 def json_dumps(value, *args, **kwargs):
     """custom json dump with sort_keys=True"""

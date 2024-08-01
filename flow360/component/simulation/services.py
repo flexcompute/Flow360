@@ -230,8 +230,7 @@ def _translate_simulation_json(
 
     if translated_dict == {}:
         raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
-    # pylint: disable=fixme
-    # TODO: Implement proper hashing. Currently floating point creates headache for reproducible hashing.
+
     # pylint: disable=protected-access
     hash_value = SimulationParams._calculate_hash(translated_dict)
     return translated_dict, hash_value

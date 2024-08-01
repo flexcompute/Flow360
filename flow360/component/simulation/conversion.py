@@ -316,7 +316,7 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     elif dimension == u.dimensions.angle:
 
         # pylint: disable=no-member
-        flow360_conversion_unit_system.base_angle = 1 * u.rad
+        flow360_conversion_unit_system.base_angle = 1
 
     elif dimension == u.dimensions.pressure:
         base_force = get_base_force()

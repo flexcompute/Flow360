@@ -72,14 +72,34 @@ class ThermalState(MultiConstructorBaseModel):
         altitude: LengthType.Positive = 0 * u.m,
         temperature_offset: TemperatureType = 0 * u.K,
     ):
-        """Constructs a thermal state from the standard atmosphere model."""
-        # pylint: disable=fixme
-        # TODO: add standard atmosphere implementation
-        density = 1.225 * u.kg / u.m**3
-        temperature = 288.15 * u.K
+        """Constructs a thermal state from the standard atmosphere model.
 
+        Parameters:
+        altitude (LengthType.Positive): The altitude at which the state is calculated.
+        temperature_offset (TemperatureType): The offset to be applied to the standard temperature.
+
+        Returns:
+        ThermalState: The thermal state at the given altitude.
+        """
+        # Standard atmosphere constants
+        t0 = 288.15 * u.K  # Sea level standard temperature
+        p0 = 101325 * u.Pa  # Sea level standard pressure
+        lapse_rate = 0.0065 * u.K / u.m  # Temperature lapse rate
+        r = Air().gas_constant  # Specific gas constant for dry air
+        g0 = 9.80665 * u.m / u.s**2  # Standard gravity
+
+        # Calculate temperature at the given altitude
+        temperature = t0 - lapse_rate * altitude
+        temperature += temperature_offset
+
+        # Calculate pressure at the given altitude
+        pressure = p0 * (1 - (lapse_rate * altitude / t0)) ** (g0 / (r * lapse_rate))
+
+        # Calculate density at the given altitude
+        density = pressure / (r * temperature)
+
+        # Construct and return the thermal state
         state = cls(density=density, temperature=temperature, material=Air())
-
         return state
 
     @property
@@ -113,7 +133,7 @@ class ThermalState(MultiConstructorBaseModel):
 
     # TODO: should we make this private_attribute?
     @pd.validate_call
-    def mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
+    def _mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
         """Computes nondimensional dynamic viscosity."""
         # TODO: use unit system for nondimensionalization
         return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()

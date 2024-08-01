@@ -25,7 +25,7 @@ from flow360.exceptions import Flow360FileError
 from flow360.log import log
 
 
-def custom_to_camel(string: str) -> str:
+def snake_to_camel(string: str) -> str:
     """
     Convert a snake_case string to camelCase.
 
@@ -40,7 +40,7 @@ def custom_to_camel(string: str) -> str:
     str: The converted string in camelCase format.
 
     Example:
-    >>> custom_to_camel("example_snake_case")
+    >>> snake_to_camel("example_snake_case")
     'exampleSnakeCase'
     """
     components = string.split("_")
@@ -116,7 +116,7 @@ class Flow360BaseModel(pd.BaseModel):
         include_hash=False,
         include_defaults_in_schema=True,
         alias_generator=pd.AliasGenerator(
-            serialization_alias=custom_to_camel,
+            serialization_alias=snake_to_camel,
         ),
     )
 

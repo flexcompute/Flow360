@@ -1,5 +1,6 @@
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -217,3 +218,12 @@ def test_simulation_params_unit_conversion(get_the_param):
         converted.models[6].turbulence_quantities.specific_dissipation_rate.value,
         28.80012584,
     )
+
+
+def test_standard_atmosphere():
+    # https://www.digitaldutch.com/atmoscalc/
+    my_conditon = ThermalState.from_standard_atmosphere(
+        altitude=1000 * u.m, temperature_offset=10 * u.K
+    )
+    assert np.isclose(my_conditon.temperature.value, 291.650)
+    assert np.isclose(my_conditon.density.value, 1.07353)

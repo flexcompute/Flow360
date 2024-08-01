@@ -112,19 +112,20 @@ class EntityRegistry(Flow360BaseModel):
             raise ValueError(f"Multiple entities found in registry with given name: '{name}'.")
         return entities[0]
 
-    def show(self):
+    def __str__(self):
         """
-        Prints a list of all registered entities, grouped by type.
+        Returns a string representation of all registered entities, grouped by type.
         """
         index = 0
-        print("---- Content of the registry ----")
+        result = "---- Content of the registry ----\n"
         # pylint: disable=no-member
         for entity_bucket, entities in self.internal_registry.items():
-            print(f"    Entities of type '{entity_bucket}':")
+            result += f"    Entities of type '{entity_bucket}':\n"
             for entity in entities:
-                print(f"    - [{index:03d}]\n{entity}")
+                result += f"    - [{index:03d}]\n{entity}\n"
                 index += 1
-        print("---- End of content ----")
+        result += "---- End of content ----"
+        return result
 
     def clear(self):
         """

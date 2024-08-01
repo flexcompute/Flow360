@@ -651,7 +651,8 @@ def get_solver_json(
             if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        "muRef": op.thermal_state.mu_ref(mesh_unit),
+        # pylint: disable=protected-access
+        "muRef": op.thermal_state._mu_ref(mesh_unit),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
