@@ -162,5 +162,11 @@
             },
             "output_type": "SurfaceOutput"
         }
-    ]
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "m"
+        }
+    }
 }

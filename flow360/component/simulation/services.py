@@ -135,7 +135,7 @@ def get_default_params(
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
-                "private_attribute_asset_cache": True,
+                "private_attribute_asset_cache": {"registry": True},
                 "meshing": {
                     "refinements": {
                         "__all__": {"first_layer_thickness": True, "max_edge_length": True}
@@ -148,7 +148,7 @@ def get_default_params(
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
-                "private_attribute_asset_cache": True,
+                "private_attribute_asset_cache": {"registry": True},
                 "meshing": True,
             },
         )
