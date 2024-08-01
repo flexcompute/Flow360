@@ -56,6 +56,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition import (
     AerospaceCondition,
+    GenericReferenceCondition,
     ThermalState,
 )
 from flow360.component.simulation.outputs.outputs import (
@@ -360,7 +361,9 @@ with SI_unit_system:
 
 
 ###################### operating_condition ######################
-write_schemas(AerospaceCondition, "operating_condition")
+write_schemas(AerospaceCondition, "operating_condition", "aerospace_condition")
+write_schemas(GenericReferenceCondition, "operating_condition", "generic_reference_condition")
+
 with SI_unit_system:
     ac = AerospaceCondition(
         velocity_magnitude=1 * u.m / u.s,

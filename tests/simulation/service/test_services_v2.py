@@ -3,7 +3,7 @@ import json
 import pytest
 
 from flow360.component.simulation import services
-from tests.utils import compare_dict_to_ref
+from tests.utils import compare_dict_to_ref, compare_values
 
 
 @pytest.fixture(autouse=True)
@@ -195,3 +195,94 @@ def test_validate_init_data_errors():
     assert errors[0]["type"] == "missing"
     assert errors[1]["loc"][-1] == "velocity_magnitude"
     assert errors[1]["type"] == "missing"
+
+
+def test_front_end_JSON_with_multi_constructor():
+    params_data = {
+        "meshing": {
+            "refinement_factor": 1.45,
+            "refinements": [
+                {
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                                "private_attribute_entity_type_name": "Box",
+                                "name": "my_box_default",
+                                "private_attribute_zone_boundary_names": {"items": []},
+                                "type_name": "Box",
+                                "private_attribute_constructor": "default",
+                                "private_attribute_input_cache": {},
+                                "center": {"value": [1.0, 2.0, 3.0], "units": "m"},
+                                "size": {"value": [2.0, 2.0, 3.0], "units": "m"},
+                                "axis_of_rotation": [1.0, 0.0, 0.0],
+                                "angle_of_rotation": {"value": 20.0, "units": "degree"},
+                            },
+                            {
+                                "type_name": "Box",
+                                "private_attribute_constructor": "from_principal_axes",
+                                "private_attribute_input_cache": {
+                                    "axes": [[0.6, 0.8, 0.0], [0.8, -0.6, 0.0]],
+                                    "center": {"value": [7.0, 1.0, 2.0], "units": "m"},
+                                    "size": {"value": [2.0, 2.0, 3.0], "units": "m"},
+                                    "name": "my_box_from",
+                                },
+                            },
+                            {
+                                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                                "private_attribute_entity_type_name": "Cylinder",
+                                "name": "my_cylinder_default",
+                                "private_attribute_zone_boundary_names": {"items": []},
+                                "axis": [0.0, 1.0, 0.0],
+                                "center": {"value": [1.0, 2.0, 3.0], "units": "m"},
+                                "height": {"value": 3.0, "units": "m"},
+                                "outer_radius": {"value": 2.0, "units": "m"},
+                            },
+                        ]
+                    },
+                    "refinement_type": "UniformRefinement",
+                    "spacing": {"units": "cm", "value": 7.5},
+                }
+            ],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "type": "AutomatedFarfield",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
+        },
+        "unit_system": {"name": "SI"},
+        "version": "24.2.0",
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "private_attribute_constructor": "from_mach",
+            "private_attribute_input_cache": {
+                "alpha": {"value": 5.0, "units": "degree"},
+                "beta": {"value": 0.0, "units": "degree"},
+                "thermal_state": {
+                    "type_name": "ThermalState",
+                    "private_attribute_constructor": "from_standard_atmosphere",
+                    "private_attribute_input_cache": {
+                        "altitude": {"value": 1000.0, "units": "m"},
+                        "temperature_offset": {"value": 0.0, "units": "K"},
+                    },
+                },
+                "mach": 0.8,
+            },
+        },
+    }
+
+    simulation_param, errors, _ = services.validate_model(
+        params_as_dict=params_data, unit_system_name="SI"
+    )
+    assert errors is None
+    with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
+        ref_data = json.load(f)
+    param_dict = simulation_param.model_dump(exclude_none=True)
+    compare_values(ref_data, param_dict)

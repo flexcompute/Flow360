@@ -34,9 +34,6 @@ class ThermalStateCache(Flow360BaseModel):
     # pylint: disable=no-member
     altitude: Optional[LengthType.Positive] = None
     temperature_offset: Optional[TemperatureType] = None
-    temperature: Optional[TemperatureType.Positive] = None
-    density: Optional[DensityType.Positive] = None
-    material: Optional[FluidMaterialTypes] = None
 
 
 class ThermalState(MultiConstructorBaseModel):
@@ -63,6 +60,9 @@ class ThermalState(MultiConstructorBaseModel):
     density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
     material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
+    private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
+        default="default", frozen=True
+    )
 
     # pylint: disable=no-self-argument, not-callable, unused-argument
     @MultiConstructorBaseModel.model_constructor
@@ -122,21 +122,8 @@ class ThermalState(MultiConstructorBaseModel):
 class GenericReferenceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for GenericReferenceCondition inputs"""
 
-    velocity_magnitude: Optional[VelocityType.Positive] = None
     thermal_state: Optional[ThermalState] = None
     mach: Optional[pd.PositiveFloat] = None
-
-
-class AerospaceConditionCache(Flow360BaseModel):
-    """[INTERNAL] Cache for AerospaceCondition inputs"""
-
-    alpha: Optional[AngleType] = None
-    beta: Optional[AngleType] = None
-    reference_velocity_magnitude: Optional[VelocityType.Positive] = None
-    velocity_magnitude: Optional[VelocityType.NonNegative] = None
-    thermal_state: Optional[ThermalState] = pd.Field(None, alias="atmosphere")
-    mach: Optional[pd.NonNegativeFloat] = None
-    reference_mach: Optional[pd.PositiveFloat] = None
 
 
 class GenericReferenceCondition(MultiConstructorBaseModel):
@@ -167,6 +154,16 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
+
+
+class AerospaceConditionCache(Flow360BaseModel):
+    """[INTERNAL] Cache for AerospaceCondition inputs"""
+
+    mach: Optional[pd.NonNegativeFloat] = None
+    alpha: Optional[AngleType] = None
+    beta: Optional[AngleType] = None
+    thermal_state: Optional[ThermalState] = pd.Field(None, alias="atmosphere")
+    reference_mach: Optional[pd.PositiveFloat] = None
 
 
 class AerospaceCondition(MultiConstructorBaseModel):

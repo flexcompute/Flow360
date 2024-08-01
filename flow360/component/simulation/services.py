@@ -3,13 +3,23 @@
 # pylint: disable=duplicate-code
 import pydantic as pd
 
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    parse_model_dict,
+)
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.operating_condition import AerospaceCondition
+from flow360.component.simulation.operating_condition import (
+    AerospaceCondition,
+    GenericReferenceCondition,
+    ThermalState,
+)
+
+# For multi constructor parse_model_dict use
+from flow360.component.simulation.primitives import Box
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -150,6 +160,7 @@ def validate_model(params_as_dict, unit_system_name):
     params_as_dict = remove_properties_by_name(params_as_dict, "hash")  #  From client
 
     try:
+        params_as_dict = parse_model_dict(params_as_dict, globals())
         with unit_system:
             validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
