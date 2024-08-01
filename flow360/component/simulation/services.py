@@ -152,7 +152,9 @@ def get_default_params(
                 "meshing": True,
             },
         )
-    raise ValueError(f"Unknown root item type: {root_item_type}")
+    raise ValueError(
+        f"Unknown root item type: {root_item_type}. Expected one of Geometry or VolumeMesh"
+    )
 
 
 def validate_model(params_as_dict, unit_system_name):
