@@ -25,7 +25,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
 )
@@ -221,9 +221,29 @@ def test_simulation_params_unit_conversion(get_the_param):
 
 
 def test_standard_atmosphere():
-    # https://www.digitaldutch.com/atmoscalc/
-    my_conditon = ThermalState.from_standard_atmosphere(
-        altitude=1000 * u.m, temperature_offset=10 * u.K
-    )
-    assert np.isclose(my_conditon.temperature.value, 291.650)
-    assert np.isclose(my_conditon.density.value, 1.07353)
+    # ref values from here: https://aerospaceweb.org/design/scripts/atmosphere/
+    # alt, temp_offset, temp, density, pressure, viscosity
+    ref_data = [
+        (-1000, 0, 294.651, 1.347, 1.1393e5, 0.000018206),
+        (0, 0, 288.15, 1.225, 101325, 0.000017894),
+        (999, 0, 281.6575, 1.1118, 89887, 0.000017579),
+        (1000, 0, 281.651, 1.11164, 89876, 0.000017579),
+        (10000, 0, 223.2521, 0.41351, 26500, 0.000014577),
+        (15000, 0, 216.65, 0.19476, 12112, 0.000014216),
+        (20000, 0, 216.65, 0.088910, 5529.3, 0.000014216),
+        (30000, 0, 226.5091, 0.018410, 1197.0, 0.000014753),
+        (40000, 0, 250.3496, 0.0039957, 287.14, 0.000016009),
+        (70000, 0, 219.5848, 0.000082829, 5.2209, 0.000014377),
+        (0, -10, 278.15, 1.2690, 101325, 0.000017407),
+        (1000, -9, 272.651, 1.1484, 89876, 0.000017136),
+    ]
+
+    for alt, temp_offset, temp, density, pressure, viscosity in ref_data:
+        atm = ThermalState.from_standard_atmosphere(
+            altitude=alt * u.m, temperature_offset=temp_offset * u.K
+        )
+
+        assert atm.temperature == pytest.approx(temp, rel=1e-6)
+        assert atm.density == pytest.approx(density, rel=1e-4)
+        assert atm.pressure == pytest.approx(pressure, rel=1e-4)
+        assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)

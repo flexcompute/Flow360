@@ -54,7 +54,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
 )

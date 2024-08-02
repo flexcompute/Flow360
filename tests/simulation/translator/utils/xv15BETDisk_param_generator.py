@@ -9,7 +9,7 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import Freestream
 from flow360.component.simulation.models.volume_models import BETDisk, Fluid
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
 )

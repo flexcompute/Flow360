@@ -9,7 +9,9 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import Fluid
-from flow360.component.simulation.operating_condition import AerospaceCondition
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.services import (
     simulation_to_case_json,

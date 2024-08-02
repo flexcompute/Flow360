@@ -15,7 +15,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
 )
 from flow360.component.simulation.models.volume_models import Fluid, PorousMedium
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     GenericReferenceCondition,
     ThermalState,
 )

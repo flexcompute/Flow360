@@ -15,7 +15,9 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.models.volume_models import Fluid
-from flow360.component.simulation.operating_condition import AerospaceCondition
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,

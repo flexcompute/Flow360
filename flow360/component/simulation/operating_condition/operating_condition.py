@@ -13,6 +13,9 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
     MultiConstructorBaseModel,
 )
 from flow360.component.simulation.models.material import Air, FluidMaterialTypes
+from flow360.component.simulation.operating_condition.atmosphere_model import (
+    StandardAtmosphereModel,
+)
 from flow360.component.simulation.unit_system import (
     AngleType,
     DensityType,
@@ -32,7 +35,7 @@ class ThermalStateCache(Flow360BaseModel):
     """[INTERNAL] Cache for thermal state inputs"""
 
     # pylint: disable=no-member
-    altitude: Optional[LengthType.Positive] = None
+    altitude: Optional[LengthType] = None
     temperature_offset: Optional[TemperatureType] = None
     temperature: Optional[TemperatureType.Positive] = None
     density: Optional[DensityType.Positive] = None
@@ -69,41 +72,31 @@ class ThermalState(MultiConstructorBaseModel):
     @pd.validate_call
     def from_standard_atmosphere(
         cls,
-        altitude: LengthType.Positive = 0 * u.m,
+        altitude: LengthType = 0 * u.m,
         temperature_offset: TemperatureType = 0 * u.K,
     ):
         """Constructs a thermal state from the standard atmosphere model.
 
         Parameters:
-        altitude (LengthType.Positive): The altitude at which the state is calculated.
+        altitude (LengthType): The altitude at which the state is calculated.
         temperature_offset (TemperatureType): The offset to be applied to the standard temperature.
 
         Returns:
         ThermalState: The thermal state at the given altitude.
         """
-        # Standard atmosphere constants
-        t0 = 288.15 * u.K  # Sea level standard temperature
-        p0 = 101325 * u.Pa  # Sea level standard pressure
-        lapse_rate = 0.0065 * u.K / u.m  # Temperature lapse rate
-        r = Air().gas_constant  # Specific gas constant for dry air
-        g0 = 9.80665 * u.m / u.s**2  # Standard gravity
-
-        # Calculate temperature at the given altitude
-        temperature = t0 - lapse_rate * altitude
-        temperature += temperature_offset
-
-        # Calculate pressure at the given altitude
-        pressure = p0 * (1 - (lapse_rate * altitude / t0)) ** (g0 / (r * lapse_rate))
-
-        # Calculate density at the given altitude
-        density = pressure / (r * temperature)
-
+        standard_atmosphere_model = StandardAtmosphereModel(
+            altitude.in_units(u.m).value, temperature_offset.in_units(u.K).value
+        )
         # Construct and return the thermal state
-        state = cls(density=density, temperature=temperature, material=Air())
+        state = cls(
+            density=standard_atmosphere_model.density * u.kg / u.m**3,
+            temperature=standard_atmosphere_model.temperature * u.K,
+            material=Air(),
+        )
         return state
 
     @property
-    def altitude(self) -> Optional[LengthType.Positive]:
+    def altitude(self) -> Optional[LengthType]:
         """Return user specified altitude."""
         if not self._cached.altitude:
             log.warning("Altitude not provided from input")

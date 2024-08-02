@@ -3,7 +3,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.surface_models import Freestream
 from flow360.component.simulation.models.volume_models import ActuatorDisk, ForcePerArea
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
 )

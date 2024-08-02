@@ -11,7 +11,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
     MultiConstructorBaseModel,
     parse_model_dict,
 )
-from flow360.component.simulation.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     AerospaceConditionCache,
     ThermalState,

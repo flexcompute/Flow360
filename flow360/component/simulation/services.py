@@ -11,7 +11,9 @@ from flow360.component.simulation.meshing_param.face_params import (
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.operating_condition import AerospaceCondition
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,

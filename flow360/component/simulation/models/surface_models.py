@@ -16,7 +16,9 @@ from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantitiesType,
 )
-from flow360.component.simulation.operating_condition import VelocityVectorType
+from flow360.component.simulation.operating_condition.operating_condition import (
+    VelocityVectorType,
+)
 from flow360.component.simulation.primitives import GhostSurface, Surface, SurfacePair
 from flow360.component.simulation.unit_system import (
     HeatFluxType,

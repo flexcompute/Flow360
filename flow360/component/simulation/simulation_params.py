@@ -23,7 +23,9 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
-from flow360.component.simulation.operating_condition import OperatingConditionTypes
+from flow360.component.simulation.operating_condition.operating_condition import (
+    OperatingConditionTypes,
+)
 from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
