@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
@@ -181,7 +181,10 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
     C_d2: NonNegativeFloat = pd.Field(3.0)
 
 
-TurbulenceModelConstants = Union[SpalartAllmarasModelConstants, KOmegaSSTModelConstants]
+TurbulenceModelConstants = Annotated[
+    Union[SpalartAllmarasModelConstants, KOmegaSSTModelConstants],
+    pd.Field(discriminator="type_name"),
+]
 
 
 class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
@@ -288,7 +291,9 @@ class NoneSolver(Flow360BaseModel):
     type_name: Literal["None"] = pd.Field("None", frozen=True)
 
 
-TurbulenceModelSolverType = Union[NoneSolver, SpalartAllmaras, KOmegaSST]
+TurbulenceModelSolverType = Annotated[
+    Union[NoneSolver, SpalartAllmaras, KOmegaSST], pd.Field(discriminator="type_name")
+]
 
 
 class HeatEquationSolver(GenericSolverSettings):
