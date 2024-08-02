@@ -1,10 +1,13 @@
-# U.S. STANDARD ATMOSPHERE 1976
+""" U.S. STANDARD ATMOSPHERE 1976
 # https://www.ngdc.noaa.gov/stp/space-weather/online-publications/miscellaneous/us-standard-atmosphere-1976/us-standard-atmosphere_st76-1562_noaa.pdf
-# Source: design 360
-from math import exp, pow, sqrt
+ Source: design 360
+ """
+
+from math import exp
 
 
 class StandardAtmosphereModel:
+    """Standard atmosphere model for the Earth."""
 
     g0_prim = 9.80665
     r0 = 6356766  # earth radius in m
@@ -44,6 +47,7 @@ class StandardAtmosphereModel:
 
     @classmethod
     def b_index(cls, h):
+        """Return the index of the layer in which the altitude is located."""
         for i in range(len(cls.H) - 2):
             if h < cls.H[i + 1]:
                 return i
@@ -80,12 +84,15 @@ class StandardAtmosphereModel:
 
     @property
     def pressure(self) -> float:
+        """Return pressure in Pa."""
         return self._pressure
 
     @property
     def density(self) -> float:
+        """Return density in kg/m^3."""
         return self._density
 
     @property
     def temperature(self) -> float:
+        """Return temperature in K."""
         return self._temperature
