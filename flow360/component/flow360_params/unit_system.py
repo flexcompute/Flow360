@@ -2,7 +2,7 @@
 Unit system definitions and utilities
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines, duplicate-code
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
@@ -16,8 +16,8 @@ import numpy as np
 import pydantic.v1 as pd
 import unyt as u
 
-from ...log import log
-from ...utils import classproperty
+from flow360.log import log
+from flow360.utils import classproperty
 
 u.dimensions.viscosity = u.dimensions.pressure * u.dimensions.time
 u.dimensions.angular_velocity = u.dimensions.angle / u.dimensions.time
@@ -317,6 +317,7 @@ class DimensionedType(ValidatedType):
 
             def validate(con_cls, value):
                 """Additional validator for value"""
+
                 dimensioned_value = dim_type.validate(value)
                 pd.validators.number_size_validator(dimensioned_value.value, con_cls.con_type)
                 pd.validators.float_finite_validator(
@@ -441,6 +442,7 @@ class DimensionedType(ValidatedType):
             cls_obj.validate = lambda value: validate(cls_obj, value)
             cls_obj.__modify_schema__ = __modify_schema__
             cls_obj.__get_validators__ = lambda: (yield cls_obj.validate)
+
             return cls_obj
 
     # pylint: disable=invalid-name
@@ -1125,7 +1127,6 @@ class UnitSystem(pd.BaseModel):
 _SI_system = u.unit_systems.mks_unit_system
 _CGS_system = u.unit_systems.cgs_unit_system
 _imperial_system = u.unit_systems.imperial_unit_system
-
 
 flow360_length_unit = Flow360LengthUnit()
 flow360_mass_unit = Flow360MassUnit()

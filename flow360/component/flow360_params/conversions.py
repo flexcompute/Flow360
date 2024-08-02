@@ -8,8 +8,13 @@ from typing import Callable, List
 
 import pydantic.v1 as pd
 
+from flow360.component.flow360_params.unit_system import (
+    flow360_conversion_unit_system,
+    is_flow360_unit,
+    u,
+)
+
 from ...exceptions import Flow360ConfigurationError
-from .unit_system import flow360_conversion_unit_system, is_flow360_unit, u
 
 
 class ExtraDimensionedProperty(pd.BaseModel):
@@ -146,6 +151,10 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         base_length = params.geometry.mesh_unit.to("m").v.item()
         return base_length
 
+    def get_base_angle():
+        # pylint: disable=no-member
+        return 1 * u.rad
+
     def get_base_temperature():
         require(["fluid_properties"], required_by, params)
         base_temperature = (
@@ -245,6 +254,10 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     if dimension == u.dimensions.length:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
+
+    elif dimension == u.dimensions.angle:
+        base_angle = get_base_angle()
+        flow360_conversion_unit_system.base_angle = base_angle
 
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()

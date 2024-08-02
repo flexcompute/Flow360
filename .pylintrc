@@ -46,7 +46,7 @@ ignore=tests, flow360/examples
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
-ignore-paths=tests
+ignore-paths=tests, flow360/examples, flow360/component/simulation/user_story_examples, flow360/component/results
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths. The default value ignores Emacs file
@@ -82,7 +82,7 @@ persistent=yes
 
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.7
+py-version=3.9
 
 # Discover python modules and packages in the file system subtree.
 recursive=no

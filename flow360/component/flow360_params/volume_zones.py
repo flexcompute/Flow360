@@ -14,17 +14,18 @@ from numpy import array, dot
 from pydantic.v1 import StrictStr
 from typing_extensions import Literal
 
-from ..constants import NumericalConstants
-from ..types import Axis, List, NonNegativeFloat, PositiveFloat
-from ..utils import process_expressions
-from .params_base import Flow360BaseModel
-from .unit_system import (
+from flow360.component.flow360_params.unit_system import (
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
     InverseLengthType,
     LengthType,
 )
+
+from ..constants import NumericalConstants
+from ..types import Axis, List
+from ..utils import process_expressions
+from .params_base import Flow360BaseModel
 
 
 class ReferenceFrameBase(Flow360BaseModel):
@@ -249,7 +250,7 @@ class VolumeZoneBase(Flow360BaseModel, metaclass=ABCMeta):
 class InitialConditionHeatTransfer(Flow360BaseModel):
     """InitialConditionHeatTransfer"""
 
-    T: Union[PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
+    T: Union[pd.PositiveFloat, StrictStr] = pd.Field(options=["Value", "Expression"])
 
     _processed_T = pd.validator("T", allow_reuse=True)(process_expressions)
 
@@ -267,11 +268,11 @@ class HeatTransferVolumeZone(VolumeZoneBase):
     """HeatTransferVolumeZone type"""
 
     model_type: Literal["HeatTransfer"] = pd.Field("HeatTransfer", alias="modelType", const=True)
-    thermal_conductivity: PositiveFloat = pd.Field(alias="thermalConductivity")
-    volumetric_heat_source: Optional[Union[NonNegativeFloat, StrictStr]] = pd.Field(
+    thermal_conductivity: pd.PositiveFloat = pd.Field(alias="thermalConductivity")
+    volumetric_heat_source: Optional[Union[pd.NonNegativeFloat, StrictStr]] = pd.Field(
         alias="volumetricHeatSource", options=["Value", "Expression"]
     )
-    heat_capacity: Optional[PositiveFloat] = pd.Field(alias="heatCapacity")
+    heat_capacity: Optional[pd.PositiveFloat] = pd.Field(alias="heatCapacity")
     initial_condition: Optional[InitialConditionHeatTransfer] = pd.Field(alias="initialCondition")
 
 

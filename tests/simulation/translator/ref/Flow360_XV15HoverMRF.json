@@ -1,0 +1,126 @@
+{
+    "freestream": {
+        "alphaAngle": -90.0,
+        "betaAngle": 0.0,
+        "Mach": 0.0146972,
+        "Temperature": 288.15,
+        "muRef": 4.29279e-08,
+        "MachRef": 0.7
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 4000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 35
+        },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "gridSizeForLES": "maxEdgeLength",
+        "reconstructionGradientLimiter": 1.0,
+        "quadraticConstitutiveRelation": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "equationEvalFrequency": 4,
+        "modelType": "kOmegaSST",
+        "modelConstants": {
+            "CDES1": 0.78,
+            "CDES2": 0.61,
+            "CD1": 20.0,
+            "CD2": 3.0
+        }
+    },
+    "volumeZones": {
+        "innerRotating": {
+            "referenceFrame": {
+                "axisOfRotation": [
+                    0.0,
+                    0.0,
+                    -1.0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "omegaRadians": 0.18467252520826463
+            },
+            "modelType": "FluidDynamics"
+        }
+    },
+    "boundaries": {
+        "innerRotating/blade": {
+            "type": "NoSlipWall"
+        },
+        "farField/farField": {
+            "type": "Freestream"
+        }
+    },
+    "volumeOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "Mach",
+            "qcriterion",
+            "nuHat"
+        ],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "innerRotating/blade": {
+                "outputFields": [
+                    "primitiveVars",
+                    "Cp",
+                    "Cf",
+                    "yPlus"
+                ]
+            }
+        },
+        "writeSingleFile": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    }
+}

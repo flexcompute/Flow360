@@ -29,7 +29,6 @@ from flow360.component.flow360_params.volume_zones import (
     ReferenceFrameExpression,
     VolumeZoneBase,
 )
-from flow360.component.types import PositiveFloat
 
 here = os.path.dirname(os.path.abspath(__file__))
 version_postfix = "develop"
@@ -104,21 +103,25 @@ class _TurbulenceModelSolver(Flow360BaseModel):
 class _TimeStepping(Flow360BaseModel):
     class _UnsteadyTimeStepping(fl.UnsteadyTimeStepping):
         class RampCFLUnsteady(fl.RampCFL):
-            initial: Optional[PositiveFloat] = pd.Field(
+            initial: Optional[pd.PositiveFloat] = pd.Field(
                 default=fl.RampCFL.default_unsteady().initial
             )
-            final: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_unsteady().final)
+            final: Optional[pd.PositiveFloat] = pd.Field(
+                default=fl.RampCFL.default_unsteady().final
+            )
             ramp_steps: Optional[int] = pd.Field(
                 alias="rampSteps", default=fl.RampCFL.default_unsteady().ramp_steps
             )
 
         class AdaptiveCFLUnsteady(fl.AdaptiveCFL):
-            max: Optional[PositiveFloat] = pd.Field(default=fl.AdaptiveCFL.default_unsteady().max)
-            convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+            max: Optional[pd.PositiveFloat] = pd.Field(
+                default=fl.AdaptiveCFL.default_unsteady().max
+            )
+            convergence_limiting_factor: Optional[pd.PositiveFloat] = pd.Field(
                 alias="convergenceLimitingFactor",
                 default=fl.AdaptiveCFL.default_unsteady().convergence_limiting_factor,
             )
-            max_relative_change: Optional[PositiveFloat] = pd.Field(
+            max_relative_change: Optional[pd.PositiveFloat] = pd.Field(
                 alias="maxRelativeChange",
                 default=fl.AdaptiveCFL.default_unsteady().max_relative_change,
             )
@@ -129,19 +132,21 @@ class _TimeStepping(Flow360BaseModel):
 
     class _SteadyTimeStepping(fl.SteadyTimeStepping):
         class RampCFLSteady(fl.RampCFL):
-            initial: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_steady().initial)
-            final: Optional[PositiveFloat] = pd.Field(default=fl.RampCFL.default_steady().final)
+            initial: Optional[pd.PositiveFloat] = pd.Field(
+                default=fl.RampCFL.default_steady().initial
+            )
+            final: Optional[pd.PositiveFloat] = pd.Field(default=fl.RampCFL.default_steady().final)
             ramp_steps: Optional[int] = pd.Field(
                 alias="rampSteps", default=fl.RampCFL.default_steady().ramp_steps
             )
 
         class AdaptiveCFLSteady(fl.AdaptiveCFL):
-            max: Optional[PositiveFloat] = pd.Field(default=fl.AdaptiveCFL.default_steady().max)
-            convergence_limiting_factor: Optional[PositiveFloat] = pd.Field(
+            max: Optional[pd.PositiveFloat] = pd.Field(default=fl.AdaptiveCFL.default_steady().max)
+            convergence_limiting_factor: Optional[pd.PositiveFloat] = pd.Field(
                 alias="convergenceLimitingFactor",
                 default=fl.AdaptiveCFL.default_steady().convergence_limiting_factor,
             )
-            max_relative_change: Optional[PositiveFloat] = pd.Field(
+            max_relative_change: Optional[pd.PositiveFloat] = pd.Field(
                 alias="maxRelativeChange",
                 default=fl.AdaptiveCFL.default_steady().max_relative_change,
             )

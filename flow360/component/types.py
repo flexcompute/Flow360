@@ -1,10 +1,11 @@
 """ Defines 'types' that various fields can be """
 
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pydantic.v1 as pd
-from typing_extensions import Annotated
+from pydantic import GetJsonSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from ..exceptions import Flow360ValidationError
 
@@ -12,29 +13,9 @@ from ..exceptions import Flow360ValidationError
 TYPE_TAG_STR = "_type"
 COMMENTS = "comments"
 
-
-def annotate_type(UnionType):  # pylint:disable=invalid-name
-    """Annotated union type using TYPE_TAG_STR as discriminator."""
-    return Annotated[UnionType, pd.Field(discriminator=TYPE_TAG_STR)]
-
-
-PositiveFloat = pd.PositiveFloat
-NonNegativeFloat = pd.NonNegativeFloat
-PositiveInt = pd.PositiveInt
-NonNegativeInt = pd.NonNegativeInt
-NonNegativeAndNegOneInt = Union[pd.NonNegativeInt, Literal[-1]]
-PositiveAndNegOneInt = Union[pd.PositiveInt, Literal[-1]]
-Size = Tuple[PositiveFloat, PositiveFloat, PositiveFloat]
-MomentLengthType = Tuple[PositiveFloat, PositiveFloat, PositiveFloat]
-BoundaryVelocityType = Tuple[Union[float, str], Union[float, str], Union[float, str]]
 List2D = List[List[float]]
-
 # we use tuple for fixed length lists, beacause List is a mutable, variable length structure
 Coordinate = Tuple[float, float, float]
-
-
-class _PydanticValidate(pd.BaseModel):
-    c: Optional[Coordinate]
 
 
 class Vector(Coordinate):
@@ -49,9 +30,27 @@ class Vector(Coordinate):
     def __get_validators__(cls):
         yield cls.validate
 
+    # pylint: disable=unused-argument
+    @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def __get_pydantic_json_schema__(cls, schema: CoreSchema, handler: GetJsonSchemaHandler):
+        schema = {"properties": {"value": {"type": "array"}}}
+        schema["properties"]["value"]["items"] = {"type": "number"}
+        schema["properties"]["value"]["strictType"] = {"type": "vector3"}
+
+        return schema
+
     @classmethod
     def validate(cls, vector):
         """validator for vector"""
+
+        class _PydanticValidate(pd.BaseModel):
+            c: Optional[Coordinate]
+
         if isinstance(vector, set):
             raise TypeError(
                 Flow360ValidationError(f"set provided {vector}, but tuple or array expected.")
@@ -90,12 +89,15 @@ class Axis(Vector):
         yield cls.validate
 
     @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs) -> CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
     def validate(cls, vector):
         """validator for Axis"""
+        if vector is None:
+            return None
         vector = super().validate(vector)
-        vector_norm = 0.0
-        for element in vector:
-            vector_norm += element * element
-        vector_norm = np.sqrt(vector_norm)
+        vector_norm = np.linalg.norm(vector)
         normalized_vector = tuple(e / vector_norm for e in vector)
         return Axis(normalized_vector)

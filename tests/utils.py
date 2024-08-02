@@ -50,11 +50,59 @@ def show_dict_diff(dict1, dict2):
 
     # Generate the diff
     diff = difflib.unified_diff(dict1_lines, dict2_lines, fromfile="dict1", tofile="dict2")
-
     # Printing the diff
     print("diff")
     print("\n".join(diff))
     print("end of diff")
+
+
+def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    if ignore_keys is None:
+        ignore_keys = set()
+
+    # Filter out the keys to be ignored
+    dict1_filtered = {k: v for k, v in dict1.items() if k not in ignore_keys}
+    dict2_filtered = {k: v for k, v in dict2.items() if k not in ignore_keys}
+
+    if dict1_filtered.keys() != dict2_filtered.keys():
+        print(f"dict keys not equal, dict1 {dict1_filtered.keys()}, dict2 {dict2_filtered.keys()}")
+        return False
+
+    for key in dict1_filtered:
+        value1 = dict1_filtered[key]
+        value2 = dict2_filtered[key]
+
+        if not compare_values(value1, value2, atol, rtol, ignore_keys):
+            print(f"dict value of key {key} not equal dict1 {dict1[key]}, dict2 {dict2[key]}")
+            return False
+
+    return True
+
+
+def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    if isinstance(value1, float) and isinstance(value2, float):
+        return np.isclose(value1, value2, rtol, atol)
+    elif isinstance(value1, dict) and isinstance(value2, dict):
+        return compare_dicts(value1, value2, atol, rtol, ignore_keys)
+    elif isinstance(value1, list) and isinstance(value2, list):
+        return compare_lists(value1, value2, atol, rtol, ignore_keys)
+    else:
+        return value1 == value2
+
+
+def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    if len(list1) != len(list2):
+        return False
+
+    if list1 and not isinstance(list1[0], dict):
+        list1, list2 = sorted(list1), sorted(list2)
+
+    for item1, item2 in zip(list1, list2):
+        if not compare_values(item1, item2, atol, rtol, ignore_keys):
+            print(f"list value not equal list1 {item1}, list2 {item2}")
+            return False
+
+    return True
 
 
 def to_file_from_file_test(obj):
@@ -70,6 +118,15 @@ def to_file_from_file_test(obj):
             assert obj == obj_read
 
 
+def compare_dict_to_ref(data, ref_path):
+    with open(ref_path) as fh:
+        ref_data = json.load(fh)
+    equal = sorted(data.items()) == sorted(ref_data.items())
+    if equal is False:
+        show_dict_diff(data, ref_data)
+        assert equal
+
+
 def compare_to_ref(obj, ref_path, content_only=False):
     with tempfile.TemporaryDirectory() as tmpdir:
         filename = os.path.join(tmpdir, f"file{os.path.splitext(ref_path)[1]}")
@@ -81,16 +138,17 @@ def compare_to_ref(obj, ref_path, content_only=False):
             assert os.path.splitext(ref_path)[1] == ".json"
             with open(filename) as fh:
                 a = json.load(fh)
-            with open(ref_path) as fh:
-                b = json.load(fh)
-            equal = sorted(a.items()) == sorted(b.items())
-            if equal is False:
-                show_dict_diff(a, b)
-                assert equal
+            compare_dict_to_ref(a, ref_path)
 
 
 @pytest.fixture()
 def array_equality_override():
+    # Save original methods
+    original_unyt_eq = unyt.unyt_array.__eq__
+    original_unyt_ne = unyt.unyt_array.__ne__
+    original_flow360_eq = unit_system._Flow360BaseUnit.__eq__
+    original_flow360_ne = unit_system._Flow360BaseUnit.__ne__
+
     # Overload equality for unyt arrays
     def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
         if isinstance(other, unit_system._Flow360BaseUnit):
@@ -140,6 +198,15 @@ def array_equality_override():
     unyt.unyt_array.__ne__ = unyt_array_ne
     unit_system._Flow360BaseUnit.__eq__ = flow360_unit_array_eq
     unit_system._Flow360BaseUnit.__ne__ = flow360_unit_array_ne
+
+    # Yield control to the test
+    yield
+
+    # Restore original methods
+    unyt.unyt_array.__eq__ = original_unyt_eq
+    unyt.unyt_array.__ne__ = original_unyt_ne
+    unit_system._Flow360BaseUnit.__eq__ = original_flow360_eq
+    unit_system._Flow360BaseUnit.__ne__ = original_flow360_ne
 
 
 @pytest.fixture()

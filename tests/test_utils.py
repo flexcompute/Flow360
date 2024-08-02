@@ -5,6 +5,10 @@ import pytest
 from flow360 import Accounts
 from flow360.cli.dict_utils import merge_overwrite
 from flow360.component.utils import (
+    CompressionFormat,
+    MeshFileFormat,
+    MeshNameParser,
+    UGRIDEndianness,
     is_valid_uuid,
     shared_account_confirm_proceed,
     validate_type,
@@ -61,10 +65,95 @@ def test_shared_confirm_proceed(mock_response, monkeypatch):
 def test_valid_uuid():
     is_valid_uuid("123e4567-e89b-12d3-a456-426614174000")
     is_valid_uuid("folder-123e4567-e89b-12d3-a456-426614174000")
+    is_valid_uuid("g-123e4567-e89b-12d3-a456-426614174000")
+    is_valid_uuid("long-length-prefix-123e4567-e89b-12d3-a456-426614174000")
+
     with pytest.raises(Flow360ValueError):
-        is_valid_uuid("not-a-valid-uuid")
+        is_valid_uuid("too-short-uuid")
 
     with pytest.raises(Flow360ValueError):
         is_valid_uuid(None)
 
     is_valid_uuid(None, allow_none=True)
+
+
+def test_mesh_name_parser_uncompressed_ugrid():
+    parser = MeshNameParser("testMesh.lb8.ugrid")
+    assert parser.file_name_no_compression == "testMesh.lb8.ugrid"
+    assert parser.endianness == UGRIDEndianness.LITTLE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.NONE
+    assert parser.is_ugrid()
+    assert not parser.is_compressed()
+
+
+def test_mesh_name_parser_ascii_ugrid():
+    parser = MeshNameParser("testMesh.ugrid")
+    assert parser.file_name_no_compression == "testMesh.ugrid"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.NONE
+    assert parser.is_ugrid()
+    assert not parser.is_compressed()
+
+
+def test_mesh_name_parser_ascii_compressed_ugrid():
+    parser = MeshNameParser("testMesh.ugrid.zst")
+    assert parser.file_name_no_compression == "testMesh.ugrid"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.ZST
+    assert parser.is_ugrid()
+    assert parser.is_compressed()
+
+
+def test_mesh_name_parser_compressed_ugrid():
+    parser = MeshNameParser("testMesh.lb8.ugrid.bz2")
+    assert parser.file_name_no_compression == "testMesh.lb8.ugrid"
+    assert parser.endianness == UGRIDEndianness.LITTLE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.BZ2
+    assert parser.is_ugrid()
+    assert parser.is_compressed()
+
+
+def test_mesh_name_parser_compressed_cgns():
+    parser = MeshNameParser("testMesh.cgns.bz2")
+    assert parser.file_name_no_compression == "testMesh.cgns"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.CGNS
+    assert parser.compression == CompressionFormat.BZ2
+    assert parser.is_ugrid() == False
+    assert parser.is_compressed()
+
+
+def test_mesh_name_parser_uncompressed_cgns():
+    parser = MeshNameParser("testMesh.cgns")
+    assert parser.file_name_no_compression == "testMesh.cgns"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.CGNS
+    assert parser.compression == CompressionFormat.NONE
+    assert parser.is_ugrid() == False
+    assert not parser.is_compressed()
+
+
+def test_mesh_name_parser_stl():
+    parser = MeshNameParser("testMesh.stl")
+    assert parser.file_name_no_compression == "testMesh.stl"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.STL
+    assert parser.compression == CompressionFormat.NONE
+    assert parser.is_ugrid() == False
+    assert not parser.is_compressed()
+
+
+def test_mesh_name_parser_compressed_stl():
+    parser = MeshNameParser("testMesh.stl.bz2")
+    assert parser.file_name_no_compression == "testMesh.stl"
+    assert parser.endianness == UGRIDEndianness.NONE
+    assert parser.format == MeshFileFormat.STL
+    assert parser.compression == CompressionFormat.BZ2
+    assert parser.is_ugrid() == False
+    assert parser.is_valid_surface_mesh()
+    assert not parser.is_valid_volume_mesh()
+    assert parser.is_compressed()

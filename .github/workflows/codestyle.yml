@@ -40,6 +40,8 @@ jobs:
           cache: 'poetry'
       - name: Install isort
         run: poetry install --only=dev
+      - name: Check isort version
+        run: poetry run isort --version 
       - name: Run isort
         run: poetry run isort . --check-only
 
@@ -56,4 +58,4 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run pylint
-        run: poetry run pylint flow360 --rcfile .pylintrc
+        run: poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc

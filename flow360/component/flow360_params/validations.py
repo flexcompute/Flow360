@@ -3,7 +3,7 @@ validation logic
 """
 
 from copy import deepcopy
-from typing import List, Literal, NoReturn, Optional, Tuple, Union, get_args, get_origin
+from typing import List, Literal, Optional, Tuple, Union, get_args, get_origin
 
 from ...log import log
 from .boundaries import (
@@ -220,9 +220,7 @@ def _check_cht_solver_settings(values):
     return values
 
 
-def _check_eval_frequency_max_pseudo_steps_in_one_solver(
-    max_pseudo_steps, values, solver_name
-) -> NoReturn:
+def _check_eval_frequency_max_pseudo_steps_in_one_solver(max_pseudo_steps, values, solver_name):
     solver = values.get(solver_name)
     solver_eq_eval_freq = None
     if solver is not None and solver.model_type != "None":
@@ -278,7 +276,7 @@ def _check_incompressible_navier_stokes_solver(values):
 
 
 # pylint: disable=line-too-long
-def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoReturn:
+def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj):
     paired_patch_name = boundary_obj.paired_patch_name
     if paired_patch_name is None:
         return

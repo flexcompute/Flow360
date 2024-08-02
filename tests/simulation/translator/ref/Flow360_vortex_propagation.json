@@ -1,0 +1,126 @@
+{
+    "boundaries": {
+        "Zone 7/7BACK": {
+            "type": "SlipWall"
+        },
+        "Zone 7/7BOTTOM": {
+            "type": "Freestream"
+        },
+        "Zone 7/7EXIT": {
+            "type": "Freestream"
+        },
+        "Zone 7/7FRONT": {
+            "type": "SlipWall"
+        },
+        "Zone 7/7INLET": {
+            "type": "Freestream"
+        },
+        "Zone 7/7TOP": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.5,
+        "muRef": 0.0,
+        "Temperature": 288.18,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0
+    },
+    "geometry": {
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "refArea": 1.0
+    },
+    "initialCondition": {
+        "p": "0.7142857142857143/(0.7142857142857143*1.0)*pow((1.0-(0.5*0.5*0.2*0.2)/(2*2.5000000000000004)*exp(-(pow(x-0.0, 2)+pow(y-0.0, 2))/(1*1)))/1.0,1/(1.4-1.)) * 0.7142857142857143 * (1.0-(0.5*0.5*0.2*0.2)/(2*2.5000000000000004)*exp(-(pow(x-0.0, 2)+pow(y-0.0, 2))/(1*1)))",
+        "rho": "0.7142857142857143/(0.7142857142857143*1.0)*pow((1.0-(0.5*0.5*0.2*0.2)/(2*2.5000000000000004)*exp(-(pow(x-0.0,2)+pow(y-0.0,2))/(1*1)))/1.0,1/(1.4-1.))",
+        "type": "expression",
+        "u": "0.5*0.2*exp(-0.5*(pow(x-0.0, 2)+pow(y-0.0,2))/(1*1))/1*(-1*(y-0.0)) + cos(0)*0.5",
+        "v": "0.5*0.2*exp(-0.5*(pow(x-0.0,2)+pow(y-0.0,2))/(1*1))/1*(x-0.0) + sin(0)*0.5",
+        "w": "0"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-09,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "Zone 7/7BACK": {
+                "outputFields": []
+            },
+            "Zone 7/7BOTTOM": {
+                "outputFields": []
+            },
+            "Zone 7/7EXIT": {
+                "outputFields": []
+            },
+            "Zone 7/7FRONT": {
+                "outputFields": []
+            },
+            "Zone 7/7INLET": {
+                "outputFields": []
+            },
+            "Zone 7/7TOP": {
+                "outputFields": []
+            }
+        },
+        "writeSingleFile": false
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 1000.0,
+            "initial": 100.0,
+            "rampSteps": 10,
+            "type": "ramp"
+        },
+        "maxPseudoSteps": 10,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 16,
+        "timeStepSize": 0.25
+    },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [
+            "primitiveVars"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    }
+}

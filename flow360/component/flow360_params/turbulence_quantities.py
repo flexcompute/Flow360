@@ -8,7 +8,6 @@ from typing import Literal, Optional, Union
 
 import pydantic.v1 as pd
 
-from ..types import NonNegativeFloat, PositiveFloat
 from .params_base import Flow360BaseModel
 
 
@@ -21,7 +20,9 @@ class TurbulentKineticEnergy(Flow360BaseModel):
     model_type: Literal["TurbulentKineticEnergy"] = pd.Field(
         "TurbulentKineticEnergy", alias="modelType", const=True
     )
-    turbulent_kinetic_energy: Optional[NonNegativeFloat] = pd.Field(alias="turbulentKineticEnergy")
+    turbulent_kinetic_energy: Optional[pd.NonNegativeFloat] = pd.Field(
+        alias="turbulentKineticEnergy"
+    )
 
 
 class TurbulentIntensity(Flow360BaseModel):
@@ -36,7 +37,7 @@ class TurbulentIntensity(Flow360BaseModel):
     model_type: Literal["TurbulentIntensity"] = pd.Field(
         "TurbulentIntensity", alias="modelType", const=True
     )
-    turbulent_intensity: Optional[NonNegativeFloat] = pd.Field(alias="turbulentIntensity")
+    turbulent_intensity: Optional[pd.NonNegativeFloat] = pd.Field(alias="turbulentIntensity")
 
 
 class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
@@ -48,7 +49,7 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
     model_type: Literal["SpecificDissipationRate"] = pd.Field(
         "SpecificDissipationRate", alias="modelType", const=True
     )
-    specific_dissipation_rate: Optional[NonNegativeFloat] = pd.Field(
+    specific_dissipation_rate: Optional[pd.NonNegativeFloat] = pd.Field(
         alias="specificDissipationRate"
     )
 
@@ -62,7 +63,9 @@ class TurbulentViscosityRatio(Flow360BaseModel):
     model_type: Literal["TurbulentViscosityRatio"] = pd.Field(
         "TurbulentViscosityRatio", alias="modelType", const=True
     )
-    turbulent_viscosity_ratio: Optional[PositiveFloat] = pd.Field(alias="turbulentViscosityRatio")
+    turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
 
 
 class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
@@ -78,7 +81,7 @@ class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
     model_type: Literal["TurbulentLengthScale"] = pd.Field(
         "TurbulentLengthScale", alias="modelType", const=True
     )
-    turbulent_length_scale: Optional[PositiveFloat] = pd.Field(alias="turbulentLengthScale")
+    turbulent_length_scale: Optional[pd.PositiveFloat] = pd.Field(alias="turbulentLengthScale")
 
 
 class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
@@ -91,7 +94,7 @@ class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
     model_type: Literal["ModifiedTurbulentViscosityRatio"] = pd.Field(
         "ModifiedTurbulentViscosityRatio", alias="modelType", const=True
     )
-    modified_turbulent_viscosity_ratio: Optional[PositiveFloat] = pd.Field(
+    modified_turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
         alias="modifiedTurbulentViscosityRatio"
     )
 
@@ -105,7 +108,7 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
     model_type: Literal["ModifiedTurbulentViscosity"] = pd.Field(
         "ModifiedTurbulentViscosity", alias="modelType", const=True
     )
-    modified_turbulent_viscosity: Optional[PositiveFloat] = pd.Field(
+    modified_turbulent_viscosity: Optional[pd.PositiveFloat] = pd.Field(
         alias="modifiedTurbulentViscosity"
     )
 
