@@ -3,8 +3,7 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.outputs.output_entities import Surface, SurfaceList
+from flow360.component.simulation.outputs.output_entities import Surface
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -14,7 +13,6 @@ from flow360.component.simulation.outputs.outputs import (
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -662,32 +660,30 @@ def surface_integral_output_config_with_global_setting():
                 output_fields=["primitiveVars", "T"],
             ),
             SurfaceIntegralOutput(  # Local
+                name="prb 110",
                 entities=[
-                    SurfaceList(
-                        name="prb 110",
-                        entities=[
-                            Surface(
-                                name="surface1", private_attribute_full_name="zoneName/surface1"
-                            ),
-                            Surface(name="surface2"),
-                        ],
-                    ),
-                    SurfaceList(
-                        name="prb 122",
-                        entities=[Surface(name="surface21"), Surface(name="surface22")],
-                    ),
+                    Surface(name="surface1", private_attribute_full_name="zoneName/surface1"),
+                    Surface(name="surface2"),
                 ],
-                output_fields=["primitiveVars", "Cp", "T"],
+                output_fields=["Cp"],
             ),
+            SurfaceIntegralOutput(
+                name="prb 122",
+                entities=[
+                    Surface(name="surface21"),
+                    Surface(name="surface22"),
+                ],
+                output_fields=["Mach"],
+            ),  # Local
         ],
         {
             "monitors": {
                 "prb 110": {
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["Cp", "primitiveVars", "T"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                 },
                 "prb 122": {
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["Mach", "primitiveVars", "T"],
                     "surfaces": ["surface21", "surface22"],
                 },
             },
@@ -738,7 +734,7 @@ def test_monitor_output(
                 "outputFields": ["primitiveVars", "Cp", "T"],
             },
             "prb 110": {
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["Cp", "primitiveVars", "T"],
                 "surfaces": ["zoneName/surface1", "surface2"],
             },
             "prb 12": {
@@ -746,12 +742,13 @@ def test_monitor_output(
                 "outputFields": ["primitiveVars", "Cp", "T"],
             },
             "prb 122": {
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["Mach", "primitiveVars", "T"],
                 "surfaces": ["surface21", "surface22"],
             },
         },
         "outputFields": [],
     }
+    print(">>>> ", json.dumps(translated["monitorOutput"], indent=4))
     assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
 
 

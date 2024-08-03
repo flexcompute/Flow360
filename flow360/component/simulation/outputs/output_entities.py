@@ -10,8 +10,7 @@ from flow360.component.flow360_params.flow360_fields import (
     IsoSurfaceFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
@@ -57,12 +56,6 @@ class Isosurface(_OutputItemBase):
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
     iso_value: float = pd.Field(description="Expect non-dimensional value.")
-
-
-class SurfaceList(_OutputItemBase):
-    """List of surfaces for integrals."""
-
-    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
 
 
 class ProbeGroup(_ProbeGroupEntityBase):

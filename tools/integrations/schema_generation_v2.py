@@ -67,7 +67,6 @@ from flow360.component.simulation.outputs.outputs import (
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -627,15 +626,22 @@ write_example(setting, "outputs", "IsosurfaceOutput")
 
 write_schemas(SurfaceIntegralOutput, "outputs", file_suffix="SurfaceIntegralOutput")
 with imperial_unit_system:
-    setting = SurfaceIntegralOutput(
-        frequency=12,
-        frequency_offset=1,
-        output_fields=["primitiveVars", "vorticity"],
-        entities=[
-            SurfaceList(name="inflow_integral", surfaces=[my_inflow1, my_inflow2]),
-            SurfaceList(name="outflow_integral", surfaces=[my_outflow]),
-        ],
-    )
+    setting = [
+        SurfaceIntegralOutput(
+            frequency=12,
+            frequency_offset=1,
+            output_fields=["primitiveVars", "vorticity"],
+            entities=[my_inflow1, my_inflow2],
+        ),
+        SurfaceIntegralOutput(
+            frequency=12,
+            frequency_offset=1,
+            output_fields=["primitiveVars", "Cp"],
+            entities=[
+                my_outflow,
+            ],
+        ),
+    ]
 write_example(setting, "outputs", "SurfaceIntegralOutput")
 
 write_schemas(ProbeOutput, "outputs", file_suffix="ProbeOutput")

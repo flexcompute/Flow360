@@ -25,7 +25,6 @@ from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     ProbeGroup,
     Slice,
-    SurfaceList,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
@@ -147,7 +146,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[SurfaceList]] = pd.Field(None, alias="monitors")
+    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 

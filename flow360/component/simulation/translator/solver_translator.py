@@ -2,6 +2,7 @@
 
 from typing import Type, Union
 
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.surface_models import (
@@ -38,7 +39,6 @@ from flow360.component.simulation.outputs.outputs import (
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -211,10 +211,13 @@ def inject_probe_info(entity: ProbeGroup):
     }
 
 
-def inject_surface_list_info(entity: SurfaceList):
+def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
+    assert isinstance(
+        entity, EntityList
+    ), f"the input entity must be an EntityList, but got: {type(entity)}"
     return {
-        "surfaces": [surface.full_name for surface in entity.entities.stored_entities],
+        "surfaces": [surface.full_name for surface in entity.stored_entities],
     }
 
 
@@ -330,6 +333,8 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
         to_list=False,
         translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
+        lump_list_of_entities=monitor_type is SurfaceIntegralOutput,
+        use_instance_name_as_key=monitor_type is SurfaceIntegralOutput,
     )
     return translated_output
 
