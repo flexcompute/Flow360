@@ -143,7 +143,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
-class SurfaceIntegralOutput(_AnimationSettings):
+class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
     name: Optional[str] = pd.Field(None)
@@ -152,7 +152,7 @@ class SurfaceIntegralOutput(_AnimationSettings):
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
-class ProbeOutput(_AnimationSettings):
+class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
