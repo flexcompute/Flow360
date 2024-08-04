@@ -620,6 +620,7 @@ def probe_output_config_with_global_setting():
     return (
         [
             ProbeOutput(  # Global
+                name="global setting",
                 output_fields=["primitiveVars", "T"],
             ),
             ProbeOutput(  # Local
@@ -668,6 +669,7 @@ def surface_integral_output_config_with_global_setting():
     return (
         [
             SurfaceIntegralOutput(  # Global
+                name="global setting",
                 output_fields=["primitiveVars", "T"],
             ),
             SurfaceIntegralOutput(  # Local

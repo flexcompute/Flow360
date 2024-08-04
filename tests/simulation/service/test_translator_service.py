@@ -331,6 +331,7 @@ def test_simulation_to_case_json():
                 "write_single_file": False,
             },
             {
+                "name": "my_integral",
                 "entities": {
                     "stored_entities": [
                         {
@@ -349,6 +350,7 @@ def test_simulation_to_case_json():
                 "output_type": "SurfaceIntegralOutput",
             },
             {
+                "name": "my_probe",
                 "entities": {
                     "stored_entities": [
                         {

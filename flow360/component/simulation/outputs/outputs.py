@@ -145,7 +145,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
-    name: Optional[str] = pd.Field(None)
+    name: str = pd.Field()
     entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
@@ -154,7 +154,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
 class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
-    name: Optional[str] = pd.Field(None)
+    name: str = pd.Field()
     entities: Optional[UniqueItemList[Point]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)

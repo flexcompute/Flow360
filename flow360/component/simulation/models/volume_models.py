@@ -106,7 +106,7 @@ class Fluid(PDEModelBase):
 
     initial_condition: Optional[
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
-    ] = pd.Field(None)
+    ] = pd.Field(None, discriminator="type")
 
     # pylint: disable=fixme
     # fixme: Add support for other initial conditions
