@@ -214,6 +214,7 @@ def inject_probe_info(entity: UniqueItemList):
 
     return {
         "monitor_locations": [item.location.value.tolist() for item in entity.items],
+        "type": "probe",
     }
 
 
@@ -221,6 +222,7 @@ def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
     return {
         "surfaces": [surface.full_name for surface in entity.stored_entities],
+        "type": "surfaceIntegral",
     }
 
 
@@ -428,6 +430,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
+    ##:: Step7: Get dummy translated["userDefinedFields"]
+    translated["userDefinedFields"] = []
     return translated
 
 

@@ -653,10 +653,12 @@ def probe_output_config_with_global_setting():
                 "prb 10": {
                     "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
+                    "type": "probe",
                 },
                 "prb 12": {
                     "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
+                    "type": "probe",
                 },
             },
             "outputFields": [],
@@ -694,10 +696,12 @@ def surface_integral_output_config_with_global_setting():
                 "prb 110": {
                     "outputFields": ["Cp", "primitiveVars", "T"],
                     "surfaces": ["zoneName/surface1", "surface2"],
+                    "type": "surfaceIntegral",
                 },
                 "prb 122": {
                     "outputFields": ["Mach", "primitiveVars", "T"],
                     "surfaces": ["surface21", "surface22"],
+                    "type": "surfaceIntegral",
                 },
             },
             "outputFields": [],
@@ -745,23 +749,26 @@ def test_monitor_output(
             "prb 10": {
                 "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
+                "type": "probe",
             },
             "prb 110": {
                 "outputFields": ["Cp", "primitiveVars", "T"],
                 "surfaces": ["zoneName/surface1", "surface2"],
+                "type": "surfaceIntegral",
             },
             "prb 12": {
                 "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
+                "type": "probe",
             },
             "prb 122": {
                 "outputFields": ["Mach", "primitiveVars", "T"],
                 "surfaces": ["surface21", "surface22"],
+                "type": "surfaceIntegral",
             },
         },
         "outputFields": [],
     }
-    print(">>>> ", json.dumps(translated["monitorOutput"], indent=4))
     assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
 
 

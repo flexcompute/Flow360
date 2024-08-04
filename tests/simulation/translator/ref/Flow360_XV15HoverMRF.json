@@ -122,5 +122,6 @@
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "startAverageIntegrationStep": -1
-    }
+    },
+    "userDefinedFields":[]
 }

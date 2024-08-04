@@ -198,5 +198,6 @@
             "thermalConductivity": 0.0239367,
             "volumetricHeatSource": 0.001
         }
-    }
+    },
+    "userDefinedFields":[]
 }
