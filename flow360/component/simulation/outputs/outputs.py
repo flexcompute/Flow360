@@ -23,7 +23,7 @@ from flow360.component.simulation.framework.unique_list import (
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
-    ProbeGroup,
+    Point,
     Slice,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
@@ -155,9 +155,13 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[ProbeGroup]] = pd.Field(None, alias="probe_groups")
+    entities: Optional[UniqueItemList[Point]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
+
+    def load_point_location_from_file(self, file_path: str):
+        """Load probe point locations from a file."""
+        raise NotImplementedError("Not implemented yet.")
 
 
 class AeroAcousticOutput(Flow360BaseModel):

@@ -15,12 +15,11 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.outputs.output_entities import Surface
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
 )
-from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 

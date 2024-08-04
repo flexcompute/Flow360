@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import List, Literal
+from typing import Literal
 
 import pydantic as pd
 
@@ -36,10 +36,6 @@ class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
 
 
-class _ProbeGroupEntityBase(EntityBase, metaclass=ABCMeta):
-    private_attribute_registry_bucket_name: Literal["ProbeEntityType"] = "ProbeEntityType"
-
-
 class Slice(_SliceEntityBase):
     """Slice output item."""
 
@@ -58,12 +54,10 @@ class Isosurface(_OutputItemBase):
     iso_value: float = pd.Field(description="Expect non-dimensional value.")
 
 
-class ProbeGroup(_ProbeGroupEntityBase):
-    """A group of coordinates that are used to probe the solution."""
+class Point(_OutputItemBase):
+    """A single point for probe output"""
 
-    private_attribute_entity_type_name: Literal["ProbeGroup"] = pd.Field("ProbeGroup", frozen=True)
+    name: str = pd.Field()
+    private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     # pylint: disable=no-member
-    locations: List[LengthType.Point] = pd.Field()
-
-    def from_csv_file(self):
-        """Load group of probe coordinates from csv file."""
+    location: LengthType.Point = pd.Field()

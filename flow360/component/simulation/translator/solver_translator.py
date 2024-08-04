@@ -3,7 +3,10 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
+from flow360.component.simulation.framework.unique_list import (
+    UniqueAliasedStringList,
+    UniqueItemList,
+)
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -34,7 +37,6 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -204,18 +206,19 @@ def inject_isosurface_info(entity: Isosurface):
     }
 
 
-def inject_probe_info(entity: ProbeGroup):
+def inject_probe_info(entity: UniqueItemList):
     """inject entity info"""
+    assert isinstance(
+        entity, UniqueItemList
+    ), f"the input entity must be an UniqueItemList, but got: {type(entity)}"
+
     return {
-        "monitor_locations": [item.value.tolist() for item in entity.locations],
+        "monitor_locations": [item.location.value.tolist() for item in entity.items],
     }
 
 
 def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
-    assert isinstance(
-        entity, EntityList
-    ), f"the input entity must be an EntityList, but got: {type(entity)}"
     return {
         "surfaces": [surface.full_name for surface in entity.stored_entities],
     }
@@ -333,8 +336,8 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
         to_list=False,
         translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
-        lump_list_of_entities=monitor_type is SurfaceIntegralOutput,
-        use_instance_name_as_key=monitor_type is SurfaceIntegralOutput,
+        lump_list_of_entities=True,
+        use_instance_name_as_key=True,
     )
     return translated_output
 

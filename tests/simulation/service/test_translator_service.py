@@ -330,6 +330,42 @@ def test_simulation_to_case_json():
                 "output_type": "SurfaceOutput",
                 "write_single_file": False,
             },
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "my_inflow1",
+                        },
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "my_inflow2",
+                        },
+                    ]
+                },
+                "output_fields": {"items": ["primitiveVars", "vorticity"]},
+                "output_type": "SurfaceIntegralOutput",
+            },
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "name": "DoesNotMatter1",
+                            "private_attribute_entity_type_name": "Point",
+                            "location": {"value": [1.0, 2.0, 3.0], "units": "ft"},
+                        },
+                        {
+                            "name": "DoesNotMatter2",
+                            "private_attribute_entity_type_name": "Point",
+                            "location": {"value": [1.0, 2.0, 5.0], "units": "ft"},
+                        },
+                    ]
+                },
+                "output_fields": {"items": ["primitiveVars", "vorticity"]},
+                "output_type": "ProbeOutput",
+            },
         ],
         "reference_geometry": {
             "area": {"units": "m**2", "value": 0.748844455929999},

@@ -3,12 +3,11 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.outputs.output_entities import Surface
+from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -18,6 +17,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import translate_output
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -623,14 +623,25 @@ def probe_output_config_with_global_setting():
                 output_fields=["primitiveVars", "T"],
             ),
             ProbeOutput(  # Local
+                name="prb 10",
                 entities=[
-                    ProbeGroup(
-                        name="prb 10",
-                        locations=[[1, 1.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                    Point(
+                        name="124",
+                        location=[1, 1.02, 0.03] * u.cm,
                     ),
-                    ProbeGroup(
-                        name="prb 12",
-                        locations=[[10, 10.02, 10.03] * u.cm],
+                    Point(
+                        name="asdfg",
+                        location=[0.0001, 0.02, 0.03] * u.m,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
+            ProbeOutput(  # Local
+                name="prb 12",
+                entities=[
+                    Point(
+                        name="asnbgoujba",
+                        location=[10, 10.02, 10.03] * u.cm,
                     ),
                 ],
                 output_fields=["primitiveVars", "Cp"],
