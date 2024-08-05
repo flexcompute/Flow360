@@ -1,0 +1,538 @@
+{
+    "meshing": {
+        "gap_treatment_strength": 0.0,
+        "refinement_factor": 1.45,
+        "refinements": [
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "angle_of_rotation": {
+                                "units": "degree",
+                                "value": 20.0
+                            },
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "center": {
+                                "units": "m",
+                                "value": [
+                                    1.0,
+                                    2.0,
+                                    3.0
+                                ]
+                            },
+                            "name": "my_box_default",
+                            "private_attribute_constructor": "default",
+                            "private_attribute_entity_type_name": "Box",
+                            "private_attribute_input_cache": {
+                                "axes": [
+                                    [
+                                        1.0,
+                                        0.0,
+                                        0.0
+                                    ],
+                                    [
+                                        0.0,
+                                        0.9396926207859084,
+                                        0.3420201433256687
+                                    ]
+                                ]
+                            },
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_zone_boundary_names": {
+                                "items": []
+                            },
+                            "size": {
+                                "units": "m",
+                                "value": [
+                                    2.0,
+                                    2.0,
+                                    3.0
+                                ]
+                            },
+                            "type_name": "Box"
+                        },
+                        {
+                            "angle_of_rotation": {
+                                "units": "rad",
+                                "value": -3.141592653589793
+                            },
+                            "axis_of_rotation": [
+                                0.894427190999916,
+                                0.447213595499958,
+                                0.0
+                            ],
+                            "center": {
+                                "units": "m",
+                                "value": [
+                                    7.0,
+                                    1.0,
+                                    2.0
+                                ]
+                            },
+                            "name": "my_box_from",
+                            "private_attribute_constructor": "from_principal_axes",
+                            "private_attribute_entity_type_name": "Box",
+                            "private_attribute_input_cache": {
+                                "axes": [
+                                    [
+                                        0.6,
+                                        0.8,
+                                        0.0
+                                    ],
+                                    [
+                                        0.8,
+                                        -0.6,
+                                        0.0
+                                    ]
+                                ],
+                                "center": {
+                                    "units": "m",
+                                    "value": [
+                                        7.0,
+                                        1.0,
+                                        2.0
+                                    ]
+                                },
+                                "name": "my_box_from",
+                                "size": {
+                                    "units": "m",
+                                    "value": [
+                                        2.0,
+                                        2.0,
+                                        3.0
+                                    ]
+                                }
+                            },
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_zone_boundary_names": {
+                                "items": []
+                            },
+                            "size": {
+                                "units": "m",
+                                "value": [
+                                    2.0,
+                                    2.0,
+                                    3.0
+                                ]
+                            },
+                            "type_name": "Box"
+                        },
+                        {
+                            "axis": [
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            "center": {
+                                "units": "m",
+                                "value": [
+                                    1.0,
+                                    2.0,
+                                    3.0
+                                ]
+                            },
+                            "height": {
+                                "units": "m",
+                                "value": 3.0
+                            },
+                            "name": "my_cylinder_default",
+                            "outer_radius": {
+                                "units": "m",
+                                "value": 2.0
+                            },
+                            "private_attribute_entity_type_name": "Cylinder",
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_zone_boundary_names": {
+                                "items": []
+                            }
+                        }
+                    ]
+                },
+                "refinement_type": "UniformRefinement",
+                "spacing": {
+                    "units": "cm",
+                    "value": 7.5
+                }
+            }
+        ],
+        "surface_layer_growth_rate": 1.2,
+        "volume_zones": [
+            {
+                "method": "auto",
+                "type": "AutomatedFarfield"
+            }
+        ]
+    },
+    "models": [
+        {
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "navier_stokes_solver": {
+                "CFL_multiplier": 1.0,
+                "absolute_tolerance": 1e-10,
+                "equation_evaluation_frequency": 1,
+                "kappa_MUSCL": -1.0,
+                "limit_pressure_density": false,
+                "limit_velocity": false,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "low_mach_preconditioner": false,
+                "max_force_jac_update_physical_steps": 0,
+                "numerical_dissipation_factor": 1.0,
+                "order_of_accuracy": 2,
+                "relative_tolerance": 0.0,
+                "type_name": "Compressible",
+                "update_jacobian_frequency": 4
+            },
+            "turbulence_model_solver": {
+                "CFL_multiplier": 2.0,
+                "DDES": false,
+                "absolute_tolerance": 1e-08,
+                "equation_evaluation_frequency": 4,
+                "grid_size_for_LES": "maxEdgeLength",
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "max_force_jac_update_physical_steps": 0,
+                "modeling_constants": {
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "type_name": "SpalartAllmarasConsts"
+                },
+                "order_of_accuracy": 2,
+                "quadratic_constitutive_relation": false,
+                "reconstruction_gradient_limiter": 0.5,
+                "relative_tolerance": 0.0,
+                "rotation_correction": false,
+                "type_name": "SpalartAllmaras",
+                "update_jacobian_frequency": 4
+            },
+            "type": "Fluid"
+        }
+    ],
+    "operating_condition": {
+        "alpha": {
+            "units": "degree",
+            "value": 5.0
+        },
+        "beta": {
+            "units": "degree",
+            "value": 0.0
+        },
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "units": "degree",
+                "value": 5.0
+            },
+            "beta": {
+                "units": "degree",
+                "value": 0.0
+            },
+            "mach": 0.8,
+            "thermal_state": {
+                "density": {
+                    "units": "kg/m**3",
+                    "value": 1.225
+                },
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {
+                            "units": "K",
+                            "value": 110.4
+                        },
+                        "reference_temperature": {
+                            "units": "K",
+                            "value": 273.15
+                        },
+                        "reference_viscosity": {
+                            "units": "Pa*s",
+                            "value": 1.716e-05
+                        }
+                    },
+                    "name": "air",
+                    "type": "air"
+                },
+                "private_attribute_constructor": "from_standard_atmosphere",
+                "private_attribute_input_cache": {
+                    "altitude": {
+                        "units": "m",
+                        "value": 1000.0
+                    },
+                    "temperature_offset": {
+                        "units": "K",
+                        "value": 0.0
+                    }
+                },
+                "temperature": {
+                    "units": "K",
+                    "value": 288.15
+                },
+                "type_name": "ThermalState"
+            }
+        },
+        "thermal_state": {
+            "density": {
+                "units": "kg/m**3",
+                "value": 1.225
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "private_attribute_constructor": "from_standard_atmosphere",
+            "private_attribute_input_cache": {
+                "altitude": {
+                    "units": "m",
+                    "value": 1000.0
+                },
+                "temperature_offset": {
+                    "units": "K",
+                    "value": 0.0
+                }
+            },
+            "temperature": {
+                "units": "K",
+                "value": 288.15
+            },
+            "type_name": "ThermalState"
+        },
+        "type_name": "AerospaceCondition",
+        "velocity_magnitude": {
+            "units": "m/s",
+            "value": 272.23520464657025
+        }
+    },
+    "outputs": [
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "SurfaceOutput 1",
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "yPlus",
+                    "Cf",
+                    "CfVec"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "registry": {
+            "internal_registry": {
+                "VolumetricEntityType": [
+                    {
+                        "angle_of_rotation": {
+                            "units": "degree",
+                            "value": 20.0
+                        },
+                        "axis_of_rotation": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                1.0,
+                                2.0,
+                                3.0
+                            ]
+                        },
+                        "name": "my_box_default",
+                        "private_attribute_constructor": "default",
+                        "private_attribute_entity_type_name": "Box",
+                        "private_attribute_input_cache": {
+                            "axes": [
+                                [
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                [
+                                    0.0,
+                                    0.9396926207859084,
+                                    0.3420201433256687
+                                ]
+                            ]
+                        },
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": []
+                        },
+                        "size": {
+                            "units": "m",
+                            "value": [
+                                2.0,
+                                2.0,
+                                3.0
+                            ]
+                        },
+                        "type_name": "Box"
+                    },
+                    {
+                        "angle_of_rotation": {
+                            "units": "rad",
+                            "value": -3.141592653589793
+                        },
+                        "axis_of_rotation": [
+                            0.894427190999916,
+                            0.447213595499958,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                7.0,
+                                1.0,
+                                2.0
+                            ]
+                        },
+                        "name": "my_box_from",
+                        "private_attribute_constructor": "from_principal_axes",
+                        "private_attribute_entity_type_name": "Box",
+                        "private_attribute_input_cache": {
+                            "axes": [
+                                [
+                                    0.6,
+                                    0.8,
+                                    0.0
+                                ],
+                                [
+                                    0.8,
+                                    -0.6,
+                                    0.0
+                                ]
+                            ],
+                            "center": {
+                                "units": "m",
+                                "value": [
+                                    7.0,
+                                    1.0,
+                                    2.0
+                                ]
+                            },
+                            "name": "my_box_from",
+                            "size": {
+                                "units": "m",
+                                "value": [
+                                    2.0,
+                                    2.0,
+                                    3.0
+                                ]
+                            }
+                        },
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": []
+                        },
+                        "size": {
+                            "units": "m",
+                            "value": [
+                                2.0,
+                                2.0,
+                                3.0
+                            ]
+                        },
+                        "type_name": "Box"
+                    },
+                    {
+                        "axis": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                1.0,
+                                2.0,
+                                3.0
+                            ]
+                        },
+                        "height": {
+                            "units": "m",
+                            "value": 3.0
+                        },
+                        "name": "my_cylinder_default",
+                        "outer_radius": {
+                            "units": "m",
+                            "value": 2.0
+                        },
+                        "private_attribute_entity_type_name": "Cylinder",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": []
+                        }
+                    },
+                    {
+                        "name": "fluid",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": [
+                                "farfield",
+                                "symmetric"
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "time_stepping": {
+        "CFL": {
+            "convergence_limiting_factor": 0.25,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "max_steps": 2000,
+        "order_of_accuracy": 2,
+        "type_name": "Steady"
+    },
+    "unit_system": {
+        "name": "SI"
+    },
+    "version": "24.2.0"
+}
