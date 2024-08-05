@@ -47,3 +47,40 @@ def test_bet_disk_initial_blade_direction_with_bet_name(create_steady_bet_disk):
         bet_disk = create_steady_bet_disk
         bet_disk.name = "custom_bet_disk_name"
         bet_disk.blade_line_chord = 0.1 * u.inch
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_disorder_alphas(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match="On one BET disk, the alphas are not in increasing order.",
+    ):
+        tmp = bet_disk.alphas[0]
+        bet_disk.alphas[0] = bet_disk.alphas[1]
+        bet_disk.alphas[1] = tmp
+        BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_duplicate_chords(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match="On the BET disk diskABC, it has duplicated radius at 150.0348189415042 in chords.",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.chords.append(bet_disk.chords[-1])
+        BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_duplicate_twists(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match="On the BET disk diskABC, it has duplicated radius at 150.0 in twists.",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.twists.append(bet_disk.twists[-1])
+        BETDisk.model_validate(bet_disk)

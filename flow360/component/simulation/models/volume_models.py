@@ -24,6 +24,8 @@ from flow360.component.simulation.models.solver_numerics import (
     TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.validation.validation_bet_disk import (
+    _check_bet_disk_alphas_in_order,
+    _check_bet_disk_duplicate_chords_or_twists,
     _check_bet_disk_initial_blade_direction,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
@@ -249,6 +251,16 @@ class BETDisk(Flow360BaseModel):
     def check_bet_disk_initial_blade_direction(self):
         """validate initial blade direction in BET disks"""
         return _check_bet_disk_initial_blade_direction(self)
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk_alphas_in_order(self):
+        """validate order of alphas in BET disks"""
+        return _check_bet_disk_alphas_in_order(self)
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk_duplicate_chords_or_twists(self):
+        """validate duplicates in chords and twists in BET disks"""
+        return _check_bet_disk_duplicate_chords_or_twists(self)
 
 
 class Rotation(Flow360BaseModel):

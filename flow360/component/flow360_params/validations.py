@@ -346,6 +346,7 @@ def _check_bet_disks_alphas_in_order(disk):
     return disk
 
 
+# pylint: disable=duplicate-code
 def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional[float]]:
     existing_radius = set()
     for item in radial_list:
