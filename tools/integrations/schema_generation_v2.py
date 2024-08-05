@@ -56,6 +56,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    GenericReferenceCondition,
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import Point
@@ -152,14 +153,21 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, file_suffix="")
 
 
 def write_example(
-    obj: Flow360BaseModel,
+    obj: Union[Flow360BaseModel, dict],
     folder_name,
     example_name,
     exclude_defaults=False,
     additional_fields: dict = {},
     exclude=None,
 ):
-    data = obj.model_dump(exclude_defaults=exclude_defaults, exclude=exclude, exclude_none=True)
+
+    if isinstance(obj, dict):
+        data = obj
+    elif isinstance(obj, Flow360BaseModel):
+        data = obj.model_dump(exclude_defaults=exclude_defaults, exclude=exclude, exclude_none=True)
+    else:
+        raise ValueError("obj should be either dict or Flow360BaseModel")
+
     data = merge_dicts_recursively(data, additional_fields)
     data_json = json.dumps(data, indent=2)
     os.makedirs(os.path.join(here, data_folder, folder_name), exist_ok=True)
@@ -353,7 +361,9 @@ with SI_unit_system:
 
 
 ###################### operating_condition ######################
-write_schemas(AerospaceCondition, "operating_condition")
+write_schemas(AerospaceCondition, "operating_condition", "aerospace_condition")
+write_schemas(GenericReferenceCondition, "operating_condition", "generic_reference_condition")
+
 with SI_unit_system:
     ac = AerospaceCondition(
         velocity_magnitude=1 * u.m / u.s,
@@ -666,3 +676,113 @@ user_defined_dynamic = UserDefinedDynamic(
     output_target=my_cylinder_1,
 )
 write_example(user_defined_dynamic, "UDD", "UserDefinedDynamic")
+
+###################### Multi Constructor example  ######################
+# 1. Operating condition and thermal state both use from function:
+example_dict = {
+    "type_name": "AerospaceCondition",
+    "private_attribute_constructor": "from_mach",
+    "private_attribute_input_cache": {
+        "alpha": {"value": 5.0, "units": "degree"},
+        "beta": {"value": 0.0, "units": "degree"},
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "from_standard_atmosphere",
+            "private_attribute_input_cache": {
+                "altitude": {"value": 1000.0, "units": "m"},
+                "temperature_offset": {"value": 0.0, "units": "K"},
+            },
+        },
+        "mach": 0.8,
+    },
+}
+write_example(example_dict, "multi_constructor", "recursive_from_function.json")
+
+# 2. Operating condition and thermal state both use default constructor:
+example_dict = {
+    "type_name": "AerospaceCondition",
+    "private_attribute_constructor": "default",
+    "private_attribute_input_cache": {},
+    "alpha": {"value": 5.0, "units": "degree"},
+    "beta": {"value": 0.0, "units": "degree"},
+    "velocity_magnitude": {"value": 0.8, "units": "km/s"},
+    "thermal_state": {
+        "type_name": "ThermalState",
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {},
+        "temperature": {"value": 288.15, "units": "K"},
+        "density": {"value": 1.225, "units": "kg/m**3"},
+        "material": {
+            "type": "air",
+            "name": "air",
+            "dynamic_viscosity": {
+                "reference_viscosity": {"value": 1.716e-05, "units": "Pa*s"},
+                "reference_temperature": {"value": 273.15, "units": "K"},
+                "effective_temperature": {"value": 110.4, "units": "K"},
+            },
+        },
+    },
+    "reference_velocity_magnitude": {"value": 100.0, "units": "m/s"},
+}
+write_example(example_dict, "multi_constructor", "default_constructor.json")
+
+# 3. Operating condition use default constructor thermal state use from function
+example_dict = {
+    "type_name": "AerospaceCondition",
+    "private_attribute_constructor": "default",
+    "private_attribute_input_cache": {},
+    "alpha": {"value": 5.0, "units": "degree"},
+    "beta": {"value": 0.0, "units": "degree"},
+    "velocity_magnitude": {"value": 0.8, "units": "km/s"},
+    "thermal_state": {
+        "type_name": "ThermalState",
+        "private_attribute_constructor": "from_standard_atmosphere",
+        "private_attribute_input_cache": {
+            "altitude": {"value": 1000.0, "units": "m"},
+            "temperature_offset": {"value": 0.0, "units": "K"},
+        },
+    },
+    "reference_velocity_magnitude": {"value": 100.0, "units": "m/s"},
+}
+write_example(example_dict, "multi_constructor", "default_and_from_constructor.json")
+
+
+# 4. entity list of boxes:
+example_dict = {
+    "entities": {
+        "stored_entities": [
+            {
+                "private_attribute_entity_type_name": "Box",
+                "name": "my_box_default",
+                "private_attribute_zone_boundary_names": {"items": []},
+                "type_name": "Box",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "center": {"value": [1.0, 2.0, 3.0], "units": "m"},
+                "size": {"value": [2.0, 2.0, 3.0], "units": "m"},
+                "axis_of_rotation": [1.0, 0.0, 0.0],
+                "angle_of_rotation": {"value": 20.0, "units": "degree"},
+            },
+            {
+                "type_name": "Box",
+                "private_attribute_constructor": "from_principal_axes",
+                "private_attribute_input_cache": {
+                    "axes": [[0.6, 0.8, 0.0], [0.8, -0.6, 0.0]],
+                    "center": {"value": [7.0, 1.0, 2.0], "units": "m"},
+                    "size": {"value": [2.0, 2.0, 3.0], "units": "m"},
+                    "name": "my_box_from",
+                },
+            },
+            {
+                "private_attribute_entity_type_name": "Cylinder",
+                "name": "my_cylinder_default",
+                "private_attribute_zone_boundary_names": {"items": []},
+                "axis": [0.0, 1.0, 0.0],
+                "center": {"value": [1.0, 2.0, 3.0], "units": "m"},
+                "height": {"value": 3.0, "units": "m"},
+                "outer_radius": {"value": 2.0, "units": "m"},
+            },
+        ]
+    }
+}
+write_example(example_dict, "multi_constructor", "box_mixed_with_cylinder.json")
