@@ -41,9 +41,8 @@ class ProgressCallbackInterface(metaclass=ABCMeta):
 
 def _get_dynamic_upload_config(file_size) -> TransferConfig:
     # Predefined chunk sizes
-    pre_defined_chunk_sizes = [5 * 1024 * 1024, 50 * 1024 * 1024, 500 * 1024 * 1024]
 
-    def select_chunk_size(file_size, chunk_sizes, max_parts=10000):
+    def select_chunk_size(file_size, max_parts=10000):
         """
         Select an appropriate chunk size for a given file size based on predefined chunk sizes.
 
@@ -52,22 +51,16 @@ def _get_dynamic_upload_config(file_size) -> TransferConfig:
         :param max_parts: Maximum number of parts allowed for multipart upload.
         :return: Optimal chunk size from the provided list.
         """
+        MIN_CHINK_SIZE = 5 * 1024 * 1024
         # Sort the list of chunk sizes in ascending order
-        sorted_chunk_sizes = sorted(chunk_sizes)
 
         # Iterate over the chunk sizes to find the smallest one that results in
         # a number of parts less than or equal to the max_parts limit
-        for chunk_size in sorted_chunk_sizes:
-            num_parts = math.ceil(file_size / chunk_size)
-            if num_parts <= max_parts:
-                return chunk_size
-
-        # If no chunk size is small enough, return the largest chunk size
-        return sorted_chunk_sizes[-1]
+        return max(int(MIN_CHINK_SIZE), math.ceil(file_size / max_parts))
 
     return TransferConfig(
         max_concurrency=50,
-        multipart_chunksize=select_chunk_size(file_size, chunk_sizes=pre_defined_chunk_sizes),
+        multipart_chunksize=select_chunk_size(file_size),
         use_threads=True,
     )
 
