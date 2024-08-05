@@ -9,6 +9,7 @@ from typing import Annotated, List, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _set_boundary_full_name_with_zone_name,
@@ -226,19 +227,14 @@ class SimulationParams(_ParamModelBase):
             )
         return v
 
-    @pd.model_validator(mode="after")
-    def _move_registry_to_asset_cache(self):
+    def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
-        self.private_attribute_asset_cache.registry.clear()
-        register_entity_list(
-            self,
-            self.private_attribute_asset_cache.registry,
-        )  # Clear so that the next param can use this.
-        return self
+        registry.clear()
+        register_entity_list(self, registry)
+        return registry
 
-    @pd.model_validator(mode="after")
-    def _update_entity_private_attrs(self):
+    def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
         Once the SimulationParams is set, extract and upate information
         into all used entities by parsing the params.
@@ -250,12 +246,12 @@ class SimulationParams(_ParamModelBase):
             for volume in self.meshing.volume_zones:
                 if isinstance(volume, AutomatedFarfield):
                     _set_boundary_full_name_with_zone_name(
-                        self.private_attribute_asset_cache.registry,
+                        registry,
                         "farfield",
                         volume.private_attribute_entity.name,
                     )
                     _set_boundary_full_name_with_zone_name(
-                        self.private_attribute_asset_cache.registry,
+                        registry,
                         "symmetric*",
                         volume.private_attribute_entity.name,
                     )
@@ -264,18 +260,28 @@ class SimulationParams(_ParamModelBase):
                     # TODO: Implement this
                     pass
 
-        return self
+        return registry
+
+    def _get_used_entity_registry(self) -> EntityRegistry:
+        """
+        Get a entity registry that collects all the entities used in the simulation.
+        And also try to update the entities now that we have a global view of the simulation.
+        """
+        registry = EntityRegistry()
+        registry = self._move_registry_to_asset_cache(registry)
+        registry = self._update_entity_private_attrs(registry)
+        return registry
 
     ##:: Internal Util functions
     def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
         """
-        Update the zone info from volume mesh. Will be executed in the casePipeline as part of preprocessing.
+        Update the zone info from volume mesh.
+        Will be executed in the casePipeline as part of preprocessing.
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
+        used_entity_registry = self._get_used_entity_registry()
         _update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
-        _update_zone_boundaries_with_metadata(
-            self.private_attribute_asset_cache.registry, volume_mesh_meta_data
-        )
+        _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self
