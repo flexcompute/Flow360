@@ -23,7 +23,7 @@ from flow360.component.simulation.models.solver_numerics import (
     TransitionModelSolver,
     TurbulenceModelSolverType,
 )
-from flow360.component.simulation.models.validation.validation_BETDisk import (
+from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
