@@ -379,8 +379,8 @@ def createBETDiskSteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
 
 def createBETDiskUnsteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
     bet_disk = createBETDiskSteady(cylinder_entity, pitch_in_degree, rpm)
-    bet_disk.blade_line_chord = 25 * u.inch
     bet_disk.initial_blade_direction = (1, 0, 0)
+    bet_disk.blade_line_chord = 25 * u.inch
     return bet_disk
 
 
