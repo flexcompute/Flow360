@@ -51,3 +51,15 @@ def _check_bet_disk_duplicate_chords_or_twists(bet_disk):
             f"On {disk_name}, it has duplicated radius at {duplicated_radius} in twists."
         )
     return bet_disk
+
+
+def _check_bet_disk_sectional_radius_and_polars(bet_disk):
+    disk_name = _get_bet_disk_name(bet_disk)
+    radiuses = bet_disk.sectional_radiuses
+    polars = bet_disk.sectional_polars
+    if len(radiuses) != len(polars):
+        raise ValueError(
+            f"On {disk_name}, the length of sectional_radiuses ({len(radiuses)})"
+            " is not the same as that of sectional_polars ({len(polars)})."
+        )
+    return bet_disk

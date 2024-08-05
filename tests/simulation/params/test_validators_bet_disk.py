@@ -84,3 +84,15 @@ def test_bet_disk_duplicate_twists(create_steady_bet_disk):
         bet_disk.name = "diskABC"
         bet_disk.twists.append(bet_disk.twists[-1])
         BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match="On the BET disk diskABC, the length of sectional_radiuses .* is not the same as that of sectional_polars .*.",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.sectional_radiuses.append(bet_disk.sectional_radiuses[-1])
+        BETDisk.model_validate(bet_disk)

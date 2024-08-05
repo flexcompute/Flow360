@@ -27,6 +27,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_alphas_in_order,
     _check_bet_disk_duplicate_chords_or_twists,
     _check_bet_disk_initial_blade_direction,
+    _check_bet_disk_sectional_radius_and_polars,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
@@ -261,6 +262,11 @@ class BETDisk(Flow360BaseModel):
     def check_bet_disk_duplicate_chords_or_twists(self):
         """validate duplicates in chords and twists in BET disks"""
         return _check_bet_disk_duplicate_chords_or_twists(self)
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk_sectional_radius_and_polars(self):
+        """validate duplicates in chords and twists in BET disks"""
+        return _check_bet_disk_sectional_radius_and_polars(self)
 
 
 class Rotation(Flow360BaseModel):
