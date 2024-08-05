@@ -91,8 +91,44 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="On the BET disk diskABC, the length of sectional_radiuses .* is not the same as that of sectional_polars .*.",
+        match=r"On the BET disk diskABC, the length of sectional_radiuses \(7\) is not the same as that of sectional_polars \(6\).",
     ):
         bet_disk.name = "diskABC"
         bet_disk.sectional_radiuses.append(bet_disk.sectional_radiuses[-1])
+        BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match=r"On the BET disk diskABC, \(cross section: 0\): number of mach_numbers = 2, but the first dimension of lift_coeffs is 1",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.mach_numbers.append(bet_disk.mach_numbers[-1])
+        BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_3d_coefficients_dimension_wrong_re_numbers(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match=r"On the BET disk diskABC, \(cross section: 0\) \(Mach index \(0-based\) 0\): number of Reynolds = 2, but the second dimension of lift_coeffs is 1",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.reynolds_numbers.append(bet_disk.reynolds_numbers[-1])
+        BETDisk.model_validate(bet_disk)
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match=r"On the BET disk diskABC, \(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 18, but the third dimension of lift_coeffs is 17.",
+    ):
+        bet_disk.name = "diskABC"
+        bet_disk.alphas.append(bet_disk.alphas[-1])
         BETDisk.model_validate(bet_disk)

@@ -24,6 +24,7 @@ from flow360.component.simulation.models.solver_numerics import (
     TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.validation.validation_bet_disk import (
+    _check_bet_disk_3d_coefficients_in_polars,
     _check_bet_disk_alphas_in_order,
     _check_bet_disk_duplicate_chords_or_twists,
     _check_bet_disk_initial_blade_direction,
@@ -267,6 +268,11 @@ class BETDisk(Flow360BaseModel):
     def check_bet_disk_sectional_radius_and_polars(self):
         """validate duplicates in chords and twists in BET disks"""
         return _check_bet_disk_sectional_radius_and_polars(self)
+
+    @pd.model_validator(mode="after")
+    def check_bet_disk_3d_coefficients_in_polars(self):
+        """validate dimension of 3d coefficients in polars"""
+        return _check_bet_disk_3d_coefficients_in_polars(self)
 
 
 class Rotation(Flow360BaseModel):
