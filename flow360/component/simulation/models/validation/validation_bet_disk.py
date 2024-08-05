@@ -16,6 +16,11 @@ def _check_bet_disk_initial_blade_direction(bet_disk):
             f"On {disk_name}, the initial_blade_direction"
             " is required to specify since its blade_line_chord is non-zero."
         )
+    if bet_disk.initial_blade_direction is not None and bet_disk.blade_line_chord == 0:
+        raise ValueError(
+            f"On {disk_name}, the blade_line_chord has to be positive"
+            " since its initial_blade_direction is specified."
+        )
     return bet_disk
 
 

@@ -26,6 +26,16 @@ def change_test_dir(request, monkeypatch):
 
 
 @pytest.mark.usefixtures("array_equality_override")
+def test_bet_disk_blade_line_chord(create_steady_bet_disk):
+    bet_disk = create_steady_bet_disk
+    with pytest.raises(
+        ValueError,
+        match="On one BET disk, the blade_line_chord has to be positive since its initial_blade_direction is specified.",
+    ):
+        bet_disk.initial_blade_direction = (1, 0, 0)
+
+
+@pytest.mark.usefixtures("array_equality_override")
 def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     BETDisk.model_validate(bet_disk)
