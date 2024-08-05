@@ -3,10 +3,7 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import (
-    UniqueAliasedStringList,
-    UniqueItemList,
-)
+from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -427,8 +424,6 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
 
-    ##:: Step7: Get dummy translated["userDefinedFields"]
-    translated["userDefinedFields"] = []
     return translated
 
 

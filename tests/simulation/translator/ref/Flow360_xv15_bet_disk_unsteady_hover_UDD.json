@@ -519,6 +519,5 @@
         ],
         "outputFormat": "tecplot",
         "startAverageIntegrationStep": -1
-    },
-    "userDefinedFields":[]
+    }
 }

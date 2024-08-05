@@ -122,6 +122,5 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
-    },
-    "userDefinedFields":[]
+    }
 }

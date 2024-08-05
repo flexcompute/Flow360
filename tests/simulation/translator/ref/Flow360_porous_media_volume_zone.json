@@ -176,6 +176,5 @@
             "zoneType": "mesh",
             "volumetricHeatSource": 0.0
         }
-    ],
-    "userDefinedFields":[]
+    ]
 }
