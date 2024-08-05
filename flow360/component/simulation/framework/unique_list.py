@@ -48,7 +48,7 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
     We will **not** try to remove duplicate items as choice is user's preference.
     """
 
-    items: Annotated[List, {"uniqueItems": True}, pd.Field()]
+    items: Annotated[List, {"uniqueItems": True}]
 
     @pd.field_validator("items", mode="after")
     @classmethod
