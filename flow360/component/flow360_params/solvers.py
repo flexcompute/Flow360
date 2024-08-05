@@ -600,6 +600,8 @@ class NavierStokesSolverLegacy(NavierStokesSolver, LegacyModel):
             "lowDissipationControlFactors": self.low_dissipation_control_factors,
             "lowMachPreconditioner": self.low_mach_preconditioner,
             "lowMachPreconditionerThreshold": self.low_mach_preconditioner_threshold,
+            "debugType": self.debug_type,
+            "debugPoint": self.debug_point,
         }
 
         if self.linear_iterations is not None and model["linearSolverConfig"] is not None:
