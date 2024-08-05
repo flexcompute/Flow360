@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import List, Literal
+from typing import Literal
 
 import pydantic as pd
 
@@ -10,8 +10,7 @@ from flow360.component.flow360_params.flow360_fields import (
     IsoSurfaceFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
@@ -37,8 +36,8 @@ class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
 
 
-class _ProbeGroupEntityBase(EntityBase, metaclass=ABCMeta):
-    private_attribute_registry_bucket_name: Literal["ProbeEntityType"] = "ProbeEntityType"
+class _PointEntityBase(EntityBase, metaclass=ABCMeta):
+    private_attribute_registry_bucket_name: Literal["PointEntityType"] = "PointEntityType"
 
 
 class Slice(_SliceEntityBase):
@@ -59,18 +58,9 @@ class Isosurface(_OutputItemBase):
     iso_value: float = pd.Field(description="Expect non-dimensional value.")
 
 
-class SurfaceList(_OutputItemBase):
-    """List of surfaces for integrals."""
+class Point(_PointEntityBase):
+    """A single point for probe output"""
 
-    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
-
-
-class ProbeGroup(_ProbeGroupEntityBase):
-    """A group of coordinates that are used to probe the solution."""
-
-    private_attribute_entity_type_name: Literal["ProbeGroup"] = pd.Field("ProbeGroup", frozen=True)
+    private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     # pylint: disable=no-member
-    locations: List[LengthType.Point] = pd.Field()
-
-    def from_csv_file(self):
-        """Load group of probe coordinates from csv file."""
+    location: LengthType.Point = pd.Field()

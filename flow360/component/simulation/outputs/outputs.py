@@ -23,9 +23,8 @@ from flow360.component.simulation.framework.unique_list import (
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
-    ProbeGroup,
+    Point,
     Slice,
-    SurfaceList,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
@@ -143,22 +142,26 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
-class SurfaceIntegralOutput(_AnimationSettings):
+class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
-    name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[SurfaceList]] = pd.Field(None, alias="monitors")
+    name: str = pd.Field()
+    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
-class ProbeOutput(_AnimationSettings):
+class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
-    name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[ProbeGroup]] = pd.Field(None, alias="probe_groups")
+    name: str = pd.Field()
+    entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
+
+    def load_point_location_from_file(self, file_path: str):
+        """Load probe point locations from a file."""
+        raise NotImplementedError("Not implemented yet.")
 
 
 class AeroAcousticOutput(Flow360BaseModel):

@@ -15,12 +15,11 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.outputs.output_entities import Surface, SurfaceList
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
 )
-from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 
@@ -160,13 +159,11 @@ def test_automated_farfield_surface_usage():
             outputs=[
                 SurfaceOutput(entities=my_farfield.farfield, output_fields=["Cp"]),
                 SurfaceIntegralOutput(
-                    entities=SurfaceList(
-                        name="prb 110",
-                        entities=[
-                            my_farfield.symmetry_planes,
-                            Surface(name="surface2"),
-                        ],
-                    ),
+                    name="prb 110",
+                    entities=[
+                        my_farfield.symmetry_planes,
+                        Surface(name="surface2"),
+                    ],
                     output_fields=["Cp"],
                 ),
             ],

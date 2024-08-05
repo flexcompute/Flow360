@@ -3,23 +3,21 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.outputs.output_entities import Surface, SurfaceList
+from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import translate_output
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -622,17 +620,29 @@ def probe_output_config_with_global_setting():
     return (
         [
             ProbeOutput(  # Global
+                name="global setting",
                 output_fields=["primitiveVars", "T"],
             ),
             ProbeOutput(  # Local
+                name="prb 10",
                 entities=[
-                    ProbeGroup(
-                        name="prb 10",
-                        locations=[[1, 1.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                    Point(
+                        name="124",
+                        location=[1, 1.02, 0.03] * u.cm,
                     ),
-                    ProbeGroup(
-                        name="prb 12",
-                        locations=[[10, 10.02, 10.03] * u.cm],
+                    Point(
+                        name="asdfg",
+                        location=[0.0001, 0.02, 0.03] * u.m,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
+            ProbeOutput(  # Local
+                name="prb 12",
+                entities=[
+                    Point(
+                        name="asnbgoujba",
+                        location=[10, 10.02, 10.03] * u.cm,
                     ),
                 ],
                 output_fields=["primitiveVars", "Cp"],
@@ -641,12 +651,14 @@ def probe_output_config_with_global_setting():
         {
             "monitors": {
                 "prb 10": {
-                    "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
+                    "type": "probe",
                 },
                 "prb 12": {
-                    "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
+                    "type": "probe",
                 },
             },
             "outputFields": [],
@@ -659,36 +671,37 @@ def surface_integral_output_config_with_global_setting():
     return (
         [
             SurfaceIntegralOutput(  # Global
+                name="global setting",
                 output_fields=["primitiveVars", "T"],
             ),
             SurfaceIntegralOutput(  # Local
+                name="prb 110",
                 entities=[
-                    SurfaceList(
-                        name="prb 110",
-                        entities=[
-                            Surface(
-                                name="surface1", private_attribute_full_name="zoneName/surface1"
-                            ),
-                            Surface(name="surface2"),
-                        ],
-                    ),
-                    SurfaceList(
-                        name="prb 122",
-                        entities=[Surface(name="surface21"), Surface(name="surface22")],
-                    ),
+                    Surface(name="surface1", private_attribute_full_name="zoneName/surface1"),
+                    Surface(name="surface2"),
                 ],
-                output_fields=["primitiveVars", "Cp", "T"],
+                output_fields=["Cp"],
             ),
+            SurfaceIntegralOutput(
+                name="prb 122",
+                entities=[
+                    Surface(name="surface21"),
+                    Surface(name="surface22"),
+                ],
+                output_fields=["Mach"],
+            ),  # Local
         ],
         {
             "monitors": {
                 "prb 110": {
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["Cp", "primitiveVars", "T"],
                     "surfaces": ["zoneName/surface1", "surface2"],
+                    "type": "surfaceIntegral",
                 },
                 "prb 122": {
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["Mach", "primitiveVars", "T"],
                     "surfaces": ["surface21", "surface22"],
+                    "type": "surfaceIntegral",
                 },
             },
             "outputFields": [],
@@ -734,20 +747,24 @@ def test_monitor_output(
     ref = {
         "monitors": {
             "prb 10": {
-                "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
+                "type": "probe",
             },
             "prb 110": {
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["Cp", "primitiveVars", "T"],
                 "surfaces": ["zoneName/surface1", "surface2"],
+                "type": "surfaceIntegral",
             },
             "prb 12": {
-                "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
+                "type": "probe",
             },
             "prb 122": {
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["Mach", "primitiveVars", "T"],
                 "surfaces": ["surface21", "surface22"],
+                "type": "surfaceIntegral",
             },
         },
         "outputFields": [],

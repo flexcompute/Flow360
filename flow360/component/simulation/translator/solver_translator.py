@@ -2,6 +2,7 @@
 
 from typing import Type, Union
 
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.surface_models import (
@@ -33,12 +34,10 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -204,17 +203,19 @@ def inject_isosurface_info(entity: Isosurface):
     }
 
 
-def inject_probe_info(entity: ProbeGroup):
+def inject_probe_info(entity: EntityList):
     """inject entity info"""
     return {
-        "monitor_locations": [item.value.tolist() for item in entity.locations],
+        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
+        "type": "probe",
     }
 
 
-def inject_surface_list_info(entity: SurfaceList):
+def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
     return {
-        "surfaces": [surface.full_name for surface in entity.entities.stored_entities],
+        "surfaces": [surface.full_name for surface in entity.stored_entities],
+        "type": "surfaceIntegral",
     }
 
 
@@ -330,6 +331,8 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
         to_list=False,
         translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
+        lump_list_of_entities=True,
+        use_instance_name_as_key=True,
     )
     return translated_output
 
@@ -420,6 +423,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
     return translated
 
 

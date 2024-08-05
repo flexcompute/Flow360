@@ -167,7 +167,7 @@ def getattr_by_path(obj, path: Union[str, list], *args):
 def get_attribute_from_instance_list(
     obj_list: list,
     class_type,
-    attribute_name: (str, list),
+    attribute_name: Union[str, list],
     only_find_when_entities_none: bool = False,
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
@@ -222,6 +222,8 @@ def translate_setting_and_apply_to_all_entities(
     entity_injection_func=lambda x, **kwargs: {},
     pass_translated_setting_to_entity_injection=False,
     custom_output_dict_entries=False,
+    lump_list_of_entities=False,
+    use_instance_name_as_key=False,
     **kwargs,
 ):
     """Translate settings and apply them to all entities of a given type.
@@ -264,10 +266,21 @@ def translate_setting_and_apply_to_all_entities(
                 if obj.entities is None:
                     continue
                 if isinstance(obj.entities, EntityList):
-                    list_of_entities = obj.entities.stored_entities
+                    list_of_entities = (
+                        obj.entities.stored_entities
+                        if lump_list_of_entities is False
+                        else [obj.entities]
+                    )
                 elif isinstance(obj.entities, UniqueItemList):
-                    list_of_entities = obj.entities.items
+                    list_of_entities = (
+                        obj.entities.items if lump_list_of_entities is False else [obj.entities]
+                    )
             elif "entity_pairs" in obj.model_fields:
+                # Note: This is only used in Periodic BC and lump_list_of_entities is not relavant
+                if lump_list_of_entities:
+                    raise NotImplementedError(
+                        "[Internal Error]: lump_list_of_entities cannot be used with entity_pairs"
+                    )
                 list_of_entities = obj.entity_pairs.items
 
             translated_setting = translation_func(obj, **translation_func_kwargs)
@@ -281,7 +294,14 @@ def translate_setting_and_apply_to_all_entities(
                     if custom_output_dict_entries:
                         output.update(entity_injection_func(entity, **entity_injection_kwargs))
                     else:
-                        key_name = _get_key_name(entity)
+                        if use_instance_name_as_key is True and lump_list_of_entities is False:
+                            raise NotImplementedError(
+                                "[Internal Error]: use_instance_name_as_key cannot be used"
+                                " when lump_list_of_entities is True"
+                            )
+                        key_name = (
+                            _get_key_name(entity) if use_instance_name_as_key is False else obj.name
+                        )
                         if output.get(key_name) is None:
                             output[key_name] = entity_injection_func(
                                 entity, **entity_injection_kwargs

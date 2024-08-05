@@ -59,16 +59,15 @@ from flow360.component.simulation.operating_condition.operating_condition import
     GenericReferenceCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
-    ProbeGroup,
     ProbeOutput,
     Slice,
     SliceOutput,
     SurfaceIntegralOutput,
-    SurfaceList,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -294,7 +293,8 @@ with SI_unit_system:
         ],
         outputs=[
             ProbeOutput(
-                probe_groups=[ProbeGroup(name="my_probe", locations=[[1, 2, 3]])],
+                name="my_probe",
+                entities=[Point(name="-asf124", location=[1, 2, 3])],
                 output_fields=["Cp"],
             ),
             SliceOutput(
@@ -638,25 +638,18 @@ write_example(setting, "outputs", "IsosurfaceOutput")
 write_schemas(SurfaceIntegralOutput, "outputs", file_suffix="SurfaceIntegralOutput")
 with imperial_unit_system:
     setting = SurfaceIntegralOutput(
-        frequency=12,
-        frequency_offset=1,
         output_fields=["primitiveVars", "vorticity"],
-        entities=[
-            SurfaceList(name="inflow_integral", surfaces=[my_inflow1, my_inflow2]),
-            SurfaceList(name="outflow_integral", surfaces=[my_outflow]),
-        ],
+        entities=[my_inflow1, my_inflow2],
     )
 write_example(setting, "outputs", "SurfaceIntegralOutput")
 
 write_schemas(ProbeOutput, "outputs", file_suffix="ProbeOutput")
 with imperial_unit_system:
     setting = ProbeOutput(
-        frequency=12,
-        frequency_offset=1,
         output_fields=["primitiveVars", "vorticity"],
         entities=[
-            ProbeGroup(name="the_name1", locations=[(1, 2, 3), (4, 5, 6)]),
-            ProbeGroup(name="the_name2", locations=[(1, 3, 5), (2, 4, 6)]),
+            Point(name="DoesNotMatter1", location=(1, 2, 3)),
+            Point(name="DoesNotMatter2", location=(1, 2, 5)),
         ],
     )
 write_example(setting, "outputs", "ProbeOutput")
