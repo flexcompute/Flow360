@@ -651,12 +651,12 @@ def probe_output_config_with_global_setting():
         {
             "monitors": {
                 "prb 10": {
-                    "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
                     "type": "probe",
                 },
                 "prb 12": {
-                    "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                     "outputFields": ["primitiveVars", "Cp", "T"],
                     "type": "probe",
                 },
@@ -747,7 +747,7 @@ def test_monitor_output(
     ref = {
         "monitors": {
             "prb 10": {
-                "monitor_locations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
                 "type": "probe",
             },
@@ -757,7 +757,7 @@ def test_monitor_output(
                 "type": "surfaceIntegral",
             },
             "prb 12": {
-                "monitor_locations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                 "outputFields": ["primitiveVars", "Cp", "T"],
                 "type": "probe",
             },

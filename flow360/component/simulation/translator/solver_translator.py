@@ -213,7 +213,7 @@ def inject_probe_info(entity: UniqueItemList):
     ), f"the input entity must be an UniqueItemList, but got: {type(entity)}"
 
     return {
-        "monitor_locations": [item.location.value.tolist() for item in entity.items],
+        "monitorLocations": [item.location.value.tolist() for item in entity.items],
         "type": "probe",
     }
 
