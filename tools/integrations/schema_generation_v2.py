@@ -759,7 +759,6 @@ example_dict = {
     "entities": {
         "stored_entities": [
             {
-                "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_entity_type_name": "Box",
                 "name": "my_box_default",
                 "private_attribute_zone_boundary_names": {"items": []},
@@ -782,7 +781,6 @@ example_dict = {
                 },
             },
             {
-                "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_entity_type_name": "Cylinder",
                 "name": "my_cylinder_default",
                 "private_attribute_zone_boundary_names": {"items": []},
