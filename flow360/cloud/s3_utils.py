@@ -43,7 +43,7 @@ def _get_dynamic_upload_config(file_size) -> TransferConfig:
     # Predefined chunk sizes
     pre_defined_chunk_sizes = [5 * 1024 * 1024, 50 * 1024 * 1024, 500 * 1024 * 1024]
 
-    def select_chunk_size(file_size, chunk_sizes=pre_defined_chunk_sizes, max_parts=10000):
+    def select_chunk_size(file_size, chunk_sizes, max_parts=10000):
         """
         Select an appropriate chunk size for a given file size based on predefined chunk sizes.
 
@@ -67,7 +67,7 @@ def _get_dynamic_upload_config(file_size) -> TransferConfig:
 
     return TransferConfig(
         max_concurrency=50,
-        multipart_chunksize=select_chunk_size(file_size),
+        multipart_chunksize=select_chunk_size(file_size, chunk_sizes=pre_defined_chunk_sizes),
         use_threads=True,
     )
 
