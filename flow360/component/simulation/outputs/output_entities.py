@@ -36,6 +36,10 @@ class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
 
 
+class _PointEntityBase(EntityBase, metaclass=ABCMeta):
+    private_attribute_registry_bucket_name: Literal["PointEntityType"] = "PointEntityType"
+
+
 class Slice(_SliceEntityBase):
     """Slice output item."""
 
@@ -54,10 +58,9 @@ class Isosurface(_OutputItemBase):
     iso_value: float = pd.Field(description="Expect non-dimensional value.")
 
 
-class Point(_OutputItemBase):
+class Point(_PointEntityBase):
     """A single point for probe output"""
 
-    name: str = pd.Field()
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     # pylint: disable=no-member
     location: LengthType.Point = pd.Field()

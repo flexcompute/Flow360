@@ -62,14 +62,11 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
         if isinstance(input_data, list):
             return {"items": input_data}
         if isinstance(input_data, dict):
-            # Add alias "stored_entities" so front end can monitor change in entities.
-            if "items" not in input_data and "stored_entities" not in input_data:
+            if "items" not in input_data:
                 raise KeyError(
                     f"Invalid input to `entities` [UniqueItemList], dict {input_data} is missing the key 'items'."
                 )
-            if "items" in input_data:
-                return {"items": input_data["items"]}
-            return {"items": input_data["stored_entities"]}
+            return {"items": input_data["items"]}
         # Single reference to an entity
         return {"items": [input_data]}
 

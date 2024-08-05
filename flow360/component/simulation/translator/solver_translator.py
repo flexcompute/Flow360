@@ -206,14 +206,10 @@ def inject_isosurface_info(entity: Isosurface):
     }
 
 
-def inject_probe_info(entity: UniqueItemList):
+def inject_probe_info(entity: EntityList):
     """inject entity info"""
-    assert isinstance(
-        entity, UniqueItemList
-    ), f"the input entity must be an UniqueItemList, but got: {type(entity)}"
-
     return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.items],
+        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
         "type": "probe",
     }
 

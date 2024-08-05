@@ -155,7 +155,7 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field()
-    entities: Optional[UniqueItemList[Point]] = pd.Field(None, alias="probe_points")
+    entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
