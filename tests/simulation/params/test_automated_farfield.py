@@ -172,7 +172,7 @@ def test_automated_farfield_surface_usage():
             ],
         )
 
-    # Test that the GhostSurface will have updated full name through model_validators
+    # Test that the GhostSurface will have updated full name through model_validators after entity register has been constructed
     with SI_unit_system:
         my_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
         param = SimulationParams(
@@ -186,6 +186,7 @@ def test_automated_farfield_surface_usage():
                 ],
             ),
         )
+    param._get_used_entity_registry()
     assert (
         param.models[0].entities.stored_entities[0].private_attribute_full_name == "fluid/farfield"
     )
