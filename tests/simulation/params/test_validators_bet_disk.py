@@ -76,7 +76,7 @@ def test_bet_disk_duplicate_chords(create_steady_bet_disk):
     ):
         bet_disk.name = "diskABC"
         bet_disk.chords.append(bet_disk.chords[-1])
-        BETDisk.model_validate(bet_disk)
+        BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_duplicate_twists(create_steady_bet_disk):
@@ -87,7 +87,7 @@ def test_bet_disk_duplicate_twists(create_steady_bet_disk):
     ):
         bet_disk.name = "diskABC"
         bet_disk.twists.append(bet_disk.twists[-1])
-        BETDisk.model_validate(bet_disk)
+        BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk):

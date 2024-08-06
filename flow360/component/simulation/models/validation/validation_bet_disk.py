@@ -37,14 +37,18 @@ def _check_has_duplicate_in_one_radial_list(radial_list):
     return False, None
 
 
-def _check_bet_disk_duplicate_chords_or_twists(bet_disk):
-    has_duplicate, duplicated_radius = _check_has_duplicate_in_one_radial_list(bet_disk.chords)
+def _check_bet_disk_duplicate_chords(value, info: ValidationInfo):
+    has_duplicate, duplicated_radius = _check_has_duplicate_in_one_radial_list(value)
     if has_duplicate:
         raise ValueError(f"it has duplicated radius at {duplicated_radius} in chords.")
-    has_duplicate, duplicated_radius = _check_has_duplicate_in_one_radial_list(bet_disk.twists)
+    return value
+
+
+def _check_bet_disk_duplicate_twists(value, info: ValidationInfo):
+    has_duplicate, duplicated_radius = _check_has_duplicate_in_one_radial_list(value)
     if has_duplicate:
         raise ValueError(f"it has duplicated radius at {duplicated_radius} in twists.")
-    return bet_disk
+    return value
 
 
 def _check_bet_disk_sectional_radius_and_polars(bet_disk):

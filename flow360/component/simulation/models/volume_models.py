@@ -26,7 +26,8 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_3d_coefficients_in_polars,
     _check_bet_disk_alphas_in_order,
-    _check_bet_disk_duplicate_chords_or_twists,
+    _check_bet_disk_duplicate_chords,
+    _check_bet_disk_duplicate_twists,
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
@@ -265,11 +266,19 @@ class BETDisk(Flow360BaseModel):
         """validate order of alphas in BET disks"""
         return _check_bet_disk_alphas_in_order(value, info)
 
-    @pd.model_validator(mode="after")
+    @pd.field_validator("chords", mode="after")
+    @classmethod
     @_validator_append_instance_name
-    def check_bet_disk_duplicate_chords_or_twists(self):
-        """validate duplicates in chords and twists in BET disks"""
-        return _check_bet_disk_duplicate_chords_or_twists(self)
+    def check_bet_disk_duplicate_chords(cls, value, info: pd.ValidationInfo):
+        """validate duplicates in chords in BET disks"""
+        return _check_bet_disk_duplicate_chords(value, info)
+
+    @pd.field_validator("twists", mode="after")
+    @classmethod
+    @_validator_append_instance_name
+    def check_bet_disk_duplicate_twists(cls, value, info: pd.ValidationInfo):
+        """validate duplicates in twists in BET disks"""
+        return _check_bet_disk_duplicate_twists(value, info)
 
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
