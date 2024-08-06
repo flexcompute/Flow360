@@ -2,11 +2,7 @@
 validation BETDisk
 """
 
-
-# pylint: disable=missing-function-docstring
-def _get_bet_disk_name(bet_disk):
-    disk_name = "one BET disk" if bet_disk.name is None else f"the BET disk {bet_disk.name}"
-    return disk_name
+from flow360.component.simulation.validation_utils import _get_bet_disk_name
 
 
 def _check_bet_disk_initial_blade_direction(bet_disk):
