@@ -342,7 +342,7 @@
         {
             "frequency": -1,
             "frequency_offset": 0,
-            "name": "SurfaceOutput 1",
+            "name": "Surface output 1",
             "output_fields": {
                 "items": [
                     "Cp",
