@@ -137,8 +137,9 @@ class CaseMeta(AssetMetaBaseModel):
     parent_id: Union[str, None] = pd.Field(alias="parentId")
     status: Flow360Status = pd.Field()
 
-    # pylint: disable=no-self-argument
+    # Resource status change, revisit when updating the case class
     @pd.validator("status")
+    @classmethod
     def set_status_type(cls, value: Flow360Status):
         """set_status_type when case uploaded"""
         if value is Flow360Status.UPLOADED:

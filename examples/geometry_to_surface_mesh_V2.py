@@ -15,6 +15,8 @@ fl.Env.dev.active()
 
 geometry_draft = Geometry.from_file(Airplane.geometry, solver_version="workbench-24.8")
 geometry = geometry_draft.submit()
+geometry.show_available_groupings(verbose_mode=True)
+
 with SI_unit_system:
     params = SimulationParams(
         meshing=MeshingParams(

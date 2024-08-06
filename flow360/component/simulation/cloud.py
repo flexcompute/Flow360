@@ -219,7 +219,7 @@ def _run(
                 source_asset.project_id, source_asset.id, source_asset.__class__.__name__
             )
             log.info("Waiting for the process to finish...")
-            time.sleep(10)
+            time.sleep(2)
     return destination_obj
 
 

@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Tuple, Union, final
+from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -130,7 +130,7 @@ class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
 @final
 class Edge(_EdgeEntityBase):
     """
-    Edge with edge name defined in the geometry file
+    Edge which contains a set of grouped edges from geometry.
     """
 
     ### Warning: Please do not change this as it affects registry bucketing.
@@ -138,6 +138,13 @@ class Edge(_EdgeEntityBase):
         "EdgeEntityType", frozen=True
     )
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
+    private_attribute_tag_key: Optional[str] = pd.Field(
+        None,
+        description="The tag/attribute string used to gourp geometry edges to form this `Edge`.",
+    )
+    private_attribute_sub_components: Optional[List[str]] = pd.Field(
+        [], description="The edge ids in geometry that composed into this `Edge`."
+    )
 
 
 @final
@@ -299,6 +306,13 @@ class Surface(_SurfaceEntityBase):
         frozen=True,
         description="This is required when generated from volume mesh "
         + "but not required when from surface mesh meta.",
+    )
+    private_attribute_tag_key: Optional[str] = pd.Field(
+        None,
+        description="The tag/attribute string used to gourp geometry faces to form this `Surface`.",
+    )
+    private_attribute_sub_components: Optional[List[str]] = pd.Field(
+        [], description="The face ids in geometry that composed into this `Surface`."
     )
 
     # pylint: disable=fixme

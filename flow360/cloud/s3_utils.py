@@ -320,6 +320,7 @@ class S3TransferType(Enum):
         overwrite: bool = True,
         progress_callback=None,
         log_error=True,
+        verbose=True,
     ):
         """
         Download a file from s3.
@@ -356,15 +357,19 @@ class S3TransferType(Enum):
             )
         else:
             with _get_progress(_S3Action.DOWNLOADING) as progress:
-                progress.start()
-                task_id = progress.add_task(
-                    "download",
-                    filename=os.path.basename(remote_file_name),
-                    total=meta_data.get("ContentLength", 0),
-                )
+                if verbose is True:
+                    progress.start()
+                    task_id = progress.add_task(
+                        "download",
+                        filename=os.path.basename(remote_file_name),
+                        total=meta_data.get("ContentLength", 0),
+                    )
 
-                def _call_back(bytes_in_chunk):
-                    progress.update(task_id, advance=bytes_in_chunk)
+                    def _call_back(bytes_in_chunk):
+                        progress.update(task_id, advance=bytes_in_chunk)
+
+                else:
+                    _call_back = None
 
                 client.download_file(
                     Bucket=token.get_bucket(),
@@ -372,7 +377,8 @@ class S3TransferType(Enum):
                     Key=token.get_s3_key(),
                     Callback=_call_back,
                 )
-        log.info(f"Saved to {to_file}")
+        if verbose is True:
+            log.info(f"Saved to {to_file}")
         return to_file
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:

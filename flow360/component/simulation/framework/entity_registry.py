@@ -27,6 +27,10 @@ class EntityRegistryBucket:
         """Return all entities in the bucket."""
         return self._source.get(self._key, [])
 
+    def _get_property_values(self, property_name: str) -> list:
+        """Get the given property of all the entities in the bucket as a list"""
+        return [getattr(entity, property_name) for entity in self.entities]
+
 
 class EntityRegistry(Flow360BaseModel):
     """
