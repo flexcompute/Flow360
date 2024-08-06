@@ -60,12 +60,12 @@ def test_bet_disk_disorder_alphas(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="On one of the BET disks, the alphas are not in increasing order.",
+        match="In one of the BETDisk: the alphas are not in increasing order.",
     ):
         tmp = bet_disk.alphas[0]
         bet_disk.alphas[0] = bet_disk.alphas[1]
         bet_disk.alphas[1] = tmp
-        BETDisk.model_validate(bet_disk)
+        BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_duplicate_chords(create_steady_bet_disk):

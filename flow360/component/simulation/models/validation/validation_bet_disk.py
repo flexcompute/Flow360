@@ -2,10 +2,12 @@
 validation BETDisk
 """
 
+from pydantic import ValidationInfo
+
 from flow360.component.simulation.validation_utils import _get_bet_disk_name
 
 
-def _check_bet_disk_initial_blade_direction(bet_disk):
+def _check_bet_disk_initial_blade_direction_and_blade_line_chord(bet_disk):
     disk_name = _get_bet_disk_name(bet_disk)
     if bet_disk.blade_line_chord > 0 and bet_disk.initial_blade_direction is None:
         raise ValueError(
@@ -20,12 +22,11 @@ def _check_bet_disk_initial_blade_direction(bet_disk):
     return bet_disk
 
 
-def _check_bet_disk_alphas_in_order(bet_disk):
-    disk_name = _get_bet_disk_name(bet_disk)
-    alphas = bet_disk.alphas
-    if alphas != sorted(alphas):
-        raise ValueError(f"On {disk_name}, the alphas are not in increasing order.")
-    return bet_disk
+# pylint: disable=unused-argument
+def _check_bet_disk_alphas_in_order(value, info: ValidationInfo):
+    if value != sorted(value):
+        raise ValueError("the alphas are not in increasing order.")
+    return value
 
 
 def _check_has_duplicate_in_one_radial_list(radial_list):

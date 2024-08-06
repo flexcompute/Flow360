@@ -27,7 +27,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_3d_coefficients_in_polars,
     _check_bet_disk_alphas_in_order,
     _check_bet_disk_duplicate_chords_or_twists,
-    _check_bet_disk_initial_blade_direction,
+    _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
@@ -38,6 +38,9 @@ from flow360.component.simulation.unit_system import (
     InverseLengthType,
     LengthType,
     PressureType,
+)
+from flow360.component.simulation.validation_utils import (
+    _field_validator_append_instance_name,
 )
 
 # pylint: disable=fixme
@@ -252,12 +255,14 @@ class BETDisk(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def check_bet_disk_initial_blade_direction(self):
         """validate initial blade direction in BET disks"""
-        return _check_bet_disk_initial_blade_direction(self)
+        return _check_bet_disk_initial_blade_direction_and_blade_line_chord(self)
 
-    @pd.model_validator(mode="after")
-    def check_bet_disk_alphas_in_order(self):
+    @pd.field_validator("alphas", mode="after")
+    @classmethod
+    @_field_validator_append_instance_name
+    def check_bet_disk_alphas_in_order(cls, value, info: pd.ValidationInfo):
         """validate order of alphas in BET disks"""
-        return _check_bet_disk_alphas_in_order(self)
+        return _check_bet_disk_alphas_in_order(value, info)
 
     @pd.model_validator(mode="after")
     def check_bet_disk_duplicate_chords_or_twists(self):
