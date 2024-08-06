@@ -29,7 +29,7 @@ def test_bet_disk_blade_line_chord(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="On one of the BET disks, the blade_line_chord has to be positive since its initial_blade_direction is specified.",
+        match="In one of the BETDisk: the blade_line_chord has to be positive since its initial_blade_direction is specified.",
     ):
         bet_disk.initial_blade_direction = (1, 0, 0)
 
@@ -40,7 +40,7 @@ def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
 
     with pytest.raises(
         ValueError,
-        match="On one of the BET disks, the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
+        match="In one of the BETDisk: the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
     ):
         bet_disk_2 = bet_disk.model_copy(deep=True)
         bet_disk_2.blade_line_chord = 0.1 * u.inch
@@ -49,7 +49,7 @@ def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
 def test_bet_disk_initial_blade_direction_with_bet_name(create_steady_bet_disk):
     with pytest.raises(
         ValueError,
-        match="On BET disk: custom_bet_disk_name, the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
+        match="BETDisk with name 'custom_bet_disk_name': the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
     ):
         bet_disk = create_steady_bet_disk
         bet_disk.name = "custom_bet_disk_name"
@@ -72,7 +72,7 @@ def test_bet_disk_duplicate_chords(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="On BET disk: diskABC, it has duplicated radius at 150.0348189415042 in chords.",
+        match="BETDisk with name 'diskABC': it has duplicated radius at 150.0348189415042 in chords.",
     ):
         bet_disk.name = "diskABC"
         bet_disk.chords.append(bet_disk.chords[-1])
@@ -83,7 +83,7 @@ def test_bet_disk_duplicate_twists(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="On BET disk: diskABC, it has duplicated radius at 150.0 in twists.",
+        match="BETDisk with name 'diskABC': it has duplicated radius at 150.0 in twists.",
     ):
         bet_disk.name = "diskABC"
         bet_disk.twists.append(bet_disk.twists[-1])
@@ -94,7 +94,7 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match=r"On BET disk: diskABC, the length of sectional_radiuses \(7\) is not the same as that of sectional_polars \(6\).",
+        match=r"BETDisk with name 'diskABC': the length of sectional_radiuses \(7\) is not the same as that of sectional_polars \(6\).",
     ):
         bet_disk.name = "diskABC"
         bet_disk.sectional_radiuses.append(bet_disk.sectional_radiuses[-1])
@@ -105,7 +105,7 @@ def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match=r"On BET disk: diskABC, \(cross section: 0\): number of mach_numbers = 2, but the first dimension of lift_coeffs is 1",
+        match=r"BETDisk with name 'diskABC': \(cross section: 0\): number of mach_numbers = 2, but the first dimension of lift_coeffs is 1",
     ):
         bet_disk.name = "diskABC"
         bet_disk.mach_numbers.append(bet_disk.mach_numbers[-1])
@@ -116,7 +116,7 @@ def test_bet_disk_3d_coefficients_dimension_wrong_re_numbers(create_steady_bet_d
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match=r"On BET disk: diskABC, \(cross section: 0\) \(Mach index \(0-based\) 0\): number of Reynolds = 2, but the second dimension of lift_coeffs is 1",
+        match=r"BETDisk with name 'diskABC': \(cross section: 0\) \(Mach index \(0-based\) 0\): number of Reynolds = 2, but the second dimension of lift_coeffs is 1",
     ):
         bet_disk.name = "diskABC"
         bet_disk.reynolds_numbers.append(bet_disk.reynolds_numbers[-1])
@@ -127,7 +127,7 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match=r"On BET disk: diskABC, \(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 18, but the third dimension of lift_coeffs is 17.",
+        match=r"BETDisk with name 'diskABC': \(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 18, but the third dimension of lift_coeffs is 17.",
     ):
         bet_disk.name = "diskABC"
         bet_disk.alphas.append(bet_disk.alphas[-1])
