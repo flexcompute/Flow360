@@ -41,6 +41,9 @@ jobs:
         poetry cache clear --all pypi
         Remove-Item -Recurse -Force $env:USERPROFILE\AppData\Local\pypoetry\Cache\virtualenvs
     - name: Install dependencies
-      run: poetry install
-    - name: Run tests
-      run: poetry run pytest -rA
+      run: |
+        poetry install
+    - name: Run simulation_params tests
+      run: poetry run pytest -rA tests/simulation
+    - name: Run flow360_params tests
+      run: poetry run pytest -rA --ignore tests/simulation

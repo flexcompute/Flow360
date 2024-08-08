@@ -1,0 +1,94 @@
+{
+    "meshing": {
+        "refinements": [
+            {
+                "_id": "some_id",
+                "refinement_type": "BoundaryLayer",
+                "first_layer_thickness": {
+                    "value": 0.001,
+                    "units": "m"
+                }
+            },
+            {
+                "_id": "some_id",
+                "refinement_type": "SurfaceRefinement",
+                "max_edge_length": {
+                    "value": 0.15,
+                    "units": "m"
+                },
+                "curvature_resolution_angle": {
+                    "value": 10.0,
+                    "units": "degree"
+                }
+            }
+        ]
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                1.0,
+                2.0,
+                3.0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": 1.0,
+            "units": "m"
+        },
+        "area": {
+            "value": 1.0,
+            "units": "cm**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "alpha": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "velocity_magnitude": {
+            "value": 100.0,
+            "units": "m/s"
+        }
+    },
+    "models": [
+        {
+            "_id": "some_id",
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "fluid/rightWing"
+                    },
+                    {
+                        "name": "fluid/leftWing"
+                    },
+                    {
+                        "name": "fluid/fuselage"
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "some_id",
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "fluid/farfield"
+                    }
+                ]
+            }
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 700
+    }
+}

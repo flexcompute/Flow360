@@ -6,7 +6,7 @@ import pytest
 import unyt
 
 import flow360
-import flow360.units as u
+import flow360.component.flow360_params.units as u
 from flow360.component.flow360_params.flow360_output import (
     IsoSurface,
     IsoSurfaceOutput,

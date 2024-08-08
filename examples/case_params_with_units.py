@@ -4,7 +4,7 @@ from pprint import pprint
 import flow360 as fl
 from flow360 import log
 from flow360 import units as u
-from flow360.services import validate_flow360_params_model
+from flow360.component.flow360_params.services import validate_model
 
 log.set_logging_level("DEBUG")
 
@@ -53,7 +53,7 @@ params_as_dict = params_copy.dict()
 
 del params_as_dict["fluid_properties"]
 
-errors, warnings = validate_flow360_params_model(params_as_dict, "SI")
+errors, warnings = validate_model(params_as_dict, "SI")
 pprint(errors)
 
 params_as_json = params.json(indent=4)
@@ -72,5 +72,5 @@ print(params_as_json)
 
 # Class name removal from loc
 params_as_dict["freestream"]["foo"] = "bar"
-errors, warnings = validate_flow360_params_model(params_as_dict, "SI")
+errors, warnings = validate_model(params_as_dict, "SI")
 pprint(errors)

@@ -1,0 +1,120 @@
+{
+    "freestream": {
+        "alphaAngle": -90.0,
+        "betaAngle": 0.0,
+        "Mach": 0.049999999999999996,
+        "Temperature": 288.15,
+        "muRef": 0.005
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 2000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 35
+        },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
+    "volumeZones": {
+        "blk-1": {
+            "referenceFrame": {
+                "axisOfRotation": [
+                    0.0,
+                    0.0,
+                    -1.0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    -1.32392
+                ],
+                "omegaRadians": 0.24997473604984027
+            },
+            "modelType": "FluidDynamics"
+        }
+    },
+    "boundaries": {
+        "blk-1/Cylinder": {
+            "type": "NoSlipWall"
+        },
+        "blk-1/OuterWall": {
+            "type": "NoSlipWall",
+            "velocity": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "blk-1/InletOutlet": {
+            "type": "Freestream"
+        }
+    },
+    "volumeOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "Mach",
+            "VelocityRelative"
+        ],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "computeTimeAverages": false,
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "blk-1/Cylinder": {
+                "outputFields": [
+                    "primitiveVars",
+                    "Cp",
+                    "Cf",
+                    "yPlus"
+                ]
+            },
+            "blk-1/OuterWall": {
+                "outputFields": [
+                    "primitiveVars",
+                    "Cp",
+                    "Cf",
+                    "yPlus"
+                ]
+            }
+        },
+        "writeSingleFile": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    }
+}

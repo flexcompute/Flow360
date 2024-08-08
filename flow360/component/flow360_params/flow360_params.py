@@ -8,12 +8,28 @@ from __future__ import annotations
 
 import json
 from abc import ABCMeta
-from typing import Dict, List, NoReturn, Optional, Union, get_args
+from typing import Dict, List, Optional, Tuple, Union, get_args
 
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from flow360 import units
+from flow360.component.flow360_params.unit_system import (
+    AngularVelocityType,
+    AreaType,
+    DensityType,
+    Flow360UnitSystem,
+    LengthType,
+    PressureType,
+    SIUnitSystem,
+    TemperatureType,
+    UnitSystem,
+    UnitSystemType,
+    VelocityType,
+    ViscosityType,
+    flow360_unit_system,
+    u,
+    unit_system_manager,
+)
 from flow360.flags import Flags
 
 from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
@@ -25,16 +41,9 @@ from ...exceptions import (
 from ...log import log
 from ...user_config import UserConfig
 from ...version import __version__
-from ..types import (
-    Axis,
-    Coordinate,
-    NonNegativeFloat,
-    PositiveFloat,
-    PositiveInt,
-    Size,
-    Vector,
-)
+from ..types import Axis, Coordinate, Vector
 from ..utils import convert_legacy_names, process_expressions
+from . import units
 from .boundaries import BoundaryType
 from .conversions import ExtraDimensionedProperty
 from .flow360_legacy import (
@@ -88,23 +97,6 @@ from .solvers import (
 )
 from .time_stepping import BaseTimeStepping, SteadyTimeStepping, TimeStepping
 from .turbulence_quantities import TurbulenceQuantitiesType, TurbulentViscosityRatio
-from .unit_system import (
-    AngularVelocityType,
-    AreaType,
-    DensityType,
-    Flow360UnitSystem,
-    LengthType,
-    PressureType,
-    SIUnitSystem,
-    TemperatureType,
-    UnitSystem,
-    UnitSystemType,
-    VelocityType,
-    ViscosityType,
-    flow360_unit_system,
-    u,
-    unit_system_manager,
-)
 from .updater import updater
 from .validations import (
     _check_aero_acoustics,
@@ -121,7 +113,6 @@ from .validations import (
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
     _check_low_mach_preconditioner_output,
-    _check_low_mach_preconditioner_support,
     _check_numerical_dissipation_factor_output,
     _check_output_fields,
     _check_periodic_boundary_mapping,
@@ -229,7 +220,7 @@ class ActuatorDisk(Flow360BaseModel):
     axis_thrust : Axis
         direction of thrust, it is a unit vector
 
-    thickness : PositiveFloat
+    thickness :pd.PositiveFloat
         Thickness of Actuator Disk in mesh units
 
     force_per_area : :class:`ForcePerArea`
@@ -248,7 +239,7 @@ class ActuatorDisk(Flow360BaseModel):
 
     center: Coordinate
     axis_thrust: Axis = pd.Field(alias="axisThrust", displayed="Axis thrust")
-    thickness: PositiveFloat
+    thickness: pd.PositiveFloat
     force_per_area: ForcePerArea = pd.Field(alias="forcePerArea", displayed="Force per area")
 
 
@@ -514,7 +505,9 @@ class FreestreamBase(Flow360BaseModel, metaclass=ABCMeta):
     model_type: str
     alpha: Optional[float] = pd.Field(alias="alphaAngle", default=0, displayed="Alpha angle [deg]")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0, displayed="Beta angle [deg]")
-    turbulent_viscosity_ratio: Optional[PositiveFloat] = pd.Field(alias="turbulentViscosityRatio")
+    turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
     ## Legacy update pending.
     ## The validation for turbulenceQuantities (make sure we have correct combinations, maybe in root validator)
     ## is also pending. TODO
@@ -549,10 +542,12 @@ class FreestreamFromMach(FreestreamBase):
     """
 
     model_type: Literal["FromMach"] = pd.Field("FromMach", alias="modelType", const=True)
-    Mach: PositiveFloat = pd.Field(displayed="Mach number")
-    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
+    Mach: pd.PositiveFloat = pd.Field(displayed="Mach number")
+    Mach_ref: Optional[pd.PositiveFloat] = pd.Field(
+        alias="MachRef", displayed="Reference Mach number"
+    )
+    mu_ref: pd.PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    temperature: Union[pd.PositiveFloat, Literal[-1]] = pd.Field(
         alias="Temperature",
         displayed="Temperature [K]",
         options=["Temperature [K]", "Constant temperature"],
@@ -574,12 +569,14 @@ class FreestreamFromMachReynolds(FreestreamBase):
     model_type: Literal["FromMachReynolds"] = pd.Field(
         "FromMachReynolds", alias="modelType", const=True
     )
-    Mach: PositiveFloat = pd.Field(displayed="Mach number")
-    Mach_ref: Optional[PositiveFloat] = pd.Field(alias="MachRef", displayed="Reference Mach number")
+    Mach: pd.PositiveFloat = pd.Field(displayed="Mach number")
+    Mach_ref: Optional[pd.PositiveFloat] = pd.Field(
+        alias="MachRef", displayed="Reference Mach number"
+    )
     Reynolds: Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]] = pd.Field(
         displayed="Reynolds number", options=["Reynolds", "Reynolds = inf"]
     )
-    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
+    temperature: Union[pd.PositiveFloat, Literal[-1]] = pd.Field(
         alias="Temperature",
         displayed="Temperature [K]",
         options=["Temperature [K]", "Constant temperature"],
@@ -601,8 +598,8 @@ class ZeroFreestream(FreestreamBase):
     model_type: Literal["ZeroMach"] = pd.Field("ZeroMach", alias="modelType", const=True)
     Mach: Literal[0] = pd.Field(0, const=True, displayed="Mach number")
     Mach_ref: pd.confloat(gt=1.0e-12) = pd.Field(alias="MachRef", displayed="Reference Mach number")
-    mu_ref: PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
-    temperature: Union[PositiveFloat, Literal[-1]] = pd.Field(
+    mu_ref: pd.PositiveFloat = pd.Field(alias="muRef", displayed="Dynamic viscosity [non-dim]")
+    temperature: Union[pd.PositiveFloat, Literal[-1]] = pd.Field(
         alias="Temperature",
         displayed="Temperature [K]",
         options=["Temperature [K]", "Constant temperature"],
@@ -895,8 +892,10 @@ class BETDisk(Flow360BaseModel):
     tip_gap: Optional[Union[LengthType.NonNegative, Literal["inf"]]] = pd.Field(
         alias="tipGap", displayed="Tip gap", default="inf"
     )
-    mach_numbers: List[NonNegativeFloat] = pd.Field(alias="MachNumbers", displayed="Mach numbers")
-    reynolds_numbers: List[PositiveFloat] = pd.Field(
+    mach_numbers: List[pd.NonNegativeFloat] = pd.Field(
+        alias="MachNumbers", displayed="Mach numbers"
+    )
+    reynolds_numbers: List[pd.PositiveFloat] = pd.Field(
         alias="ReynoldsNumbers", displayed="Reynolds numbers"
     )
     alphas: List[float] = pd.Field()
@@ -978,7 +977,9 @@ class PorousMediumBox(PorousMediumBase):
     zone_type: Literal["box"] = pd.Field("box", alias="zoneType", const=True)
     center: LengthType.Point = pd.Field()
     lengths: LengthType.Moment = pd.Field()
-    windowing_lengths: Optional[Size] = pd.Field(alias="windowingLengths")
+    windowing_lengths: Optional[Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat]] = (
+        pd.Field(alias="windowingLengths")
+    )
 
 
 class PorousMediumVolumeZoneLegacy(Flow360BaseModel):
@@ -1373,14 +1374,6 @@ class Flow360Params(Flow360BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator
-    def check_low_mach_preconditioner_support(cls, values):
-        """
-        Detect scenarios under which low mach preconditioning is not yet supported.
-        """
-        return _check_low_mach_preconditioner_support(values)
-
-    # pylint: disable=no-self-argument
-    @pd.root_validator
     def add_heat_equation_solver_if_HeatTransferVolumeZone_used(cls, values):
         """
         Add heat_equation_solver if it is not specified but HeatTransferVolumeZone is used.
@@ -1513,13 +1506,15 @@ class FreestreamLegacy(LegacyModel):
     Reynolds: Optional[Union[pd.confloat(gt=0, allow_inf_nan=False), Literal["inf"]]] = pd.Field(
         displayed="Reynolds number"
     )
-    Mach: Optional[NonNegativeFloat] = pd.Field()
-    Mach_Ref: Optional[PositiveFloat] = pd.Field(alias="MachRef")
-    mu_ref: Optional[PositiveFloat] = pd.Field(alias="muRef")
-    temperature: Union[Literal[-1], PositiveFloat] = pd.Field(alias="Temperature")
+    Mach: Optional[pd.NonNegativeFloat] = pd.Field()
+    Mach_Ref: Optional[pd.PositiveFloat] = pd.Field(alias="MachRef")
+    mu_ref: Optional[pd.PositiveFloat] = pd.Field(alias="muRef")
+    temperature: Union[Literal[-1], pd.PositiveFloat] = pd.Field(alias="Temperature")
     alpha: Optional[float] = pd.Field(alias="alphaAngle")
     beta: Optional[float] = pd.Field(alias="betaAngle", default=0)
-    turbulent_viscosity_ratio: Optional[PositiveFloat] = pd.Field(alias="turbulentViscosityRatio")
+    turbulent_viscosity_ratio: Optional[pd.PositiveFloat] = pd.Field(
+        alias="turbulentViscosityRatio"
+    )
     turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
         alias="turbulenceQuantities"
     )
@@ -1595,11 +1590,11 @@ class FreestreamLegacy(LegacyModel):
 class TimeSteppingLegacy(BaseTimeStepping, LegacyModel):
     """:class: `TimeSteppingLegacy` class"""
 
-    physical_steps: Optional[PositiveInt] = pd.Field(alias="physicalSteps")
-    time_step_size: Optional[Union[Literal["inf"], PositiveFloat]] = pd.Field(
+    physical_steps: Optional[pd.PositiveInt] = pd.Field(alias="physicalSteps")
+    time_step_size: Optional[Union[Literal["inf"], pd.PositiveFloat]] = pd.Field(
         "inf", alias="timeStepSize"
     )
-    physical_steps: Optional[PositiveInt] = pd.Field(1, alias="physicalSteps")
+    physical_steps: Optional[pd.PositiveInt] = pd.Field(1, alias="physicalSteps")
 
     def update_model(self) -> Flow360BaseModel:
         class _TimeSteppingTempModel(pd.BaseModel):

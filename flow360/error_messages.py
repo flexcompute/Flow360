@@ -62,6 +62,14 @@ Params must be created with unit system context. For example:
         )
 """
 
+use_unit_system_for_simulation_msg = """\
+SimulationParams must be created with a unit system context. For example:
+>>> with SI_unit_system:
+>>>     params = SimulationParams(
+            ...
+        )
+"""
+
 
 def unit_system_inconsistent_msg(kwarg_unit_system, context_unit_system):
     return f"""\

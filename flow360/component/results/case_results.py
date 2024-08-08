@@ -13,6 +13,14 @@ import numpy as np
 import pandas
 import pydantic.v1 as pd
 
+from flow360.component.flow360_params.unit_system import (
+    Flow360UnitSystem,
+    ForceType,
+    MomentType,
+    PowerType,
+    is_flow360_unit,
+)
+
 from ...cloud.s3_utils import (
     CloudFileNotFoundError,
     get_local_filename_and_create_folders,
@@ -21,13 +29,6 @@ from ...exceptions import Flow360ValueError
 from ...log import log
 from ..flow360_params.conversions import unit_converter
 from ..flow360_params.flow360_params import Flow360Params
-from ..flow360_params.unit_system import (
-    Flow360UnitSystem,
-    ForceType,
-    MomentType,
-    PowerType,
-    is_flow360_unit,
-)
 
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()

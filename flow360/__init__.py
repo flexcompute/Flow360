@@ -6,14 +6,22 @@ import os
 
 from numpy import pi
 
-from . import global_exception_handler, units
+from flow360.component.flow360_params.unit_system import (
+    CGS_unit_system,
+    SI_unit_system,
+    UnitSystem,
+    flow360_unit_system,
+    imperial_unit_system,
+)
+
+from . import global_exception_handler
 from .accounts_utils import Accounts
 from .cli import flow360
 from .cloud.s3_utils import ProgressCallbackInterface
 from .component import meshing
 from .component.case import Case
 from .component.case import CaseList as MyCases
-from .component.flow360_params import solvers
+from .component.flow360_params import solvers, units
 from .component.flow360_params.boundaries import (
     FreestreamBoundary,
     HeatFluxWall,
@@ -103,13 +111,6 @@ from .component.flow360_params.time_stepping import (
     UnsteadyTimeStepping,
 )
 from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
-from .component.flow360_params.unit_system import (
-    CGS_unit_system,
-    SI_unit_system,
-    UnitSystem,
-    flow360_unit_system,
-    imperial_unit_system,
-)
 from .component.flow360_params.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,

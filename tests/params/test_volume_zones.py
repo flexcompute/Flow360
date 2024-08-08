@@ -22,6 +22,7 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
+@pytest.mark.usefixtures("array_equality_override")
 def test_volume_zones():
     with pytest.raises(pd.ValidationError):
         with fl.SI_unit_system:

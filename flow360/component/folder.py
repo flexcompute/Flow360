@@ -13,12 +13,12 @@ from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360ValueError
 from ..log import log
 from .interfaces import FolderInterface
-from .resource_base import Flow360Resource, Flow360ResourceBaseModel, ResourceDraft
+from .resource_base import AssetMetaBaseModel, Flow360Resource, ResourceDraft
 from .utils import shared_account_confirm_proceed, validate_type
 
 
 # pylint: disable=E0213
-class FolderMeta(Flow360ResourceBaseModel, extra=pd.Extra.allow):
+class FolderMeta(AssetMetaBaseModel, extra=pd.Extra.allow):
     """
     FolderMeta component
     """
@@ -76,7 +76,7 @@ class Folder(Flow360Resource):
     def __init__(self, id: str):
         super().__init__(
             interface=FolderInterface,
-            info_type_class=FolderMeta,
+            meta_class=FolderMeta,
             id=id,
         )
 
@@ -97,9 +97,7 @@ class Folder(Flow360Resource):
         """
 
         if self._info is None or force:
-            self._info = self.info_type_class(
-                **self.get(f"{self._endpoint}/items/{self.id}/metadata")
-            )
+            self._info = self.meta_class(**self.get(f"{self._endpoint}/items/{self.id}/metadata"))
         return self._info
 
     def move_to_folder(self, folder: Folder):

@@ -3,7 +3,7 @@ import os
 import pytest
 
 import flow360
-from flow360.examples import Airplane, Cylinder, OM6wing
+from flow360.examples import Airplane, Cylinder2D, OM6wing
 from flow360.examples.base_test_case import BaseTestCase
 
 
@@ -32,8 +32,8 @@ def test_om6_release_22_3_3_0_example():
 
 
 def test_cylinder_example():
-    Cylinder.get_files()
-    assert os.path.exists(Cylinder.case_json)
+    Cylinder2D.get_files()
+    assert os.path.exists(Cylinder2D.case_json)
     assert os.path.exists(OM6wing.mesh_json)
     assert os.path.exists(OM6wing.mesh_filename)
 

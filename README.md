@@ -61,8 +61,11 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 1. ``poetry run pytest -rA``
 2. ``black .`` - performs auto-formatting
 3. ``isort .`` - sorts imports
-4. ``pylint flow360 --rcfile .pylintrc`` - checks code style
-5. ``pytest tests --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report
+4. ``poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc`` - checks code style
+5. ``poetry run pytest -rA tests/simulation`` - run V2 related tests
+6. ``poetry run pytest -rA --ignore tests/simulation`` - run V1 related tests (cannot be run altogether)
+7. ``pytest -rA tests/simulation --cov-report=html --cov=flow360/component/simulation`` - see test coverage report for V2 client
+8. ``pytest -rA --ignore tests/simulation --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report for V1+V2 client
 
 ## Documentation Requirements
 

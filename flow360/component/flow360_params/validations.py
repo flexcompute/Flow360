@@ -3,7 +3,7 @@ validation logic
 """
 
 from copy import deepcopy
-from typing import List, Literal, NoReturn, Optional, Tuple, Union, get_args, get_origin
+from typing import List, Literal, Optional, Tuple, Union, get_args, get_origin
 
 from ...log import log
 from .boundaries import (
@@ -220,9 +220,7 @@ def _check_cht_solver_settings(values):
     return values
 
 
-def _check_eval_frequency_max_pseudo_steps_in_one_solver(
-    max_pseudo_steps, values, solver_name
-) -> NoReturn:
+def _check_eval_frequency_max_pseudo_steps_in_one_solver(max_pseudo_steps, values, solver_name):
     solver = values.get(solver_name)
     solver_eq_eval_freq = None
     if solver is not None and solver.model_type != "None":
@@ -278,7 +276,7 @@ def _check_incompressible_navier_stokes_solver(values):
 
 
 # pylint: disable=line-too-long
-def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj) -> NoReturn:
+def _check_one_periodic_boundary(boundaries, boundary_key, boundary_obj):
     paired_patch_name = boundary_obj.paired_patch_name
     if paired_patch_name is None:
         return
@@ -348,6 +346,7 @@ def _check_bet_disks_alphas_in_order(disk):
     return disk
 
 
+# pylint: disable=duplicate-code
 def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional[float]]:
     existing_radius = set()
     for item in radial_list:
@@ -503,24 +502,6 @@ def _check_low_mach_preconditioner_output(values):
         ):
             raise ValueError(
                 "Low-Mach preconditioner output requested, but low-Mach preconditioner mode is not enabled."
-            )
-    return values
-
-
-def _check_low_mach_preconditioner_support(values):
-    navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None and not isinstance(
-        navier_stokes_solver, IncompressibleNavierStokesSolver
-    ):
-        low_mach_preconditioner = navier_stokes_solver.low_mach_preconditioner
-        time_stepping = values.get("time_stepping")
-        if (
-            low_mach_preconditioner
-            and time_stepping is not None
-            and isinstance(time_stepping, UnsteadyTimeStepping)
-        ):
-            raise ValueError(
-                "Low-Mach Preconditioning is not currently supported for unsteady simulations.."
             )
     return values
 

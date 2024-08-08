@@ -177,6 +177,7 @@ class S3TransferType(Enum):
     Enum for s3 transfer type
     """
 
+    GEOMETRY = "Geometry"
     VOLUME_MESH = "VolumeMesh"
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
@@ -194,6 +195,8 @@ class S3TransferType(Enum):
             return f"surfacemeshes/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.CASE:
             return f"cases/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.GEOMETRY:
+            return f"geometries/{resource_id}/file?filename={file_name}"
 
         return None
 
