@@ -506,24 +506,6 @@ def _check_low_mach_preconditioner_output(values):
     return values
 
 
-def _check_low_mach_preconditioner_support(values):
-    navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None and not isinstance(
-        navier_stokes_solver, IncompressibleNavierStokesSolver
-    ):
-        low_mach_preconditioner = navier_stokes_solver.low_mach_preconditioner
-        time_stepping = values.get("time_stepping")
-        if (
-            low_mach_preconditioner
-            and time_stepping is not None
-            and isinstance(time_stepping, UnsteadyTimeStepping)
-        ):
-            raise ValueError(
-                "Low-Mach Preconditioning is not currently supported for unsteady simulations.."
-            )
-    return values
-
-
 def _check_per_item_output_fields(output_item_obj, additional_fields: List, error_prefix=""):
 
     def extract_literal_values(annotation):
