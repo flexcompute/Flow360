@@ -28,9 +28,6 @@ CommonFieldNamesFull = Literal[
     "Heat equation residual",
     "Velocity with respect to non-inertial frame",
     "Low-Mach preconditioner factor",
-    "Linear residual of Navier-Stokes solver",
-    "Linear residual of turbulence solver",
-    "Linear residual of transition solver",
 ]
 
 CommonFieldNames = Literal[
@@ -57,9 +54,6 @@ CommonFieldNames = Literal[
     "residualHeatSolver",
     "VelocityRelative",
     "lowMachPreconditionerSensor",
-    "linearResidualNavierStokes",
-    "linearResidualTurbulence",
-    "linearResidualTransition",
 ]
 
 SurfaceFieldNamesFull = Literal[
@@ -84,11 +78,25 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
 ]
 
-VolumeFieldNamesFull = Literal[CommonFieldNamesFull, "BET Metrics", "BET Metrics per Disk"]
+VolumeFieldNamesFull = Literal[
+    CommonFieldNamesFull,
+    "BET Metrics",
+    "BET Metrics per Disk",
+    "linear residual of Navier-Stokes solver",
+    "linear residual of turbulence solver",
+    "linear residual of transition solver",
+]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
 
-VolumeFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
+VolumeFieldNames = Literal[
+    CommonFieldNames,
+    "betMetrics",
+    "betMetricsPerDisk",
+    "linearResidualNavierStokes",
+    "linearResidualTurbulence",
+    "linearResidualTransition",
+]
 
 SliceFieldNames = VolumeFieldNames
 
