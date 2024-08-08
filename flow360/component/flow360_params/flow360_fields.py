@@ -15,7 +15,7 @@ CommonFieldNamesFull = Literal[
     "rho, u, v, w, p (density, 3 velocities and pressure)",
     "Q criterion",
     "N-S residual",
-    "Linear Resdidual of Navier Stokes Solver",
+    "Linear Residual of Navier Stokes Solver",
     "Transition residual",
     "Linear Residual of Transition Solver",
     "Turbulence residual",
