@@ -346,6 +346,7 @@ def _check_bet_disks_alphas_in_order(disk):
     return disk
 
 
+# pylint: disable=duplicate-code
 def _check_has_duplicate_in_one_radial_list(radial_list) -> Tuple[bool, Optional[float]]:
     existing_radius = set()
     for item in radial_list:
@@ -501,24 +502,6 @@ def _check_low_mach_preconditioner_output(values):
         ):
             raise ValueError(
                 "Low-Mach preconditioner output requested, but low-Mach preconditioner mode is not enabled."
-            )
-    return values
-
-
-def _check_low_mach_preconditioner_support(values):
-    navier_stokes_solver = values.get("navier_stokes_solver")
-    if navier_stokes_solver is not None and not isinstance(
-        navier_stokes_solver, IncompressibleNavierStokesSolver
-    ):
-        low_mach_preconditioner = navier_stokes_solver.low_mach_preconditioner
-        time_stepping = values.get("time_stepping")
-        if (
-            low_mach_preconditioner
-            and time_stepping is not None
-            and isinstance(time_stepping, UnsteadyTimeStepping)
-        ):
-            raise ValueError(
-                "Low-Mach Preconditioning is not currently supported for unsteady simulations.."
             )
     return values
 
