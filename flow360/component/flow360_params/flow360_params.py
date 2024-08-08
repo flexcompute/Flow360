@@ -113,7 +113,6 @@ from .validations import (
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
     _check_low_mach_preconditioner_output,
-    _check_low_mach_preconditioner_support,
     _check_numerical_dissipation_factor_output,
     _check_output_fields,
     _check_periodic_boundary_mapping,
@@ -1372,14 +1371,6 @@ class Flow360Params(Flow360BaseModel):
         Detect output of lowMachPreconditioner if not enabled.
         """
         return _check_low_mach_preconditioner_output(values)
-
-    # pylint: disable=no-self-argument
-    @pd.root_validator
-    def check_low_mach_preconditioner_support(cls, values):
-        """
-        Detect scenarios under which low mach preconditioning is not yet supported.
-        """
-        return _check_low_mach_preconditioner_support(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
