@@ -40,28 +40,14 @@ class ProgressCallbackInterface(metaclass=ABCMeta):
 
 
 def _get_dynamic_upload_config(file_size) -> TransferConfig:
-    # Predefined chunk sizes
-
-    def select_chunk_size(file_size, max_parts=10000):
-        """
-        Select an appropriate chunk size for a given file size based on predefined chunk sizes.
-
-        :param file_size: Size of the file to be uploaded in bytes.
-        :param chunk_sizes: List of chunk sizes in bytes to consider.
-        :param max_parts: Maximum number of parts allowed for multipart upload.
-        :return: Optimal chunk size from the provided list.
-        """
-        # pylint: disable=invalid-name
-        MIN_CHUNK_SIZE = 5 * 1024 * 1024
-        # Sort the list of chunk sizes in ascending order
-
-        # Iterate over the chunk sizes to find the smallest one that results in
-        # a number of parts less than or equal to the max_parts limit
-        return max(int(MIN_CHUNK_SIZE), math.ceil(file_size / max_parts))
+    # pylint: disable=invalid-name
+    # Constant definition: https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html
+    MIN_CHUNK_SIZE = 5 * 1024 * 1024
+    MAX_PART_COUNT = 100000
 
     return TransferConfig(
         max_concurrency=50,
-        multipart_chunksize=select_chunk_size(file_size),
+        multipart_chunksize=max(int(MIN_CHUNK_SIZE), math.ceil(file_size / MAX_PART_COUNT)),
         use_threads=True,
     )
 
