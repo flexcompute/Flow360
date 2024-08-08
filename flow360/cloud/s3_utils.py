@@ -51,12 +51,13 @@ def _get_dynamic_upload_config(file_size) -> TransferConfig:
         :param max_parts: Maximum number of parts allowed for multipart upload.
         :return: Optimal chunk size from the provided list.
         """
-        MIN_CHINK_SIZE = 5 * 1024 * 1024
+        # pylint: disable=invalid-name
+        MIN_CHUNK_SIZE = 5 * 1024 * 1024
         # Sort the list of chunk sizes in ascending order
 
         # Iterate over the chunk sizes to find the smallest one that results in
         # a number of parts less than or equal to the max_parts limit
-        return max(int(MIN_CHINK_SIZE), math.ceil(file_size / max_parts))
+        return max(int(MIN_CHUNK_SIZE), math.ceil(file_size / max_parts))
 
     return TransferConfig(
         max_concurrency=50,
@@ -300,7 +301,7 @@ class S3TransferType(Enum):
                 Filename=file_name,
                 Key=token.get_s3_key(),
                 Callback=progress_callback,
-                Config=_get_dynamic_upload_config(float(os.path.getsize(file_name))),
+                Config=_get_dynamic_upload_config(os.path.getsize(file_name)),
             )
         else:
             with _get_progress(_S3Action.UPLOADING) as progress:
@@ -317,7 +318,7 @@ class S3TransferType(Enum):
                     Filename=file_name,
                     Key=token.get_s3_key(),
                     Callback=_call_back,
-                    Config=_get_dynamic_upload_config(float(os.path.getsize(file_name))),
+                    Config=_get_dynamic_upload_config(os.path.getsize(file_name)),
                 )
 
     # pylint: disable=too-many-arguments
