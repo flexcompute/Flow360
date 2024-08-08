@@ -382,6 +382,7 @@ class KOmegaSST(TurbulenceModelSolver):
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
+    rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
