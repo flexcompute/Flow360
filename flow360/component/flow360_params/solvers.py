@@ -340,6 +340,9 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
         (values shown in the parentheses are the default values used in Flow360)
         An example with kOmegaSST mode would be: {"C_DES1": 0.85, "C_d1": 8.0}
 
+    rotation_correction:
+        rotation-curvature correction for the turbulence model.
+
     Returns
     -------
     :class:`TurbulenceModelSolver`
@@ -370,6 +373,7 @@ class TurbulenceModelSolver(GenericFlowSolverSettings, metaclass=ABCMeta):
     linear_solver: Optional[LinearSolver] = pd.Field(
         LinearSolver(max_iterations=20), alias="linearSolver", displayed="Linear solver config"
     )
+    rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
 
 class KOmegaSST(TurbulenceModelSolver):
@@ -382,7 +386,6 @@ class KOmegaSST(TurbulenceModelSolver):
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0, le=2)] = pd.Field(
         1.0, alias="reconstructionGradientLimiter"
     )
-    rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
 
 class SpalartAllmaras(TurbulenceModelSolver):
@@ -391,7 +394,6 @@ class SpalartAllmaras(TurbulenceModelSolver):
     model_type: Literal["SpalartAllmaras"] = pd.Field(
         "SpalartAllmaras", alias="modelType", const=True
     )
-    rotation_correction: Optional[bool] = pd.Field(False, alias="rotationCorrection")
 
     model_constants: Optional[SpalartAllmarasModelConstants] = pd.Field(
         alias="modelConstants", default=SpalartAllmarasModelConstants()
