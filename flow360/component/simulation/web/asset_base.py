@@ -77,7 +77,7 @@ class AssetBase(metaclass=ABCMeta):
     def from_file(
         cls,
         file_names: Union[List[str], str],
-        name: str = None,
+        project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
@@ -94,7 +94,7 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=not-callable
         return cls._draft_class(
             file_names=file_names,
-            name=name,
+            project_name=project_name,
             solver_version=solver_version,
             tags=tags,
             length_unit=length_unit,

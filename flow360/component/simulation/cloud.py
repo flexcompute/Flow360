@@ -3,6 +3,9 @@
 import json
 import time
 from datetime import datetime
+from typing import Annotated, Literal, Optional
+
+import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
@@ -10,11 +13,40 @@ from flow360.component.interfaces import DraftInterface, ProjectInterface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.surface_mesh import SurfaceMesh
+from flow360.component.utils import is_valid_uuid
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
 
 TIMEOUT_MINUTES = 60
+
+
+def _valid_id_validator(input_id: str):
+    is_valid_uuid(input_id)
+    return input_id
+
+
+IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
+
+
+class DraftPostModel(pd.BaseModel):
+    """Data model for draft post request"""
+
+    name: Optional[str] = pd.Field(None)
+    project_id: IDStringType = pd.Field(serialization_alias="projectId")
+    source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
+    source_item_type: Literal[
+        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+    ] = pd.Field(serialization_alias="sourceItemType")
+    solver_version: str = pd.Field(serialization_alias="solverVersion")
+    fork_case: bool = pd.Field(serialization_alias="forkCase")
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _defautl_draft_name(cls, value):
+        if value is None:
+            return "Client " + datetime.now().strftime("%m-%d %H:%M:%S")
+        return value
 
 
 def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
@@ -25,10 +57,13 @@ def _check_project_path_status(project_id: str, item_id: str, item_type: str) ->
     # TODO: check all status on the given path
 
 
+# pylint: disable=too-many-arguments
 def _run(
     source_asset: AssetBase,
     params: SimulationParams,
     target_asset: type[AssetBase],
+    draft_name: str = None,
+    fork_case: bool = False,
     async_mode: bool = True,
 ) -> AssetBase:
     """
@@ -40,25 +75,23 @@ def _run(
             f"params argument must be a SimulationParams object but is of type {type(params)}"
         )
 
-    ##-- Get the latest draft of the project:
-    draft_id = RestApi(ProjectInterface.endpoint, id=source_asset.project_id).get()[
-        "lastOpenDraftId"
-    ]
-    if draft_id is None:  # No saved online session
-        ##-- Get new draft
-        draft_id = RestApi(DraftInterface.endpoint).post(
-            {
-                "name": "Client " + datetime.now().strftime("%m-%d %H:%M:%S"),
-                "projectId": source_asset.project_id,
-                "sourceItemId": source_asset.id,
-                "sourceItemType": "Geometry",
-                "solverVersion": source_asset.solver_version,
-                "forkCase": False,
-            }
-        )["id"]
+    ##-- Get new draft
+    draft_id = RestApi(DraftInterface.endpoint).post(
+        DraftPostModel(
+            name=draft_name,
+            project_id=source_asset.project_id,
+            source_item_id=source_asset.id,
+            source_item_type=source_asset.__class__.__name__,
+            solver_version=source_asset.solver_version,
+            fork_case=fork_case,
+        ).model_dump(by_alias=True)
+    )["id"]
+
     ##-- Post the simulation param:
-    req = {"data": params.model_dump_json(), "type": "simulation", "version": ""}
-    RestApi(DraftInterface.endpoint, id=draft_id).post(json=req, method="simulation/file")
+    RestApi(DraftInterface.endpoint, id=draft_id).post(
+        json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+        method="simulation/file",
+    )
     ##-- Kick off draft run:
     try:
         run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
@@ -96,19 +129,30 @@ def _run(
 
 
 def generate_surface_mesh(
-    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
 ):
     """generate surface mesh from the geometry"""
-    return _run(source_asset, params, SurfaceMesh, async_mode)
+    return _run(source_asset, params, SurfaceMesh, draft_name, False, async_mode)
 
 
 def generate_volume_mesh(
-    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
 ):
     """generate volume mesh from the geometry"""
-    return _run(source_asset, params, VolumeMesh, async_mode)
+    return _run(source_asset, params, VolumeMesh, draft_name, False, async_mode)
 
 
-def run_case(source_asset: AssetBase, params: SimulationParams, async_mode: bool = True):
+def run_case(
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
+):
     """run case from the geometry"""
-    return _run(source_asset, params, Case, async_mode)
+    return _run(source_asset, params, Case, draft_name, False, async_mode)

@@ -65,13 +65,13 @@ class GeometryDraft(ResourceDraft):
     def __init__(
         self,
         file_names: List[str],
-        name: str = None,
+        project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
         self._file_names = file_names
-        self.name = name
+        self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
@@ -97,9 +97,9 @@ class GeometryDraft(ResourceDraft):
             if not os.path.exists(geometry_file):
                 raise Flow360FileError(f"{geometry_file} not found.")
 
-        if self.name is None and len(self.file_names) > 1:
+        if self.project_name is None and len(self.file_names) > 1:
             raise Flow360ValueError(
-                "name field is required if more than one geometry files are provided."
+                "`project_name` field is required if more than one geometry files are provided."
             )
         if self.length_unit not in LengthUnitType.__args__:
             raise Flow360ValueError(
@@ -135,16 +135,16 @@ class GeometryDraft(ResourceDraft):
         """
 
         self._validate()
-        name = self.name
-        if name is None:
-            name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
-        self.name = name
+        project_name = self.project_name
+        if project_name is None:
+            project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
+        self.project_name = project_name
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
         # The first geometry is assumed to be the main one.
         req = NewGeometryRequest(
-            name=self.name,
+            name=self.project_name,
             solver_version=self.solver_version,
             tags=self.tags,
             files=[
@@ -200,13 +200,13 @@ class Geometry(AssetBase):
     def from_file(
         cls,
         file_names: Union[List[str], str],
-        name: str = None,
+        project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(file_names, name, solver_version, length_unit, tags)
+        return super().from_file(file_names, project_name, solver_version, length_unit, tags)
 
     def _get_metadata(self):
         # get the metadata when initializing the object (blocking)
