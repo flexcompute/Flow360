@@ -78,11 +78,25 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
 ]
 
-VolumeFieldNamesFull = Literal[CommonFieldNamesFull, "BET Metrics", "BET Metrics per Disk"]
+VolumeFieldNamesFull = Literal[
+    CommonFieldNamesFull,
+    "BET Metrics",
+    "BET Metrics per Disk",
+    "linear residual of Navier-Stokes solver",
+    "linear residual of turbulence solver",
+    "linear residual of transition solver",
+]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
 
-VolumeFieldNames = Literal[CommonFieldNames, "betMetrics", "betMetricsPerDisk"]
+VolumeFieldNames = Literal[
+    CommonFieldNames,
+    "betMetrics",
+    "betMetricsPerDisk",
+    "linearResidualNavierStokes",
+    "linearResidualTurbulence",
+    "linearResidualTransition",
+]
 
 SliceFieldNames = VolumeFieldNames
 
