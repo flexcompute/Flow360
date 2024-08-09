@@ -2,6 +2,7 @@
 s3 util file for material uploading and downloading.
 """
 
+import math
 import os
 import urllib
 from abc import ABCMeta, abstractmethod
@@ -38,12 +39,17 @@ class ProgressCallbackInterface(metaclass=ABCMeta):
         pass
 
 
-_s3_config = TransferConfig(
-    multipart_threshold=1024 * 25,
-    max_concurrency=50,
-    multipart_chunksize=1024 * 25,
-    use_threads=True,
-)
+def _get_dynamic_upload_config(file_size) -> TransferConfig:
+    # pylint: disable=invalid-name
+    # Constant definition: https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html
+    MIN_CHUNK_SIZE = 5 * 1024 * 1024
+    MAX_PART_COUNT = 100000
+
+    return TransferConfig(
+        max_concurrency=50,
+        multipart_chunksize=max(int(MIN_CHUNK_SIZE), math.ceil(file_size / MAX_PART_COUNT)),
+        use_threads=True,
+    )
 
 
 def get_local_filename_and_create_folders(
@@ -284,7 +290,7 @@ class S3TransferType(Enum):
                 Filename=file_name,
                 Key=token.get_s3_key(),
                 Callback=progress_callback,
-                Config=_s3_config,
+                Config=_get_dynamic_upload_config(os.path.getsize(file_name)),
             )
         else:
             with _get_progress(_S3Action.UPLOADING) as progress:
@@ -301,7 +307,7 @@ class S3TransferType(Enum):
                     Filename=file_name,
                     Key=token.get_s3_key(),
                     Callback=_call_back,
-                    Config=_s3_config,
+                    Config=_get_dynamic_upload_config(os.path.getsize(file_name)),
                 )
 
     # pylint: disable=too-many-arguments
