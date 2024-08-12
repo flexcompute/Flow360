@@ -488,14 +488,14 @@ class Flow360BaseModel(pd.BaseModel):
             default_str = "" if field.is_required() else f" = {default_val}"
             doc += f"    {field_name} : {data_type}{default_str}\n"
 
-            # get field metadata
-            doc += "        "
-
+            # pylint: disable=fixme
+            # TODO: Add units now does not work.
             # add units (if present)
             units = None
             if field.json_schema_extra is not None:
                 units = field.json_schema_extra.get("units")
             if units is not None:
+                doc += "        "
                 if isinstance(units, (tuple, list)):
                     unitstr = "("
                     for unit in units:
@@ -510,7 +510,7 @@ class Flow360BaseModel(pd.BaseModel):
             # add description
             description_str = field.description
             if description_str is not None:
-                doc += f"{description_str}\n"
+                doc += f"        {description_str}\n"
 
         # add in remaining things in the docs
         if original_docstrings:

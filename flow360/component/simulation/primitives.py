@@ -78,7 +78,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
-        description="""Boundary names of the zone WITH the prepending zone name.""",
+        description="Boundary names of the zone WITH the prepending zone name.",
     )
 
     def _is_volume_zone(self) -> bool:
@@ -291,8 +291,8 @@ class Surface(_SurfaceEntityBase):
     private_attribute_is_interface: Optional[bool] = pd.Field(
         None,
         frozen=True,
-        description="""This is required when generated from volume mesh
-        but not required when from surface mesh meta.""",
+        description="This is required when generated from volume mesh "
+        + "but not required when from surface mesh meta.",
     )
 
     # pylint: disable=fixme

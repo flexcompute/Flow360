@@ -1165,11 +1165,11 @@ class Flow360BaseModel(BaseModel):
 
             # get field metadata
             field_info = field.field_info
-            doc += "        "
 
             # add units (if present)
             units = field_info.extra.get("units")
             if units is not None:
+                doc += "        "
                 if isinstance(units, (tuple, list)):
                     unitstr = "("
                     for unit in units:

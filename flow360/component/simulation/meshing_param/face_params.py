@@ -34,12 +34,10 @@ class SurfaceRefinement(Flow360BaseModel):
     # pylint: disable=no-member
     curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
         None,
-        description="""
-        Global maximum angular deviation in degrees. This value will restrict:
-        (1) The angle between a cell’s normal and its underlying surface normal
-        (2) The angle between a line segment’s normal and its underlying curve normal
-        This can not be overridden per face. The default is 12 degrees.
-        """,
+        description="Global maximum angular deviation in degrees. This value will restrict:"
+        "(1) The angle between a cell’s normal and its underlying surface normal"
+        "(2) The angle between a line segment’s normal and its underlying curve normal"
+        "This can not be overridden per face. The default is 12 degrees.",
     )
 
     @pd.model_validator(mode="after")

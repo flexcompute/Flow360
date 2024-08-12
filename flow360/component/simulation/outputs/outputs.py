@@ -38,14 +38,14 @@ class _AnimationSettings(Flow360BaseModel):
     frequency: int = pd.Field(
         default=-1,
         ge=-1,
-        description="""Frequency (in number of physical time steps) at which output is saved.
-        -1 is at end of simulation.""",
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="""Offset (in number of physical time steps) at which output animation is started.
-        0 is at beginning of simulation.""",
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
     )
 
 
@@ -66,10 +66,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
-        description="""Enable writing all surface outputs into a single file instead of one file per surface.
-        This option currently only supports Tecplot output format.
-        Will choose the value of the last instance of this option of the same output type
-        (SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.""",
+        description="Enable writing all surface outputs into a single file instead of one file per surface."
+        + "This option currently only supports Tecplot output format."
+        + "Will choose the value of the last instance of this option of the same output type"
+        + "(SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
     output_fields: UniqueAliasedStringList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
