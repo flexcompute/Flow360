@@ -140,10 +140,10 @@ def test_validate_errors():
         "meshing": {
             "farfield": "auto",
             "refinement_factor": 1,
+            "curvature_resolution_angle": 10,
             "refinements": [
                 {
                     "_id": "926a6cbd-0ddb-4051-b860-3414565e6408",
-                    "curvature_resolution_angle": 10,
                     "max_edge_length": 0.1,
                     "name": "Surface refinement_0",
                     "refinement_type": "SurfaceRefinement",

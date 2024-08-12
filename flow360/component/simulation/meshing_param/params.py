@@ -5,6 +5,7 @@ from typing import Annotated, List, Optional, Union
 import pydantic as pd
 from typing_extensions import Self
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
@@ -18,6 +19,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     VolumeRefinementTypes,
 )
 from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.unit_system import AngleType
 
 RefinementTypes = Annotated[
     Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
@@ -73,6 +75,17 @@ class MeshingParams(Flow360BaseModel):
     surface_layer_growth_rate: float = pd.Field(
         1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
     )  # Conditionally optional
+
+    # pylint: disable=no-member
+    curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
+        12 * u.deg,
+        description="""
+        Global maximum angular deviation in degrees. This value will restrict:
+        (1) The angle between a cell’s normal and its underlying surface normal
+        (2) The angle between a line segment’s normal and its underlying curve normal
+        This can not be overridden per face. The default is 12 degrees.
+        """,
+    )
 
     refinements: List[RefinementTypes] = pd.Field(
         default=[],

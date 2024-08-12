@@ -52,11 +52,11 @@ def get_all_process_jsons(params_as_dict):
 
 with SI_unit_system:
     meshing = MeshingParams(
+        curvature_resolution_angle=10 * u.deg,
         refinements=[
             BoundaryLayer(first_layer_thickness=0.001),
             SurfaceRefinement(
                 max_edge_length=0.15 * u.m,
-                curvature_resolution_angle=10 * u.deg,
             ),
         ],
     )

@@ -7,14 +7,14 @@
     "refinement_factor": 1.0,
     "gap_treatment_strength": 0.0,
     "surface_layer_growth_rate": 1.2,
+    "curvature_resolution_angle": {
+      "value": 12.0,
+      "units": "degree"
+    },
     "refinements": [
       {
         "name": "Global surface refinement",
-        "refinement_type": "SurfaceRefinement",
-        "curvature_resolution_angle": {
-          "value": 12.0,
-          "units": "degree"
-        }
+        "refinement_type": "SurfaceRefinement"
       },
       {
         "name": "Global Boundary layer refinement",

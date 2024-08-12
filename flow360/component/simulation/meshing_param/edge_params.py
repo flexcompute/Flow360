@@ -38,14 +38,7 @@ class ProjectAnisoSpacing(Flow360BaseModel):
     type: Literal["projectAnisoSpacing"] = pd.Field("projectAnisoSpacing", frozen=True)
 
 
-class _BaseEdgeRefinement(Flow360BaseModel):
-    entities: EntityList[Edge] = pd.Field(alias="edges")
-    growth_rate: Optional[float] = pd.Field(
-        None, description="Growth rate for surface mesh layers grown from edges.", ge=1
-    )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
-
-
-class SurfaceEdgeRefinement(_BaseEdgeRefinement):
+class SurfaceEdgeRefinement(Flow360BaseModel):
     """
     Grow anisotropic layers orthogonal to the edge.
 
@@ -54,6 +47,7 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     """
 
     name: Optional[str] = pd.Field(None)
+    entities: EntityList[Edge] = pd.Field(alias="edges")
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
     )

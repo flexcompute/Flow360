@@ -104,14 +104,21 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     ##~~ Or
     ##~~ when all SurfaceRefinement specifies the same value. (The completeness check is
     ##~~ done on the SimulationParam side.)
-    global_curvature_resolution_angle = get_global_setting_from_per_item_setting(
-        input_params.meshing.refinements,
-        SurfaceRefinement,
-        "curvature_resolution_angle",
-        allow_get_from_first_instance_as_fallback=True,
-        # `allow_get_from_first_instance_as_fallback` can be true because completeness check is done in Params
-    )
-    translated["curvatureResolutionAngle"] = global_curvature_resolution_angle.to(
+    # global_curvature_resolution_angle = get_global_setting_from_per_item_setting(
+    #     input_params.meshing.refinements,
+    #     SurfaceRefinement,
+    #     "curvature_resolution_angle",
+    #     allow_get_from_first_instance_as_fallback=True,
+    #     # `allow_get_from_first_instance_as_fallback` can be true because completeness check is done in Params
+    # )
+    if input_params.meshing.curvature_resolution_angle is None:
+        raise Flow360TranslationError(
+            "curvature_resolution_angle not specified.",
+            None,
+            ["meshing"],
+        )
+
+    translated["curvatureResolutionAngle"] = input_params.meshing.curvature_resolution_angle.to(
         "degree"
     ).value.item()
 

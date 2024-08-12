@@ -309,12 +309,12 @@ write_example(param, "simulation_params", "example-1")
 with SI_unit_system:
     meshing = MeshingParams(
         surface_layer_growth_rate=1.5,
+        curvature_resolution_angle=10 * u.deg,
         refinements=[
             BoundaryLayer(first_layer_thickness=0.001),
             SurfaceRefinement(
                 entities=[Surface(name="wing")],
                 max_edge_length=15 * u.cm,
-                curvature_resolution_angle=10 * u.deg,
             ),
         ],
     )

@@ -28,9 +28,9 @@ from flow360.component.simulation.unit_system import SI_unit_system, u
 def test_simulation_to_surface_meshing_json():
     param_data = {
         "meshing": {
+            "curvature_resolution_angle": {"units": "degree", "value": 10.0},
             "refinements": [
                 {
-                    "curvature_resolution_angle": {"units": "degree", "value": 10.0},
                     "max_edge_length": {"units": "cm", "value": 15.0},
                     "refinement_type": "SurfaceRefinement",
                 },
@@ -399,11 +399,11 @@ def test_simulation_to_all_translation():
     with SI_unit_system:
         meshing = MeshingParams(
             surface_layer_growth_rate=1.5,
+            curvature_resolution_angle=10 * u.deg,
             refinements=[
                 BoundaryLayer(first_layer_thickness=0.001),
                 SurfaceRefinement(
                     max_edge_length=15 * u.cm,
-                    curvature_resolution_angle=10 * u.deg,
                 ),
             ],
             volume_zones=[AutomatedFarfield()],
@@ -443,6 +443,7 @@ def test_simulation_to_all_translation_2():
             "refinement_factor": 1,
             "gap_treatment_strength": None,
             "surface_layer_growth_rate": 1.2,
+            "curvature_resolution_angle": {"value": 10, "units": "degree"},
             "refinements": [
                 {
                     "name": "Boundary layer refinement_0",
@@ -456,7 +457,6 @@ def test_simulation_to_all_translation_2():
                     "refinement_type": "SurfaceRefinement",
                     "_id": "2d95e85c-d91b-4842-96a7-444794193956",
                     "max_edge_length": {"value": 0.15, "units": "m"},
-                    "curvature_resolution_angle": {"value": 10, "units": "degree"},
                 },
             ],
             "volume_zones": [
