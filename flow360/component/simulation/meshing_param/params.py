@@ -57,17 +57,17 @@ class MeshingParams(Flow360BaseModel):
     # Volume **defaults**:
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
-        description="""If refinementFactor=r is provided all spacings in refinementregions
-        and first layer thickness will be adjusted to generate r-times finer mesh.""",
+        description="If refinementFactor=r is provided all spacings in refinementregions"
+        + "and first layer thickness will be adjusted to generate r-times finer mesh.",
     )
     gap_treatment_strength: Optional[float] = pd.Field(
         default=0,
         ge=0,
         le=1,
-        description="""Narrow gap treatment strength used when two surfaces are in close proximity.
-        Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment.
-        This parameter has a global impact where the anisotropic transition into the isotropic mesh.
-        However the impact on regions without close proximity is negligible.""",
+        description="Narrow gap treatment strength used when two surfaces are in close proximity."
+        "Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        + "This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        + "However the impact on regions without close proximity is negligible.",
     )
 
     surface_layer_growth_rate: float = pd.Field(
