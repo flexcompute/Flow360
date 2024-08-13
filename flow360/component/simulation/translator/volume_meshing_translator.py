@@ -168,13 +168,12 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         "first_layer_thickness",
         allow_get_from_first_instance_as_fallback=True,
     ).value.item()
-    # growthRate can only be global so after completeness check, and use same logic as curvature_resolution_angle.
+
     translated["volume"]["growthRate"] = get_global_setting_from_per_item_setting(
         meshing_params.refinements,
         BoundaryLayer,
         "growth_rate",
-        allow_get_from_first_instance_as_fallback=True,
-        # `allow_get_from_first_instance_as_fallback` can be true because completeness check is done in Params
+        allow_get_from_first_instance_as_fallback=False,
     )
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
 

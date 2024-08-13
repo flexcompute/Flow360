@@ -101,15 +101,11 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
     ##~~ `curvature_resolution_angle` can not be overridden per face.
     ##~~ This can only appear on `SurfaceRefinement` instance without entities.
-    ##~~ Or
-    ##~~ when all SurfaceRefinement specifies the same value. (The completeness check is
-    ##~~ done on the SimulationParam side.)
     global_curvature_resolution_angle = get_global_setting_from_per_item_setting(
         input_params.meshing.refinements,
         SurfaceRefinement,
         "curvature_resolution_angle",
-        allow_get_from_first_instance_as_fallback=True,
-        # `allow_get_from_first_instance_as_fallback` can be true because completeness check is done in Params
+        allow_get_from_first_instance_as_fallback=False,  # No per item override allowed
     )
     translated["curvatureResolutionAngle"] = global_curvature_resolution_angle.to(
         "degree"
@@ -121,8 +117,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         input_params.meshing.refinements,
         SurfaceEdgeRefinement,
         "growth_rate",
-        allow_get_from_first_instance_as_fallback=False,
-        # `allow_get_from_first_instance_as_fallback` is Flase since we cannot specify per edge growth rate.
+        allow_get_from_first_instance_as_fallback=False,  # No per item override allowed
     )
     translated["growthRate"] = surface_layer_growth_rate
 

@@ -29,7 +29,8 @@ class SurfaceRefinement(Flow360BaseModel):
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     # pylint: disable=no-member
     max_edge_length: LengthType.Positive = pd.Field(
-        description="Local maximum edge length for surface cells."
+        description="Global/Local maximum edge length for surface cells. "
+        + "The effective value will be the minimum of global and local."
     )
     # pylint: disable=no-member
     curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
@@ -41,15 +42,18 @@ class SurfaceRefinement(Flow360BaseModel):
     )
 
     @pd.model_validator(mode="after")
-    def _add_global_default_curvature_resolution_angle(self):
-        """
-        [CAPABILITY-LIMITATION]
-        Add **global** default for `curvature_resolution_angle`.
-        Cannot add default in field definition because that may imply it can be set per surface.
-        self.entities is None indicates that this is a global setting.
-        """
-        if self.entities is None and self.curvature_resolution_angle is None:
-            self.curvature_resolution_angle = 12 * u.deg
+    def _check_valid_setting_combination(self):
+        """Check if the settings are valid in global or per-item context."""
+        if self.entities is not None:
+            # Is per-item refinement
+            if self.curvature_resolution_angle is not None:
+                raise ValueError(
+                    "`curvature_resolution_angle` can be only specified in global manner."
+                )
+        else:
+            # Is Global refinement
+            if self.curvature_resolution_angle is None:
+                self.curvature_resolution_angle = 12 * u.deg  # Applying default
         return self
 
 
@@ -77,18 +81,18 @@ class BoundaryLayer(Flow360BaseModel):
     growth_rate: Optional[pd.PositiveFloat] = pd.Field(
         None, description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported.
-    # This is a global setting in mesher similar to curvature_resolution_angle.
 
     @pd.model_validator(mode="after")
-    def _add_global_default_growth_rate(self):
-        """
-        [CAPABILITY-LIMITATION]
-        Add **global** default for `growth_rate`.
-        Cannot add default in field definition because that may imply it can be set per surface.
-        self.entities is None indicates that this is a global setting.
-        """
-        if self.entities is None and self.growth_rate is None:
-            self.growth_rate = 1.2
+    def _check_valid_setting_combination(self):
+        """Check if the settings are valid in global or per-item context."""
+        if self.entities is not None:
+            # Is per-item refinement
+            if self.growth_rate is not None:
+                raise ValueError("`growth_rate` can be only specified in global manner.")
+        else:
+            # Is Global refinement
+            if self.growth_rate is None:
+                self.growth_rate = 1.2  # Applying default
         return self
 
 

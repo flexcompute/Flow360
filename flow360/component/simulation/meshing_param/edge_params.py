@@ -51,7 +51,9 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     # Note: Per edge `growth_rate` specification is actually not supported.
     # Note: This can be only specified in global manner.
     growth_rate: Optional[float] = pd.Field(
-        1.2, description="Growth rate for surface mesh layers grown from edges.", ge=1
+        None,
+        description="Growth rate for surface mesh layers grown from edges. Default is 1.2",
+        ge=1,
     )
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
@@ -79,9 +81,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         else:
             # Is Global edge refinement
             if self.growth_rate is None:
-                raise ValueError(
-                    "`growth_rate` is required for global surface edge refinement specification."
-                )
+                self.growth_rate = 1.2  # Applying default
             if self.method is not None:
                 raise ValueError("`method` can be only specified in per-item manner, not global.")
         return self
