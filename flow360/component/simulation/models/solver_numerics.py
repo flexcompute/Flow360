@@ -19,6 +19,7 @@ from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
+from flow360.component.simulation.primitives import Box
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -364,5 +365,7 @@ class TransitionModelSolver(GenericSolverSettings):
     update_jacobian_frequency: PositiveInt = pd.Field(4)
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
+
+    trip_region: Optional[Box] = pd.Field(None)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))

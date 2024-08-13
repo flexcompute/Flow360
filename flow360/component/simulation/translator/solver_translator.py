@@ -744,6 +744,18 @@ def get_solver_json(
                 ncrit = compute_aft_ncrit(turb_intensity_percent)
                 translated["transitionModelSolver"]["N_crit"] = ncrit
                 translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
+                # build trip region if applicable
+                if translated["transitionModelSolver"]["tripRegion"] is not None:
+                    translated["transitionModelSolver"].pop("tripRegion")
+                    model.transition_model_solver.trip_region.convert_axis_and_angle_to_coordinate_axes()
+                    axes = (
+                        model.transition_model_solver.trip_region.private_attribute_input_cache.axes
+                    )
+                    translated["transitionModelSolver"]["tripRegion"] = {
+                        "center": model.transition_model_solver.trip_region.center.tolist(),
+                        "size": model.transition_model_solver.trip_region.size.tolist(),
+                        "axes": [list(axes[0]), list(axes[1])],
+                    }
 
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
