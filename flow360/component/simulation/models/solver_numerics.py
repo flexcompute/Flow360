@@ -363,6 +363,6 @@ class TransitionModelSolver(GenericSolverSettings):
     turbulence_intensity_percent: pd.confloat(ge=0.03, le=2.5) = pd.Field(1.0)
     update_jacobian_frequency: PositiveInt = pd.Field(4)
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
-    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0., le=2.)] = pd.Field(1.0)
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
