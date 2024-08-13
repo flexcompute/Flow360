@@ -1,5 +1,7 @@
 """Flow360 solver setting parameter translator."""
 
+import numpy as np
+
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -616,6 +618,16 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     return boundary
 
 
+def compute_AFT_NCrit(turb_intensity_percent):
+
+    NCrit = 8.15
+    if turb_intensity_percent is not None:
+        NCrit = -8.43 - 2.4 * np.log(0.025 * np.tanh(turb_intensity_percent / 2.5))
+        np.clip(NCrit, 1., 11.)
+
+    return NCrit
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -686,7 +698,9 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
+
         if isinstance(model, Fluid):
+
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -694,6 +708,7 @@ def get_solver_json(
                 "equationEvaluationFrequency",
                 "equationEvalFrequency",
             )
+
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
             replace_dict_key(
                 translated["turbulenceModelSolver"],
@@ -709,6 +724,16 @@ def get_solver_json(
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+
+            translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
+            replace_dict_key(translated["transitionModelSolver"], "typeName", "modelType")
+            replace_dict_key(translated["transitionModelSolver"], "equationEvaluationFrequency", "equationEvalFrequency")
+            # compute NCrit and remove turbulence intensity
+            turb_intensity_percent = translated["transitionModelSolver"]["turbulenceIntensityPercent"]
+            NCrit = compute_AFT_NCrit(turb_intensity_percent)
+            translated["transitionModelSolver"]["N_crit"] = NCrit
+            translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
+
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
 
