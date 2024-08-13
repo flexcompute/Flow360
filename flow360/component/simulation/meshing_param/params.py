@@ -49,7 +49,6 @@ class MeshingParams(Flow360BaseModel):
     - `class` RotationCylinder
 
     Affects surface meshing:
-    - surface_layer_growth_rate
     - `class` SurfaceRefinement
     - `class` SurfaceEdgeRefinement
     """
@@ -70,15 +69,11 @@ class MeshingParams(Flow360BaseModel):
         + "However the impact on regions without close proximity is negligible.",
     )
 
-    surface_layer_growth_rate: float = pd.Field(
-        1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
-    )  # Conditionally optional
-
     refinements: List[RefinementTypes] = pd.Field(
         default=[],
         description="Additional fine-tunning for refinements.",
     )
-    # Will add more to the Union
+
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
     )

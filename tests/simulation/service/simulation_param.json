@@ -160,7 +160,6 @@
                 }
             }
         ],
-        "surface_layer_growth_rate": 1.2,
         "volume_zones": [
             {
                 "method": "auto",

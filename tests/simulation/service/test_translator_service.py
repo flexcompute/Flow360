@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -35,6 +36,10 @@ def test_simulation_to_surface_meshing_json():
                     "refinement_type": "SurfaceRefinement",
                 },
                 {
+                    "refinement_type": "SurfaceEdgeRefinement",
+                    "growth_rate": 1.2,
+                },
+                {
                     "entities": {
                         "stored_entities": [
                             {"name": "wingLeadingEdge"},
@@ -52,7 +57,6 @@ def test_simulation_to_surface_meshing_json():
                     "refinement_type": "SurfaceEdgeRefinement",
                 },
             ],
-            "surface_layer_growth_rate": 1.07,
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
@@ -398,13 +402,13 @@ def test_simulation_to_case_json():
 def test_simulation_to_all_translation():
     with SI_unit_system:
         meshing = MeshingParams(
-            surface_layer_growth_rate=1.5,
             refinements=[
                 BoundaryLayer(first_layer_thickness=0.001),
                 SurfaceRefinement(
                     max_edge_length=15 * u.cm,
                     curvature_resolution_angle=10 * u.deg,
                 ),
+                SurfaceEdgeRefinement(growth_rate=1.5),
             ],
             volume_zones=[AutomatedFarfield()],
         )
@@ -442,13 +446,16 @@ def test_simulation_to_all_translation_2():
         "meshing": {
             "refinement_factor": 1,
             "gap_treatment_strength": None,
-            "surface_layer_growth_rate": 1.2,
             "refinements": [
                 {
                     "name": "Boundary layer refinement_0",
                     "refinement_type": "BoundaryLayer",
                     "_id": "63ed1bfe-1b1b-4092-bb9d-915da0b6c092",
                     "first_layer_thickness": {"value": 0.001, "units": "m"},
+                    "growth_rate": 1.2,
+                },
+                {
+                    "refinement_type": "SurfaceEdgeRefinement",
                     "growth_rate": 1.2,
                 },
                 {

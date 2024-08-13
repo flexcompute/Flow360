@@ -7,7 +7,6 @@
         "farfield": "auto",
         "refinement_factor": 1.0,
         "gap_treatment_strength": null,
-        "surface_layer_growth_rate": 1.2,
         "refinements": [
             {
                 "name": null,

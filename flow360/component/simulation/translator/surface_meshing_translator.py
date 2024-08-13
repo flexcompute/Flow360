@@ -117,13 +117,14 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##:: >> Step 3: Get growthRate [REQUIRED]
     ##~~ Same logic as `curvature_resolution_angle`
-    if input_params.meshing.surface_layer_growth_rate is None:
-        raise Flow360TranslationError(
-            "No `surface_layer_growth_rate` found in the `SurfaceRefinement`s",
-            input_value=None,
-            location=["meshing", "surface_layer_growth_rate"],
-        )
-    translated["growthRate"] = input_params.meshing.surface_layer_growth_rate
+    surface_layer_growth_rate = get_global_setting_from_per_item_setting(
+        input_params.meshing.refinements,
+        SurfaceEdgeRefinement,
+        "growth_rate",
+        allow_get_from_first_instance_as_fallback=False,
+        # `allow_get_from_first_instance_as_fallback` is Flase since we cannot specify per edge growth rate.
+    )
+    translated["growthRate"] = surface_layer_growth_rate
 
     ##:: >> Step 4: Get edges [OPTIONAL]
     edge_config = translate_setting_and_apply_to_all_entities(

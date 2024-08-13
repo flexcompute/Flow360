@@ -102,7 +102,6 @@ def om6wing_tutorial_global_plus_local_override():
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.07,
                 refinements=[
                     SurfaceRefinement(
                         max_edge_length=15 * u.cm,
@@ -112,6 +111,7 @@ def om6wing_tutorial_global_plus_local_override():
                         entities=[my_geometry["wing"]],
                         max_edge_length=15 * u.cm,
                     ),
+                    SurfaceEdgeRefinement(growth_rate=1.07),
                     SurfaceEdgeRefinement(
                         entities=[my_geometry["wing*Edge"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
@@ -137,8 +137,8 @@ def om6wing_tutorial_global_only():
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.07,
                 refinements=[
+                    SurfaceEdgeRefinement(growth_rate=1.07),
                     SurfaceRefinement(
                         max_edge_length=15 * u.cm,
                         curvature_resolution_angle=10 * u.deg,
@@ -176,6 +176,7 @@ def airplane_surface_mesh():
         param = SimulationParams(
             meshing=MeshingParams(
                 refinements=[
+                    SurfaceEdgeRefinement(growth_rate=1.2),
                     SurfaceRefinement(
                         max_edge_length=100 * u.cm,
                         curvature_resolution_angle=pi / 12 * u.rad,
@@ -208,8 +209,8 @@ def rotor_surface_mesh():
     with imperial_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.2,
                 refinements=[
+                    SurfaceEdgeRefinement(growth_rate=1.2),
                     SurfaceRefinement(
                         max_edge_length=10,
                         curvature_resolution_angle=15 * u.deg,

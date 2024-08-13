@@ -38,14 +38,7 @@ class ProjectAnisoSpacing(Flow360BaseModel):
     type: Literal["projectAnisoSpacing"] = pd.Field("projectAnisoSpacing", frozen=True)
 
 
-class _BaseEdgeRefinement(Flow360BaseModel):
-    entities: EntityList[Edge] = pd.Field(alias="edges")
-    growth_rate: Optional[float] = pd.Field(
-        None, description="Growth rate for surface mesh layers grown from edges.", ge=1
-    )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.
-
-
-class SurfaceEdgeRefinement(_BaseEdgeRefinement):
+class SurfaceEdgeRefinement(Flow360BaseModel):
     """
     Grow anisotropic layers orthogonal to the edge.
 
@@ -54,12 +47,41 @@ class SurfaceEdgeRefinement(_BaseEdgeRefinement):
     """
 
     name: Optional[str] = pd.Field(None)
+    entities: Optional[EntityList[Edge]] = pd.Field(None, alias="edges")
+    # Note: Per edge `growth_rate` specification is actually not supported.
+    # Note: This can be only specified in global manner.
+    growth_rate: Optional[float] = pd.Field(
+        1.2, description="Growth rate for surface mesh layers grown from edges.", ge=1
+    )
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
     )
-    method: Union[
-        AngleBasedRefinement,
-        HeightBasedRefinement,
-        AspectRatioBasedRefinement,
-        ProjectAnisoSpacing,
-    ] = pd.Field(discriminator="type")
+    method: Optional[
+        Union[
+            AngleBasedRefinement,
+            HeightBasedRefinement,
+            AspectRatioBasedRefinement,
+            ProjectAnisoSpacing,
+        ]
+    ] = pd.Field(None, discriminator="type")
+
+    @pd.model_validator(mode="after")
+    def _check_valid_setting_combination(self):
+        """Check if the settings are valid in global or per-item context."""
+        if self.entities is not None:
+            # Is per-item edge refinement
+            if self.growth_rate is not None:
+                raise ValueError(
+                    "`growth_rate` can be only specified in global manner, not per edge."
+                )
+            if self.method is None:
+                raise ValueError("`method` must be specified for per-item surface edge refinement.")
+        else:
+            # Is Global edge refinement
+            if self.growth_rate is None:
+                raise ValueError(
+                    "`growth_rate` is required for global surface edge refinement specification."
+                )
+            if self.method is not None:
+                raise ValueError("`method` can be only specified in per-item manner, not global.")
+        return self

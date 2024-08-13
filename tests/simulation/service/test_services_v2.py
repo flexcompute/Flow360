@@ -17,7 +17,6 @@ def test_validate_service():
         "meshing": {
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
-            "surface_layer_growth_rate": 1.5,
             "refinements": [],
             "volume_zones": [
                 {
@@ -57,7 +56,6 @@ def test_validate_error():
             "farfield": "invalid",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
-            "surface_layer_growth_rate": 1.5,
             "refinements": [],
             "volume_zones": [
                 {
@@ -98,7 +96,6 @@ def test_validate_multiple_errors():
             "farfield": "invalid",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
-            "surface_layer_growth_rate": 1.5,
             "refinements": [],
             "volume_zones": [
                 {
@@ -167,7 +164,6 @@ def test_validate_errors():
                     },
                 }
             ],
-            "surface_layer_growth_rate": 1.2,
         },
     }
 

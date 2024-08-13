@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.material import SolidMaterial
@@ -80,8 +81,10 @@ def get_the_param():
             meshing=MeshingParams(
                 refinement_factor=1.0,
                 gap_treatment_strength=0.5,
-                surface_layer_growth_rate=1.5,
-                refinements=[UniformRefinement(entities=[my_box], spacing=0.1 * u.m)],
+                refinements=[
+                    SurfaceEdgeRefinement(growth_rate=1.5),
+                    UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
+                ],
             ),
             reference_geometry=ReferenceGeometry(
                 moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2

@@ -6,8 +6,12 @@
   "meshing": {
     "refinement_factor": 1.0,
     "gap_treatment_strength": 0.0,
-    "surface_layer_growth_rate": 1.2,
     "refinements": [
+      {
+        "name": "Global surface edge refinement",
+        "refinement_type": "SurfaceEdgeRefinement",
+        "growth_rate": 1.2
+      },
       {
         "name": "Global surface refinement",
         "refinement_type": "SurfaceRefinement",
@@ -17,7 +21,7 @@
         }
       },
       {
-        "name": "Global Boundary layer refinement",
+        "name": "Global boundary layer refinement",
         "refinement_type": "BoundaryLayer",
         "type": "aniso",
         "growth_rate": 1.2

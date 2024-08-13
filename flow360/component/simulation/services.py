@@ -8,6 +8,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
+from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -123,11 +124,12 @@ def get_default_params(
             ),
             meshing=MeshingParams(
                 refinements=[
+                    SurfaceEdgeRefinement(name="Global surface edge refinement", growth_rate=1.2),
                     SurfaceRefinement(
                         name="Global surface refinement", max_edge_length=dummy_value
                     ),
                     BoundaryLayer(
-                        name="Global Boundary layer refinement", first_layer_thickness=dummy_value
+                        name="Global boundary layer refinement", first_layer_thickness=dummy_value
                     ),
                 ],
                 volume_zones=[AutomatedFarfield(name="Farfield")],

@@ -212,8 +212,8 @@ with SI_unit_system:
     meshing = MeshingParams(
         refinement_factor=1.0,
         gap_treatment_strength=0.5,
-        surface_layer_growth_rate=1.5,
         refinements=[
+            SurfaceEdgeRefinement(growth_rate=1.5),
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
             UniformRefinement(entities=[my_box, my_cylinder_2], spacing=0.1 * u.m),
             SurfaceEdgeRefinement(edges=[edge], method=AngleBasedRefinement(value=1 * u.deg)),
@@ -308,8 +308,8 @@ write_example(param, "simulation_params", "example-1")
 
 with SI_unit_system:
     meshing = MeshingParams(
-        surface_layer_growth_rate=1.5,
         refinements=[
+            SurfaceEdgeRefinement(growth_rate=1.5),
             BoundaryLayer(first_layer_thickness=0.001),
             SurfaceRefinement(
                 entities=[Surface(name="wing")],
