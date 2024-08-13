@@ -74,8 +74,8 @@ class BoundaryLayer(Flow360BaseModel):
     type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field(default="aniso")
     entities: Optional[EntityList[Surface]] = pd.Field(None, alias="faces")
     # pylint: disable=no-member
-    first_layer_thickness: LengthType.Positive = pd.Field(
-        description="First layer thickness for volumetric anisotropic layers."
+    first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
+        None, description="First layer thickness for volumetric anisotropic layers."
     )
     # pylint: disable=no-member
     growth_rate: Optional[pd.PositiveFloat] = pd.Field(
@@ -89,6 +89,10 @@ class BoundaryLayer(Flow360BaseModel):
             # Is per-item refinement
             if self.growth_rate is not None:
                 raise ValueError("`growth_rate` can be only specified in global manner.")
+            if self.first_layer_thickness is None:
+                raise ValueError(
+                    "`first_layer_thickness` must be specified for per-item refinement."
+                )
         else:
             # Is Global refinement
             if self.growth_rate is None:
