@@ -729,20 +729,21 @@ def get_solver_json(
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
 
-            translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
-            replace_dict_key(translated["transitionModelSolver"], "typeName", "modelType")
-            replace_dict_key(
-                translated["transitionModelSolver"],
-                "equationEvaluationFrequency",
-                "equationEvalFrequency",
-            )
-            # compute NCrit and remove turbulence intensity
-            turb_intensity_percent = translated["transitionModelSolver"][
-                "turbulenceIntensityPercent"
-            ]
-            ncrit = compute_aft_ncrit(turb_intensity_percent)
-            translated["transitionModelSolver"]["N_crit"] = ncrit
-            translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
+            if model.transition_model_solver is not None:
+                translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
+                replace_dict_key(translated["transitionModelSolver"], "typeName", "modelType")
+                replace_dict_key(
+                    translated["transitionModelSolver"],
+                    "equationEvaluationFrequency",
+                    "equationEvalFrequency",
+                )
+                # compute NCrit and remove turbulence intensity
+                turb_intensity_percent = translated["transitionModelSolver"][
+                    "turbulenceIntensityPercent"
+                ]
+                ncrit = compute_aft_ncrit(turb_intensity_percent)
+                translated["transitionModelSolver"]["N_crit"] = ncrit
+                translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
 
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
