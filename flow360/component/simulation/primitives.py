@@ -179,18 +179,15 @@ class BoxCache(Flow360BaseModel):
 class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
     Represents a box in three-dimensional space.
-
-    Attributes:
-        center (LengthType.Point): The coordinates of the center of the box.
-        size (LengthType.Point): The dimensions of the box (length, width, height).
-        axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field()
-    size: LengthType.Point = pd.Field()
+    center: LengthType.Point = pd.Field(description=" The coordinates of the center of the box.")
+    size: LengthType.Point = pd.Field(
+        description="The dimensions of the box (length, width, height)"
+    )
     axis_of_rotation: Axis = pd.Field(default=(0, 0, 1))
     angle_of_rotation: AngleType = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
