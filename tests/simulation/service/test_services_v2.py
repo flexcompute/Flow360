@@ -202,8 +202,8 @@ def test_validate_init_data_errors():
     assert len(errors) == 2
     assert errors[0]["loc"][-1] == "max_edge_length"
     assert errors[0]["type"] == "missing"
-    assert errors[2]["loc"][-1] == "velocity_magnitude"
-    assert errors[2]["type"] == "missing"
+    assert errors[1]["loc"][-1] == "velocity_magnitude"
+    assert errors[1]["type"] == "missing"
 
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
