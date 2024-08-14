@@ -359,6 +359,7 @@ class TransitionModelSolver(GenericSolverSettings):
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
     )
+    CFL_multiplier: PositiveFloat = pd.Field(2.0)
     absolute_tolerance: PositiveFloat = pd.Field(1e-7)
     equation_evaluation_frequency: PositiveInt = pd.Field(4)
     turbulence_intensity_percent: pd.confloat(ge=0.03, le=2.5) = pd.Field(1.0)

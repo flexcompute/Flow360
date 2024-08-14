@@ -705,6 +705,11 @@ def get_solver_json(
 
         if isinstance(model, Fluid):
 
+            if model.navier_stokes_solver.low_mach_preconditioner:
+                if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
+                    model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                        input_params.operating_condition.mach
+                    )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -742,10 +747,10 @@ def get_solver_json(
                     "turbulenceIntensityPercent"
                 ]
                 ncrit = compute_aft_ncrit(turb_intensity_percent)
-                translated["transitionModelSolver"]["N_crit"] = ncrit
+                translated["transitionModelSolver"]["Ncrit"] = ncrit
                 translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
                 # build trip region if applicable
-                if translated["transitionModelSolver"]["tripRegion"] is not None:
+                if "tripRegion" in translated["transitionModelSolver"]:
                     translated["transitionModelSolver"].pop("tripRegion")
                     model.transition_model_solver.trip_region.convert_axis_and_angle_to_coordinate_axes()
                     axes = (
