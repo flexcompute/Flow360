@@ -115,6 +115,8 @@ class Flow360BaseModel(pd.BaseModel):
         conflicting_fields=[],
         include_hash=False,
         include_defaults_in_schema=True,
+        # pylint: disable=fixme
+        # TODO: Remove alias_generator since it is only for translator
         alias_generator=pd.AliasGenerator(
             serialization_alias=snake_to_camel,
         ),
