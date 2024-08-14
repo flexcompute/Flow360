@@ -81,7 +81,6 @@ class GeometryDraft(ResourceDraft):
     def _validate(self):
         self._validate_geometry()
 
-    # pylint: disable=consider-using-f-string
     def _validate_geometry(self):
 
         if not isinstance(self.file_names, list) or len(self.file_names) == 0:
@@ -91,9 +90,8 @@ class GeometryDraft(ResourceDraft):
             _, ext = os.path.splitext(geometry_file)
             if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
                 raise Flow360FileError(
-                    "Unsupported geometry file extensions: {}. Supported: [{}].".format(
-                        ext.lower(), ", ".join(SUPPORTED_GEOMETRY_FILE_PATTERNS)
-                    )
+                    f"Unsupported geometry file extensions: {ext.lower()}. "
+                    f"Supported: [{', '.join(SUPPORTED_GEOMETRY_FILE_PATTERNS)}]."
                 )
 
             if not os.path.exists(geometry_file):

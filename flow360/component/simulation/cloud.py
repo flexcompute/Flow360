@@ -1,19 +1,26 @@
 """Cloud communication for simulation related tasks"""
 
+from __future__ import annotations
+
 import json
 import time
 from datetime import datetime
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.interfaces import DraftInterface, ProjectInterface
+from flow360.component.resource_base import (
+    AssetMetaBaseModel,
+    Flow360Resource,
+    ResourceDraft,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.surface_mesh import SurfaceMesh
-from flow360.component.utils import is_valid_uuid
+from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
@@ -44,6 +51,112 @@ class DraftPostRequest(pd.BaseModel):
     fork_case: bool = pd.Field(serialization_alias="forkCase")
 
 
+class DraftDraft(ResourceDraft):
+    """
+    Draft Draft component
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        name: str,
+        project_id: str,
+        source_item_id: str,
+        source_item_type: Literal[
+            "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+        ],
+        solver_version: str,
+        fork_case: bool,
+    ):
+        self._request = DraftPostRequest(
+            name=name,
+            project_id=project_id,
+            source_item_id=source_item_id,
+            source_item_type=source_item_type,
+            solver_version=solver_version,
+            fork_case=fork_case,
+        )
+        ResourceDraft.__init__(self)
+
+    def submit(self) -> Draft:
+        """
+        Submit draft to cloud and under a given project
+        """
+        draft_id = RestApi(DraftInterface.endpoint).post(self._request.model_dump(by_alias=True))
+        return Draft.from_cloud(draft_id["id"])
+
+
+class Draft(Flow360Resource):
+    """Project Draft component"""
+
+    def __init__(self, draft_id: IDStringType):
+        super().__init__(
+            interface=DraftInterface,
+            meta_class=AssetMetaBaseModel,  # We do not have dedicated meta class for Draft
+            id=draft_id,
+        )
+
+    @classmethod
+    # pylint: disable=protected-access
+    def _from_meta(cls, meta: AssetMetaBaseModel):
+        validate_type(meta, "meta", AssetMetaBaseModel)
+        resource = cls(draft_id=meta.id)
+        return resource
+
+    # pylint: disable=too-many-arguments
+    @classmethod
+    def create(
+        cls,
+        name: str = None,
+        project_id: IDStringType = None,
+        source_item_id: IDStringType = None,
+        source_item_type: Literal[
+            "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+        ] = None,
+        solver_version: str = None,
+        fork_case: bool = None,
+    ) -> DraftDraft:
+        """Create a new instance of DraftDraft"""
+        return DraftDraft(
+            name=name,
+            project_id=project_id,
+            source_item_id=source_item_id,
+            source_item_type=source_item_type,
+            solver_version=solver_version,
+            fork_case=fork_case,
+        )
+
+    @classmethod
+    def from_cloud(cls, draft_id: IDStringType) -> Draft:
+        """Load draft from cloud"""
+        return Draft(draft_id=draft_id)
+
+    def update_simulation_params(self, params: SimulationParams):
+        """update the SimulationParams of the draft"""
+
+        RestApi(DraftInterface.endpoint, id=self.id).post(
+            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            method="simulation/file",
+        )
+
+    def run_up_to_target_asset(self, target_asset: type[AssetBase]) -> str:
+        """run the draft up to the target asset"""
+
+        try:
+            run_response = RestApi(DraftInterface.endpoint, id=self.id).post(
+                json={"upTo": target_asset.__name__, "useInHouse": True},
+                method="run",
+            )
+        except Flow360WebError as err:
+            # Error found when translating/runing the simulation
+            detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
+            log.error(f"Failure detail: {detailed_error}")
+            raise RuntimeError(f"Failure detail: {detailed_error}") from err
+
+        destination_id = run_response["id"]
+        return destination_id
+
+
 def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
     RestApi(ProjectInterface.endpoint, id=project_id).get(
         method="path", params={"itemId": item_id, "itemType": item_type}
@@ -71,35 +184,21 @@ def _run(
         )
 
     ##-- Get new draft
-    draft_id = RestApi(DraftInterface.endpoint).post(
-        DraftPostRequest(
-            name=draft_name,
-            project_id=source_asset.project_id,
-            source_item_id=source_asset.id,
-            source_item_type=source_asset.__class__.__name__,
-            solver_version=source_asset.solver_version,
-            fork_case=fork_case,
-        ).model_dump(by_alias=True)
-    )["id"]
+    _draft = Draft.create(
+        name=draft_name,
+        project_id=source_asset.project_id,
+        source_item_id=source_asset.id,
+        source_item_type=source_asset.__class__.__name__,
+        solver_version=source_asset.solver_version,
+        fork_case=fork_case,
+    ).submit()
 
     ##-- Post the simulation param:
-    RestApi(DraftInterface.endpoint, id=draft_id).post(
-        json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
-        method="simulation/file",
-    )
-    ##-- Kick off draft run:
-    try:
-        run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
-            json={"upTo": target_asset.__name__, "useInHouse": True},
-            method="run",
-        )
-    except Flow360WebError as err:
-        # Error found when translating/runing the simulation
-        detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
-        log.error(f"Failure detail: {detailed_error}")
-        raise RuntimeError(f"Failure detail: {detailed_error}") from err
+    _draft.update_simulation_params(params)
 
-    destination_id = run_response["id"]
+    ##-- Kick off draft run:
+    destination_id = _draft.run_up_to_target_asset(target_asset)
+
     ##-- Patch project
     RestApi(ProjectInterface.endpoint, id=source_asset.project_id).patch(
         json={
@@ -108,6 +207,7 @@ def _run(
         }
     )
     destination_obj = target_asset.from_cloud(destination_id)
+
     if async_mode is False:
         start_time = time.time()
         while destination_obj.status.is_final() is False:
