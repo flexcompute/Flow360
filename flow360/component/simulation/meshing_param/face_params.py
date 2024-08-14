@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
 
 
 class SurfaceRefinement(Flow360BaseModel):
@@ -41,6 +42,8 @@ class SurfaceRefinement(Flow360BaseModel):
         "This can not be overridden per face. The default is 12 degrees.",
     )
 
+    private_attribute_is_global_setting: bool = pd.Field(default=False, frozen=True)
+
     @pd.model_validator(mode="after")
     def _check_valid_setting_combination(self):
         """Check if the settings are valid in global or per-item context."""
@@ -54,6 +57,13 @@ class SurfaceRefinement(Flow360BaseModel):
             # Is Global refinement
             if self.curvature_resolution_angle is None:
                 self.curvature_resolution_angle = 12 * u.deg  # Applying default
+        return self
+
+    @pd.model_validator(mode="after")
+    def _flag_global_setting(self):
+        """Flag the global setting after user input depending on if `entities` is empty."""
+        with _model_attribute_unlock(self, "private_attribute_is_global_setting"):
+            self.private_attribute_is_global_setting = self.entities is None
         return self
 
 
@@ -82,6 +92,8 @@ class BoundaryLayer(Flow360BaseModel):
         None, description="Growth rate for volume prism layers.", ge=1
     )  # Note:  Per face specification is actually not supported.
 
+    private_attribute_is_global_setting: bool = pd.Field(default=False, frozen=True)
+
     @pd.model_validator(mode="after")
     def _check_valid_setting_combination(self):
         """Check if the settings are valid in global or per-item context."""
@@ -97,6 +109,13 @@ class BoundaryLayer(Flow360BaseModel):
             # Is Global refinement
             if self.growth_rate is None:
                 self.growth_rate = 1.2  # Applying default
+        return self
+
+    @pd.model_validator(mode="after")
+    def _flag_global_setting(self):
+        """Flag the global setting after user input depending on if `entities` is empty."""
+        with _model_attribute_unlock(self, "private_attribute_is_global_setting"):
+            self.private_attribute_is_global_setting = self.entities is None
         return self
 
 

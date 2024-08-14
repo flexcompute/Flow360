@@ -8,6 +8,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
 
 
 class AngleBasedRefinement(Flow360BaseModel):
@@ -67,6 +68,8 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         ]
     ] = pd.Field(None, discriminator="type")
 
+    private_attribute_is_global_setting: bool = pd.Field(default=False, frozen=True)
+
     @pd.model_validator(mode="after")
     def _check_valid_setting_combination(self):
         """Check if the settings are valid in global or per-item context."""
@@ -84,4 +87,11 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
                 self.growth_rate = 1.2  # Applying default
             if self.method is not None:
                 raise ValueError("`method` can be only specified in per-item manner, not global.")
+        return self
+
+    @pd.model_validator(mode="after")
+    def _flag_global_setting(self):
+        """Flag the global setting after user input depending on if `entities` is empty."""
+        with _model_attribute_unlock(self, "private_attribute_is_global_setting"):
+            self.private_attribute_is_global_setting = self.entities is None
         return self
