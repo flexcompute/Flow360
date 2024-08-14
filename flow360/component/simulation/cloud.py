@@ -134,7 +134,7 @@ class Draft(Flow360Resource):
     def update_simulation_params(self, params: SimulationParams):
         """update the SimulationParams of the draft"""
 
-        RestApi(DraftInterface.endpoint, id=self.id).post(
+        self.post(
             json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
             method="simulation/file",
         )
@@ -143,7 +143,7 @@ class Draft(Flow360Resource):
         """run the draft up to the target asset"""
 
         try:
-            run_response = RestApi(DraftInterface.endpoint, id=self.id).post(
+            run_response = self.post(
                 json={"upTo": target_asset.__name__, "useInHouse": True},
                 method="run",
             )
