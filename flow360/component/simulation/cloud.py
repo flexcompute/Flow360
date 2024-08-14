@@ -29,10 +29,12 @@ def _valid_id_validator(input_id: str):
 IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
 
 
-class DraftPostModel(pd.BaseModel):
+class DraftPostRequest(pd.BaseModel):
     """Data model for draft post request"""
 
-    name: Optional[str] = pd.Field(None)
+    name: str = pd.Field(
+        default_factory=lambda: "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
+    )
     project_id: IDStringType = pd.Field(serialization_alias="projectId")
     source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
     source_item_type: Literal[
@@ -40,13 +42,6 @@ class DraftPostModel(pd.BaseModel):
     ] = pd.Field(serialization_alias="sourceItemType")
     solver_version: str = pd.Field(serialization_alias="solverVersion")
     fork_case: bool = pd.Field(serialization_alias="forkCase")
-
-    @pd.field_validator("name", mode="after")
-    @classmethod
-    def _defautl_draft_name(cls, value):
-        if value is None:
-            return "Client " + datetime.now().strftime("%m-%d %H:%M:%S")
-        return value
 
 
 def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
@@ -77,7 +72,7 @@ def _run(
 
     ##-- Get new draft
     draft_id = RestApi(DraftInterface.endpoint).post(
-        DraftPostModel(
+        DraftPostRequest(
             name=draft_name,
             project_id=source_asset.project_id,
             source_item_id=source_asset.id,

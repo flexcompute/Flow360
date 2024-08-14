@@ -83,8 +83,10 @@ class GeometryDraft(ResourceDraft):
 
     # pylint: disable=consider-using-f-string
     def _validate_geometry(self):
-        if not isinstance(self.file_names, list):
-            raise Flow360FileError("file_names field has to be a list.")
+
+        if not isinstance(self.file_names, list) or len(self.file_names) == 0:
+            raise Flow360FileError("file_names field has to be a non-empty list.")
+
         for geometry_file in self.file_names:
             _, ext = os.path.splitext(geometry_file)
             if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
@@ -97,10 +99,13 @@ class GeometryDraft(ResourceDraft):
             if not os.path.exists(geometry_file):
                 raise Flow360FileError(f"{geometry_file} not found.")
 
-        if self.project_name is None and len(self.file_names) > 1:
-            raise Flow360ValueError(
-                "`project_name` field is required if more than one geometry files are provided."
+        if self.project_name is None:
+            self.project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the first geometry file name {self.project_name} as project name."
             )
+
         if self.length_unit not in LengthUnitType.__args__:
             raise Flow360ValueError(
                 f"specified length_unit : {self.length_unit} is invalid. "
@@ -135,10 +140,6 @@ class GeometryDraft(ResourceDraft):
         """
 
         self._validate()
-        project_name = self.project_name
-        if project_name is None:
-            project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
-        self.project_name = project_name
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
