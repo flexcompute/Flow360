@@ -218,6 +218,10 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         ] = pd.Field(alias="debugType")
         debug_point: Optional[Coordinate] = pd.Field(alias="debugPoint")
 
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(Flow360BaseModel.Config):
+            conflicting_fields = [Conflicts(field1="debug_type", field2="debug_point")]
+
     # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> NavierStokesSolver:
         """
