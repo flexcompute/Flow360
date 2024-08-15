@@ -884,7 +884,7 @@ def compare_boxes(box1, box2):
     )
 
 
-def test_box_creation():
+def test_box_multi_constructor():
     box1 = Box(
         name="box1",
         center=(0, 0, 0) * u.m,
@@ -920,10 +920,40 @@ def test_box_creation():
     )
     assert np.isclose(box5.angle_of_rotation.value, 0)
 
+
+##:: ---------------- Entity specific validaitons ----------------
+
+
+def test_box_validation():
+    with pytest.raises(
+        ValueError, match=re.escape("The two axes are not orthogonal, dot product is 1.")
+    ):
+        Box.from_principal_axes(
+            name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
+        )
+
+    with pytest.raises(
+        ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative values")
+    ):
+        Box(
+            name="box6",
+            center=(0, 0, 0) * u.m,
+            size=(1, 1, -10) * u.m,
+            axis_of_rotation=(1, 0, 0),
+            angle_of_rotation=10 * u.deg,
+        )
+
+
+def test_cylinder_validation():
     with pytest.raises(
         ValueError,
-        match=re.escape("Box axes not orthogonal."),
+        match=re.escape("Cylinder inner radius (1000.0 m) must be less than outer radius (2.0 m)"),
     ):
-        box6 = Box.from_principal_axes(
-            name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
+        Cylinder(
+            name="cyl",
+            center=(0, 0, 0) * u.m,
+            height=2 * u.m,
+            axis=(1, 0, 0),
+            inner_radius=1000 * u.m,
+            outer_radius=2 * u.m,
         )

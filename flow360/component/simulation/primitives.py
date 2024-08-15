@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Literal, Optional, Tuple, Union, final
+from typing import Annotated, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -45,6 +45,17 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
             + "It is likely that it was never auto generated because the condition is not met."
         )
     raise ValueError(f"Parent zone not found for surface {surface_name}.")
+
+
+def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
+    axis_1, axis_2 = np.array(axis_pair[0]), np.array(axis_pair[1])
+    dot_product = np.dot(axis_1, axis_2)
+    if not np.isclose(dot_product, 0):
+        raise ValueError(f"The two axes are not orthogonal, dot product is {dot_product}.")
+    return axis_pair
+
+
+OrthogonalAxis = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
 
 
 class ReferenceGeometry(Flow360BaseModel):
@@ -140,7 +151,7 @@ class GenericVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["GenericVolume"] = pd.Field(
         "GenericVolume", frozen=True
     )
-    axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)  # Porous media support
+    axes: Optional[OrthogonalAxis] = pd.Field(None)  # Porous media support
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
@@ -168,10 +179,10 @@ class BoxCache(Flow360BaseModel):
     """BoxCache"""
 
     # `axes` will always exist as it needs to be used. So `axes` is more like a storage than input cache.
-    axes: Optional[Tuple[Axis, Axis]] = pd.Field(None)
+    axes: Optional[OrthogonalAxis] = pd.Field(None)
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)
-    size: Optional[LengthType.Point] = pd.Field(None)
+    size: Optional[LengthType.PositiveVector] = pd.Field(None)
     name: Optional[str] = pd.Field(None)
 
 
@@ -179,32 +190,28 @@ class BoxCache(Flow360BaseModel):
 class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
     Represents a box in three-dimensional space.
-
-    Attributes:
-        center (LengthType.Point): The coordinates of the center of the box.
-        size (LengthType.Point): The dimensions of the box (length, width, height).
-        axes (Tuple[Axis, Axis]]): The axes of the box.
     """
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field()
-    size: LengthType.Point = pd.Field()
+    center: LengthType.Point = pd.Field(description="The coordinates of the center of the box.")
+    size: LengthType.PositiveVector = pd.Field(
+        description="The dimensions of the box (length, width, height)."
+    )
     axis_of_rotation: Axis = pd.Field(default=(0, 0, 1))
     angle_of_rotation: AngleType = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
 
-    # pylint: disable=no-self-argument, fixme
-    # TODO: add data type for Tuple[Axis, Axis]
+    # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_principal_axes(
         cls,
         name: str,
         center: LengthType.Point,
-        size: LengthType.Point,
-        axes: Tuple[Axis, Axis],
+        size: LengthType.PositiveVector,
+        axes: OrthogonalAxis,
     ):
         """
         Construct box from principal axes
@@ -212,8 +219,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
-        if not np.isclose(np.linalg.norm(z_axis), 1):
-            raise ValueError("Box axes not orthogonal.")
 
         rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=np.float64))
 
@@ -261,24 +266,25 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 class Cylinder(_VolumeEntityBase):
     """
     Represents a cylinder in three-dimensional space.
-
-    Attributes:
-        axis (Axis): The axis of the cylinder.
-        center (LengthType.Point): The center point of the cylinder.
-        height (LengthType.Postive): The height of the cylinder.
-        inner_radius (LengthType.Positive): The inner radius of the cylinder.
-        outer_radius (LengthType.Positive): The outer radius of the cylinder.
     """
 
     private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)
-    axis: Axis = pd.Field()
+    axis: Axis = pd.Field(description="The axis of the cylinder.")
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field()
-    height: LengthType.Positive = pd.Field()
-    inner_radius: Optional[LengthType.NonNegative] = pd.Field(None)
-    # pylint: disable=fixme
-    # TODO validation outer > inner
-    outer_radius: LengthType.Positive = pd.Field()
+    center: LengthType.Point = pd.Field(description="The center point of the cylinder.")
+    height: LengthType.Positive = pd.Field(description="The height of the cylinder.")
+    inner_radius: Optional[LengthType.NonNegative] = pd.Field(
+        None, description="The inner radius of the cylinder."
+    )
+    outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
+
+    @pd.model_validator(mode="after")
+    def _check_inner_radius_is_less_than_outer_radius(self) -> Self:
+        if self.inner_radius is not None and self.inner_radius >= self.outer_radius:
+            raise ValueError(
+                f"Cylinder inner radius ({self.inner_radius}) must be less than outer radius ({self.outer_radius})."
+            )
+        return self
 
 
 @final
