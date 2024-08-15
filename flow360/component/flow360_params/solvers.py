@@ -206,7 +206,6 @@ class NavierStokesSolver(GenericFlowSolverSettings):
     if Flags.beta_features():
         debug_type: Optional[
             Literal[
-                "point",
                 "minDensity",
                 "minPressure",
                 "maxVelocity",
