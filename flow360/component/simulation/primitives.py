@@ -55,7 +55,7 @@ def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]
     return axis_pair
 
 
-OrthogonalAxis = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
+OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
 
 
 class ReferenceGeometry(Flow360BaseModel):
@@ -151,7 +151,7 @@ class GenericVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["GenericVolume"] = pd.Field(
         "GenericVolume", frozen=True
     )
-    axes: Optional[OrthogonalAxis] = pd.Field(None)  # Porous media support
+    axes: Optional[OrthogonalAxes] = pd.Field(None)  # Porous media support
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
@@ -179,7 +179,7 @@ class BoxCache(Flow360BaseModel):
     """BoxCache"""
 
     # `axes` will always exist as it needs to be used. So `axes` is more like a storage than input cache.
-    axes: Optional[OrthogonalAxis] = pd.Field(None)
+    axes: Optional[OrthogonalAxes] = pd.Field(None)
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)
     size: Optional[LengthType.PositiveVector] = pd.Field(None)
@@ -211,7 +211,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         name: str,
         center: LengthType.Point,
         size: LengthType.PositiveVector,
-        axes: OrthogonalAxis,
+        axes: OrthogonalAxes,
     ):
         """
         Construct box from principal axes
