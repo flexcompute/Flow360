@@ -70,7 +70,7 @@ class ReferenceGeometry(Flow360BaseModel):
 
     # pylint: disable=no-member
     moment_center: Optional[LengthType.Point] = pd.Field(None)
-    moment_length: Optional[Union[LengthType.Positive, LengthType.Moment]] = pd.Field(None)
+    moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(None)
     area: Optional[AreaType.Positive] = pd.Field(None)
 
 
