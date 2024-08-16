@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import List, Union
 
 from flow360.cloud.requests import LengthUnitType
@@ -21,30 +21,24 @@ class AssetBase(metaclass=ABCMeta):
     _interface_class: type[BaseInterface] = None
     _meta_class: type[AssetMetaBaseModel] = None
     _draft_class: type[ResourceDraft] = None
-    id: str
-    project_id: str
-    solver_version: str
-
-    @abstractmethod
-    def _get_metadata(self) -> None:
-        # get the metadata when initializing the object (blocking)
-        pass
+    _web_api_class: type[Flow360Resource] = None
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
-        self._webapi = Flow360Resource(
+        # pylint: disable=not-callable
+        self._webapi = self.__class__._web_api_class(
             interface=self._interface_class,
             meta_class=self._meta_class,
             id=id,
         )
         self.id = id
-        self._get_metadata()
         # get the project id according to resource id
         resp = self._webapi.get()
         project_id = resp["projectId"]
         solver_version = resp["solverVersion"]
-        self.project_id = project_id
-        self.solver_version = solver_version
+        self.project_id: str = project_id
+        self.solver_version: str = solver_version
+        self.internal_registry = None
 
     @classmethod
     # pylint: disable=protected-access
@@ -70,7 +64,8 @@ class AssetBase(metaclass=ABCMeta):
     @classmethod
     def from_cloud(cls, id: str):
         """Create asset with the given ID"""
-        return cls(id)
+        asset_obj = cls(id)
+        return asset_obj
 
     @classmethod
     # pylint: disable=too-many-arguments

@@ -219,6 +219,7 @@ def s3_download_override():
         overwrite: bool = True,
         progress_callback=None,
         log_error=True,
+        **kwargs,
     ):
         to_file = get_local_filename_and_create_folders(
             remote_file_name, to_file=to_file, to_folder=to_folder
@@ -227,6 +228,7 @@ def s3_download_override():
         print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
     S3TransferType.CASE.download_file = s3_mock_download
+    S3TransferType.GEOMETRY.download_file = s3_mock_download
 
 
 # for generating MOCK WEBAPI data:

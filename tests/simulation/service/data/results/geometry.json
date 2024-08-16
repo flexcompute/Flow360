@@ -1,0 +1,1602 @@
+{
+	"version": "0.0.1",
+	"lengthUnits": "Unknown",
+	"stats": {
+		"nBody": 2,
+		"nFace": 12,
+		"nEdge": 24,
+		"bbox": [
+			[
+				0,
+				0,
+				0
+			],
+			[
+				3,
+				1,
+				1
+			]
+		],
+		"minArea": 1,
+		"maxArea": 1,
+		"minLength": 1,
+		"maxLength": 1,
+		"tolerance": 1e-7
+	},
+	"bodies": [
+		{
+			"type": "body",
+			"metadata": {
+				"bbox": [
+					[
+						0,
+						0,
+						0
+					],
+					[
+						1,
+						1,
+						1
+					]
+				],
+				"nFace": 6,
+				"faces": [
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0001.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									0,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body01_face0001",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0001"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0002.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									1,
+									0,
+									0
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body01_face0002",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0002"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0003.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									1,
+									0,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body01_face0003",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0003"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0004.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									0,
+									1,
+									0
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body01_face0004",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0004"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0005.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									1,
+									1,
+									0
+								]
+							],
+							"area": 1,
+							"id": "body01_face0005",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0005"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body01_face0006.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									0,
+									0,
+									1
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body01_face0006",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "IsFirstBox",
+									"value": "Yes"
+								},
+								{
+									"key": "faceId",
+									"value": "body01_face0006"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					}
+				],
+				"nEdge": 12,
+				"edges": [
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0001.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0003"
+							],
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									0,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0001",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0001"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0002.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0006"
+							],
+							"bbox": [
+								[
+									0,
+									0,
+									1
+								],
+								[
+									0,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0002",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0002"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0003.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0004"
+							],
+							"bbox": [
+								[
+									0,
+									1,
+									0
+								],
+								[
+									0,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0003",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0003"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0004.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0005"
+							],
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									0,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0004",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0004"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0005.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0003"
+							],
+							"bbox": [
+								[
+									1,
+									0,
+									0
+								],
+								[
+									1,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0005",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0005"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0006.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0006"
+							],
+							"bbox": [
+								[
+									1,
+									0,
+									1
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0006",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0006"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0007.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0004"
+							],
+							"bbox": [
+								[
+									1,
+									1,
+									0
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0007",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0007"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0008.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0005"
+							],
+							"bbox": [
+								[
+									1,
+									0,
+									0
+								],
+								[
+									1,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0008",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0008"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0009.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0003",
+								"face0005"
+							],
+							"bbox": [
+								[
+									0,
+									0,
+									0
+								],
+								[
+									1,
+									0,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0009",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0009"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0010.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0003",
+								"face0006"
+							],
+							"bbox": [
+								[
+									0,
+									0,
+									1
+								],
+								[
+									1,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0010",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0010"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0011.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0004",
+								"face0005"
+							],
+							"bbox": [
+								[
+									0,
+									1,
+									0
+								],
+								[
+									1,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0011",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0011"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body01_edge0012.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0004",
+								"face0006"
+							],
+							"bbox": [
+								[
+									0,
+									1,
+									1
+								],
+								[
+									1,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body01_edge0012",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box1"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body01_edge0012"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					}
+				],
+				"volume": 1,
+				"id": "body01",
+				"attributes": [
+					{
+						"key": "ByBody",
+						"value": "Box1"
+					},
+					{
+						"key": "ByTheType",
+						"value": "IamFaces"
+					},
+					{
+						"key": "IsFirstBox",
+						"value": "Yes"
+					},
+					{
+						"key": "FCsource",
+						"value": "geometry_by_pyCAPS.egads"
+					}
+				]
+			}
+		},
+		{
+			"type": "body",
+			"metadata": {
+				"bbox": [
+					[
+						2,
+						0,
+						0
+					],
+					[
+						3,
+						1,
+						1
+					]
+				],
+				"nFace": 6,
+				"faces": [
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0001.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									2,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body02_face0001",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0001"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0002.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									3,
+									0,
+									0
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body02_face0002",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0002"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0003.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									3,
+									0,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body02_face0003",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "RandomName",
+									"value": "IamIsolated"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0003"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0004.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									2,
+									1,
+									0
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body02_face0004",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0004"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0005.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									3,
+									1,
+									0
+								]
+							],
+							"area": 1,
+							"id": "body02_face0005",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0005"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "face",
+						"file": {
+							"fileName": "body02_face0006.gltf",
+							"fileSize": 202140
+						},
+						"metadata": {
+							"bbox": [
+								[
+									2,
+									0,
+									1
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"area": 1,
+							"id": "body02_face0006",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamFaces"
+								},
+								{
+									"key": "faceId",
+									"value": "body02_face0006"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					}
+				],
+				"nEdge": 12,
+				"edges": [
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0001.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0003"
+							],
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									2,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0001",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0001"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0002.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0006"
+							],
+							"bbox": [
+								[
+									2,
+									0,
+									1
+								],
+								[
+									2,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0002",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0002"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0003.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0004"
+							],
+							"bbox": [
+								[
+									2,
+									1,
+									0
+								],
+								[
+									2,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0003",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0003"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0004.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0001",
+								"face0005"
+							],
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									2,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0004",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0004"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0005.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0003"
+							],
+							"bbox": [
+								[
+									3,
+									0,
+									0
+								],
+								[
+									3,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0005",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0005"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0006.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0006"
+							],
+							"bbox": [
+								[
+									3,
+									0,
+									1
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0006",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0006"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0007.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0004"
+							],
+							"bbox": [
+								[
+									3,
+									1,
+									0
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0007",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0007"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0008.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0002",
+								"face0005"
+							],
+							"bbox": [
+								[
+									3,
+									0,
+									0
+								],
+								[
+									3,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0008",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0008"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0009.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0003",
+								"face0005"
+							],
+							"bbox": [
+								[
+									2,
+									0,
+									0
+								],
+								[
+									3,
+									0,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0009",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0009"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0010.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0003",
+								"face0006"
+							],
+							"bbox": [
+								[
+									2,
+									0,
+									1
+								],
+								[
+									3,
+									0,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0010",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0010"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0011.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0004",
+								"face0005"
+							],
+							"bbox": [
+								[
+									2,
+									1,
+									0
+								],
+								[
+									3,
+									1,
+									0
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0011",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0011"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					},
+					{
+						"type": "edge",
+						"file": {
+							"fileName": "body02_edge0012.gltf",
+							"fileSize": 1850
+						},
+						"metadata": {
+							"faces": [
+								"face0004",
+								"face0006"
+							],
+							"bbox": [
+								[
+									2,
+									1,
+									1
+								],
+								[
+									3,
+									1,
+									1
+								]
+							],
+							"arcLength": 1,
+							"id": "body02_edge0012",
+							"attributes": [
+								{
+									"key": "ByBody",
+									"value": "Box2"
+								},
+								{
+									"key": "ByTheType",
+									"value": "IamEdges"
+								},
+								{
+									"key": "edgeId",
+									"value": "body02_edge0012"
+								}
+							],
+							"tolerance": 1e-7
+						}
+					}
+				],
+				"volume": 1,
+				"id": "body02",
+				"attributes": [
+					{
+						"key": "ByBody",
+						"value": "Box2"
+					},
+					{
+						"key": "ByTheType",
+						"value": "IamFaces"
+					},
+					{
+						"key": "FCsource",
+						"value": "geometry_by_pyCAPS.egads"
+					}
+				]
+			}
+		}
+	]
+}
