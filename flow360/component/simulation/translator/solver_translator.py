@@ -7,6 +7,7 @@ import numpy as np
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
+from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
@@ -737,7 +738,7 @@ def get_solver_json(
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
 
-            if model.transition_model_solver is not None:
+            if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
                 translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
                 transition_dict = translated["transitionModelSolver"]

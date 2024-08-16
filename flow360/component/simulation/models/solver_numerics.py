@@ -371,3 +371,8 @@ class TransitionModelSolver(GenericSolverSettings):
     trip_regions: Optional[List[Box]] = pd.Field(None)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
+
+
+TransitionModelSolverType = Annotated[
+    Union[NoneSolver, TransitionModelSolver], pd.Field(discriminator="type_name")
+]
