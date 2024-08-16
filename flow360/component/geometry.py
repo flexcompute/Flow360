@@ -96,19 +96,6 @@ class GeometryMeta(AssetMetaBaseModel):
     metadata: Optional[_GeometryMetadataModel] = pd.Field(None)
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
 
-    @classmethod
-    def _replace_metadata_in_given_geometry_meta(
-        cls, geometry_meta: GeometryMeta, new_metadata: _GeometryMetadataModel
-    ) -> GeometryMeta:
-        """
-        Replace the metadata inside the given geometry_meta with the
-        new_metadata and return the updated geometry_meta.
-        This circumvents the immutability of `AssetMetaBaseModel`.
-        """
-        geometry_meta_dict = geometry_meta.dict(by_alias=True)
-        geometry_meta_dict["metadata"] = new_metadata.dict()
-        return GeometryMeta.parse_obj(geometry_meta_dict)
-
 
 class GeometryWebAPI(Flow360Resource):
     """Specialized web API for Geometry resource. Added capability to download and parse metadata."""
