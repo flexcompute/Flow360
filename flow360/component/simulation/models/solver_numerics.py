@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
@@ -368,6 +368,6 @@ class TransitionModelSolver(GenericSolverSettings):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
 
-    trip_region: Optional[Box] = pd.Field(None)
+    trip_regions: Optional[List[Box]] = pd.Field(None)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))

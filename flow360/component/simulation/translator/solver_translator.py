@@ -618,7 +618,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     return boundary
 
 
-def set_AFT_ncrit(ncrit_input, turb_intensity_percent_input):
+def set_aft_ncrit(ncrit_input, turb_intensity_percent_input):
     """
     Compute the critical amplification factor for AFT transition solver based on
     input turbulence intensity and input Ncrit. Computing Ncrit from turbulence
@@ -627,7 +627,6 @@ def set_AFT_ncrit(ncrit_input, turb_intensity_percent_input):
 
     if turb_intensity_percent_input is not None:
         ncrit = -8.43 - 2.4 * np.log(0.025 * np.tanh(turb_intensity_percent_input / 2.5))
-        np.clip(ncrit, 1.0, 11.0)
     elif ncrit_input is not None:
         ncrit = ncrit_input
     else:
@@ -739,32 +738,35 @@ def get_solver_json(
                 ].pop("modelingConstants")
 
             if model.transition_model_solver is not None:
+                # baseline dictionary dump for transition model object
                 translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
-                replace_dict_key(translated["transitionModelSolver"], "typeName", "modelType")
+                transition_dict = translated["transitionModelSolver"]
+                replace_dict_key(transition_dict, "typeName", "modelType")
                 replace_dict_key(
-                    translated["transitionModelSolver"],
-                    "equationEvaluationFrequency",
-                    "equationEvalFrequency",
+                    transition_dict, "equationEvaluationFrequency", "equationEvalFrequency"
                 )
                 # compute NCrit and remove turbulence intensity
-                turb_intensity_percent_input = model.transition_model_solver.turbulence_intensity_percent
-                ncrit_input = model.transition_model_solver.N_crit
-                ncrit = set_AFT_ncrit(ncrit_input, turb_intensity_percent_input)
-                translated["transitionModelSolver"].pop("turbulenceIntensityPercent", None)
-                translated["transitionModelSolver"].pop("NCrit", None)
-                translated["transitionModelSolver"]["Ncrit"] = ncrit
-                # build trip region if applicable
-                if "tripRegion" in translated["transitionModelSolver"]:
-                    translated["transitionModelSolver"].pop("tripRegion")
-                    model.transition_model_solver.trip_region.convert_axis_and_angle_to_coordinate_axes()
-                    axes = (
-                        model.transition_model_solver.trip_region.private_attribute_input_cache.axes
-                    )
-                    translated["transitionModelSolver"]["tripRegion"] = {
-                        "center": model.transition_model_solver.trip_region.center.tolist(),
-                        "size": model.transition_model_solver.trip_region.size.tolist(),
-                        "axes": [list(axes[0]), list(axes[1])],
-                    }
+                ncrit = set_aft_ncrit(
+                    model.transition_model_solver.N_crit,
+                    model.transition_model_solver.turbulence_intensity_percent,
+                )
+                transition_dict.pop("turbulenceIntensityPercent", None)
+                transition_dict.pop("NCrit", None)
+                transition_dict["Ncrit"] = ncrit
+                # build trip region(s) if applicable
+                if "tripRegions" in transition_dict:
+                    transition_dict.pop("tripRegions")
+                    for trip_region in model.transition_model_solver.trip_regions:
+                        trip_region.convert_axis_and_angle_to_coordinate_axes()
+                        axes = trip_region.private_attribute_input_cache.axes
+                        transition_dict["tripRegions"] = []
+                        transition_dict["tripRegions"].append(
+                            {
+                                "center": list(trip_region.center.value),
+                                "size": list(trip_region.size.value),
+                                "axes": [list(axes[0]), list(axes[1])],
+                            }
+                        )
 
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
