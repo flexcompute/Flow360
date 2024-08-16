@@ -618,16 +618,20 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     return boundary
 
 
-def compute_aft_ncrit(turb_intensity_percent):
+def set_AFT_ncrit(ncrit_input, turb_intensity_percent_input):
     """
     Compute the critical amplification factor for AFT transition solver based on
-    input turbulence intensity if available. Otherwise, supply a default.
+    input turbulence intensity and input Ncrit. Computing Ncrit from turbulence
+    intensity takes priority if both are specified.
     """
 
-    ncrit = 8.15
-    if turb_intensity_percent is not None:
-        ncrit = -8.43 - 2.4 * np.log(0.025 * np.tanh(turb_intensity_percent / 2.5))
+    if turb_intensity_percent_input is not None:
+        ncrit = -8.43 - 2.4 * np.log(0.025 * np.tanh(turb_intensity_percent_input / 2.5))
         np.clip(ncrit, 1.0, 11.0)
+    elif ncrit_input is not None:
+        ncrit = ncrit_input
+    else:
+        ncrit = 8.15
 
     return ncrit
 
@@ -743,12 +747,12 @@ def get_solver_json(
                     "equationEvalFrequency",
                 )
                 # compute NCrit and remove turbulence intensity
-                turb_intensity_percent = translated["transitionModelSolver"][
-                    "turbulenceIntensityPercent"
-                ]
-                ncrit = compute_aft_ncrit(turb_intensity_percent)
+                turb_intensity_percent_input = model.transition_model_solver.turbulence_intensity_percent
+                ncrit_input = model.transition_model_solver.N_crit
+                ncrit = set_AFT_ncrit(ncrit_input, turb_intensity_percent_input)
+                translated["transitionModelSolver"].pop("turbulenceIntensityPercent", None)
+                translated["transitionModelSolver"].pop("NCrit", None)
                 translated["transitionModelSolver"]["Ncrit"] = ncrit
-                translated["transitionModelSolver"].pop("turbulenceIntensityPercent")
                 # build trip region if applicable
                 if "tripRegion" in translated["transitionModelSolver"]:
                     translated["transitionModelSolver"].pop("tripRegion")
