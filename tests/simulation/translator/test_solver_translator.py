@@ -55,6 +55,9 @@ from tests.simulation.translator.utils.porousMedia_param_generator import (
 from tests.simulation.translator.utils.symmetryBC_param_generator import (
     create_symmetryBC_param,
 )
+from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator import (
+    create_turb_flat_plate_box_trip_param,
+)
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
     create_vortex_propagation_param,
@@ -274,3 +277,10 @@ def test_heatFluxCylinder(create_heat_flux_cylinder_param):
 def test_plateASI(create_plateASI_param):
     param = create_plateASI_param
     translate_and_compare(param, mesh_unit=0.1016 * u.m, ref_json_file="Flow360_plateASI.json")
+
+
+def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
+    param = create_turb_flat_plate_box_trip_param
+    translate_and_compare(
+        param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_TurbFlatPlate137x97_BoxTrip.json"
+    )
