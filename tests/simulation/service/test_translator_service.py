@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import pytest
 
+from flow360.component.simulation.framework.entity_base import ForAll
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -167,7 +168,7 @@ def test_simulation_to_volume_meshing_json():
                     "first_layer_thickness": {"units": "m", "value": 1.35e-06},
                     "growth_rate": 1.04,
                     "refinement_type": "BoundaryLayer",
-                    "type": "aniso",
+                    "entities": {"stored_entities": [{"type_name": "ForAll"}]},
                 },
             ],
             "volume_zones": [
@@ -400,7 +401,7 @@ def test_simulation_to_all_translation():
         meshing = MeshingParams(
             surface_layer_growth_rate=1.5,
             refinements=[
-                BoundaryLayer(first_layer_thickness=0.001),
+                BoundaryLayer(first_layer_thickness=0.001, entities=ForAll()),
                 SurfaceRefinement(
                     max_edge_length=15 * u.cm,
                     curvature_resolution_angle=10 * u.deg,
@@ -450,6 +451,7 @@ def test_simulation_to_all_translation_2():
                     "_id": "63ed1bfe-1b1b-4092-bb9d-915da0b6c092",
                     "first_layer_thickness": {"value": 0.001, "units": "m"},
                     "growth_rate": 1.2,
+                    "entities": {"stored_entities": [{"type_name": "ForAll"}]},
                 },
                 {
                     "name": "Surface refinement_1",

@@ -11,6 +11,13 @@
       {
         "name": "Global surface refinement",
         "refinement_type": "SurfaceRefinement",
+        "entities": {
+          "stored_entities": [
+            {
+              "type_name": "ForAll"
+            }
+          ]
+        },
         "curvature_resolution_angle": {
           "value": 12.0,
           "units": "degree"
@@ -20,7 +27,14 @@
         "name": "Global Boundary layer refinement",
         "refinement_type": "BoundaryLayer",
         "type": "aniso",
-        "growth_rate": 1.2
+        "growth_rate": 1.2,
+        "entities": {
+          "stored_entities": [
+            {
+              "type_name": "ForAll"
+            }
+          ]
+        }
       }
     ],
     "volume_zones": [
@@ -188,7 +202,14 @@
           "CfVec"
         ]
       },
-      "output_type": "SurfaceOutput"
+      "output_type": "SurfaceOutput",
+      "entities": {
+        "stored_entities": [
+          {
+            "type_name": "ForAll"
+          }
+        ]
+      }
     }
   ],
   "private_attribute_asset_cache": {

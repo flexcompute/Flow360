@@ -5,7 +5,11 @@ from typing import Optional
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_base import (
+    EntityBase,
+    EntityList,
+    ForAll,
+)
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
@@ -51,6 +55,9 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
                 supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
             )
             for entity in expanded_entities if expanded_entities else []:
+                if isinstance(entity, ForAll):
+                    # ForAll is symbolic, does not need to be registered.
+                    continue
                 registry.register(entity)
 
         elif isinstance(field, list):

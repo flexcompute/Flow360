@@ -168,7 +168,7 @@ def get_attribute_from_instance_list(
     obj_list: list,
     class_type,
     attribute_name: Union[str, list],
-    only_find_when_entities_none: bool = False,
+    only_find_when_entities_is_all: bool = False,
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
@@ -178,7 +178,12 @@ def get_attribute_from_instance_list(
                 and getattr_by_path(obj, attribute_name, None) is not None
             ):
                 # Route 1: Requested to look into empty-entity instances
-                if only_find_when_entities_none and getattr(obj, "entities", None) is not None:
+                entities = getattr(obj, "entities", None)
+                if (
+                    only_find_when_entities_is_all
+                    and entities is not None
+                    and entities.has_all() is False
+                ):
                     # We only look for empty entities instances
                     # Note: This poses requirement that entity list has to be under attribute name 'entities'
                     continue
@@ -263,15 +268,17 @@ def translate_setting_and_apply_to_all_entities(
 
             list_of_entities = []
             if "entities" in obj.model_fields:
-                if obj.entities is None:
-                    continue
                 if isinstance(obj.entities, EntityList):
+                    if obj.entities.has_all():
+                        continue
                     list_of_entities = (
                         obj.entities.stored_entities
                         if lump_list_of_entities is False
                         else [obj.entities]
                     )
                 elif isinstance(obj.entities, UniqueItemList):
+                    if obj.entities.has_all():
+                        continue
                     list_of_entities = (
                         obj.entities.items if lump_list_of_entities is False else [obj.entities]
                     )
@@ -364,7 +371,7 @@ def get_global_setting_from_per_item_setting(
         obj_list,
         class_type,
         attribute_name,
-        only_find_when_entities_none=True,
+        only_find_when_entities_is_all=True,
     )
 
     if global_setting is None:
@@ -379,7 +386,7 @@ def get_global_setting_from_per_item_setting(
                 obj_list,
                 class_type,
                 attribute_name,
-                only_find_when_entities_none=False,
+                only_find_when_entities_is_all=False,
             )
         else:
             # Ideally SimulationParams should have validation on this.

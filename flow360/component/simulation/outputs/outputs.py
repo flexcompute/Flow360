@@ -16,7 +16,7 @@ from flow360.component.flow360_params.flow360_fields import (
     VolumeFieldNames,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, ForAll
 from flow360.component.simulation.framework.unique_list import (
     UniqueAliasedStringList,
     UniqueItemList,
@@ -60,10 +60,8 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 class SurfaceOutput(_AnimationAndFileFormatSettings):
     """Surface output settings."""
 
-    # pylint: disable=fixme
-    # TODO: entities is None --> use all surfaces. This is not implemented yet.
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
+    entities: EntityList[Surface, GhostSurface, ForAll] = pd.Field(ForAll(), alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface."
@@ -128,7 +126,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Slice]] = pd.Field(None, alias="slices")
+    entities: EntityList[Slice, ForAll] = pd.Field(ForAll(), alias="slices")
     output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
@@ -137,7 +135,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces")
+    entities: UniqueItemList[Isosurface, ForAll] = pd.Field(ForAll(), alias="isosurfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
@@ -146,7 +144,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
+    entities: EntityList[Surface, GhostSurface, ForAll] = pd.Field(ForAll(), alias="surfaces")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
@@ -155,7 +153,7 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
+    entities: EntityList[Point, ForAll] = pd.Field(ForAll(), alias="probe_points")
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 

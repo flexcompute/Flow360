@@ -10,6 +10,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import (
     EntityList,
+    ForAll,
     MergeConflictError,
     _merge_objects,
 )
@@ -183,9 +184,7 @@ class TempSurface(_SurfaceEntityBase):
 
 
 class TempFluidDynamics(Flow360BaseModel):
-    entities: EntityList[GenericVolume, Box, Cylinder, str] = pd.Field(
-        alias="volumes", default=None
-    )
+    entities: EntityList[GenericVolume, Box, Cylinder, str, ForAll] = pd.Field(alias="volumes")
 
 
 class TempWallBC(Flow360BaseModel):
@@ -488,9 +487,9 @@ def test_entities_input_interface(my_volume_mesh1):
     ):
         expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities()
 
-    # 4. test None
-    expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
-    assert expanded_entities is None
+    # 4. test ForAll
+    expanded_entities = TempFluidDynamics(entities=ForAll()).entities._get_expanded_entities()
+    assert expanded_entities == [ForAll()]
 
     # 5. test non-existing entity
     with pytest.raises(
@@ -508,11 +507,6 @@ def test_entities_input_interface(my_volume_mesh1):
         match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
     ):
         my_volume_mesh1["asdf"]
-
-
-def test_skipped_entities():
-    TempFluidDynamics()
-    assert TempFluidDynamics().entities.stored_entities is None
 
 
 def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
@@ -957,3 +951,13 @@ def test_cylinder_validation():
             inner_radius=1000 * u.m,
             outer_radius=2 * u.m,
         )
+
+
+def test_mixing_of_local_and_global(my_cylinder1):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Cannot mix 'ForAll' with individual entities. Please either remove 'ForAll' or individual entities."
+        ),
+    ):
+        TempFluidDynamics(entities=[my_cylinder1, ForAll()])

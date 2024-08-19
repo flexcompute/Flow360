@@ -2,6 +2,7 @@ import json
 import os
 
 import flow360 as fl
+from flow360.component.simulation.framework.entity_base import ForAll
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -28,10 +29,8 @@ from flow360.component.simulation.unit_system import SI_unit_system, u
 fl.UserConfig.set_profile("auto_test_1")
 fl.Env.dev.active()
 
-from flow360.component.geometry_v1 import Geometry
-from flow360.examples import Airplane
 
-SOLVER_VERSION = "workbench-24.6.0"
+SOLVER_VERSION = "workbench-24.8.0"
 
 
 def get_all_process_jsons(params_as_dict):
@@ -53,7 +52,7 @@ def get_all_process_jsons(params_as_dict):
 with SI_unit_system:
     meshing = MeshingParams(
         refinements=[
-            BoundaryLayer(first_layer_thickness=0.001),
+            BoundaryLayer(first_layer_thickness=0.001, entities=ForAll()),
             SurfaceRefinement(
                 max_edge_length=0.15 * u.m,
                 curvature_resolution_angle=10 * u.deg,

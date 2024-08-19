@@ -303,6 +303,7 @@ def translate_slice_isosurface_output(
         allow_get_from_first_instance_as_fallback=False,
         return_none_when_no_global_found=True,
     )
+    print(f">> shared_output_fields for {output_class.__name__} is ", shared_output_fields)
     translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,

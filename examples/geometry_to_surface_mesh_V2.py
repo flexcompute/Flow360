@@ -1,6 +1,7 @@
 import flow360 as fl
 from flow360.component.geometry import Geometry
 from flow360.component.simulation import cloud
+from flow360.component.simulation.framework.entity_base import ForAll
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -22,7 +23,7 @@ with SI_unit_system:
         meshing=MeshingParams(
             refinements=[
                 SurfaceRefinement(max_edge_length=0.8),
-                BoundaryLayer(first_layer_thickness=0.8),
+                BoundaryLayer(faces=ForAll(), first_layer_thickness=0.8),
             ],
             volume_zones=[AutomatedFarfield()],
         ),

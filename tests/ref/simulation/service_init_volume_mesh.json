@@ -160,7 +160,14 @@
                     "CfVec"
                 ]
             },
-            "output_type": "SurfaceOutput"
+            "output_type": "SurfaceOutput",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "type_name": "ForAll"
+                    }
+                ]
+            }
         }
     ],
     "private_attribute_asset_cache": {

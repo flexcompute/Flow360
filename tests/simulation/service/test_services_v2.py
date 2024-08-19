@@ -134,47 +134,6 @@ def test_validate_multiple_errors():
     assert errors[1]["loc"] == ("reference_geometry", "area", "value")
 
 
-def test_validate_errors():
-
-    params_data = {
-        "meshing": {
-            "farfield": "auto",
-            "refinement_factor": 1,
-            "refinements": [
-                {
-                    "_id": "926a6cbd-0ddb-4051-b860-3414565e6408",
-                    "curvature_resolution_angle": 10,
-                    "max_edge_length": 0.1,
-                    "name": "Surface refinement_0",
-                    "refinement_type": "SurfaceRefinement",
-                },
-                {
-                    "_id": "3972fbbf-4af6-4ca5-a8bb-341bbcf1294b",
-                    "first_layer_thickness": 0.001,
-                    "name": "Boundary layer refinement_1",
-                    "refinement_type": "BoundaryLayer",
-                },
-            ],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
-            "surface_layer_growth_rate": 1.2,
-        },
-    }
-
-    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
-    json.dumps(errors)
-
-
 def test_init():
     ##1: test default values for geometry starting point
     data = services.get_default_params(

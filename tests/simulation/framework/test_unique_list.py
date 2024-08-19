@@ -9,6 +9,7 @@ from flow360.component.flow360_params.flow360_fields import (
     CommonFieldNamesFull,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import ForAll
 from flow360.component.simulation.framework.unique_list import (
     UniqueAliasedStringList,
     UniqueItemList,
@@ -42,7 +43,7 @@ class TempSlice(_OutputItemBase):
 
 
 class TempIsosurfaceOutput(Flow360BaseModel):
-    isosurfaces: UniqueItemList[TempIsosurface] = pd.Field()
+    isosurfaces: UniqueItemList[TempIsosurface, ForAll] = pd.Field()
     output_fields: UniqueAliasedStringList[Literal[CommonFieldNames, CommonFieldNamesFull]] = (
         pd.Field()
     )
@@ -92,6 +93,15 @@ def test_unique_list():
         match=re.escape("Input should be a valid dictionary or instance of TempIsosurface"),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1, my_slice], output_fields=["wallDistance"])
+
+    # 4.1: Test mixing of global and local entities types:
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Cannot mix 'ForAll' with individual items. Please either remove 'ForAll' or individual items."
+        ),
+    ):
+        TempIsosurfaceOutput(isosurfaces=[ForAll(), my_iso_1], output_fields=["wallDistance"])
 
     with pytest.raises(
         ValueError,

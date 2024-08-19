@@ -122,7 +122,6 @@ def test_recursive_incomplete_model(get_aerospace_condition_using_from):
 
 
 def test_entity_with_multi_constructor():
-    import json
 
     class ModelWithEntityList(Flow360BaseModel):
         entities: EntityList[Box, Cylinder] = pd.Field()

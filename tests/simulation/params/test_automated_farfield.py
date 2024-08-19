@@ -93,7 +93,9 @@ def test_automated_farfield_surface_usage():
     # Test use of GhostSurface in meshing
     with pytest.raises(
         ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+        match=re.escape(
+            "Can not find any valid entity of type ['Surface', 'ForAll'] from the input."
+        ),
     ):
         with SI_unit_system:
             my_farfield = AutomatedFarfield(name="my_farfield")
@@ -115,7 +117,9 @@ def test_automated_farfield_surface_usage():
     # Test use of GhostSurface in boundary conditions
     with pytest.raises(
         ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+        match=re.escape(
+            "Can not find any valid entity of type ['Surface', 'ForAll'] from the input."
+        ),
     ):
         with SI_unit_system:
             my_farfield = AutomatedFarfield(name="my_farfield")

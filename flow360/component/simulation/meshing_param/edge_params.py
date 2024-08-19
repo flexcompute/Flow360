@@ -5,7 +5,7 @@ from typing import Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, ForAll
 from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
@@ -39,7 +39,7 @@ class ProjectAnisoSpacing(Flow360BaseModel):
 
 
 class _BaseEdgeRefinement(Flow360BaseModel):
-    entities: EntityList[Edge] = pd.Field(alias="edges")
+    entities: EntityList[Edge, ForAll] = pd.Field(alias="edges")
     growth_rate: Optional[float] = pd.Field(
         None, description="Growth rate for surface mesh layers grown from edges.", ge=1
     )  # Note:  Per edge specification is actually not supported. This is a global setting in mesher.

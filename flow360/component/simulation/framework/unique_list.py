@@ -8,6 +8,7 @@ import pydantic as pd
 
 from flow360.component.flow360_params.flow360_fields import get_aliases
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import ForAll
 
 
 class _CombinedMeta(type(Flow360BaseModel), type):
@@ -56,6 +57,18 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
         """Check if the items are unique after type checking"""
         return _validate_unique_list(v)
 
+    @pd.field_validator("items", mode="after")
+    @classmethod
+    def _check_mixing_of_all_and_individual_entities(cls, v):
+        """Check if the items are unique after type checking"""
+        if v is None:
+            return None
+        if ForAll() in v and len(v) > 1:
+            raise ValueError(
+                "Cannot mix 'ForAll' with individual items. Please either remove 'ForAll' or individual items."
+            )
+        return v
+
     @pd.model_validator(mode="before")
     @classmethod
     def _format_input_to_list(cls, input_data: Union[dict, list, Any]):
@@ -75,6 +88,10 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
         items_copy = deepcopy(self.items)
         items_copy.append(obj)
         self.items = items_copy  # To trigger validation
+
+    def has_all(self):
+        """This is to support same interface as EntityList."""
+        return self.items == [ForAll()]
 
 
 def _validate_unique_aliased_item(v: List[str]) -> List[str]:

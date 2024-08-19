@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from abc import ABCMeta
 from numbers import Number
-from typing import List, Optional, Union, get_args, get_origin
+from typing import List, Literal, Optional, Union, get_args, get_origin
 
 import numpy as np
 import pydantic as pd
@@ -291,9 +291,25 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     return [entity_list[0] for entity_list in all_entities.values()]
 
 
+class ForAll(Flow360BaseModel):
+    """
+    A symbol that represents all entities of a certain type. The proper type is determined by the context.
+    """
+
+    type_name: Literal["ForAll"] = pd.Field("ForAll", frozen=True)
+
+    def __hash__(self):
+        """For use in UniuqeItemList."""
+        return hash(self.type_name + "collision_avoider")
+
+
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
     The type accepting a list of entities or (name, registry) pair.
+
+    Note: Cannot use discriminator to differentiate from `ForAll` as Pydantic will first
+          look for discriminator which voids our `_format_input_to_list`.
+          We can try Discriminated Unions with callable Discriminator if necessary.
 
     Attributes:
         stored_entities (List[Union[EntityBase, Tuple[str, registry]]]): List of stored entities, which can be
@@ -339,7 +355,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     @classmethod
     def _valid_individual_input(cls, input_data):
         """Validate each individual element in a list or as standalone entity."""
-        if isinstance(input_data, (str, EntityBase)):
+        if isinstance(input_data, (str, EntityBase, ForAll)):
             return input_data
 
         raise ValueError(
@@ -404,6 +420,17 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     @pd.field_validator("stored_entities", mode="after")
     @classmethod
+    def _check_mixing_of_all_and_individual_entities(cls, values):
+        if values is None:
+            return None
+        if ForAll() in values and len(values) > 1:
+            raise ValueError(
+                "Cannot mix 'ForAll' with individual entities. Please either remove 'ForAll' or individual entities."
+            )
+        return values
+
+    @pd.field_validator("stored_entities", mode="after")
+    @classmethod
     def _check_duplicate_entity_in_list(cls, values):
         seen = []
         if values is None:
@@ -444,6 +471,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
         if entities is None:
             return None
+
+        if entities == [ForAll()]:
+            return entities
 
         # pylint: disable=protected-access
         valid_types = self.__class__._get_valid_entity_types()
@@ -495,3 +525,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         """
         self.stored_entities = self._get_expanded_entities(supplied_registry)
         return super().preprocess(self, **kwargs)
+
+    def has_all(self) -> bool:
+        """Check if the entities is meant to be applied to all entities."""
+        return ForAll() in self.stored_entities and len(self.stored_entities) == 1
