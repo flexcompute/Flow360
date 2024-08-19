@@ -58,12 +58,16 @@ def test_simulation_to_surface_meshing_json():
         "version": "24.2.0",
     }
 
-    simulation_to_surface_meshing_json(param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+    simulation_to_surface_meshing_json(
+        param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+    )
 
     bad_param_data = deepcopy(param_data)
     bad_param_data["meshing"]["refinements"][0]["max_edge_length"]["value"] = -12.0
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_surface_meshing_json(bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+        simulation_to_surface_meshing_json(
+            bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+        )
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
         simulation_to_surface_meshing_json(param_data, "Geometry", "SI", None)
@@ -195,7 +199,9 @@ def test_simulation_to_volume_meshing_json():
     bad_param_data = deepcopy(param_data)
     bad_param_data["meshing"]["refinements"][0]["spacing"]["value"] = -12.0
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_volume_meshing_json(bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+        simulation_to_volume_meshing_json(
+            bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+        )
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
         simulation_to_volume_meshing_json(param_data, "Geometry", "SI", None)
@@ -433,15 +439,15 @@ def test_simulation_to_all_translation():
         params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
     )
     print(volume_json)
-    case_json, hash = simulation_to_case_json(params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+    case_json, hash = simulation_to_case_json(
+        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+    )
     print(case_json)
 
 
 def test_simulation_to_case_vm_workflow():
     param_data = {
-        "meshing": {
-           "wrong": "parameters"
-        },
+        "meshing": {"wrong": "parameters"},
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "velocity_magnitude": {"value": 100, "units": "m/s"},
@@ -453,11 +459,14 @@ def test_simulation_to_case_vm_workflow():
     }
 
     with pytest.raises(ValueError):
-        case_json, hash = simulation_to_case_json(param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+        case_json, hash = simulation_to_case_json(
+            param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+        )
         print(case_json)
-    case_json, hash = simulation_to_case_json(param_data, "VolumeMesh", "SI", {"value": 100.0, "units": "cm"})
+    case_json, hash = simulation_to_case_json(
+        param_data, "VolumeMesh", "SI", {"value": 100.0, "units": "cm"}
+    )
     print(case_json)
-
 
 
 def test_simulation_to_all_translation_2():
@@ -517,5 +526,7 @@ def test_simulation_to_all_translation_2():
         params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
     )
     print(volume_json)
-    case_json, hash = simulation_to_case_json(params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+    case_json, hash = simulation_to_case_json(
+        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
+    )
     print(case_json)
