@@ -309,6 +309,22 @@ class Rotation(Flow360BaseModel):
     )
     parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(None)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+        """Ensure entities have sufficient attributes."""
+
+        for entity in value.stored_entities:
+            if entity.axis is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `axis` to be used under `Rotation`."
+                )
+            if entity.center is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `center` to be used under `Rotation`"
+                )
+        return value
+
 
 class PorousMedium(Flow360BaseModel):
     """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
@@ -321,6 +337,18 @@ class PorousMedium(Flow360BaseModel):
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
     volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
     # Note: Axes will always come from the entity
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+        """Ensure entities have sufficient attributes."""
+
+        for entity in value.stored_entities:
+            if entity.axes is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
+                )
+        return value
 
 
 VolumeModelTypes = Union[
