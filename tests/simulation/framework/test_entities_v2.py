@@ -943,6 +943,17 @@ def test_box_validation():
             angle_of_rotation=10 * u.deg,
         )
 
+    with pytest.raises(
+        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative values")
+    ):
+        Box(
+            name="box6",
+            center=(0, 0, 0) * u.m,
+            size=(1, 1, -10) * u.flow360_length_unit,
+            axis_of_rotation=(1, 0, 0),
+            angle_of_rotation=10 * u.deg,
+        )
+
 
 def test_cylinder_validation():
     with pytest.raises(

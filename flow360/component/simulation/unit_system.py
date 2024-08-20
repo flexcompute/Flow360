@@ -919,6 +919,30 @@ class _Flow360BaseUnit(_DimensionedType):
             return self.val != other.val
         return True
 
+    def __lt__(self, other):
+        """
+        This seems consistent with unyt in that for numbers only value is compared
+        e.g.:
+        >>> 1*u.mm >0.1
+        array(True)
+        """
+        if isinstance(other, self.__class__):
+            return self.val < other.val
+        if isinstance(other, Number):
+            return self.val < other
+        raise ValueError(
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
+        )
+
+    def __gt__(self, other):
+        if isinstance(other, self.__class__):
+            return self.val > other.val
+        if isinstance(other, Number):
+            return self.val > other
+        raise ValueError(
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
+        )
+
     def __len__(self):
         if self.val and isinstance(self.val, Collection):
             return len(self.val)
