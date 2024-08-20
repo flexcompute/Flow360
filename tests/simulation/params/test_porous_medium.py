@@ -1,10 +1,7 @@
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.volume_models import (
-    AngleExpression,
-    PorousMedium,
-)
+from flow360.component.simulation.models.volume_models import PorousMedium
 from flow360.component.simulation.primitives import GenericVolume
 
 
