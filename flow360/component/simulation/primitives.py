@@ -268,6 +268,11 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 
         return self
 
+    @property
+    def axes(self):
+        """Return the axes that the box is aligned with."""
+        return self.private_attribute_input_cache.axes
+
 
 @final
 class Cylinder(_VolumeEntityBase):
