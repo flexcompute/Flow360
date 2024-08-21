@@ -638,6 +638,7 @@ write_example(setting, "outputs", "IsosurfaceOutput")
 write_schemas(SurfaceIntegralOutput, "outputs", file_suffix="SurfaceIntegralOutput")
 with imperial_unit_system:
     setting = SurfaceIntegralOutput(
+        name="my_surface_integral",
         output_fields=["primitiveVars", "vorticity"],
         entities=[my_inflow1, my_inflow2],
     )
@@ -646,6 +647,7 @@ write_example(setting, "outputs", "SurfaceIntegralOutput")
 write_schemas(ProbeOutput, "outputs", file_suffix="ProbeOutput")
 with imperial_unit_system:
     setting = ProbeOutput(
+        name="my_probe",
         output_fields=["primitiveVars", "vorticity"],
         entities=[
             Point(name="DoesNotMatter1", location=(1, 2, 3)),
@@ -786,3 +788,9 @@ example_dict = {
     }
 }
 write_example(example_dict, "multi_constructor", "box_mixed_with_cylinder.json")
+
+#### Primitives ####
+write_schemas(Box, "Primitives", file_suffix="Box")
+write_schemas(GenericVolume, "Primitives", file_suffix="GenericVolume")
+write_schemas(Surface, "Primitives", file_suffix="Surface")
+write_schemas(Edge, "Primitives", file_suffix="Edge")
