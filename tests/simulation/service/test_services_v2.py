@@ -46,7 +46,9 @@ def test_validate_service():
         "user_defined_dynamics": [],
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+    )
 
     assert errors is None
 
@@ -86,7 +88,9 @@ def test_validate_error():
         "user_defined_dynamics": [],
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+    )
 
     assert len(errors) == 1
     assert errors[0]["loc"] == ("meshing", "farfield")
@@ -127,7 +131,9 @@ def test_validate_multiple_errors():
         "user_defined_dynamics": [],
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+    )
 
     assert len(errors) == 2
     assert errors[0]["loc"] == ("meshing", "farfield")
@@ -171,7 +177,9 @@ def test_validate_errors():
         },
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+    )
     json.dumps(errors)
 
 
@@ -202,7 +210,9 @@ def test_validate_init_data_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=data, unit_system_name="SI", root_item_type="Geometry"
+    )
     assert len(errors) == 3
     assert errors[0]["loc"][-1] == "max_edge_length"
     assert errors[0]["type"] == "missing"
@@ -214,7 +224,22 @@ def test_validate_init_data_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
-    _, errors, _ = services.validate_model(params_as_dict=data, unit_system_name="SI")
+    _, errors, _ = services.validate_model(
+        params_as_dict=data, unit_system_name="SI", root_item_type="VolumeMesh"
+    )
+    assert len(errors) == 1
+    assert errors[0]["loc"][-1] == "velocity_magnitude"
+    assert errors[0]["type"] == "missing"
+
+
+def test_validate_init_data_vm_workflow_errors():
+
+    data = services.get_default_params(
+        unit_system_name="SI", length_unit="m", root_item_type="Geometry"
+    )
+    _, errors, _ = services.validate_model(
+        params_as_dict=data, unit_system_name="SI", root_item_type="VolumeMesh"
+    )
     assert len(errors) == 1
     assert errors[0]["loc"][-1] == "velocity_magnitude"
     assert errors[0]["type"] == "missing"
@@ -302,7 +327,7 @@ def test_front_end_JSON_with_multi_constructor():
     }
 
     simulation_param, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI"
+        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
     )
     assert errors is None
     with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
