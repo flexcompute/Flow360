@@ -2,8 +2,6 @@
 
 from typing import Type, Union
 
-import numpy as np
-
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
@@ -619,23 +617,6 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     return boundary
 
 
-def set_aft_ncrit(ncrit_input, turb_intensity_percent_input):
-    """
-    Compute the critical amplification factor for AFT transition solver based on
-    input turbulence intensity and input Ncrit. Computing Ncrit from turbulence
-    intensity takes priority if both are specified.
-    """
-
-    if turb_intensity_percent_input is not None:
-        ncrit = -8.43 - 2.4 * np.log(0.025 * np.tanh(turb_intensity_percent_input / 2.5))
-    elif ncrit_input is not None:
-        ncrit = ncrit_input
-    else:
-        ncrit = 8.15
-
-    return ncrit
-
-
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -746,19 +727,13 @@ def get_solver_json(
                 replace_dict_key(
                     transition_dict, "equationEvaluationFrequency", "equationEvalFrequency"
                 )
-                # compute NCrit and remove turbulence intensity
-                ncrit = set_aft_ncrit(
-                    model.transition_model_solver.N_crit,
-                    model.transition_model_solver.turbulence_intensity_percent,
-                )
                 transition_dict.pop("turbulenceIntensityPercent", None)
-                transition_dict.pop("NCrit", None)
-                transition_dict["Ncrit"] = ncrit
+                replace_dict_key(transition_dict, "NCrit", "Ncrit")
+
                 # build trip region(s) if applicable
                 if "tripRegions" in transition_dict:
                     transition_dict.pop("tripRegions")
-                    for trip_region in model.transition_model_solver.trip_regions:
-                        trip_region.convert_axis_and_angle_to_coordinate_axes()
+                    for trip_region in model.transition_model_solver.trip_regions.stored_entities:
                         axes = trip_region.private_attribute_input_cache.axes
                         transition_dict["tripRegions"] = []
                         transition_dict["tripRegions"].append(

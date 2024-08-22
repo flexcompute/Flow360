@@ -252,11 +252,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         )
 
     @pd.model_validator(mode="after")
-    def convert_axis_and_angle_to_coordinate_axes(self) -> Self:
-        """
-        Converts the axis and angle transformation represnetation stored in Box
-        to the coordinate axes representation in BoxCache.
-        """
+    def _convert_axis_and_angle_to_coordinate_axes(self) -> Self:
         # Ensure the axis is a numpy array
         if not self.private_attribute_input_cache.axes:
             axis = np.asarray(self.axis_of_rotation, dtype=np.float64)

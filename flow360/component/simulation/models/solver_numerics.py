@@ -10,15 +10,18 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Union
 
+import numpy as np
 import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
+from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box
 
 # from .time_stepping import UnsteadyTimeStepping
@@ -368,9 +371,28 @@ class TransitionModelSolver(GenericSolverSettings):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
 
-    trip_regions: Optional[List[Box]] = pd.Field(None)
+    trip_regions: Optional[EntityList[Box]] = pd.Field(None)
 
     linear_solver: LinearSolver = pd.Field(LinearSolver(max_iterations=20))
+
+    @pd.model_validator(mode="after")
+    def _set_aft_ncrit(self) -> Self:
+        """
+        Compute the critical amplification factor for AFT transition solver based on
+        input turbulence intensity and input Ncrit. Computing Ncrit from turbulence
+        intensity takes priority if both are specified.
+        """
+
+        if self.turbulence_intensity_percent is not None:
+            ncrit_converted = -8.43 - 2.4 * np.log(
+                0.025 * np.tanh(self.turbulence_intensity_percent / 2.5)
+            )
+            self.turbulence_intensity_percent = None
+            self.N_crit = ncrit_converted
+        elif self.N_crit is None:
+            self.N_crit = 8.15
+
+        return self
 
 
 TransitionModelSolverType = Annotated[
