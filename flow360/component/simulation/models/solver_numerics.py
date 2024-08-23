@@ -366,7 +366,7 @@ class TransitionModelSolver(GenericSolverSettings):
     absolute_tolerance: PositiveFloat = pd.Field(1e-7)
     equation_evaluation_frequency: PositiveInt = pd.Field(4)
     turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(None)
-    # pylint: disable=C0103
+    # pylint: disable=invalid-name
     N_crit: Optional[pd.confloat(ge=1.0, le=11.0)] = pd.Field(None)
     update_jacobian_frequency: PositiveInt = pd.Field(4)
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(0)
