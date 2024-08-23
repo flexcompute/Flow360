@@ -26,6 +26,12 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.primitives import Box  # For parse_model_dict
+from flow360.component.simulation.second_stage_validations.main import (
+    destination_validation,
+)
+from flow360.component.simulation.second_stage_validations.validation_result import (
+    ValidationResult,
+)
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -171,13 +177,17 @@ def get_default_params(
     )
 
 
-def validate_model(
+class ValidationResponse(pd.BaseModel):
+    generic_validtiton: ValidationResult = pd.Field(ValidationResult())
+    surface_meshing: ValidationResult = pd.Field(ValidationResult())
+    volume_meshing: ValidationResult = pd.Field(ValidationResult())
+    case: ValidationResult = pd.Field(ValidationResult())
+
+
+def _generic_validation(
     params_as_dict, unit_system_name, root_item_type: Literal["Geometry", "VolumeMesh"]
 ):
-    """
-    Validate a params dict against the pydantic model
-    """
-
+    """Validaitons that is destination-agnostic"""
     # To be added when unit system is supported in simulation
     unit_system = init_unit_system(unit_system_name)
 
@@ -236,8 +246,42 @@ def validate_model(
             # pylint: disable=broad-exception-caught
             except Exception:  # This seems to be duplicate info anyway.
                 error["ctx"] = {}
+    else:
+        validation_errors = []
 
-    return validated_param, validation_errors, validation_warnings
+    if validation_warnings is None:
+        validation_warnings = []
+
+    return validated_param, ValidationResult(errors=validation_errors, warnings=validation_warnings)
+
+
+def validate_model(
+    params_as_dict,
+    unit_system_name,
+    root_item_type: Literal["Geometry", "VolumeMesh"],
+    run_second_stage_validation: bool = True,
+):
+    """
+    Validate a params dict against the pydantic model
+    """
+    validated_param, generic_validation_results = _generic_validation(
+        params_as_dict, unit_system_name, root_item_type
+    )
+    ##:: 2nd stage validations
+    if generic_validation_results.passed() and run_second_stage_validation is True:
+        (
+            case_validation_results,
+            volume_meshing_validation_results,
+            surface_meshing_validation_results,
+        ) = destination_validation(root_item_type)
+
+    response = ValidationResponse(
+        generic_validtiton=generic_validation_results,
+        case=case_validation_results,
+        surface_meshing=surface_meshing_validation_results,
+        volume_meshing=volume_meshing_validation_results,
+    )
+    return validated_param, response
 
 
 # pylint: disable=too-many-arguments

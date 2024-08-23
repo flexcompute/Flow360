@@ -17,6 +17,9 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.second_stage_validations.main import (
+    destination_validation,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
@@ -189,6 +192,7 @@ def _run(
         raise ValueError(
             f"params argument must be a SimulationParams object but is of type {type(params)}"
         )
+    destination_validation()
 
     ##-- Getting the project length unit from draft and store in the SimulationParams
     _resp = RestApi(ProjectInterface.endpoint, id=source_asset.project_id).get()
