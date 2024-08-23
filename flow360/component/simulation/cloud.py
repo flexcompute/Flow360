@@ -141,7 +141,7 @@ class Draft(Flow360Resource):
             method="simulation/file",
         )
 
-    def retrieve_simulation_dict(self) -> dict:
+    def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""
         response = self.get(method="simulation-config")
         return json.loads(response["simulationJson"])
@@ -195,9 +195,20 @@ def _run(
     last_opened_draft_id = _resp["lastOpenDraftId"]
     assert last_opened_draft_id is not None
     _draft_with_length_unit = Draft.from_cloud(last_opened_draft_id)
-    length_unit = _draft_with_length_unit.retrieve_simulation_dict()[
-        "private_attribute_asset_cache"
-    ]["project_length_unit"]
+
+    simulation_dict = _draft_with_length_unit.get_simulation_dict()
+
+    if (
+        "private_attribute_asset_cache" not in simulation_dict
+        or "project_length_unit" not in simulation_dict["private_attribute_asset_cache"]
+    ):
+        raise KeyError(
+            "[Internal] Could not find project length unit in the draft's simulation settings."
+        )
+
+    length_unit = _draft_with_length_unit.get_simulation_dict()["private_attribute_asset_cache"][
+        "project_length_unit"
+    ]
     with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
         # pylint: disable=no-member
         params.private_attribute_asset_cache.project_length_unit = LengthType.validate(length_unit)
