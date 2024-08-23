@@ -5,6 +5,7 @@ from typing import Type, Union
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
+from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
@@ -686,7 +687,14 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
+
         if isinstance(model, Fluid):
+
+            if model.navier_stokes_solver.low_mach_preconditioner:
+                if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
+                    model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                        input_params.operating_condition.mach
+                    )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -694,6 +702,7 @@ def get_solver_json(
                 "equationEvaluationFrequency",
                 "equationEvalFrequency",
             )
+
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
             replace_dict_key(
                 translated["turbulenceModelSolver"],
@@ -709,6 +718,32 @@ def get_solver_json(
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+
+            if not isinstance(model.transition_model_solver, NoneSolver):
+                # baseline dictionary dump for transition model object
+                translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
+                transition_dict = translated["transitionModelSolver"]
+                replace_dict_key(transition_dict, "typeName", "modelType")
+                replace_dict_key(
+                    transition_dict, "equationEvaluationFrequency", "equationEvalFrequency"
+                )
+                transition_dict.pop("turbulenceIntensityPercent", None)
+                replace_dict_key(transition_dict, "NCrit", "Ncrit")
+
+                # build trip region(s) if applicable
+                if "tripRegions" in transition_dict:
+                    transition_dict.pop("tripRegions")
+                    for trip_region in model.transition_model_solver.trip_regions.stored_entities:
+                        axes = trip_region.private_attribute_input_cache.axes
+                        transition_dict["tripRegions"] = []
+                        transition_dict["tripRegions"].append(
+                            {
+                                "center": list(trip_region.center.value),
+                                "size": list(trip_region.size.value),
+                                "axes": [list(axes[0]), list(axes[1])],
+                            }
+                        )
+
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
 

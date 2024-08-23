@@ -19,8 +19,9 @@ from flow360.component.simulation.models.material import (
 from flow360.component.simulation.models.solver_numerics import (
     HeatEquationSolver,
     NavierStokesSolver,
+    NoneSolver,
     SpalartAllmaras,
-    TransitionModelSolver,
+    TransitionModelSolverType,
     TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.validation.validation_bet_disk import (
@@ -111,7 +112,7 @@ class Fluid(PDEModelBase):
     type: Literal["Fluid"] = pd.Field("Fluid", frozen=True)
     navier_stokes_solver: NavierStokesSolver = pd.Field(NavierStokesSolver())
     turbulence_model_solver: TurbulenceModelSolverType = pd.Field(SpalartAllmaras())
-    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(None)
+    transition_model_solver: TransitionModelSolverType = pd.Field(NoneSolver())
 
     material: FluidMaterialTypes = pd.Field(Air())
 

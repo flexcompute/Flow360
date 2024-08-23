@@ -58,6 +58,7 @@
             "maxIterations": 50
         },
         "lowMachPreconditioner": true,
+        "lowMachPreconditionerThreshold": 0.01,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "Compressible",
         "numericalDissipationFactor": 0.01,
