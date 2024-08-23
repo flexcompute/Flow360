@@ -213,7 +213,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         raise Flow360TranslationError(
             "`boundary_layer_growth_rate` is not set.",
             None,
-            ["meshing", "volume_zones"],
+            ["meshing", "defaults"],
         )
     translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
 

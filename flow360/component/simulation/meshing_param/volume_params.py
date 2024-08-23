@@ -3,7 +3,7 @@ Meshing settings that applies to volumes.
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 
 import pydantic as pd
 
@@ -55,10 +55,6 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
         "AxisymmetricRefinement", frozen=True
     )
     entities: EntityList[Cylinder] = pd.Field()
-    # pylint: disable=no-member
-
-
-VolumeRefinementTypes = Union[UniformRefinement, AxisymmetricRefinement]
 
 
 class RotationCylinder(CylindricalRefinementBase):
@@ -141,6 +137,7 @@ class AutomatedFarfield(Flow360BaseModel):
             # so it is most likely incomplete.
             # Besides in casePipeline we will overwrite private_attribute_zone_boundary_names
             # with volume mesh metadata anyway.
+            # pylint: disable=no-member
             self.private_attribute_entity.private_attribute_zone_boundary_names.append("farfield")
             if self.method == "auto":
                 self.private_attribute_entity.private_attribute_zone_boundary_names.append(

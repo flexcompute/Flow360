@@ -1,6 +1,6 @@
 """Face based meshing parameters for meshing."""
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 
 import pydantic as pd
 
@@ -54,8 +54,5 @@ class BoundaryLayer(Flow360BaseModel):
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
     first_layer_thickness: LengthType.Positive = pd.Field(
-        description="First layer thickness for volumetric anisotropic layers for given face."
+        description="First layer thickness for volumetric anisotropic layers grown from given faces."
     )
-
-
-SurfaceRefinementTypes = Union[SurfaceRefinement, BoundaryLayer, PassiveSpacing]

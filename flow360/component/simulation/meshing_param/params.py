@@ -9,20 +9,28 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
-    SurfaceRefinementTypes,
+    BoundaryLayer,
+    PassiveSpacing,
+    SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
-    VolumeRefinementTypes,
 )
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
 RefinementTypes = Annotated[
-    Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
+    Union[
+        SurfaceEdgeRefinement,
+        SurfaceRefinement,
+        BoundaryLayer,
+        PassiveSpacing,
+        UniformRefinement,
+        AxisymmetricRefinement,
+    ],
     pd.Field(discriminator="refinement_type"),
 ]
 
