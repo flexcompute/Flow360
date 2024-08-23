@@ -18,6 +18,8 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import is_valid_uuid, validate_type
@@ -139,6 +141,11 @@ class Draft(Flow360Resource):
             method="simulation/file",
         )
 
+    def get_simulation_dict(self) -> dict:
+        """retrieve the SimulationParams of the draft"""
+        response = self.get(method="simulation-config")
+        return json.loads(response["simulationJson"])
+
     def run_up_to_target_asset(self, target_asset: type[AssetBase]) -> str:
         """run the draft up to the target asset"""
 
@@ -182,6 +189,29 @@ def _run(
         raise ValueError(
             f"params argument must be a SimulationParams object but is of type {type(params)}"
         )
+
+    ##-- Getting the project length unit from draft and store in the SimulationParams
+    _resp = RestApi(ProjectInterface.endpoint, id=source_asset.project_id).get()
+    last_opened_draft_id = _resp["lastOpenDraftId"]
+    assert last_opened_draft_id is not None
+    _draft_with_length_unit = Draft.from_cloud(last_opened_draft_id)
+
+    simulation_dict = _draft_with_length_unit.get_simulation_dict()
+
+    if (
+        "private_attribute_asset_cache" not in simulation_dict
+        or "project_length_unit" not in simulation_dict["private_attribute_asset_cache"]
+    ):
+        raise KeyError(
+            "[Internal] Could not find project length unit in the draft's simulation settings."
+        )
+
+    length_unit = _draft_with_length_unit.get_simulation_dict()["private_attribute_asset_cache"][
+        "project_length_unit"
+    ]
+    with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+        # pylint: disable=no-member
+        params.private_attribute_asset_cache.project_length_unit = LengthType.validate(length_unit)
 
     ##-- Get new draft
     _draft = Draft.create(

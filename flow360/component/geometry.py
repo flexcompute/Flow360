@@ -61,7 +61,7 @@ class GeometryStatus(Enum):
     UPLOADED = "uploaded"
     UPLOADING = "uploading"
     RUNNING = "running"
-    PREPROCESSING = "preprocessing"
+    GENERATING = "generating"
     PROCESSED = "processed"
     DELETED = "deleted"
     PENDING = "pending"
