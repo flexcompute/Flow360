@@ -38,6 +38,9 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.validation.validation_simulation_params import (
+    _check_consistency_wall_function_and_surface_output,
+)
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -188,7 +191,6 @@ class SimulationParams(_ParamModelBase):
     # pylint: disable=arguments-differ
     def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
         """TBD"""
-
         if exclude is None:
             exclude = []
 
@@ -226,6 +228,12 @@ class SimulationParams(_ParamModelBase):
                 SurfaceOutput(name="Surface output 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
             )
         return v
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_consistency_wall_function_and_surface_output(cls, v):
+        """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
+        return _check_consistency_wall_function_and_surface_output(v)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
