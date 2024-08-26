@@ -85,6 +85,8 @@ VolumeFieldNamesFull = Literal[
     "linear residual of Navier-Stokes solver",
     "linear residual of turbulence solver",
     "linear residual of transition solver",
+    "DDES output for Spalart-Allmaras solver",
+    "DDES output for kOmegaSST solver",
 ]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
@@ -96,6 +98,8 @@ VolumeFieldNames = Literal[
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
+    "SpalartAllmaras_DDES",
+    "kOmegaSST_DDES",
 ]
 
 SliceFieldNames = VolumeFieldNames

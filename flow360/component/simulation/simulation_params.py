@@ -39,6 +39,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
+    _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
 )
 from flow360.error_messages import (
@@ -234,6 +235,12 @@ class SimulationParams(_ParamModelBase):
     def check_consistency_wall_function_and_surface_output(cls, v):
         """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
         return _check_consistency_wall_function_and_surface_output(v)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_consistency_ddes_volume_output(cls, v):
+        """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
+        return _check_consistency_ddes_volume_output(v)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

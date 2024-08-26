@@ -4,7 +4,8 @@ import unittest
 import pytest
 
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -21,6 +22,18 @@ def surface_output_with_wall_metric():
 
 
 @pytest.fixture()
+def volume_output_with_SA_DDES():
+    volume_output = VolumeOutput(name="volume", output_fields=["SpalartAllmaras_DDES"])
+    return volume_output
+
+
+@pytest.fixture()
+def volume_output_with_kOmega_DDES():
+    volume_output = VolumeOutput(name="volume", output_fields=["kOmegaSST_DDES"])
+    return volume_output
+
+
+@pytest.fixture()
 def wall_model_with_function():
     wall_model = Wall(name="wall", surfaces=[Surface(name="noSlipWall")], use_wall_function=True)
     return wall_model
@@ -30,6 +43,19 @@ def wall_model_with_function():
 def wall_model_without_function():
     wall_model = Wall(name="wall", surfaces=[Surface(name="noSlipWall")], use_wall_function=False)
     return wall_model
+
+
+@pytest.fixture()
+def fluid_model_with_DDES():
+    fluid_model = Fluid()
+    fluid_model.turbulence_model_solver.DDES = True
+    return fluid_model
+
+
+@pytest.fixture()
+def fluid_model_without_DDES():
+    fluid_model = Fluid()
+    return fluid_model
 
 
 def test_consistency_wall_function_validator(
@@ -49,4 +75,27 @@ def test_consistency_wall_function_validator(
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[wall_model_without_function], outputs=[surface_output_with_wall_metric]
+        )
+
+
+def test_ddes_wall_function_validator(
+    volume_output_with_SA_DDES,
+    volume_output_with_kOmega_DDES,
+    fluid_model_with_DDES,
+    fluid_model_without_DDES,
+):
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_DDES], outputs=[volume_output_with_SA_DDES]
+        )
+
+    assert params
+
+    message = "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
+
+    # Invalid simulation params (wrong output type)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES]
         )

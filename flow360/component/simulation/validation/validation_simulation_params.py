@@ -3,8 +3,10 @@ validation for SimulationParams
 """
 
 from flow360.component.flow360_params.flow360_fields import get_aliases
+from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -35,4 +37,33 @@ def _check_consistency_wall_function_and_surface_output(v):
                     "To use 'wallFunctionMetric' for output specify a Wall with use_wall_function=true"
                 )
 
+    return v
+
+
+def _check_consistency_ddes_volume_output(v):
+    model_type = None
+    run_ddes = False
+
+    for model in v.models:
+        if isinstance(model, Fluid):
+            turbulence_model_solver = model.turbulence_model_solver
+            if not isinstance(turbulence_model_solver, NoneSolver) and turbulence_model_solver.DDES:
+                model_type = turbulence_model_solver.type_name
+                run_ddes = True
+                break
+
+    for output in v.outputs:
+        if isinstance(output, VolumeOutput) and output.output_fields is not None:
+            output_fields = output.output_fields.items
+            if "SpalartAllmaras_DDES" in output_fields and not (
+                model_type == "SpalartAllmaras" and run_ddes
+            ):
+                raise ValueError(
+                    "SpalartAllmaras_DDES output can only be specified with "
+                    "SpalartAllmaras turbulence model and DDES turned on."
+                )
+            if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_ddes):
+                raise ValueError(
+                    "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
+                )
     return v
