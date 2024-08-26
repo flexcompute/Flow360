@@ -13,6 +13,7 @@ from functools import wraps
 from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
+import pydantic as pd_v2
 import pydantic.v1 as pd
 
 from flow360 import error_messages
@@ -110,6 +111,33 @@ def before_submit_only(func):
         return func(obj, *args, **kwargs)
 
     return wrapper
+
+
+class AssetMetaBaseModelV2(pd_v2.BaseModel):
+    """
+    Flow360 base Model
+    """
+
+    name: str = pd_v2.Field()
+    user_id: str = pd_v2.Field(alias="userId")
+    id: str = pd_v2.Field()
+    solver_version: str = pd_v2.Field(alias="solverVersion")
+    status: Flow360Status = pd_v2.Field()
+    tags: List[str] = pd_v2.Field([])
+    created_at: str = pd_v2.Field(alias="createdAt")
+    updated_at: datetime = pd_v2.Field(alias="updatedAt")
+    updated_by: Optional[str] = pd_v2.Field(None, alias="updatedBy")
+    deleted: bool = pd_v2.Field()
+
+    model_config = pd_v2.ConfigDict(extra="allow", frozen=True)
+
+    # pylint: disable=no-self-argument
+    @pd_v2.field_validator("*", mode="before")
+    def handle_none_str(cls, value):
+        """handle None strings"""
+        if value == "None":
+            value = None
+        return value
 
 
 class ResourceDraft(metaclass=ABCMeta):

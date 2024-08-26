@@ -5,7 +5,7 @@ import pytest
 
 from flow360.component.geometry import Geometry
 from flow360.component.simulation.primitives import Edge, Surface
-from flow360.log import log, set_logging_level
+from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
 
@@ -36,7 +36,7 @@ set_logging_level("DEBUG")
 def test_multi_body_geometry(mock_id, mock_response):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     geometry = Geometry.from_cloud(mock_id)
-
+    print(">>>> ", geometry._meta_class)
     # Test grouping both edge and face at the same time.
     geometry.group_faces_by_tag(tag_name="ByTheType")
     geometry.group_edges_by_tag(tag_name="ByTheType")

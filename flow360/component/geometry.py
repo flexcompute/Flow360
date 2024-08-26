@@ -12,17 +12,17 @@ import time
 from enum import Enum
 from typing import List, Literal, Optional, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_metadata import Edge, Surface, _GeometryMetadataModel
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
-    AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
@@ -86,27 +86,27 @@ class GeometryStatus(Enum):
 
 
 # pylint: disable=R0801
-class GeometryMeta(AssetMetaBaseModel):
+class GeometryMeta(AssetMetaBaseModelV2):
     """
     GeometryMeta component
     """
 
     project_id: str = pd.Field(alias="projectId")
     deleted: bool = pd.Field()
-    metadata: Optional[_GeometryMetadataModel] = pd.Field(None)
+    metadata: Optional[GeometryEntityInfo] = pd.Field(None)
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
 class GeometryWebAPI(Flow360Resource):
-    """Specialized web API for Geometry resource. Added capability to download and parse metadata."""
+    """web API for Geometry resource. This can and should be generalized and reused by all resources."""
 
-    def get_metadata(self, force: bool = False):
+    def get_entity_info(self, force: bool = False):
         """
-        Blockingly trying to download the metadata and populate the metadata info.
+        Blockingly trying to download the entityInfo.json
         """
         self._info = super().get_info()
         if getattr(self._info, "metadata", None) is not None and force is False:
-            log.warning("Metadata already loaded. Skipping download.")
+            log.debug("Metadata already loaded. Skipping download.")
             return
 
         start_time = time.time()
@@ -122,7 +122,7 @@ class GeometryWebAPI(Flow360Resource):
             # Windows OS complains when a file is opened in write mode and then read mode. So we need to close it first.
             # pylint: disable=protected-access
             self._download_file(
-                "results/geometry.json",
+                "metadata/entityInfo.json",
                 to_file=temp_file.name,
                 to_folder=".",
                 overwrite=True,
@@ -137,11 +137,11 @@ class GeometryWebAPI(Flow360Resource):
             with open(temp_file_name, "r", encoding="utf-8") as f:
                 _meta = json.load(f)
                 # pylint: disable=protected-access
-                self._info = self._info.copy(
-                    deep=True, update={"metadata": _GeometryMetadataModel(**_meta)}
+                self._info = self._info.model_copy(
+                    deep=True, update={"metadata": GeometryEntityInfo(**_meta)}
                 )
                 assert isinstance(
-                    self._info.metadata, _GeometryMetadataModel
+                    self._info.metadata, GeometryEntityInfo
                 ), "[Internal Error] Metadata parsing failed."
         finally:
             os.remove(temp_file_name)
@@ -150,7 +150,7 @@ class GeometryWebAPI(Flow360Resource):
     @property
     def metadata(self):
         """Return the metadata of the resource"""
-        self.get_metadata()
+        self.get_entity_info()
         return self._info.metadata
 
     @classmethod
@@ -341,18 +341,23 @@ class Geometry(AssetBase):
             raise Flow360ValueError(
                 f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
             )
-        group_name_to_items = self._webapi.metadata.process_metadata_for_given_type(
-            entity_type_name
-        )
+
         log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
-        for tag_index, (attribute_tag, group_dict) in enumerate(group_name_to_items.items()):
+        # pylint: disable=no-member
+        if entity_type_name == "faces":
+            attribute_names = self.metadata.face_attribute_names
+            grouped_items = self.metadata.grouped_faces
+        else:
+            attribute_names = self.metadata.edge_attribute_names
+            grouped_items = self.metadata.grouped_edges
+        for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
             log.info(f"    >> Tag {tag_index}: {attribute_tag}")
-            for index, (group_name, face_ids) in enumerate(group_dict.items()):
-                log.info(f"        >> Group {index}: {group_name}")
+            for index, entity in enumerate(grouped_items[tag_index]):
+                log.info(f"        >> Group {index}: {entity.name}")
                 if show_ids_in_each_group is True:
-                    log.info(f"           IDs: {face_ids}")
+                    log.info(f"           IDs: {entity.private_attribute_sub_components}")
 
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
@@ -360,8 +365,9 @@ class Geometry(AssetBase):
         """
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
+
         self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            Surface, attribute_tag=tag_name, registry=self.internal_registry
+            "face", attribute_name=tag_name, registry=self.internal_registry
         )
 
     def group_edges_by_tag(self, tag_name: str) -> None:
@@ -371,5 +377,5 @@ class Geometry(AssetBase):
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
         self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            Edge, attribute_tag=tag_name, registry=self.internal_registry
+            "edge", attribute_name=tag_name, registry=self.internal_registry
         )

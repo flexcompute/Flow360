@@ -23,6 +23,7 @@ class AssetCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
+    project_source_entity_info: Optional[EntityRegistry] = pd.Field(None, frozen=True)
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:

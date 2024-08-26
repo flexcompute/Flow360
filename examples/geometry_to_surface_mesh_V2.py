@@ -13,20 +13,20 @@ from flow360.examples import Airplane
 
 fl.Env.dev.active()
 
-geometry_draft = Geometry.from_file(Airplane.geometry, solver_version="workbench-24.8")
+geometry_draft = Geometry.from_file(Airplane.geometry, solver_version="workbenchMetaConvert-24.8")
 geometry = geometry_draft.submit()
 geometry.show_available_groupings(verbose_mode=True)
 
-with SI_unit_system:
-    params = SimulationParams(
-        meshing=MeshingParams(
-            refinements=[
-                SurfaceRefinement(max_edge_length=0.8),
-                BoundaryLayer(first_layer_thickness=0.8),
-            ],
-            volume_zones=[AutomatedFarfield()],
-        ),
-    )
-cloud.generate_surface_mesh(geometry, params=params, draft_name="TTEESSTT", async_mode=True)
-# geometry.generate_volume_mesh(params=params, async_mode=False)
-print(geometry._meta_class)
+# with SI_unit_system:
+#     params = SimulationParams(
+#         meshing=MeshingParams(
+#             refinements=[
+#                 SurfaceRefinement(max_edge_length=0.8),
+#                 BoundaryLayer(first_layer_thickness=0.8),
+#             ],
+#             volume_zones=[AutomatedFarfield()],
+#         ),
+#     )
+# cloud.generate_surface_mesh(geometry, params=params, draft_name="TTEESSTT", async_mode=True)
+# # geometry.generate_volume_mesh(params=params, async_mode=False)
+# print(geometry._meta_class)
