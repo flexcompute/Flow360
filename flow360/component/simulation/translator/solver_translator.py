@@ -712,9 +712,17 @@ def get_solver_json(
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
-                if modeling_constants.pop("typeName", None) == "SpalartAllmarasConsts":
+                print("Okk: ", modeling_constants)
+                if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
                     modeling_constants["C_d"] = modeling_constants.pop("CD", None)
                     modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
+
+                if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
+                    modeling_constants["C_DES1"] = modeling_constants.pop("CDES1", None)
+                    modeling_constants["C_DES2"] = modeling_constants.pop("CDES2", None)
+                    modeling_constants["C_d1"] = modeling_constants.pop("CD1", None)
+                    modeling_constants["C_d2"] = modeling_constants.pop("CD2", None)
+                modeling_constants.pop("typeName")  # Not read by solver
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
