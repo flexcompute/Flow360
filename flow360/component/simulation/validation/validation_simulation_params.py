@@ -18,6 +18,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     for model in models:
         if isinstance(model, Wall) and model.use_wall_function:
             has_wall_function_model = True
+            break
 
     outputs = v.outputs
 
