@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 from enum import Enum
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -342,14 +342,15 @@ class Geometry(AssetBase):
                 f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
             )
 
+        self._webapi.get_entity_info()
         log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
         # pylint: disable=no-member
         if entity_type_name == "faces":
-            attribute_names = self.metadata.face_attribute_names
-            grouped_items = self.metadata.grouped_faces
+            attribute_names = self._webapi.metadata.face_attribute_names
+            grouped_items = self._webapi.metadata.grouped_faces
         else:
-            attribute_names = self.metadata.edge_attribute_names
-            grouped_items = self.metadata.grouped_edges
+            attribute_names = self._webapi.metadata.edge_attribute_names
+            grouped_items = self._webapi.metadata.grouped_edges
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
@@ -379,3 +380,24 @@ class Geometry(AssetBase):
         self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
             "edge", attribute_name=tag_name, registry=self.internal_registry
         )
+
+    def __getitem__(self, key: str):
+        """
+        Get the entity by name.
+        `key` is the name of the entity or the naming pattern if wildcard is used.
+        """
+        if isinstance(key, str) is False:
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
+        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
+            raise Flow360ValueError(
+                "The faces/edges in geometry are not grouped yet."
+                "Please use `group_faces_by_tag` or `group_edges_by_tag` function to group them first."
+            )
+            # Note: Or we assume group default by just FaceID and EdgeID? Not sure if this is actually useful.
+        return self.internal_registry.find_by_naming_pattern(
+            key, enforce_output_as_list=False, error_when_no_match=True
+        )
+
+    def __setitem__(self, key: str, value: Any):
+        raise NotImplementedError("Assigning/setting entities is not supported.")

@@ -223,6 +223,11 @@ def _run(
         fork_case=fork_case,
     ).submit()
 
+    ##-- Store the entity info part for future retrival
+    # pylint: disable=protected-access
+    with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+        params.private_attribute_asset_cache.project_entity_info = source_asset._webapi.metadata
+    print("\n>>> \n", params.model_dump_json(indent=4))
     ##-- Post the simulation param:
     _draft.update_simulation_params(params)
 

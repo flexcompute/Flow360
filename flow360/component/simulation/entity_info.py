@@ -91,19 +91,21 @@ class GeometryEntityInfo(EntityInfoModel):
         # Validations
         if entity_type_name is None:
             raise ValueError("Entity type name is required.")
-        elif entity_type_name not in ["face", "edge"]:
+        if entity_type_name not in ["face", "edge"]:
             raise ValueError(
                 f"Invalid entity type name, expected 'face' or 'edge' but got {entity_type_name}."
             )
         entity_attribute_names = getattr(self, f"{entity_type_name}_attribute_names")
         entity_full_list = getattr(self, f"grouped_{entity_type_name}s")
+
         if attribute_name is not None:
             if attribute_name in entity_attribute_names:
                 return entity_full_list[entity_attribute_names.index(attribute_name)]
-            else:
-                raise ValueError()
-        else:
-            raise ValueError("Attribute name is required to get the full list of boundaries.")
+            raise ValueError(
+                f"The given attribute_name {attribute_name} is not found"
+                f" in geometry metadata. Available: {entity_attribute_names}"
+            )
+        raise ValueError("Attribute name is required to get the full list of boundaries.")
 
     def get_full_list_of_boundaries(self, attribute_name: str = None) -> list:
         """
@@ -119,6 +121,7 @@ class VolumeMeshEntityInfo(EntityInfoModel):
     zones: list[GenericVolume] = pd.Field([])
     boundaries: list[Surface] = pd.Field([])
 
+    # pylint: disable=arguments-differ
     def get_full_list_of_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
@@ -129,8 +132,9 @@ class VolumeMeshEntityInfo(EntityInfoModel):
 class SurfaceMeshEntityInfo(EntityInfoModel):
     """Data model for surface mesh entityInfo.json"""
 
-    pass
+    type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
 
+    # pylint: disable=arguments-differ
     def get_full_list_of_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.

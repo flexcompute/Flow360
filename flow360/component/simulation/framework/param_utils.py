@@ -1,9 +1,14 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Optional
+from typing import Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    SurfaceMeshEntityInfo,
+    VolumeMeshEntityInfo,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -23,7 +28,9 @@ class AssetCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
-    project_source_entity_info: Optional[EntityRegistry] = pd.Field(None, frozen=True)
+    project_entity_info: Optional[
+        Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
+    ] = pd.Field(None, frozen=True, discriminator="type_name")
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
