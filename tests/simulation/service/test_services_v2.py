@@ -328,5 +328,10 @@ def test_front_end_JSON_with_multi_constructor():
     assert errors is None
     with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
         ref_data = json.load(f)
+        ref_param, err, _ = services.validate_model(
+            params_as_dict=ref_data, unit_system_name="SI", root_item_type="Geometry"
+        )
+
     param_dict = simulation_param.model_dump(exclude_none=True)
-    compare_values(ref_data, param_dict)
+    ref_param_dict = ref_param.model_dump(exclude_none=True)
+    assert compare_values(ref_param_dict, param_dict)

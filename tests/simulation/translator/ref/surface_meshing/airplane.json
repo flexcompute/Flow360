@@ -1,5 +1,4 @@
 {
-    "maxEdgeLength": 1.0,
     "faces": {
         "Inner_Wing": {
             "maxEdgeLength": 1.5

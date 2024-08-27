@@ -87,11 +87,18 @@ class TempGeometry(AssetBase):
     def _populate_registry(self):
         self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
         for zone_name in self._get_meta_data()["edges"] if "edges" in self._get_meta_data() else []:
-            self.internal_registry.register(Edge(name=zone_name))
+            # pylint: disable=fixme
+            # TODO: private_attribute_sub_components is hacked to be just the grouped name,
+            # TODO: this should actually be the list of edgeIDs/faceIDs
+            self.internal_registry.register(
+                Edge(name=zone_name, private_attribute_sub_components=[zone_name])
+            )
         for surface_name in (
             self._get_meta_data()["surfaces"] if "surfaces" in self._get_meta_data() else []
         ):
-            self.internal_registry.register(Surface(name=surface_name))
+            self.internal_registry.register(
+                Surface(name=surface_name, private_attribute_sub_components=[surface_name])
+            )
 
     def __init__(self, file_name: str):
         super().__init__()
@@ -221,6 +228,10 @@ def rotor_surface_mesh():
                         entities=[rotor_geopmetry["tip"]],
                         max_edge_length=0.1 * u.inch,
                     ),
+                    SurfaceRefinement(
+                        entities=[rotor_geopmetry["blade"], rotor_geopmetry["hub"]],
+                        max_edge_length=10 * u.inch,
+                    ),
                     SurfaceEdgeRefinement(
                         entities=[rotor_geopmetry["leadingEdge"]],
                         method=AngleBasedRefinement(value=1 * u.degree),
@@ -230,7 +241,10 @@ def rotor_surface_mesh():
                         method=HeightBasedRefinement(value=0.05 * u.inch),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["bladeSplitEdge"]],
+                        entities=[
+                            rotor_geopmetry["bladeSplitEdge"],
+                            rotor_geopmetry["hubSplitEdge"],
+                        ],
                         method=ProjectAnisoSpacing(),
                     ),
                     SurfaceEdgeRefinement(
@@ -255,8 +269,7 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
         )
     ) as fh:
         ref_dict = json.load(fh)
-
-    compare_values(ref_dict, translated)
+    assert compare_values(ref_dict, translated)
 
 
 def test_om6wing_tutorial(

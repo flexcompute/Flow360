@@ -159,7 +159,14 @@
                 }
             }
         ],
-        "surface_layer_growth_rate": 1.2,
+        "defaults": {
+            "surface_edge_growth_rate": 1.2,
+            "boundary_layer_growth_rate": 1.2,
+            "curvature_resolution_angle": {
+                "value": 12.0,
+                "units": "degree"
+            }
+        },
         "volume_zones": [
             {
                 "method": "auto",
@@ -356,169 +363,6 @@
             "write_single_file": false
         }
     ],
-    "private_attribute_asset_cache": {
-        "registry": {
-            "internal_registry": {
-                "VolumetricEntityType": [
-                    {
-                        "angle_of_rotation": {
-                            "units": "degree",
-                            "value": 20.0
-                        },
-                        "axis_of_rotation": [
-                            1.0,
-                            0.0,
-                            0.0
-                        ],
-                        "center": {
-                            "units": "m",
-                            "value": [
-                                1.0,
-                                2.0,
-                                3.0
-                            ]
-                        },
-                        "name": "my_box_default",
-                        "private_attribute_constructor": "default",
-                        "private_attribute_entity_type_name": "Box",
-                        "private_attribute_input_cache": {
-                            "axes": [
-                                [
-                                    1.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                [
-                                    0.0,
-                                    0.9396926207859084,
-                                    0.3420201433256687
-                                ]
-                            ]
-                        },
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_zone_boundary_names": {
-                            "items": []
-                        },
-                        "size": {
-                            "units": "m",
-                            "value": [
-                                2.0,
-                                2.0,
-                                3.0
-                            ]
-                        },
-                        "type_name": "Box"
-                    },
-                    {
-                        "angle_of_rotation": {
-                            "units": "rad",
-                            "value": -3.141592653589793
-                        },
-                        "axis_of_rotation": [
-                            0.894427190999916,
-                            0.447213595499958,
-                            0.0
-                        ],
-                        "center": {
-                            "units": "m",
-                            "value": [
-                                7.0,
-                                1.0,
-                                2.0
-                            ]
-                        },
-                        "name": "my_box_from",
-                        "private_attribute_constructor": "from_principal_axes",
-                        "private_attribute_entity_type_name": "Box",
-                        "private_attribute_input_cache": {
-                            "axes": [
-                                [
-                                    0.6,
-                                    0.8,
-                                    0.0
-                                ],
-                                [
-                                    0.8,
-                                    -0.6,
-                                    0.0
-                                ]
-                            ],
-                            "center": {
-                                "units": "m",
-                                "value": [
-                                    7.0,
-                                    1.0,
-                                    2.0
-                                ]
-                            },
-                            "name": "my_box_from",
-                            "size": {
-                                "units": "m",
-                                "value": [
-                                    2.0,
-                                    2.0,
-                                    3.0
-                                ]
-                            }
-                        },
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_zone_boundary_names": {
-                            "items": []
-                        },
-                        "size": {
-                            "units": "m",
-                            "value": [
-                                2.0,
-                                2.0,
-                                3.0
-                            ]
-                        },
-                        "type_name": "Box"
-                    },
-                    {
-                        "axis": [
-                            0.0,
-                            1.0,
-                            0.0
-                        ],
-                        "center": {
-                            "units": "m",
-                            "value": [
-                                1.0,
-                                2.0,
-                                3.0
-                            ]
-                        },
-                        "height": {
-                            "units": "m",
-                            "value": 3.0
-                        },
-                        "name": "my_cylinder_default",
-                        "outer_radius": {
-                            "units": "m",
-                            "value": 2.0
-                        },
-                        "private_attribute_entity_type_name": "Cylinder",
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_zone_boundary_names": {
-                            "items": []
-                        }
-                    },
-                    {
-                        "name": "fluid",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_zone_boundary_names": {
-                            "items": [
-                                "farfield",
-                                "symmetric"
-                            ]
-                        }
-                    }
-                ]
-            }
-        }
-    },
     "time_stepping": {
         "CFL": {
             "convergence_limiting_factor": 0.25,

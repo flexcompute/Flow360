@@ -1,5 +1,4 @@
 {
-    "maxEdgeLength": 10, 
     "curvatureResolutionAngle": 15,
     "growthRate": 1.2, 
     "edges": {
