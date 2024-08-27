@@ -1,7 +1,7 @@
 """Registry for managing and storing instances of various entity types."""
 
 import re
-from typing import Any
+from typing import Any, Union
 
 import pydantic as pd
 
@@ -141,12 +141,18 @@ class EntityRegistry(Flow360BaseModel):
         result += "---- End of content ----"
         return result
 
-    def clear(self):
+    def clear(self, entity_type: Union[None, type[EntityBase]] = None):
         """
         Clears all entities from the registry.
         """
         # pylint: disable=no-member
-        self.internal_registry.clear()
+        if entity_type is not None:
+            bucket_name = entity_type.model_fields["private_attribute_registry_bucket_name"].default
+            if bucket_name in self.internal_registry.keys():
+                # pylint: disable=unsubscriptable-object
+                self.internal_registry[bucket_name].clear()
+        else:
+            self.internal_registry.clear()
 
     def contains(self, entity: EntityBase) -> bool:
         """

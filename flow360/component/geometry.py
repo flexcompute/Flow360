@@ -24,6 +24,7 @@ from flow360.component.resource_base import (
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
@@ -360,26 +361,49 @@ class Geometry(AssetBase):
                 if show_ids_in_each_group is True:
                     log.info(f"           IDs: {entity.private_attribute_sub_components}")
 
+    def _group_entity_by_tag(
+        self, entity_type_name: Literal["face", "edge"], tag_name: str
+    ) -> None:
+        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
+            self.internal_registry = EntityRegistry()
+
+        if getattr(self, f"_{entity_type_name}_has_been_grouped", None) is True:
+            # pylint: disable=fixme
+            # TODO: We need to make sure only 1 grouping is used in simluationParams.
+            log.warning(f"Grouping already exists for {entity_type_name}. Resetting the grouping.")
+            self._reset_grouping(entity_type_name)
+
+        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
+            entity_type_name, attribute_name=tag_name, registry=self.internal_registry
+        )
+        setattr(self, f"_{entity_type_name}_has_been_grouped", True)
+
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
         Group faces by tag name
         """
-        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
-            self.internal_registry = EntityRegistry()
-
-        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            "face", attribute_name=tag_name, registry=self.internal_registry
-        )
+        self._group_entity_by_tag("face", tag_name)
 
     def group_edges_by_tag(self, tag_name: str) -> None:
         """
         Group edges by tag name
         """
-        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
-            self.internal_registry = EntityRegistry()
-        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            "edge", attribute_name=tag_name, registry=self.internal_registry
-        )
+        self._group_entity_by_tag("edge", tag_name)
+
+    def _reset_grouping(self, entity_type_name: Literal["face", "edge"]) -> None:
+        if entity_type_name == "face":
+            self.internal_registry.clear(Surface)
+        else:
+            self.internal_registry.clear(Edge)
+        setattr(self, f"_{entity_type_name}_has_been_grouped", False)
+
+    def reset_face_grouping(self) -> None:
+        """Reset the face grouping"""
+        self._reset_grouping("face")
+
+    def reset_edge_grouping(self) -> None:
+        """Reset the edge grouping"""
+        self._reset_grouping("edge")
 
     def __getitem__(self, key: str):
         """
