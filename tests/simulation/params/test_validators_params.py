@@ -34,6 +34,14 @@ def volume_output_with_kOmega_DDES():
 
 
 @pytest.fixture()
+def surface_output_with_low_mach_precond():
+    surface_output = SurfaceOutput(
+        name="surface", write_single_file=True, output_fields=["lowMachPreconditionerSensor"]
+    )
+    return surface_output
+
+
+@pytest.fixture()
 def surface_output_with_numerical_dissipation():
     surface_output = SurfaceOutput(
         name="surface", write_single_file=True, output_fields=["numericalDissipationFactor"]
@@ -54,9 +62,9 @@ def wall_model_without_function():
 
 
 @pytest.fixture()
-def fluid_model_with_DDES():
+def fluid_model_with_low_mach_precond():
     fluid_model = Fluid()
-    fluid_model.turbulence_model_solver.DDES = True
+    fluid_model.navier_stokes_solver.low_mach_preconditioner = True
     return fluid_model
 
 
@@ -64,6 +72,13 @@ def fluid_model_with_DDES():
 def fluid_model_with_low_numerical_dissipation():
     fluid_model = Fluid()
     fluid_model.navier_stokes_solver.numerical_dissipation_factor = 0.2
+    return fluid_model
+
+
+@pytest.fixture()
+def fluid_model_with_DDES():
+    fluid_model = Fluid()
+    fluid_model.turbulence_model_solver.DDES = True
     return fluid_model
 
 
@@ -84,12 +99,63 @@ def test_consistency_wall_function_validator(
 
     assert params
 
-    message = "To use 'wallFunctionMetric' for output specify a Wall with use_wall_function=true"
+    message = (
+        "To use 'wallFunctionMetric' for output specify a Wall model with use_wall_function=true. "
+    )
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(
+        _ = SimulationParams(
             models=[wall_model_without_function], outputs=[surface_output_with_wall_metric]
+        )
+
+
+def test_low_mach_preconditioner_validator(
+    surface_output_with_low_mach_precond, fluid_model_with_low_mach_precond, fluid_model
+):
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_low_mach_precond],
+            outputs=[surface_output_with_low_mach_precond],
+        )
+
+    assert params
+
+    message = (
+        "Low-Mach preconditioner output requested, but low_mach_preconditioner is not enabled. "
+        "You can enable it via model.navier_stokes_solver.low_mach_preconditioner = True for a Fluid "
+        "model in the models field of the simulation object."
+    )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(models=[fluid_model], outputs=[surface_output_with_low_mach_precond])
+
+
+def test_numerical_dissipation_mode_validator(
+    surface_output_with_numerical_dissipation,
+    fluid_model_with_low_numerical_dissipation,
+    fluid_model,
+):
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_low_numerical_dissipation],
+            outputs=[surface_output_with_numerical_dissipation],
+        )
+
+    assert params
+
+    message = (
+        "Numerical dissipation factor output requested, but low dissipation mode is not enabled. "
+        "You can enable it via model.navier_stokes_solver.numerical_dissipation_factor = True for a Fluid "
+        "model in the models field of the simulation object."
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model], outputs=[surface_output_with_numerical_dissipation]
         )
 
 
@@ -116,26 +182,3 @@ def test_ddes_wall_function_validator(
     # Invalid simulation params (DDES turned off)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_DDES])
-
-
-def test_numerical_dissipation_mode_validator(
-    surface_output_with_numerical_dissipation,
-    fluid_model_with_low_numerical_dissipation,
-    fluid_model,
-):
-    # Valid simulation params
-    with SI_unit_system:
-        params = SimulationParams(
-            models=[fluid_model_with_low_numerical_dissipation],
-            outputs=[surface_output_with_numerical_dissipation],
-        )
-
-    assert params
-
-    message = (
-        "Numerical dissipation factor output requested, but low dissipation mode is not enabled"
-    )
-
-    # Invalid simulation params
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(models=[fluid_model], outputs=[surface_output_with_numerical_dissipation])

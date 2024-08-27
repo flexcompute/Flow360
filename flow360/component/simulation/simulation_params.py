@@ -46,6 +46,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_numerical_dissipation_factor_output,
+    _check_low_mach_preconditioner_output,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -256,6 +257,12 @@ class SimulationParams(_ParamModelBase):
     def check_numerical_dissipation_factor_output(cls, v):
         """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
         return _check_numerical_dissipation_factor_output(v)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_low_mach_preconditioner_output(cls, v):
+        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        return _check_low_mach_preconditioner_output(v)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
