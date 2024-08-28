@@ -301,7 +301,7 @@ class Geometry(AssetBase):
     edge_group_tag: str = None
 
     @classmethod
-    #pylint: disable=redefined-builtin
+    # pylint: disable=redefined-builtin
     def from_cloud(cls, id: str):
         """Create asset with the given ID"""
         asset_obj = super().from_cloud(id)
@@ -344,7 +344,7 @@ class Geometry(AssetBase):
     @property
     def entity_info(self):
         """Return the entity info of the resource"""
-        #pylint: disable=protected-access
+        # pylint: disable=protected-access
         self._webapi.get_entity_info()
         return self._webapi._info.entity_info
 
