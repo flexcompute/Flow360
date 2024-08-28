@@ -31,6 +31,8 @@ class AssetCache(Flow360BaseModel):
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
+    face_group_tag: Optional[str] = pd.Field(None, frozen=True)
+    edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:

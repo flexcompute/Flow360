@@ -5,19 +5,20 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from typing import Annotated, Literal
+
+import pydantic as pd
+
+from flow360.cloud.rest_api import RestApi
+from flow360.component.interfaces import DraftInterface, ProjectInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.interfaces import DraftInterface
-import pydantic as pd
-from flow360.component.utils import validate_type, is_valid_uuid
+from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
-from flow360.cloud.rest_api import RestApi
-from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.interfaces import ProjectInterface
 
 
 def _valid_id_validator(input_id: str):

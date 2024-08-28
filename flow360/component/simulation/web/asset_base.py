@@ -12,6 +12,7 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.utils import validate_type
 
 
@@ -94,3 +95,10 @@ class AssetBase(metaclass=ABCMeta):
             tags=tags,
             length_unit=length_unit,
         )
+
+    def _inject_entity_info_to_params(self, params):
+        """Inject the length unit into the SimulationParams"""
+        # pylint: disable=protected-access
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+            params.private_attribute_asset_cache.project_entity_info = self._webapi.metadata
+        return params

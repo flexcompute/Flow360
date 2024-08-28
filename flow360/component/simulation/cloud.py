@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-
 import time
-
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.interfaces import ProjectInterface
-
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.simulation.web.draft import (
+    Draft,
+    _get_simulation_json_from_cloud,
+)
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.log import log
-from flow360.component.simulation.web.draft import Draft, _get_simulation_json_from_cloud
 
 TIMEOUT_MINUTES = 60
 
@@ -76,8 +76,7 @@ def _run(
 
     ##-- Store the entity info part for future retrival
     # pylint: disable=protected-access
-    with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-        params.private_attribute_asset_cache.project_entity_info = source_asset._webapi.metadata
+    params = source_asset._inject_entity_info_to_params(params)
 
     ##-- Post the simulation param:
     _draft.update_simulation_params(params)

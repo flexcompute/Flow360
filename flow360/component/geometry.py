@@ -25,7 +25,9 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
@@ -301,6 +303,35 @@ class Geometry(AssetBase):
     _meta_class = GeometryMeta
     _draft_class = GeometryDraft
     _web_api_class = GeometryWebAPI
+    face_group_tag: str = None
+    edge_group_tag: str = None
+
+    @classmethod
+    def from_cloud(cls, id: str):
+        """Create asset with the given ID"""
+        asset_obj = super().from_cloud(id)
+        # get the face tag and edge tag used.
+        simulation_dict = _get_simulation_json_from_cloud(asset_obj.project_id)
+        if "private_attribute_asset_cache" not in simulation_dict:
+            raise KeyError(
+                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
+            )
+        asset_cache = simulation_dict["private_attribute_asset_cache"]
+        if "face_group_tag" not in asset_cache or asset_cache["face_group_tag"] is None:
+            # This may happen if users submit the Geometry but did not do anything else.
+            # Then they load back the geometry which will then have no info on grouping.
+            log.warning(
+                "Could not find face grouping info in the draft's simulation settings. "
+                "Please remember to group them if relevant features are used."
+            )
+            asset_obj.face_group_tag = asset_cache["face_group_tag"]
+        if "edge_group_tag" not in asset_cache or asset_cache["edge_group_tag"] is None:
+            log.warning(
+                "Could not find face grouping info in the draft's simulation settings. "
+                "Please remember to group them if relevant features are used."
+            )
+            asset_obj.edge_group_tag = asset_cache["edge_group_tag"]
+        return asset_obj
 
     @classmethod
     # pylint: disable=too-many-arguments
@@ -367,16 +398,26 @@ class Geometry(AssetBase):
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
 
-        if getattr(self, f"_{entity_type_name}_has_been_grouped", None) is True:
+        found_existing_grouping = (
+            self.face_group_tag is not None
+            if entity_type_name == "face"
+            else self.edge_group_tag is not None
+        )
+        if found_existing_grouping is True:
             # pylint: disable=fixme
             # TODO: We need to make sure only 1 grouping is used in simluationParams.
-            log.warning(f"Grouping already exists for {entity_type_name}. Resetting the grouping.")
+            log.warning(
+                f"Grouping already exists for {entity_type_name}. Resetting the grouping and regroup with {tag_name}."
+            )
             self._reset_grouping(entity_type_name)
 
         self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
             entity_type_name, attribute_name=tag_name, registry=self.internal_registry
         )
-        setattr(self, f"_{entity_type_name}_has_been_grouped", True)
+        if entity_type_name == "face":
+            self.face_group_tag = tag_name
+        else:
+            self.edge_group_tag = tag_name
 
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
@@ -395,7 +436,11 @@ class Geometry(AssetBase):
             self.internal_registry.clear(Surface)
         else:
             self.internal_registry.clear(Edge)
-        setattr(self, f"_{entity_type_name}_has_been_grouped", False)
+
+        if entity_type_name == "face":
+            self.face_group_tag = None
+        else:
+            self.edge_group_tag = None
 
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""
@@ -425,3 +470,10 @@ class Geometry(AssetBase):
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
+
+    def _inject_entity_info_to_params(self, params):
+        params = super()._inject_entity_info_to_params(params)
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "face_group_tag"):
+            params.private_attribute_asset_cache.face_group_tag = self.face_group_tag
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "edge_group_tag"):
+            params.private_attribute_asset_cache.edge_group_tag = self.edge_group_tag
