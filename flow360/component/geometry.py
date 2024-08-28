@@ -96,7 +96,7 @@ class GeometryMeta(AssetMetaBaseModelV2):
 
     project_id: str = pd.Field(alias="projectId")
     deleted: bool = pd.Field()
-    metadata: Optional[GeometryEntityInfo] = pd.Field(None)
+    entity_info: Optional[GeometryEntityInfo] = pd.Field(None)
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
@@ -141,20 +141,14 @@ class GeometryWebAPI(Flow360Resource):
                 _meta = json.load(f)
                 # pylint: disable=protected-access
                 self._info = self._info.model_copy(
-                    deep=True, update={"metadata": GeometryEntityInfo(**_meta)}
+                    deep=True, update={"entity_info": GeometryEntityInfo(**_meta)}
                 )
                 assert isinstance(
-                    self._info.metadata, GeometryEntityInfo
-                ), "[Internal Error] Metadata parsing failed."
+                    self._info.entity_info, GeometryEntityInfo
+                ), "[Internal Error] Entity info parsing failed."
         finally:
             os.remove(temp_file_name)
-        log.debug("Metadata loaded successfully.")
-
-    @property
-    def metadata(self):
-        """Return the metadata of the resource"""
-        self.get_entity_info()
-        return self._info.metadata
+        log.debug("Entity info loaded successfully.")
 
     @classmethod
     def _from_meta(cls, meta: GeometryMeta) -> GeometryWebAPI:
@@ -307,6 +301,7 @@ class Geometry(AssetBase):
     edge_group_tag: str = None
 
     @classmethod
+    #pylint: disable=redefined-builtin
     def from_cloud(cls, id: str):
         """Create asset with the given ID"""
         asset_obj = super().from_cloud(id)
@@ -346,6 +341,13 @@ class Geometry(AssetBase):
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, project_name, solver_version, length_unit, tags)
 
+    @property
+    def entity_info(self):
+        """Return the entity info of the resource"""
+        #pylint: disable=protected-access
+        self._webapi.get_entity_info()
+        return self._webapi._info.entity_info
+
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
         self._show_avaliable_entity_groups(
@@ -374,15 +376,14 @@ class Geometry(AssetBase):
                 f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
             )
 
-        self._webapi.get_entity_info()
         log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
         # pylint: disable=no-member
         if entity_type_name == "faces":
-            attribute_names = self._webapi.metadata.face_attribute_names
-            grouped_items = self._webapi.metadata.grouped_faces
+            attribute_names = self.entity_info.face_attribute_names
+            grouped_items = self.entity_info.grouped_faces
         else:
-            attribute_names = self._webapi.metadata.edge_attribute_names
-            grouped_items = self._webapi.metadata.grouped_edges
+            attribute_names = self.entity_info.edge_attribute_names
+            grouped_items = self.entity_info.grouped_edges
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
@@ -411,7 +412,7 @@ class Geometry(AssetBase):
             )
             self._reset_grouping(entity_type_name)
 
-        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
+        self.internal_registry = self.entity_info.group_in_registry(
             entity_type_name, attribute_name=tag_name, registry=self.internal_registry
         )
         if entity_type_name == "face":

@@ -22,7 +22,7 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
     )
 
     @abstractmethod
-    def get_full_list_of_boundaries(self, attribute_name: str = None) -> list:
+    def get_boundaries(self, attribute_name: str = None) -> list:
         """
         Helper function.
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
@@ -69,7 +69,7 @@ class GeometryEntityInfo(EntityInfoModel):
         alias="groupedEdges",
     )
 
-    def group_items_with_given_tag(
+    def group_in_registry(
         self,
         entity_type_name: Literal["face", "edge"],
         attribute_name: str,
@@ -78,12 +78,12 @@ class GeometryEntityInfo(EntityInfoModel):
         """
         Group items with given attribute_name.
         """
-        entity_list = self._get_full_list_of_given_entity_type(attribute_name, entity_type_name)
+        entity_list = self._get_list_of_entities(attribute_name, entity_type_name)
         for item in entity_list:
             registry.register(item)
         return registry
 
-    def _get_full_list_of_given_entity_type(
+    def _get_list_of_entities(
         self,
         attribute_name: Union[str, None] = None,
         entity_type_name: Union[Literal["face", "edge"], None] = None,
@@ -95,11 +95,17 @@ class GeometryEntityInfo(EntityInfoModel):
             raise ValueError(
                 f"Invalid entity type name, expected 'face' or 'edge' but got {entity_type_name}."
             )
-        entity_attribute_names = getattr(self, f"{entity_type_name}_attribute_names")
-        entity_full_list = getattr(self, f"grouped_{entity_type_name}s")
+        if entity_type_name == "face":
+            entity_attribute_names = self.face_attribute_names
+            entity_full_list = self.grouped_faces
+        else:
+            entity_attribute_names = self.edge_attribute_names
+            entity_full_list = self.grouped_edges
 
         if attribute_name is not None:
+            # pylint: disable=unsupported-membership-test,unsubscriptable-object
             if attribute_name in entity_attribute_names:
+                # pylint: disable=no-member
                 return entity_full_list[entity_attribute_names.index(attribute_name)]
             raise ValueError(
                 f"The given attribute_name {attribute_name} is not found"
@@ -107,11 +113,11 @@ class GeometryEntityInfo(EntityInfoModel):
             )
         raise ValueError("Attribute name is required to get the full list of boundaries.")
 
-    def get_full_list_of_boundaries(self, attribute_name: str = None) -> list:
+    def get_boundaries(self, attribute_name: str = None) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
-        return self._get_full_list_of_given_entity_type(attribute_name, "face")
+        return self._get_list_of_entities(attribute_name, "face")
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):
@@ -122,7 +128,7 @@ class VolumeMeshEntityInfo(EntityInfoModel):
     boundaries: list[Surface] = pd.Field([])
 
     # pylint: disable=arguments-differ
-    def get_full_list_of_boundaries(self) -> list:
+    def get_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
@@ -135,7 +141,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
 
     # pylint: disable=arguments-differ
-    def get_full_list_of_boundaries(self) -> list:
+    def get_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
