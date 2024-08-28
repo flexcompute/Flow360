@@ -114,18 +114,31 @@ def _check_numerical_dissipation_factor_output(v):
 
 def _check_low_mach_preconditioner_output(v):
     models = v.models
+
+    if not models:
+        return v
+
+    has_low_mach_preconditioner = False
     for model in models:
         if isinstance(model, Fluid) and model.navier_stokes_solver:
             preconditioner = model.navier_stokes_solver.low_mach_preconditioner
             if preconditioner:
-                continue
+                has_low_mach_preconditioner = True
+                break
 
-            outputs = v.outputs
-            for output in outputs:
-                if not hasattr(output, "output_fields"):
-                    continue
-                if "lowMachPreconditionerSensor" in output.output_fields.items:
-                    raise ValueError(
-                        "Low-Mach preconditioner output requested, but low-Mach preconditioner mode is not enabled."
-                    )
+    if has_low_mach_preconditioner:
+        return v
+
+    outputs = v.outputs
+
+    if not outputs:
+        return v
+
+    for output in outputs:
+        if not hasattr(output, "output_fields"):
+            continue
+        if "lowMachPreconditionerSensor" in output.output_fields.items:
+            raise ValueError(
+                "Low-Mach preconditioner output requested, but low-Mach preconditioner is not enabled."
+            )
     return v
