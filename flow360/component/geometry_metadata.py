@@ -13,7 +13,7 @@ from flow360.log import log
 
 class _KeyValuePair(MetadataBaseModel):
     key: str = pd.Field()
-    value: str = pd.Field()
+    value: Union[List, str]  = pd.Field()
 
 
 class _FaceEdgeMeta(MetadataBaseModel):
