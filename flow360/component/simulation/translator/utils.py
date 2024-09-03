@@ -263,7 +263,7 @@ def translate_setting_and_apply_to_all_entities(
 
             list_of_entities = []
             if "entities" in obj.model_fields:
-                if obj.entities is None:
+                if obj.entities is None or obj.entities.stored_entities is None:
                     continue
                 if isinstance(obj.entities, EntityList):
                     list_of_entities = (
