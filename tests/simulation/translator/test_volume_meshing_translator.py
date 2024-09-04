@@ -1,8 +1,14 @@
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    PassiveSpacing,
+)
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -103,6 +109,10 @@ def get_test_param():
         param = SimulationParams(
             meshing=MeshingParams(
                 refinement_factor=1.45,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1.35e-06 * u.m,
+                    boundary_layer_growth_rate=1 + 0.04,
+                ),
                 refinements=[
                     UniformRefinement(
                         entities=[
@@ -116,14 +126,16 @@ def get_test_param():
                         ],
                         spacing=7.5 * u.cm,
                     ),
-                    BoundaryLayer(
-                        type="aniso", first_layer_thickness=1.35e-06 * u.m, growth_rate=1 + 0.04
-                    ),
                     AxisymmetricRefinement(
                         entities=[rotor_disk_cylinder],
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
+                    ),
+                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
+                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
+                    BoundaryLayer(
+                        entities=[Surface(name="boundary1")], first_layer_thickness=0.5 * u.m
                     ),
                 ],
                 volume_zones=[
@@ -191,6 +203,11 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
             "gapTreatmentStrength": 0.0,
+        },
+        "faces": {
+            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso"},
+            "passive1": {"type": "projectAnisoSpacing"},
+            "passive2": {"type": "none"},
         },
         "refinement": [
             {
