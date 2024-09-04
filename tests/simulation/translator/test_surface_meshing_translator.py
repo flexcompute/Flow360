@@ -11,7 +11,10 @@ from flow360.component.simulation.meshing_param.edge_params import (
     SurfaceEdgeRefinement,
 )
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
@@ -102,12 +105,12 @@ def om6wing_tutorial_global_plus_local_override():
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.07,
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.07,
+                    curvature_resolution_angle=10 * u.deg,
+                    surface_max_edge_length=15 * u.cm,
+                ),
                 refinements=[
-                    SurfaceRefinement(
-                        max_edge_length=15 * u.cm,
-                        curvature_resolution_angle=10 * u.deg,
-                    ),
                     SurfaceRefinement(
                         entities=[my_geometry["wing"]],
                         max_edge_length=15 * u.cm,
@@ -137,12 +140,12 @@ def om6wing_tutorial_global_only():
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.07,
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.07,
+                    curvature_resolution_angle=10 * u.deg,
+                    surface_max_edge_length=15 * u.cm,
+                ),
                 refinements=[
-                    SurfaceRefinement(
-                        max_edge_length=15 * u.cm,
-                        curvature_resolution_angle=10 * u.deg,
-                    ),
                     SurfaceEdgeRefinement(
                         entities=[my_geometry["wing*Edge"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
@@ -175,11 +178,11 @@ def airplane_surface_mesh():
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=100 * u.cm,
+                    curvature_resolution_angle=pi / 12 * u.rad,
+                ),
                 refinements=[
-                    SurfaceRefinement(
-                        max_edge_length=100 * u.cm,
-                        curvature_resolution_angle=pi / 12 * u.rad,
-                    ),
                     SurfaceRefinement(
                         entities=[my_geometry["Inner*"]],
                         max_edge_length=1.5 * u.m,
@@ -208,12 +211,12 @@ def rotor_surface_mesh():
     with imperial_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(
-                surface_layer_growth_rate=1.2,
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
+                    surface_max_edge_length=10,
+                    curvature_resolution_angle=15 * u.deg,
+                ),
                 refinements=[
-                    SurfaceRefinement(
-                        max_edge_length=10,
-                        curvature_resolution_angle=15 * u.deg,
-                    ),  # Global
                     SurfaceRefinement(
                         entities=[rotor_geopmetry["tip"]],
                         max_edge_length=0.1 * u.inch,

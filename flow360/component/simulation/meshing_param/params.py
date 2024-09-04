@@ -5,28 +5,70 @@ from typing import Annotated, List, Optional, Union
 import pydantic as pd
 from typing_extensions import Self
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
-    SurfaceRefinementTypes,
+    BoundaryLayer,
+    PassiveSpacing,
+    SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
-    VolumeRefinementTypes,
 )
 from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.unit_system import AngleType, LengthType
 
 RefinementTypes = Annotated[
-    Union[SurfaceEdgeRefinement, SurfaceRefinementTypes, VolumeRefinementTypes],
+    Union[
+        SurfaceEdgeRefinement,
+        SurfaceRefinement,
+        BoundaryLayer,
+        PassiveSpacing,
+        UniformRefinement,
+        AxisymmetricRefinement,
+    ],
     pd.Field(discriminator="refinement_type"),
 ]
 
 VolumeZonesTypes = Annotated[
     Union[RotationCylinder, AutomatedFarfield], pd.Field(discriminator="type")
 ]
+
+
+class MeshingDefaults(Flow360BaseModel):
+    """
+    Default/global settings for meshing parameters.
+    """
+
+    ##::   Default surface edge settings
+    surface_edge_growth_rate: float = pd.Field(
+        1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
+    )
+
+    ##::    Default boundary layer settings
+    boundary_layer_growth_rate: float = pd.Field(
+        1.2, description="Default growth rate for volume prism layers.", ge=1
+    )
+    # pylint: disable=no-member
+    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
+        None, description="Default first layer thickness for volumetric anisotropic layers."
+    )  # Truly optional if all BL faces already have first_layer_thickness
+
+    ##::    Default surface layer settings
+    surface_max_edge_length: Optional[LengthType.Positive] = pd.Field(
+        None, description="Default maximum edge length for surface cells."
+    )  # Not actually optional and will raise error (TODO) if surface meshing is needed
+    curvature_resolution_angle: AngleType.Positive = pd.Field(
+        12 * u.deg,
+        description="Default maximum angular deviation in degrees. This value will restrict:"
+        "(1) The angle between a cell’s normal and its underlying surface normal"
+        "(2) The angle between a line segment’s normal and its underlying curve normal"
+        "This can not be overridden per face.",
+    )
 
 
 class MeshingParams(Flow360BaseModel):
@@ -39,19 +81,6 @@ class MeshingParams(Flow360BaseModel):
     Meshing related but may and maynot (user specified) need info from `Simulation`:
     1. Add rotational zones.
     2. Add default BETDisk refinement.
-
-    Affects volume meshing:
-    - refinement_factor
-    - gap_treatment_strength
-    - `class` BoundaryLayer
-    - `class` UniformRefinement
-    - `class` AxisymmetricRefinement
-    - `class` RotationCylinder
-
-    Affects surface meshing:
-    - surface_layer_growth_rate
-    - `class` SurfaceRefinement
-    - `class` SurfaceEdgeRefinement
     """
 
     # Volume **defaults**:
@@ -70,9 +99,9 @@ class MeshingParams(Flow360BaseModel):
         + "However the impact on regions without close proximity is negligible.",
     )
 
-    surface_layer_growth_rate: float = pd.Field(
-        1.2, ge=1, description="Global growth rate of the anisotropic layers grown from the edges."
-    )  # Conditionally optional
+    defaults: MeshingDefaults = pd.Field(
+        MeshingDefaults(), description="Default settings for meshing."
+    )
 
     refinements: List[RefinementTypes] = pd.Field(
         default=[],
