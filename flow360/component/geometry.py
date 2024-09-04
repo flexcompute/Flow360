@@ -312,20 +312,26 @@ class Geometry(AssetBase):
                 "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
             )
         asset_cache = simulation_dict["private_attribute_asset_cache"]
-        if "face_group_tag" not in asset_cache or asset_cache["face_group_tag"] is None:
+
+        if "private_attribute_asset_cache" not in asset_cache:
+            raise KeyError(
+                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
+            )
+        entity_info = asset_cache["project_entity_info"]
+        if "face_group_tag" not in entity_info or entity_info["face_group_tag"] is None:
             # This may happen if users submit the Geometry but did not do anything else.
             # Then they load back the geometry which will then have no info on grouping.
             log.warning(
                 "Could not find face grouping info in the draft's simulation settings. "
                 "Please remember to group them if relevant features are used."
             )
-            asset_obj.face_group_tag = asset_cache["face_group_tag"]
-        if "edge_group_tag" not in asset_cache or asset_cache["edge_group_tag"] is None:
+            asset_obj.face_group_tag = entity_info["face_group_tag"]
+        if "edge_group_tag" not in entity_info or entity_info["edge_group_tag"] is None:
             log.warning(
                 "Could not find face grouping info in the draft's simulation settings. "
                 "Please remember to group them if relevant features are used."
             )
-            asset_obj.edge_group_tag = asset_cache["edge_group_tag"]
+            asset_obj.edge_group_tag = entity_info["edge_group_tag"]
         return asset_obj
 
     @classmethod
@@ -474,7 +480,15 @@ class Geometry(AssetBase):
 
     def _inject_entity_info_to_params(self, params):
         params = super()._inject_entity_info_to_params(params)
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "face_group_tag"):
-            params.private_attribute_asset_cache.face_group_tag = self.face_group_tag
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "edge_group_tag"):
-            params.private_attribute_asset_cache.edge_group_tag = self.edge_group_tag
+        with _model_attribute_unlock(
+            params.private_attribute_asset_cache.project_entity_info, "face_group_tag"
+        ):
+            params.private_attribute_asset_cache.project_entity_info.face_group_tag = (
+                self.face_group_tag
+            )
+        with _model_attribute_unlock(
+            params.private_attribute_asset_cache.project_entity_info, "edge_group_tag"
+        ):
+            params.private_attribute_asset_cache.project_entity_info.edge_group_tag = (
+                self.edge_group_tag
+            )

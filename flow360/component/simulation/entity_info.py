@@ -1,7 +1,7 @@
 """Desearlizer for entity info retrieved from asset metadata pipeline."""
 
 from abc import ABCMeta, abstractmethod
-from typing import List, Literal, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -68,6 +68,8 @@ class GeometryEntityInfo(EntityInfoModel):
         "of `Edge` entities after grouping using the attribute name.",
         alias="groupedEdges",
     )
+    face_group_tag: Optional[str] = pd.Field(None, frozen=True)
+    edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
 
     def group_in_registry(
         self,
