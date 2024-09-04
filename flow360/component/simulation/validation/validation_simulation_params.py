@@ -4,6 +4,7 @@ validation for SimulationParams
 
 from flow360.component.flow360_params.flow360_fields import get_aliases
 from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 
 
@@ -34,5 +35,40 @@ def _check_consistency_wall_function_and_surface_output(v):
                 raise ValueError(
                     "To use 'wallFunctionMetric' for output specify a Wall with use_wall_function=true"
                 )
+
+    return v
+
+
+def _check_numerical_dissipation_factor_output(v):
+    models = v.models
+
+    if not models:
+        return v
+
+    low_dissipation_enabled = False
+
+    for model in models:
+        if isinstance(model, Fluid) and model.navier_stokes_solver:
+            numerical_dissipation_factor = model.navier_stokes_solver.numerical_dissipation_factor
+            low_dissipation_flag = int(round(1.0 / numerical_dissipation_factor)) - 1
+            if low_dissipation_flag != 0:
+                low_dissipation_enabled = True
+                break
+
+    if low_dissipation_enabled:
+        return v
+
+    outputs = v.outputs
+
+    if not outputs:
+        return v
+
+    for output in outputs:
+        if not hasattr(output, "output_fields"):
+            continue
+        if "numericalDissipationFactor" in output.output_fields.items:
+            raise ValueError(
+                "Numerical dissipation factor output requested, but low dissipation mode is not enabled"
+            )
 
     return v
