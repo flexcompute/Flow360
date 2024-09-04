@@ -10,21 +10,24 @@ import tempfile
 import threading
 import time
 from enum import Enum
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_metadata import Edge, Surface, _GeometryMetadataModel
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
-    AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
@@ -86,27 +89,27 @@ class GeometryStatus(Enum):
 
 
 # pylint: disable=R0801
-class GeometryMeta(AssetMetaBaseModel):
+class GeometryMeta(AssetMetaBaseModelV2):
     """
     GeometryMeta component
     """
 
     project_id: str = pd.Field(alias="projectId")
     deleted: bool = pd.Field()
-    metadata: Optional[_GeometryMetadataModel] = pd.Field(None)
+    entity_info: Optional[GeometryEntityInfo] = pd.Field(None)
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
 class GeometryWebAPI(Flow360Resource):
-    """Specialized web API for Geometry resource. Added capability to download and parse metadata."""
+    """web API for Geometry resource. This can and should be generalized and reused by all resources."""
 
-    def get_metadata(self, force: bool = False):
+    def get_entity_info(self, force: bool = False):
         """
-        Blockingly trying to download the metadata and populate the metadata info.
+        Blockingly trying to download the entityInfo.json
         """
         self._info = super().get_info()
         if getattr(self._info, "metadata", None) is not None and force is False:
-            log.warning("Metadata already loaded. Skipping download.")
+            log.debug("Metadata already loaded. Skipping download.")
             return
 
         start_time = time.time()
@@ -122,7 +125,7 @@ class GeometryWebAPI(Flow360Resource):
             # Windows OS complains when a file is opened in write mode and then read mode. So we need to close it first.
             # pylint: disable=protected-access
             self._download_file(
-                "results/geometry.json",
+                "metadata/entityInfo.json",
                 to_file=temp_file.name,
                 to_folder=".",
                 overwrite=True,
@@ -137,21 +140,15 @@ class GeometryWebAPI(Flow360Resource):
             with open(temp_file_name, "r", encoding="utf-8") as f:
                 _meta = json.load(f)
                 # pylint: disable=protected-access
-                self._info = self._info.copy(
-                    deep=True, update={"metadata": _GeometryMetadataModel(**_meta)}
+                self._info = self._info.model_copy(
+                    deep=True, update={"entity_info": GeometryEntityInfo(**_meta)}
                 )
                 assert isinstance(
-                    self._info.metadata, _GeometryMetadataModel
-                ), "[Internal Error] Metadata parsing failed."
+                    self._info.entity_info, GeometryEntityInfo
+                ), "[Internal Error] Entity info parsing failed."
         finally:
             os.remove(temp_file_name)
-        log.debug("Metadata loaded successfully.")
-
-    @property
-    def metadata(self):
-        """Return the metadata of the resource"""
-        self.get_metadata()
-        return self._info.metadata
+        log.debug("Entity info loaded successfully.")
 
     @classmethod
     def _from_meta(cls, meta: GeometryMeta) -> GeometryWebAPI:
@@ -300,6 +297,36 @@ class Geometry(AssetBase):
     _meta_class = GeometryMeta
     _draft_class = GeometryDraft
     _web_api_class = GeometryWebAPI
+    face_group_tag: str = None
+    edge_group_tag: str = None
+
+    @classmethod
+    # pylint: disable=redefined-builtin
+    def from_cloud(cls, id: str):
+        """Create asset with the given ID"""
+        asset_obj = super().from_cloud(id)
+        # get the face tag and edge tag used.
+        simulation_dict = _get_simulation_json_from_cloud(asset_obj.project_id)
+        if "private_attribute_asset_cache" not in simulation_dict:
+            raise KeyError(
+                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
+            )
+        asset_cache = simulation_dict["private_attribute_asset_cache"]
+        if "face_group_tag" not in asset_cache or asset_cache["face_group_tag"] is None:
+            # This may happen if users submit the Geometry but did not do anything else.
+            # Then they load back the geometry which will then have no info on grouping.
+            log.warning(
+                "Could not find face grouping info in the draft's simulation settings. "
+                "Please remember to group them if relevant features are used."
+            )
+            asset_obj.face_group_tag = asset_cache["face_group_tag"]
+        if "edge_group_tag" not in asset_cache or asset_cache["edge_group_tag"] is None:
+            log.warning(
+                "Could not find face grouping info in the draft's simulation settings. "
+                "Please remember to group them if relevant features are used."
+            )
+            asset_obj.edge_group_tag = asset_cache["edge_group_tag"]
+        return asset_obj
 
     @classmethod
     # pylint: disable=too-many-arguments
@@ -313,6 +340,13 @@ class Geometry(AssetBase):
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, project_name, solver_version, length_unit, tags)
+
+    @property
+    def entity_info(self):
+        """Return the entity info of the resource"""
+        # pylint: disable=protected-access
+        self._webapi.get_entity_info()
+        return self._webapi._info.entity_info
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
@@ -341,35 +375,106 @@ class Geometry(AssetBase):
             raise Flow360ValueError(
                 f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
             )
-        group_name_to_items = self._webapi.metadata.process_metadata_for_given_type(
-            entity_type_name
-        )
+
         log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
-        for tag_index, (attribute_tag, group_dict) in enumerate(group_name_to_items.items()):
+        # pylint: disable=no-member
+        if entity_type_name == "faces":
+            attribute_names = self.entity_info.face_attribute_names
+            grouped_items = self.entity_info.grouped_faces
+        else:
+            attribute_names = self.entity_info.edge_attribute_names
+            grouped_items = self.entity_info.grouped_edges
+        for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
             log.info(f"    >> Tag {tag_index}: {attribute_tag}")
-            for index, (group_name, face_ids) in enumerate(group_dict.items()):
-                log.info(f"        >> Group {index}: {group_name}")
+            for index, entity in enumerate(grouped_items[tag_index]):
+                log.info(f"        >> Group {index}: {entity.name}")
                 if show_ids_in_each_group is True:
-                    log.info(f"           IDs: {face_ids}")
+                    log.info(f"           IDs: {entity.private_attribute_sub_components}")
+
+    def _group_entity_by_tag(
+        self, entity_type_name: Literal["face", "edge"], tag_name: str
+    ) -> None:
+        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
+            self.internal_registry = EntityRegistry()
+
+        found_existing_grouping = (
+            self.face_group_tag is not None
+            if entity_type_name == "face"
+            else self.edge_group_tag is not None
+        )
+        if found_existing_grouping is True:
+            # pylint: disable=fixme
+            # TODO: We need to make sure only 1 grouping is used in simluationParams.
+            log.warning(
+                f"Grouping already exists for {entity_type_name}. Resetting the grouping and regroup with {tag_name}."
+            )
+            self._reset_grouping(entity_type_name)
+
+        self.internal_registry = self.entity_info.group_in_registry(
+            entity_type_name, attribute_name=tag_name, registry=self.internal_registry
+        )
+        if entity_type_name == "face":
+            self.face_group_tag = tag_name
+        else:
+            self.edge_group_tag = tag_name
 
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
         Group faces by tag name
         """
-        if hasattr(self, "internal_registry") is False or self.internal_registry is None:
-            self.internal_registry = EntityRegistry()
-        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            Surface, attribute_tag=tag_name, registry=self.internal_registry
-        )
+        self._group_entity_by_tag("face", tag_name)
 
     def group_edges_by_tag(self, tag_name: str) -> None:
         """
         Group edges by tag name
         """
+        self._group_entity_by_tag("edge", tag_name)
+
+    def _reset_grouping(self, entity_type_name: Literal["face", "edge"]) -> None:
+        if entity_type_name == "face":
+            self.internal_registry.clear(Surface)
+        else:
+            self.internal_registry.clear(Edge)
+
+        if entity_type_name == "face":
+            self.face_group_tag = None
+        else:
+            self.edge_group_tag = None
+
+    def reset_face_grouping(self) -> None:
+        """Reset the face grouping"""
+        self._reset_grouping("face")
+
+    def reset_edge_grouping(self) -> None:
+        """Reset the edge grouping"""
+        self._reset_grouping("edge")
+
+    def __getitem__(self, key: str):
+        """
+        Get the entity by name.
+        `key` is the name of the entity or the naming pattern if wildcard is used.
+        """
+        if isinstance(key, str) is False:
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
-            self.internal_registry = EntityRegistry()
-        self.internal_registry = self._webapi.metadata.group_items_with_given_tag(
-            Edge, attribute_tag=tag_name, registry=self.internal_registry
+            raise Flow360ValueError(
+                "The faces/edges in geometry are not grouped yet."
+                "Please use `group_faces_by_tag` or `group_edges_by_tag` function to group them first."
+            )
+            # Note: Or we assume group default by just FaceID and EdgeID? Not sure if this is actually useful.
+        return self.internal_registry.find_by_naming_pattern(
+            key, enforce_output_as_list=False, error_when_no_match=True
         )
+
+    def __setitem__(self, key: str, value: Any):
+        raise NotImplementedError("Assigning/setting entities is not supported.")
+
+    def _inject_entity_info_to_params(self, params):
+        params = super()._inject_entity_info_to_params(params)
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "face_group_tag"):
+            params.private_attribute_asset_cache.face_group_tag = self.face_group_tag
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "edge_group_tag"):
+            params.private_attribute_asset_cache.edge_group_tag = self.edge_group_tag

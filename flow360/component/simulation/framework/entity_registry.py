@@ -1,7 +1,7 @@
 """Registry for managing and storing instances of various entity types."""
 
 import re
-from typing import Any
+from typing import Any, Union
 
 import pydantic as pd
 
@@ -85,7 +85,9 @@ class EntityRegistry(Flow360BaseModel):
             by_type.model_fields["private_attribute_registry_bucket_name"].default,
         )
 
-    def find_by_naming_pattern(self, pattern: str) -> list[EntityBase]:
+    def find_by_naming_pattern(
+        self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
+    ) -> list[EntityBase]:
         """
         Finds all registered entities whose names match a given pattern.
 
@@ -105,13 +107,21 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
+
+        if not matched_entities and error_when_no_match is True:
+            raise ValueError(
+                f"No entity found in registry with given name/naming pattern: '{pattern}'."
+            )
+        if enforce_output_as_list is False and len(matched_entities) == 1:
+            return matched_entities[0]
+
         return matched_entities
 
-    def find_by_name(self, name: str):
+    def find_single_entity_by_name(self, name: str):
         """Retrieve the entity with the given name from the registry."""
-        entities = self.find_by_naming_pattern(name)
-        if not entities:
-            raise ValueError(f"No entity found in registry with given name: '{name}'.")
+        entities = self.find_by_naming_pattern(
+            name, enforce_output_as_list=True, error_when_no_match=True
+        )
         if len(entities) > 1:
             raise ValueError(f"Multiple entities found in registry with given name: '{name}'.")
         return entities[0]
@@ -131,12 +141,18 @@ class EntityRegistry(Flow360BaseModel):
         result += "---- End of content ----"
         return result
 
-    def clear(self):
+    def clear(self, entity_type: Union[None, type[EntityBase]] = None):
         """
         Clears all entities from the registry.
         """
         # pylint: disable=no-member
-        self.internal_registry.clear()
+        if entity_type is not None:
+            bucket_name = entity_type.model_fields["private_attribute_registry_bucket_name"].default
+            if bucket_name in self.internal_registry.keys():
+                # pylint: disable=unsubscriptable-object
+                self.internal_registry[bucket_name].clear()
+        else:
+            self.internal_registry.clear()
 
     def contains(self, entity: EntityBase) -> bool:
         """

@@ -5,7 +5,7 @@ import pytest
 
 from flow360.component.geometry import Geometry
 from flow360.component.simulation.primitives import Edge, Surface
-from flow360.log import log, set_logging_level
+from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
 
@@ -35,7 +35,7 @@ set_logging_level("DEBUG")
 @pytest.mark.usefixtures("s3_download_override")
 def test_multi_body_geometry(mock_id, mock_response):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    geometry = Geometry.from_cloud(mock_id)
+    geometry = Geometry(mock_id)
 
     # Test grouping both edge and face at the same time.
     geometry.group_faces_by_tag(tag_name="ByTheType")
@@ -86,7 +86,8 @@ def test_multi_body_geometry(mock_id, mock_response):
     }
 
     # Test by body grouping
-    geometry.internal_registry.clear()
+    geometry.reset_face_grouping()
+    geometry.reset_edge_grouping()
     geometry.group_faces_by_tag(tag_name="ByBody")
     geometry.group_edges_by_tag(tag_name="ByBody")
     surface_bucket = geometry.internal_registry.get_bucket(Surface)
@@ -139,7 +140,8 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body02_edge0012",
     }
 
-    geometry.internal_registry.clear()
+    geometry.reset_face_grouping()
+    geometry.reset_edge_grouping()
     geometry.group_faces_by_tag(tag_name="RandomName")
     surface_bucket = geometry.internal_registry.get_bucket(Surface)
     assert set(surface_bucket._get_property_values("name")) == {
@@ -156,3 +158,39 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body02_face0005",
         "body02_face0006",
     }
+
+    ##-- Test the __getitem__ method
+    geometry.reset_face_grouping()
+    geometry.reset_edge_grouping()
+    geometry.group_faces_by_tag(tag_name="ByBody")
+    geometry.group_edges_by_tag(tag_name="ByBody")
+
+    assert geometry["Box1"][0].private_attribute_entity_type_name == "Surface"
+    assert geometry["Box1"][0].name == "Box1"
+    assert geometry["Box1"][0].private_attribute_tag_key == "ByBody"
+    assert geometry["Box1"][0].private_attribute_sub_components == [
+        "body01_face0001",
+        "body01_face0002",
+        "body01_face0003",
+        "body01_face0004",
+        "body01_face0005",
+        "body01_face0006",
+    ]
+
+    assert geometry["Box1"][1].private_attribute_entity_type_name == "Edge"
+    assert geometry["Box1"][1].name == "Box1"
+    assert geometry["Box1"][1].private_attribute_tag_key == "ByBody"
+    assert geometry["Box1"][1].private_attribute_sub_components == [
+        "body01_edge0001",
+        "body01_edge0002",
+        "body01_edge0003",
+        "body01_edge0004",
+        "body01_edge0005",
+        "body01_edge0006",
+        "body01_edge0007",
+        "body01_edge0008",
+        "body01_edge0009",
+        "body01_edge0010",
+        "body01_edge0011",
+        "body01_edge0012",
+    ]

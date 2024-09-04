@@ -69,13 +69,22 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
     params._update_zone_info_from_volume_mesh(get_volume_mesh_metadata)
     my_reg = params._get_used_entity_registry()
     assert isinstance(
-        my_reg.find_by_name("plateBlock"),
+        my_reg.find_single_entity_by_name("plateBlock"),
         Cylinder,
     )
     assert (
-        my_reg.find_by_name("plateBlock").private_attribute_zone_boundary_names.items
+        my_reg.find_single_entity_by_name("plateBlock").private_attribute_zone_boundary_names.items
         == get_volume_mesh_metadata["zones"]["plateBlock"]["boundaryNames"]
     )
-    assert my_reg.find_by_name("slipWall").private_attribute_full_name == "farFieldBlock/slipWall"
-    assert my_reg.find_by_name("noSlipWall").private_attribute_full_name == "plateBlock/noSlipWall"
-    assert my_reg.find_by_name("farField").private_attribute_full_name == "farFieldBlock/farField"
+    assert (
+        my_reg.find_single_entity_by_name("slipWall").private_attribute_full_name
+        == "farFieldBlock/slipWall"
+    )
+    assert (
+        my_reg.find_single_entity_by_name("noSlipWall").private_attribute_full_name
+        == "plateBlock/noSlipWall"
+    )
+    assert (
+        my_reg.find_single_entity_by_name("farField").private_attribute_full_name
+        == "farFieldBlock/farField"
+    )
