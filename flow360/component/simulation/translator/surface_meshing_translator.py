@@ -1,7 +1,11 @@
 """Surface meshing parameter translator."""
 
+from typing import List
+
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     preprocess_input,
@@ -9,7 +13,6 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.exceptions import Flow360TranslationError
 from flow360.log import log
-from flow360.component.simulation.entity_info import GeometryEntityInfo
 
 
 # pylint: disable=invalid-name
@@ -111,16 +114,27 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     )
 
     ##:: >> Step 5.1: Apply default_max_edge_length to faces that are not explicitly specified
-    assert input_params.project_entity_info is not None
-    assert isinstance(input_params.project_entity_info, GeometryEntityInfo)
+    assert input_params.private_attribute_asset_cache.project_entity_info is not None
+    assert isinstance(
+        input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+    )
 
-    for face_id in input_params.project_entity_info.face_ids:
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
         if face_id not in face_config.keys():
             face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
-    
+
     translated["faces"] = face_config
 
     ##:: >> Step 6: Tell surface mesher how do we group boundaries.
     translated["boundaries"] = {}
-    
+    face_group_tag = input_params.private_attribute_asset_cache.project_entity_info.face_group_tag
+    grouped_faces: List[Surface] = (
+        input_params.private_attribute_asset_cache.project_entity_info.get_boundaries(
+            face_group_tag
+        )
+    )
+    for surface in grouped_faces:
+        for face_id in surface.private_attribute_sub_components:
+            translated["boundaries"][face_id] = surface.name
+
     return translated

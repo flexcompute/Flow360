@@ -23,5 +23,8 @@
         "wing": {
             "maxEdgeLength": 0.15
         }
+    },
+    "boundaries": {
+        "wing": "wing"
     }
 }

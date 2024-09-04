@@ -4,6 +4,8 @@ import os
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     HeightBasedRefinement,
@@ -84,6 +86,81 @@ class TempGeometry(AssetBase):
         else:
             raise ValueError("Invalid file name")
 
+    def _get_entity_info(self):
+        if self.fname == "om6wing.csm":
+            return GeometryEntityInfo(
+                face_ids=["wing"],
+                edge_ids=[
+                    "wingLeadingEdge",
+                    "wingTrailingEdge",
+                    "rootAirfoilEdge",
+                    "tipAirfoilEdge",
+                ],
+                face_attribute_names=["dummy"],
+                face_group_tag="dummy",
+                grouped_faces=[[Surface(name="wing", private_attribute_sub_components=["wing"])]],
+            )
+
+        elif self.fname == "geometry.egads":
+            return GeometryEntityInfo(
+                face_ids=[
+                    "Outer_Wing_mirrored",
+                    "Stab_mirrored",
+                    "Outer_Wing",
+                    "Fuselage_H",
+                    "Inner_Wing",
+                    "Fin",
+                    "Inner_Wing_mirrored",
+                    "Stab",
+                    "Fuselage_H_mirrored",
+                    "Fuselage_V",
+                ],
+                edge_ids=[],
+                face_attribute_names=["dummy"],
+                face_group_tag="dummy",
+                grouped_faces=[
+                    Surface(
+                        name="Outer_Wing_mirrored",
+                        private_attribute_sub_components=["Outer_Wing_mirrored"],
+                    ),
+                    Surface(
+                        name="Stab_mirrored", private_attribute_sub_components=["Stab_mirrored"]
+                    ),
+                    Surface(name="Outer_Wing", private_attribute_sub_components=["Outer_Wing"]),
+                    Surface(name="Fuselage_H", private_attribute_sub_components=["Fuselage_H"]),
+                    Surface(name="Inner_Wing", private_attribute_sub_components=["Inner_Wing"]),
+                    Surface(name="Fin", private_attribute_sub_components=["Fin"]),
+                    Surface(
+                        name="Inner_Wing_mirrored",
+                        private_attribute_sub_components=["Inner_Wing_mirrored"],
+                    ),
+                    Surface(name="Stab", private_attribute_sub_components=["Stab"]),
+                    Surface(
+                        name="Fuselage_H_mirrored",
+                        private_attribute_sub_components=["Fuselage_H_mirrored"],
+                    ),
+                    Surface(name="Fuselage_V", private_attribute_sub_components=["Fuselage_V"]),
+                ],
+            )
+        elif self.fname == "rotor.csm":
+            return GeometryEntityInfo(
+                face_ids=["hub", "blade", "tip"],
+                edge_ids=[
+                    "leadingEdge",
+                    "trailingEdge",
+                    "tipEdge",
+                    "bladeSplitEdge",
+                    "hubCircle",
+                    "hubSplitEdge",
+                    "junctionEdge",
+                ],
+                face_attribute_names=["dummy"],
+                face_group_tag="dummy",
+            )
+            r
+        else:
+            raise ValueError("Invalid file name")
+
     def _populate_registry(self):
         self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
         for zone_name in self._get_meta_data()["edges"] if "edges" in self._get_meta_data() else []:
@@ -111,6 +188,9 @@ def om6wing_tutorial_global_plus_local_override():
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     surface_edge_growth_rate=1.07,
@@ -131,7 +211,7 @@ def om6wing_tutorial_global_plus_local_override():
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
-            )
+            ),
         )
     return param
 
@@ -146,6 +226,9 @@ def om6wing_tutorial_global_only():
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     surface_edge_growth_rate=1.07,
@@ -162,7 +245,7 @@ def om6wing_tutorial_global_only():
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
-            )
+            ),
         )
     return param
 
@@ -184,6 +267,9 @@ def airplane_surface_mesh():
 
     with SI_unit_system:
         param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     surface_max_edge_length=100 * u.cm,
@@ -207,7 +293,7 @@ def airplane_surface_mesh():
                         max_edge_length=0.5 * u.m,
                     ),
                 ],
-            )
+            ),
         )
     return param
 
@@ -217,6 +303,9 @@ def rotor_surface_mesh():
     rotor_geopmetry = TempGeometry("rotor.csm")
     with imperial_unit_system:
         param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=rotor_geopmetry._get_entity_info()
+            ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     surface_edge_growth_rate=1.2,
@@ -256,7 +345,7 @@ def rotor_surface_mesh():
                         method=HeightBasedRefinement(value=0.01 * u.inch),
                     ),
                 ],
-            )
+            ),
         )
     return param
 

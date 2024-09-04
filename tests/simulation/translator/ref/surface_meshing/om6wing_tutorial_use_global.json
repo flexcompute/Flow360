@@ -18,5 +18,13 @@
         "tipAirfoilEdge": {
             "type": "projectAnisoSpacing"
         }
+    },
+    "faces":{
+        "wing": {
+            "maxEdgeLength": 0.15
+        }
+    },
+    "boundaries": {
+        "wing": "wing"
     }
 }
