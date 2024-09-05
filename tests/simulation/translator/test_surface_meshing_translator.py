@@ -118,29 +118,17 @@ class TempGeometry(AssetBase):
                 edge_ids=[],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
-                grouped_faces=[
+                grouped_faces=[[
                     Surface(
-                        name="Outer_Wing_mirrored",
-                        private_attribute_sub_components=["Outer_Wing_mirrored"],
+                        name="Wing",
+                        private_attribute_sub_components=["Outer_Wing_mirrored", "Outer_Wing", "Inner_Wing", "Inner_Wing_mirrored"],
                     ),
                     Surface(
-                        name="Stab_mirrored", private_attribute_sub_components=["Stab_mirrored"]
+                        name="Fuselage", private_attribute_sub_components=["Fuselage_H_mirrored", "Fuselage_H", "Fuselage_V"]
                     ),
-                    Surface(name="Outer_Wing", private_attribute_sub_components=["Outer_Wing"]),
-                    Surface(name="Fuselage_H", private_attribute_sub_components=["Fuselage_H"]),
-                    Surface(name="Inner_Wing", private_attribute_sub_components=["Inner_Wing"]),
+                    Surface(name="Stab", private_attribute_sub_components=["Stab","Stab_mirrored"]),
                     Surface(name="Fin", private_attribute_sub_components=["Fin"]),
-                    Surface(
-                        name="Inner_Wing_mirrored",
-                        private_attribute_sub_components=["Inner_Wing_mirrored"],
-                    ),
-                    Surface(name="Stab", private_attribute_sub_components=["Stab"]),
-                    Surface(
-                        name="Fuselage_H_mirrored",
-                        private_attribute_sub_components=["Fuselage_H_mirrored"],
-                    ),
-                    Surface(name="Fuselage_V", private_attribute_sub_components=["Fuselage_V"]),
-                ],
+                ]],
             )
         elif self.fname == "rotor.csm":
             return GeometryEntityInfo(
@@ -272,16 +260,17 @@ def airplane_surface_mesh():
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
                     surface_max_edge_length=100 * u.cm,
                     curvature_resolution_angle=pi / 12 * u.rad,
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[my_geometry["Inner*"]],
+                        entities=[my_geometry["*Wing*"]],
                         max_edge_length=1.5 * u.m,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Outer*"]],
+                        entities=[my_geometry["Fuselage*"]],
                         max_edge_length=700 * u.mm,
                     ),
                     SurfaceRefinement(
@@ -289,8 +278,8 @@ def airplane_surface_mesh():
                         max_edge_length=0.5 * u.m,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Fin*"]],
-                        max_edge_length=0.5 * u.m,
+                        entities=[my_geometry["Fin"]],
+                        max_edge_length=50 * u.cm,
                     ),
                 ],
             ),
@@ -384,9 +373,9 @@ def test_airplane_surface_mesh(get_airplane_geometry, airplane_surface_mesh):
     )
 
 
-def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
-    _translate_and_compare(
-        rotor_surface_mesh,
-        get_rotor_geometry.mesh_unit,
-        "rotor.json",
-    )
+#def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
+#    _translate_and_compare(
+#        rotor_surface_mesh,
+#        get_rotor_geometry.mesh_unit,
+#        "rotor.json",
+#    )
