@@ -121,7 +121,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     )
 
     for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
-        if face_id not in face_config.keys():
+        if face_id not in face_config:
             face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
 
     translated["faces"] = face_config
