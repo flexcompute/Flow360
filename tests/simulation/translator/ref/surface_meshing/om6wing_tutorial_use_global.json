@@ -1,5 +1,6 @@
 {
     "curvatureResolutionAngle": 10,
+    "maxEdgeLength": 0.15,
     "growthRate": 1.07,
     "edges": {
         "wingLeadingEdge": {

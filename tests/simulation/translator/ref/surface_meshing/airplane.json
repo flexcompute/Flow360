@@ -1,52 +1,29 @@
 {
-    "faces": {
-        "Inner_Wing": {
-            "maxEdgeLength": 1.5
-        },
-        "Stab_mirrored": {
-            "maxEdgeLength": 0.5
-        },
-        "Outer_Wing_mirrored": {
-            "maxEdgeLength": 1.5
-        },
-        "Stab": {
-            "maxEdgeLength": 0.5
-        },
-        "Stab_mirrored": {
-            "maxEdgeLength": 0.5
-        },
-        "Fin": {
-            "maxEdgeLength": 0.5
-        },
-        "Outer_Wing": {
-            "maxEdgeLength": 1.5
-        },
-        "Inner_Wing_mirrored": {
-            "maxEdgeLength": 1.5
-        },
-        "Fuselage_H": {
-            "maxEdgeLength": 0.7
-        },
-        "Fuselage_H_mirrored": {
-            "maxEdgeLength": 0.7
-        },
-        "Fuselage_V": {
-            "maxEdgeLength": 0.7
-        }
-    },
-    "curvatureResolutionAngle": 15.0,
-    "surfaceMaxEdgeLength": 1,
-    "growthRate": 1.2,
-    "boundaries":{
-        "Outer_Wing_mirrored": "Wing",
-        "Outer_Wing": "Wing",
-        "Inner_Wing_mirrored": "Wing",
-        "Inner_Wing_mirrored": "Wing",
-        "Fuselage_H_mirrored": "Fuselage",
-        "Fuselage_H": "Fuselage",
-        "Fuselage_V": "Fuselage",
-        "Stab": "Stab",
-        "Stab_mirrored": "Stab",
-        "Fin": "Fin"
-    }
+  "faces": {
+    "Outer_Wing_mirrored": { "maxEdgeLength": 1.5 },
+    "Outer_Wing": { "maxEdgeLength": 1.5 },
+    "Inner_Wing": { "maxEdgeLength": 1.5 },
+    "Inner_Wing_mirrored": { "maxEdgeLength": 1.5 },
+    "Fuselage_H": { "maxEdgeLength": 0.7000000000000001 },
+    "Fuselage_H_mirrored": { "maxEdgeLength": 0.7000000000000001 },
+    "Fuselage_V": { "maxEdgeLength": 0.7000000000000001 },
+    "Stab_mirrored": { "maxEdgeLength": 0.5 },
+    "Stab": { "maxEdgeLength": 0.5 },
+    "Fin": { "maxEdgeLength": 0.5 }
+  },
+  "curvatureResolutionAngle": 15.0,
+  "maxEdgeLength": 1,
+  "growthRate": 1.2,
+  "boundaries": {
+    "Outer_Wing_mirrored": "Wing",
+    "Outer_Wing": "Wing",
+    "Inner_Wing_mirrored": "Wing",
+    "Inner_Wing": "Wing",
+    "Fuselage_H_mirrored": "Fuselage",
+    "Fuselage_H": "Fuselage",
+    "Fuselage_V": "Fuselage",
+    "Stab": "Stab",
+    "Stab_mirrored": "Stab",
+    "Fin": "Fin"
+  }
 }

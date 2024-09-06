@@ -118,17 +118,31 @@ class TempGeometry(AssetBase):
                 edge_ids=[],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
-                grouped_faces=[[
-                    Surface(
-                        name="Wing",
-                        private_attribute_sub_components=["Outer_Wing_mirrored", "Outer_Wing", "Inner_Wing", "Inner_Wing_mirrored"],
-                    ),
-                    Surface(
-                        name="Fuselage", private_attribute_sub_components=["Fuselage_H_mirrored", "Fuselage_H", "Fuselage_V"]
-                    ),
-                    Surface(name="Stab", private_attribute_sub_components=["Stab","Stab_mirrored"]),
-                    Surface(name="Fin", private_attribute_sub_components=["Fin"]),
-                ]],
+                grouped_faces=[
+                    [
+                        Surface(
+                            name="Wing",
+                            private_attribute_sub_components=[
+                                "Outer_Wing_mirrored",
+                                "Outer_Wing",
+                                "Inner_Wing",
+                                "Inner_Wing_mirrored",
+                            ],
+                        ),
+                        Surface(
+                            name="Fuselage",
+                            private_attribute_sub_components=[
+                                "Fuselage_H_mirrored",
+                                "Fuselage_H",
+                                "Fuselage_V",
+                            ],
+                        ),
+                        Surface(
+                            name="Stab", private_attribute_sub_components=["Stab", "Stab_mirrored"]
+                        ),
+                        Surface(name="Fin", private_attribute_sub_components=["Fin"]),
+                    ]
+                ],
             )
         elif self.fname == "rotor.csm":
             return GeometryEntityInfo(
@@ -144,6 +158,14 @@ class TempGeometry(AssetBase):
                 ],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
+                grouped_faces=[
+                    [
+                        Surface(
+                            name="rotor",
+                            private_attribute_sub_components=["hub", "blade", "tip"],
+                        )
+                    ]
+                ],
             )
             r
         else:
@@ -188,7 +210,7 @@ def om6wing_tutorial_global_plus_local_override():
                 refinements=[
                     SurfaceRefinement(
                         entities=[my_geometry["wing"]],
-                        max_edge_length=15 * u.cm,
+                        max_edge_length=14 * u.cm,
                     ),
                     SurfaceEdgeRefinement(
                         entities=[my_geometry["wing*Edge"]],
@@ -373,9 +395,9 @@ def test_airplane_surface_mesh(get_airplane_geometry, airplane_surface_mesh):
     )
 
 
-#def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
-#    _translate_and_compare(
-#        rotor_surface_mesh,
-#        get_rotor_geometry.mesh_unit,
-#        "rotor.json",
-#    )
+def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
+    _translate_and_compare(
+        rotor_surface_mesh,
+        get_rotor_geometry.mesh_unit,
+        "rotor.json",
+    )

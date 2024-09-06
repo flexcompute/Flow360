@@ -1,6 +1,7 @@
 {
     "curvatureResolutionAngle": 15,
     "growthRate": 1.2, 
+    "maxEdgeLength": 120,
     "edges": {
         "leadingEdge":  {
             "type": "aniso",
@@ -44,5 +45,10 @@
         "tip":   {
             "maxEdgeLength": 0.1
         }
+    },
+    "boundaries": {
+        "hub":   "rotor",
+        "blade": "rotor",
+        "tip": "rotor"
     }
 }
