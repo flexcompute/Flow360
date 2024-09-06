@@ -741,10 +741,9 @@ def get_solver_json(
 
                 # build trip region(s) if applicable
                 if "tripRegions" in transition_dict:
-                    transition_dict.pop("tripRegions")
+                    transition_dict["tripRegions"] = []
                     for trip_region in model.transition_model_solver.trip_regions.stored_entities:
                         axes = trip_region.private_attribute_input_cache.axes
-                        transition_dict["tripRegions"] = []
                         transition_dict["tripRegions"].append(
                             {
                                 "center": list(trip_region.center.value),
