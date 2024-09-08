@@ -1,9 +1,9 @@
 {
   "faces": {
-    "Outer_Wing_mirrored": { "maxEdgeLength": 1.5 },
-    "Outer_Wing": { "maxEdgeLength": 1.5 },
-    "Inner_Wing": { "maxEdgeLength": 1.5 },
-    "Inner_Wing_mirrored": { "maxEdgeLength": 1.5 },
+    "Outer_Wing_mirrored": { "maxEdgeLength": 1 },
+    "Outer_Wing": { "maxEdgeLength": 1 },
+    "Inner_Wing": { "maxEdgeLength": 1 },
+    "Inner_Wing_mirrored": { "maxEdgeLength": 1 },
     "Fuselage_H": { "maxEdgeLength": 0.7000000000000001 },
     "Fuselage_H_mirrored": { "maxEdgeLength": 0.7000000000000001 },
     "Fuselage_V": { "maxEdgeLength": 0.7000000000000001 },
@@ -12,7 +12,6 @@
     "Fin": { "maxEdgeLength": 0.5 }
   },
   "curvatureResolutionAngle": 15.0,
-  "maxEdgeLength": 1,
   "growthRate": 1.2,
   "boundaries": {
     "Outer_Wing_mirrored": "Wing",

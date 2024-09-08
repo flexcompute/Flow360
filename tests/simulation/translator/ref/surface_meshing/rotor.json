@@ -1,7 +1,6 @@
 {
     "curvatureResolutionAngle": 15,
     "growthRate": 1.2, 
-    "maxEdgeLength": 120,
     "edges": {
         "leadingEdge":  {
             "type": "aniso",

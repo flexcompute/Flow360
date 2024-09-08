@@ -85,7 +85,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         )
 
     default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length.value.item()
-    translated["maxEdgeLength"] = default_max_edge_length
 
     ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
     translated["curvatureResolutionAngle"] = (
