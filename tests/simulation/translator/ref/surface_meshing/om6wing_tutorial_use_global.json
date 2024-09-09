@@ -19,12 +19,14 @@
             "type": "projectAnisoSpacing"
         }
     },
-    "faces":{
+    "faces": {
         "wing": {
             "maxEdgeLength": 0.15
         }
     },
     "boundaries": {
-        "wing": "wing"
+        "wing": {
+            "boundaryName": "wing"
+        }
     }
 }

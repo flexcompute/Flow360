@@ -25,6 +25,8 @@
         }
     },
     "boundaries": {
-        "wing": "wing"
+        "wing": {
+            "boundaryName": "wing"
+        }
     }
 }

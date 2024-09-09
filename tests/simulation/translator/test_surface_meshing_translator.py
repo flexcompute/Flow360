@@ -296,7 +296,7 @@ def airplane_surface_mesh():
                         max_edge_length=700 * u.mm,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Stab*"]],
+                        entities=[my_geometry["Stab_*"]],
                         max_edge_length=0.5 * u.m,
                     ),
                     SurfaceRefinement(

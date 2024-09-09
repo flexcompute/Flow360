@@ -1,8 +1,8 @@
 {
     "curvatureResolutionAngle": 15,
-    "growthRate": 1.2, 
+    "growthRate": 1.2,
     "edges": {
-        "leadingEdge":  {
+        "leadingEdge": {
             "type": "aniso",
             "method": "angle",
             "value": 1
@@ -35,19 +35,25 @@
         }
     },
     "faces": {
-        "hub":   {
+        "hub": {
             "maxEdgeLength": 10
         },
         "blade": {
             "maxEdgeLength": 10
         },
-        "tip":   {
+        "tip": {
             "maxEdgeLength": 0.1
         }
     },
     "boundaries": {
-        "hub":   "rotor",
-        "blade": "rotor",
-        "tip": "rotor"
+        "hub": {
+            "boundaryName": "rotor"
+        },
+        "blade": {
+            "boundaryName": "rotor"
+        },
+        "tip": {
+            "boundaryName": "rotor"
+        }
     }
 }

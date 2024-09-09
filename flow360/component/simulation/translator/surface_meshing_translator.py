@@ -135,6 +135,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     )
     for surface in grouped_faces:
         for face_id in surface.private_attribute_sub_components:
-            translated["boundaries"][face_id] = surface.name
+            translated["boundaries"][face_id] = {"boundaryName": surface.name}
 
     return translated

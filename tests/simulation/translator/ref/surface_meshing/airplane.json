@@ -1,28 +1,68 @@
 {
   "faces": {
-    "Outer_Wing_mirrored": { "maxEdgeLength": 1 },
-    "Outer_Wing": { "maxEdgeLength": 1 },
-    "Inner_Wing": { "maxEdgeLength": 1 },
-    "Inner_Wing_mirrored": { "maxEdgeLength": 1 },
-    "Fuselage_H": { "maxEdgeLength": 0.7000000000000001 },
-    "Fuselage_H_mirrored": { "maxEdgeLength": 0.7000000000000001 },
-    "Fuselage_V": { "maxEdgeLength": 0.7000000000000001 },
-    "Stab_mirrored": { "maxEdgeLength": 0.5 },
-    "Stab": { "maxEdgeLength": 0.5 },
-    "Fin": { "maxEdgeLength": 0.5 }
+    "Outer_Wing_mirrored": {
+      "maxEdgeLength": 1.5
+    },
+    "Outer_Wing": {
+      "maxEdgeLength": 1.5
+    },
+    "Inner_Wing": {
+      "maxEdgeLength": 1.5
+    },
+    "Inner_Wing_mirrored": {
+      "maxEdgeLength": 1.5
+    },
+    "Fuselage_H": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "Fuselage_H_mirrored": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "Fuselage_V": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "Stab_mirrored": {
+      "maxEdgeLength": 0.5
+    },
+    "Stab": {
+      "maxEdgeLength": 1.0
+    },
+    "Fin": {
+      "maxEdgeLength": 0.5
+    }
   },
   "curvatureResolutionAngle": 15.0,
   "growthRate": 1.2,
   "boundaries": {
-    "Outer_Wing_mirrored": "Wing",
-    "Outer_Wing": "Wing",
-    "Inner_Wing_mirrored": "Wing",
-    "Inner_Wing": "Wing",
-    "Fuselage_H_mirrored": "Fuselage",
-    "Fuselage_H": "Fuselage",
-    "Fuselage_V": "Fuselage",
-    "Stab": "Stab",
-    "Stab_mirrored": "Stab",
-    "Fin": "Fin"
+    "Outer_Wing_mirrored": {
+      "boundaryName": "Wing"
+    },
+    "Outer_Wing": {
+      "boundaryName": "Wing"
+    },
+    "Inner_Wing_mirrored": {
+      "boundaryName": "Wing"
+    },
+    "Inner_Wing": {
+      "boundaryName": "Wing"
+    },
+    "Fuselage_H_mirrored": {
+      "boundaryName": "Fuselage"
+    },
+    "Fuselage_H": {
+      "boundaryName": "Fuselage"
+    },
+    "Fuselage_V": {
+      "boundaryName": "Fuselage"
+    },
+    "Stab": {
+      "boundaryName": "Stab"
+    },
+    "Stab_mirrored": {
+      "boundaryName": "Stab"
+    },
+    "Fin": {
+      "boundaryName": "Fin"
+    }
   }
 }
