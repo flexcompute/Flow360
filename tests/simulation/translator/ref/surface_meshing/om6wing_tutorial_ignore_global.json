@@ -1,28 +1,32 @@
 {
-    "maxEdgeLength": 0.15,
     "curvatureResolutionAngle": 10,
     "growthRate": 1.07,
     "edges": {
-        "wingLeadingEdge": {
+        "body01_edge001": {
             "type": "aniso",
             "method": "height",
             "value": 3e-4
         },
-        "wingTrailingEdge": {
+        "body01_edge002": {
             "type": "aniso",
             "method": "height",
             "value": 3e-4
         },
-        "rootAirfoilEdge": {
+        "body01_edge003": {
             "type": "projectAnisoSpacing"
         },
-        "tipAirfoilEdge": {
+        "body01_edge004": {
             "type": "projectAnisoSpacing"
         }
     },
     "faces": {
-        "wing": {
-            "maxEdgeLength": 0.15
+        "body01_face001": {
+            "maxEdgeLength": 0.14
+        }
+    },
+    "boundaries": {
+        "body01_face001": {
+            "boundaryName": "wing"
         }
     }
 }

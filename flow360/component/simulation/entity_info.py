@@ -113,7 +113,7 @@ class GeometryEntityInfo(EntityInfoModel):
                 f"The given attribute_name {attribute_name} is not found"
                 f" in geometry metadata. Available: {entity_attribute_names}"
             )
-        raise ValueError("Attribute name is required to get the full list of boundaries.")
+        raise ValueError("Attribute name is required to get the full list of grouped entities.")
 
     def get_boundaries(self, attribute_name: str = None) -> list:
         """

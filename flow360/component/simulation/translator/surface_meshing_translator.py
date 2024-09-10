@@ -1,7 +1,11 @@
 """Surface meshing parameter translator."""
 
+from typing import List
+
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     preprocess_input,
@@ -71,14 +75,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing"],
         )
 
-    if input_params.meshing.refinements is None:
-        log.info("No `refinements` found in the input. Skipping translation.")
-        raise Flow360TranslationError(
-            "No `refinements` found in the input",
-            input_value=None,
-            location=["meshing", "refinements"],
-        )
-
     ##:: >>  Step 1:  Get global maxEdgeLength [REQUIRED]
     if input_params.meshing.defaults.surface_max_edge_length is None:
         log.info("No `surface_max_edge_length` found in the defaults. Skipping translation.")
@@ -88,7 +84,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             location=["meshing", "refinements", "defaults"],
         )
 
-    translated["maxEdgeLength"] = input_params.meshing.defaults.surface_max_edge_length.value.item()
+    default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length.value.item()
 
     ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
     translated["curvatureResolutionAngle"] = (
@@ -103,18 +99,42 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         input_params.meshing.refinements,
         SurfaceEdgeRefinement,
         translation_func=SurfaceEdgeRefinement_to_edges,
+        use_sub_item_as_key=True,
     )
     if edge_config != {}:
         translated["edges"] = edge_config
 
-    ##:: >> Step 5: Get faces [OPTIONAL]
+    ##:: >> Step 5: Get faces
     face_config = translate_setting_and_apply_to_all_entities(
         input_params.meshing.refinements,
         SurfaceRefinement,
         translation_func=SurfaceRefinement_to_faces,
         translation_func_global_max_edge_length=input_params.meshing.defaults.surface_max_edge_length,
+        use_sub_item_as_key=True,
     )
-    if face_config != {}:
-        translated["faces"] = face_config
+
+    ##:: >> Step 5.1: Apply default_max_edge_length to faces that are not explicitly specified
+    assert input_params.private_attribute_asset_cache.project_entity_info is not None
+    assert isinstance(
+        input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+    )
+
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+        if face_id not in face_config:
+            face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
+
+    translated["faces"] = face_config
+
+    ##:: >> Step 6: Tell surface mesher how do we group boundaries.
+    translated["boundaries"] = {}
+    face_group_tag = input_params.private_attribute_asset_cache.project_entity_info.face_group_tag
+    grouped_faces: List[Surface] = (
+        input_params.private_attribute_asset_cache.project_entity_info.get_boundaries(
+            face_group_tag
+        )
+    )
+    for surface in grouped_faces:
+        for face_id in surface.private_attribute_sub_components:
+            translated["boundaries"][face_id] = {"boundaryName": surface.name}
 
     return translated

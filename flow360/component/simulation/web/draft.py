@@ -15,7 +15,6 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
@@ -137,12 +136,12 @@ class Draft(Flow360Resource):
         response = self.get(method="simulation-config")
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(self, target_asset: type[AssetBase]) -> str:
+    def run_up_to_target_asset(self, target_asset: type) -> str:
         """run the draft up to the target asset"""
 
         try:
             run_response = self.post(
-                json={"upTo": target_asset.__name__, "useInHouse": True},
+                json={"upTo": target_asset.__name__, "useInHouse": False},
                 method="run",
             )
         except Flow360WebError as err:

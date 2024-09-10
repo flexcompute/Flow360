@@ -224,6 +224,7 @@ def translate_setting_and_apply_to_all_entities(
     custom_output_dict_entries=False,
     lump_list_of_entities=False,
     use_instance_name_as_key=False,
+    use_sub_item_as_key=False,
     **kwargs,
 ):
     """Translate settings and apply them to all entities of a given type.
@@ -302,14 +303,25 @@ def translate_setting_and_apply_to_all_entities(
                                 "[Internal Error]: use_instance_name_as_key cannot be used"
                                 " when lump_list_of_entities is True"
                             )
-                        key_name = (
-                            _get_key_name(entity) if use_instance_name_as_key is False else obj.name
-                        )
-                        if output.get(key_name) is None:
-                            output[key_name] = entity_injection_func(
-                                entity, **entity_injection_kwargs
-                            )
-                        update_dict_recursively(output[key_name], translated_setting)
+                        if use_sub_item_as_key is True:
+                            # pylint: disable=fixme
+                            # TODO: Make sure when use_sub_item_as_key is True
+                            # TODO: the entity has private_attribute_sub_components
+                            key_names = entity.private_attribute_sub_components
+                        else:
+                            key_names = [
+                                (
+                                    _get_key_name(entity)
+                                    if use_instance_name_as_key is False
+                                    else obj.name
+                                )
+                            ]
+                        for key_name in key_names:
+                            if output.get(key_name) is None:
+                                output[key_name] = entity_injection_func(
+                                    entity, **entity_injection_kwargs
+                                )
+                            update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
                     # Note: Surface/Boundary logic should be handeled in the entity_injection_func

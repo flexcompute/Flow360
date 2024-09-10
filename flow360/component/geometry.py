@@ -4,13 +4,11 @@ Geometry component
 
 from __future__ import annotations
 
-import json
 import os
-import tempfile
 import threading
 import time
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Union
 
 import pydantic as pd
 
@@ -27,12 +25,10 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     match_file_pattern,
     shared_account_confirm_proceed,
-    validate_type,
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
@@ -96,66 +92,7 @@ class GeometryMeta(AssetMetaBaseModelV2):
 
     project_id: str = pd.Field(alias="projectId")
     deleted: bool = pd.Field()
-    entity_info: Optional[GeometryEntityInfo] = pd.Field(None)
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
-
-
-class GeometryWebAPI(Flow360Resource):
-    """web API for Geometry resource. This can and should be generalized and reused by all resources."""
-
-    def get_entity_info(self, force: bool = False):
-        """
-        Blockingly trying to download the entityInfo.json
-        """
-        self._info = super().get_info()
-        if getattr(self._info, "metadata", None) is not None and force is False:
-            log.debug("Metadata already loaded. Skipping download.")
-            return
-
-        start_time = time.time()
-        while self.status.is_final() is False:
-            if time.time() - start_time > TIMEOUT_MINUTES * 60:
-                raise TimeoutError(
-                    "Timeout: Process did not finish within the specified timeout period"
-                )
-            time.sleep(2)
-
-        log.debug("Metadata pipeline completed, downloading metadata now...")
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-            # Windows OS complains when a file is opened in write mode and then read mode. So we need to close it first.
-            # pylint: disable=protected-access
-            self._download_file(
-                "metadata/entityInfo.json",
-                to_file=temp_file.name,
-                to_folder=".",
-                overwrite=True,
-                progress_callback=None,
-                verbose=False,
-            )
-            temp_file.flush()
-            temp_file_name = temp_file.name
-            temp_file.close()
-
-        try:
-            with open(temp_file_name, "r", encoding="utf-8") as f:
-                _meta = json.load(f)
-                # pylint: disable=protected-access
-                self._info = self._info.model_copy(
-                    deep=True, update={"entity_info": GeometryEntityInfo(**_meta)}
-                )
-                assert isinstance(
-                    self._info.entity_info, GeometryEntityInfo
-                ), "[Internal Error] Entity info parsing failed."
-        finally:
-            os.remove(temp_file_name)
-        log.debug("Entity info loaded successfully.")
-
-    @classmethod
-    def _from_meta(cls, meta: GeometryMeta) -> GeometryWebAPI:
-        validate_type(meta, "meta", GeometryMeta)
-        geometry_web_api = cls(id=meta.id, interface=GeometryInterface, meta_class=GeometryMeta)
-        geometry_web_api._set_meta(meta)
-        return geometry_web_api
 
 
 class GeometryDraft(ResourceDraft):
@@ -184,7 +121,6 @@ class GeometryDraft(ResourceDraft):
         self._validate_geometry()
 
     def _validate_geometry(self):
-
         if not isinstance(self.file_names, list) or len(self.file_names) == 0:
             raise Flow360FileError("file_names field has to be a non-empty list.")
 
@@ -296,9 +232,28 @@ class Geometry(AssetBase):
     _interface_class = GeometryInterface
     _meta_class = GeometryMeta
     _draft_class = GeometryDraft
-    _web_api_class = GeometryWebAPI
-    face_group_tag: str = None
-    edge_group_tag: str = None
+    _web_api_class = Flow360Resource
+    _entity_info_class = GeometryEntityInfo
+
+    @property
+    def face_group_tag(self):
+        "getter for face_group_tag"
+        return self._entity_info.face_group_tag
+
+    @face_group_tag.setter
+    def face_group_tag(self, new_value: str):
+        with _model_attribute_unlock(self._entity_info, "face_group_tag"):
+            self._entity_info.face_group_tag = new_value
+
+    @property
+    def edge_group_tag(self):
+        "getter for edge_group_tag"
+        return self._entity_info.edge_group_tag
+
+    @edge_group_tag.setter
+    def edge_group_tag(self, new_value: str):
+        with _model_attribute_unlock(self._entity_info, "edge_group_tag"):
+            self._entity_info.edge_group_tag = new_value
 
     @classmethod
     # pylint: disable=redefined-builtin
@@ -306,32 +261,21 @@ class Geometry(AssetBase):
         """Create asset with the given ID"""
         asset_obj = super().from_cloud(id)
         # get the face tag and edge tag used.
-        simulation_dict = _get_simulation_json_from_cloud(asset_obj.project_id)
-        if "private_attribute_asset_cache" not in simulation_dict:
-            raise KeyError(
-                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
-            )
-        asset_cache = simulation_dict["private_attribute_asset_cache"]
-
-        if "private_attribute_asset_cache" not in asset_cache:
-            raise KeyError(
-                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
-            )
-        entity_info = asset_cache["project_entity_info"]
-        if "face_group_tag" not in entity_info or entity_info["face_group_tag"] is None:
+        # pylint: disable=no-member
+        if asset_obj.face_group_tag is None:
             # This may happen if users submit the Geometry but did not do anything else.
             # Then they load back the geometry which will then have no info on grouping.
             log.warning(
                 "Could not find face grouping info in the draft's simulation settings. "
                 "Please remember to group them if relevant features are used."
             )
-            asset_obj.face_group_tag = entity_info["face_group_tag"]
-        if "edge_group_tag" not in entity_info or entity_info["edge_group_tag"] is None:
+
+        if asset_obj.edge_group_tag is None:
             log.warning(
-                "Could not find face grouping info in the draft's simulation settings. "
+                "Could not find edge grouping info in the draft's simulation settings. "
                 "Please remember to group them if relevant features are used."
             )
-            asset_obj.edge_group_tag = entity_info["edge_group_tag"]
+
         return asset_obj
 
     @classmethod
@@ -346,13 +290,6 @@ class Geometry(AssetBase):
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, project_name, solver_version, length_unit, tags)
-
-    @property
-    def entity_info(self):
-        """Return the entity info of the resource"""
-        # pylint: disable=protected-access
-        self._webapi.get_entity_info()
-        return self._webapi._info.entity_info
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
@@ -382,14 +319,14 @@ class Geometry(AssetBase):
                 f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
             )
 
-        log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
         # pylint: disable=no-member
         if entity_type_name == "faces":
-            attribute_names = self.entity_info.face_attribute_names
-            grouped_items = self.entity_info.grouped_faces
+            attribute_names = self._entity_info.face_attribute_names
+            grouped_items = self._entity_info.grouped_faces
         else:
-            attribute_names = self.entity_info.edge_attribute_names
-            grouped_items = self.entity_info.grouped_edges
+            attribute_names = self._entity_info.edge_attribute_names
+            grouped_items = self._entity_info.grouped_edges
+        log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
@@ -418,7 +355,7 @@ class Geometry(AssetBase):
             )
             self._reset_grouping(entity_type_name)
 
-        self.internal_registry = self.entity_info.group_in_registry(
+        self.internal_registry = self._entity_info.group_in_registry(
             entity_type_name, attribute_name=tag_name, registry=self.internal_registry
         )
         if entity_type_name == "face":
@@ -477,18 +414,3 @@ class Geometry(AssetBase):
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
-
-    def _inject_entity_info_to_params(self, params):
-        params = super()._inject_entity_info_to_params(params)
-        with _model_attribute_unlock(
-            params.private_attribute_asset_cache.project_entity_info, "face_group_tag"
-        ):
-            params.private_attribute_asset_cache.project_entity_info.face_group_tag = (
-                self.face_group_tag
-            )
-        with _model_attribute_unlock(
-            params.private_attribute_asset_cache.project_entity_info, "edge_group_tag"
-        ):
-            params.private_attribute_asset_cache.project_entity_info.edge_group_tag = (
-                self.edge_group_tag
-            )

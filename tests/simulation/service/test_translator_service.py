@@ -2,6 +2,8 @@ from copy import deepcopy
 
 import pytest
 
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -56,6 +58,14 @@ def test_simulation_to_surface_meshing_json():
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x"],
+                "face_group_tag": "not_used",
+                "face_attribute_names": ["not_used"],
+            }
+        },
     }
 
     simulation_to_surface_meshing_json(
@@ -425,6 +435,13 @@ def test_simulation_to_all_translation():
                 ),
                 Freestream(entities=[Surface(name="farfield")]),
             ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=GeometryEntityInfo(
+                    face_group_tag="not_used",
+                    face_ids=["face_x"],
+                    face_attribute_names=["not_used"],
+                )
+            ),
         )
 
     params_as_dict = param.model_dump()
@@ -503,6 +520,14 @@ def test_simulation_to_all_translation_2():
             "area": {"value": 1, "units": "m**2"},
         },
         "models": [],
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x"],
+                "face_group_tag": "not_used",
+                "face_attribute_names": ["not_used"],
+            }
+        },
     }
 
     surface_json, hash = simulation_to_surface_meshing_json(
