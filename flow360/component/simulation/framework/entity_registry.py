@@ -85,6 +85,16 @@ class EntityRegistry(Flow360BaseModel):
             by_type.model_fields["private_attribute_registry_bucket_name"].default,
         )
 
+    def find_by_type(self, entity_class: type[EntityBase]) -> list[EntityBase]:
+        """
+        Finds all registered entities of a given type.
+        """
+        matched_entities = []
+        for entity_list in self.internal_registry.values():
+            matched_entities.extend(filter(lambda x: isinstance(x, entity_class), entity_list))
+
+        return matched_entities
+
     def find_by_naming_pattern(
         self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
     ) -> list[EntityBase]:
