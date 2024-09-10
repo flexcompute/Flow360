@@ -8,7 +8,7 @@ import os
 import threading
 import time
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Union
 
 import pydantic as pd
 
