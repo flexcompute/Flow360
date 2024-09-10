@@ -68,18 +68,18 @@ class TempGeometry(AssetBase):
         elif self.fname == "rotor.csm":
             return {
                 "surfaces": {
-                    "hub": {},
-                    "blade": {},
-                    "tip": {},
+                    "body01_face001": {},
+                    "body01_face002": {},
+                    "body01_face003": {},
                 },
                 "edges": {
-                    "leadingEdge": {},
-                    "trailingEdge": {},
-                    "tipEdge": {},
-                    "bladeSplitEdge": {},
-                    "hubCircle": {},
-                    "hubSplitEdge": {},
-                    "junctionEdge": {},
+                    "body01_edge001": {},
+                    "body01_edge002": {},
+                    "body01_edge003": {},
+                    "body01_edge004": {},
+                    "body01_edge005": {},
+                    "body01_edge006": {},
+                    "body01_edge007": {},
                 },
                 "mesh_unit": {"units": "inch", "value": 1.0},
             }
@@ -98,7 +98,9 @@ class TempGeometry(AssetBase):
                 ],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
-                grouped_faces=[[Surface(name="wing", private_attribute_sub_components=["body01_face001"])]],
+                grouped_faces=[
+                    [Surface(name="wing", private_attribute_sub_components=["body01_face001"])]
+                ],
             )
 
         elif self.fname == "geometry.egads":
@@ -138,14 +140,18 @@ class TempGeometry(AssetBase):
                             ],
                         ),
                         Surface(
-                            name="Stab", private_attribute_sub_components=[
+                            name="Stab",
+                            private_attribute_sub_components=[
                                 "body01_face008",
                                 "body01_face009",
-                                ]
+                            ],
                         ),
-                        Surface(name="Fin", private_attribute_sub_components=[
+                        Surface(
+                            name="Fin",
+                            private_attribute_sub_components=[
                                 "body01_face010",
-                            ]),
+                            ],
+                        ),
                     ]
                 ],
             )
@@ -222,11 +228,11 @@ def om6wing_tutorial_global_plus_local_override():
                         max_edge_length=14 * u.cm,
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["body01_face001","body01_face002"]],
+                        entities=[my_geometry["body01_edge001"], my_geometry["body01_edge002"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["body01_face003","body01_face004"]],
+                        entities=[my_geometry["body01_edge003"], my_geometry["body01_edge004"]],
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
@@ -256,11 +262,11 @@ def om6wing_tutorial_global_only():
                 ),
                 refinements=[
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["body01_face001","body01_face002"]],
+                        entities=[my_geometry["body01_edge001"], my_geometry["body01_edge002"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["body01_face003","body01_face004"]],
+                        entities=[my_geometry["body01_edge003"], my_geometry["body01_edge004"]],
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
@@ -297,15 +303,24 @@ def airplane_surface_mesh():
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[my_geometry["body01_face001", "body01_face002","body01_face003", "body01_face004" ]],
+                        entities=[
+                            my_geometry["body01_face001"],
+                            my_geometry["body01_face002"],
+                            my_geometry["body01_face003"],
+                            my_geometry["body01_face004"],
+                        ],
                         max_edge_length=1.5 * u.m,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["body01_face005","body01_face006","body01_face007"]],
+                        entities=[
+                            my_geometry["body01_face005"],
+                            my_geometry["body01_face006"],
+                            my_geometry["body01_face007"],
+                        ],
                         max_edge_length=700 * u.mm,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["body01_face008","body01_face009"]],
+                        entities=[my_geometry["body01_face008"], my_geometry["body01_face009"]],
                         max_edge_length=0.5 * u.m,
                     ),
                     SurfaceRefinement(
@@ -338,7 +353,10 @@ def rotor_surface_mesh():
                         max_edge_length=0.1 * u.inch,
                     ),
                     SurfaceRefinement(
-                        entities=[rotor_geopmetry["body01_face001"], rotor_geopmetry["body01_face002"]],
+                        entities=[
+                            rotor_geopmetry["body01_face001"],
+                            rotor_geopmetry["body01_face002"],
+                        ],
                         max_edge_length=10 * u.inch,
                     ),
                     SurfaceEdgeRefinement(
@@ -346,22 +364,25 @@ def rotor_surface_mesh():
                         method=AngleBasedRefinement(value=1 * u.degree),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["t*Edge"]],
+                        entities=[
+                            rotor_geopmetry["body01_edge002"],
+                            rotor_geopmetry["body01_edge003"],
+                        ],
                         method=HeightBasedRefinement(value=0.05 * u.inch),
                     ),
                     SurfaceEdgeRefinement(
                         entities=[
-                            rotor_geopmetry["bladeSplitEdge"],
-                            rotor_geopmetry["hubSplitEdge"],
+                            rotor_geopmetry["body01_edge004"],
+                            rotor_geopmetry["body01_edge006"],
                         ],
                         method=ProjectAnisoSpacing(),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["hubCircle"]],
+                        entities=[rotor_geopmetry["body01_edge005"]],
                         method=HeightBasedRefinement(value=0.01 * u.inch),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["junctionEdge"]],
+                        entities=[rotor_geopmetry["body01_edge007"]],
                         method=HeightBasedRefinement(value=0.01 * u.inch),
                     ),
                 ],
