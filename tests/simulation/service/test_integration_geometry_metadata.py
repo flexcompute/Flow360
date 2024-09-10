@@ -35,7 +35,7 @@ set_logging_level("DEBUG")
 @pytest.mark.usefixtures("s3_download_override")
 def test_multi_body_geometry(mock_id, mock_response):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    geometry = Geometry(mock_id)
+    geometry = Geometry.from_cloud(mock_id)
 
     # Test grouping both edge and face at the same time.
     geometry.group_faces_by_tag(tag_name="ByTheType")
