@@ -1,67 +1,67 @@
 {
   "faces": {
-    "Outer_Wing_mirrored": {
+    "body01_face001": {
       "maxEdgeLength": 1.5
     },
-    "Outer_Wing": {
+    "body01_face002": {
       "maxEdgeLength": 1.5
     },
-    "Inner_Wing": {
+    "body01_face003": {
       "maxEdgeLength": 1.5
     },
-    "Inner_Wing_mirrored": {
+    "body01_face004": {
       "maxEdgeLength": 1.5
     },
-    "Fuselage_H": {
+    "body01_face005": {
       "maxEdgeLength": 0.7000000000000001
     },
-    "Fuselage_H_mirrored": {
+    "body01_face006": {
       "maxEdgeLength": 0.7000000000000001
     },
-    "Fuselage_V": {
+    "body01_face007": {
       "maxEdgeLength": 0.7000000000000001
     },
-    "Stab_mirrored": {
+    "body01_face008": {
       "maxEdgeLength": 0.5
     },
-    "Stab": {
+    "body01_face009": {
       "maxEdgeLength": 1.0
     },
-    "Fin": {
+    "body01_face010": {
       "maxEdgeLength": 0.5
     }
   },
   "curvatureResolutionAngle": 15.0,
   "growthRate": 1.2,
   "boundaries": {
-    "Outer_Wing_mirrored": {
+    "body01_face001": {
       "boundaryName": "Wing"
     },
-    "Outer_Wing": {
+    "body01_face002": {
       "boundaryName": "Wing"
     },
-    "Inner_Wing_mirrored": {
+    "body01_face004": {
       "boundaryName": "Wing"
     },
-    "Inner_Wing": {
+    "body01_face003": {
       "boundaryName": "Wing"
     },
-    "Fuselage_H_mirrored": {
+    "body01_face006": {
       "boundaryName": "Fuselage"
     },
-    "Fuselage_H": {
+    "body01_face005": {
       "boundaryName": "Fuselage"
     },
-    "Fuselage_V": {
+    "body01_face007": {
       "boundaryName": "Fuselage"
     },
-    "Stab": {
+    "body01_face009": {
       "boundaryName": "Stab"
     },
-    "Stab_mirrored": {
+    "body01_face008": {
       "boundaryName": "Stab"
     },
-    "Fin": {
+    "body01_face010": {
       "boundaryName": "Fin"
     }
   }

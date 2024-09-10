@@ -41,27 +41,27 @@ class TempGeometry(AssetBase):
         if self.fname == "om6wing.csm":
             return {
                 "edges": {
-                    "wingLeadingEdge": {},
-                    "wingTrailingEdge": {},
-                    "rootAirfoilEdge": {},
-                    "tipAirfoilEdge": {},
+                    "body01_edge001": {},
+                    "body01_edge002": {},
+                    "body01_edge003": {},
+                    "body01_edge004": {},
                 },
-                "surfaces": {"wing": {}},
+                "surfaces": {"body01_face001": {}},
                 "mesh_unit": {"units": "m", "value": 1.0},
             }
         elif self.fname == "geometry.egads":
             return {
                 "surfaces": {
-                    "Outer_Wing_mirrored": {},
-                    "Stab_mirrored": {},
-                    "Outer_Wing": {},
-                    "Fuselage_H": {},
-                    "Inner_Wing": {},
-                    "Fin": {},
-                    "Inner_Wing_mirrored": {},
-                    "Stab": {},
-                    "Fuselage_H_mirrored": {},
-                    "Fuselage_V": {},
+                    "body01_face001": {},
+                    "body01_face002": {},
+                    "body01_face003": {},
+                    "body01_face004": {},
+                    "body01_face005": {},
+                    "body01_face006": {},
+                    "body01_face007": {},
+                    "body01_face008": {},
+                    "body01_face009": {},
+                    "body01_face010": {},
                 },
                 "mesh_unit": {"units": "m", "value": 1.0},
             }
@@ -89,31 +89,31 @@ class TempGeometry(AssetBase):
     def _get_entity_info(self):
         if self.fname == "om6wing.csm":
             return GeometryEntityInfo(
-                face_ids=["wing"],
+                face_ids=["body01_face001"],
                 edge_ids=[
-                    "wingLeadingEdge",
-                    "wingTrailingEdge",
-                    "rootAirfoilEdge",
-                    "tipAirfoilEdge",
+                    "body01_edge001",
+                    "body01_edge002",
+                    "body01_edge003",
+                    "body01_edge004",
                 ],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
-                grouped_faces=[[Surface(name="wing", private_attribute_sub_components=["wing"])]],
+                grouped_faces=[[Surface(name="wing", private_attribute_sub_components=["body01_face001"])]],
             )
 
         elif self.fname == "geometry.egads":
             return GeometryEntityInfo(
                 face_ids=[
-                    "Outer_Wing_mirrored",
-                    "Stab_mirrored",
-                    "Outer_Wing",
-                    "Fuselage_H",
-                    "Inner_Wing",
-                    "Fin",
-                    "Inner_Wing_mirrored",
-                    "Stab",
-                    "Fuselage_H_mirrored",
-                    "Fuselage_V",
+                    "body01_face001",
+                    "body01_face002",
+                    "body01_face003",
+                    "body01_face004",
+                    "body01_face005",
+                    "body01_face006",
+                    "body01_face007",
+                    "body01_face008",
+                    "body01_face009",
+                    "body01_face010",
                 ],
                 edge_ids=[],
                 face_attribute_names=["dummy"],
@@ -123,38 +123,43 @@ class TempGeometry(AssetBase):
                         Surface(
                             name="Wing",
                             private_attribute_sub_components=[
-                                "Outer_Wing_mirrored",
-                                "Outer_Wing",
-                                "Inner_Wing",
-                                "Inner_Wing_mirrored",
+                                "body01_face001",
+                                "body01_face002",
+                                "body01_face003",
+                                "body01_face004",
                             ],
                         ),
                         Surface(
                             name="Fuselage",
                             private_attribute_sub_components=[
-                                "Fuselage_H_mirrored",
-                                "Fuselage_H",
-                                "Fuselage_V",
+                                "body01_face005",
+                                "body01_face006",
+                                "body01_face007",
                             ],
                         ),
                         Surface(
-                            name="Stab", private_attribute_sub_components=["Stab", "Stab_mirrored"]
+                            name="Stab", private_attribute_sub_components=[
+                                "body01_face008",
+                                "body01_face009",
+                                ]
                         ),
-                        Surface(name="Fin", private_attribute_sub_components=["Fin"]),
+                        Surface(name="Fin", private_attribute_sub_components=[
+                                "body01_face010",
+                            ]),
                     ]
                 ],
             )
         elif self.fname == "rotor.csm":
             return GeometryEntityInfo(
-                face_ids=["hub", "blade", "tip"],
+                face_ids=["body01_face001", "body01_face002", "body01_face003"],
                 edge_ids=[
-                    "leadingEdge",
-                    "trailingEdge",
-                    "tipEdge",
-                    "bladeSplitEdge",
-                    "hubCircle",
-                    "hubSplitEdge",
-                    "junctionEdge",
+                    "body01_edge001",
+                    "body01_edge002",
+                    "body01_edge003",
+                    "body01_edge004",
+                    "body01_edge005",
+                    "body01_edge006",
+                    "body01_edge007",
                 ],
                 face_attribute_names=["dummy"],
                 face_group_tag="dummy",
@@ -162,7 +167,11 @@ class TempGeometry(AssetBase):
                     [
                         Surface(
                             name="rotor",
-                            private_attribute_sub_components=["hub", "blade", "tip"],
+                            private_attribute_sub_components=[
+                                "body01_face001",
+                                "body01_face002",
+                                "body01_face003",
+                            ],
                         )
                     ]
                 ],
@@ -209,15 +218,15 @@ def om6wing_tutorial_global_plus_local_override():
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[my_geometry["wing"]],
+                        entities=[my_geometry["body01_face001"]],
                         max_edge_length=14 * u.cm,
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["wing*Edge"]],
+                        entities=[my_geometry["body01_face001","body01_face002"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["*AirfoilEdge"]],
+                        entities=[my_geometry["body01_face003","body01_face004"]],
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
@@ -247,11 +256,11 @@ def om6wing_tutorial_global_only():
                 ),
                 refinements=[
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["wing*Edge"]],
+                        entities=[my_geometry["body01_face001","body01_face002"]],
                         method=HeightBasedRefinement(value=3e-2 * u.cm),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[my_geometry["*AirfoilEdge"]],
+                        entities=[my_geometry["body01_face003","body01_face004"]],
                         method=ProjectAnisoSpacing(),
                     ),
                 ],
@@ -288,19 +297,19 @@ def airplane_surface_mesh():
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[my_geometry["*Wing*"]],
+                        entities=[my_geometry["body01_face001", "body01_face002","body01_face003", "body01_face004" ]],
                         max_edge_length=1.5 * u.m,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Fuselage*"]],
+                        entities=[my_geometry["body01_face005","body01_face006","body01_face007"]],
                         max_edge_length=700 * u.mm,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Stab_*"]],
+                        entities=[my_geometry["body01_face008","body01_face009"]],
                         max_edge_length=0.5 * u.m,
                     ),
                     SurfaceRefinement(
-                        entities=[my_geometry["Fin"]],
+                        entities=[my_geometry["body01_face010"]],
                         max_edge_length=50 * u.cm,
                     ),
                 ],
@@ -325,15 +334,15 @@ def rotor_surface_mesh():
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[rotor_geopmetry["tip"]],
+                        entities=[rotor_geopmetry["body01_face003"]],
                         max_edge_length=0.1 * u.inch,
                     ),
                     SurfaceRefinement(
-                        entities=[rotor_geopmetry["blade"], rotor_geopmetry["hub"]],
+                        entities=[rotor_geopmetry["body01_face001"], rotor_geopmetry["body01_face002"]],
                         max_edge_length=10 * u.inch,
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["leadingEdge"]],
+                        entities=[rotor_geopmetry["body01_edge001"]],
                         method=AngleBasedRefinement(value=1 * u.degree),
                     ),
                     SurfaceEdgeRefinement(
