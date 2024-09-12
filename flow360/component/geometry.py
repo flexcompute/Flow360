@@ -34,7 +34,7 @@ from flow360.component.utils import (
     shared_account_confirm_proceed,
     validate_type,
 )
-from flow360.exceptions import Flow360FileError, Flow360ValueError
+from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360RuntimeError
 from flow360.log import log
 
 HEARTBEAT_INTERVAL = 15
@@ -125,7 +125,7 @@ class GeometryWebAPI(Flow360Resource):
             # Windows OS complains when a file is opened in write mode and then read mode. So we need to close it first.
             # pylint: disable=protected-access
             self._download_file(
-                "metadata/entityInfo.json",
+                "simulation.json",
                 to_file=temp_file.name,
                 to_folder=".",
                 overwrite=True,
@@ -139,6 +139,11 @@ class GeometryWebAPI(Flow360Resource):
         try:
             with open(temp_file_name, "r", encoding="utf-8") as f:
                 _meta = json.load(f)
+                if "private_attribute_asset_cache" in _meta.keys() and "project_entity_info" in _meta['private_attribute_asset_cache'].keys():            
+                    _meta = _meta['private_attribute_asset_cache']['project_entity_info']
+                else:
+                    raise Flow360RuntimeError('"[Internal Error] processing geometry failed."')
+
                 # pylint: disable=protected-access
                 self._info = self._info.model_copy(
                     deep=True, update={"entity_info": GeometryEntityInfo(**_meta)}
@@ -492,3 +497,4 @@ class Geometry(AssetBase):
             params.private_attribute_asset_cache.project_entity_info.edge_group_tag = (
                 self.edge_group_tag
             )
+        return params

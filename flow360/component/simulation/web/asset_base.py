@@ -100,5 +100,5 @@ class AssetBase(metaclass=ABCMeta):
         """Inject the length unit into the SimulationParams"""
         # pylint: disable=protected-access
         with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = self._webapi.metadata
+            params.private_attribute_asset_cache.project_entity_info = self.info.entity_info
         return params
