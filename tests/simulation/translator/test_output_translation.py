@@ -467,7 +467,7 @@ def isosurface_output_config_with_global_setting():
                     Isosurface(
                         name="isosurface 12",
                         iso_value=20.431,
-                        field="vorticity",
+                        field="qcriterion",
                     ),
                 ],
                 output_fields=["Cp"],
@@ -509,7 +509,7 @@ def isosurface_output_config_with_global_setting():
                 },
                 "isosurface 12": {
                     "outputFields": ["Cp", "primitiveVars", "wallDistance"],
-                    "surfaceField": "vorticity",
+                    "surfaceField": "qcriterion",
                     "surfaceFieldMagnitude": 20.431,
                 },
             },
@@ -533,7 +533,7 @@ def isosurface_output_config_with_no_global_setting():
                     Isosurface(
                         name="isosurface 14",
                         iso_value=20.431,
-                        field="vorticity",
+                        field="qcriterion",
                     ),
                 ],
                 output_fields=["Cp"],
@@ -581,7 +581,7 @@ def isosurface_output_config_with_no_global_setting():
                 },
                 "isosurface 14": {
                     "outputFields": ["Cp"],
-                    "surfaceField": "vorticity",
+                    "surfaceField": "qcriterion",
                     "surfaceFieldMagnitude": 20.431,
                 },
             },

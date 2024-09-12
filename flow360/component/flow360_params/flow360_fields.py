@@ -101,7 +101,6 @@ VolumeFieldNames = Literal[
 SliceFieldNames = VolumeFieldNames
 
 IsoSurfaceFieldNamesFull = Literal[
-    CommonFieldNamesFull,
     "Pressure",
     "Density",
     "Mach number",
@@ -114,7 +113,6 @@ IsoSurfaceFieldNamesFull = Literal[
 ]
 
 IsoSurfaceFieldNames = Literal[
-    CommonFieldNames,
     "p",
     "rho",
     "Mach",
