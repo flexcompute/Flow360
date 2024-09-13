@@ -8,6 +8,7 @@ from itertools import chain
 from typing import Any, List
 
 import pydantic as pd
+from pydantic_core import InitErrorDetails
 import rich
 import yaml
 from pydantic import ConfigDict
@@ -23,6 +24,7 @@ from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
+from ..validation import validation_context
 
 
 def snake_to_camel(string: str) -> str:
@@ -190,6 +192,24 @@ class Flow360BaseModel(pd.BaseModel):
             if len(alias) > 0:
                 return alias[0]
         return None
+
+
+    @pd.field_validator("*", mode="before")
+    @classmethod
+    def validate_conditionally_required_field(cls, value, info):
+        level = validation_context.get_validation_level()
+        if level is None:
+            return value
+        
+        field_info = cls.model_fields[info.field_name]
+        if isinstance(field_info.json_schema_extra, dict):
+            required_for = field_info.json_schema_extra.get('required_for')
+            if required_for is not None and (required_for == level or level == validation_context.ALL) and value is None:
+                details = InitErrorDetails(type="missing", ctx={"relevant_for": required_for})
+                raise pd.ValidationError.from_exception_data("validation error", [details])
+
+        return value
+
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference

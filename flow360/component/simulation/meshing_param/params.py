@@ -55,13 +55,13 @@ class MeshingDefaults(Flow360BaseModel):
     )
     # pylint: disable=no-member
     boundary_layer_first_layer_thickness: LengthType.Positive = pd.Field(
-        0.001 * u.m, description="Default first layer thickness for volumetric anisotropic layers."
+        description="Default first layer thickness for volumetric anisotropic layers."
     )  # Truly optional if all BL faces already have first_layer_thickness
 
     ##::    Default surface layer settings
     surface_max_edge_length: LengthType.Positive = pd.Field(
-       1  * u.m, description="Default maximum edge length for surface cells."
-    ) 
+        description="Default maximum edge length for surface cells."
+    )
     curvature_resolution_angle: AngleType.Positive = pd.Field(
         12 * u.deg,
         description="Default maximum angular deviation in degrees. This value will restrict:"
