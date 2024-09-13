@@ -43,6 +43,7 @@ class Flow360Status(Enum):
     GENERATING = "generating"
     PROCESSED = "processed"
     STOPPED = "stopped"
+    PAUSED = "paused"
     DELETED = "deleted"
     PENDING = "pending"
     UNKNOWN = "unknown"
