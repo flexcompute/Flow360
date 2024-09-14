@@ -1,7 +1,7 @@
 """Registry for managing and storing instances of various entity types."""
 
 import re
-from typing import Any, Union, Dict
+from typing import Any, Dict, Union
 
 import pydantic as pd
 
