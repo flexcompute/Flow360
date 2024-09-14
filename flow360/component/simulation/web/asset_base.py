@@ -119,12 +119,13 @@ class AssetBase(metaclass=ABCMeta):
     def _inject_entity_info_to_params(self, params):
         """Inject the length unit into the SimulationParams"""
         # Add used cylinder, box, point and slice entities to the entityInfo.
+        # pylint: disable=protected-access
         registry: EntityRegistry = params._get_used_entity_registry()
         old_draft_entities = self._entity_info.draft_entities
         # Step 1: Update old ones:
-        for index, old_entity in enumerate(old_draft_entities):
+        for _, old_entity in enumerate(old_draft_entities):
             try:
-                new_entity = registry.find_by_naming_pattern(old_entity.name)
+                _ = registry.find_by_naming_pattern(old_entity.name)
             except ValueError:  # old_entity did not apperar in params.
                 continue
 
