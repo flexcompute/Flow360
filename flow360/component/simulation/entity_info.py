@@ -15,10 +15,6 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 
-class DraftEntity(pd.BaseModel):
-    entity: Union[Box, Cylinder, Point, Slice] = pd.Field(..., discriminator="private_attribute_entity_type_name")
-
-
 
 class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
@@ -33,7 +29,7 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
     )
     # Storing entities that appeared in the simulation JSON. (Otherwise when front end loads the JSON it will delete
     # entities that appear in simulation JSON but did not appear in EntityInfo)
-    draft_entities: List[DraftEntity] = pd.Field(
+    draft_entities: List[Union[Box, Cylinder, Point, Slice]] = pd.Field(
         [],
     )
 
