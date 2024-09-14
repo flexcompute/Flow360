@@ -6,7 +6,14 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.primitives import Edge, GenericVolume, Surface
+from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    Edge,
+    GenericVolume,
+    Surface,
+)
 
 
 class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
@@ -19,6 +26,12 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
         populate_by_name=True,
         validate_assignment=True,
         validate_default=True,
+    )
+    # Storing entities that appeared in the simulation JSON. (Otherwise when front end loads the JSON it will delete
+    # entities that appear in simulation JSON but did not appear in EntityInfo)
+    draft_entities: List[Union[Box, Cylinder, Point, Slice]] = pd.Field(
+        [],
+        discriminator="private_attribute_entity_type_name",
     )
 
     @abstractmethod

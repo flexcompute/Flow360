@@ -273,6 +273,7 @@ def mock_webapi(type, url, params):
 
     if type == "get":
         if method in GET_RESPONSE_MAP.keys():
+            print("method = ", method, GET_RESPONSE_MAP[method]())
             return GET_RESPONSE_MAP[method]()
 
         if method.startswith("-python-client-v2"):

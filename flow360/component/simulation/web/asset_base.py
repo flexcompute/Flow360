@@ -13,6 +13,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import EntityInfoModel
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
 from flow360.component.utils import validate_type
@@ -117,6 +118,17 @@ class AssetBase(metaclass=ABCMeta):
 
     def _inject_entity_info_to_params(self, params):
         """Inject the length unit into the SimulationParams"""
+        # Add used cylinder, box, point and slice entities to the entityInfo.
+        # pylint: disable=protected-access
+        registry: EntityRegistry = params._get_used_entity_registry()
+        old_draft_entities = self._entity_info.draft_entities
+        # Step 1: Update old ones:
+        for _, old_entity in enumerate(old_draft_entities):
+            try:
+                _ = registry.find_by_naming_pattern(old_entity.name)
+            except ValueError:  # old_entity did not apperar in params.
+                continue
+
         # pylint: disable=protected-access
         with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = self._entity_info

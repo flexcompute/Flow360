@@ -1,7 +1,7 @@
 """Registry for managing and storing instances of various entity types."""
 
 import re
-from typing import Any, Union
+from typing import Any, Dict, Union
 
 import pydantic as pd
 
@@ -46,7 +46,7 @@ class EntityRegistry(Flow360BaseModel):
     frozen=True do not stop the user from changing the internal_registry
     """
 
-    internal_registry: dict[str, list[Any]] = pd.Field({})
+    internal_registry: Dict[str, list[Any]] = pd.Field({})
 
     def register(self, entity: EntityBase):
         """
@@ -84,6 +84,17 @@ class EntityRegistry(Flow360BaseModel):
             self.internal_registry,
             by_type.model_fields["private_attribute_registry_bucket_name"].default,
         )
+
+    def find_by_type(self, entity_class: type[EntityBase]) -> list[EntityBase]:
+        """
+        Finds all registered entities of a given type.
+        """
+        matched_entities = []
+        # pylint: disable=no-member
+        for entity_list in self.internal_registry.values():
+            matched_entities.extend(filter(lambda x: isinstance(x, entity_class), entity_list))
+
+        return matched_entities
 
     def find_by_naming_pattern(
         self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
