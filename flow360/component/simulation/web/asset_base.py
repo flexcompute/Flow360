@@ -132,6 +132,4 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=protected-access
         with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = self._entity_info
-
-
         return params
