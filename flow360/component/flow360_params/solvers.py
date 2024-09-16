@@ -291,6 +291,14 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     )
     C_DES: Optional[pd.NonNegativeFloat] = pd.Field(0.72)
     C_d: Optional[pd.NonNegativeFloat] = pd.Field(8.0)
+    C_cb1: Optional[pd.NonNegativeFloat] = pd.Field(0.1355)
+    C_cb2: Optional[pd.NonNegativeFloat] = pd.Field(0.622)
+    C_sigma: Optional[pd.NonNegativeFloat] = pd.Field(2. / 3.)
+    C_v1: Optional[pd.NonNegativeFloat] = pd.Field(7.1)
+    C_vonKarman: Optional[pd.NonNegativeFloat] = pd.Field(0.41)
+    C_t3: Optional[pd.NonNegativeFloat] = pd.Field(1.2)
+    C_t4: Optional[pd.NonNegativeFloat] = pd.Field(0.5)
+    C_min_rd: Optional[pd.NonNegativeFloat] = pd.Field(10.)
 
 
 class KOmegaSSTModelConstants(Flow360BaseModel):
