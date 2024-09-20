@@ -194,21 +194,59 @@ class Flow360BaseModel(pd.BaseModel):
         return None
 
 
+    
+    @classmethod
+    def _get_model_context(cls, info, context_key):
+        if info.field_name is not None:
+            field_info = cls.model_fields[info.field_name]
+            if isinstance(field_info.json_schema_extra, dict):
+                return field_info.json_schema_extra.get(context_key)
+
+        return None
+
+
     @pd.field_validator("*", mode="before")
     @classmethod
     def validate_conditionally_required_field(cls, value, info):
+        """
+        this validator checks for conditionally required fields depending on context
+        """
         level = validation_context.get_validation_level()
         if level is None:
             return value
         
-        field_info = cls.model_fields[info.field_name]
-        if isinstance(field_info.json_schema_extra, dict):
-            required_for = field_info.json_schema_extra.get('required_for')
-            if required_for is not None and (required_for == level or level == validation_context.ALL) and value is None:
-                details = InitErrorDetails(type="missing", ctx={"relevant_for": required_for})
-                raise pd.ValidationError.from_exception_data("validation error", [details])
+        required_for = cls._get_model_context(info, 'required_for')
+        if required_for is not None and (required_for == level or level == validation_context.ALL) and value is None:
+            details = InitErrorDetails(type="missing", ctx={"relevant_for": required_for})
+            raise pd.ValidationError.from_exception_data("validation error", [details])
 
         return value
+
+
+
+    @pd.field_validator("*", mode="wrap")
+    @classmethod
+    def populate_ctx_to_error_messages(cls, self, handler, info) -> Any:        
+        """
+        this validator populates ctx messages of fields tagged with "relevant_for" context
+        it will populate to all child messages
+        """ 
+        try:
+            return handler(self)
+        except pd.ValidationError as e:
+            validation_errors = e.errors()
+            relevant_for = cls._get_model_context(info, 'relevant_for')
+            print(f'{relevant_for=}')
+            print(f'{validation_errors=}')
+            if relevant_for is not None:
+                for i, error in enumerate(validation_errors):
+                    ctx = error.get('ctx')
+                    if ctx is None:
+                        ctx = {}
+                    if ctx.get('relevant_for') is None:
+                        ctx['relevant_for'] = relevant_for
+                    validation_errors[i]['ctx'] = ctx
+            raise pd.ValidationError.from_exception_data(title=self.__class__.__name__, line_errors=validation_errors)
 
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
