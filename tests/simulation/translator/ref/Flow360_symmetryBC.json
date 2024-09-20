@@ -55,8 +55,17 @@
         "equationEvalFrequency": 4,
         "modelType": "SpalartAllmaras",
         "modelConstants": {
+            "C_DES": 0.72,
             "C_d": 8.0,
-            "C_DES": 0.72
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_sigma": 0.6666666666666666,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_min_rd": 10.0
         }
     },
     "boundaries": {

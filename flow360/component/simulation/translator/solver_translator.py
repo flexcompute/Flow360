@@ -715,14 +715,32 @@ def get_solver_json(
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
                 if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
-                    modeling_constants["C_d"] = modeling_constants.pop("CD", None)
-                    modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
+                    replace_dict_key(modeling_constants, "CDES", "C_DES")
+                    replace_dict_key(modeling_constants, "CD", "C_d")
+                    replace_dict_key(modeling_constants, "CCb1", "C_cb1")
+                    replace_dict_key(modeling_constants, "CCb2", "C_cb2")
+                    replace_dict_key(modeling_constants, "CSigma", "C_sigma")
+                    replace_dict_key(modeling_constants, "CV1", "C_v1")
+                    replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
+                    replace_dict_key(modeling_constants, "CW2", "C_w2")
+                    replace_dict_key(modeling_constants, "CT3", "C_t3")
+                    replace_dict_key(modeling_constants, "CT4", "C_t4")
+                    replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
 
                 if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
-                    modeling_constants["C_DES1"] = modeling_constants.pop("CDES1", None)
-                    modeling_constants["C_DES2"] = modeling_constants.pop("CDES2", None)
-                    modeling_constants["C_d1"] = modeling_constants.pop("CD1", None)
-                    modeling_constants["C_d2"] = modeling_constants.pop("CD2", None)
+                    replace_dict_key(modeling_constants, "CDES1", "C_DES1")
+                    replace_dict_key(modeling_constants, "CDES2", "C_DES2")
+                    replace_dict_key(modeling_constants, "CD1", "C_d1")
+                    replace_dict_key(modeling_constants, "CD2", "C_d2")
+                    replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
+                    replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
+                    replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
+                    replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
+                    replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
+                    replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
+                    replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
+                    replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
+
                 modeling_constants.pop("typeName")  # Not read by solver
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
