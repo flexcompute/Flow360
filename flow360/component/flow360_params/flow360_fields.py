@@ -77,7 +77,7 @@ SurfaceFieldNames = Literal[
     "nodeForcesPerUnitArea",
     "yPlus",
     "wallFunctionMetric",
-    "heatTransferCoeff"
+    "heatTransferCoeff",
 ]
 
 VolumeFieldNamesFull = Literal[
