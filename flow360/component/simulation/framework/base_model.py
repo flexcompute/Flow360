@@ -28,7 +28,7 @@ from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
 
-from ..validation import validation_context
+from flow360.component.simulation.validation import validation_context
 
 DISCRIMINATOR_NAMES = [
     "type",
@@ -241,6 +241,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         for field_name, field in cls.model_fields.items():
             # Ignore discriminator validators
+            # pylint: disable=comparison-with-callable
             if get_origin(field.annotation) == Literal and field_name in DISCRIMINATOR_NAMES:
                 continue
 
@@ -267,7 +268,7 @@ class Flow360BaseModel(pd.BaseModel):
         relevant_for = cls._get_field_context(info, "relevant_for")
         if (
             conditionally_required is True
-            and (relevant_for == level or level == validation_context.ALL)
+            and level in (relevant_for, validation_context.ALL)
             and value is None
         ):
             raise pd.ValidationError.from_exception_data(
