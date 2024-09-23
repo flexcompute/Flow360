@@ -101,7 +101,7 @@ class AssetBase(metaclass=ABCMeta):
         """
         Create asset draft from files
         :param file_names:
-        :param name:
+        :param project_name:
         :param tags:
         :return:
         """
