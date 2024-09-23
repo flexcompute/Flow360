@@ -30,7 +30,13 @@ from flow360.log import log
 
 from ..validation import validation_context
 
-DISCRIMINATOR_NAMES = ["type", "type_name", "refinement_type", "output_type"]
+DISCRIMINATOR_NAMES = [
+    "type",
+    "type_name",
+    "refinement_type",
+    "output_type",
+    "private_attribute_entity_type_name",
+]
 
 
 def snake_to_camel(string: str) -> str:

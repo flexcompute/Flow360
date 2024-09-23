@@ -294,9 +294,7 @@ def validate_error_locations(errors: list, params: dict) -> list:
         for field in error["loc"][:-1]:
             current, valid = _traverse_error_location(current, field)
             if not valid:
-                error["loc"] = tuple(
-                    loc for loc in error["loc"] if loc != field
-                )
+                error["loc"] = tuple(loc for loc in error["loc"] if loc != field)
 
         _populate_error_context(error)
     return errors
