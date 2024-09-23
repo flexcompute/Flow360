@@ -23,12 +23,11 @@ from flow360.component.simulation.conversion import (
     unit_converter,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation import validation_context
 from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
-
-from flow360.component.simulation.validation import validation_context
 
 DISCRIMINATOR_NAMES = [
     "type",
