@@ -1,7 +1,7 @@
 """Simulation services module."""
 
 # pylint: disable=duplicate-code
-from typing import Literal
+from typing import Literal, Optional, Tuple
 
 import pydantic as pd
 
@@ -43,6 +43,13 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    SURFACE_MESH,
+    VOLUME_MESH,
+    ValidationLevelContext,
+)
 from flow360.component.utils import remove_properties_by_name
 from flow360.exceptions import Flow360TranslationError
 
@@ -155,72 +162,187 @@ def get_default_params(
 
 
 def validate_model(
-    params_as_dict, unit_system_name, root_item_type: Literal["Geometry", "VolumeMesh"]
-):
+    params_as_dict,
+    unit_system_name,
+    root_item_type: Literal["Geometry", "VolumeMesh"],
+    validation_level: Literal[
+        "SurfaceMesh", "VolumeMesh", "Case", "All"
+    ] = ALL,  # Fix implicit string concatenation
+) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
     """
-    Validate a params dict against the pydantic model
-    """
+    Validate a params dict against the pydantic model.
 
-    # To be added when unit system is supported in simulation
-    unit_system = init_unit_system(unit_system_name)
+    Parameters
+    ----------
+    params_as_dict : dict
+        The parameters dictionary to validate.
+    unit_system_name : str
+        The unit system name to initialize.
+    root_item_type : Literal["Geometry", "VolumeMesh"]
+        The root item type for validation.
+    validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], optional
+        The validation level, default is ALL.
+
+    Returns
+    -------
+    validated_param : dict or None
+        The validated parameters if successful, otherwise None.
+    validation_errors : list or None
+        A list of validation errors if any occurred.
+    validation_warnings : list or None
+        A list of validation warnings if any occurred.
+    """
+    unit_system = init_unit_system(
+        unit_system_name
+    )  # Initialize unit system (to be implemented when supported)
 
     validation_errors = None
     validation_warnings = None
     validated_param = None
 
-    params_as_dict = remove_properties_by_name(params_as_dict, "_id")
-    params_as_dict = remove_properties_by_name(params_as_dict, "hash")  #  From client
-
-    if root_item_type == "VolumeMesh":
-        params_as_dict.pop("meshing", None)
+    params_as_dict = clean_params_dict(params_as_dict, root_item_type)
 
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
         with unit_system:
-            validated_param = SimulationParams(**params_as_dict)
+            with ValidationLevelContext(validation_level):
+                validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
-    # pylint: disable=broad-exception-caught
-    except Exception as err:
-        if validation_errors is None:
-            validation_errors = []
-        # Note: Ideally the definition of WorkbenchValidateWarningOrError should be on the client side?
-        validation_errors.append(
-            {
-                "type": err.__class__.__name__.lower().replace("error", "_error"),
-                "loc": ["unknown"],
-                "msg": str(err),
-                "ctx": {},
-            }
-        )
-        # We do not care about handling / propagating the validation errors here,
-        # just collecting them in the context and passing them downstream
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        validation_errors = handle_generic_exception(err, validation_errors)
 
-    # Check if all validation loc paths are valid params dict paths that can be traversed
     if validation_errors is not None:
-        for error in validation_errors:
-            current = params_as_dict
-            for field in error["loc"][:-1]:
-                if (
-                    isinstance(field, int)
-                    and isinstance(current, list)
-                    and field in range(0, len(current))
-                ):
-                    current = current[field]
-                elif isinstance(field, str) and isinstance(current, dict) and current.get(field):
-                    current = current.get(field)
-                else:
-                    errors_as_list = list(error["loc"])
-                    errors_as_list.remove(field)
-                    error["loc"] = tuple(errors_as_list)
-            try:
-                for field_name, field in error["ctx"].items():
-                    error["ctx"][field_name] = str(field)
-            # pylint: disable=broad-exception-caught
-            except Exception:  # This seems to be duplicate info anyway.
-                error["ctx"] = {}
+        validation_errors = validate_error_locations(validation_errors, params_as_dict)
 
     return validated_param, validation_errors, validation_warnings
+
+
+def clean_params_dict(params: dict, root_item_type: str) -> dict:
+    """
+    Cleans the parameters dictionary by removing unwanted properties.
+
+    Parameters
+    ----------
+    params : dict
+        The original parameters dictionary.
+    root_item_type : str
+        The root item type determining specific cleaning actions.
+
+    Returns
+    -------
+    dict
+        The cleaned parameters dictionary.
+    """
+    params = remove_properties_by_name(params, "_id")
+    params = remove_properties_by_name(params, "hash")  # From client
+
+    if root_item_type == "VolumeMesh":
+        params.pop("meshing", None)
+
+    return params
+
+
+def handle_generic_exception(err: Exception, validation_errors: Optional[list]) -> list:
+    """
+    Handles generic exceptions during validation, adding to validation errors.
+
+    Parameters
+    ----------
+    err : Exception
+        The exception caught during validation.
+    validation_errors : list or None
+        Current list of validation errors, may be None.
+
+    Returns
+    -------
+    list
+        The updated list of validation errors including the new error.
+    """
+    if validation_errors is None:
+        validation_errors = []
+
+    validation_errors.append(
+        {
+            "type": err.__class__.__name__.lower().replace("error", "_error"),
+            "loc": ["unknown"],
+            "msg": str(err),
+            "ctx": {},
+        }
+    )
+    return validation_errors
+
+
+def validate_error_locations(errors: list, params: dict) -> list:
+    """
+    Validates the locations in the errors to ensure they correspond to the params dict.
+
+    Parameters
+    ----------
+    errors : list
+        The list of validation errors to process.
+    params : dict
+        The parameters dictionary being validated.
+
+    Returns
+    -------
+    list
+        The updated list of errors with validated locations and context.
+    """
+    for error in errors:
+        current = params
+        for field in error["loc"][:-1]:
+            current, valid = _traverse_error_location(current, field)
+            if not valid:
+                error["loc"] = tuple(
+                    loc for loc in error["loc"] if loc != field
+                )
+
+        _populate_error_context(error)
+    return errors
+
+
+def _traverse_error_location(current, field):
+    """
+    Traverse through the error location path within the parameters.
+
+    Parameters
+    ----------
+    current : any
+        The current position in the params dict or list.
+    field : any
+        The current field being validated.
+
+    Returns
+    -------
+    tuple
+        The updated current position and whether the traversal was valid.
+    """
+    if isinstance(field, int) and isinstance(current, list) and field in range(len(current)):
+        return current[field], True
+    if isinstance(field, str) and isinstance(current, dict) and current.get(field):
+        return current.get(field), True
+    return current, False
+
+
+def _populate_error_context(error: dict):
+    """
+    Populates the error context with relevant stringified values.
+
+    Parameters
+    ----------
+    error : dict
+        The error dictionary to update with context information.
+    """
+    ctx = error.get("ctx")
+    if isinstance(ctx, dict):
+        for field_name, field in ctx.items():
+            try:
+                error["ctx"][field_name] = str(field)
+            except Exception:  # pylint: disable=broad-exception-caught
+                error["ctx"][field_name] = "<couldn't stringify>"
+    else:
+        error["ctx"] = {}
 
 
 # pylint: disable=too-many-arguments

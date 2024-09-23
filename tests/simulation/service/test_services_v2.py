@@ -13,7 +13,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_validate_service():
 
-    params_data = {
+    params_data_from_vm = {
         "meshing": {
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
@@ -46,8 +46,21 @@ def test_validate_service():
         "user_defined_dynamics": [],
     }
 
+    params_data_from_geo = params_data_from_vm
+    params_data_from_geo["meshing"]["defaults"] = {
+        "surface_edge_growth_rate": 1.5,
+        "boundary_layer_first_layer_thickness": "1*m",
+        "surface_max_edge_length": "1*m",
+    }
+
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+        params_as_dict=params_data_from_geo, unit_system_name="SI", root_item_type="Geometry"
+    )
+
+    assert errors is None
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data_from_vm, unit_system_name="SI", root_item_type="VolumeMesh"
     )
 
     assert errors is None
@@ -92,8 +105,28 @@ def test_validate_error():
         params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
     )
 
-    assert len(errors) == 1
-    assert errors[0]["loc"] == ("meshing", "farfield")
+    excpected_errors = [
+        {
+            "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
+            "type": "missing",
+            "ctx": {"relevant_for": "VolumeMesh"},
+        },
+        {
+            "loc": ("meshing", "defaults", "surface_max_edge_length"),
+            "type": "missing",
+            "ctx": {"relevant_for": "SurfaceMesh"},
+        },
+        {
+            "loc": ("meshing", "farfield"),
+            "type": "extra_forbidden",
+            "ctx": {"relevant_for": "SurfaceMesh"},
+        },
+    ]
+    assert len(errors) == len(excpected_errors)
+    for err, exp_err in zip(errors, excpected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
 def test_validate_multiple_errors():
@@ -102,7 +135,11 @@ def test_validate_multiple_errors():
             "farfield": "invalid",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
-            "defaults": {"surface_edge_growth_rate": 1.5},
+            "defaults": {
+                "surface_edge_growth_rate": 1.5,
+                "boundary_layer_first_layer_thickness": "1*m",
+                "surface_max_edge_length": "1*s",
+            },
             "refinements": [],
             "volume_zones": [
                 {
@@ -135,9 +172,28 @@ def test_validate_multiple_errors():
         params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
     )
 
-    assert len(errors) == 2
-    assert errors[0]["loc"] == ("meshing", "farfield")
-    assert errors[1]["loc"] == ("reference_geometry", "area", "value")
+    excpected_errors = [
+        {
+            "loc": ("meshing", "defaults", "surface_max_edge_length"),
+            "type": "value_error",
+            "ctx": {"relevant_for": "SurfaceMesh"},
+        },
+        {
+            "loc": ("meshing", "farfield"),
+            "type": "extra_forbidden",
+            "ctx": {"relevant_for": "SurfaceMesh"},
+        },
+        {
+            "loc": ("reference_geometry", "area", "value"),
+            "type": "greater_than",
+            "ctx": {"relevant_for": "Case"},
+        },
+    ]
+    assert len(errors) == len(excpected_errors)
+    for err, exp_err in zip(errors, excpected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
 def test_validate_errors():
@@ -213,9 +269,33 @@ def test_validate_init_data_errors():
     _, errors, _ = services.validate_model(
         params_as_dict=data, unit_system_name="SI", root_item_type="Geometry"
     )
-    assert len(errors) == 1
-    assert errors[0]["loc"][-1] == "velocity_magnitude"
-    assert errors[0]["type"] == "missing"
+
+    excpected_errors = [
+        {
+            "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
+            "type": "missing",
+            "ctx": {"relevant_for": "VolumeMesh"},
+        },
+        {
+            "loc": ("meshing", "defaults", "surface_max_edge_length"),
+            "type": "missing",
+            "ctx": {"relevant_for": "SurfaceMesh"},
+        },
+        {
+            "loc": ("operating_condition", "velocity_magnitude"),
+            "type": "missing",
+            "ctx": {"relevant_for": "Case"},
+        },
+    ]
+
+    assert len(errors) == len(excpected_errors)
+    for err, exp_err in zip(errors, excpected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
+
+
+def test_validate_init_data_vm_workflow_errors():
 
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
@@ -223,27 +303,29 @@ def test_validate_init_data_errors():
     _, errors, _ = services.validate_model(
         params_as_dict=data, unit_system_name="SI", root_item_type="VolumeMesh"
     )
-    assert len(errors) == 1
-    assert errors[0]["loc"][-1] == "velocity_magnitude"
-    assert errors[0]["type"] == "missing"
 
+    excpected_errors = [
+        {
+            "loc": ("operating_condition", "velocity_magnitude"),
+            "type": "missing",
+            "ctx": {"relevant_for": "Case"},
+        },
+    ]
 
-def test_validate_init_data_vm_workflow_errors():
-
-    data = services.get_default_params(
-        unit_system_name="SI", length_unit="m", root_item_type="Geometry"
-    )
-    _, errors, _ = services.validate_model(
-        params_as_dict=data, unit_system_name="SI", root_item_type="VolumeMesh"
-    )
-    assert len(errors) == 1
-    assert errors[0]["loc"][-1] == "velocity_magnitude"
-    assert errors[0]["type"] == "missing"
+    assert len(errors) == len(excpected_errors)
+    for err, exp_err in zip(errors, excpected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
 def test_front_end_JSON_with_multi_constructor():
     params_data = {
         "meshing": {
+            "defaults": {
+                "boundary_layer_first_layer_thickness": "1*m",
+                "surface_max_edge_length": "1*m",
+            },
             "refinement_factor": 1.45,
             "refinements": [
                 {
@@ -331,6 +413,7 @@ def test_front_end_JSON_with_multi_constructor():
         ref_param, err, _ = services.validate_model(
             params_as_dict=ref_data, unit_system_name="SI", root_item_type="Geometry"
         )
+        assert err is None
 
     param_dict = simulation_param.model_dump(exclude_none=True)
     ref_param_dict = ref_param.model_dump(exclude_none=True)

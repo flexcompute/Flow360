@@ -12,15 +12,7 @@
         "units": "degree",
         "value": 12.0
       },
-      "surface_edge_growth_rate": 1.2,
-      "boundary_layer_first_layer_thickness": {
-        "units": "m",
-        "value": 0.001
-      },
-      "surface_max_edge_length": {
-        "units": "m",
-        "value": 1.0
-      }
+      "surface_edge_growth_rate": 1.2
     },
   "refinements": [],
   "volume_zones": [

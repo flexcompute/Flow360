@@ -53,6 +53,8 @@ from flow360.error_messages import (
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
+from .validation.validation_context import SURFACE_MESH, CaseField, ConditionalField
+
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
 
 
@@ -161,9 +163,9 @@ class SimulationParams(_ParamModelBase):
         ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(
+    meshing: Optional[MeshingParams] = ConditionalField(MeshingParams(), relevant_for=SURFACE_MESH)
+    reference_geometry: Optional[ReferenceGeometry] = CaseField(None)
+    operating_condition: Optional[OperatingConditionTypes] = CaseField(
         None, discriminator="type_name"
     )
     #
@@ -174,12 +176,14 @@ class SimulationParams(_ParamModelBase):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[ModelTypes]] = pd.Field(None)
+    models: Optional[List[ModelTypes]] = CaseField(None)
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(Steady(), discriminator="type_name")
-    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
+    time_stepping: Optional[Union[Steady, Unsteady]] = CaseField(
+        Steady(), discriminator="type_name"
+    )
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
     """
     Support for user defined expression?
     If so:
@@ -188,7 +192,7 @@ class SimulationParams(_ParamModelBase):
     Limitations:
         1. No per volume zone output. (single volume output)
     """
-    outputs: Optional[List[OutputTypes]] = pd.Field(None)
+    outputs: Optional[List[OutputTypes]] = CaseField(None)
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
