@@ -111,7 +111,7 @@ class _ParamModelBase(Flow360BaseModel):
         Initializes the simulation parameters with the given unit context.
         """
         kwargs = self._init_check_unit_system(**kwargs)
-        super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+        super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme

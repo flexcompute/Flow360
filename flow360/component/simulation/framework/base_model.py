@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from copy import deepcopy
 from typing import Any, List
 
 import pydantic as pd
@@ -532,7 +531,7 @@ class Flow360BaseModel(pd.BaseModel):
         extra: List[Any] = None,
     ) -> dict:
         solver_values = {}
-        self_dict = deepcopy(self.__dict__)
+        self_dict = self.__dict__
 
         if exclude is None:
             exclude = []
