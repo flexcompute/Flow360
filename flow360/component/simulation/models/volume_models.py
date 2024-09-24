@@ -117,8 +117,8 @@ class Fluid(PDEModelBase):
         description="Initial condition for the Fluid model. "
         "When not specified we use the operating condition or the parent case's solution as initial condition. "
         "When specified the expression will be used instead. "
-        "Note that if the expressions contain soluiton variables and the case is being forked, "
-        "the parent case's solution will be modified by the expression as initial condition.",
+        "Note that if the case is being forked, "
+        "the parent case's solution will be modified/overwritten by the expression as initial condition.",
     )
 
     # pylint: disable=fixme
