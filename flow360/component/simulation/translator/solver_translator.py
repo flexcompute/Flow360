@@ -627,6 +627,7 @@ def get_solver_json(
     input_params: SimulationParams,
     # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
+    is_forking: bool,
 ):
     """
     Get the solver json from the simulation parameters.
@@ -770,8 +771,10 @@ def get_solver_json(
                             }
                         )
 
-            if model.initial_condition:
+            if model.initial_condition is not None:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
+                if is_forking:
+                    translated["initialCondition"]["type"] = "restartManipulation"
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):

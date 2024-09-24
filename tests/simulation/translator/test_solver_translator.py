@@ -14,7 +14,10 @@ from flow360.component.simulation.models.surface_models import (
     SlipWall,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    NavierStokesInitialCondition,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -153,8 +156,10 @@ def get_om6Wing_tutorial_param():
     return param
 
 
-def translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10):
-    translated = get_solver_json(param, mesh_unit=mesh_unit)
+def translate_and_compare(
+    param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10, is_forking=False
+):
+    translated = get_solver_json(param, mesh_unit=mesh_unit, is_forking=is_forking)
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     print(">>> translated = ", translated)
@@ -166,6 +171,18 @@ def translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15, rtol
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
     translate_and_compare(
         get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+
+def test_initial_condition_with_fork(get_om6Wing_tutorial_param):
+    get_om6Wing_tutorial_param.models[0].initial_condition = NavierStokesInitialCondition(
+        rho="1.0+my_const", constants={"my_const": "1.0*2.0"}
+    )
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing_forked_initial_condition.json",
+        is_forking=True,
     )
 
 

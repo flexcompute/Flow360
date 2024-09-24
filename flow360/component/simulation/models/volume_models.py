@@ -79,15 +79,11 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 
 # pylint: disable=missing-class-docstring
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
-    rho: str = pd.Field()
-    u: str = pd.Field()
-    v: str = pd.Field()
-    w: str = pd.Field()
-    p: str = pd.Field()
-
-
-class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
-    type: Literal["restartManipulation"] = pd.Field("restartManipulation", frozen=True)
+    rho: Optional[str] = pd.Field(None)
+    u: Optional[str] = pd.Field(None)
+    v: Optional[str] = pd.Field(None)
+    w: Optional[str] = pd.Field(None)
+    p: Optional[str] = pd.Field(None)
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
@@ -101,7 +97,6 @@ class PDEModelBase(Flow360BaseModel):
     """
 
     material: MaterialBase = pd.Field()
-    initial_condition: Optional[dict] = pd.Field(None)
 
 
 class Fluid(PDEModelBase):
@@ -116,9 +111,15 @@ class Fluid(PDEModelBase):
 
     material: FluidMaterialTypes = pd.Field(Air())
 
-    initial_condition: Optional[
-        Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
-    ] = pd.Field(None, discriminator="type")
+    initial_condition: Optional[NavierStokesInitialCondition] = pd.Field(
+        None,
+        discriminator="type",
+        description="Initial condition for the Fluid model. "
+        "When not specified we use the operating condition or the parent case's solution as initial condition. "
+        "When specified the expression will be used instead. "
+        "Note that if the expressions contain soluiton variables and the case is being forked, "
+        "the parent case's solution will be modified by the expression as initial condition.",
+    )
 
     # pylint: disable=fixme
     # fixme: Add support for other initial conditions
