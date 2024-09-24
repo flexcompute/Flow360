@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from itertools import chain
 from typing import Any, List
 
 import pydantic as pd
@@ -539,15 +540,16 @@ class Flow360BaseModel(pd.BaseModel):
         if required_by is None:
             required_by = []
 
+        additional_fields = {}
         if extra is not None:
             for extra_item in extra:
                 # Note: we should not be expecting extra field for SimulationParam?
                 require(extra_item.dependency_list, required_by, params)
-                self_dict[extra_item.name] = extra_item.value_factory()
+                additional_fields[extra_item.name] = extra_item.value_factory()
 
         assert mesh_unit is not None
 
-        for property_name, value in self_dict.items():
+        for property_name, value in chain(self_dict.items(), additional_fields.items()):
             if property_name in [COMMENTS, TYPE_TAG_STR]:
                 continue
             loc_name = property_name
