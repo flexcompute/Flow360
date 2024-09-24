@@ -65,7 +65,8 @@ SurfaceFieldNamesFull = Literal[
     "Spalart-Allmaras variable",
     "Non-dimensional wall distance",
     "Wall function metrics",
-    "Surface heat transfer coefficient",
+    "Surface heat transfer coefficient (static temperature as reference)",
+    "Surface heat transfer coefficient (total temperature as reference)",
 ]
 
 SurfaceFieldNames = Literal[
@@ -77,7 +78,8 @@ SurfaceFieldNames = Literal[
     "nodeForcesPerUnitArea",
     "yPlus",
     "wallFunctionMetric",
-    "heatTransferCoefficient",
+    "heatTransferCoefficientStaticTemperature",
+    "heatTransferCoefficientTotalTemperature",
 ]
 
 VolumeFieldNamesFull = Literal[
