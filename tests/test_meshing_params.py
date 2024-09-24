@@ -6,7 +6,9 @@ from flow360.component.meshing.params import (
     CylinderRefinement,
     Edges,
     Face,
+    FaceInVolume,
     Faces,
+    Farfield,
     ProjectAniso,
     RotorDisk,
     SurfaceMeshingParams,
@@ -286,3 +288,26 @@ def test_volume_meshing_params():
         rotor_disks=[rotor_disk_left, rotor_disk_right],
     )
     assert params
+
+
+def test_volume_meshing_params_farfield():
+    params = VolumeMeshingParams(
+        volume=Volume(first_layer_thickness=1e-5), farfield=Farfield(type="auto")
+    )
+    params = VolumeMeshingParams(
+        volume=Volume(first_layer_thickness=1e-5), farfield=Farfield(type="quasi-3d")
+    )
+    params = VolumeMeshingParams(
+        volume=Volume(first_layer_thickness=1e-5), farfield=Farfield(type="user-defined")
+    )
+
+
+def test_volume_meshing_face_in_volume():
+    params = VolumeMeshingParams(
+        volume=Volume(first_layer_thickness=1e-5),
+        faces={
+            "floor": FaceInVolume(type="aniso", first_layer_thickness=1e-5),
+            "ceiling": FaceInVolume(type="none"),
+            "adjacent2floor": FaceInVolume(type="projectAnisoSpacing"),
+        },
+    )

@@ -140,7 +140,7 @@ class Faces(Flow360SortableBaseModel):
 class FaceInVolume(Flow360BaseModel):
     """Face"""
 
-    type: str = pd.Field()
+    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
     first_layer_thickness: Optional[pd.PositiveFloat] = pd.Field(alias="firstLayerThickness")
 
 
