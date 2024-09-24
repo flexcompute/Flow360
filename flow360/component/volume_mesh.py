@@ -808,7 +808,7 @@ class VolumeMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [VolumeMeshStatusV2.COMPLETED]:
+        if self in [VolumeMeshStatusV2.COMPLETED, VolumeMeshStatusV2.UPLOADED]:
             return True
         return False
 
@@ -847,7 +847,6 @@ class VolumeMeshDraftV2(ResourceDraft):
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
-        self.format = None
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -862,7 +861,6 @@ class VolumeMeshDraftV2(ResourceDraft):
                     f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
                     f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
                 )
-            self.format = mesh_parser.format
 
         if self.project_name is None:
             self.project_name = os.path.splitext(os.path.basename(self.file_name))[0]
@@ -880,7 +878,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         if self.solver_version is None:
             raise Flow360ValueError("solver_version field is required.")
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-locals
     def submit(self, description="", progress_callback=None) -> VolumeMeshV2:
         """
         Submit volume mesh to cloud and create a new project
@@ -903,41 +901,65 @@ class VolumeMeshDraftV2(ResourceDraft):
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
+        mesh_parser = MeshNameParser(self.file_name)
+
+        original_compression = mesh_parser.compression
+        endianness = mesh_parser.endianness
+        mesh_format = mesh_parser.format
+
+        if original_compression == CompressionFormat.NONE:
+            compression = CompressionFormat.ZST
+        else:
+            compression = original_compression
+
+        if mesh_format is MeshFileFormat.CGNS:
+            remote_name = "volumeMesh"
+        else:
+            remote_name = "mesh"
+        remote_name = f"{remote_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+
         req = NewVolumeMeshRequestV2(
             name=self.project_name,
             solver_version=self.solver_version,
             tags=self.tags,
-            file_name=os.path.basename(self.file_name),
-            # pylint: disable=fixme
-            # TODO: remove hardcoding
-            parent_folder_id="ROOT.FLOW360",
+            file_name=remote_name,
             length_unit=self.length_unit,
-            format=self.format.value,
+            format=mesh_format.value,
             description=description,
         )
 
-        ##:: Create new Volume mesh resource and project
-        resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req.dict())
+        # Create new volume mesh resource and project
+        req_dict = req.dict()
+        resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req_dict)
         info = VolumeMeshMetaV2(**resp)
 
-        ##:: upload volume mesh file
         volume_mesh = VolumeMeshV2(info.id)
+
+        # Upload volume mesh file, keep posting the heartbeat to keep server patient about uploading.
         heartbeat_info = {"resourceId": info.id, "resourceType": "VolumeMesh", "stop": False}
-        # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
-        volume_mesh._webapi._upload_file(
-            remote_file_name=os.path.basename(self.file_name),
-            file_name=self.file_name,
-            progress_callback=progress_callback,
-        )
+
+        # Compress (if not already compressed) and upload
+        if original_compression == CompressionFormat.NONE:
+            compressed_name = zstd_compress(self.file_name)
+            volume_mesh._webapi._upload_file(
+                remote_name, compressed_name, progress_callback=progress_callback
+            )
+            os.remove(compressed_name)
+        else:
+            volume_mesh._webapi._upload_file(
+                remote_name, self.file_name, progress_callback=progress_callback
+            )
+
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
-        ##:: kick off pipeline
+
+        # Start processing pipeline
         volume_mesh._webapi._complete_upload()
         log.debug("Waiting for volume mesh to be processed.")
         volume_mesh._webapi.get_info()
-        log.info("Volume mesh successfully submitted.")
+        log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
         return volume_mesh
 
 
