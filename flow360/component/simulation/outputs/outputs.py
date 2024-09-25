@@ -223,6 +223,18 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         return _check_unique_probe_type(value, "SurfaceSliceOutput")
 
 
+class TimeAverageProbeOutput(ProbeOutput):
+    """Time average probe monitor output settings."""
+
+    # pylint: disable=abstract-method
+    frequency: int = pd.Field(default=1, ge=1)
+    frequency_offset: int = pd.Field(default=0, ge=0)
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
+    output_type: Literal["TimeAverageProbeOutput"] = pd.Field("TimeAverageProbeOutput", frozen=True)
+
+
 class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
@@ -251,6 +263,7 @@ OutputTypes = Annotated[
         ProbeOutput,
         SurfaceProbeOutput,
         SurfaceSliceOutput,
+        TimeAverageProbeOutput,
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),

@@ -404,11 +404,17 @@ def probe_output_config():
         {
             "monitors": {
                 "prb 10": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp"],
                     "type": "probe",
                 },
                 "prb 12": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                     "outputFields": ["primitiveVars", "Cp"],
                     "type": "probe",
@@ -463,11 +469,17 @@ def probe_output_with_point_array():
                     "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
                     "numberOfPoints": [5, 7],
                     "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "type": "lineProbe",
                 },
                 "prb point": {
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "type": "probe",
                 },
             },
@@ -500,11 +512,17 @@ def surface_integral_output_config():
         {
             "monitors": {
                 "prb 110": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Cp"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                     "type": "surfaceIntegral",
                 },
                 "prb 122": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Mach"],
                     "surfaces": ["surface21", "surface22"],
                     "type": "surfaceIntegral",
@@ -648,21 +666,33 @@ def test_monitor_output(
     ref = {
         "monitors": {
             "prb 10": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                 "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 110": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "outputFields": ["Cp"],
                 "surfaces": ["zoneName/surface1", "surface2"],
                 "type": "surfaceIntegral",
             },
             "prb 12": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                 "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 122": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "outputFields": ["Mach"],
                 "surfaces": ["surface21", "surface22"],
                 "type": "surfaceIntegral",
