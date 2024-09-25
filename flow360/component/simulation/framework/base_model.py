@@ -473,7 +473,7 @@ class Flow360BaseModel(pd.BaseModel):
         doc += "\n\n    Parameters\n    ----------\n"
         for field_name, field in cls.model_fields.items():
             # ignore the type tag
-            if field_name == TYPE_TAG_STR:
+            if field_name == TYPE_TAG_STR or field_name.startswith("private_attribute"):
                 continue
 
             # get data type
