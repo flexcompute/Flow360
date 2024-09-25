@@ -23,7 +23,7 @@ from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.types import Axis
 
 
-def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict) -> str:
+def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
     """Ideally volume_mesh_meta should be a pydantic model.
 
     TODO:  Note that the same surface_name may appear in different blocks. E.g.
@@ -91,10 +91,49 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
         frozen=True,
         description="Boundary names of the zone WITH the prepending zone name.",
     )
+    private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _is_volume_zone(self) -> bool:
         """This is not a zone if zone boundaries are not defined. For validation usage."""
-        return self.private_attribute_zone_boundaries is not None
+        return self.private_attribute_zone_boundary_names is not None
+
+    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict[str, dict]) -> None:
+        """
+        Update the full name of zones once the volume mesh is done.
+        e.g. rotating_cylinder --> rotatingBlock-rotating_cylinder
+        """
+        entity_name = self.name
+        for zone_full_name, zone_meta in volume_mesh_meta_data["zones"].items():
+            pattern = r"rotatingBlock-" + re.escape(entity_name)
+            if entity_name == "__farfield_zone_name_not_properly_set_yet":
+                # We have hardcoded name for farfield zone.
+                pattern = r"stationaryBlock|fluid"
+            match = re.search(pattern, zone_full_name)
+            print(
+                "entity_name: ",
+                entity_name,
+                " zone_full_name: ",
+                zone_full_name,
+                " match: ",
+                match,
+                " pattern: ",
+                pattern,
+            )
+            if match is not None or entity_name == zone_full_name:
+                with _model_attribute_unlock(self, "private_attribute_full_name"):
+                    self.private_attribute_full_name = zone_full_name
+                with _model_attribute_unlock(self, "private_attribute_zone_boundary_names"):
+                    self.private_attribute_zone_boundary_names = UniqueStringList(
+                        items=zone_meta["boundaryNames"]
+                    )
+                break
+
+    @property
+    def full_name(self):
+        """Gets the full name which includes the zone name"""
+        if self.private_attribute_full_name is None:
+            return self.name
+        return self.private_attribute_full_name
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
@@ -102,13 +141,10 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
-    def _set_boundary_full_name_from_metadata(self, volume_mesh_meta_data: dict) -> None:
+    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
         """
         Update parent zone name once the volume mesh is done.
-        volume_mesh is supposed to provide the exact same info as meshMetaData.json (which we do not have?)
         """
-
-        # Note: Ideally we should have use the entity registry inside the VolumeMesh class
         with _model_attribute_unlock(self, "private_attribute_full_name"):
             self.private_attribute_full_name = _get_boundary_full_name(
                 self.name, volume_mesh_meta_data

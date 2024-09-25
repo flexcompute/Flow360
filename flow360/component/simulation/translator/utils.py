@@ -9,7 +9,10 @@ from typing import Union
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.primitives import _SurfaceEntityBase
+from flow360.component.simulation.primitives import (
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
@@ -206,7 +209,7 @@ def update_dict_recursively(a: dict, b: dict):
 
 
 def _get_key_name(entity: EntityBase):
-    if isinstance(entity, _SurfaceEntityBase):
+    if isinstance(entity, (_SurfaceEntityBase, _VolumeEntityBase)):
         # Note: If the entity is a Surface/Boundary, we need to use the full name
         return entity.full_name
 

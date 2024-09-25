@@ -70,17 +70,19 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
             register_entity_list(field, registry)
 
 
-def _update_zone_name_in_surface_with_metadata(
-    model: Flow360BaseModel, volume_mesh_meta_data: dict
+def _update_entity_full_name(
+    model: Flow360BaseModel,
+    target_entity_type: Union[type[_SurfaceEntityBase], type[_VolumeEntityBase]],
+    volume_mesh_meta_data: dict,
 ):
     """
     Update Surface/Boundary with zone name from volume mesh metadata.
     TODO: Maybe no need to recursivly looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
-        if isinstance(field, _SurfaceEntityBase):
+        if isinstance(field, target_entity_type):
             # pylint: disable=protected-access
-            field._set_boundary_full_name_from_metadata(volume_mesh_meta_data)
+            field._update_entity_info_with_metadata(volume_mesh_meta_data)
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
@@ -88,16 +90,16 @@ def _update_zone_name_in_surface_with_metadata(
                 supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
             )
             for entity in expanded_entities if expanded_entities else []:
-                if isinstance(entity, _SurfaceEntityBase):
-                    entity._set_boundary_full_name_from_metadata(volume_mesh_meta_data)
+                if isinstance(entity, target_entity_type):
+                    entity._update_entity_info_with_metadata(volume_mesh_meta_data)
 
         elif isinstance(field, list):
             for item in field:
                 if isinstance(item, Flow360BaseModel):
-                    _update_zone_name_in_surface_with_metadata(item, volume_mesh_meta_data)
+                    _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
 
         elif isinstance(field, Flow360BaseModel):
-            _update_zone_name_in_surface_with_metadata(field, volume_mesh_meta_data)
+            _update_entity_full_name(field, target_entity_type, volume_mesh_meta_data)
 
 
 def _update_zone_boundaries_with_metadata(
