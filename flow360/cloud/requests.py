@@ -165,4 +165,4 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
         alias="lengthUnit", description="project length unit"
     )
     description: str = pd_v2.Field(default="", description="project description")
-    format: Union[Literal["cgns"], Literal["aflr3"]] = pd_v2.Field(description="data format")
+    format: Literal["cgns", "aflr3"] = pd_v2.Field(description="data format")

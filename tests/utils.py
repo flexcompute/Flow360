@@ -230,7 +230,6 @@ def s3_download_override():
 
     S3TransferType.CASE.download_file = s3_mock_download
     S3TransferType.GEOMETRY.download_file = s3_mock_download
-    S3TransferType.VOLUME_MESH.download_file = s3_mock_download
 
 
 # for generating MOCK WEBAPI data:
