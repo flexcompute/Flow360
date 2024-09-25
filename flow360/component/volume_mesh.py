@@ -2,12 +2,14 @@
 Volume mesh component
 """
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import os.path
 import threading
 from enum import Enum
-from typing import Iterator, List, Optional, Union
+from typing import Any, Iterator, List, Optional, Union
 
 import numpy as np
 
@@ -54,6 +56,7 @@ from .resource_base import (
     ResourceDraft,
 )
 from .simulation.entity_info import VolumeMeshEntityInfo
+from .simulation.primitives import Surface
 from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
 from .utils import (
@@ -808,7 +811,7 @@ class VolumeMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [VolumeMeshStatusV2.COMPLETED, VolumeMeshStatusV2.UPLOADED]:
+        if self in [VolumeMeshStatusV2.COMPLETED]:
             return True
         return False
 
@@ -879,7 +882,7 @@ class VolumeMeshDraftV2(ResourceDraft):
             raise Flow360ValueError("solver_version field is required.")
 
     # pylint: disable=protected-access, too-many-locals
-    def submit(self, description="", progress_callback=None) -> VolumeMeshV2:
+    def submit(self, description="", progress_callback=None, compress=False) -> VolumeMeshV2:
         """
         Submit volume mesh to cloud and create a new project
 
@@ -889,6 +892,8 @@ class VolumeMeshDraftV2(ResourceDraft):
             description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
+        compress : boolean, optional
+            Compress the volume mesh file when sending to S3, default is False
 
         Returns
         -------
@@ -911,6 +916,9 @@ class VolumeMeshDraftV2(ResourceDraft):
             compression = CompressionFormat.ZST
         else:
             compression = original_compression
+
+        if not compress:
+            compression = CompressionFormat.NONE
 
         if mesh_format is MeshFileFormat.CGNS:
             remote_name = "volumeMesh"
@@ -941,7 +949,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         heartbeat_thread.start()
 
         # Compress (if not already compressed) and upload
-        if original_compression == CompressionFormat.NONE:
+        if original_compression == CompressionFormat.NONE and compress:
             compressed_name = zstd_compress(self.file_name)
             volume_mesh._webapi._upload_file(
                 remote_name, compressed_name, progress_callback=progress_callback
@@ -976,12 +984,19 @@ class VolumeMeshV2(AssetBase):
 
     @classmethod
     # pylint: disable=redefined-builtin
-    def from_cloud(cls, id: str):
-        """Create asset with the given ID"""
-        asset_obj = super().from_cloud(id)
+    def from_cloud(cls, id: str) -> VolumeMeshV2:
+        """
+        Parameters
+        ----------
+        id : str
+            ID of the volume mesh resource in the cloud
 
-        # pylint: disable=fixme
-        # TODO: Grouping logic?
+        Returns
+        -------
+        VolumeMeshV2
+            Volume mesh object
+        """
+        asset_obj = super().from_cloud(id)
 
         return asset_obj
 
@@ -995,5 +1010,72 @@ class VolumeMeshV2(AssetBase):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ) -> VolumeMeshDraftV2:
+        """
+        Parameters
+        ----------
+        file_names : str
+            The name of the input volume mesh file (*.cgns, *.ugrid)
+        project_name : str, optional
+            The name of the newly created project, defaults to file name if empty
+        solver_version: str
+            Solver version to use for the project
+        length_unit: LengthUnitType
+            Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
+        tags: List[str]
+            List of string tags to be added to the project upon creation
+
+        Returns
+        -------
+        VolumeMeshDraftV2
+            Draft of the volume mesh to be submitted
+        """
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, project_name, solver_version, length_unit, tags)
+
+    @property
+    def boundary_names(self) -> List[str]:
+        """
+        Retrieve all boundary names available in this volume mesh as a list
+
+        Returns
+        -------
+        List[str]
+            List of boundary names contained within the volume mesh
+        """
+        if hasattr(self, "_entity_info") is False or self._entity_info is None:
+            raise Flow360ValueError("The entity info object does not exist")
+
+        return [surface.name for surface in self._entity_info.get_boundaries()]
+
+    def __getitem__(self, key: str) -> Optional[Surface]:
+        """
+        Parameters
+        ----------
+        key : str
+            The name of the boundary to be found
+
+        Returns
+        -------
+        Surface
+            The boundary object
+        """
+        if isinstance(key, str) is False:
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
+        if hasattr(self, "_entity_info") is False or self._entity_info is None:
+            raise Flow360ValueError("The entity info object does not exist")
+
+        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
+            raise Flow360ValueError(
+                "Entity info is of invalid type for a "
+                f"volume mesh object {type(self._entity_info)}"
+            )
+
+        for boundary in self._entity_info.boundaries:
+            if boundary.name == key:
+                return boundary
+
+        raise ValueError(f"No entity found in entity info with given name: '{key}'.")
+
+    def __setitem__(self, key: str, value: Any):
+        raise NotImplementedError("Assigning/setting entities is not supported.")
