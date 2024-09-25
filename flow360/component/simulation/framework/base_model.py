@@ -111,8 +111,9 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
-        cls._handle_wrap_validators()
-        cls.model_rebuild(force=True)
+        need_to_rebuild = cls._handle_wrap_validators()
+        if need_to_rebuild is True:
+            cls.model_rebuild(force=True)
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
         cls._generate_docstring()
 
@@ -237,21 +238,25 @@ class Flow360BaseModel(pd.BaseModel):
             ("before", "validate_conditionally_required_field"),
         ]
         fields_to_validate = []
+        need_to_rebuild = False
 
         for field_name, field in cls.model_fields.items():
             # Ignore discriminator validators
             # pylint: disable=comparison-with-callable
             if get_origin(field.annotation) == Literal and field_name in DISCRIMINATOR_NAMES:
+                need_to_rebuild = True
                 continue
 
             fields_to_validate.append(field_name)
 
-        for mode, method in validators:
-            info = FieldValidatorDecoratorInfo(
-                fields=tuple(fields_to_validate), mode=mode, check_fields=None
-            )
-            deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
-            cls.__pydantic_decorators__.field_validators[method] = deco
+        if need_to_rebuild is True:
+            for mode, method in validators:
+                info = FieldValidatorDecoratorInfo(
+                    fields=tuple(fields_to_validate), mode=mode, check_fields=None
+                )
+                deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
+                cls.__pydantic_decorators__.field_validators[method] = deco
+        return need_to_rebuild
 
     @pd.field_validator("*", mode="before")
     @classmethod
