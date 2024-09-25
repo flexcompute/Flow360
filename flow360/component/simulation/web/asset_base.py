@@ -71,7 +71,7 @@ class AssetBase(metaclass=ABCMeta):
     def from_cloud(cls, id: str):
         """Create asset with the given ID"""
         asset_obj = cls(id)
-        # populating the entityInfo
+        # populating the entityInfo object
         simulation_dict = _get_simulation_json_from_cloud(asset_obj.project_id)
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(

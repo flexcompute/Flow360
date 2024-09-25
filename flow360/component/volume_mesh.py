@@ -56,7 +56,8 @@ from .resource_base import (
     ResourceDraft,
 )
 from .simulation.entity_info import VolumeMeshEntityInfo
-from .simulation.primitives import Surface
+from .simulation.framework.entity_registry import EntityRegistry
+from .simulation.primitives import GenericVolume, Surface
 from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
 from .utils import (
@@ -894,6 +895,8 @@ class VolumeMeshDraftV2(ResourceDraft):
             Use for custom progress bar, by default None
         compress : boolean, optional
             Compress the volume mesh file when sending to S3, default is False
+        fetch_entities : boolean, optional
+            Whether to fetch and populate the entity info object after submitting, default is False
 
         Returns
         -------
@@ -968,6 +971,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         log.debug("Waiting for volume mesh to be processed.")
         volume_mesh._webapi.get_info()
         log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
+
         return volume_mesh
 
 
@@ -1032,6 +1036,38 @@ class VolumeMeshV2(AssetBase):
         # For type hint only but proper fix is to fully abstract the Draft class too.
         return super().from_file(file_names, project_name, solver_version, length_unit, tags)
 
+    def _populate_registry(self):
+        if hasattr(self, "_entity_info") is False or self._entity_info is None:
+            raise Flow360ValueError("The entity info object does not exist")
+
+        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
+            raise Flow360ValueError(
+                "Entity info is of invalid type for a "
+                f"volume mesh object {type(self._entity_info)}"
+            )
+
+        # Initialize the local registry
+        self.internal_registry = EntityRegistry()
+
+        # Populate boundaries
+        for boundary in self._entity_info.boundaries:
+            self.internal_registry.register(boundary)
+
+        for zone in self._entity_info.zones:
+            self.internal_registry.register(zone)
+
+    def _check_registry(self):
+        if not hasattr(self, "internal_registry") or self.internal_registry is None:
+            if hasattr(self, "_entity_info") and self._entity_info is not None:
+                self._populate_registry()
+                return
+
+            raise Flow360ValueError(
+                "The entity info registry has not been populated. "
+                "Currently entity info is populated only when loading "
+                "an asset from the cloud using the from_cloud method "
+            )
+
     @property
     def boundary_names(self) -> List[str]:
         """
@@ -1042,17 +1078,35 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the volume mesh
         """
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
+        self._check_registry()
 
-        return [surface.name for surface in self._entity_info.get_boundaries()]
+        return [
+            surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
+        ]
 
-    def __getitem__(self, key: str) -> Optional[Surface]:
+    @property
+    def zone_names(self) -> List[str]:
+        """
+        Retrieve all volume zone names available in this volume mesh as a list
+
+        Returns
+        -------
+        List[str]
+            List of zone names contained within the volume mesh
+        """
+        self._check_registry()
+
+        return [
+            volume.name
+            for volume in self.internal_registry.get_bucket(by_type=GenericVolume).entities
+        ]
+
+    def __getitem__(self, key: str):
         """
         Parameters
         ----------
         key : str
-            The name of the boundary to be found
+            The name of the entity to be found
 
         Returns
         -------
@@ -1062,20 +1116,11 @@ class VolumeMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
+        self._check_registry()
 
-        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
-            raise Flow360ValueError(
-                "Entity info is of invalid type for a "
-                f"volume mesh object {type(self._entity_info)}"
-            )
-
-        for boundary in self._entity_info.boundaries:
-            if boundary.name == key:
-                return boundary
-
-        raise ValueError(f"No entity found in entity info with given name: '{key}'.")
+        return self.internal_registry.find_by_naming_pattern(
+            key, enforce_output_as_list=False, error_when_no_match=True
+        )
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")

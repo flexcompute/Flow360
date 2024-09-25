@@ -202,6 +202,7 @@ class GeometryDraft(ResourceDraft):
         log.debug("Waiting for geometry to be processed.")
         geometry._webapi.get_info()
         log.info("Geometry successfully submitted.")
+
         return geometry
 
 
