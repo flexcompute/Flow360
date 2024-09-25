@@ -151,7 +151,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 for cylinder in [
                     item
-                    for item in volume_zone.entities._get_expanded_entities()
+                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                     if isinstance(item, Cylinder)
                 ]:
                     cylinder_name_to_usage_map[cylinder.name] = RotationCylinder.model_fields[
@@ -163,7 +163,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 for cylinder in [
                     item
-                    for item in refinement.entities._get_expanded_entities()
+                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
                     if isinstance(item, Cylinder)
                 ]:
                     cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type
