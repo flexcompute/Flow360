@@ -17,7 +17,6 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import _model_attribute_unlock
 
 
 class UniformRefinement(Flow360BaseModel):
