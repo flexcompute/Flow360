@@ -506,6 +506,22 @@ def _check_low_mach_preconditioner_output(values):
     return values
 
 
+def _check_local_cfl_output(values):
+    time_stepping = values.get("time_stepping")
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if "localCFL" in _get_all_output_fields(values):
+        if time_stepping is None or isinstance(time_stepping, SteadyTimeStepping):
+            raise ValueError("Outputting local CFL with steady simulation is invalid")
+
+        if navier_stokes_solver is not None and isinstance(
+            navier_stokes_solver, IncompressibleNavierStokesSolver
+        ):
+            raise ValueError(
+                "Local CFL output requested, but not supported in the incompressible Navier Stokes solver."
+            )
+    return values
+
+
 def _check_per_item_output_fields(output_item_obj, additional_fields: List, error_prefix=""):
 
     def extract_literal_values(annotation):

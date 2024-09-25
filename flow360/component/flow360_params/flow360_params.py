@@ -113,6 +113,7 @@ from .validations import (
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
     _check_low_mach_preconditioner_output,
+    _check_local_cfl_output,
     _check_numerical_dissipation_factor_output,
     _check_output_fields,
     _check_periodic_boundary_mapping,
@@ -1371,6 +1372,14 @@ class Flow360Params(Flow360BaseModel):
         Detect output of lowMachPreconditioner if not enabled.
         """
         return _check_low_mach_preconditioner_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
+    def check_local_cfl_output(cls, values):
+        """
+        Detect output of local CFL if not supported in incompressible Navier Stokes solver or steady simulations.
+        """
+        return _check_local_cfl_output(values)
 
     # pylint: disable=no-self-argument
     @pd.root_validator
