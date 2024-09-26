@@ -2,21 +2,22 @@ import random
 import matplotlib.pyplot as plt
 
 from pydantic import BaseModel, model_validator
-from typing import List, Literal, Union
+from typing import List, Literal, Union, Any
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, PageStyle, SubFigure
+from pylatex import Document, Section, Command, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure
 from pylatex.utils import bold
 
 from flow360 import Case
 
-def get_case_from_id(id: str, cases: list[Case]):
+def get_case_from_id(id: str, cases: list[Case]) -> Case:
+    # This can happen if Delta has no ref_case
     if len(cases) == 0:
         raise ValueError("No cases provided for `get_case_from_id`.")
     for case in cases:
         if case.id == id:
             return case
 
-def data_from_path(case: Case, path:str, cases: list[Case]=[]):
+def data_from_path(case: Case, path:str, cases: list[Case]=[]) -> Any:
     # Handle Delta values
     if isinstance(path, Delta):
         ref_case = get_case_from_id(path.ref_case_id, cases)
@@ -25,7 +26,7 @@ def data_from_path(case: Case, path:str, cases: list[Case]=[]):
     # Split path into components
     path_components = path.split("/")
 
-    def _search_path(case: Case, component: str):
+    def _search_path(case: Case, component: str) -> Any:
         """
         Case starts as a `Case` object but changes as it recurses through the path components
         """
@@ -45,16 +46,20 @@ def data_from_path(case: Case, path:str, cases: list[Case]=[]):
         # Check if component is a key for a dictionary
         try:
             case = case[component]
+            # Have to test for int or str here otherwise...
             if isinstance(case, (int, str)):
                 return case
+            # .. this raises a KeyError. 
+            # This is a convenience that may be removed for if people want something other than the value
             elif "value" in case:
                 return case["value"]
             else:
                 return case
-        except TypeError: 
+        except TypeError:
             pass
 
         # Check if case is a list and interpret component as an int index
+        # E.g. in user defined functions
         if isinstance(case, list):
             try:
                 return case[int(component)]
@@ -67,6 +72,7 @@ def data_from_path(case: Case, path:str, cases: list[Case]=[]):
         except KeyError:
             raise ValueError(f"Could not find path component: '{component}'")
 
+    # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
         case = _search_path(case, component)
 
@@ -76,7 +82,7 @@ class ReportItem(BaseModel):
 
     boundaries: Union[Literal['ALL'], List[str]] = 'ALL'
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
         with doc.create(section_func(self.__class__.__name__)):
             doc.append(f"this is {self.__class__.__name__}")
 
@@ -85,35 +91,45 @@ class Report(BaseModel):
     items: List[ReportItem]
     include_case_by_case: bool = True
 
-    def _create_header(self):
-        header = PageStyle("header")           
+    def _create_header_footer(self) -> PageStyle:
+        header = PageStyle("header")
+        # Header title and logo
         with header.create(Head("C")):
             header.append("Flow 360 Report")
 
         with header.create(Head("R")):
-            header.append(NoEscape(r'\includegraphics[width=2cm]{/home/matt/Documents/Flexcompute/flow360/Flow360/flow360.png}'))
+            header.append(NoEscape(r"\includegraphics[width=2cm]{/home/matt/Documents/Flexcompute/flow360/Flow360/flow360.png}"))
+
+        # Footer date and page number
+        with header.create(Foot("C")):
+            header.append(NoEscape(r"\thepage"))
+
+        with header.create(Foot("L")):
+            header.append(NoEscape(r"\today"))
 
         return header
 
-    def create_pdf(self, filename:str, cases: list[Case]):
+    def create_pdf(self, filename:str, cases: list[Case]) -> None:
         # Create a new LaTeX document
         doc = Document()
+        # Package info
         doc.packages.append(NoEscape(r'\usepackage{float}'))
         doc.packages.append(NoEscape(r'\usepackage{graphicx}'))
-        # doc.packages.append(NoEscape(r'\usepackage{subfig}'))
         doc.packages.append(NoEscape(r'\usepackage{placeins}')) # For FloatBarrier
-        doc.packages.append(NoEscape(r'\usepackage[a4paper, margin=1.5in]{geometry}'))
+        doc.packages.append(NoEscape(r'\usepackage[a4paper, margin=1in]{geometry}'))
 
-        doc.preamble.append(self._create_header())
+        # Preamble info
+        doc.preamble.append(self._create_header_footer())
         doc.preamble.append(NoEscape(r'\setlength{\headheight}{20pt}'))
         doc.preamble.append(NoEscape(r'\addtolength{\topmargin}{-5pt}'))
         doc.change_document_style("header")
     
+        # Iterate through all cases together
         for item in self.items:
             item.get_doc_item(cases, doc, case_by_case=self.include_case_by_case)
 
+        # Iterate each case one at a time
         if self.include_case_by_case is True:
-
             with doc.create(Section('Appendix', numbering=False)):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
@@ -128,7 +144,7 @@ class Report(BaseModel):
 class Summary(ReportItem):
     text: str
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
         with doc.create(section_func("Summary")):
             doc.append(f"{self.text}\n")
             for case in cases:
@@ -139,7 +155,7 @@ class Inputs(ReportItem):
     """
     Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
     """
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
         Table(data_path=[
                 "params_as_dict/version",
                 "params_as_dict/timeStepping/orderOfAccuracy",
@@ -162,7 +178,7 @@ class Delta(BaseModel):
     data_path: str
     ref_case_id: str
 
-    def calculate(self, case: Case, ref: Case):
+    def calculate(self, case: Case, ref: Case) -> float:
         # Used when trying to do a Delta in a case_by_case or if ref ID is bad
         if ref is None:
             return "Ref not found."
@@ -189,15 +205,15 @@ class Table(ReportItem):
     custom_headings: list[str] = None
 
     @model_validator(mode="after")
-    def check_custom_heading_count(self):
+    def check_custom_heading_count(self) -> None:
         if self.custom_headings is not None:
             if len(self.data_path) != len(self.custom_headings):
                 raise ValueError(f"Suppled `custom_headings` must be the same length as `data_path`: " 
                                  f"{len(self.custom_headings)} instead of {len(self.data_path)}")
 
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
-        
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
+        # Only create a title if specified
         if self.section_title is not None:
             section = section_func(self.section_title)
             doc.append(section)
@@ -220,10 +236,11 @@ class Table(ReportItem):
 
             table.add_row(field_titles)
             table.add_hline()
+            
+            # Build data rows
             for idx, case in enumerate(cases):
                 row_list = [data_from_path(case, path, cases) for path in self.data_path]
-                # row_list = [getattr(case.results, loc).values[field] for loc, field in zip(self.data_loc, self.field)]
-                row_list.insert(0, str(idx + 1))
+                row_list.insert(0, str(idx + 1)) # Case numbers
                 table.add_row(row_list)
                 table.add_hline()
 
@@ -239,12 +256,13 @@ class Chart2D(ReportItem):
     single_plot: bool = False
 
     @model_validator(mode="after")
-    def check_items_in_row(self):
+    def check_items_in_row(self) -> None:
         if self.items_in_row is not None:
             if self.items_in_row == 1:
                 raise ValueError(f"`Items_in_row` should be greater than 1. Use `None` to disable the argument.")
 
-    def _create_fig(self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str):
+    def _create_fig(self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str) -> None:
+        """Create a simple matplotlib figure"""
         plt.plot(x_data, y_data)
         plt.xlabel(x_lab)
         plt.ylabel(y_lab)
@@ -252,12 +270,13 @@ class Chart2D(ReportItem):
         if not self.single_plot:
             plt.close()
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
             if self.items_in_row > len(cases):
                 self.items_in_row = len(cases)
         
+        # Only create a title if specified
         if self.section_title is not None:
             section = section_func(self.section_title)
             doc.append(section)
@@ -289,6 +308,7 @@ class Chart2D(ReportItem):
                 continue
 
             else:
+                # Fig is added to doc later to facilitate method of creating single_plot
                 fig = Figure(position="h!")
                 fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
                 fig.add_caption(f'{x_lab} against {y_lab} for {case.name}.')
@@ -369,19 +389,19 @@ if __name__ == "__main__":
     # Answered Questions:
     # Where to start putting in styling - font, colours, etc.
     # Lost as to what Group is doing. What about changing Chart2D to control fig size and a TitledSummary for other text?
-    # # How does include_case_by_case operate with Group?
 
     # New Questions
     # Delta is currently just a mean - what other ways might people want to express a delta
     # Is there any guide to test design for Flow360?
+    # Where should report sit in the repo?
     # Any other details that should be included in Summary? 
     # # Need to think how to format case id and name as these are often long strings
     # What's the usecase for Chart3D? Is it not just displaying a png?
     # Discuss Expression: Parsing an expression safely is pretty challenging - lot of recent work on this for Tidy3D
     # Group may be redundant. What if Chart2D can tesselate any X by Y arrangement with something like a draw_rows=2 arg?
-    # # Could change doc.create(Section) in favour of saving to variable that is passed along
-    # # Subsequent report items can take the previous section variable and not build a new section if an old one is supplied
+    # # Toggle of section creation helps do what Group is achieving
     # Would basic Text and Image classes be useful to include for users customising reporting?
+    # Need better figure naming convention - any preference? 
 
     # To Do
     # Need to improve data_loc/field system. Need something that makes it easy to get into nested data
