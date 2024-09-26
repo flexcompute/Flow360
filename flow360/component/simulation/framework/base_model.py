@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from copy import deepcopy
 from itertools import chain
 from typing import Any, List, Literal, get_origin
 
