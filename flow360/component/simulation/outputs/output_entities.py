@@ -5,10 +5,7 @@ from typing import Literal
 
 import pydantic as pd
 
-from flow360.component.flow360_params.flow360_fields import (
-    IsoSurfaceFieldNames,
-    IsoSurfaceFieldNamesFull,
-)
+from flow360.component.flow360_params.flow360_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
@@ -52,7 +49,7 @@ class Slice(_SliceEntityBase):
 class Isosurface(_OutputItemBase):
     """Isosurface output item."""
 
-    field: Literal[IsoSurfaceFieldNames, IsoSurfaceFieldNamesFull] = pd.Field()
+    field: Literal[IsoSurfaceFieldNames] = pd.Field()
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
     iso_value: float = pd.Field(description="Expect non-dimensional value.")

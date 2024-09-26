@@ -173,6 +173,15 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     type_name: Literal["SpalartAllmarasConsts"] = pd.Field("SpalartAllmarasConsts", frozen=True)
     C_DES: NonNegativeFloat = pd.Field(0.72)
     C_d: NonNegativeFloat = pd.Field(8.0)
+    C_cb1: NonNegativeFloat = pd.Field(0.1355)
+    C_cb2: NonNegativeFloat = pd.Field(0.622)
+    C_sigma: NonNegativeFloat = pd.Field(2.0 / 3.0)
+    C_v1: NonNegativeFloat = pd.Field(7.1)
+    C_vonKarman: NonNegativeFloat = pd.Field(0.41)
+    C_w2: NonNegativeFloat = pd.Field(0.3)
+    C_t3: NonNegativeFloat = pd.Field(1.2)
+    C_t4: NonNegativeFloat = pd.Field(0.5)
+    C_min_rd: NonNegativeFloat = pd.Field(10.0)
 
 
 class KOmegaSSTModelConstants(Flow360BaseModel):
@@ -183,6 +192,14 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
     C_DES2: NonNegativeFloat = pd.Field(0.61)
     C_d1: NonNegativeFloat = pd.Field(20.0)
     C_d2: NonNegativeFloat = pd.Field(3.0)
+    C_sigma_k1: NonNegativeFloat = pd.Field(0.85)
+    C_sigma_k2: NonNegativeFloat = pd.Field(1.0)
+    C_sigma_omega1: NonNegativeFloat = pd.Field(0.5)
+    C_sigma_omega2: NonNegativeFloat = pd.Field(0.856)
+    C_alpha1: NonNegativeFloat = pd.Field(0.31)
+    C_beta1: NonNegativeFloat = pd.Field(0.075)
+    C_beta2: NonNegativeFloat = pd.Field(0.0828)
+    C_beta_star: NonNegativeFloat = pd.Field(0.09)
 
 
 TurbulenceModelConstants = Annotated[

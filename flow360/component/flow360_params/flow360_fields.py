@@ -65,6 +65,8 @@ SurfaceFieldNamesFull = Literal[
     "Spalart-Allmaras variable",
     "Non-dimensional wall distance",
     "Wall function metrics",
+    "Surface heat transfer coefficient (static temperature as reference)",
+    "Surface heat transfer coefficient (total temperature as reference)",
 ]
 
 SurfaceFieldNames = Literal[
@@ -76,17 +78,21 @@ SurfaceFieldNames = Literal[
     "nodeForcesPerUnitArea",
     "yPlus",
     "wallFunctionMetric",
+    "heatTransferCoefficientStaticTemperature",
+    "heatTransferCoefficientTotalTemperature",
 ]
 
 VolumeFieldNamesFull = Literal[
     CommonFieldNamesFull,
     "BET Metrics",
     "BET Metrics per Disk",
+    "Coefficient of total pressure",
     "linear residual of Navier-Stokes solver",
     "linear residual of turbulence solver",
     "linear residual of transition solver",
     "DDES output for Spalart-Allmaras solver",
     "DDES output for kOmegaSST solver",
+    "Local CFL number",
 ]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
@@ -95,17 +101,18 @@ VolumeFieldNames = Literal[
     CommonFieldNames,
     "betMetrics",
     "betMetricsPerDisk",
+    "Cpt",
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
     "SpalartAllmaras_DDES",
     "kOmegaSST_DDES",
+    "localCFL",
 ]
 
 SliceFieldNames = VolumeFieldNames
 
 IsoSurfaceFieldNamesFull = Literal[
-    CommonFieldNamesFull,
     "Pressure",
     "Density",
     "Mach number",
@@ -118,7 +125,6 @@ IsoSurfaceFieldNamesFull = Literal[
 ]
 
 IsoSurfaceFieldNames = Literal[
-    CommonFieldNames,
     "p",
     "rho",
     "Mach",

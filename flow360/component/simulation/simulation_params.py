@@ -13,8 +13,8 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _set_boundary_full_name_with_zone_name,
+    _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
-    _update_zone_name_in_surface_with_metadata,
     register_entity_list,
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -28,7 +28,11 @@ from flow360.component.simulation.operating_condition.operating_condition import
     OperatingConditionTypes,
 )
 from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
-from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.primitives import (
+    ReferenceGeometry,
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     UnitSystem,
@@ -41,6 +45,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_numerical_dissipation_factor_output,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -111,7 +116,7 @@ class _ParamModelBase(Flow360BaseModel):
         Initializes the simulation parameters with the given unit context.
         """
         kwargs = self._init_check_unit_system(**kwargs)
-        super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+        super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
@@ -242,6 +247,12 @@ class SimulationParams(_ParamModelBase):
         """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
         return _check_consistency_ddes_volume_output(v)
 
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_numerical_dissipation_factor_output(cls, v):
+        """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
+        return _check_numerical_dissipation_factor_output(v)
+
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
@@ -288,15 +299,16 @@ class SimulationParams(_ParamModelBase):
         return registry
 
     ##:: Internal Util functions
-    def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
+    def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
         """
-        Update the zone info from volume mesh.
+        Update the zone info from the actual volume mesh before solver execution.
         Will be executed in the casePipeline as part of preprocessing.
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
         used_entity_registry = self._get_used_entity_registry()
-        _update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
+        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
+        _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self

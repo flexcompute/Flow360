@@ -1,36 +1,39 @@
 {
     "boundaries": {
         "1": {
-            "type": "SlipWall"
+            "type": "NoSlipWall"
         },
         "2": {
             "type": "SlipWall"
         },
         "3": {
-            "totalPressureRatio": 1.0282799999999999,
-            "totalTemperatureRatio": 1.008,
-            "type": "SubsonicInflow"
-        },
-        "4": {
-            "staticPressureRatio": 1.0,
-            "type": "SubsonicOutflowPressure"
-        },
-        "5": {
-            "type": "SymmetryPlane"
-        },
-        "6": {
-            "type": "NoSlipWall"
-        },
-        "7": {
-            "type": "SlipWall"
+            "type": "Freestream",
+            "velocity": [
+                "123",
+                "12",
+                "x*y-z"
+            ]
         }
     },
     "freestream": {
-        "Mach": 0.19999999999999998,
-        "Temperature": -1,
-        "alphaAngle": 0,
-        "betaAngle": 0,
-        "muRef": 3.999996580105659e-08
+        "Mach": 0.84,
+        "muRef": 5.326121165140212e-08,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
+    },
+    "geometry": {
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            0.801672958512342,
+            0.801672958512342,
+            0.801672958512342
+        ],
+        "refArea": 1.1529999999999987
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -40,16 +43,45 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 25
         },
-        "lowMachPreconditioner": true,
-        "lowMachPreconditionerThreshold": 0.19999999999999998,
+        "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "Compressible",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "sliceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "outputFormat": "tecplot",
+        "outputFields": [],
+        "slices": {
+            "sliceName_1": {
+                "outputFields": [
+                    "primitiveVars",
+                    "vorticity",
+                    "T",
+                    "s",
+                    "Cp",
+                    "mut",
+                    "mutRatio",
+                    "Mach"
+                ],
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.0,
+                    0.7000000000000001,
+                    0.0
+                ]
+            }
+        }
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -61,39 +93,19 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "1": {
+            "3": {
                 "outputFields": [
-                    "Cf"
+                    "nuHat"
                 ]
             },
             "2": {
                 "outputFields": [
-                    "Cf"
+                    "nuHat"
                 ]
             },
-            "3": {
+            "1": {
                 "outputFields": [
-                    "Cf"
-                ]
-            },
-            "4": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "5": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "6": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "7": {
-                "outputFields": [
-                    "Cf"
+                    "nuHat"
                 ]
             }
         },
@@ -101,56 +113,15 @@
     },
     "timeStepping": {
         "CFL": {
-            "final": 100.0,
-            "initial": 1.0,
-            "rampSteps": 200,
+            "final": 200.0,
+            "initial": 5.0,
+            "rampSteps": 40,
             "type": "ramp"
         },
-        "maxPseudoSteps": 20000,
+        "maxPseudoSteps": 2000,
         "orderOfAccuracy": 2,
         "physicalSteps": 1,
         "timeStepSize": "inf"
-    },
-    "transitionModelSolver": {
-        "CFLMultiplier": 2.0,
-        "Ncrit": 10.347915213822596,
-        "absoluteTolerance": 1e-08,
-        "equationEvalFrequency": 1,
-        "linearSolver": {
-            "maxIterations": 50
-        },
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "AmplificationFactorTransport",
-        "orderOfAccuracy": 2,
-        "reconstructionGradientLimiter": 1.0,
-        "relativeTolerance": 0.0,
-        "tripRegions": [
-            {
-                "axes": [
-                    [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    [
-                        0.0,
-                        1.0,
-                        0.0
-                    ]
-                ],
-                "center": [
-                    0.25,
-                    -0.5,
-                    0.0251
-                ],
-                "size": [
-                    0.05,
-                    1.0,
-                    0.05
-                ]
-            }
-        ],
-        "updateJacobianFrequency": 1
     },
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,
@@ -159,7 +130,7 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 15
         },
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
@@ -192,10 +163,8 @@
         "outputFields": [
             "primitiveVars",
             "residualNavierStokes",
-            "vorticity",
-            "solutionTurbulence",
-            "mutRatio",
-            "solutionTransition"
+            "residualTurbulence",
+            "Mach"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1

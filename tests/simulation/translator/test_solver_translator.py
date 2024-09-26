@@ -169,6 +169,22 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
     )
 
 
+def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[3].velocity = (01.0, 10.0, 0.0) * u.m / u.s
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_FS_with_vel.json",
+    )
+    params.models[3].velocity = ["123", "12", "x*y-z"]
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_FS_with_vel_expression.json",
+    )
+
+
 ##::  Test with local test cases
 def test_xv15_bet_disk(
     create_steady_hover_param,

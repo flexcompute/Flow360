@@ -493,5 +493,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         Expand and overwrite self.stored_entities in preparation for submissin/serialization.
         Should only be called as late as possible to incoperate all possible changes.
         """
-        self.stored_entities = self._get_expanded_entities(supplied_registry)
+        self.stored_entities = self._get_expanded_entities(
+            supplied_registry, create_hard_copy=False
+        )
         return super().preprocess(self, **kwargs)

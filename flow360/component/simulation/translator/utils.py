@@ -9,7 +9,10 @@ from typing import Union
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.primitives import _SurfaceEntityBase
+from flow360.component.simulation.primitives import (
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
@@ -206,7 +209,7 @@ def update_dict_recursively(a: dict, b: dict):
 
 
 def _get_key_name(entity: EntityBase):
-    if isinstance(entity, _SurfaceEntityBase):
+    if isinstance(entity, (_SurfaceEntityBase, _VolumeEntityBase)):
         # Note: If the entity is a Surface/Boundary, we need to use the full name
         return entity.full_name
 
@@ -224,6 +227,7 @@ def translate_setting_and_apply_to_all_entities(
     custom_output_dict_entries=False,
     lump_list_of_entities=False,
     use_instance_name_as_key=False,
+    use_sub_item_as_key=False,
     **kwargs,
 ):
     """Translate settings and apply them to all entities of a given type.
@@ -263,7 +267,10 @@ def translate_setting_and_apply_to_all_entities(
 
             list_of_entities = []
             if "entities" in obj.model_fields:
-                if obj.entities is None:
+                if obj.entities is None or (
+                    "stored_entities" in obj.entities.model_fields
+                    and obj.entities.stored_entities is None
+                ):  # unique item list does not allow None "items" for now.
                     continue
                 if isinstance(obj.entities, EntityList):
                     list_of_entities = (
@@ -299,14 +306,25 @@ def translate_setting_and_apply_to_all_entities(
                                 "[Internal Error]: use_instance_name_as_key cannot be used"
                                 " when lump_list_of_entities is True"
                             )
-                        key_name = (
-                            _get_key_name(entity) if use_instance_name_as_key is False else obj.name
-                        )
-                        if output.get(key_name) is None:
-                            output[key_name] = entity_injection_func(
-                                entity, **entity_injection_kwargs
-                            )
-                        update_dict_recursively(output[key_name], translated_setting)
+                        if use_sub_item_as_key is True:
+                            # pylint: disable=fixme
+                            # TODO: Make sure when use_sub_item_as_key is True
+                            # TODO: the entity has private_attribute_sub_components
+                            key_names = entity.private_attribute_sub_components
+                        else:
+                            key_names = [
+                                (
+                                    _get_key_name(entity)
+                                    if use_instance_name_as_key is False
+                                    else obj.name
+                                )
+                            ]
+                        for key_name in key_names:
+                            if output.get(key_name) is None:
+                                output[key_name] = entity_injection_func(
+                                    entity, **entity_injection_kwargs
+                                )
+                            update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
                     # Note: Surface/Boundary logic should be handeled in the entity_injection_func

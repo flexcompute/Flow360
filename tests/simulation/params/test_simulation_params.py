@@ -4,7 +4,10 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.material import SolidMaterial
 from flow360.component.simulation.models.surface_models import (
@@ -38,7 +41,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import CGS_unit_system
+from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -80,7 +83,7 @@ def get_the_param():
             meshing=MeshingParams(
                 refinement_factor=1.0,
                 gap_treatment_strength=0.5,
-                surface_layer_growth_rate=1.5,
+                defaults=MeshingDefaults(surface_edge_growth_rate=1.5),
                 refinements=[UniformRefinement(entities=[my_box], spacing=0.1 * u.m)],
             ),
             reference_geometry=ReferenceGeometry(
@@ -247,3 +250,22 @@ def test_standard_atmosphere():
         assert atm.density == pytest.approx(density, rel=1e-4)
         assert atm.pressure == pytest.approx(pressure, rel=1e-4)
         assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
+
+
+def test_subsequent_param_with_different_unit_system(get_the_param):
+    with SI_unit_system:
+        param_SI = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=0.2)
+            )
+        )
+    with CGS_unit_system:
+        param_CGS = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=0.3)
+            )
+        )
+    assert param_SI.unit_system.name == "SI"
+    assert param_SI.meshing.defaults.boundary_layer_first_layer_thickness == 0.2 * u.m
+    assert param_CGS.unit_system.name == "CGS"
+    assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm

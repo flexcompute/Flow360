@@ -34,6 +34,14 @@ def volume_output_with_kOmega_DDES():
 
 
 @pytest.fixture()
+def surface_output_with_numerical_dissipation():
+    surface_output = SurfaceOutput(
+        name="surface", write_single_file=True, output_fields=["numericalDissipationFactor"]
+    )
+    return surface_output
+
+
+@pytest.fixture()
 def wall_model_with_function():
     wall_model = Wall(name="wall", surfaces=[Surface(name="noSlipWall")], use_wall_function=True)
     return wall_model
@@ -53,7 +61,14 @@ def fluid_model_with_DDES():
 
 
 @pytest.fixture()
-def fluid_model_without_DDES():
+def fluid_model_with_low_numerical_dissipation():
+    fluid_model = Fluid()
+    fluid_model.navier_stokes_solver.numerical_dissipation_factor = 0.2
+    return fluid_model
+
+
+@pytest.fixture()
+def fluid_model():
     fluid_model = Fluid()
     return fluid_model
 
@@ -82,7 +97,7 @@ def test_ddes_wall_function_validator(
     volume_output_with_SA_DDES,
     volume_output_with_kOmega_DDES,
     fluid_model_with_DDES,
-    fluid_model_without_DDES,
+    fluid_model,
 ):
     # Valid simulation params
     with SI_unit_system:
@@ -98,4 +113,29 @@ def test_ddes_wall_function_validator(
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES]
+        )
+
+
+def test_numerical_dissipation_mode_validator(
+    surface_output_with_numerical_dissipation,
+    fluid_model_with_low_numerical_dissipation,
+    fluid_model,
+):
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_low_numerical_dissipation],
+            outputs=[surface_output_with_numerical_dissipation],
+        )
+
+    assert params
+
+    message = (
+        "Numerical dissipation factor output requested, but low dissipation mode is not enabled"
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model], outputs=[surface_output_with_numerical_dissipation]
         )

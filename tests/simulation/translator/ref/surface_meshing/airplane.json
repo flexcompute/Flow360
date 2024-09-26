@@ -1,28 +1,68 @@
 {
-    "maxEdgeLength": 1.0,
-    "faces": {
-        "Inner_Wing": {
-            "maxEdgeLength": 1.5
-        },
-        "Stab_mirrored": {
-            "maxEdgeLength": 0.5
-        },
-        "Outer_Wing_mirrored": {
-            "maxEdgeLength": 0.7
-        },
-        "Stab": {
-            "maxEdgeLength": 0.5
-        },
-        "Fin": {
-            "maxEdgeLength": 0.5
-        },
-        "Outer_Wing": {
-            "maxEdgeLength": 0.7
-        },
-        "Inner_Wing_mirrored": {
-            "maxEdgeLength": 1.5
-        }
+  "faces": {
+    "body01_face001": {
+      "maxEdgeLength": 1.5
     },
-    "curvatureResolutionAngle": 15.0,
-    "growthRate": 1.2
+    "body01_face002": {
+      "maxEdgeLength": 1.5
+    },
+    "body01_face003": {
+      "maxEdgeLength": 1.5
+    },
+    "body01_face004": {
+      "maxEdgeLength": 1.5
+    },
+    "body01_face005": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "body01_face006": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "body01_face007": {
+      "maxEdgeLength": 0.7000000000000001
+    },
+    "body01_face008": {
+      "maxEdgeLength": 0.5
+    },
+    "body01_face009": {
+      "maxEdgeLength": 0.5
+    },
+    "body01_face010": {
+      "maxEdgeLength": 0.5
+    }
+  },
+  "curvatureResolutionAngle": 15.0,
+  "growthRate": 1.2,
+  "boundaries": {
+    "body01_face001": {
+      "boundaryName": "Wing"
+    },
+    "body01_face002": {
+      "boundaryName": "Wing"
+    },
+    "body01_face004": {
+      "boundaryName": "Wing"
+    },
+    "body01_face003": {
+      "boundaryName": "Wing"
+    },
+    "body01_face006": {
+      "boundaryName": "Fuselage"
+    },
+    "body01_face005": {
+      "boundaryName": "Fuselage"
+    },
+    "body01_face007": {
+      "boundaryName": "Fuselage"
+    },
+    "body01_face009": {
+      "boundaryName": "Stab"
+    },
+    "body01_face008": {
+      "boundaryName": "Stab"
+    },
+    "body01_face010": {
+      "boundaryName": "Fin"
+    }
+  }
 }

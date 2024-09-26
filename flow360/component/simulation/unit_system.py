@@ -116,16 +116,6 @@ class UnitSystemManager:
 
         return self._current
 
-    def copy_current(self):
-        """
-        Get a copy of the current UnitSystem.
-        :return: UnitSystem
-        """
-        if self._current:
-            copy = self._current.model_copy(deep=True)
-            return copy
-        return None
-
     def set_current(self, unit_system: UnitSystem):
         """
         Set the current UnitSystem.

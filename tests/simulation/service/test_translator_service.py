@@ -1,10 +1,17 @@
+import time
 from copy import deepcopy
 
 import pytest
 
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
+)
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
@@ -17,23 +24,21 @@ from flow360.component.simulation.services import (
     simulation_to_case_json,
     simulation_to_surface_meshing_json,
     simulation_to_volume_meshing_json,
+    validate_model,
 )
-from flow360.component.simulation.simulation_params import (
-    MeshingParams,
-    SimulationParams,
-)
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, u
 
 
 def test_simulation_to_surface_meshing_json():
     param_data = {
         "meshing": {
+            "defaults": {
+                "curvature_resolution_angle": {"units": "degree", "value": 10.0},
+                "surface_max_edge_length": {"units": "cm", "value": 15.0},
+                "surface_edge_growth_rate": 1.07,
+            },
             "refinements": [
-                {
-                    "curvature_resolution_angle": {"units": "degree", "value": 10.0},
-                    "max_edge_length": {"units": "cm", "value": 15.0},
-                    "refinement_type": "SurfaceRefinement",
-                },
                 {
                     "entities": {
                         "stored_entities": [
@@ -52,25 +57,28 @@ def test_simulation_to_surface_meshing_json():
                     "refinement_type": "SurfaceEdgeRefinement",
                 },
             ],
-            "surface_layer_growth_rate": 1.07,
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x"],
+                "face_group_tag": "not_used",
+                "face_attribute_names": ["not_used"],
+            }
+        },
     }
 
-    simulation_to_surface_meshing_json(
-        param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
-
-    bad_param_data = deepcopy(param_data)
-    bad_param_data["meshing"]["refinements"][0]["max_edge_length"]["value"] = -12.0
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_surface_meshing_json(
-            bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-        )
+    start_time = time.time()
+    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time} seconds")
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_surface_meshing_json(param_data, "Geometry", "SI", None)
+        simulation_to_surface_meshing_json(param_data, None)
 
     # TODO:  This needs more consideration. Is it allowed/possible to translate into an empty dict?
     # with pytest.raises(
@@ -91,6 +99,10 @@ def test_simulation_to_volume_meshing_json():
     param_data = {
         "meshing": {
             "refinement_factor": 1.45,
+            "defaults": {
+                "boundary_layer_first_layer_thickness": {"units": "m", "value": 1.35e-06},
+                "boundary_layer_growth_rate": 1.04,
+            },
             "refinements": [
                 {
                     "entities": {
@@ -167,12 +179,6 @@ def test_simulation_to_volume_meshing_json():
                     "refinement_type": "UniformRefinement",
                     "spacing": {"units": "mm", "value": 300.0},
                 },
-                {
-                    "first_layer_thickness": {"units": "m", "value": 1.35e-06},
-                    "growth_rate": 1.04,
-                    "refinement_type": "BoundaryLayer",
-                    "type": "aniso",
-                },
             ],
             "volume_zones": [
                 {
@@ -191,20 +197,13 @@ def test_simulation_to_volume_meshing_json():
         "version": "24.2.0",
     }
 
-    sm_json, hash = simulation_to_volume_meshing_json(
-        param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    params, _, _ = validate_model(param_data, "SI", "Geometry")
+
+    sm_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
     assert sm_json["farfield"]["type"] == "auto"
 
-    bad_param_data = deepcopy(param_data)
-    bad_param_data["meshing"]["refinements"][0]["spacing"]["value"] = -12.0
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_volume_meshing_json(
-            bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-        )
-
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_volume_meshing_json(param_data, "Geometry", "SI", None)
+        simulation_to_volume_meshing_json(params, None)
 
 
 def test_simulation_to_case_json():
@@ -390,28 +389,24 @@ def test_simulation_to_case_json():
         "version": "24.2.0",
     }
 
-    simulation_to_case_json(param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+    params, _, _ = validate_model(param_data, "SI", "Geometry")
 
-    bad_param_data = deepcopy(param_data)
-    bad_param_data["reference_geometry"]["area"]["value"] = -12.0
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        simulation_to_case_json(bad_param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"})
+    simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
-        simulation_to_case_json(param_data, "Geometry", "SI", None)
+        simulation_to_case_json(param_data, None)
 
 
 def test_simulation_to_all_translation():
     with SI_unit_system:
         meshing = MeshingParams(
-            surface_layer_growth_rate=1.5,
-            refinements=[
-                BoundaryLayer(first_layer_thickness=0.001),
-                SurfaceRefinement(
-                    max_edge_length=15 * u.cm,
-                    curvature_resolution_angle=10 * u.deg,
-                ),
-            ],
+            defaults=MeshingDefaults(
+                surface_edge_growth_rate=1.5,
+                boundary_layer_first_layer_thickness=0.001,
+                curvature_resolution_angle=10 * u.deg,
+                surface_max_edge_length=15 * u.cm,
+            ),
+            refinements=[],
             volume_zones=[AutomatedFarfield()],
         )
         param = SimulationParams(
@@ -428,20 +423,20 @@ def test_simulation_to_all_translation():
                 ),
                 Freestream(entities=[Surface(name="farfield")]),
             ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=GeometryEntityInfo(
+                    face_group_tag="not_used",
+                    face_ids=["face_x"],
+                    face_attribute_names=["not_used"],
+                )
+            ),
         )
 
-    params_as_dict = param.model_dump()
-    surface_json, hash = simulation_to_surface_meshing_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    surface_json, hash = simulation_to_surface_meshing_json(param, {"value": 100.0, "units": "cm"})
     print(surface_json)
-    volume_json, hash = simulation_to_volume_meshing_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    volume_json, hash = simulation_to_volume_meshing_json(param, {"value": 100.0, "units": "cm"})
     print(volume_json)
-    case_json, hash = simulation_to_case_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    case_json, hash = simulation_to_case_json(param, {"value": 100.0, "units": "cm"})
     print(case_json)
 
 
@@ -458,14 +453,14 @@ def test_simulation_to_case_vm_workflow():
         "version": "24.2.0",
     }
 
+    params, _, _ = validate_model(param_data, "SI", "Geometry")
+
     with pytest.raises(ValueError):
-        case_json, hash = simulation_to_case_json(
-            param_data, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-        )
+        case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
-    case_json, hash = simulation_to_case_json(
-        param_data, "VolumeMesh", "SI", {"value": 100.0, "units": "cm"}
-    )
+
+    params, _, _ = validate_model(param_data, "SI", "VolumeMesh")
+    case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
 
 
@@ -473,24 +468,14 @@ def test_simulation_to_all_translation_2():
     params_as_dict = {
         "meshing": {
             "refinement_factor": 1,
-            "gap_treatment_strength": None,
-            "surface_layer_growth_rate": 1.2,
-            "refinements": [
-                {
-                    "name": "Boundary layer refinement_0",
-                    "refinement_type": "BoundaryLayer",
-                    "_id": "63ed1bfe-1b1b-4092-bb9d-915da0b6c092",
-                    "first_layer_thickness": {"value": 0.001, "units": "m"},
-                    "growth_rate": 1.2,
-                },
-                {
-                    "name": "Surface refinement_1",
-                    "refinement_type": "SurfaceRefinement",
-                    "_id": "2d95e85c-d91b-4842-96a7-444794193956",
-                    "max_edge_length": {"value": 0.15, "units": "m"},
-                    "curvature_resolution_angle": {"value": 10, "units": "degree"},
-                },
-            ],
+            "defaults": {
+                "surface_edge_growth_rate": 1.2,
+                "boundary_layer_first_layer_thickness": {"value": 0.001, "units": "m"},
+                "boundary_layer_growth_rate": 1.2,
+                "curvature_resolution_angle": {"value": 10, "units": "degree"},
+                "surface_max_edge_length": {"value": 0.15, "units": "m"},
+            },
+            "refinements": [],
             "volume_zones": [
                 {
                     "method": "auto",
@@ -516,17 +501,21 @@ def test_simulation_to_all_translation_2():
             "area": {"value": 1, "units": "m**2"},
         },
         "models": [],
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x"],
+                "face_group_tag": "not_used",
+                "face_attribute_names": ["not_used"],
+            }
+        },
     }
 
-    surface_json, hash = simulation_to_surface_meshing_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    params, _, _ = validate_model(params_as_dict, "SI", "Geometry")
+
+    surface_json, hash = simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     print(surface_json)
-    volume_json, hash = simulation_to_volume_meshing_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    volume_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
     print(volume_json)
-    case_json, hash = simulation_to_case_json(
-        params_as_dict, "Geometry", "SI", {"value": 100.0, "units": "cm"}
-    )
+    case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
