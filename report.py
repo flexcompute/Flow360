@@ -1,10 +1,10 @@
 import random
 import matplotlib.pyplot as plt
 
-from pydantic import BaseModel, model_validator, field_validator
+from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, PageStyle, MiniPage, SubFigure
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, PageStyle, SubFigure
 from pylatex.utils import bold
 
 from flow360 import Case
@@ -76,7 +76,7 @@ class ReportItem(BaseModel):
 
     boundaries: Union[Literal['ALL'], List[str]] = 'ALL'
 
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
         with doc.create(section_func(self.__class__.__name__)):
             doc.append(f"this is {self.__class__.__name__}")
 
@@ -110,7 +110,7 @@ class Report(BaseModel):
         doc.change_document_style("header")
     
         for item in self.items:
-            item.get_doc_node(cases, doc)
+            item.get_doc_item(cases, doc, case_by_case=self.include_case_by_case)
 
         if self.include_case_by_case is True:
 
@@ -118,7 +118,8 @@ class Report(BaseModel):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
                         for item in self.items:
-                            item.get_doc_node([case], doc, Subsection)
+                            item.get_doc_item([case], doc, Subsection, self.include_case_by_case)
+
 
         # Generate the PDF
         doc.generate_pdf(filename, clean_tex=False)
@@ -127,7 +128,7 @@ class Report(BaseModel):
 class Summary(ReportItem):
     text: str
 
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
         with doc.create(section_func("Summary")):
             doc.append(f"{self.text}\n")
             for case in cases:
@@ -138,7 +139,7 @@ class Inputs(ReportItem):
     """
     Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
     """
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
         Table(data_path=[
                 "params_as_dict/version",
                 "params_as_dict/timeStepping/orderOfAccuracy",
@@ -154,7 +155,7 @@ class Inputs(ReportItem):
                 "CustomField 1",
                 "CustomField 3",
             ]
-        ).get_doc_node(cases, doc, section_func)
+        ).get_doc_item(cases, doc, section_func, case_by_case)
 
 
 class Delta(BaseModel):
@@ -195,38 +196,41 @@ class Table(ReportItem):
                                  f"{len(self.custom_headings)} instead of {len(self.data_path)}")
 
 
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
         
-        with doc.create(section_func(self.section_title)):
-            with doc.create(Tabular('|c' * (len(self.data_path) + 1) + '|')) as table:
+        if self.section_title is not None:
+            section = section_func(self.section_title)
+            doc.append(section)
+        
+        with doc.create(Tabular('|c' * (len(self.data_path) + 1) + '|')) as table:
+            table.add_hline()
+
+            # Manage column headings
+            field_titles = [bold("Case No.")]
+            if self.custom_headings is None:
+                for path in self.data_path:
+                    if isinstance(path, Delta):
+                        field = path.__str__()
+                    else:
+                        field = path.split("/")[-1]
+
+                    field_titles.append(bold(str(field)))
+            else:
+                field_titles.extend(self.custom_headings)
+
+            table.add_row(field_titles)
+            table.add_hline()
+            for idx, case in enumerate(cases):
+                row_list = [data_from_path(case, path, cases) for path in self.data_path]
+                # row_list = [getattr(case.results, loc).values[field] for loc, field in zip(self.data_loc, self.field)]
+                row_list.insert(0, str(idx + 1))
+                table.add_row(row_list)
                 table.add_hline()
-
-                # Manage column headings
-                field_titles = [bold("Case No.")]
-                if self.custom_headings is None:
-                    for path in self.data_path:
-                        if isinstance(path, Delta):
-                            field = path.__str__()
-                        else:
-                            field = path.split("/")[-1]
-
-                        field_titles.append(bold(str(field)))
-                else:
-                    field_titles.extend(self.custom_headings)
-
-                table.add_row(field_titles)
-                table.add_hline()
-                for idx, case in enumerate(cases):
-                    row_list = [data_from_path(case, path, cases) for path in self.data_path]
-                    # row_list = [getattr(case.results, loc).values[field] for loc, field in zip(self.data_loc, self.field)]
-                    row_list.insert(0, str(idx + 1))
-                    table.add_row(row_list)
-                    table.add_hline()
 
 
 class Chart2D(ReportItem):
     data_path: list[Union[str, Delta]]
-    section_title: str
+    section_title: Union[str, None]
     fig_name: str
     background: Union[Literal["geometry"], None]
     select_case_ids: list[str] = None
@@ -248,78 +252,82 @@ class Chart2D(ReportItem):
         if not self.single_plot:
             plt.close()
 
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False):
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
             if self.items_in_row > len(cases):
                 self.items_in_row = len(cases)
         
-        with doc.create(section_func(self.section_title)):
-            x_lab = self.data_path[0].split("/")[-1]
-            y_lab = self.data_path[1].split("/")[-1]
+        if self.section_title is not None:
+            section = section_func(self.section_title)
+            doc.append(section)
 
-            figure_list = []
-            for case in cases:
-                # Skip Cases the user hasn't selected
-                if self.select_case_ids is not None:
-                    if case.id not in self.select_case_ids:
-                        continue
-                
-                # Extract data from the Case
-                x_data = data_from_path(case, self.data_path[0], cases)
-                y_data = data_from_path(case, self.data_path[1], cases)
+        x_lab = self.data_path[0].split("/")[-1]
+        y_lab = self.data_path[1].split("/")[-1]
 
-                # Create the figure using basic matplotlib
-                save_name = self.fig_name + case.name + ".png"
-                self._create_fig(x_data, y_data, x_lab, y_lab, save_name)
-
-                # Allow for handling the figures later inside a subfig
-                if self.items_in_row is not None:
-                    figure_list.append(save_name)
-
-                elif self.single_plot:
+        figure_list = []
+        for case in cases:
+            # Skip Cases the user hasn't selected
+            if self.select_case_ids is not None:
+                if case.id not in self.select_case_ids:
                     continue
+            
+            # Extract data from the Case
+            x_data = data_from_path(case, self.data_path[0], cases)
+            y_data = data_from_path(case, self.data_path[1], cases)
 
-                else:
-                    fig = Figure(position="h!")
-                    fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
-                    fig.add_caption(f'{x_lab} against {y_lab} for {case.name}.')
-                    figure_list.append(fig)
+            # Create the figure using basic matplotlib
+            cbc_str = "_cbc_" if case_by_case else ""
+            save_name = self.fig_name + cbc_str + case.name + ".png"
+            self._create_fig(x_data, y_data, x_lab, y_lab, save_name)
 
+            # Allow for handling the figures later inside a subfig
             if self.items_in_row is not None:
-                minipage_size = 0.98 / self.items_in_row # Smaller than 1 to avoid overflowing
-                main_fig = Figure(position="h!")
-                
-                # Build list of indices to combine into rows
-                indices = list(range(len(figure_list)))
-                idx_list = [indices[i:i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)]
-                for row_idx in idx_list:
-                    for idx in row_idx:
-                        sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
-                        sub_fig.add_image(filename=figure_list[idx], width=NoEscape(fr"\textwidth"))
-
-                        # Stop caption for single subfigures - happens when include_case_by_case
-                        if self.items_in_row != 1:
-                            sub_fig.add_caption(idx)
-
-                        main_fig.append(sub_fig)
-                        
-                        main_fig.append(NoEscape(r'\hfill'))
-
-                    main_fig.append(NoEscape(r'\\'))
-
-                doc.append(main_fig)
-                main_fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+                figure_list.append(save_name)
 
             elif self.single_plot:
-                # Takes advantage of plot cached by matplotlib and that the last save_name is the full plot
+                continue
+
+            else:
                 fig = Figure(position="h!")
                 fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
-                fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+                fig.add_caption(f'{x_lab} against {y_lab} for {case.name}.')
+                figure_list.append(fig)
+
+        if self.items_in_row is not None:
+            minipage_size = 0.98 / self.items_in_row # Smaller than 1 to avoid overflowing
+            main_fig = Figure(position="h!")
+            
+            # Build list of indices to combine into rows
+            indices = list(range(len(figure_list)))
+            idx_list = [indices[i:i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)]
+            for row_idx in idx_list:
+                for idx in row_idx:
+                    sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
+                    sub_fig.add_image(filename=figure_list[idx], width=NoEscape(fr"\textwidth"))
+
+                    # Stop caption for single subfigures - happens when include_case_by_case
+                    if self.items_in_row != 1:
+                        sub_fig.add_caption(idx)
+
+                    main_fig.append(sub_fig)
+                    
+                    main_fig.append(NoEscape(r'\hfill'))
+
+                main_fig.append(NoEscape(r'\\'))
+
+            doc.append(main_fig)
+            main_fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+
+        elif self.single_plot:
+            # Takes advantage of plot cached by matplotlib and that the last save_name is the full plot
+            fig = Figure(position="h!")
+            fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
+            fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+            doc.append(fig)
+        else:
+            for fig in figure_list:
                 doc.append(fig)
-            else:
-                for fig in figure_list:
-                   doc.append(fig)
 
         # Stops figures floating away from their sections
         doc.append(NoEscape(r'\FloatBarrier'))
@@ -333,18 +341,18 @@ class Chart3D(ReportItem):
     camera: List[float]
     limits: List[float]
 
-    def _get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+    def _get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
         with doc.create(Figure(position='H')) as fig:
             for case in cases:
                 fig.add_image(case.results.get_chart3D(self.field, self.camera, self.limits), width=NoEscape(r'0.5\textwidth'))
                 fig.add_caption(f'Image case: {case.name}, for boundaries: {self.boundaries}')
 
-    def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, create_title: bool = True):
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, create_title: bool = True):
         if create_title:
             with doc.create(section_func(self.__class__.__name__)):
-                self._get_doc_node(cases, doc, section_func)
+                self._get_doc_item(cases, doc, section_func)
         else:
-            self._get_doc_node(cases, doc, section_func)
+            self._get_doc_item(cases, doc, section_func)
 
 
 class Group(ReportItem):
@@ -352,10 +360,10 @@ class Group(ReportItem):
     layout: Literal["vertical", "horizontal"]
     item: Union[Chart2D, Chart3D]
 
-    def get_doc_node(self, cases: List[Case], doc: Document):
+    def get_doc_item(self, cases: List[Case], doc: Document):
         with doc.create(Section(f"{self.__class__.__name__}: {self.title}")):
             for case in cases:
-                self.item.get_doc_node([case], doc, create_title=False)
+                self.item.get_doc_item([case], doc, create_title=False)
 
 if __name__ == "__main__":
     # Answered Questions:
@@ -373,6 +381,7 @@ if __name__ == "__main__":
     # Group may be redundant. What if Chart2D can tesselate any X by Y arrangement with something like a draw_rows=2 arg?
     # # Could change doc.create(Section) in favour of saving to variable that is passed along
     # # Subsequent report items can take the previous section variable and not build a new section if an old one is supplied
+    # Would basic Text and Image classes be useful to include for users customising reporting?
 
     # To Do
     # Need to improve data_loc/field system. Need something that makes it easy to get into nested data
@@ -411,16 +420,16 @@ if __name__ == "__main__":
                 select_case_ids=[a2_case.id]
             ),
             Chart2D(
-                data_path=["total_forces/pseudo_step", "total_forces/CD"],
-                section_title="Global Coefficient of Drag (subfigure example)",
+                data_path=["total_forces/pseudo_step", "total_forces/CFy"],
+                section_title="Global Coefficient of Force in Y (subfigure and combined)",
                 fig_name="cd_fig",
                 background=None,
                 items_in_row=2
             ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/CFy"],
-                section_title="Coefficient of Force in Y Plane (combined figure)",
-                fig_name="cfy_fig",
+                section_title=None,
+                fig_name="cd_comb_fig",
                 background=None,
                 single_plot=True
             ),
