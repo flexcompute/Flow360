@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any, Iterator, List, Optional, Union
 
 import numpy as np
+import pydantic as pd_v2
 
 # This will be split into two files in a future commit...
 # For now we keep it to not mix new features with file
@@ -822,9 +823,9 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     VolumeMeshMetaV2 component
     """
 
-    project_id: str = pd.Field(alias="projectId")
-    deleted: bool = pd.Field()
-    status: VolumeMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
+    project_id: str = pd_v2.Field(alias="projectId")
+    deleted: bool = pd_v2.Field()
+    status: VolumeMeshStatusV2 = pd_v2.Field()  # Overshadowing to ensure correct is_final() method
 
 
 class VolumeMeshDraftV2(ResourceDraft):
