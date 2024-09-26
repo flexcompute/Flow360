@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from itertools import chain
-from typing import Any, List
 from copy import deepcopy
+from itertools import chain
 from typing import Any, List, Literal, get_origin
 
 import pydantic as pd
