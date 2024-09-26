@@ -109,16 +109,6 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
                 # We have hardcoded name for farfield zone.
                 pattern = r"stationaryBlock|fluid"
             match = re.search(pattern, zone_full_name)
-            print(
-                "entity_name: ",
-                entity_name,
-                " zone_full_name: ",
-                zone_full_name,
-                " match: ",
-                match,
-                " pattern: ",
-                pattern,
-            )
             if match is not None or entity_name == zone_full_name:
                 with _model_attribute_unlock(self, "private_attribute_full_name"):
                     self.private_attribute_full_name = zone_full_name

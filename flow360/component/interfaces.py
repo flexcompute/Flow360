@@ -32,6 +32,12 @@ VolumeMeshInterface = BaseInterface(
     endpoint="volumemeshes",
 )
 
+VolumeMeshInterfaceV2 = BaseInterface(
+    resource_type="Volume Mesh",
+    s3_transfer_method=S3TransferType.VOLUME_MESH,
+    endpoint="v2/volume-meshes",
+)
+
 CaseInterface = BaseInterface(
     resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="cases"
 )
