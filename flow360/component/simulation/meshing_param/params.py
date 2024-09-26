@@ -114,22 +114,6 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _finalize_automated_farfield(cls, v) -> Self:
-        if v is None:
-            # User did not put anything in volume_zones so may not want to use volume meshing
-            return v
-
-        has_rotating_zone = any(isinstance(volume_zone, RotationCylinder) for volume_zone in v)
-        # pylint: disable=expression-not-assigned, protected-access
-        [
-            volume_zone._set_up_zone_entity(has_rotating_zone)
-            for volume_zone in v
-            if isinstance(volume_zone, AutomatedFarfield)
-        ]
-        return v
-
-    @pd.field_validator("volume_zones", mode="after")
-    @classmethod
     def _check_volume_zones_has_farfied(cls, v):
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing
@@ -167,7 +151,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 for cylinder in [
                     item
-                    for item in volume_zone.entities._get_expanded_entities()
+                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                     if isinstance(item, Cylinder)
                 ]:
                     cylinder_name_to_usage_map[cylinder.name] = RotationCylinder.model_fields[
@@ -179,7 +163,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 for cylinder in [
                     item
-                    for item in refinement.entities._get_expanded_entities()
+                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
                     if isinstance(item, Cylinder)
                 ]:
                     cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type

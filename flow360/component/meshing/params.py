@@ -137,6 +137,58 @@ class Faces(Flow360SortableBaseModel):
         )
 
 
+class FaceInVolume(Flow360BaseModel):
+    """Face"""
+
+    type: Literal["aniso", "projectAnisoSpacing", "none"] = pd.Field()
+    first_layer_thickness: Optional[pd.PositiveFloat] = pd.Field(alias="firstLayerThickness")
+
+
+FaceInVolumeType = FaceInVolume
+
+
+class _GenericFaceInVolumeWrapper(Flow360BaseModel):
+    v: FaceInVolumeType
+
+
+class FacesInVolume(Flow360SortableBaseModel):
+    """:class:`FaceInVolumes` class for setting up Faces meshing constrains
+
+    Parameters
+    ----------
+    <face_name> : FaceInVolume
+        Supported face types: Face(first_layer_thickness=)
+
+    Returns
+    -------
+    :class:`FaceInVolumes`
+        An instance of the component class FaceInVolumes.
+
+    Example
+    -------
+    >>>
+    """
+
+    @classmethod
+    def get_subtypes(cls) -> list:
+        return [_GenericFaceInVolumeWrapper.__fields__["v"].type_]
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator(pre=True)
+    def validate_face(cls, values):
+        """Validator for face list section
+
+        Raises
+        ------
+        ValidationError
+            When face is incorrect
+        """
+
+        return _self_named_property_validator(
+            values, _GenericFaceInVolumeWrapper, msg="is not any of supported face types."
+        )
+
+
 class SurfaceMeshingParams(Flow360BaseModel):
     """
     Flow360 Surface Meshing parameters
@@ -203,7 +255,7 @@ class Farfield(Flow360BaseModel):
     Farfield type for meshing
     """
 
-    type: Literal["auto", "quasi-3d"] = pd.Field()
+    type: Literal["auto", "quasi-3d", "user-defined"] = pd.Field()
 
 
 class Volume(Flow360BaseModel):
@@ -258,6 +310,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     refinement: Optional[List[Union[BoxRefinement, CylinderRefinement]]] = pd.Field()
     rotor_disks: Optional[List[RotorDisk]] = pd.Field(alias="rotorDisks")
     sliding_interfaces: Optional[List[SlidingInterface]] = pd.Field(alias="slidingInterfaces")
+    faces: Optional[FacesInVolume] = pd.Field()
 
     if Flags.beta_features():
         version: Optional[Literal["v1", "v2"]] = pd.Field(alias="version", default="v1")

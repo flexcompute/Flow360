@@ -225,9 +225,7 @@ def validate_model(
 
 # pylint: disable=too-many-arguments
 def _translate_simulation_json(
-    params_as_dict,
-    root_item_type: Literal["Geometry", "VolumeMesh"],
-    unit_system_name,
+    input_params: SimulationParams,
     mesh_unit,
     target_name: str = None,
     translation_func=None,
@@ -237,17 +235,15 @@ def _translate_simulation_json(
 
     """
     translated_dict = None
-    # pylint: disable=unused-variable
-    param, errors, warnings = validate_model(params_as_dict, unit_system_name, root_item_type)
-    if errors is not None:
-        # pylint: disable=fixme
-        # TODO: Check if this looks good in terminal.
-        raise ValueError(errors)
     if mesh_unit is None:
         raise ValueError("Mesh unit is required for translation.")
+    if isinstance(input_params, SimulationParams) is False:
+        raise ValueError(
+            "input_params must be of type SimulationParams. Instead got: " + str(type(input_params))
+        )
 
     try:
-        translated_dict = translation_func(param, mesh_unit)
+        translated_dict = translation_func(input_params, mesh_unit)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
     except Exception as err:  # tranlsation itself is not supposed to raise any other exception
@@ -263,42 +259,30 @@ def _translate_simulation_json(
     return translated_dict, hash_value
 
 
-def simulation_to_surface_meshing_json(
-    params_as_dict, root_item_type: Literal["Geometry", "VolumeMesh"], unit_system_name, mesh_unit
-):
+def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit):
     """Get JSON for surface meshing from a given simulaiton JSON."""
     return _translate_simulation_json(
-        params_as_dict,
-        root_item_type,
-        unit_system_name,
+        input_params,
         mesh_unit,
         "surface meshing",
         get_surface_meshing_json,
     )
 
 
-def simulation_to_volume_meshing_json(
-    params_as_dict, root_item_type: Literal["Geometry", "VolumeMesh"], unit_system_name, mesh_unit
-):
+def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit):
     """Get JSON for volume meshing from a given simulaiton JSON."""
     return _translate_simulation_json(
-        params_as_dict,
-        root_item_type,
-        unit_system_name,
+        input_params,
         mesh_unit,
         "volume meshing",
         get_volume_meshing_json,
     )
 
 
-def simulation_to_case_json(
-    params_as_dict, root_item_type: Literal["Geometry", "VolumeMesh"], unit_system_name, mesh_unit
-):
+def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
     """Get JSON for case from a given simulaiton JSON."""
     return _translate_simulation_json(
-        params_as_dict,
-        root_item_type,
-        unit_system_name,
+        input_params,
         mesh_unit,
         "case",
         get_solver_json,
