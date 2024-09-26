@@ -109,16 +109,6 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
                 # We have hardcoded name for farfield zone.
                 pattern = r"stationaryBlock|fluid"
             match = re.search(pattern, zone_full_name)
-            print(
-                "entity_name: ",
-                entity_name,
-                " zone_full_name: ",
-                zone_full_name,
-                " match: ",
-                match,
-                " pattern: ",
-                pattern,
-            )
             if match is not None or entity_name == zone_full_name:
                 with _model_attribute_unlock(self, "private_attribute_full_name"):
                     self.private_attribute_full_name = zone_full_name
@@ -198,9 +188,6 @@ class GenericVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
-
-    # # Temporary measure until the "_id" field is deleted by the frontend...
-    # model_config = pd.ConfigDict(extra="allow")
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):

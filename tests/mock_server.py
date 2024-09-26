@@ -135,12 +135,12 @@ class MockResponseGeometryProjectV2(MockResponse):
         return res
 
 
-class MockResponseGeometryProjectSimConfigV2(MockResponse):
+class MockResponseGeometrySimConfigV2(MockResponse):
     """response for Geometry(id="00000000-0000-0000-0000-000000000000")'s simulation json"""
 
     @staticmethod
     def json():
-        with open(os.path.join(here, "data/mock_webapi/geometry_draft_simulation_json.json")) as fh:
+        with open(os.path.join(here, "data/mock_webapi/geometry_birth_simulation_json.json")) as fh:
             res = json.load(fh)
         return res
 
@@ -242,7 +242,7 @@ GET_RESPONSE_MAP = {
     "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
     "/v2/geometries/00000000-0000-0000-0000-000000000000": MockResponseGeometryV2,
     "/v2/projects/prj-29e35434-2148-47c8-b548-58b479c37b99": MockResponseGeometryProjectV2,
-    "/v2/drafts/draft-e6cf57bd-07bc-43af-b107-a5e689dfd979/simulation-config": MockResponseGeometryProjectSimConfigV2,
+    "/v2/geometries/00000000-0000-0000-0000-000000000000/simulation-config": MockResponseGeometrySimConfigV2,
     "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/00000000-0000-0000-0000-000000000000": MockResponseCase,
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb": MockResponseCase,

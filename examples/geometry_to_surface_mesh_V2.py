@@ -1,4 +1,5 @@
 import flow360 as fl
+from flow360 import log
 from flow360.component.geometry import Geometry
 from flow360.component.simulation import cloud
 from flow360.component.simulation.meshing_param.face_params import (
@@ -13,15 +14,12 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.examples import Airplane
-from flow360 import log
 
 fl.Env.dev.active()
 
 log.set_logging_level("DEBUG")
 
-geometry_draft = Geometry.from_file(
-    Airplane.geometry, solver_version="workbench-24.9.2"
-)
+geometry_draft = Geometry.from_file(Airplane.geometry, solver_version="workbench-24.9.2")
 geometry = geometry_draft.submit()
 # geometry = Geometry.from_cloud("geo-6e45ad20-74be-48d2-9092-d4de968df4f8")
 geometry.show_available_groupings(verbose_mode=True)

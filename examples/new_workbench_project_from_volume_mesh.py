@@ -8,20 +8,21 @@ from flow360.examples import OM6wing
 fl.Env.dev.active()
 
 # Creating and uploading a volume mesh from file
-volume_mesh_draft = VolumeMeshV2.from_file(
-    OM6wing.mesh_filename,
-    project_name="wing-volume-mesh-python-upload",
-    solver_version="workbench-24.9.2",
-    tags=["python"],
-)
+# volume_mesh_draft = VolumeMeshV2.from_file(
+#     OM6wing.mesh_filename,
+#     project_name="wing-volume-mesh-python-upload",
+#     solver_version="workbench-24.9.2",
+#     tags=["python"],
+# )
 
-volume_mesh = volume_mesh_draft.submit()
+# volume_mesh = volume_mesh_draft.submit()
 
-# Going to sleep after upload, let pipelines finish...
+# # Going to sleep after upload, let pipelines finish...
 # time.sleep(10)
 
 # Loading volume mesh from cloud
-volume_mesh = VolumeMeshV2.from_cloud(volume_mesh.id)
+# volume_mesh = VolumeMeshV2.from_cloud(volume_mesh.id)
+volume_mesh = VolumeMeshV2.from_cloud("vm-a02669d8-ab34-4a22-9d3b-c19196d98050")
 
 print(volume_mesh.boundary_names)
 print(volume_mesh.zone_names)

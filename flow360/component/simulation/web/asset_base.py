@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import time
 from abc import ABCMeta
 from typing import List, Union
 
 from flow360.cloud.requests import LengthUnitType
-from flow360.component.interfaces import BaseInterface
+from flow360.cloud.rest_api import RestApi
+from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
@@ -15,14 +18,10 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import _model_attribute_unlock
-from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
-from flow360.component.utils import validate_type
-from flow360.component.interfaces import ProjectInterface
-from flow360.cloud.rest_api import RestApi
-import time, json
+from flow360.component.utils import remove_properties_by_name, validate_type
+from flow360.log import log
 
 TIMEOUT_MINUTES = 60
-
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -60,7 +59,7 @@ class AssetBase(metaclass=ABCMeta):
         resource._webapi._set_meta(meta)
         return resource
 
-    def _wait_until_completed(self):
+    def _wait_until_final_status(self):
         start_time = time.time()
         while self._webapi.status.is_final() is False:
             if time.time() - start_time > TIMEOUT_MINUTES * 60:
@@ -71,16 +70,16 @@ class AssetBase(metaclass=ABCMeta):
 
     @classmethod
     def _get_simulation_json(cls, asset: AssetBase) -> dict:
-        """Get the simulation json AKA birth setting of the asset."""
-        ##>> Check if the current asset is project's root item. If so then we need to wait for its pipeline to finish.
+        """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
+        ##>> Check if the current asset is project's root item.
+        ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
         _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
-        root_item_id = _resp["rootItemId"]
-        print("root_item_id = ", root_item_id)
-        print("asset.id = ", asset.id)
-        if asset.id == root_item_id:
-            print("Current asset is project's root item. Waiting for pipeline to finish.")
-            asset._wait_until_completed()
-            
+        if asset.id == _resp["rootItemId"]:
+            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
+            # pylint: disable=protected-access
+            asset._wait_until_final_status()
+
+        # pylint: disable=protected-access
         simulation_json = asset._webapi.get(method="simulation-config")["simulationJson"]
         return json.loads(simulation_json)
 
@@ -103,7 +102,6 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj = cls(id)
         # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
-        print("simulation_dict = ", simulation_dict)
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -115,7 +113,11 @@ class AssetBase(metaclass=ABCMeta):
                 "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
         entity_info = asset_cache["project_entity_info"]
-        #TODO：Ignore _id field
+        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
+        # Note: Only the draft's and non-root item simulation.json will have it.
+        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
+        # Note: This should be addressed when we design the new project client interface.
+        remove_properties_by_name(entity_info, "_id")
         asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
         return asset_obj
 
