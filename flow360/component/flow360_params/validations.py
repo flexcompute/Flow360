@@ -511,7 +511,7 @@ def _check_local_cfl_output(values):
     navier_stokes_solver = values.get("navier_stokes_solver")
     if "localCFL" in _get_all_output_fields(values):
         if time_stepping is None or isinstance(time_stepping, SteadyTimeStepping):
-            raise ValueError("Outputting local CFL with steady simulation is invalid")
+            raise ValueError("Outputting local CFL with steady simulation is invalid.")
 
         if navier_stokes_solver is not None and isinstance(
             navier_stokes_solver, IncompressibleNavierStokesSolver
