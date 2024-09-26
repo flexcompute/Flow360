@@ -86,9 +86,11 @@ VolumeFieldNamesFull = Literal[
     CommonFieldNamesFull,
     "BET Metrics",
     "BET Metrics per Disk",
+    "Coefficient of total pressure",
     "linear residual of Navier-Stokes solver",
     "linear residual of turbulence solver",
     "linear residual of transition solver",
+    "Local CFL number",
 ]
 
 SliceFieldNamesFull = VolumeFieldNamesFull
@@ -97,9 +99,11 @@ VolumeFieldNames = Literal[
     CommonFieldNames,
     "betMetrics",
     "betMetricsPerDisk",
+    "Cpt",
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
+    "localCFL",
 ]
 
 SliceFieldNames = VolumeFieldNames
