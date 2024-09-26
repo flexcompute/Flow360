@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
-from flow360.component.interfaces import DraftInterface, ProjectInterface
+from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
@@ -152,13 +152,3 @@ class Draft(Flow360Resource):
 
         destination_id = run_response["id"]
         return destination_id
-
-
-def _get_simulation_json_from_cloud(project_id: str) -> dict:
-    _resp = RestApi(ProjectInterface.endpoint, id=project_id).get()
-    last_opened_draft_id = _resp["lastOpenDraftId"]
-    assert last_opened_draft_id is not None
-    _draft = Draft.from_cloud(last_opened_draft_id)
-
-    simulation_dict = _draft.get_simulation_dict()
-    return simulation_dict

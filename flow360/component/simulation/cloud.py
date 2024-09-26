@@ -11,10 +11,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.simulation.web.draft import (
-    Draft,
-    _get_simulation_json_from_cloud,
-)
+from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.log import log
@@ -48,8 +45,9 @@ def _run(
             f"params argument must be a SimulationParams object but is of type {type(params)}"
         )
 
-    ##-- Getting the project length unit from draft and store in the SimulationParams
-    simulation_dict = _get_simulation_json_from_cloud(source_asset.project_id)
+    ##-- Getting the project length unit from the current resource and store in the SimulationParams
+    # pylint: disable=protected-access
+    simulation_dict = AssetBase._get_simulation_json(source_asset)
 
     if (
         "private_attribute_asset_cache" not in simulation_dict
@@ -95,7 +93,7 @@ def _run(
 
     if async_mode is False:
         start_time = time.time()
-        while destination_obj.status.is_final() is False:
+        while destination_obj._webapi.status.is_final() is False:
             if time.time() - start_time > TIMEOUT_MINUTES * 60:
                 raise TimeoutError(
                     "Timeout: Process did not finish within the specified timeout period"

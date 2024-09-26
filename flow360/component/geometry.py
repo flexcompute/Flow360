@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import os
 import threading
-import time
 from enum import Enum
 from typing import Any, List, Literal, Union
 
 import pydantic as pd
 
+from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import GeometryInterface
@@ -32,25 +32,6 @@ from flow360.component.utils import (
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
-
-HEARTBEAT_INTERVAL = 15
-TIMEOUT_MINUTES = 30
-
-
-def _post_upload_heartbeat(info):
-    """
-    Keep letting the server know that the uploading is still in progress.
-    Server marks resource as failed if no heartbeat is received for 3 `heartbeatInterval`s.
-    """
-    while not info["stop"]:
-        RestApi("v2/heartbeats/uploading").post(
-            {
-                "resourceId": info["resourceId"],
-                "heartbeatInterval": HEARTBEAT_INTERVAL,
-                "resourceType": info["resourceType"],
-            }
-        )
-        time.sleep(HEARTBEAT_INTERVAL)
 
 
 class GeometryStatus(Enum):
@@ -206,7 +187,7 @@ class GeometryDraft(ResourceDraft):
         geometry = Geometry(info.id)
         heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
         # Keep posting the heartbeat to keep server patient about uploading.
-        heartbeat_thread = threading.Thread(target=_post_upload_heartbeat, args=(heartbeat_info,))
+        heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
         for file_path in self.file_names:
             geometry._webapi._upload_file(
@@ -218,10 +199,10 @@ class GeometryDraft(ResourceDraft):
         heartbeat_thread.join()
         ##:: kick off pipeline
         geometry._webapi._complete_upload()
-        log.debug("Waiting for geometry to be processed.")
-        geometry._webapi.get_info()
         log.info("Geometry successfully submitted.")
-        return geometry
+        log.info("Waiting for geometry to be processed.")
+        # uses from_cloud to ensure all metadata is ready before yielding the object
+        return Geometry.from_cloud(info.id)
 
 
 class Geometry(AssetBase):
