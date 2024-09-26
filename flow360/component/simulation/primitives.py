@@ -163,8 +163,8 @@ class GenericVolume(_VolumeEntityBase):
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None)  # Rotation support
 
-    # Temporary measure until the "_id" field is deleted by the frontend...
-    model_config = pd.ConfigDict(extra="allow")
+    # # Temporary measure until the "_id" field is deleted by the frontend...
+    # model_config = pd.ConfigDict(extra="allow")
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):

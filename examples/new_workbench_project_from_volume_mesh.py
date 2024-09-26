@@ -18,7 +18,7 @@ volume_mesh_draft = VolumeMeshV2.from_file(
 volume_mesh = volume_mesh_draft.submit()
 
 # Going to sleep after upload, let pipelines finish...
-time.sleep(10)
+# time.sleep(10)
 
 # Loading volume mesh from cloud
 volume_mesh = VolumeMeshV2.from_cloud(volume_mesh.id)

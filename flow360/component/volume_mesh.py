@@ -972,7 +972,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         volume_mesh._webapi.get_info()
         log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
 
-        return volume_mesh
+        return VolumeMeshV2.from_cloud(volume_mesh.id)
 
 
 class VolumeMeshV2(AssetBase):

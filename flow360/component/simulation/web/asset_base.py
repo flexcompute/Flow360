@@ -17,6 +17,12 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.draft import _get_simulation_json_from_cloud
 from flow360.component.utils import validate_type
+from flow360.component.interfaces import ProjectInterface
+from flow360.cloud.rest_api import RestApi
+import time, json
+
+TIMEOUT_MINUTES = 60
+
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -54,6 +60,30 @@ class AssetBase(metaclass=ABCMeta):
         resource._webapi._set_meta(meta)
         return resource
 
+    def _wait_until_completed(self):
+        start_time = time.time()
+        while self._webapi.status.is_final() is False:
+            if time.time() - start_time > TIMEOUT_MINUTES * 60:
+                raise TimeoutError(
+                    "Timeout: Asset did not become avaliable within the specified timeout period"
+                )
+            time.sleep(2)
+
+    @classmethod
+    def _get_simulation_json(cls, asset: AssetBase) -> dict:
+        """Get the simulation json AKA birth setting of the asset."""
+        ##>> Check if the current asset is project's root item. If so then we need to wait for its pipeline to finish.
+        _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
+        root_item_id = _resp["rootItemId"]
+        print("root_item_id = ", root_item_id)
+        print("asset.id = ", asset.id)
+        if asset.id == root_item_id:
+            print("Current asset is project's root item. Waiting for pipeline to finish.")
+            asset._wait_until_completed()
+            
+        simulation_json = asset._webapi.get(method="simulation-config")["simulationJson"]
+        return json.loads(simulation_json)
+
     @property
     def info(self) -> AssetMetaBaseModel:
         """Return the metadata of the resource"""
@@ -72,19 +102,20 @@ class AssetBase(metaclass=ABCMeta):
         """Create asset with the given ID"""
         asset_obj = cls(id)
         # populating the entityInfo object
-        simulation_dict = _get_simulation_json_from_cloud(asset_obj.project_id)
+        simulation_dict = cls._get_simulation_json(asset_obj)
+        print("simulation_dict = ", simulation_dict)
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
-                "[Internal] Could not find private_attribute_asset_cache in the draft's simulation settings."
+                "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
             )
         asset_cache = simulation_dict["private_attribute_asset_cache"]
 
         if "project_entity_info" not in asset_cache:
             raise KeyError(
-                "[Internal] Could not find project_entity_info in the draft's simulation settings."
+                "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
         entity_info = asset_cache["project_entity_info"]
-
+        #TODO：Ignore _id field
         asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
         return asset_obj
 

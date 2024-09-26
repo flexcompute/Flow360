@@ -199,11 +199,10 @@ class GeometryDraft(ResourceDraft):
         heartbeat_thread.join()
         ##:: kick off pipeline
         geometry._webapi._complete_upload()
-        log.debug("Waiting for geometry to be processed.")
-        geometry._webapi.get_info()
         log.info("Geometry successfully submitted.")
+        log.debug("Waiting for geometry to be processed.")
 
-        return geometry
+        return Geometry.from_cloud(info.id)
 
 
 class Geometry(AssetBase):
