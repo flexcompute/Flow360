@@ -1,10 +1,10 @@
 import random
 import matplotlib.pyplot as plt
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, field_validator
 from typing import List, Literal, Union
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, PageStyle, MiniPage
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, PageStyle, MiniPage, SubFigure
 from pylatex.utils import bold
 
 from flow360 import Case
@@ -100,6 +100,7 @@ class Report(BaseModel):
         doc = Document()
         doc.packages.append(NoEscape(r'\usepackage{float}'))
         doc.packages.append(NoEscape(r'\usepackage{graphicx}'))
+        # doc.packages.append(NoEscape(r'\usepackage{subfig}'))
         doc.packages.append(NoEscape(r'\usepackage{placeins}')) # For FloatBarrier
         doc.packages.append(NoEscape(r'\usepackage[a4paper, margin=1.5in]{geometry}'))
 
@@ -230,8 +231,14 @@ class Chart2D(ReportItem):
     background: Union[Literal["geometry"], None]
     select_case_ids: list[str] = None
     fig_size: float = 0.8 # Relates to fraction of the textwidth
-    fit_horizontal: bool = False
+    items_in_row: Union[int, None] = None
     single_plot: bool = False
+
+    @model_validator(mode="after")
+    def check_items_in_row(self):
+        if self.items_in_row is not None:
+            if self.items_in_row == 1:
+                raise ValueError(f"`Items_in_row` should be greater than 1. Use `None` to disable the argument.")
 
     def _create_fig(self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str):
         plt.plot(x_data, y_data)
@@ -242,13 +249,14 @@ class Chart2D(ReportItem):
             plt.close()
 
     def get_doc_node(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
+        # Change items in row to be the number of cases if higher number is supplied
+        if self.items_in_row is not None:
+            if self.items_in_row > len(cases):
+                self.items_in_row = len(cases)
+        
         with doc.create(section_func(self.section_title)):
             x_lab = self.data_path[0].split("/")[-1]
             y_lab = self.data_path[1].split("/")[-1]
-
-            if self.fit_horizontal:
-                main_fig = Figure(position="h!")
-                sub_fig_width = 0.95 / len(cases) # Smaller than 1 to avoid overflowing
 
             figure_list = []
             for case in cases:
@@ -265,12 +273,10 @@ class Chart2D(ReportItem):
                 save_name = self.fig_name + case.name + ".png"
                 self._create_fig(x_data, y_data, x_lab, y_lab, save_name)
 
-                # Combine smaller figures inside MiniPages into a single figure
-                if self.fit_horizontal:
-                    mini_page = MiniPage(width=NoEscape(fr"{sub_fig_width}\textwidth"))
-                    mini_page.append(NoEscape(r"\includegraphics[width=\textwidth]{" + save_name + "}"))
-                    main_fig.append(mini_page)
-                
+                # Allow for handling the figures later inside a subfig
+                if self.items_in_row is not None:
+                    figure_list.append(save_name)
+
                 elif self.single_plot:
                     continue
 
@@ -280,7 +286,28 @@ class Chart2D(ReportItem):
                     fig.add_caption(f'{x_lab} against {y_lab} for {case.name}.')
                     figure_list.append(fig)
 
-            if self.fit_horizontal:
+            if self.items_in_row is not None:
+                minipage_size = 0.98 / self.items_in_row # Smaller than 1 to avoid overflowing
+                main_fig = Figure(position="h!")
+                
+                # Build list of indices to combine into rows
+                indices = list(range(len(figure_list)))
+                idx_list = [indices[i:i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)]
+                for row_idx in idx_list:
+                    for idx in row_idx:
+                        sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
+                        sub_fig.add_image(filename=figure_list[idx], width=NoEscape(fr"\textwidth"))
+
+                        # Stop caption for single subfigures - happens when include_case_by_case
+                        if self.items_in_row != 1:
+                            sub_fig.add_caption(idx)
+
+                        main_fig.append(sub_fig)
+                        
+                        main_fig.append(NoEscape(r'\hfill'))
+
+                    main_fig.append(NoEscape(r'\\'))
+
                 doc.append(main_fig)
                 main_fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
 
@@ -296,6 +323,7 @@ class Chart2D(ReportItem):
 
         # Stops figures floating away from their sections
         doc.append(NoEscape(r'\FloatBarrier'))
+        doc.append(NoEscape(r'\clearpage'))
 
         # Clear the matplotlib cache to be certain figure won't appear
         plt.close()
@@ -343,6 +371,8 @@ if __name__ == "__main__":
     # What's the usecase for Chart3D? Is it not just displaying a png?
     # Discuss Expression: Parsing an expression safely is pretty challenging - lot of recent work on this for Tidy3D
     # Group may be redundant. What if Chart2D can tesselate any X by Y arrangement with something like a draw_rows=2 arg?
+    # # Could change doc.create(Section) in favour of saving to variable that is passed along
+    # # Subsequent report items can take the previous section variable and not build a new section if an old one is supplied
 
     # To Do
     # Need to improve data_loc/field system. Need something that makes it easy to get into nested data
@@ -382,10 +412,10 @@ if __name__ == "__main__":
             ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/CD"],
-                section_title="Global Coefficient of Drag (horizontal figure)",
+                section_title="Global Coefficient of Drag (subfigure example)",
                 fig_name="cd_fig",
                 background=None,
-                fit_horizontal=True
+                items_in_row=2
             ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/CFy"],
