@@ -126,7 +126,7 @@ class Report(BaseModel):
     
         # Iterate through all cases together
         for item in self.items:
-            item.get_doc_item(cases, doc, case_by_case=self.include_case_by_case)
+            item.get_doc_item(cases, doc, case_by_case=False)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
