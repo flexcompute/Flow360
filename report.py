@@ -1,10 +1,11 @@
 import random
+import requests
 import matplotlib.pyplot as plt
 
 from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union, Any
 
-from pylatex import Document, Section, Command, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package
 from pylatex.utils import bold
 
 from flow360 import Case
@@ -113,10 +114,9 @@ class Report(BaseModel):
         # Create a new LaTeX document
         doc = Document()
         # Package info
-        doc.packages.append(NoEscape(r'\usepackage{float}'))
-        doc.packages.append(NoEscape(r'\usepackage{graphicx}'))
-        doc.packages.append(NoEscape(r'\usepackage{placeins}')) # For FloatBarrier
-        doc.packages.append(NoEscape(r'\usepackage[a4paper, margin=1in]{geometry}'))
+        doc.packages.append(Package("float"))
+        doc.packages.append(Package("placeins")) # For FloatBarrier
+        doc.packages.append(Package("geometry", options=["a4paper", "margin=1in"]))
 
         # Preamble info
         doc.preamble.append(self._create_header_footer())
@@ -145,10 +145,14 @@ class Summary(ReportItem):
     text: str
 
     def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
-        with doc.create(section_func("Summary")):
-            doc.append(f"{self.text}\n")
-            for case in cases:
-                doc.append(f"id={case.id}, name: {case.name}\n")
+        section = section_func("Summary")
+        doc.append(section)
+        doc.append(f"{self.text}\n")
+        Table(
+            data_path=["name"],
+            section_title=None,
+            custom_headings=["Case Name"]
+        ).get_doc_item(cases, doc, section_func, case_by_case)
 
 
 class Inputs(ReportItem):
@@ -198,10 +202,24 @@ class Expression(BaseModel):
 
     __str__ = lambda self: self.title
 
+class Tabulary(Tabular):
+
+    packages = [Package("tabulary")]
+    
+    def __init__(self, *args, width_argument=NoEscape(r"\linewidth"), **kwargs):
+        """
+        Args
+        ----
+        width_argument:
+            The width of the table. By default the table is as wide as the
+            text.
+        """
+        super().__init__(*args, start_arguments=width_argument, **kwargs)
+
 
 class Table(ReportItem):
     data_path: list[Union[str, Delta]]
-    section_title: str
+    section_title: Union[str, None]
     custom_headings: list[str] = None
 
     @model_validator(mode="after")
@@ -217,8 +235,9 @@ class Table(ReportItem):
         if self.section_title is not None:
             section = section_func(self.section_title)
             doc.append(section)
-        
-        with doc.create(Tabular('|c' * (len(self.data_path) + 1) + '|')) as table:
+
+        # Getting tables to wrap is a pain - Tabulary seems the best approach
+        with doc.create(Tabulary('|C' * (len(self.data_path) + 1) + '|', width=len(self.data_path) + 1)) as table:
             table.add_hline()
 
             # Manage column headings
@@ -232,7 +251,7 @@ class Table(ReportItem):
 
                     field_titles.append(bold(str(field)))
             else:
-                field_titles.extend(self.custom_headings)
+                field_titles.extend([bold(heading) for heading in self.custom_headings])
 
             table.add_row(field_titles)
             table.add_hline()
@@ -258,14 +277,19 @@ class Chart2D(ReportItem):
     @model_validator(mode="after")
     def check_items_in_row(self) -> None:
         if self.items_in_row is not None:
-            if self.items_in_row == 1:
-                raise ValueError(f"`Items_in_row` should be greater than 1. Use `None` to disable the argument.")
+            if self.items_in_row == -1:
+                return
+            if self.items_in_row <= 1:
+                raise ValueError(f"`Items_in_row` should be greater than 1. Use -1 to include all cases on a single row. Use `None` to disable the argument.")
 
     def _create_fig(self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str) -> None:
         """Create a simple matplotlib figure"""
         plt.plot(x_data, y_data)
         plt.xlabel(x_lab)
         plt.ylabel(y_lab)
+        if self.single_plot:
+            plt.legend([val + 1 for val in range(len(x_data))])
+
         plt.savefig(save_name)
         if not self.single_plot:
             plt.close()
@@ -273,7 +297,7 @@ class Chart2D(ReportItem):
     def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
-            if self.items_in_row > len(cases):
+            if self.items_in_row > len(cases) or self.items_in_row == -1:
                 self.items_in_row = len(cases)
         
         # Only create a title if specified
@@ -375,38 +399,18 @@ class Chart3D(ReportItem):
             self._get_doc_item(cases, doc, section_func)
 
 
-class Group(ReportItem):
-    title: str
-    layout: Literal["vertical", "horizontal"]
-    item: Union[Chart2D, Chart3D]
-
-    def get_doc_item(self, cases: List[Case], doc: Document):
-        with doc.create(Section(f"{self.__class__.__name__}: {self.title}")):
-            for case in cases:
-                self.item.get_doc_item([case], doc, create_title=False)
-
 if __name__ == "__main__":
     # Answered Questions:
     # Where to start putting in styling - font, colours, etc.
-    # Lost as to what Group is doing. What about changing Chart2D to control fig size and a TitledSummary for other text?
 
     # New Questions
     # Delta is currently just a mean - what other ways might people want to express a delta
     # Is there any guide to test design for Flow360?
     # Where should report sit in the repo?
-    # Any other details that should be included in Summary? 
-    # # Need to think how to format case id and name as these are often long strings
-    # What's the usecase for Chart3D? Is it not just displaying a png?
-    # Discuss Expression: Parsing an expression safely is pretty challenging - lot of recent work on this for Tidy3D
-    # Group may be redundant. What if Chart2D can tesselate any X by Y arrangement with something like a draw_rows=2 arg?
-    # # Toggle of section creation helps do what Group is achieving
-    # Would basic Text and Image classes be useful to include for users customising reporting?
-    # Need better figure naming convention - any preference? 
+    # Any other details that should be included in Summary?
+    # Is Expression needed? Parsing a user defined expression safely is pretty challenging - lot of recent work on this for Tidy3D
 
     # To Do
-    # Need to improve data_loc/field system. Need something that makes it easy to get into nested data
-    # Expressions and Deltas in "field" will need to have some name attached to them
-    # # This will then need to be pulled out, instead of assuming the input is a str
     # Tweak Delta to have more control over output
 
     a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")
@@ -444,7 +448,7 @@ if __name__ == "__main__":
                 section_title="Global Coefficient of Force in Y (subfigure and combined)",
                 fig_name="cd_fig",
                 background=None,
-                items_in_row=2
+                items_in_row=-1
             ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/CFy"],
