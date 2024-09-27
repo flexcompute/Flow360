@@ -242,7 +242,7 @@ GET_RESPONSE_MAP = {
     "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
     "/v2/geometries/00000000-0000-0000-0000-000000000000": MockResponseGeometryV2,
     "/v2/projects/prj-29e35434-2148-47c8-b548-58b479c37b99": MockResponseGeometryProjectV2,
-    "/v2/geometries/00000000-0000-0000-0000-000000000000/simulation-config": MockResponseGeometrySimConfigV2,
+    "/v2/geometries/00000000-0000-0000-0000-000000000000/simulation/file": MockResponseGeometrySimConfigV2,
     "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
     "/cases/00000000-0000-0000-0000-000000000000": MockResponseCase,
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb": MockResponseCase,
@@ -273,7 +273,6 @@ def mock_webapi(type, url, params):
 
     if type == "get":
         if method in GET_RESPONSE_MAP.keys():
-            print("method = ", method, GET_RESPONSE_MAP[method]())
             return GET_RESPONSE_MAP[method]()
 
         if method.startswith("-python-client-v2"):

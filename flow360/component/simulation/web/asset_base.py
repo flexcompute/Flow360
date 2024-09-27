@@ -80,7 +80,9 @@ class AssetBase(metaclass=ABCMeta):
             asset._wait_until_final_status()
 
         # pylint: disable=protected-access
-        simulation_json = asset._webapi.get(method="simulation-config")["simulationJson"]
+        simulation_json = asset._webapi.get(
+            method="simulation/file", params={"type": "simulation"}
+        )["simulationJson"]
         return json.loads(simulation_json)
 
     @property
