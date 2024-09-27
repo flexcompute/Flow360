@@ -13,16 +13,10 @@ set_logging_level("DEBUG")
 
 class Model(Flow360BaseModel):
     a: str
-    b: Optional[int] = validation_context.ConditionalField(
-        required=True, relevant_for=validation_context.SURFACE_MESH
-    )
-    c: Optional[str] = validation_context.ConditionalField(
-        required=True, relevant_for=validation_context.VOLUME_MESH
-    )
-    d: Optional[float] = validation_context.ConditionalField(
-        required=True, relevant_for=validation_context.CASE
-    )
-    e: Optional[float] = validation_context.ConditionalField(relevant_for=validation_context.CASE)
+    b: Optional[int] = validation_context.ConditionalField(context=validation_context.SURFACE_MESH)
+    c: Optional[str] = validation_context.ConditionalField(context=validation_context.VOLUME_MESH)
+    d: Optional[float] = validation_context.ConditionalField(context=validation_context.CASE)
+    e: Optional[float] = validation_context.ContextField(context=validation_context.CASE)
 
 
 class ModelA(Flow360BaseModel):
@@ -35,12 +29,10 @@ class ModelB(Flow360BaseModel):
 
 class BaseModel(Flow360BaseModel):
     m: Model
-    c: Optional[Model] = validation_context.ConditionalField(
-        required=True, relevant_for=validation_context.CASE
-    )
-    d: Model = validation_context.ConditionalField(relevant_for=validation_context.CASE)
-    e: Union[ModelA, ModelB] = validation_context.ConditionalField(
-        discriminator="type", relevant_for=validation_context.CASE
+    c: Optional[Model] = validation_context.ConditionalField(context=validation_context.CASE)
+    d: Model = validation_context.ContextField(context=validation_context.CASE)
+    e: Union[ModelA, ModelB] = validation_context.ContextField(
+        discriminator="type", context=validation_context.CASE
     )
 
 
@@ -131,6 +123,60 @@ def test_with_all_context_validate():
     ]
 
     _test_with_given_context_and_data(validation_context.ALL, test_data1, excpected_errors)
+
+
+def test_with_sm_and_vm_context_validate():
+    excpected_errors = [
+        {"loc": ("m", "a"), "type": "missing"},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+    ]
+
+    try:
+        with validation_context.ValidationLevelContext(
+            [validation_context.SURFACE_MESH, validation_context.VOLUME_MESH]
+        ):
+            BaseModel(**test_data1)
+    except pd.ValidationError as err:
+        errors = err.errors()
+        assert len(errors) == len(excpected_errors)
+        for err, exp_err in zip(errors, excpected_errors):
+            assert err["loc"] == exp_err["loc"]
+            assert err["type"] == exp_err["type"]
+            if "ctx" in exp_err.keys():
+                assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
+
+
+def test_with_sm_and_vm_and_case_context_validate():
+    excpected_errors = [
+        {"loc": ("m", "a"), "type": "missing"},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
+        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+    ]
+
+    try:
+        with validation_context.ValidationLevelContext(
+            [
+                validation_context.SURFACE_MESH,
+                validation_context.VOLUME_MESH,
+                validation_context.CASE,
+            ]
+        ):
+            BaseModel(**test_data1)
+    except pd.ValidationError as err:
+        errors = err.errors()
+        assert len(errors) == len(excpected_errors)
+        for err, exp_err in zip(errors, excpected_errors):
+            assert err["loc"] == exp_err["loc"]
+            assert err["type"] == exp_err["type"]
+            if "ctx" in exp_err.keys():
+                assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
 def test_correct_context_validate():

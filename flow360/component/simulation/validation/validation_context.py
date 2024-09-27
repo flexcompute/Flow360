@@ -15,7 +15,8 @@ Features
 """
 
 import contextvars
-from typing import Optional
+from functools import wraps
+from typing import Any, Callable, List, Literal, Union
 
 from pydantic import Field
 
@@ -25,7 +26,7 @@ CASE = "Case"
 # when running validation with ALL, it will report errors happing in all scenarios in one validation pass
 ALL = "All"
 
-_validation_level_ctx = contextvars.ContextVar("validation_level", default=None)
+_validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 
 
 class ValidationLevelContext:
@@ -36,21 +37,29 @@ class ValidationLevelContext:
     the conditional validation of fields based on the defined levels.
     """
 
-    def __init__(self, level: str):
-        if level not in {None, SURFACE_MESH, VOLUME_MESH, CASE, ALL}:
-            raise ValueError(f"Invalid validation level: {level}")
-        self.level = level
-        self.token = None
+    def __init__(self, levels: Union[str, List[str]]):
+        valid_levels = {SURFACE_MESH, VOLUME_MESH, CASE, ALL}
+        if isinstance(levels, str):
+            levels = [levels]
+        if (
+            levels is None
+            or isinstance(levels, list)
+            and all(lvl in valid_levels for lvl in levels)
+        ):
+            self.levels = levels
+            self.token = None
+        else:
+            raise ValueError(f"Invalid validation level: {levels}")
 
     def __enter__(self):
-        self.token = _validation_level_ctx.set(self.level)
+        self.token = _validation_level_ctx.set(self.levels)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         _validation_level_ctx.reset(self.token)
 
 
-def get_validation_level():
+def get_validation_levels():
     """
     Retrieves the current validation level from the context.
 
@@ -61,20 +70,18 @@ def get_validation_level():
 
 
 # pylint: disable=invalid-name
-def ConditionalField(
-    default=None, *, relevant_for: Optional[str] = None, required: Optional[bool] = False, **kwargs
+def ContextField(
+    default=None, *, context: Literal["SurfaceMesh", "VolumeMesh", "Case"] = None, **kwargs
 ):
     """
-    Creates a field with conditional validation requirements.
+    Creates a field with context validation (the field is not required).
 
     Parameters
     ----------
     default : any, optional
         The default value for the field.
-    relevant_for : str, optional
-        Specifies the scenario for which this field is relevant. The relevant_for is included in error->ctx
-    required : bool, optional
-        Indicates if the field is conditionally required based on the scenario.
+    context : str, optional
+        Specifies the scenario for which this field is relevant. The relevant_for=context is included in error->ctx
     **kwargs : dict
         Additional keyword arguments passed to Pydantic's Field.
 
@@ -85,12 +92,43 @@ def ConditionalField(
 
     Notes
     -----
-    Use this field for required or not required fields but only for certain scenarios,
-    such as volume meshing only.
+    Use this field for not required fields to profide context information during validation.
     """
     return Field(
         default,
-        json_schema_extra={"relevant_for": relevant_for, "conditionally_required": required},
+        json_schema_extra={"relevant_for": context, "conditionally_required": False},
+        **kwargs,
+    )
+
+
+# pylint: disable=invalid-name
+def ConditionalField(
+    default=None, *, context: Literal["SurfaceMesh", "VolumeMesh", "Case"] = None, **kwargs
+):
+    """
+    Creates a field with conditional context validation requirements.
+
+    Parameters
+    ----------
+    default : any, optional
+        The default value for the field.
+    context : str, optional
+        Specifies the scenario for which this field is relevant. The relevant_for=context is included in error->ctx
+    **kwargs : dict
+        Additional keyword arguments passed to Pydantic's Field.
+
+    Returns
+    -------
+    Field
+        A Pydantic Field configured with conditional validation context.
+
+    Notes
+    -----
+    Use this field for required fields but only for certain scenarios, such as volume meshing only.
+    """
+    return Field(
+        default,
+        json_schema_extra={"relevant_for": context, "conditionally_required": True},
         **kwargs,
     )
 
@@ -116,4 +154,41 @@ def CaseField(default=None, **kwargs):
     -----
     Use this field for fields that are not required but make sense only for Case.
     """
-    return ConditionalField(default, relevant_for=CASE, **kwargs)
+    return ContextField(default, context=CASE, **kwargs)
+
+
+def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
+    """
+    Decorator to conditionally run a validator based on the current validation context.
+
+    This decorator runs the decorated validator function only if the current validation
+    level matches the specified context or if the validation level is set to ALL.
+
+    Parameters
+    ----------
+    context : Literal["SurfaceMesh", "VolumeMesh", "Case"]
+        The specific validation context in which the validator should be run.
+
+    Returns
+    -------
+    Callable
+        The decorated function that will only run when the specified context condition is met.
+
+    Notes
+    -----
+    This decorator is designed to be used with Pydantic model validators to ensure that
+    certain validations are only executed when the validation level matches the given context.
+    """
+
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(self: Any, *args, **kwargs):
+            current_levels = get_validation_levels()
+            # Run the validator only if the current levels matches the specified context or is ALL
+            if current_levels is None or any(lvl in (context, ALL) for lvl in current_levels):
+                return func(self, *args, **kwargs)
+            return self
+
+        return wrapper
+
+    return decorator

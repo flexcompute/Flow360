@@ -53,7 +53,7 @@ from flow360.error_messages import (
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
-from .validation.validation_context import SURFACE_MESH, CaseField, ConditionalField
+from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
 
@@ -163,7 +163,7 @@ class SimulationParams(_ParamModelBase):
         ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    meshing: Optional[MeshingParams] = ConditionalField(MeshingParams(), relevant_for=SURFACE_MESH)
+    meshing: Optional[MeshingParams] = ContextField(MeshingParams(), context=SURFACE_MESH)
     reference_geometry: Optional[ReferenceGeometry] = CaseField(None)
     operating_condition: Optional[OperatingConditionTypes] = CaseField(
         None, discriminator="type_name"

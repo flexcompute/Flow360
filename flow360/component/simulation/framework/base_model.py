@@ -262,15 +262,15 @@ class Flow360BaseModel(pd.BaseModel):
         """
         this validator checks for conditionally required fields depending on context
         """
-        level = validation_context.get_validation_level()
-        if level is None:
+        validation_levels = validation_context.get_validation_levels()
+        if validation_levels is None:
             return value
 
         conditionally_required = cls._get_field_context(info, "conditionally_required")
         relevant_for = cls._get_field_context(info, "relevant_for")
         if (
             conditionally_required is True
-            and level in (relevant_for, validation_context.ALL)
+            and any(lvl in (relevant_for, validation_context.ALL) for lvl in validation_levels)
             and value is None
         ):
             raise pd.ValidationError.from_exception_data(
