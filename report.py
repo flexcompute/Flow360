@@ -263,6 +263,28 @@ class Table(ReportItem):
                 table.add_row(row_list)
                 table.add_hline()
 
+def _assemble_fig_rows(img_list, items_in_row):
+    minipage_size = 0.98 / items_in_row # Smaller than 1 to avoid overflowing
+    main_fig = Figure(position="h!")
+        
+        # Build list of indices to combine into rows
+    indices = list(range(len(img_list)))
+    idx_list = [indices[i:i + items_in_row] for i in range(0, len(indices), items_in_row)]
+    for row_idx in idx_list:
+        for idx in row_idx:
+            sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
+            sub_fig.add_image(filename=img_list[idx], width=NoEscape(fr"\textwidth"))
+
+                # Stop caption for single subfigures - happens when include_case_by_case
+            if items_in_row != 1:
+                sub_fig.add_caption(idx)
+
+            main_fig.append(sub_fig)
+                
+            main_fig.append(NoEscape(r'\hfill'))
+
+        main_fig.append(NoEscape(r'\\'))
+    return main_fig
 
 class Chart2D(ReportItem):
     data_path: list[Union[str, Delta]]
@@ -339,26 +361,7 @@ class Chart2D(ReportItem):
                 figure_list.append(fig)
 
         if self.items_in_row is not None:
-            minipage_size = 0.98 / self.items_in_row # Smaller than 1 to avoid overflowing
-            main_fig = Figure(position="h!")
-            
-            # Build list of indices to combine into rows
-            indices = list(range(len(figure_list)))
-            idx_list = [indices[i:i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)]
-            for row_idx in idx_list:
-                for idx in row_idx:
-                    sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
-                    sub_fig.add_image(filename=figure_list[idx], width=NoEscape(fr"\textwidth"))
-
-                    # Stop caption for single subfigures - happens when include_case_by_case
-                    if self.items_in_row != 1:
-                        sub_fig.add_caption(idx)
-
-                    main_fig.append(sub_fig)
-                    
-                    main_fig.append(NoEscape(r'\hfill'))
-
-                main_fig.append(NoEscape(r'\\'))
+            main_fig = _assemble_fig_rows(figure_list, self.items_in_row)
 
             doc.append(main_fig)
             main_fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
@@ -381,23 +384,62 @@ class Chart2D(ReportItem):
         plt.close()
 
 class Chart3D(ReportItem):
-    field: str
-    camera: List[float]
-    limits: List[float]
+    section_title: Union[str, None]
+    fig_size: float = 0.8
+    items_in_row: Union[int, None] = None
+    select_case_ids: list[str] = None
+    # field: str
+    # camera: List[float]
+    # limits: List[float]
 
-    def _get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section):
-        with doc.create(Figure(position='H')) as fig:
-            for case in cases:
-                fig.add_image(case.results.get_chart3D(self.field, self.camera, self.limits), width=NoEscape(r'0.5\textwidth'))
-                fig.add_caption(f'Image case: {case.name}, for boundaries: {self.boundaries}')
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case: bool=False):
+        for case in cases:
+            # This will use case.id to create requests
+            # case.id
+            file_name = "cp.png"
+            img = requests.get('https://simcloud-public-1.s3.amazonaws.com/temp/post-processing-demo/cp.png', allow_redirects=True)
+            open(file_name, "wb").write(img.content)
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, create_title: bool = True):
-        if create_title:
-            with doc.create(section_func(self.__class__.__name__)):
-                self._get_doc_item(cases, doc, section_func)
+        # Change items in row to be the number of cases if higher number is supplied
+        if self.items_in_row is not None:
+            if self.items_in_row > len(cases) or self.items_in_row == -1:
+                self.items_in_row = len(cases)
+        
+        # Only create a title if specified
+        if self.section_title is not None:
+            section = section_func(self.section_title)
+            doc.append(section)
+
+        img_list = []
+        for case in cases:
+            # Skip Cases the user hasn't selected
+            if self.select_case_ids is not None:
+                if case.id not in self.select_case_ids:
+                    continue
+            
+            # Will change this once request image is built
+            cbc_str = "cbc_" if case_by_case else ""
+            file_name = "cp.png"
+            img = requests.get('https://simcloud-public-1.s3.amazonaws.com/temp/post-processing-demo/cp.png', allow_redirects=True)
+            open(cbc_str + file_name, "wb").write(img.content)
+            img_list.append(file_name)
+                      
+        if self.items_in_row is not None:
+            main_fig = _assemble_fig_rows(img_list, self.items_in_row)
+
+            doc.append(main_fig)
+            main_fig.add_caption(f'A cool test picture in a row.')
+
         else:
-            self._get_doc_item(cases, doc, section_func)
+            for filename in img_list:
+                fig = Figure(position="h!")
+                fig.add_image(filename, width=NoEscape(fr'{self.fig_size}\textwidth'))
+                fig.add_caption(f'A cool test picture.')
+                doc.append(fig)
 
+        # Stops figures floating away from their sections
+        doc.append(NoEscape(r'\FloatBarrier'))
+        doc.append(NoEscape(r'\clearpage'))
 
 if __name__ == "__main__":
     # Answered Questions:
@@ -429,7 +471,14 @@ if __name__ == "__main__":
                 ],
                 section_title="My Favourite Quantities",
             ),
-
+            Chart3D(
+                section_title="Chart3D Testing",
+                fig_size=0.5
+            ),
+            Chart3D(
+                section_title="Chart3D Rows Testing",
+                items_in_row=-1
+            ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
                 section_title="Sanity Check Step against Step",
