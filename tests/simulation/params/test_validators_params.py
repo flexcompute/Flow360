@@ -88,7 +88,7 @@ def test_consistency_wall_function_validator(
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        _ = SimulationParams(
+        SimulationParams(
             models=[wall_model_without_function], outputs=[surface_output_with_wall_metric]
         )
 
@@ -111,9 +111,11 @@ def test_ddes_wall_function_validator(
 
     # Invalid simulation params (wrong output type)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        _ = SimulationParams(
-            models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES]
-        )
+        SimulationParams(models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES])
+
+    # Invalid simulation params (DDES turned off)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_DDES])
 
 
 def test_numerical_dissipation_mode_validator(
@@ -136,6 +138,4 @@ def test_numerical_dissipation_mode_validator(
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        _ = SimulationParams(
-            models=[fluid_model], outputs=[surface_output_with_numerical_dissipation]
-        )
+        SimulationParams(models=[fluid_model], outputs=[surface_output_with_numerical_dissipation])

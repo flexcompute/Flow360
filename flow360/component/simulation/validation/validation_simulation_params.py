@@ -2,7 +2,6 @@
 validation for SimulationParams
 """
 
-from flow360.component.flow360_params.flow360_fields import get_aliases
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.models.volume_models import Fluid
@@ -29,10 +28,8 @@ def _check_consistency_wall_function_and_surface_output(v):
 
     for output in outputs:
         if isinstance(output, SurfaceOutput):
-            aliases = get_aliases("wallFunctionMetric", raise_on_not_found=True)
-            if [i for i in aliases if i in output.output_fields.items] and (
-                not has_wall_function_model
-            ):
+            fields = output.output_fields.items
+            if "wallFunctionMetric" in fields and not has_wall_function_model:
                 raise ValueError(
                     "To use 'wallFunctionMetric' for output specify a Wall with use_wall_function=true"
                 )

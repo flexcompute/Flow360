@@ -3,7 +3,7 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
+from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -177,7 +177,7 @@ def rotation_translator(model: Rotation):
     return volume_zone
 
 
-def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: UniqueAliasedStringList):
+def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: UniqueStringList):
     """Get merged output fields"""
     if shared_output_fields is None:
         return {"outputFields": output_model.output_fields.items}

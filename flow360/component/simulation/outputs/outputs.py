@@ -17,10 +17,7 @@ from flow360.component.flow360_params.flow360_fields import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import (
-    UniqueAliasedStringList,
-    UniqueItemList,
-)
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -71,7 +68,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type"
         + "(SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: UniqueAliasedStringList[SurfaceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 
@@ -99,7 +96,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """Volume output settings."""
 
     name: Optional[str] = pd.Field(None)
-    output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field()
+    output_fields: UniqueItemList[VolumeFieldNames] = pd.Field()
     output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
 
@@ -129,7 +126,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 
     name: Optional[str] = pd.Field(None)
     entities: Optional[EntityList[Slice]] = pd.Field(None, alias="slices")
-    output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
@@ -138,7 +135,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 
     name: Optional[str] = pd.Field(None)
     entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces")
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
@@ -147,7 +144,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
 
     name: str = pd.Field()
     entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
@@ -156,7 +153,7 @@ class ProbeOutput(Flow360BaseModel):
 
     name: str = pd.Field()
     entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
     def load_point_location_from_file(self, file_path: str):
