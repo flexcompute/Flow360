@@ -28,6 +28,10 @@ from flow360.component.simulation.services import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.validation.validation_context import (
+    SURFACE_MESH,
+    VOLUME_MESH,
+)
 
 
 def test_simulation_to_surface_meshing_json():
@@ -71,7 +75,7 @@ def test_simulation_to_surface_meshing_json():
     }
 
     start_time = time.time()
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    params, _, _ = validate_model(param_data, "SI", "Geometry", SURFACE_MESH)
     simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     end_time = time.time()
     execution_time = end_time - start_time
@@ -197,7 +201,7 @@ def test_simulation_to_volume_meshing_json():
         "version": "24.2.0",
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    params, _, _ = validate_model(param_data, "SI", "Geometry", VOLUME_MESH)
 
     sm_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
     assert sm_json["farfield"]["type"] == "auto"

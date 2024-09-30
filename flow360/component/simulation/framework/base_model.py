@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 from itertools import chain
-from typing import Any, List
+from typing import Any, List, Literal, get_origin
 
 import pydantic as pd
 import rich
 import yaml
 from pydantic import ConfigDict
+from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
+from pydantic_core import InitErrorDetails
 from unyt import unyt_quantity
 
 from flow360.component.simulation.conversion import (
@@ -19,10 +21,19 @@ from flow360.component.simulation.conversion import (
     unit_converter,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation import validation_context
 from flow360.component.types import COMMENTS, TYPE_TAG_STR
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
+
+DISCRIMINATOR_NAMES = [
+    "type",
+    "type_name",
+    "refinement_type",
+    "output_type",
+    "private_attribute_entity_type_name",
+]
 
 
 def snake_to_camel(string: str) -> str:
@@ -98,6 +109,9 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
+        need_to_rebuild = cls._handle_wrap_validators()
+        if need_to_rebuild is True:
+            cls.model_rebuild(force=True)
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
         cls._generate_docstring()
 
@@ -190,6 +204,102 @@ class Flow360BaseModel(pd.BaseModel):
             if len(alias) > 0:
                 return alias[0]
         return None
+
+    @classmethod
+    def _get_field_context(cls, info, context_key):
+        if info.field_name is not None:
+            field_info = cls.model_fields[info.field_name]
+            if isinstance(field_info.json_schema_extra, dict):
+                return field_info.json_schema_extra.get(context_key)
+
+        return None
+
+    @classmethod
+    def _handle_wrap_validators(cls):
+        """
+        Applies `wrap` and `before` validators to selected fields while excluding discriminator fields.
+
+        **Purpose**:
+        - `wrap` validators cannot be applied to discriminator fields (e.g., `Literal` types like 'type'),
+        as they cause Pydantic conflicts during validation.
+        - This method manually assigns validators only to non-discriminator fields to avoid errors and
+        ensure correct validation flow.
+
+        **How it works**:
+        - Iterates over model fields, excluding discriminator fields.
+        - Applies validators dynamically to the remaining fields to ensure compatibility.
+
+        """
+
+        validators = [
+            ("wrap", "populate_ctx_to_error_messages"),
+            ("before", "validate_conditionally_required_field"),
+        ]
+        fields_to_validate = []
+        need_to_rebuild = False
+
+        for field_name, field in cls.model_fields.items():
+            # Ignore discriminator validators
+            # pylint: disable=comparison-with-callable
+            if get_origin(field.annotation) == Literal and field_name in DISCRIMINATOR_NAMES:
+                need_to_rebuild = True
+                continue
+
+            fields_to_validate.append(field_name)
+
+        if need_to_rebuild is True:
+            for mode, method in validators:
+                info = FieldValidatorDecoratorInfo(
+                    fields=tuple(fields_to_validate), mode=mode, check_fields=None
+                )
+                deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
+                cls.__pydantic_decorators__.field_validators[method] = deco
+        return need_to_rebuild
+
+    @pd.field_validator("*", mode="before")
+    @classmethod
+    def validate_conditionally_required_field(cls, value, info):
+        """
+        this validator checks for conditionally required fields depending on context
+        """
+        validation_levels = validation_context.get_validation_levels()
+        if validation_levels is None:
+            return value
+
+        conditionally_required = cls._get_field_context(info, "conditionally_required")
+        relevant_for = cls._get_field_context(info, "relevant_for")
+        if (
+            conditionally_required is True
+            and any(lvl in (relevant_for, validation_context.ALL) for lvl in validation_levels)
+            and value is None
+        ):
+            raise pd.ValidationError.from_exception_data(
+                "validation error", [InitErrorDetails(type="missing")]
+            )
+
+        return value
+
+    @pd.field_validator("*", mode="wrap")
+    @classmethod
+    def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
+        """
+        this validator populates ctx messages of fields tagged with "relevant_for" context
+        it will populate to all child messages
+        """
+        try:
+            return handler(values)
+        except pd.ValidationError as e:
+            validation_errors = e.errors()
+            relevant_for = cls._get_field_context(info, "relevant_for")
+            if relevant_for is not None:
+                for i, error in enumerate(validation_errors):
+                    ctx = error.get("ctx", {})
+                    if ctx.get("relevant_for") is None:
+                        ctx["relevant_for"] = relevant_for
+                    validation_errors[i]["ctx"] = ctx
+            raise pd.ValidationError.from_exception_data(
+                title=cls.__class__.__name__, line_errors=validation_errors
+            )
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference
