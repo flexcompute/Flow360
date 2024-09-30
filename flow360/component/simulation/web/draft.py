@@ -133,7 +133,7 @@ class Draft(Flow360Resource):
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""
-        response = self.get(method="simulation-config")
+        response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
     def run_up_to_target_asset(self, target_asset: type) -> str:
