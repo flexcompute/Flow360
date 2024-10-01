@@ -42,6 +42,7 @@
             "absoluteTolerance": 1e-15,
             "maxIterations": 100
         },
+        "modelType":"HeatEquation",
         "maxForceJacUpdatePhysicalSteps": 0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
