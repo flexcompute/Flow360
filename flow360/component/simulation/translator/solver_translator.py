@@ -850,6 +850,7 @@ def get_solver_json(
             "CFLMultiplier": 1.0,
             "updateJacobianFrequency": 1,
             "maxForceJacUpdatePhysicalSteps": 0,
+            "modelType": "HeatEquation",
         }
         linear_solver_absolute_tolerance = get_attribute_from_instance_list(
             input_params.models,
