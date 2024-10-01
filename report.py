@@ -1,3 +1,4 @@
+import os
 import random
 import requests
 import matplotlib.pyplot as plt
@@ -99,7 +100,11 @@ class Report(BaseModel):
             header.append("Flow 360 Report")
 
         with header.create(Head("R")):
-            header.append(NoEscape(r"\includegraphics[width=2cm]{/home/matt/Documents/Flexcompute/flow360/Flow360/flow360.png}"))
+            header.append(NoEscape(
+                r"\includegraphics[width=2cm]{"
+                f"{os.path.join(os.path.dirname(__file__), 'img', 'flow360.png')}"
+                "}"
+            ))
 
         # Footer date and page number
         with header.create(Foot("C")):
@@ -220,7 +225,7 @@ class Tabulary(Tabular):
 class Table(ReportItem):
     data_path: list[Union[str, Delta]]
     section_title: Union[str, None]
-    custom_headings: list[str] = None
+    custom_headings: Union[list[str], None] = None
 
     @model_validator(mode="after")
     def check_custom_heading_count(self) -> None:
@@ -286,23 +291,27 @@ def _assemble_fig_rows(img_list, items_in_row):
         main_fig.append(NoEscape(r'\\'))
     return main_fig
 
-class Chart2D(ReportItem):
-    data_path: list[Union[str, Delta]]
+class Chart(ReportItem):
     section_title: Union[str, None]
     fig_name: str
-    background: Union[Literal["geometry"], None]
-    select_case_ids: list[str] = None
     fig_size: float = 0.8 # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
-    single_plot: bool = False
+    select_case_ids: list[str] = None
 
     @model_validator(mode="after")
-    def check_items_in_row(self) -> None:
+    def check_chart_args(self) -> None:
         if self.items_in_row is not None:
             if self.items_in_row == -1:
                 return
             if self.items_in_row <= 1:
                 raise ValueError(f"`Items_in_row` should be greater than 1. Use -1 to include all cases on a single row. Use `None` to disable the argument.")
+        if self.items_in_row is not None and self.single_plot:
+            raise ValueError(f"`Items_in_row` and `single_plot` cannot be used together.")
+
+class Chart2D(Chart):
+    data_path: list[Union[str, Delta]]
+    background: Union[Literal["geometry"], None] = None
+    single_plot: bool = False
 
     def _create_fig(self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str) -> None:
         """Create a simple matplotlib figure"""
@@ -383,11 +392,7 @@ class Chart2D(ReportItem):
         # Clear the matplotlib cache to be certain figure won't appear
         plt.close()
 
-class Chart3D(ReportItem):
-    section_title: Union[str, None]
-    fig_size: float = 0.8
-    items_in_row: Union[int, None] = None
-    select_case_ids: list[str] = None
+class Chart3D(Chart):
     # field: str
     # camera: List[float]
     # limits: List[float]
@@ -467,18 +472,20 @@ if __name__ == "__main__":
             Table(
                 data_path=[
                     "params_as_dict/geometry/refArea", 
-                    Delta(data_path="total_forces/CD", ref_case_id=a2_case.id)
+                    Delta(data_path="total_forces/CD", ref_case_id=a2_case.id),
                 ],
                 section_title="My Favourite Quantities",
             ),
-            Chart3D(
-                section_title="Chart3D Testing",
-                fig_size=0.5
-            ),
-            Chart3D(
-                section_title="Chart3D Rows Testing",
-                items_in_row=-1
-            ),
+            # Chart3D(
+            #     section_title="Chart3D Testing",
+            #     fig_size=0.5,
+            #     fig_name="Unused"
+            # ),
+            # Chart3D(
+            #     section_title="Chart3D Rows Testing",
+            #     items_in_row=-1,
+            #     fig_name="Unused"
+            # ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
                 section_title="Sanity Check Step against Step",
