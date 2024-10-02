@@ -1,6 +1,5 @@
 import os
 import random
-import requests
 import matplotlib.pyplot as plt
 
 import backoff
@@ -144,6 +143,13 @@ class Report(BaseModel):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
                         for item in self.items:
+                            # Don't attempt to create ReportItems that have a select_case_ids which don't include the current case.id
+                            # Checks for valid selecte_case_ids can be done later
+                            if hasattr(item, "select_case_ids"):
+                                if item.select_case_ids is not None:
+                                    if case.id not in item.select_case_ids:
+                                        continue
+                                    
                             item.get_doc_item([case], doc, Subsection, self.include_case_by_case)
 
 
@@ -402,14 +408,13 @@ class Chart3D(Chart):
     # camera: List[float]
     # limits: List[float]
 
-    async def process_3d_images(self, cases: list[Case]):
-        # Want it to try max of 5 minutes in backoff loop or total time? `max_time` if latter
+    async def process_3d_images(self, cases: list[Case], fig_name: str) -> list[str]:
         @backoff.on_exception(
                 backoff.expo,
                 ValueError,
                 max_time=300
                 )
-        async def _get_image(session, url, manifest):
+        async def _get_image(session: aiohttp.client.ClientSession, url:str, manifest: list[dict]):
             async with session.post(url, json=manifest) as response:
                 if response.status == 503:
                     raise ValueError("503 response received.")
@@ -429,10 +434,18 @@ class Chart3D(Chart):
         async with aiohttp.ClientSession() as session:
             tasks = []
             img_names = []
+            existing_images = os.listdir(current_dir)
             for case in cases:
+                # Stops case_by_case re-requesting images from the server
+                # Empty list doesn't cause issues with later gather or zip
+                img_name = fig_name + "_" + case.name
+                img_names.append(img_name)
+                if img_name + ".png" in existing_images:
+                    print("Image exists - skipping")
+                    continue
+
                 task = _get_image(session=session, url=url, manifest=manifest)
                 tasks.append(task)
-                img_names.append(case.name)
             responses = await asyncio.gather(*tasks)
 
             os.chdir(current_dir)
@@ -457,7 +470,7 @@ class Chart3D(Chart):
         if self.select_case_ids is not None:
             cases = [case for case in cases if case.id in self.select_case_ids]
 
-        img_list = asyncio.run(self.process_3d_images(cases))
+        img_list = asyncio.run(self.process_3d_images(cases, self.fig_name))
                       
         if self.items_in_row is not None:
             main_fig = _assemble_fig_rows(img_list, self.items_in_row)
@@ -484,6 +497,9 @@ if __name__ == "__main__":
     # Is Expression needed? Parsing a user defined expression safely is pretty challenging - lot of recent work on this for Tidy3D
     # Is there a hook to check code style for Flow360? Not currently running anything
 
+    # To Do
+    # Real captions for Chart3D items - waiting UVF-shutter development
+
     a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")
     b2_case = Case("bd63add6-4093-4fca-95e8-f1ff754cfcd9")
     other_a2_case = Case("706d5fad-39ef-4782-8df5-c020723259bf")
@@ -503,12 +519,12 @@ if __name__ == "__main__":
             Chart3D(
                 section_title="Chart3D Testing",
                 fig_size=0.5,
-                fig_name="Unused"
+                fig_name="c3d_std"
             ),
             Chart3D(
                 section_title="Chart3D Rows Testing",
                 items_in_row=-1,
-                fig_name="Unused"
+                fig_name="c3d_rows"
             ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],

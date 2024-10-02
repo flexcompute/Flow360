@@ -141,7 +141,7 @@ def test_table():
 def test_report():
     # This does fail if pylatex throws an error - even if a mostly good pdf is produced
     # Just doing case_by_case True as it calls all the False side as well
-    os.chdir("tests/temp")
+    os.chdir(os.path.dirname(__file__) + "/temp")
     _reset_test()
     report = Report(
         items=[
