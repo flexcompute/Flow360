@@ -9,6 +9,7 @@ from flow360 import Case, SI_unit_system, Flow360Params, Geometry, FreestreamFro
 # What can I use as a preloaded Case with plotable data?
 # How best to emulate Chart3D image download?
 # Is it worth loading the generated pdf into python and asserting quality?
+# Is creating a temp folder ok?
 
 
 a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")

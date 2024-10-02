@@ -3,6 +3,11 @@ import random
 import requests
 import matplotlib.pyplot as plt
 
+import backoff
+import asyncio
+import aiohttp
+import json
+
 from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union, Any
 
@@ -397,14 +402,47 @@ class Chart3D(Chart):
     # camera: List[float]
     # limits: List[float]
 
-    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case: bool=False):
-        for case in cases:
-            # This will use case.id to create requests
-            # case.id
-            file_name = "cp.png"
-            img = requests.get('https://simcloud-public-1.s3.amazonaws.com/temp/post-processing-demo/cp.png', allow_redirects=True)
-            open(file_name, "wb").write(img.content)
+    async def process_3d_images(self, cases: list[Case]):
+        # Want it to try max of 5 minutes in backoff loop or total time? `max_time` if latter
+        @backoff.on_exception(
+                backoff.expo,
+                ValueError,
+                max_time=300
+                )
+        async def _get_image(session, url, manifest):
+            async with session.post(url, json=manifest) as response:
+                if response.status == 503:
+                    raise ValueError("503 response received.")
+                else:
+                    return await response.read()
 
+        url = "http://localhost:3000/screenshot"
+
+        # May not be necessary - depends on manifest loading method
+        current_dir = os.getcwd()
+
+        # Load manifest from case - move to loop later
+        os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
+        with open("b777.json", "r") as in_file:
+            manifest = json.load(in_file)
+
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            img_names = []
+            for case in cases:
+                task = _get_image(session=session, url=url, manifest=manifest)
+                tasks.append(task)
+                img_names.append(case.name)
+            responses = await asyncio.gather(*tasks)
+
+            os.chdir(current_dir)
+            for response, img_name in zip(responses, img_names):
+                with open(f"{img_name}.png", "wb") as img_out:
+                    img_out.write(response)
+
+        return img_names
+    
+    def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case: bool=False):
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
             if self.items_in_row > len(cases) or self.items_in_row == -1:
@@ -415,19 +453,11 @@ class Chart3D(Chart):
             section = section_func(self.section_title)
             doc.append(section)
 
-        img_list = []
-        for case in cases:
-            # Skip Cases the user hasn't selected
-            if self.select_case_ids is not None:
-                if case.id not in self.select_case_ids:
-                    continue
-            
-            # Will change this once request image is built
-            cbc_str = "cbc_" if case_by_case else ""
-            file_name = "cp.png"
-            img = requests.get('https://simcloud-public-1.s3.amazonaws.com/temp/post-processing-demo/cp.png', allow_redirects=True)
-            open(cbc_str + file_name, "wb").write(img.content)
-            img_list.append(file_name)
+        # Reduce the case list by the selected IDs
+        if self.select_case_ids is not None:
+            cases = [case for case in cases if case.id in self.select_case_ids]
+
+        img_list = asyncio.run(self.process_3d_images(cases))
                       
         if self.items_in_row is not None:
             main_fig = _assemble_fig_rows(img_list, self.items_in_row)
@@ -447,18 +477,12 @@ class Chart3D(Chart):
         doc.append(NoEscape(r'\clearpage'))
 
 if __name__ == "__main__":
-    # Answered Questions:
-    # Where to start putting in styling - font, colours, etc.
-
     # New Questions
     # Delta is currently just a mean - what other ways might people want to express a delta
-    # Is there any guide to test design for Flow360?
     # Where should report sit in the repo?
     # Any other details that should be included in Summary?
     # Is Expression needed? Parsing a user defined expression safely is pretty challenging - lot of recent work on this for Tidy3D
-
-    # To Do
-    # Tweak Delta to have more control over output
+    # Is there a hook to check code style for Flow360? Not currently running anything
 
     a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")
     b2_case = Case("bd63add6-4093-4fca-95e8-f1ff754cfcd9")
@@ -476,16 +500,16 @@ if __name__ == "__main__":
                 ],
                 section_title="My Favourite Quantities",
             ),
-            # Chart3D(
-            #     section_title="Chart3D Testing",
-            #     fig_size=0.5,
-            #     fig_name="Unused"
-            # ),
-            # Chart3D(
-            #     section_title="Chart3D Rows Testing",
-            #     items_in_row=-1,
-            #     fig_name="Unused"
-            # ),
+            Chart3D(
+                section_title="Chart3D Testing",
+                fig_size=0.5,
+                fig_name="Unused"
+            ),
+            Chart3D(
+                section_title="Chart3D Rows Testing",
+                items_in_row=-1,
+                fig_name="Unused"
+            ),
             Chart2D(
                 data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
                 section_title="Sanity Check Step against Step",
