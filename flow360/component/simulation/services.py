@@ -179,8 +179,8 @@ def get_default_params(
                 ],
             )
         # cleaning up stored entities in default settings to let user decide:
-        params.models[0].entities.stored_entities = [] # pylint: disable=unsubscriptable-object
-        params.models[1].entities.stored_entities = [] # pylint: disable=unsubscriptable-object
+        params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
+        params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
 
         params = _store_project_length_unit(length_unit, params)
 
