@@ -10,10 +10,18 @@ import json
 from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union, Any
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package
-from pylatex.utils import bold
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package, Command
+from pylatex.utils import bold, escape_latex
 
 from flow360 import Case
+
+def check_landscape(doc):
+    for package in doc.packages:
+        if "geometry" in str(package.arguments):
+            if "landscape" in str(package.options):
+                return True
+            else:
+                return False
 
 def get_case_from_id(id: str, cases: list[Case]) -> Case:
     # This can happen if Delta has no ref_case
@@ -100,8 +108,8 @@ class Report(BaseModel):
     def _create_header_footer(self) -> PageStyle:
         header = PageStyle("header")
         # Header title and logo
-        with header.create(Head("C")):
-            header.append("Flow 360 Report")
+        # with header.create(Head("C")):
+        #     header.append("Flow 360 Report")
 
         with header.create(Head("R")):
             header.append(NoEscape(
@@ -111,7 +119,7 @@ class Report(BaseModel):
             ))
 
         # Footer date and page number
-        with header.create(Foot("C")):
+        with header.create(Foot("R")):
             header.append(NoEscape(r"\thepage"))
 
         with header.create(Foot("L")):
@@ -119,20 +127,61 @@ class Report(BaseModel):
 
         return header
 
-    def create_pdf(self, filename:str, cases: list[Case]) -> None:
+    def create_pdf(self, filename:str, cases: list[Case], landscape:bool=False) -> None:
         # Create a new LaTeX document
-        doc = Document()
+        doc = Document(document_options=["10pt"])
+        
         # Package info
         doc.packages.append(Package("float"))
+        doc.packages.append(Package("caption"))
+        # doc.packages.append(Package("ragged2e"))
         doc.packages.append(Package("placeins")) # For FloatBarrier
-        doc.packages.append(Package("geometry", options=["a4paper", "margin=1in"]))
+        doc.packages.append(Package("xcolor", options="table")) # For Table coloring
+        doc.packages.append(Package("opensans", options="default")) # For changing font
+
+        geometry_options = ["a4paper", "margin=1in"]
+        if landscape:
+            geometry_options.append("landscape")
+        doc.packages.append(Package("geometry", options=geometry_options))
+
+        # Title page - include before footer to prevent page number on title page
+        # doc.append(Command('begin', 'titlepage'))  # Start title page
+        # doc.append(Command('thispagestyle', 'empty'))  # No page number
+        # doc.append(Command('centering'))
+        # doc.append(Command('huge', 'Flow 360 report'))
+        # doc.append(Command('hspace{1cm}'))
+        # doc.append(Command('large', NoEscape(r'\today')))  # Current date
+        # doc.append(Command('end', 'titlepage'))
+
+        doc.append(Command('begin', 'titlepage'))  # Start title page
+        doc.append(Command('centering'))
+
+        # Title
+        doc.append(Command('vspace*{3cm}'))
+        doc.append(Command('huge', 'Flow 360 Report'))
+        doc.append(Command('newline'))
+
+        # Date
+        doc.append(Command('large', NoEscape(r'\today')))  # Current date
+        doc.append(Command('newline'))
+
+        # Image
+        doc.append(NoEscape(r'\includegraphics[width=0.4\textwidth]{' + os.path.join(os.path.dirname(__file__), 'img', 'flow360.png') + '}'))
+        doc.append(Command('end', 'titlepage'))  # Start title page
+        doc.append(Command('newpage'))
+        
 
         # Preamble info
         doc.preamble.append(self._create_header_footer())
         doc.preamble.append(NoEscape(r'\setlength{\headheight}{20pt}'))
         doc.preamble.append(NoEscape(r'\addtolength{\topmargin}{-5pt}'))
+        
+        # doc.preamble.append(NoEscape(r'\DeclareCaptionFont{myblue}{\color{gray}}'))
+        doc.preamble.append(NoEscape(r'\DeclareCaptionLabelFormat{graybox}{\colorbox{gray!20}{#1 #2} }'))
+
+        doc.preamble.append(NoEscape(r'\captionsetup{position=bottom, font=large, labelfont={bf}, labelformat=graybox, labelsep=none, justification=raggedright}'))
         doc.change_document_style("header")
-    
+
         # Iterate through all cases together
         for item in self.items:
             item.get_doc_item(cases, doc, case_by_case=False)
@@ -151,7 +200,6 @@ class Report(BaseModel):
                                         continue
                                     
                             item.get_doc_item([case], doc, Subsection, self.include_case_by_case)
-
 
         # Generate the PDF
         doc.generate_pdf(filename, clean_tex=False)
@@ -269,6 +317,7 @@ class Table(ReportItem):
             else:
                 field_titles.extend([bold(heading) for heading in self.custom_headings])
 
+            table.append(Command('rowcolor', 'gray!20'))
             table.add_row(field_titles)
             table.add_hline()
             
@@ -279,9 +328,14 @@ class Table(ReportItem):
                 table.add_row(row_list)
                 table.add_hline()
 
-def _assemble_fig_rows(img_list, items_in_row):
+def _assemble_fig_rows(img_list: list[str], items_in_row: int, doc: Document, fig_caption: str):
+    """
+    Build a figure from SubFigures which displays images in rows
+
+    Using Doc manually here may be uncessary - but it does allow for more control 
+    """
     minipage_size = 0.98 / items_in_row # Smaller than 1 to avoid overflowing
-    main_fig = Figure(position="h!")
+    doc.append(NoEscape(r'\begin{figure}[h!]'))
         
         # Build list of indices to combine into rows
     indices = list(range(len(img_list)))
@@ -295,17 +349,19 @@ def _assemble_fig_rows(img_list, items_in_row):
             if items_in_row != 1:
                 sub_fig.add_caption(idx)
 
-            main_fig.append(sub_fig)
+            doc.append(sub_fig)
                 
-            main_fig.append(NoEscape(r'\hfill'))
+            doc.append(NoEscape(r'\hfill'))
 
-        main_fig.append(NoEscape(r'\\'))
-    return main_fig
+        doc.append(NoEscape(r'\\'))
+    
+    doc.append(NoEscape(r'\caption{' + escape_latex(fig_caption) + "}"))
+    doc.append(NoEscape(r'\end{figure}'))
 
 class Chart(ReportItem):
     section_title: Union[str, None]
     fig_name: str
-    fig_size: float = 0.8 # Relates to fraction of the textwidth
+    fig_size: float = 0.7 # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
     select_case_ids: list[str] = None
 
@@ -381,10 +437,8 @@ class Chart2D(Chart):
                 figure_list.append(fig)
 
         if self.items_in_row is not None:
-            main_fig = _assemble_fig_rows(figure_list, self.items_in_row)
-
-            doc.append(main_fig)
-            main_fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+            fig_caption = f'[{x_lab}] against [{y_lab}] for all cases.'
+            _assemble_fig_rows(figure_list, self.items_in_row, doc, fig_caption)
 
         elif self.single_plot:
             # Takes advantage of plot cached by matplotlib and that the last save_name is the full plot
@@ -408,7 +462,7 @@ class Chart3D(Chart):
     # camera: List[float]
     # limits: List[float]
 
-    async def process_3d_images(self, cases: list[Case], fig_name: str) -> list[str]:
+    async def process_3d_images(self, cases: list[Case], fig_name: str, url: str, manifest: list) -> list[str]:
         @backoff.on_exception(
                 backoff.expo,
                 ValueError,
@@ -421,34 +475,22 @@ class Chart3D(Chart):
                 else:
                     return await response.read()
 
-        url = "http://localhost:3000/screenshot"
-
-        # May not be necessary - depends on manifest loading method
-        current_dir = os.getcwd()
-
-        # Load manifest from case - move to loop later
-        os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
-        with open("b777.json", "r") as in_file:
-            manifest = json.load(in_file)
-
         async with aiohttp.ClientSession() as session:
             tasks = []
             img_names = []
-            existing_images = os.listdir(current_dir)
+            existing_images = os.listdir()
             for case in cases:
                 # Stops case_by_case re-requesting images from the server
                 # Empty list doesn't cause issues with later gather or zip
                 img_name = fig_name + "_" + case.name
                 img_names.append(img_name)
                 if img_name + ".png" in existing_images:
-                    print("Image exists - skipping")
                     continue
 
                 task = _get_image(session=session, url=url, manifest=manifest)
                 tasks.append(task)
             responses = await asyncio.gather(*tasks)
 
-            os.chdir(current_dir)
             for response, img_name in zip(responses, img_names):
                 with open(f"{img_name}.png", "wb") as img_out:
                     img_out.write(response)
@@ -470,14 +512,24 @@ class Chart3D(Chart):
         if self.select_case_ids is not None:
             cases = [case for case in cases if case.id in self.select_case_ids]
 
-        img_list = asyncio.run(self.process_3d_images(cases, self.fig_name))
+        url = "https://uvf-shutter.dev-simulation.cloud/screenshot"
+
+        # May not be necessary - depends on manifest loading method
+        current_dir = os.getcwd()
+
+        # Load manifest from case - move to loop later
+        os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
+        with open("b777.json", "r") as in_file:
+            manifest = json.load(in_file)
+
+        os.chdir(current_dir)
+
+        img_list = asyncio.run(self.process_3d_images(cases, self.fig_name, url=url, manifest=manifest))
                       
         if self.items_in_row is not None:
-            main_fig = _assemble_fig_rows(img_list, self.items_in_row)
-
-            doc.append(main_fig)
-            main_fig.add_caption(f'A cool test picture in a row.')
-
+            fig_caption = f"Chart3D Row"
+            _assemble_fig_rows(img_list, self.items_in_row, doc, fig_caption)
+            
         else:
             for filename in img_list:
                 fig = Figure(position="h!")
@@ -556,4 +608,9 @@ if __name__ == "__main__":
         ],
         include_case_by_case=True
     )
-    report.create_pdf("test_report", [a2_case, b2_case, other_a2_case])
+
+    # NOTE: There's a bug where something is being cached between create_pdf calls like this
+    # The issue seems to affect _assemble_fig_rows
+    report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
+    # report.create_pdf("test_report_portrait", [a2_case, b2_case, other_a2_case], landscape=False)
+    
