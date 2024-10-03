@@ -3,11 +3,19 @@ import unittest
 
 import pytest
 
+import flow360.component.simulation.units as u
+from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    HeatEquationInitialCondition,
+    NavierStokesInitialCondition,
+    Solid,
+)
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import GenericVolume, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
 
 assertions = unittest.TestCase("__init__")
@@ -182,3 +190,92 @@ def test_ddes_wall_function_validator(
     # Invalid simulation params (DDES turned off)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_DDES])
+
+
+def test_cht_solver_settings_validator(
+    fluid_model,
+):
+    timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
+    fluid_model_with_initial_condition = Fluid(
+        initial_condition=NavierStokesInitialCondition(rho="1;", u="1;", v="1;", w="1;", p="1;")
+    )
+    solid_model = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=aluminum,
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10"),
+    )
+    solid_model_without_initial_condition = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=aluminum,
+        volumetric_heat_source="0",
+    )
+    solid_model_without_specific_heat_capacity = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=SolidMaterial(
+            name="aluminum_without_specific_heat_capacity",
+            thermal_conductivity=235 * u.kg / u.s**3 * u.m / u.K,
+            density=2710 * u.kg / u.m**3,
+        ),
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10;"),
+    )
+    surface_output_with_residual_heat_solver = SurfaceOutput(
+        name="surface", write_single_file=True, output_fields=["residualHeatSolver"]
+    )
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model, solid_model],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    assert params
+
+    message = (
+        "Heat equation output variables: residualHeatSolver is requested in "
+        f"{surface_output_with_residual_heat_solver.output_type} with no `Solid` model defined."
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    message = "In `Solid` model -> material, the heat capacity needs to be specified for unsteady simulations."
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model, solid_model_without_specific_heat_capacity],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    message = (
+        "In `Solid` model, the initial condition needs to be specified for unsteady simulations."
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model, solid_model_without_initial_condition],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    message = "In `Solid` model, the initial condition needs to be specified "
+    "when the `Fluid` model uses expression as initial condition."
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model_with_initial_condition, solid_model_without_initial_condition],
+            time_stepping=Steady(),
+            outputs=[surface_output_with_residual_heat_solver],
+        )

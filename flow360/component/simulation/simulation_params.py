@@ -43,6 +43,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
+    _check_cht_solver_settings,
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_low_mach_preconditioner_output,
@@ -239,6 +240,12 @@ class SimulationParams(_ParamModelBase):
                 SurfaceOutput(name="Surface output 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
             )
         return v
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_cht_solver_settings(cls, params):
+        """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
+        return _check_cht_solver_settings(params)
 
     @pd.model_validator(mode="after")
     @classmethod
