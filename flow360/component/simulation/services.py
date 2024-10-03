@@ -170,9 +170,18 @@ def get_default_params(
                 reference_geometry=reference_geometry,
                 operating_condition=operating_condition,
                 models=[
-                    Wall(name="Wall", surfaces=[Surface(name="*")]),
+                    Wall(
+                        name="Wall", surfaces=[Surface(name="placeholder")]
+                    ),  # to make it consistent with geo
+                    Freestream(
+                        name="Freestream", surfaces=[Surface(name="placeholder")]
+                    ),  # to make it consistent with geo
                 ],
             )
+        # cleaning up stored entities in default settings to let user decide:
+        params.models[0].entities.stored_entities = [] # pylint: disable=unsubscriptable-object
+        params.models[1].entities.stored_entities = [] # pylint: disable=unsubscriptable-object
+
         params = _store_project_length_unit(length_unit, params)
 
         return params.model_dump(
