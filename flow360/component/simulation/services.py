@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -23,6 +24,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.primitives import Box  # For parse_model_dict
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -96,6 +98,19 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
+def _store_project_length_unit(length_unit, params: SimulationParams):
+    if length_unit is not None:
+        # Store the length unit so downstream services/pipelines can use it
+        # pylint: disable=fixme
+        # TODO: client does not call this. We need to start using new webAPI for that
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot,no-member
+            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
+                length_unit
+            )
+    return params
+
+
 def get_default_params(
     unit_system_name, length_unit, root_item_type: Literal["Geometry", "VolumeMesh"]
 ) -> SimulationParams:
@@ -120,26 +135,28 @@ def get_default_params(
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
     with unit_system:
-        params = SimulationParams(
-            reference_geometry=ReferenceGeometry(
-                area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
-            ),
-            meshing=MeshingParams(
-                volume_zones=[AutomatedFarfield(name="Farfield")],
-            ),
-            operating_condition=AerospaceCondition(velocity_magnitude=dummy_value),
+        reference_geometry = ReferenceGeometry(
+            area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
         )
+        operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
 
-    if length_unit is not None:
-        # Store the length unit so downstream services/pipelines can use it
-        # pylint: disable=fixme
-        # TODO: client does not call this. We need to start using new webAPI for that
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-            # pylint: disable=assigning-non-slot,no-member
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
     if root_item_type == "Geometry":
+        automated_farfield = AutomatedFarfield(name="Farfield")
+        with unit_system:
+            params = SimulationParams(
+                reference_geometry=reference_geometry,
+                meshing=MeshingParams(
+                    volume_zones=[automated_farfield],
+                ),
+                operating_condition=operating_condition,
+                models=[
+                    Wall(name="Wall", surfaces=[Surface(name="*")]),
+                    Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
+                ],
+            )
+
+        params = _store_project_length_unit(length_unit, params)
+
         return params.model_dump(
             exclude_none=True,
             exclude={
@@ -148,6 +165,25 @@ def get_default_params(
             },
         )
     if root_item_type == "VolumeMesh":
+        with unit_system:
+            params = SimulationParams(
+                reference_geometry=reference_geometry,
+                operating_condition=operating_condition,
+                models=[
+                    Wall(
+                        name="Wall", surfaces=[Surface(name="placeholder")]
+                    ),  # to make it consistent with geo
+                    Freestream(
+                        name="Freestream", surfaces=[Surface(name="placeholder")]
+                    ),  # to make it consistent with geo
+                ],
+            )
+        # cleaning up stored entities in default settings to let user decide:
+        params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
+        params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
+
+        params = _store_project_length_unit(length_unit, params)
+
         return params.model_dump(
             exclude_none=True,
             exclude={

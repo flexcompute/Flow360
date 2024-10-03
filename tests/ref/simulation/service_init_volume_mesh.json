@@ -71,6 +71,21 @@
     },
     "models": [
         {
+            "type": "Wall",
+            "entities": {
+              "stored_entities": []
+            },
+            "name": "Wall",
+            "use_wall_function": false
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+              "stored_entities": []
+            },
+            "name": "Freestream"
+        },
+        {
             "material": {
                 "type": "air",
                 "name": "air",

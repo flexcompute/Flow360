@@ -91,6 +91,34 @@
 },
 "models": [
   {
+    "type": "Wall",
+    "entities": {
+      "stored_entities": [
+        {
+          "private_attribute_registry_bucket_name": "SurfaceEntityType",
+          "private_attribute_entity_type_name": "Surface",
+          "name": "*",
+          "private_attribute_sub_components": []
+        }
+      ]
+    },
+    "name": "Wall",
+    "use_wall_function": false
+  },
+  {
+    "type": "Freestream",
+    "entities": {
+      "stored_entities": [
+        {
+          "private_attribute_registry_bucket_name": "SurfaceEntityType",
+          "private_attribute_entity_type_name": "GhostSurface",
+          "name": "farfield"
+        }
+      ]
+    },
+    "name": "Freestream"
+  },
+  {
     "material": {
       "type": "air",
       "name": "air",
