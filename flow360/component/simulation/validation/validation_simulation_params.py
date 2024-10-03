@@ -115,7 +115,10 @@ def _check_consistency_ddes_volume_output(v):
         for model in models:
             if isinstance(model, Fluid):
                 turbulence_model_solver = model.turbulence_model_solver
-                if not isinstance(turbulence_model_solver, NoneSolver) and turbulence_model_solver.DDES:
+                if (
+                    not isinstance(turbulence_model_solver, NoneSolver)
+                    and turbulence_model_solver.DDES
+                ):
                     model_type = turbulence_model_solver.type_name
                     run_ddes = True
                     break
@@ -128,7 +131,9 @@ def _check_consistency_ddes_volume_output(v):
     for output in outputs:
         if isinstance(output, VolumeOutput) and output.output_fields is not None:
             output_fields = output.output_fields.items
-            if "SpalartAllmaras_DDES" in output_fields and not (model_type == "SpalartAllmaras" and run_ddes):
+            if "SpalartAllmaras_DDES" in output_fields and not (
+                model_type == "SpalartAllmaras" and run_ddes
+            ):
                 raise ValueError(
                     "SpalartAllmaras_DDES output can only be specified with "
                     "SpalartAllmaras turbulence model and DDES turned on."

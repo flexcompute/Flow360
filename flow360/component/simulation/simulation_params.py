@@ -45,8 +45,8 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
-    _check_numerical_dissipation_factor_output,
     _check_low_mach_preconditioner_output,
+    _check_numerical_dissipation_factor_output,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
