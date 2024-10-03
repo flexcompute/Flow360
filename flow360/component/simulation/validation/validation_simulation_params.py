@@ -4,8 +4,19 @@ validation for SimulationParams
 
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import Fluid
-from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    NavierStokesInitialCondition,
+    Solid,
+)
+from flow360.component.simulation.outputs.outputs import (
+    IsosurfaceOutput,
+    ProbeOutput,
+    SliceOutput,
+    SurfaceOutput,
+    VolumeOutput,
+)
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -144,3 +155,68 @@ def _check_consistency_ddes_volume_output(v):
                 )
 
     return v
+
+
+def _check_cht_solver_settings(params):
+    has_heat_transfer = False
+
+    models = params.models
+
+    if models:
+        for model in models:
+            if isinstance(model, Solid):
+                has_heat_transfer = True
+
+        if has_heat_transfer is False:
+            params = _validate_cht_no_heat_transfer(params)
+        if has_heat_transfer is True:
+            params = _validate_cht_has_heat_transfer(params)
+
+    return params
+
+
+def _validate_cht_no_heat_transfer(params):
+
+    if params.outputs:
+        for output in params.outputs:
+            if isinstance(
+                output, (SurfaceOutput, VolumeOutput, SliceOutput, ProbeOutput, IsosurfaceOutput)
+            ):
+                if "residualHeatSolver" in output.output_fields.items:
+                    raise ValueError(
+                        f"Heat equation output variables: residualHeatSolver is requested in {output.output_type} with"
+                        " no `Solid` model defined."
+                    )
+
+    return params
+
+
+def _validate_cht_has_heat_transfer(params):
+
+    time_stepping = params.time_stepping
+    if isinstance(time_stepping, Unsteady):
+        for model_solid in params.models:
+            if isinstance(model_solid, Solid):
+                if model_solid.material.specific_heat_capacity is None:
+                    raise ValueError(
+                        "In `Solid` model -> material, the heat capacity needs to be specified "
+                        "for unsteady simulations."
+                    )
+                if model_solid.initial_condition is None:
+                    raise ValueError(
+                        "In `Solid` model, the initial condition needs to be specified "
+                        "for unsteady simulations."
+                    )
+
+    for model in params.models:
+        if isinstance(model, Fluid) and isinstance(
+            model.initial_condition, NavierStokesInitialCondition
+        ):
+            for model_solid in params.models:
+                if isinstance(model_solid, Solid) and model_solid.initial_condition is None:
+                    raise ValueError(
+                        "In `Solid` model, the initial condition needs to be specified "
+                        "when the `Fluid` model uses expression as initial condition."
+                    )
+
+    return params

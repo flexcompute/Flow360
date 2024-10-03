@@ -24,6 +24,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
 from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     Fluid,
+    HeatEquationInitialCondition,
     PorousMedium,
     Rotation,
     Solid,
@@ -120,6 +121,7 @@ def get_the_param():
                         specific_heat_capacity=1.0 * u.J / u.kg / u.K,
                         density=1.0 * u.kg / u.m**3,
                     ),
+                    initial_condition=HeatEquationInitialCondition(temperature="1"),
                 ),
                 Inflow(
                     surfaces=[my_inflow1],
