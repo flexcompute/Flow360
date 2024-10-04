@@ -9,7 +9,7 @@ import json
 from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union, Any
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package, Command, NewPage, NewLine
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package, Command, NewPage
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case
@@ -334,7 +334,7 @@ class Chart(ReportItem):
         """
 
         # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
-        minipage_size = 0.95/ self.items_in_row if self.items_in_row != 1 else 0.7 
+        minipage_size = 0.98/ self.items_in_row if self.items_in_row != 1 else 0.7 
         doc.append(NoEscape(r'\begin{figure}[h!]'))
         doc.append(NoEscape(r'\centering'))
 
