@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 import pydantic as pd
 
@@ -31,9 +31,7 @@ IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
 class DraftPostRequest(pd.BaseModel):
     """Data model for draft post request"""
 
-    name: str = pd.Field(
-        default_factory=lambda: "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
-    )
+    name: Optional[str] = pd.Field(None)
     project_id: IDStringType = pd.Field(serialization_alias="projectId")
     source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
     source_item_type: Literal[
@@ -41,6 +39,13 @@ class DraftPostRequest(pd.BaseModel):
     ] = pd.Field(serialization_alias="sourceItemType")
     solver_version: str = pd.Field(serialization_alias="solverVersion")
     fork_case: bool = pd.Field(serialization_alias="forkCase")
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _generate_default_name(cls, values):
+        if values is None:
+            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
+        return values
 
 
 class DraftDraft(ResourceDraft):
