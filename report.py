@@ -1,5 +1,4 @@
 import os
-import random
 import matplotlib.pyplot as plt
 
 import backoff
@@ -10,7 +9,7 @@ import json
 from pydantic import BaseModel, model_validator
 from typing import List, Literal, Union, Any
 
-from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package, Command
+from pylatex import Document, Section, Subsection, Tabular, Figure, NoEscape, Head, Foot, PageStyle, SubFigure, Package, Command, NewPage, NewLine
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case
@@ -134,9 +133,9 @@ class Report(BaseModel):
         # Package info
         doc.packages.append(Package("float"))
         doc.packages.append(Package("caption"))
-        # doc.packages.append(Package("ragged2e"))
+        doc.packages.append(Package("graphicx")) # Included here as it's sometimes not included automatically when needed
         doc.packages.append(Package("placeins")) # For FloatBarrier
-        doc.packages.append(Package("xcolor", options="table")) # For Table coloring
+        doc.packages.append(Package("xcolor", options="table")) # For coloring inc Table
         doc.packages.append(Package("opensans", options="default")) # For changing font
 
         geometry_options = ["a4paper", "margin=1in"]
@@ -144,31 +143,24 @@ class Report(BaseModel):
             geometry_options.append("landscape")
         doc.packages.append(Package("geometry", options=geometry_options))
 
-        # Title page - include before footer to prevent page number on title page
-        # doc.append(Command('begin', 'titlepage'))  # Start title page
-        # doc.append(Command('thispagestyle', 'empty'))  # No page number
-        # doc.append(Command('centering'))
-        # doc.append(Command('huge', 'Flow 360 report'))
-        # doc.append(Command('hspace{1cm}'))
-        # doc.append(Command('large', NoEscape(r'\today')))  # Current date
-        # doc.append(Command('end', 'titlepage'))
-
-        doc.append(Command('begin', 'titlepage'))  # Start title page
+        # Title page
+        # NOTE: using NewLine inside a titlepage causes centering to fail. MUST use "\\" instead.
+        doc.append(Command('begin', 'titlepage'))
         doc.append(Command('centering'))
 
         # Title
         doc.append(Command('vspace*{3cm}'))
         doc.append(Command('huge', 'Flow 360 Report'))
-        doc.append(Command('newline'))
+        doc.append(NoEscape(r"\\"))
 
         # Date
         doc.append(Command('large', NoEscape(r'\today')))  # Current date
-        doc.append(Command('newline'))
+        doc.append(NoEscape(r"\\"))
 
         # Image
         doc.append(NoEscape(r'\includegraphics[width=0.4\textwidth]{' + os.path.join(os.path.dirname(__file__), 'img', 'flow360.png') + '}'))
-        doc.append(Command('end', 'titlepage'))  # Start title page
-        doc.append(Command('newpage'))
+        doc.append(Command('end', 'titlepage'))
+        doc.append(NewPage())
         
 
         # Preamble info
@@ -176,10 +168,8 @@ class Report(BaseModel):
         doc.preamble.append(NoEscape(r'\setlength{\headheight}{20pt}'))
         doc.preamble.append(NoEscape(r'\addtolength{\topmargin}{-5pt}'))
         
-        # doc.preamble.append(NoEscape(r'\DeclareCaptionFont{myblue}{\color{gray}}'))
         doc.preamble.append(NoEscape(r'\DeclareCaptionLabelFormat{graybox}{\colorbox{gray!20}{#1 #2} }'))
-
-        doc.preamble.append(NoEscape(r'\captionsetup{position=bottom, font=large, labelfont={bf}, labelformat=graybox, labelsep=none, justification=raggedright}'))
+        doc.preamble.append(NoEscape(r'\captionsetup{position=bottom, font=large, labelformat=graybox, labelsep=none, justification=raggedright, singlelinecheck=false}'))
         doc.change_document_style("header")
 
         # Iterate through all cases together
@@ -256,18 +246,8 @@ class Delta(BaseModel):
     
     __str__ = lambda self: f"Delta {self.data_path.split('/')[-1]}"
 
-
-class Expression(BaseModel):
-    title: str
-    expression: str
-
-    def calculate(self, case: Case):
-        return random.uniform(0.0, 1.0)
-
-    __str__ = lambda self: self.title
-
 class Tabulary(Tabular):
-
+    """The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex"""
     packages = [Package("tabulary")]
     
     def __init__(self, *args, width_argument=NoEscape(r"\linewidth"), **kwargs):
@@ -328,42 +308,13 @@ class Table(ReportItem):
                 table.add_row(row_list)
                 table.add_hline()
 
-def _assemble_fig_rows(img_list: list[str], items_in_row: int, doc: Document, fig_caption: str):
-    """
-    Build a figure from SubFigures which displays images in rows
-
-    Using Doc manually here may be uncessary - but it does allow for more control 
-    """
-    minipage_size = 0.98 / items_in_row # Smaller than 1 to avoid overflowing
-    doc.append(NoEscape(r'\begin{figure}[h!]'))
-        
-        # Build list of indices to combine into rows
-    indices = list(range(len(img_list)))
-    idx_list = [indices[i:i + items_in_row] for i in range(0, len(indices), items_in_row)]
-    for row_idx in idx_list:
-        for idx in row_idx:
-            sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
-            sub_fig.add_image(filename=img_list[idx], width=NoEscape(fr"\textwidth"))
-
-                # Stop caption for single subfigures - happens when include_case_by_case
-            if items_in_row != 1:
-                sub_fig.add_caption(idx)
-
-            doc.append(sub_fig)
-                
-            doc.append(NoEscape(r'\hfill'))
-
-        doc.append(NoEscape(r'\\'))
-    
-    doc.append(NoEscape(r'\caption{' + escape_latex(fig_caption) + "}"))
-    doc.append(NoEscape(r'\end{figure}'))
-
 class Chart(ReportItem):
     section_title: Union[str, None]
     fig_name: str
     fig_size: float = 0.7 # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
     select_case_ids: list[str] = None
+    force_new_page: bool = False
 
     @model_validator(mode="after")
     def check_chart_args(self) -> None:
@@ -374,6 +325,39 @@ class Chart(ReportItem):
                 raise ValueError(f"`Items_in_row` should be greater than 1. Use -1 to include all cases on a single row. Use `None` to disable the argument.")
         if self.items_in_row is not None and self.single_plot:
             raise ValueError(f"`Items_in_row` and `single_plot` cannot be used together.")
+
+    def _assemble_fig_rows(self, img_list: list[str], doc: Document, fig_caption: str):
+        """
+        Build a figure from SubFigures which displays images in rows
+
+        Using Doc manually here may be uncessary - but it does allow for more control 
+        """
+
+        # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
+        minipage_size = 0.95/ self.items_in_row if self.items_in_row != 1 else 0.7 
+        doc.append(NoEscape(r'\begin{figure}[h!]'))
+        doc.append(NoEscape(r'\centering'))
+
+            # Build list of indices to combine into rows
+        indices = list(range(len(img_list)))
+        idx_list = [indices[i:i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)]
+        for row_idx in idx_list:
+            for idx in row_idx:
+                sub_fig = SubFigure(position="t", width=NoEscape(fr"{minipage_size}\textwidth"))
+                sub_fig.add_image(filename=img_list[idx], width=NoEscape(r"\textwidth"))
+
+                    # Stop caption for single subfigures - happens when include_case_by_case
+                if self.items_in_row != 1:
+                    sub_fig.add_caption(idx)
+
+                doc.append(sub_fig)
+                    
+                doc.append(NoEscape(r'\hfill'))
+
+            doc.append(NoEscape(r'\\'))
+        
+        doc.append(NoEscape(r'\caption{' + escape_latex(fig_caption) + "}"))
+        doc.append(NoEscape(r'\end{figure}'))
 
 class Chart2D(Chart):
     data_path: list[Union[str, Delta]]
@@ -393,6 +377,10 @@ class Chart2D(Chart):
             plt.close()
 
     def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case=False) -> None:
+        # Create new page is user requests one
+        if self.force_new_page:
+            doc.append(NewPage())
+
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
             if self.items_in_row > len(cases) or self.items_in_row == -1:
@@ -433,18 +421,18 @@ class Chart2D(Chart):
                 # Fig is added to doc later to facilitate method of creating single_plot
                 fig = Figure(position="h!")
                 fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
-                fig.add_caption(f'{x_lab} against {y_lab} for {case.name}.')
+                fig.add_caption(NoEscape(f'{bold(x_lab)} against {bold(y_lab)} for {bold(case.name)}.'))
                 figure_list.append(fig)
 
         if self.items_in_row is not None:
-            fig_caption = f'[{x_lab}] against [{y_lab}] for all cases.'
-            _assemble_fig_rows(figure_list, self.items_in_row, doc, fig_caption)
+            fig_caption = NoEscape(f'{bold(x_lab)} against {bold(y_lab)} for {bold("all cases")}.')
+            self._assemble_fig_rows(figure_list, doc, fig_caption)
 
         elif self.single_plot:
             # Takes advantage of plot cached by matplotlib and that the last save_name is the full plot
             fig = Figure(position="h!")
             fig.add_image(save_name, width=NoEscape(fr'{self.fig_size}\textwidth'))
-            fig.add_caption(f'{x_lab} against {y_lab} for all cases.')
+            fig.add_caption(NoEscape(f'{bold(x_lab)} against {bold(y_lab)} for {bold("all cases")}.'))
             doc.append(fig)
         else:
             for fig in figure_list:
@@ -498,6 +486,10 @@ class Chart3D(Chart):
         return img_names
     
     def get_doc_item(self, cases: List[Case], doc: Document, section_func: Union[Section, Subsection]=Section, case_by_case: bool=False):
+        # Create new page is user requests one
+        if self.force_new_page:
+            doc.append(NewPage())
+
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
             if self.items_in_row > len(cases) or self.items_in_row == -1:
@@ -512,6 +504,7 @@ class Chart3D(Chart):
         if self.select_case_ids is not None:
             cases = [case for case in cases if case.id in self.select_case_ids]
 
+        # url = "https://localhost:3000/screenshot" Local url
         url = "https://uvf-shutter.dev-simulation.cloud/screenshot"
 
         # May not be necessary - depends on manifest loading method
@@ -528,13 +521,13 @@ class Chart3D(Chart):
                       
         if self.items_in_row is not None:
             fig_caption = f"Chart3D Row"
-            _assemble_fig_rows(img_list, self.items_in_row, doc, fig_caption)
+            self._assemble_fig_rows(img_list, doc, fig_caption)
             
         else:
             for filename in img_list:
                 fig = Figure(position="h!")
                 fig.add_image(filename, width=NoEscape(fr'{self.fig_size}\textwidth'))
-                fig.add_caption(f'A cool test picture.')
+                fig.add_caption(f'A Chart3D test picture.')
                 doc.append(fig)
 
         # Stops figures floating away from their sections
@@ -546,7 +539,6 @@ if __name__ == "__main__":
     # Delta is currently just a mean - what other ways might people want to express a delta
     # Where should report sit in the repo?
     # Any other details that should be included in Summary?
-    # Is Expression needed? Parsing a user defined expression safely is pretty challenging - lot of recent work on this for Tidy3D
     # Is there a hook to check code style for Flow360? Not currently running anything
 
     # To Do
@@ -570,8 +562,9 @@ if __name__ == "__main__":
             ),
             Chart3D(
                 section_title="Chart3D Testing",
-                fig_size=0.5,
-                fig_name="c3d_std"
+                fig_size=0.4,
+                fig_name="c3d_std",
+                force_new_page=True
             ),
             Chart3D(
                 section_title="Chart3D Rows Testing",
@@ -611,6 +604,6 @@ if __name__ == "__main__":
 
     # NOTE: There's a bug where something is being cached between create_pdf calls like this
     # The issue seems to affect _assemble_fig_rows
-    report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
-    # report.create_pdf("test_report_portrait", [a2_case, b2_case, other_a2_case], landscape=False)
+    # report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
+    report.create_pdf("test_report_portrait", [a2_case, b2_case, other_a2_case], landscape=False)
     
