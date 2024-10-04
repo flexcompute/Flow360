@@ -1,6 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
+from Flow360Core.Flow360 import b777
 import backoff
 import asyncio
 import aiohttp
@@ -126,7 +127,7 @@ class Report(BaseModel):
 
         return header
 
-    def create_pdf(self, filename:str, cases: list[Case], landscape:bool=False) -> None:
+    def create_pdf(self, filename:str, cases: list[Case], landscape:bool=False) -> str:
         # Create a new LaTeX document
         doc = Document(document_options=["10pt"])
         
@@ -193,6 +194,7 @@ class Report(BaseModel):
 
         # Generate the PDF
         doc.generate_pdf(filename, clean_tex=False)
+        return filename
 
 
 class Summary(ReportItem):
@@ -507,15 +509,18 @@ class Chart3D(Chart):
         # url = "https://localhost:3000/screenshot" Local url
         url = "https://uvf-shutter.dev-simulation.cloud/screenshot"
 
-        # May not be necessary - depends on manifest loading method
-        current_dir = os.getcwd()
+        # # May not be necessary - depends on manifest loading method
+        # current_dir = os.getcwd()
 
-        # Load manifest from case - move to loop later
-        os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
-        with open("b777.json", "r") as in_file:
-            manifest = json.load(in_file)
+        # # Load manifest from case - move to loop later
 
-        os.chdir(current_dir)
+        # os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
+        # with open("b777.json", "r") as in_file:
+        #     manifest = json.load(in_file)
+
+        # os.chdir(current_dir)
+
+        manifest = b777.b777()
 
         img_list = asyncio.run(self.process_3d_images(cases, self.fig_name, url=url, manifest=manifest))
                       
@@ -533,6 +538,87 @@ class Chart3D(Chart):
         # Stops figures floating away from their sections
         doc.append(NoEscape(r'\FloatBarrier'))
         doc.append(NoEscape(r'\clearpage'))
+
+
+
+def generate(reportCaseIds: list[str]) -> str:
+    """This is an example call to demonstrate that the reporting funciton works.
+    """
+    # New Questions
+    # Delta is currently just a mean - what other ways might people want to express a delta
+    # Where should report sit in the repo?
+    # Any other details that should be included in Summary?
+    # Is there a hook to check code style for Flow360? Not currently running anything
+
+    # To Do
+    # Real captions for Chart3D items - waiting UVF-shutter development
+
+    a2_case = Case(reportCaseIds[0])
+    b2_case = Case(reportCaseIds[1])
+    other_a2_case = Case(reportCaseIds[2])
+
+    # a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")
+    # b2_case = Case("bd63add6-4093-4fca-95e8-f1ff754cfcd9")
+    # other_a2_case = Case("706d5fad-39ef-4782-8df5-c020723259bf")
+    
+    report = Report(
+        items=[
+            Summary(text='Analysis of a new feature'),
+            Inputs(),
+
+            Table(
+                data_path=[
+                    "params_as_dict/geometry/refArea", 
+                    Delta(data_path="total_forces/CD", ref_case_id=a2_case.id),
+                ],
+                section_title="My Favourite Quantities",
+            ),
+            Chart3D(
+                section_title="Chart3D Testing",
+                fig_size=0.4,
+                fig_name="c3d_std",
+                force_new_page=True
+            ),
+            Chart3D(
+                section_title="Chart3D Rows Testing",
+                items_in_row=-1,
+                fig_name="c3d_rows"
+            ),
+            Chart2D(
+                data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
+                section_title="Sanity Check Step against Step",
+                fig_name="step_fig",
+                background=None,
+            ),
+            Chart2D(
+                data_path=["total_forces/pseudo_step", "total_forces/CL"],
+                section_title="Global Coefficient of Lift (just first Case)",
+                fig_name="cl_fig",
+                background=None,
+                select_case_ids=[a2_case.id]
+            ),
+            Chart2D(
+                data_path=["total_forces/pseudo_step", "total_forces/CFy"],
+                section_title="Global Coefficient of Force in Y (subfigure and combined)",
+                fig_name="cd_fig",
+                background=None,
+                items_in_row=-1
+            ),
+            Chart2D(
+                data_path=["total_forces/pseudo_step", "total_forces/CFy"],
+                section_title=None,
+                fig_name="cd_comb_fig",
+                background=None,
+                single_plot=True
+            ),
+        ],
+        include_case_by_case=True
+    )
+
+    # NOTE: There's a bug where something is being cached between create_pdf calls like this
+    # The issue seems to affect _assemble_fig_rows
+    # report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
+    return report.create_pdf("test_report_portrait", [a2_case, b2_case, other_a2_case], landscape=False)
 
 if __name__ == "__main__":
     # New Questions
@@ -607,3 +693,5 @@ if __name__ == "__main__":
     # report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
     report.create_pdf("test_report_portrait", [a2_case, b2_case, other_a2_case], landscape=False)
     
+
+
