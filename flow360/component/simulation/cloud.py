@@ -19,6 +19,12 @@ from flow360.log import log
 TIMEOUT_MINUTES = 60
 
 
+def _get_source_type_string(source_asset_class_name: str):
+    if source_asset_class_name.endswith("V2"):
+        return source_asset_class_name[:-2]  # Removes the last two characters (i.e., "V2")
+    return source_asset_class_name
+
+
 def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
     RestApi(ProjectInterface.endpoint, id=project_id).get(
         method="path", params={"itemId": item_id, "itemType": item_type}
@@ -62,12 +68,13 @@ def _run(
         # pylint: disable=no-member
         params.private_attribute_asset_cache.project_length_unit = LengthType.validate(length_unit)
 
+    source_item_type = _get_source_type_string(source_asset.__class__.__name__)
     ##-- Get new draft
     _draft = Draft.create(
         name=draft_name,
         project_id=source_asset.project_id,
         source_item_id=source_asset.id,
-        source_item_type=source_asset.__class__.__name__,
+        source_item_type=source_item_type,
         solver_version=source_asset.solver_version,
         fork_case=fork_case,
     ).submit()
@@ -98,9 +105,7 @@ def _run(
                 raise TimeoutError(
                     "Timeout: Process did not finish within the specified timeout period"
                 )
-            _check_project_path_status(
-                source_asset.project_id, source_asset.id, source_asset.__class__.__name__
-            )
+            _check_project_path_status(source_asset.project_id, source_asset.id, source_item_type)
             log.info("Waiting for the process to finish...")
             time.sleep(2)
     return destination_obj
