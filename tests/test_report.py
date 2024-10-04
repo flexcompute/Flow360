@@ -16,17 +16,6 @@ a2_case = Case("9d86fc07-3d43-4c72-b324-7acad033edde")
 b2_case = Case("bd63add6-4093-4fca-95e8-f1ff754cfcd9")
 cases = [a2_case, b2_case]
 
-# with SI_unit_system:
-#     case1 = Case.create(
-#         name="hi",
-#         params=Flow360Params(
-#             geometry=Geometry(mesh_unit="m"),
-#             freestream=FreestreamFromVelocity(velocity=286, alpha=3.06),
-#             fluid_properties=air,
-#             boundaries={},
-#         ),
-#         volume_mesh_id="00000000-0000-0000-0000-000000000000"
-#     )
 
 def _reset_test():
     for filename in os.listdir():
@@ -74,7 +63,7 @@ def test_chart2d():
     # Assert pngs exist, section title is right, image plot is the correct size for 2 in row
     assert len(os.listdir()) == 2
     assert section_title in str(test_doc.data[1])
-    assert "0.49\\textwidth" in str(test_doc.data[2].data[0])
+    assert "0.49\\textwidth" in str(test_doc.data[4].arguments)
 
     test_doc = _reset_test()
     Chart2D(
@@ -108,7 +97,7 @@ def test_table():
     test_doc = Document()
     Table(
         data_path=[
-            "params_as_dict/geometry/refArea", 
+            "params_as_dict/geometry/refArea",
             Delta(data_path="total_forces/CD", ref_case_id=a2_case.id)
         ],
         section_title="Test Table",
@@ -116,8 +105,8 @@ def test_table():
     ).get_doc_item(cases, test_doc, Section)
 
     # Tests that the number of rows and hline commands
-    # Set reduces length to 1 hline and 3 unique rows
-    assert len(test_doc.data[2].data) == 7 and len(set(test_doc.data[2].data)) == 4
+    # Set reduces length to 1 hline, 1 rowcolor and 3 unique rows
+    assert len(test_doc.data[2].data) == 8 and len(set(test_doc.data[2].data)) == 5
 
     # Test custom headings
     test_doc = Document()
@@ -132,7 +121,7 @@ def test_table():
 
     # \textit doesn't work but check is to see if it throws an error
     # pylatex escapes all these characters automatically so checking that it does it properly
-    assert r"1.£,\$;\%:\^{}\#\&?*(){[}{]}\{\}}\\" in str(test_doc.data[2].data[1])
+    assert r"1.£,\$;\%:\^{}\#\&?*(){[}{]}\{\}}\\" in str(test_doc.data[2].data[2])
 
     # Just checking that neither throw errors - both are wrappers for Table so shouldn't
     Summary(text="Test Summary Text.")
