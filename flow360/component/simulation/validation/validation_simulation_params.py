@@ -2,7 +2,6 @@
 validation for SimulationParams
 """
 
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.models.volume_models import (
@@ -56,43 +55,36 @@ def _check_duplicate_entities_in_models(params):
     models = params.models
 
     dict_entity = {"Surface": {}, "Volume": {}}
-    registry_entity = {"Surface": EntityRegistry(), "Volume": EntityRegistry()}
 
-    def register_single_entity(entity, model_type, registry_entity, dict_entity):
+    def register_single_entity(entity, model_type, dict_entity):
         entity_type = None
         if isinstance(entity, _SurfaceEntityBase):
             entity_type = "Surface"
         if isinstance(entity, _VolumeEntityBase):
             entity_type = "Volume"
-        entity_log = dict_entity[entity_type].get(entity.name, [set(), False])
-        entity_log[0].add(model_type)
-        if registry_entity[entity_type].contains(entity):
-            entity_log[1] = True
+        entity_log = dict_entity[entity_type].get(entity.name, [])
+        entity_log.append(model_type)
         dict_entity[entity_type][entity.name] = entity_log
-        registry_entity[entity_type].register(entity)
-
-        return registry_entity, dict_entity
+        return dict_entity
 
     if models:
         for model in models:
             if hasattr(model, "entities"):
                 for entity in model.entities.stored_entities:
-                    registry_entity, dict_entity = register_single_entity(
-                        entity, model.type, registry_entity, dict_entity
-                    )
+                    dict_entity = register_single_entity(entity, model.type, dict_entity)
 
     error_msg = ""
-    for entity_type in dict_entity.keys():
-        for entity_name, (model_list, is_invalid_entity) in dict_entity[entity_type].items():
-            if is_invalid_entity:
-                model_string = ", ".join(f"`{x}`" for x in sorted(model_list))
-                model_string += " models.\n" if len(model_list) > 1 else " model.\n"
+    for entity_type, entity_model_map in dict_entity.items():
+        for entity_name, model_list in entity_model_map.items():
+            if len(model_list) > 1:
+                model_set = set(model_list)
+                model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
+                model_string += " models.\n" if len(model_set) > 1 else " model.\n"
                 error_msg += (
                     f"{entity_type} entity `{entity_name}` appears "
                     f"multiple times in {model_string}"
                 )
 
-    print(error_msg)
     if error_msg != "":
         raise ValueError(error_msg)
 
