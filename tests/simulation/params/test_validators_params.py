@@ -281,7 +281,7 @@ def test_cht_solver_settings_validator(
         )
 
 
-def test_cht_solver_settings_validator():
+def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")
     volume_model1 = Solid(
