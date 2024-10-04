@@ -13,6 +13,7 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    SurfaceProbeOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -707,6 +708,63 @@ def surface_integral_output_config_with_global_setting():
             "outputFields": [],
         },
     )
+
+
+def test_surface_probe_output():
+    param_with_ref = (
+        [
+            SurfaceProbeOutput(
+                name="SP-1",
+                entities=[
+                    Point(name="P1", location=[1, 1.02, 0.03] * u.cm),
+                    Point(name="P2", location=[2, 1.01, 0.03] * u.m),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneA/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneA/surface2"),
+                ],
+                output_fields=["Cp", "Cf"],
+            ),
+            SurfaceProbeOutput(
+                name="SP-2",
+                entities=[
+                    Point(name="P1", location=[1, 1.02, 0.03] * u.cm),
+                    Point(name="P2", location=[2, 1.01, 0.03] * u.m),
+                    Point(name="P3", location=[3, 1.02, 0.03] * u.m),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneB/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneB/surface2"),
+                ],
+                output_fields=["Mach", "primitiveVars", "yPlus"],
+            ),
+        ],
+        {
+            "monitors": {
+                "SP-1": {
+                    "outputFields": ["Cp", "Cf"],
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03]],
+                    "type": "surfaceProbe",
+                },
+                "SP-2": {
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03], [3, 1.02, 0.03]],
+                    "type": "surfaceProbe",
+                },
+            },
+            "outputFields": [],
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_ref[0])
+    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceMonitorOutput"].items())
 
 
 def test_monitor_output(

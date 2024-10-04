@@ -161,6 +161,21 @@ class ProbeOutput(Flow360BaseModel):
         raise NotImplementedError("Not implemented yet.")
 
 
+class SurfaceProbeOutput(Flow360BaseModel):
+    """
+    Probe monitor output settings.
+    The monitor location will be projected to the surface closest to the point.
+    """
+
+    name: str = pd.Field()
+    entities: EntityList[Point] = pd.Field(None, alias="probe_points")
+    # Maybe add preprocess for this and by default add all Surfaces?
+    target_surfaces: EntityList[Surface] = pd.Field()
+
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
+
+
 class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
@@ -186,6 +201,7 @@ OutputTypes = Annotated[
         IsosurfaceOutput,
         SurfaceIntegralOutput,
         ProbeOutput,
+        SurfaceProbeOutput,
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),
