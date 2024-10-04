@@ -52,55 +52,50 @@ def _check_consistency_wall_function_and_surface_output(v):
     return v
 
 
-def _check_duplicate_entity_in_model(params):
+def _check_duplicate_entities_in_models(params):
     models = params.models
 
     dict_entity = {"Surface": {}, "Volume": {}}
     registry_entity = {"Surface": EntityRegistry(), "Volume": EntityRegistry()}
 
-    is_duplicate = False
+    def register_single_entity(entity, model_type, registry_entity, dict_entity):
+        entity_type = None
+        if isinstance(entity, _SurfaceEntityBase):
+            entity_type = "Surface"
+        if isinstance(entity, _VolumeEntityBase):
+            entity_type = "Volume"
+        entity_log = dict_entity[entity_type].get(entity.name, [set(), False])
+        entity_log[0].add(model_type)
+        if registry_entity[entity_type].contains(entity):
+            entity_log[1] = True
+        dict_entity[entity_type][entity.name] = entity_log
+        registry_entity[entity_type].register(entity)
+
+        return registry_entity, dict_entity
 
     if models:
         for model in models:
             if hasattr(model, "entities"):
                 for entity in model.entities.stored_entities:
-                    registry_entity, dict_entity, is_duplicate = _register_single_entity(
-                        entity, model.type, registry_entity, dict_entity, is_duplicate
+                    registry_entity, dict_entity = register_single_entity(
+                        entity, model.type, registry_entity, dict_entity
                     )
 
-    if is_duplicate:
-        error_msg = ""
-        for entity_type in dict_entity.keys():
-            for entity_name, (model_list, is_invalid_entity) in dict_entity[entity_type].items():
-                if is_invalid_entity:
-                    model_string = ",".join(f"`{x}`" for x in model_list)
-                    error_msg += (
-                        f"{entity_type} entity `{entity_name}` appears "
-                        f"multiple times in {model_string} model.\n"
-                    )
+    error_msg = ""
+    for entity_type in dict_entity.keys():
+        for entity_name, (model_list, is_invalid_entity) in dict_entity[entity_type].items():
+            if is_invalid_entity:
+                model_string = ", ".join(f"`{x}`" for x in model_list)
+                model_string += " models.\n" if len(model_list) > 1 else " model.\n"
+                error_msg += (
+                    f"{entity_type} entity `{entity_name}` appears "
+                    f"multiple times in {model_string}"
+                )
+
+    if error_msg != "":
         raise ValueError(error_msg)
 
     return params
-
-
-def _register_single_entity(entity, model_type, registry_entity, dict_entity, is_duplicate):
-    if isinstance(entity, _SurfaceEntityBase):
-        dict_entity["Surface"][entity.name] = [set(), False]
-        dict_entity["Surface"][entity.name][0].add(model_type)
-        if registry_entity["Surface"].contains(entity):
-            dict_entity["Surface"][entity.name][1] = True
-            is_duplicate = True
-        registry_entity["Surface"].register(entity)
-
-    if isinstance(entity, _VolumeEntityBase):
-        dict_entity["Volume"][entity.name] = [set(), False]
-        dict_entity["Volume"][entity.name][0].add(model_type)
-        if registry_entity["Volume"].contains(entity):
-            dict_entity["Volume"][entity.name][1] = True
-            is_duplicate = True
-        registry_entity["Volume"].register(entity)
-
-    return registry_entity, dict_entity, is_duplicate
 
 
 def _check_low_mach_preconditioner_output(v):
