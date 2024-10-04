@@ -85,13 +85,14 @@ def _check_duplicate_entities_in_models(params):
     for entity_type in dict_entity.keys():
         for entity_name, (model_list, is_invalid_entity) in dict_entity[entity_type].items():
             if is_invalid_entity:
-                model_string = ", ".join(f"`{x}`" for x in model_list)
+                model_string = ", ".join(f"`{x}`" for x in sorted(model_list))
                 model_string += " models.\n" if len(model_list) > 1 else " model.\n"
                 error_msg += (
                     f"{entity_type} entity `{entity_name}` appears "
                     f"multiple times in {model_string}"
                 )
 
+    print(error_msg)
     if error_msg != "":
         raise ValueError(error_msg)
 
