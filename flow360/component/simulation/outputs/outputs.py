@@ -21,6 +21,7 @@ from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
+    PointArray,
     Slice,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
@@ -152,7 +153,7 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
+    entities: Optional[EntityList[Point, PointArray]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 

@@ -3,7 +3,7 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -667,6 +667,63 @@ def probe_output_config_with_global_setting():
 
 
 @pytest.fixture()
+def probe_output_with_point_array():
+    return (
+        [
+            ProbeOutput(
+                name="prb line",
+                entities=[
+                    PointArray(
+                        name="Line 1",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.1, 1.2, 1.3] * u.m,
+                        number_of_points=5,
+                    ),
+                    PointArray(
+                        name="Line 2",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.3, 1.5, 1.7] * u.m,
+                        number_of_points=7,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
+            ProbeOutput(
+                name="prb point",
+                entities=[
+                    Point(
+                        name="124",
+                        location=[1, 1.02, 0.03] * u.cm,
+                    ),
+                    Point(
+                        name="asdfg",
+                        location=[0.0001, 0.02, 0.03] * u.m,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
+        ],
+        {
+            "monitors": {
+                "prb line": {
+                    "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
+                    "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
+                    "numberOfPoints": [5, 7],
+                    "outputFields": ["primitiveVars", "Cp"],
+                    "type": "probeArray",
+                },
+                "prb point": {
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "outputFields": ["primitiveVars", "Cp"],
+                    "type": "probe",
+                },
+            },
+            "outputFields": [],
+        },
+    )
+
+
+@pytest.fixture()
 def surface_integral_output_config_with_global_setting():
     return (
         [
@@ -710,7 +767,9 @@ def surface_integral_output_config_with_global_setting():
 
 
 def test_monitor_output(
-    probe_output_config_with_global_setting, surface_integral_output_config_with_global_setting
+    probe_output_config_with_global_setting,
+    probe_output_with_point_array,
+    surface_integral_output_config_with_global_setting,
 ):
     ##:: monitorOutput with global probe settings
     with SI_unit_system:
@@ -720,6 +779,17 @@ def test_monitor_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(probe_output_config_with_global_setting[1].items()) == sorted(
+        translated["monitorOutput"].items()
+    )
+
+    ##:: monitorOutput with probe array
+    with SI_unit_system:
+        param = SimulationParams(outputs=probe_output_with_point_array[0])
+    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+    assert sorted(probe_output_with_point_array[1].items()) == sorted(
         translated["monitorOutput"].items()
     )
 
