@@ -301,7 +301,7 @@ class Folder(Flow360Resource):
                 total_storage += storage_size
                 print(
                     "  " * (indent + 1)
-                    + f"- {item['name']} (Size: {storage_size_formatter(storage_size)})"
+                    + f"- [{item['type']}] {item['name']} (Size: {storage_size_formatter(storage_size)})"
                 )
 
         if len(remaining_items) > 0:
