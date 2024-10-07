@@ -710,7 +710,7 @@ def probe_output_with_point_array():
                     "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
                     "numberOfPoints": [5, 7],
                     "outputFields": ["primitiveVars", "Cp"],
-                    "type": "probeArray",
+                    "type": "lineProbe",
                 },
                 "prb point": {
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
@@ -782,7 +782,7 @@ def test_monitor_output(
         translated["monitorOutput"].items()
     )
 
-    ##:: monitorOutput with probe array
+    ##:: monitorOutput with line probes
     with SI_unit_system:
         param = SimulationParams(outputs=probe_output_with_point_array[0])
     param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])

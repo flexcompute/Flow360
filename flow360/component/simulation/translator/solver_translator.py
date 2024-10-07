@@ -212,7 +212,7 @@ def inject_probe_info(entity: EntityList):
             "start": [item.start.value.tolist() for item in entity.stored_entities],
             "end": [item.end.value.tolist() for item in entity.stored_entities],
             "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "probeArray",
+            "type": "lineProbe",
         }
     return {
         "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
