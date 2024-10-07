@@ -230,18 +230,64 @@ def translate_setting_and_apply_to_all_entities(
     use_sub_item_as_key=False,
     **kwargs,
 ):
-    """Translate settings and apply them to all entities of a given type.
+    """
+    Translate settings and apply them to all entities of a given type.
 
-    Args:
-        obj_list (list): A list of objects to loop through.
-        class_type: The type of objects to match.
-        translation_func: The function to use for translation. This function should return a dictionary.
-        to_list (bool, optional): Whether the return is a list which does not differentiate entity name or a
-        dict (default).
+    This function iterates over a list of objects, applies a translation function to each object if
+    it matches the given `class_type`, and then processes its entities based on various customization
+    options. The function supports returning either a dictionary or a list of translated settings.
 
-    Returns:
-        dict: A dictionary containing the translated settings applied to all entities.
+    Parameters
+    ----------
+    obj_list : list
+        A list of objects to process.
+    class_type : type
+        The type of objects to match. Only objects of this type will be processed.
+    translation_func : callable
+        A function that translates the settings for each object. It should return a dictionary.
+    to_list : bool, optional
+        If True, the output is a list. If False (default), the output is a dictionary.
+    entity_injection_func : callable, optional
+        A function for injecting additional settings into each entity. Defaults to a lambda returning an empty dict.
+    pass_translated_setting_to_entity_injection : bool, optional
+        If True, passes the translated settings to `entity_injection_func`. Defaults to False.
+    custom_output_dict_entries : bool, optional
+        If True, allows customization of output dictionary entries. Defaults to False.
+    lump_list_of_entities : bool, optional
+        If True, lumps all entities into a single list. Defaults to False.
+    use_instance_name_as_key : bool, optional
+        If True, uses the instance name of the object as the key in the output dictionary.
+        Only valid if `lump_list_of_entities` is False. Defaults to False.
+    use_sub_item_as_key : bool, optional
+        If True, uses subcomponents of entities as keys in the output dictionary. Defaults to False.
+    **kwargs : dict, optional
+        Additional keyword arguments. Arguments prefixed with `translation_func_` are passed to
+        `translation_func`, and those prefixed with `entity_injection_` are passed to `entity_injection_func`.
 
+    Returns
+    -------
+    dict or list
+        A dictionary or list containing the translated settings applied to all entities.
+        If `to_list` is False (default), the output is a dictionary, where keys are entity names (or custom keys)
+        and values are the translated settings. If `to_list` is True, the output is a list.
+
+    Raises
+    ------
+    NotImplementedError
+        If `lump_list_of_entities` is used with `entity_pairs` or if `use_instance_name_as_key`
+        is used when `lump_list_of_entities` is True.
+
+    Notes
+    -----
+    - The `translation_func` must return a dictionary with the translated settings.
+    - The `entity_injection_func` allows additional customizations to be applied to each entity.
+    - If `lump_list_of_entities` is True, all entities are treated as a single group, and custom key usage
+      (e.g., `use_instance_name_as_key`) may be restricted.
+
+    Examples
+    --------
+    >>> translate_setting_and_apply_to_all_entities(obj_list, MyClass, my_translation_func)
+    {'entity1': {'setting1': 'value1'}, 'entity2': {'setting1': 'value2'}}
     """
     if not to_list:
         output = {}

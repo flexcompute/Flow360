@@ -41,6 +41,7 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    SurfaceProbeOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -178,7 +179,18 @@ def rotation_translator(model: Rotation):
     return volume_zone
 
 
-def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: UniqueStringList):
+def merge_output_fields(
+    output_model: Union[
+        SurfaceOutput,
+        TimeAverageSurfaceOutput,
+        SliceOutput,
+        IsosurfaceOutput,
+        ProbeOutput,
+        SurfaceIntegralOutput,
+        SurfaceProbeOutput,
+    ],
+    shared_output_fields: UniqueStringList,
+):
     """Get merged output fields"""
     if shared_output_fields is None:
         return {"outputFields": output_model.output_fields.items}
@@ -187,6 +199,15 @@ def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: Uniqu
             output_model.output_fields.items, shared_output_fields.items
         )
     }
+
+
+def surface_probe_setting_translation_func(entity: SurfaceProbeOutput, shared_output_fields):
+    """Translate non-entitties part of SurfaceProbeOutput"""
+    dict_with_merged_output_fields = merge_output_fields(entity, shared_output_fields)
+    dict_with_merged_output_fields["surfacePatches"] = [
+        surface.full_name for surface in entity.target_surfaces.stored_entities
+    ]
+    return dict_with_merged_output_fields
 
 
 def inject_slice_info(entity: Slice):
@@ -217,6 +238,14 @@ def inject_probe_info(entity: EntityList):
     return {
         "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
         "type": "probe",
+    }
+
+
+def inject_surface_robe_info(entity: EntityList):
+    """inject entity info"""
+    return {
+        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
+        "type": "surfaceProbe",
     }
 
 
@@ -323,7 +352,9 @@ def translate_slice_isosurface_output(
     return translated_output
 
 
-def translate_monitor_output(output_params: list, monitor_type, injection_function):
+def translate_monitor_output(
+    output_params: list, monitor_type, injection_function, translation_func=merge_output_fields
+):
     """Translate monitor output settings."""
     translated_output = {"outputFields": []}
     shared_output_fields = get_global_setting_from_per_item_setting(
@@ -336,7 +367,7 @@ def translate_monitor_output(output_params: list, monitor_type, injection_functi
     translated_output["monitors"] = translate_setting_and_apply_to_all_entities(
         output_params,
         monitor_type,
-        translation_func=merge_output_fields,
+        translation_func=translation_func,
         to_list=False,
         translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
@@ -428,6 +459,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
     # Merge
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
+
+    ##:: Step5.1: Get translated["surfaceMonitorOutput"]
+    surface_monitor_output = {}
+    if has_instance_in_list(outputs, SurfaceProbeOutput):
+        surface_monitor_output = translate_monitor_output(
+            outputs,
+            SurfaceProbeOutput,
+            inject_surface_robe_info,
+            surface_probe_setting_translation_func,
+        )
+        translated["surfaceMonitorOutput"] = surface_monitor_output
 
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
