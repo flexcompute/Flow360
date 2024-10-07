@@ -795,6 +795,28 @@ def test_surface_probe_output():
                 ],
                 output_fields=["Mach", "primitiveVars", "yPlus"],
             ),
+            SurfaceProbeOutput(
+                name="SP-3",
+                entities=[
+                    PointArray(
+                        name="PA1",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.1, 1.2, 1.3] * u.m,
+                        number_of_points=5,
+                    ),
+                    PointArray(
+                        name="PA2",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.3, 1.5, 1.7] * u.m,
+                        number_of_points=7,
+                    ),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneC/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneC/surface2"),
+                ],
+                output_fields=["Mach", "primitiveVars", "yPlus"],
+            ),
         ],
         {
             "monitors": {
@@ -809,6 +831,14 @@ def test_surface_probe_output():
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03], [3, 1.02, 0.03]],
                     "type": "surfaceProbe",
+                },
+                "SP-3": {
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
+                    "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
+                    "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
+                    "numberOfPoints": [5, 7],
+                    "type": "lineProbe",
                 },
             },
             "outputFields": [],

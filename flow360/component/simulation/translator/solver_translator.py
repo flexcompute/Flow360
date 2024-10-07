@@ -241,8 +241,15 @@ def inject_probe_info(entity: EntityList):
     }
 
 
-def inject_surface_robe_info(entity: EntityList):
+def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
+    if isinstance(entity.stored_entities[0], PointArray):
+        return {
+            "start": [item.start.value.tolist() for item in entity.stored_entities],
+            "end": [item.end.value.tolist() for item in entity.stored_entities],
+            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
+            "type": "lineProbe",
+        }
     return {
         "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
         "type": "surfaceProbe",
@@ -466,7 +473,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         surface_monitor_output = translate_monitor_output(
             outputs,
             SurfaceProbeOutput,
-            inject_surface_robe_info,
+            inject_surface_probe_info,
             surface_probe_setting_translation_func,
         )
         translated["surfaceMonitorOutput"] = surface_monitor_output

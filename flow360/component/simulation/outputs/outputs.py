@@ -169,7 +169,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field()
-    entities: EntityList[Point] = pd.Field(None, alias="probe_points")
+    entities: EntityList[Point, PointArray] = pd.Field(None, alias="probe_points")
     # Maybe add preprocess for this and by default add all Surfaces?
     target_surfaces: EntityList[Surface] = pd.Field()
 
