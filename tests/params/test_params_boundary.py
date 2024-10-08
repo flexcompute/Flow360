@@ -567,9 +567,9 @@ def test_boundary_expression():
     solver_params = params.to_solver()
     for bc_name in ["NSW", "FS", "ISW", "HFW", "VIF"]:
         assert solver_params.boundaries[bc_name].velocity == (
-            "x*powf(y, z);",
-            "1.2/45;",
-            "powf(y, 0.5)-123;",
+            "x*powf(y, z)",
+            "1.2/45",
+            "powf(y, 0.5)-123",
         )
-    assert solver_params.boundaries["ISW"].temperature == "1.23*powf(x, 2.34)/2;"
-    assert solver_params.boundaries["HFW"].heat_flux == "1.234;"
+    assert solver_params.boundaries["ISW"].temperature == "1.23*powf(x, 2.34)/2"
+    assert solver_params.boundaries["HFW"].heat_flux == "1.234"
