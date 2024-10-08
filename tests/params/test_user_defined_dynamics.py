@@ -49,8 +49,8 @@ def test_user_defined_dynamics():
             == "(pseudoStep > 500) ? (state[0]) : (alphaAngle);"
         )
         assert solver_params.user_defined_dynamics[0].state_vars_initial_value == [
-            "alphaAngle;",
-            "momentY;",
+            "alphaAngle",
+            "momentY",
         ]
         assert solver_params.user_defined_dynamics[0].update_law == [
             "(pseudoStep > 500) ? (state[0] + Kp * (CLTarget - CL) + Ki * state[1]) : (state[0]);",
