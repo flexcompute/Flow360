@@ -245,16 +245,6 @@ def convert_caret_to_power(input_str):
     return result
 
 
-def add_trailing_semicolon(input_str):
-    """
-    Add trailing semicolon to comply with C++ syntax
-    """
-    regex = r";\s*$"
-    if not re.search(regex, input_str):
-        input_str += ";"
-    return input_str
-
-
 def convert_legacy_names(input_str):
     """
     Convert legacy var name to new ones.
@@ -276,7 +266,6 @@ def _process_string_expression(expression: str):
     if not isinstance(expression, str):
         return expression
     expression = str(expression)
-    expression = add_trailing_semicolon(expression)
     expression = convert_if_else(expression)
     expression = convert_caret_to_power(expression)
     expression = convert_legacy_names(expression)
