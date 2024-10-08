@@ -1,11 +1,22 @@
+import json
 import re
 import unittest
+from typing import Literal
 
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
-from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.surface_models import (
+    Freestream,
+    Periodic,
+    SlipWall,
+    Translational,
+    Wall,
+)
 from flow360.component.simulation.models.volume_models import (
     Fluid,
     HeatEquationInitialCondition,
@@ -14,9 +25,17 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.services import validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    SURFACE_MESH,
+    VOLUME_MESH,
+    ValidationLevelContext,
+)
 
 assertions = unittest.TestCase("__init__")
 
@@ -279,3 +298,70 @@ def test_cht_solver_settings_validator(
             time_stepping=Steady(),
             outputs=[surface_output_with_residual_heat_solver],
         )
+
+
+def test_incomplete_BC():
+    ##:: Construct a dummy asset cache
+
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    some_interface = Surface(
+        name="some_interface", private_attribute_is_interface=True, private_attribute_tag_key="test"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="inch",
+        project_entity_info=VolumeMeshEntityInfo(
+            boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
+        ),
+    )
+    auto_farfield = AutomatedFarfield(name="my_farfield")
+
+    with SI_unit_system:
+        param = SimulationParams(
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    def _validate_under_CASE(param):
+        param_dict = json.loads(param.model_dump_json())
+        with ValidationLevelContext(CASE):
+            with SI_unit_system:
+                SimulationParams.model_validate(param_dict)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"no_bc does not have a boundary condition. Please add to it a model in the `models` section."
+        ),
+    ):
+        _validate_under_CASE(param)
+
+    param.models.append(SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]))
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"plz_dont_do_this is not a known `Surface` entity but it appears in the `models` section."
+        ),
+    ):
+        _validate_under_CASE(param)

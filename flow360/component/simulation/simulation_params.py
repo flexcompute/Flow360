@@ -44,6 +44,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_cht_solver_settings,
+    _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_low_mach_preconditioner_output,
@@ -56,7 +57,13 @@ from flow360.error_messages import (
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
-from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
+from .validation.validation_context import (
+    CASE,
+    SURFACE_MESH,
+    CaseField,
+    ContextField,
+    context_validator,
+)
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
 
@@ -242,34 +249,35 @@ class SimulationParams(_ParamModelBase):
         return v
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_cht_solver_settings(cls, params):
+    def check_cht_solver_settings(self):
         """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
-        return _check_cht_solver_settings(params)
+        return _check_cht_solver_settings(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_consistency_wall_function_and_surface_output(cls, v):
+    def check_consistency_wall_function_and_surface_output(self):
         """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
-        return _check_consistency_wall_function_and_surface_output(v)
+        return _check_consistency_wall_function_and_surface_output(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_consistency_ddes_volume_output(cls, v):
+    def check_consistency_ddes_volume_output(self):
         """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
-        return _check_consistency_ddes_volume_output(v)
+        return _check_consistency_ddes_volume_output(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_numerical_dissipation_factor_output(cls, v):
+    def check_numerical_dissipation_factor_output(self):
         """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
-        return _check_numerical_dissipation_factor_output(v)
+        return _check_numerical_dissipation_factor_output(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_low_mach_preconditioner_output(cls, v):
+    def check_low_mach_preconditioner_output(self):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
-        return _check_low_mach_preconditioner_output(v)
+        return _check_low_mach_preconditioner_output(self)
+
+    @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
+    def check_complete_boundary_condition_and_unknown_surface(self):
+        """Make sure that all boundaries have been assigned with a boundary condition"""
+        return _check_complete_boundary_condition_and_unknown_surface(self)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

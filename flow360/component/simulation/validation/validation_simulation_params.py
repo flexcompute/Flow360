@@ -2,8 +2,11 @@
 validation for SimulationParams
 """
 
+from typing import get_args
+
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.models.solver_numerics import NoneSolver
-from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import (
     Fluid,
     NavierStokesInitialCondition,
@@ -16,6 +19,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
 
@@ -219,4 +223,48 @@ def _validate_cht_has_heat_transfer(params):
                         "when the `Fluid` model uses expression as initial condition."
                     )
 
+    return params
+
+
+def _check_complete_boundary_condition_and_unknown_surface(params):
+    ##:: Step 1: Get all boundaries patches from asset cache
+    asset_boundaries: list[Surface] = params.private_attribute_asset_cache.boundaries
+    if asset_boundaries is None:
+        # No entity info found. Skip the validation.
+        return params
+    ##:: Step 2: Make sure that all boundaries appear in the models section.
+    if params.models is None:
+        raise ValueError("To run a case, `models` field must be defined.")
+    param_boundary_registry = EntityRegistry()
+
+    for model in params.models:
+        if not isinstance(model, get_args(SurfaceModelTypes)):
+            # None-BC models
+            continue
+        # Get referenced entities
+        if hasattr(model, "entities"):
+            # pylint: disable=protected-access
+            for entity in model.entities._get_expanded_entities(create_hard_copy=False):
+                param_boundary_registry.register(entity)
+        elif hasattr(model, "entity_pairs"):  # Periodic BC
+            for surface_pair in model.entity_pairs.items:
+                param_boundary_registry.register(surface_pair.pair[0])
+                param_boundary_registry.register(surface_pair.pair[1])
+
+    for boundary in asset_boundaries:
+        if param_boundary_registry.contains(boundary) is False:
+            raise ValueError(
+                f"{boundary.name} does not have a boundary condition. Please add to it a model in the `models` section."
+            )
+
+    ##:: Step 3:
+    ##:: class `GhostSurface` (mostly just farfield/symmetry)
+    ##:: can be assigned with BC but may/may not be in the entity info.
+    ##:: Therefore we do not include them in the `param_boundaries`.
+    param_boundaries = param_boundary_registry.find_by_type(Surface)
+    for boundary in param_boundaries:
+        if boundary not in asset_boundaries:
+            raise ValueError(
+                f"{boundary.name} is not a known `Surface` entity but it appears in the `models` section."
+            )
     return params
