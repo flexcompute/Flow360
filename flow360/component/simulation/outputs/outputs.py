@@ -161,6 +161,19 @@ class ProbeOutput(Flow360BaseModel):
         """Load probe point locations from a file."""
         raise NotImplementedError("Not implemented yet.")
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_entities_type(cls, value):
+        """check to ensure every entity has the same type"""
+        if value is None:
+            return value
+        for entity in value.stored_entities:
+            if type(entity) is not type(value.stored_entities[0]):
+                raise ValueError(
+                    "All entities in a single `ProbeOutput` must have the same type: `Point` or `PointArray`."
+                )
+        return value
+
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
@@ -175,6 +188,19 @@ class SurfaceProbeOutput(Flow360BaseModel):
 
     output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_entities_type(cls, value):
+        """check to ensure every entity has the same type"""
+        if value is None:
+            return value
+        for entity in value.stored_entities:
+            if type(entity) is not type(value.stored_entities[0]):
+                raise ValueError(
+                    "All entities in a single `SurfaceProbeOutput` must have the same type: `Point` or `PointArray`."
+                )
+        return value
 
 
 class AeroAcousticOutput(Flow360BaseModel):
