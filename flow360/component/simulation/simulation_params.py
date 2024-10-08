@@ -243,9 +243,9 @@ class SimulationParams(_ParamModelBase):
         return v
 
     @pd.model_validator(mode="after")
-    def check_cht_solver_settings(cls, params):
+    def check_cht_solver_settings(self):
         """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
-        return _check_cht_solver_settings(params)
+        return _check_cht_solver_settings(self)
 
     @pd.model_validator(mode="after")
     @classmethod
@@ -260,9 +260,9 @@ class SimulationParams(_ParamModelBase):
         return _check_consistency_ddes_volume_output(v)
 
     @pd.model_validator(mode="after")
-    def check_duplicate_entities_in_models(cls, params):
+    def check_duplicate_entities_in_models(self):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
-        return _check_duplicate_entities_in_models(params)
+        return _check_duplicate_entities_in_models(self)
 
     @pd.model_validator(mode="after")
     @classmethod
