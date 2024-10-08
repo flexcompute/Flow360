@@ -157,7 +157,7 @@ def test_volume_zones():
     assert solver_params.heat_equation_solver is not None
     assert solver_params.heat_equation_solver.equation_eval_frequency == 10
     assert (
-        solver_params.volume_zones["zone1"].initial_condition.T == "1.5*powf(y, 0.5)/powf(1.56, 3);"
+        solver_params.volume_zones["zone1"].initial_condition.T == "1.5*powf(y, 0.5)/powf(1.56, 3)"
     )
 
     zones = VolumeZones(

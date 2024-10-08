@@ -35,6 +35,6 @@ def test_initial_condition():
             initial_condition=fl.ExpressionInitialCondition(rho="1.0", u="2.0*y^2", v="2;"),
         )
         solver_params = params.to_solver()
-        assert solver_params.initial_condition.rho == "1.0;"
-        assert solver_params.initial_condition.u == "2.0*powf(y, 2);"
+        assert solver_params.initial_condition.rho == "1.0"
+        assert solver_params.initial_condition.u == "2.0*powf(y, 2)"
         assert solver_params.initial_condition.v == "2;"
