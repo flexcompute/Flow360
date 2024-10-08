@@ -26,6 +26,9 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_output import (
+    _check_entities_type,
+)
 
 
 class _AnimationSettings(Flow360BaseModel):
@@ -164,15 +167,8 @@ class ProbeOutput(Flow360BaseModel):
     @pd.field_validator("entities", mode="after")
     @classmethod
     def check_entities_type(cls, value):
-        """check to ensure every entity has the same type"""
-        if value is None:
-            return value
-        for entity in value.stored_entities:
-            if type(entity) is not type(value.stored_entities[0]):
-                raise ValueError(
-                    "All entities in a single `ProbeOutput` must have the same type: `Point` or `PointArray`."
-                )
-        return value
+        """Check to ensure every entity has the same type"""
+        return _check_entities_type(value, "ProbeOutput")
 
 
 class SurfaceProbeOutput(Flow360BaseModel):
@@ -192,15 +188,8 @@ class SurfaceProbeOutput(Flow360BaseModel):
     @pd.field_validator("entities", mode="after")
     @classmethod
     def check_entities_type(cls, value):
-        """check to ensure every entity has the same type"""
-        if value is None:
-            return value
-        for entity in value.stored_entities:
-            if type(entity) is not type(value.stored_entities[0]):
-                raise ValueError(
-                    "All entities in a single `SurfaceProbeOutput` must have the same type: `Point` or `PointArray`."
-                )
-        return value
+        """Check to ensure every entity has the same type"""
+        return _check_entities_type(value, "SurfaceProbeOutput")
 
 
 class AeroAcousticOutput(Flow360BaseModel):
