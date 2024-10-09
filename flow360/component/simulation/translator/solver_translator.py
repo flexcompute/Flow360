@@ -490,7 +490,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
         )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         integral_output = translate_monitor_output(
-            outputs, SurfaceIntegralOutput, inject_surface_list_info, time_average_volume_probe_translation_func
+            outputs,
+            SurfaceIntegralOutput,
+            inject_surface_list_info,
+            time_average_volume_probe_translation_func,
         )
     # Merge
     if probe_output or probe_output_average:
