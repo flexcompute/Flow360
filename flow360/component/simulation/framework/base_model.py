@@ -250,7 +250,10 @@ class Flow360BaseModel(pd.BaseModel):
         if need_to_rebuild is True:
             for mode, method in validators:
                 info = FieldValidatorDecoratorInfo(
-                    fields=tuple(fields_to_validate), mode=mode, check_fields=None
+                    fields=tuple(fields_to_validate),
+                    mode=mode,
+                    check_fields=None,
+                    json_schema_input_type=Any,
                 )
                 deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
                 cls.__pydantic_decorators__.field_validators[method] = deco
