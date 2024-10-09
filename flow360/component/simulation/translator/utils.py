@@ -167,11 +167,10 @@ def getattr_by_path(obj, path: Union[str, list], *args):
     return obj
 
 
-def get_attribute_from_instance_list(
+def get_global_setting_from_first_instance(
     obj_list: list,
     class_type,
     attribute_name: Union[str, list],
-    only_find_when_entities_none: bool = False,
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
@@ -180,13 +179,7 @@ def get_attribute_from_instance_list(
                 is_exact_instance(obj, class_type)
                 and getattr_by_path(obj, attribute_name, None) is not None
             ):
-                # Route 1: Requested to look into empty-entity instances
-                if only_find_when_entities_none and getattr(obj, "entities", None) is not None:
-                    # We only look for empty entities instances
-                    # Note: This poses requirement that entity list has to be under attribute name 'entities'
-                    continue
-
-                # Route 2: Allowed to look into non-empty-entity instances
+                # Allowed to look into non-empty-entity instances
                 # Then we return the first non-None value.
                 # Previously we return the value that is non-default.
                 # But this is deemed not intuitive and very hard to implement.
@@ -384,73 +377,3 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
     """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
-
-
-def get_global_setting_from_per_item_setting(
-    obj_list: list,
-    class_type,
-    attribute_name: str,
-    allow_get_from_first_instance_as_fallback: bool,
-    return_none_when_no_global_found: bool = False,
-):
-    """
-    [AI-Generated] Retrieves a global setting from the per-item settings in a list of objects.
-
-    This function searches through a list of objects to find the first instance of a given class type
-    with empty entities and retrieves a specified attribute. If no such instance is found and
-    `allow_get_from_first_instance_as_fallback` is True, it retrieves the attribute from the first instance of
-    the class type regardless of whether its entities are empty. If `allow_get_from_first_instance_as_fallback`
-    is False and no suitable instance is found, it raises a `Flow360TranslationError`.
-
-    Note: This function does not apply to SurfaceOutput situations.
-
-    Args:
-        obj_list (list):
-            A list of objects to search through.
-        class_type (type):
-            The class type of objects to match.
-        attribute_name (str):
-            The name of the attribute to retrieve.
-        allow_get_from_first_instance_as_fallback (bool, optional):
-            Whether to allow retrieving the attribute from any instance of the class
-            type if no instance with empty entities is found.
-
-    Returns:
-        The value of the specified attribute from the first matching object.
-
-    Raises:
-        Flow360TranslationError: If `allow_get_from_first_instance_as_fallback` is False and no suitable
-        instance is found.
-    """
-
-    # Get from the first instance of `class_type` with empty entities
-    global_setting = get_attribute_from_instance_list(
-        obj_list,
-        class_type,
-        attribute_name,
-        only_find_when_entities_none=True,
-    )
-
-    if global_setting is None:
-
-        if return_none_when_no_global_found is True:
-            return None
-
-        if allow_get_from_first_instance_as_fallback is True:
-            # Assume that no global setting is needed. Just get the first instance of `class_type`
-            # This is allowed because simulation will make sure global setting is not used anywhere.
-            global_setting = get_attribute_from_instance_list(
-                obj_list,
-                class_type,
-                attribute_name,
-                only_find_when_entities_none=False,
-            )
-        else:
-            # Ideally SimulationParams should have validation on this.
-            raise Flow360TranslationError(
-                f"Global setting of {attribute_name} is required but not found in"
-                f"`{class_type.__name__}` instances. \n[For developers]: This error message should not appear."
-                "SimulationParams should have caught this!!!",
-                input_value=obj_list,
-            )
-    return global_setting

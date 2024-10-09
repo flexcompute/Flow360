@@ -107,7 +107,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
 
 
 @pytest.fixture()
-def surface_output_config_with_global_setting():
+def surface_output_config():
     return (
         [
             SurfaceOutput(  # Global
@@ -155,7 +155,7 @@ def surface_output_config_with_global_setting():
 
 
 @pytest.fixture()
-def surface_output_config_with_no_global_setting():
+def surface_output_config():
     return (
         [
             SurfaceOutput(  # Local
@@ -194,16 +194,8 @@ def surface_output_config_with_no_global_setting():
 
 
 @pytest.fixture()
-def avg_surface_output_config_with_global_setting():
+def avg_surface_output_config():
     return [
-        TimeAverageSurfaceOutput(  # Global
-            frequency=23,
-            frequency_offset=21,
-            output_format="tecplot",
-            output_fields=[],
-            start_step=12,
-            write_single_file=True,
-        ),
         TimeAverageSurfaceOutput(  # Local
             entities=[Surface(name="surface1"), Surface(name="surface2")],
             output_fields=["Cp"],
@@ -216,141 +208,48 @@ def avg_surface_output_config_with_global_setting():
 
 
 def test_surface_ouput(
-    surface_output_config_with_global_setting,
-    surface_output_config_with_no_global_setting,
-    avg_surface_output_config_with_global_setting,
+    surface_output_config,
+    avg_surface_output_config,
 ):
-    import json
-
-    ##:: surfaceOutput with global settings
-    with SI_unit_system:
-        param = SimulationParams(outputs=surface_output_config_with_global_setting[0])
-    translated = {
-        "boundaries": {
-            "Wall1": {"type": "NoSlipWall"},
-            "Wall2": {"type": "NoSlipWall"},
-            "surface1": {"type": "NoSlipWall"},
-            "ZoneName/surface11": {"type": "NoSlipWall"},
-            "surface2": {"type": "NoSlipWall"},
-            "surface22": {"type": "NoSlipWall"},
-        }
-    }
-    translated = translate_output(param, translated)
-    assert sorted(surface_output_config_with_global_setting[1].items()) == sorted(
-        translated["surfaceOutput"].items()
-    )
-
     ##:: surfaceOutput with No global settings
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_output_config_with_no_global_setting[0])
+        param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_output_config_with_no_global_setting[1].items()) == sorted(
+    assert sorted(surface_output_config[1].items()) == sorted(
         translated["surfaceOutput"].items()
     )
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
         param = SimulationParams(
-            outputs=surface_output_config_with_no_global_setting[0]
-            + avg_surface_output_config_with_global_setting
+            outputs=surface_output_config[0]
+            + avg_surface_output_config
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
         "animationFrequency": 123,
         "animationFrequencyOffset": 321,
-        "animationFrequencyTimeAverage": 23,
-        "animationFrequencyTimeAverageOffset": 21,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": True,
         "outputFields": [],
-        "outputFormat": "tecplot",
-        "startAverageIntegrationStep": 12,
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
         "surfaces": {
             "surface1": {"outputFields": ["Cp"]},
             "surface11": {"outputFields": ["T"]},
             "surface2": {"outputFields": ["Cp"]},
             "surface22": {"outputFields": ["T"]},
         },
-        "writeSingleFile": True,
+        "writeSingleFile": False,
     }
     assert sorted(ref.items()) == sorted(translated["surfaceOutput"].items())
 
 
 @pytest.fixture()
-def sliceoutput_config_with_global_setting():
-    return (
-        [
-            SliceOutput(  # Global
-                frequency=33,
-                frequency_offset=22,
-                output_format="both",
-                output_fields=["primitiveVars", "wallDistance"],
-            ),
-            SliceOutput(  # Local
-                entities=[
-                    Slice(
-                        name="slice10",
-                        normal=(0, 0, 2),
-                        origin=(0.02, 0.03, 0.04) * u.m,
-                    ),
-                    Slice(
-                        name="slice20",
-                        normal=(0, 3, 4),
-                        origin=(0.12, 0.13, 0.14) * u.m,
-                    ),
-                ],
-                output_fields=["Cp"],
-            ),
-            SliceOutput(  # Local
-                entities=[
-                    Slice(
-                        name="slice01",
-                        normal=(10, 0, 0),
-                        origin=(10.02, 10.03, 10.04) * u.m,
-                    ),
-                    Slice(
-                        name="slice02",
-                        normal=(4, 0, 3),
-                        origin=(6.12e-2, 6.13e-2, 6.14e-2) * u.m,
-                    ),
-                ],
-                output_fields=["T", "qcriterion"],
-            ),
-        ],
-        {
-            "animationFrequency": 33,
-            "animationFrequencyOffset": 22,
-            "outputFields": [],
-            "outputFormat": "paraview,tecplot",
-            "slices": {
-                "slice01": {
-                    "outputFields": ["T", "qcriterion", "primitiveVars", "wallDistance"],
-                    "sliceNormal": [1.0, 0.0, 0.0],
-                    "sliceOrigin": [10.02, 10.03, 10.04],
-                },
-                "slice02": {
-                    "outputFields": ["T", "qcriterion", "primitiveVars", "wallDistance"],
-                    "sliceNormal": [0.8, 0.0, 0.6],
-                    "sliceOrigin": [6.12e-2, 6.13e-2, 6.14e-2],
-                },
-                "slice10": {
-                    "outputFields": ["Cp", "primitiveVars", "wallDistance"],
-                    "sliceNormal": [0.0, 0.0, 1],
-                    "sliceOrigin": [0.02, 0.03, 0.04],
-                },
-                "slice20": {
-                    "outputFields": ["Cp", "primitiveVars", "wallDistance"],
-                    "sliceNormal": [0.0, 0.6, 0.8],
-                    "sliceOrigin": [0.12, 0.13, 0.14],
-                },
-            },
-        },
-    )
-
-
-@pytest.fixture()
-def sliceoutput_config_with_no_global_setting():
+def sliceoutput_config():
     return (
         [
             SliceOutput(  # Local
@@ -421,107 +320,23 @@ def sliceoutput_config_with_no_global_setting():
     )
 
 
-def test_slice_ouput(
-    sliceoutput_config_with_global_setting,
-    sliceoutput_config_with_no_global_setting,
+def test_slice_output(
+    sliceoutput_config,
 ):
-    ##:: sliceOutput with global settings
-    with SI_unit_system:
-        param = SimulationParams(outputs=sliceoutput_config_with_global_setting[0])
-    param = param.preprocess(1.0 * u.m, exclude=["models"])
-    translated = {"boundaries": {}}
-    translated = translate_output(param, translated)
-
-    assert sorted(sliceoutput_config_with_global_setting[1].items()) == sorted(
-        translated["sliceOutput"].items()
-    )
-
     ##:: sliceOutput with NO global settings
     with SI_unit_system:
-        param = SimulationParams(outputs=sliceoutput_config_with_no_global_setting[0])
+        param = SimulationParams(outputs=sliceoutput_config[0])
     param = param.preprocess(1.0 * u.m, exclude=["models"])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(sliceoutput_config_with_no_global_setting[1].items()) == sorted(
+    assert sorted(sliceoutput_config[1].items()) == sorted(
         translated["sliceOutput"].items()
     )
 
 
 @pytest.fixture()
-def isosurface_output_config_with_global_setting():
-    return (
-        [
-            IsosurfaceOutput(  # Global
-                frequency=33,
-                frequency_offset=22,
-                output_format="both",
-                output_fields=["primitiveVars", "wallDistance"],
-            ),
-            IsosurfaceOutput(  # Local
-                entities=[
-                    Isosurface(
-                        name="isosurface 10",
-                        iso_value=0.0001,
-                        field="T",
-                    ),
-                    Isosurface(
-                        name="isosurface 12",
-                        iso_value=20.431,
-                        field="qcriterion",
-                    ),
-                ],
-                output_fields=["Cp"],
-            ),
-            IsosurfaceOutput(  # Local
-                entities=[
-                    Isosurface(
-                        name="isosurface 01",
-                        iso_value=0.0001,
-                        field="nuHat",
-                    ),
-                    Isosurface(
-                        name="isosurface 02",
-                        iso_value=1e4,
-                        field="qcriterion",
-                    ),
-                ],
-                output_fields=["T", "primitiveVars"],
-            ),
-        ],
-        {
-            "animationFrequency": 33,
-            "animationFrequencyOffset": 22,
-            "isoSurfaces": {
-                "isosurface 01": {
-                    "outputFields": ["T", "primitiveVars", "wallDistance"],
-                    "surfaceField": "nuHat",
-                    "surfaceFieldMagnitude": 0.0001,
-                },
-                "isosurface 02": {
-                    "outputFields": ["T", "primitiveVars", "wallDistance"],
-                    "surfaceField": "qcriterion",
-                    "surfaceFieldMagnitude": 10000.0,
-                },
-                "isosurface 10": {
-                    "outputFields": ["Cp", "primitiveVars", "wallDistance"],
-                    "surfaceField": "T",
-                    "surfaceFieldMagnitude": 0.0001,
-                },
-                "isosurface 12": {
-                    "outputFields": ["Cp", "primitiveVars", "wallDistance"],
-                    "surfaceField": "qcriterion",
-                    "surfaceFieldMagnitude": 20.431,
-                },
-            },
-            "outputFields": [],
-            "outputFormat": "paraview,tecplot",
-        },
-    )
-
-
-@pytest.fixture()
-def isosurface_output_config_with_no_global_setting():
+def isosurface_output_config():
     return (
         [
             IsosurfaceOutput(  # Local
@@ -593,37 +408,23 @@ def isosurface_output_config_with_no_global_setting():
 
 
 def test_isosurface_output(
-    isosurface_output_config_with_global_setting,
-    isosurface_output_config_with_no_global_setting,
+    isosurface_output_config,
 ):
-    ##:: isoSurface with global settings
-    with SI_unit_system:
-        param = SimulationParams(outputs=isosurface_output_config_with_global_setting[0])
-    translated = {"boundaries": {}}
-    translated = translate_output(param, translated)
-    assert sorted(isosurface_output_config_with_global_setting[1].items()) == sorted(
-        translated["isoSurfaceOutput"].items()
-    )
-
     ##:: isoSurface with NO global settings
     with SI_unit_system:
-        param = SimulationParams(outputs=isosurface_output_config_with_no_global_setting[0])
+        param = SimulationParams(outputs=isosurface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(isosurface_output_config_with_no_global_setting[1].items()) == sorted(
+    assert sorted(isosurface_output_config[1].items()) == sorted(
         translated["isoSurfaceOutput"].items()
     )
 
 
 @pytest.fixture()
-def probe_output_config_with_global_setting():
+def probe_output_config():
     return (
         [
-            ProbeOutput(  # Global
-                name="global setting",
-                output_fields=["primitiveVars", "T"],
-            ),
             ProbeOutput(  # Local
                 name="prb 10",
                 entities=[
@@ -653,12 +454,12 @@ def probe_output_config_with_global_setting():
             "monitors": {
                 "prb 10": {
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["primitiveVars", "Cp"],
                     "type": "probe",
                 },
                 "prb 12": {
                     "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
-                    "outputFields": ["primitiveVars", "Cp", "T"],
+                    "outputFields": ["primitiveVars", "Cp"],
                     "type": "probe",
                 },
             },
@@ -725,13 +526,9 @@ def probe_output_with_point_array():
 
 
 @pytest.fixture()
-def surface_integral_output_config_with_global_setting():
+def surface_integral_output_config():
     return (
         [
-            SurfaceIntegralOutput(  # Global
-                name="global setting",
-                output_fields=["primitiveVars", "T"],
-            ),
             SurfaceIntegralOutput(  # Local
                 name="prb 110",
                 entities=[
@@ -752,12 +549,12 @@ def surface_integral_output_config_with_global_setting():
         {
             "monitors": {
                 "prb 110": {
-                    "outputFields": ["Cp", "primitiveVars", "T"],
+                    "outputFields": ["Cp"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                     "type": "surfaceIntegral",
                 },
                 "prb 122": {
-                    "outputFields": ["Mach", "primitiveVars", "T"],
+                    "outputFields": ["Mach"],
                     "surfaces": ["surface21", "surface22"],
                     "type": "surfaceIntegral",
                 },
@@ -855,18 +652,22 @@ def test_surface_probe_output():
 
 
 def test_monitor_output(
+<<<<<<< HEAD
     probe_output_config_with_global_setting,
     probe_output_with_point_array,
     surface_integral_output_config_with_global_setting,
+=======
+    probe_output_config, surface_integral_output_config
+>>>>>>> ad1ca7cd (Remove logic for applying global setting when no entity is specified)
 ):
     ##:: monitorOutput with global probe settings
     with SI_unit_system:
-        param = SimulationParams(outputs=probe_output_config_with_global_setting[0])
+        param = SimulationParams(outputs=probe_output_config[0])
     param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config_with_global_setting[1].items()) == sorted(
+    assert sorted(probe_output_config[1].items()) == sorted(
         translated["monitorOutput"].items()
     )
 
@@ -883,20 +684,20 @@ def test_monitor_output(
 
     ##:: surfaceIntegral with global probe settings
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_integral_output_config_with_global_setting[0])
+        param = SimulationParams(outputs=surface_integral_output_config[0])
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_integral_output_config_with_global_setting[1].items()) == sorted(
+    assert sorted(surface_integral_output_config[1].items()) == sorted(
         translated["monitorOutput"].items()
     )
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
         param = SimulationParams(
-            outputs=surface_integral_output_config_with_global_setting[0]
-            + probe_output_config_with_global_setting[0]
+            outputs=surface_integral_output_config[0]
+            + probe_output_config[0]
         )
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
@@ -906,21 +707,21 @@ def test_monitor_output(
         "monitors": {
             "prb 10": {
                 "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 110": {
-                "outputFields": ["Cp", "primitiveVars", "T"],
+                "outputFields": ["Cp"],
                 "surfaces": ["zoneName/surface1", "surface2"],
                 "type": "surfaceIntegral",
             },
             "prb 12": {
                 "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
-                "outputFields": ["primitiveVars", "Cp", "T"],
+                "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 122": {
-                "outputFields": ["Mach", "primitiveVars", "T"],
+                "outputFields": ["Mach"],
                 "surfaces": ["surface21", "surface22"],
                 "type": "surfaceIntegral",
             },
