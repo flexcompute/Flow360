@@ -3,7 +3,7 @@ Validation for output parameters
 """
 
 
-def _check_entities_type(value, probe_output_type_str: str):
+def _check_unique_probe_type(value, probe_output_type_str: str):
     """check to ensure every entity has the same type"""
     if value is None:
         return value

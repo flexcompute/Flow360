@@ -27,7 +27,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_output import (
-    _check_entities_type,
+    _check_unique_probe_type,
 )
 
 
@@ -166,9 +166,9 @@ class ProbeOutput(Flow360BaseModel):
 
     @pd.field_validator("entities", mode="after")
     @classmethod
-    def check_entities_type(cls, value):
+    def check_unique_probe_type(cls, value):
         """Check to ensure every entity has the same type"""
-        return _check_entities_type(value, "ProbeOutput")
+        return _check_unique_probe_type(value, "ProbeOutput")
 
 
 class SurfaceProbeOutput(Flow360BaseModel):
@@ -187,9 +187,9 @@ class SurfaceProbeOutput(Flow360BaseModel):
 
     @pd.field_validator("entities", mode="after")
     @classmethod
-    def check_entities_type(cls, value):
+    def check_unique_probe_type(cls, value):
         """Check to ensure every entity has the same type"""
-        return _check_entities_type(value, "SurfaceProbeOutput")
+        return _check_unique_probe_type(value, "SurfaceProbeOutput")
 
 
 class AeroAcousticOutput(Flow360BaseModel):
