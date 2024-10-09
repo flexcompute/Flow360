@@ -13,7 +13,6 @@ import unyt
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.utils import is_exact_instance
-from flow360.log import log
 
 
 class MergeConflictError(Exception):
@@ -401,22 +400,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             )
 
         return {"stored_entities": entities_to_store}
-
-    @pd.field_validator("stored_entities", mode="after")
-    @classmethod
-    def _check_duplicate_entity_in_list(cls, values):
-        seen = []
-        if values is None:
-            return None
-        for value in values:
-            if value in seen:
-                if isinstance(value, EntityBase):
-                    log.warning(f"Duplicate entity found, name: {value.name}")
-                else:
-                    log.warning(f"Duplicate entity found: {value}")
-                continue
-            seen.append(value)
-        return seen
 
     def _get_expanded_entities(
         self,
