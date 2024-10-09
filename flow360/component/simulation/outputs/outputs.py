@@ -21,10 +21,14 @@ from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
+    PointArray,
     Slice,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_output import (
+    _check_unique_probe_type,
+)
 
 
 class _AnimationSettings(Flow360BaseModel):
@@ -152,13 +156,19 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Point]] = pd.Field(None, alias="probe_points")
+    entities: Optional[EntityList[Point, PointArray]] = pd.Field(None, alias="probe_points")
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
     def load_point_location_from_file(self, file_path: str):
         """Load probe point locations from a file."""
         raise NotImplementedError("Not implemented yet.")
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "ProbeOutput")
 
 
 class SurfaceProbeOutput(Flow360BaseModel):
@@ -168,12 +178,18 @@ class SurfaceProbeOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field()
-    entities: EntityList[Point] = pd.Field(None, alias="probe_points")
+    entities: EntityList[Point, PointArray] = pd.Field(None, alias="probe_points")
     # Maybe add preprocess for this and by default add all Surfaces?
     target_surfaces: EntityList[Surface] = pd.Field()
 
     output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "SurfaceProbeOutput")
 
 
 class AeroAcousticOutput(Flow360BaseModel):
