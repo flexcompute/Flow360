@@ -47,6 +47,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
 )
@@ -262,6 +263,11 @@ class SimulationParams(_ParamModelBase):
     def check_consistency_ddes_volume_output(self):
         """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
         return _check_consistency_ddes_volume_output(self)
+
+    @pd.model_validator(mode="after")
+    def check_duplicate_entities_in_models(self):
+        """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
+        return _check_duplicate_entities_in_models(self)
 
     @pd.model_validator(mode="after")
     def check_numerical_dissipation_factor_output(self):

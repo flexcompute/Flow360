@@ -19,7 +19,11 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import (
+    Surface,
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
 
@@ -49,6 +53,46 @@ def _check_consistency_wall_function_and_surface_output(v):
                 )
 
     return v
+
+
+def _check_duplicate_entities_in_models(params):
+    models = params.models
+
+    dict_entity = {"Surface": {}, "Volume": {}}
+
+    def register_single_entity(entity, model_type, dict_entity):
+        entity_type = None
+        if isinstance(entity, _SurfaceEntityBase):
+            entity_type = "Surface"
+        if isinstance(entity, _VolumeEntityBase):
+            entity_type = "Volume"
+        entity_log = dict_entity[entity_type].get(entity.name, [])
+        entity_log.append(model_type)
+        dict_entity[entity_type][entity.name] = entity_log
+        return dict_entity
+
+    if models:
+        for model in models:
+            if hasattr(model, "entities"):
+                for entity in model.entities.stored_entities:
+                    dict_entity = register_single_entity(entity, model.type, dict_entity)
+
+    error_msg = ""
+    for entity_type, entity_model_map in dict_entity.items():
+        for entity_name, model_list in entity_model_map.items():
+            if len(model_list) > 1:
+                model_set = set(model_list)
+                model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
+                model_string += " models.\n" if len(model_set) > 1 else " model.\n"
+                error_msg += (
+                    f"{entity_type} entity `{entity_name}` appears "
+                    f"multiple times in {model_string}"
+                )
+
+    if error_msg != "":
+        raise ValueError(error_msg)
+
+    return params
 
 
 def _check_low_mach_preconditioner_output(v):

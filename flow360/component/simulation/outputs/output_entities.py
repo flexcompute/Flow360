@@ -61,3 +61,13 @@ class Point(_PointEntityBase):
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     # pylint: disable=no-member
     location: LengthType.Point = pd.Field()
+
+
+class PointArray(_PointEntityBase):
+    """A single point for probe output"""
+
+    private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)
+    # pylint: disable=no-member
+    start: LengthType.Point = pd.Field()
+    end: LengthType.Point = pd.Field()
+    number_of_points: int = pd.Field(gt=2)

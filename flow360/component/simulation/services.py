@@ -171,10 +171,10 @@ def get_default_params(
                 operating_condition=operating_condition,
                 models=[
                     Wall(
-                        name="Wall", surfaces=[Surface(name="placeholder")]
+                        name="Wall", surfaces=[Surface(name="placeholder1")]
                     ),  # to make it consistent with geo
                     Freestream(
-                        name="Freestream", surfaces=[Surface(name="placeholder")]
+                        name="Freestream", surfaces=[Surface(name="placeholder2")]
                     ),  # to make it consistent with geo
                 ],
             )

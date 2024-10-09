@@ -348,16 +348,12 @@ def test_wrong_ways_of_copying_entity(my_cylinder1):
         my_cylinder1.copy(update={"height": 1.0234, "name": my_cylinder1.name})
 
     assert (
-        len(TempFluidDynamics(entities=[my_cylinder1, my_cylinder1]).entities.stored_entities) == 1
-    )
-
-    assert (
         len(
             TempFluidDynamics(
-                entities=["zone/Box1", "zone/Box1", my_cylinder1]
-            ).entities.stored_entities
+                entities=[my_cylinder1, my_cylinder1]
+            ).entities._get_expanded_entities(create_hard_copy=False)
         )
-        == 2
+        == 1
     )
 
 
