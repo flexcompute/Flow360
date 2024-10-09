@@ -1,5 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
+# pylint: disable=too-many-lines
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -42,6 +43,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -199,6 +201,23 @@ def merge_output_fields(
             output_model.output_fields.items, shared_output_fields.items
         )
     }
+
+
+def time_average_volume_probe_translation_func(
+    output_model: Union[ProbeOutput, TimeAverageProbeOutput],
+    shared_output_fields: UniqueStringList,
+):
+    """Monitor translator"""
+    monitor_group = merge_output_fields(output_model, shared_output_fields)
+    monitor_group["computeTimeAverages"] = False
+    monitor_group["animationFrequency"] = 1
+    monitor_group["animationFrequencyOffset"] = 0
+    if isinstance(output_model, TimeAverageProbeOutput):
+        monitor_group["computeTimeAverages"] = True
+        monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
+        monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
+        monitor_group["startAverageIntegrationStep"] = output_model.start_step
+    return monitor_group
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput, shared_output_fields):
@@ -360,7 +379,7 @@ def translate_slice_isosurface_output(
 
 
 def translate_monitor_output(
-    output_params: list, monitor_type, injection_function, translation_func=merge_output_fields
+    output_params: list, monitor_type, injection_function, translation_func
 ):
     """Translate monitor output settings."""
     translated_output = {"outputFields": []}
@@ -456,14 +475,26 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step5: Get translated["monitorOutput"]
     probe_output = {}
+    probe_output_average = {}
     integral_output = {}
     if has_instance_in_list(outputs, ProbeOutput):
-        probe_output = translate_monitor_output(outputs, ProbeOutput, inject_probe_info)
+        probe_output = translate_monitor_output(
+            outputs, ProbeOutput, inject_probe_info, time_average_volume_probe_translation_func
+        )
+    if has_instance_in_list(outputs, TimeAverageProbeOutput):
+        probe_output_average = translate_monitor_output(
+            outputs,
+            TimeAverageProbeOutput,
+            inject_probe_info,
+            time_average_volume_probe_translation_func,
+        )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         integral_output = translate_monitor_output(
-            outputs, SurfaceIntegralOutput, inject_surface_list_info
+            outputs, SurfaceIntegralOutput, inject_surface_list_info, time_average_volume_probe_translation_func
         )
     # Merge
+    if probe_output or probe_output_average:
+        probe_output = merge_monitor_output(probe_output, probe_output_average)
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
 
