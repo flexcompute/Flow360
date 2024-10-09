@@ -5,7 +5,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
-from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.surface_models import SlipWall, Wall
 from flow360.component.simulation.models.volume_models import (
     Fluid,
     HeatEquationInitialCondition,
@@ -278,4 +278,37 @@ def test_cht_solver_settings_validator(
             models=[fluid_model_with_initial_condition, solid_model_without_initial_condition],
             time_stepping=Steady(),
             outputs=[surface_output_with_residual_heat_solver],
+        )
+
+
+def test_duplicate_entities_in_models():
+    entity_generic_volume = GenericVolume(name="Duplicate Volume")
+    entity_surface = Surface(name="Duplicate Surface")
+    volume_model1 = Solid(
+        volumes=[entity_generic_volume],
+        material=aluminum,
+        volumetric_heat_source="0",
+    )
+    volume_model2 = volume_model1
+    surface_model1 = SlipWall(entities=[entity_surface])
+    surface_model2 = Wall(entities=[entity_surface])
+    surface_model3 = surface_model1
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[volume_model1, surface_model1],
+        )
+
+    assert params
+
+    message = (
+        f"Surface entity `{entity_surface.name}` appears multiple times in `{surface_model1.type}`, `{surface_model2.type}` models.\n"
+        f"Volume entity `{entity_generic_volume.name}` appears multiple times in `{volume_model1.type}` model.\n"
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
