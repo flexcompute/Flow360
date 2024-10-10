@@ -140,6 +140,11 @@ def get_default_params(
             area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
         )
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
+        surface_output = SurfaceOutput(
+            name="Surface output",
+            entities=[Surface(name="*")],
+            output_fields=["Cp", "yPlus", "Cf", "CfVec"],
+        )
 
     if root_item_type == "Geometry":
         automated_farfield = AutomatedFarfield(name="Farfield")
@@ -154,13 +159,7 @@ def get_default_params(
                     Wall(name="Wall", surfaces=[Surface(name="*")]),
                     Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
                 ],
-                outputs=[
-                    SurfaceOutput(
-                        name="Surface output",
-                        entities=[Surface(name="*")],
-                        output_fields=["Cp", "yPlus", "Cf", "CfVec"],
-                    ),
-                ],
+                outputs=[surface_output],
             )
 
         params = _store_project_length_unit(length_unit, params)
@@ -185,13 +184,7 @@ def get_default_params(
                         name="Freestream", surfaces=[Surface(name="placeholder2")]
                     ),  # to make it consistent with geo
                 ],
-                outputs=[
-                    SurfaceOutput(
-                        name="Surface output",
-                        entities=[Surface(name="*")],
-                        output_fields=["Cp", "yPlus", "Cf", "CfVec"],
-                    ),
-                ],
+                outputs=[surface_output],
             )
         # cleaning up stored entities in default settings to let user decide:
         params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
