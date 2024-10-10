@@ -121,7 +121,7 @@ class CaseBase:
         :param tags:
         :return:
         """
-
+        # [WORKBENCH] TODO: Add Warning if the initial condition is set.
         name = name or self.name or self.info.name
         params = params or self.params.copy(deep=True)
         return Case.create(name, params, parent_case=self, tags=tags)
