@@ -23,6 +23,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import Box  # For parse_model_dict
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import (
@@ -153,6 +154,13 @@ def get_default_params(
                     Wall(name="Wall", surfaces=[Surface(name="*")]),
                     Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
                 ],
+                outputs=[
+                    SurfaceOutput(
+                        name="Surface output 1",
+                        entities=[Surface(name="*")],
+                        output_fields=["Cp", "yPlus", "Cf", "CfVec"],
+                    ),
+                ],
             )
 
         params = _store_project_length_unit(length_unit, params)
@@ -177,10 +185,18 @@ def get_default_params(
                         name="Freestream", surfaces=[Surface(name="placeholder2")]
                     ),  # to make it consistent with geo
                 ],
+                outputs=[
+                    SurfaceOutput(
+                        name="Surface output 1",
+                        entities=[Surface(name="placeholder")],
+                        output_fields=["Cp", "yPlus", "Cf", "CfVec"],
+                    ),
+                ],
             )
         # cleaning up stored entities in default settings to let user decide:
         params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
         params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
+        params.outputs[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
 
         params = _store_project_length_unit(length_unit, params)
 

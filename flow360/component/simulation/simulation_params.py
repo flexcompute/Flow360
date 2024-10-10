@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
-from flow360.log import log
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -28,7 +27,7 @@ from flow360.component.simulation.models.volume_models import Fluid, VolumeModel
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
+from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     _SurfaceEntityBase,
@@ -229,20 +228,6 @@ class SimulationParams(_ParamModelBase):
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
         return v
-
-    @pd.model_validator(mode="after")
-    def apply_defult_output_settings(self):
-        """[Solver Capability Related] apply default SurfaceOutput settings if not found in outputs"""
-        if self.private_attribute_asset_cache.project_entity_info is None:
-            log.warning("No asset cache in project")
-            return self
-        if self.outputs is None:
-            self.outputs = []
-        if not any(isinstance(item, SurfaceOutput) for item in self.outputs):
-            self.outputs.append(
-                SurfaceOutput(entities=self.private_attribute_asset_cache.project_entity_info.get_boundaries(), name="Surface output 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
-            )
-        return self
 
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):

@@ -157,6 +157,7 @@ def create_plateASI_base_param(Reynolds, Mach):
                     output_fields=["primitiveVars"],
                 ),
                 SurfaceOutput(
+                    entities=[my_wall],
                     output_format="paraview",
                     output_fields=["Cp"],
                 ),

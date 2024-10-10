@@ -216,16 +216,11 @@ def test_surface_ouput(
         param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_output_config[1].items()) == sorted(
-        translated["surfaceOutput"].items()
-    )
+    assert sorted(surface_output_config[1].items()) == sorted(translated["surfaceOutput"].items())
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
-        param = SimulationParams(
-            outputs=surface_output_config[0]
-            + avg_surface_output_config
-        )
+        param = SimulationParams(outputs=surface_output_config[0] + avg_surface_output_config)
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
@@ -330,9 +325,7 @@ def test_slice_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(sliceoutput_config[1].items()) == sorted(
-        translated["sliceOutput"].items()
-    )
+    assert sorted(sliceoutput_config[1].items()) == sorted(translated["sliceOutput"].items())
 
 
 @pytest.fixture()
@@ -652,13 +645,9 @@ def test_surface_probe_output():
 
 
 def test_monitor_output(
-<<<<<<< HEAD
-    probe_output_config_with_global_setting,
+    probe_output_config,
     probe_output_with_point_array,
-    surface_integral_output_config_with_global_setting,
-=======
-    probe_output_config, surface_integral_output_config
->>>>>>> ad1ca7cd (Remove logic for applying global setting when no entity is specified)
+    surface_integral_output_config,
 ):
     ##:: monitorOutput with global probe settings
     with SI_unit_system:
@@ -667,9 +656,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert sorted(probe_output_config[1].items()) == sorted(translated["monitorOutput"].items())
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
@@ -695,10 +682,7 @@ def test_monitor_output(
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
-        param = SimulationParams(
-            outputs=surface_integral_output_config[0]
-            + probe_output_config[0]
-        )
+        param = SimulationParams(outputs=surface_integral_output_config[0] + probe_output_config[0])
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}

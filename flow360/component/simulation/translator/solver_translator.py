@@ -3,7 +3,6 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -54,7 +53,6 @@ from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_global_setting_from_first_instance,
     has_instance_in_list,
-    merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
@@ -81,10 +79,14 @@ def init_non_average_output(
         base["computeTimeAverages"] = False
 
     base["animationFrequency"] = get_global_setting_from_first_instance(
-        obj_list, class_type, "frequency",
+        obj_list,
+        class_type,
+        "frequency",
     )
     base["animationFrequencyOffset"] = get_global_setting_from_first_instance(
-        obj_list, class_type, "frequency_offset",
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
     return base
 
@@ -97,13 +99,19 @@ def init_average_output(
     """Initialize the common output attribute for average output."""
     base["computeTimeAverages"] = True
     base["animationFrequencyTimeAverage"] = get_global_setting_from_first_instance(
-        obj_list, class_type, "frequency",
+        obj_list,
+        class_type,
+        "frequency",
     )
     base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_first_instance(
-        obj_list, class_type, "frequency_offset",
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
     base["startAverageIntegrationStep"] = get_global_setting_from_first_instance(
-        obj_list, class_type, "start_step",
+        obj_list,
+        class_type,
+        "start_step",
     )
     return base
 
@@ -113,7 +121,9 @@ def init_output_base(obj_list, class_type: Type, has_average_capability: bool, i
 
     base = {"outputFields": []}
     output_format = get_global_setting_from_first_instance(
-        obj_list, class_type, "output_format",
+        obj_list,
+        class_type,
+        "output_format",
     )
     assert output_format is not None
     if output_format == "both":

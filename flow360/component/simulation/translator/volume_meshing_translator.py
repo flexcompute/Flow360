@@ -201,7 +201,6 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             meshing_params.refinements,
             BoundaryLayer,
             "first_layer_thickness",
-            only_find_when_entities_none=False,
         )
     else:
         default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness

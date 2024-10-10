@@ -88,7 +88,11 @@ def create_turb_flat_plate_box_trip_param():
                         "solutionTransition",
                     ],
                 ),
-                outputs.SurfaceOutput(output_format="paraview", output_fields=["Cf"]),
+                outputs.SurfaceOutput(
+                    entities=[primitives.Surface(name="6")],
+                    output_format="paraview",
+                    output_fields=["Cf"],
+                ),
             ],
         )
 

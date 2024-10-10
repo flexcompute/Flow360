@@ -67,37 +67,6 @@
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "VOLUME/BACK": {
-                "outputFields": []
-            },
-            "VOLUME/BOTTOM": {
-                "outputFields": []
-            },
-            "VOLUME/FRONT": {
-                "outputFields": []
-            },
-            "VOLUME/LEFT": {
-                "outputFields": []
-            },
-            "VOLUME/RIGHT": {
-                "outputFields": []
-            },
-            "VOLUME/TOP": {
-                "outputFields": []
-            }
-        },
-        "writeSingleFile": false
-    },
     "timeStepping": {
         "CFL": {
             "final": 10000.0,

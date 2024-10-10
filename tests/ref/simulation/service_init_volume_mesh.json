@@ -187,6 +187,9 @@
                     "CfVec"
                 ]
             },
+            "entities": {
+                "stored_entities": []
+            },
             "output_type": "SurfaceOutput"
         }
     ],
