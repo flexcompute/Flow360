@@ -156,7 +156,7 @@ def get_default_params(
                 ],
                 outputs=[
                     SurfaceOutput(
-                        name="Surface output 1",
+                        name="Surface output",
                         entities=[Surface(name="*")],
                         output_fields=["Cp", "yPlus", "Cf", "CfVec"],
                     ),
@@ -187,8 +187,8 @@ def get_default_params(
                 ],
                 outputs=[
                     SurfaceOutput(
-                        name="Surface output 1",
-                        entities=[Surface(name="placeholder")],
+                        name="Surface output",
+                        entities=[Surface(name="*")],
                         output_fields=["Cp", "yPlus", "Cf", "CfVec"],
                     ),
                 ],
@@ -196,7 +196,6 @@ def get_default_params(
         # cleaning up stored entities in default settings to let user decide:
         params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
         params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
-        params.outputs[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
 
         params = _store_project_length_unit(length_unit, params)
 
