@@ -2,10 +2,6 @@
 This module is flow360 for simulation based models
 """
 
-import os
-
-from numpy import pi
-
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
