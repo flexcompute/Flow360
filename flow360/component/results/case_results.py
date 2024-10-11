@@ -123,6 +123,7 @@ class ResultBaseModel(pd.BaseModel):
     remote_file_name: str = pd.Field()
     local_file_name: str = pd.Field(None)
     do_download: Optional[bool] = pd.Field(None)
+    local_storage: Optional[str] = pd.Field(None)
     _download_method: Optional[Callable] = pd.PrivateAttr()
     _get_params_method: Optional[Callable] = pd.PrivateAttr()
     _is_downloadable: Callable = pd.PrivateAttr(lambda: True)
@@ -228,9 +229,11 @@ class ResultCSVModel(ResultBaseModel):
         Load CSV data from a remote source.
         """
 
-        self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
-        self._raw_values = self._read_csv_file(self.temp_file)
-        self.local_file_name = self.temp_file
+        if self.local_storage is not None:
+            self.download(to_folder=self.local_storage, overwrite=True, **kwargs_download)
+        else:
+            self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
+        self._raw_values = self._read_csv_file(self.local_file_name)
 
     def download(
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
@@ -265,8 +268,9 @@ class ResultCSVModel(ResultBaseModel):
                     overwrite=overwrite,
                     **kwargs,
                 )
+                self.local_file_name = local_file_path
             else:
-                shutil.copy(self.temp_file, local_file_path)
+                shutil.copy(self.local_file_name, local_file_path)
                 log.info(f"Saved to {local_file_path}")
 
     def __str__(self):
@@ -420,7 +424,31 @@ class TotalForcesResultCSVModel(ResultCSVModel):
     """TotalForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, const=True)
+    _averages: Optional[Dict] = pd.PrivateAttr(None)
 
+    def average_last_fraction(self, column, avarage_fraction):
+        df = self.as_dataframe()
+        last_10_percent = df.tail(int(len(df) * avarage_fraction))
+        average = last_10_percent[column].mean()
+        return average
+
+    def get_averages(self, avarage_fraction):
+        return {column: self.average_last_fraction(column, avarage_fraction) for column in self.values.keys()}
+
+    @property
+    def averages(self):
+        """
+        Get average data over last 10%
+
+        Returns
+        -------
+        dict
+            Dictionary containing CL, CD, CFx/y/z, CMx/y/z
+        """
+
+        if self._averages is None:
+            self._averages = self.get_averages(0.1)
+        return self._averages
 
 class SurfaceForcesResultCSVModel(ResultCSVModel):
     """SurfaceForcesResultCSVModel"""

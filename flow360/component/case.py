@@ -4,15 +4,19 @@ Case component
 
 from __future__ import annotations
 
+import os
 import json
 import tempfile
-from typing import Any, Iterator, List, Union
+import time
+import shutil
+from typing import Any, Iterator, List, Union, Optional
 
 import pydantic.v1 as pd
 
 from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import CloudFileNotFoundError, get_local_filename_and_create_folders
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
@@ -49,6 +53,8 @@ from .results.case_results import (
 )
 from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
 from .validator import Validator
+from .simulation.simulation_params import SimulationParams
+from .simulation import services
 
 
 class CaseBase:
@@ -397,12 +403,33 @@ class Case(CaseBase, Flow360Resource):
         case._set_meta(meta)
         return case
 
+    def get_simulation_params(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
+            try:
+                self._download_file("simulation.json", to_file=temp_file.name)
+            except CloudFileNotFoundError as err:
+                raise Flow360ValueError("Simulation params not found for this case.") from err
+
+            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
+            with open(temp_file.name, "r") as fh:
+                params_as_dict = json.load(fh)
+                params_as_dict = services.clean_params_dict(params_as_dict, "VolumeMesh")
+            with open(temp_file.name, "w") as fh:
+                json.dump(params_as_dict, fh)
+            return SimulationParams(filename=temp_file.name)
+
     @property
-    def params(self) -> Flow360Params:
+    def params(self) -> Union[Flow360Params, SimulationParams]:
         """
         returns case params
         """
         if self._params is None:
+            try:
+                self._params = self.get_simulation_params()
+                return self._params
+            except Flow360ValueError:
+                pass
+
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
             try:
                 with tempfile.NamedTemporaryFile(
@@ -573,6 +600,38 @@ class Case(CaseBase, Flow360Resource):
         """
         return cls(case_id)
 
+    @classmethod
+    def from_local_storage(cls, id, name, local_storage_path) -> Case:
+        def _local_download_file(
+            file_name: str,
+            to_file: str = None,
+            to_folder: str = ".",
+            **kwargs,
+        ):
+            expected_local_file = os.path.join(local_storage_path, os.path.basename(file_name))
+            if not os.path.exists(expected_local_file):
+                raise RuntimeError(
+                    f"File {expected_local_file} not found. Make sure the file exists when using Case.from_local_storage()."
+                )
+            new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
+            if new_local_file != expected_local_file:
+                shutil.copy(expected_local_file, new_local_file)
+
+        # we don't know if the status is completed, but if we load from local, we can assume
+        case = cls._from_meta(
+            CaseMeta(
+                caseId=id,
+                name=name,
+                status=Flow360Status.COMPLETED,
+                userId="local",
+                deleted=False,
+                caseMeshId="unknown",
+            )
+        )
+        case._download_file = _local_download_file
+        case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
+        return case
+
     # pylint: disable=too-many-arguments
     @classmethod
     def create(
@@ -690,6 +749,8 @@ class CaseResultsModel(pd.BaseModel):
         default_factory=lambda: AeroacousticsResultCSVModel()
     )
 
+    local_storage: Optional[str] = pd.Field()
+
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
     # pylint: disable=no-self-argument, protected-access
@@ -710,6 +771,7 @@ class CaseResultsModel(pd.BaseModel):
                 if isinstance(value, ResultBaseModel):
                     value._download_method = values["case"]._download_file
                     value._get_params_method = lambda: values["case"].params
+                    value.local_storage = values.get("local_storage")
 
                     values[field.name] = value
 
