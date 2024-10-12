@@ -67,7 +67,6 @@ from flow360.component.simulation.time_stepping.time_stepping import (
     Unsteady,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.utils import _model_attribute_unlock
 
 __all__ = [
     "u",
