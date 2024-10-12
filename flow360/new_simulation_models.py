@@ -84,7 +84,6 @@ __all__ = [
     "ReferenceGeometry",
     "AssetCache",
     "GeometryEntityInfo",
-    "_model_attribute_unlock",
     "AerospaceCondition",
     "ThermalState",
     "Steady",
