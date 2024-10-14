@@ -107,14 +107,21 @@ class AssetBase(metaclass=ABCMeta):
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
+                "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
             )
         asset_cache = simulation_dict["private_attribute_asset_cache"]
 
         if "project_entity_info" not in asset_cache:
             raise KeyError(
                 "[Internal] Could not find project_entity_info in the asset's simulation settings."
+                "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
         entity_info = asset_cache["project_entity_info"]
+        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
+        # Note: Only the draft's and non-root item simulation.json will have it.
+        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
+        # Note: This should be addressed when we design the new project client interface.
+        remove_properties_by_name(entity_info, "_id")
         # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
         # Note: Only the draft's and non-root item simulation.json will have it.
         # Note: But we still add this because it is not clear currently if Asset is alywas the root item.

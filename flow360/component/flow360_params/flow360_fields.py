@@ -89,6 +89,7 @@ VolumeFieldNames = Literal[
     "betMetrics",
     "betMetricsPerDisk",
     "Cpt",
+    "Cpt",
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
