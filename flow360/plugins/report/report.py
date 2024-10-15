@@ -70,7 +70,7 @@ class Report(Flow360BaseModel):
         )  # Included here as it's sometimes not included automatically when needed
         doc.packages.append(Package("placeins"))  # For FloatBarrier
         doc.packages.append(Package("xcolor", options="table"))  # For coloring inc Table
-        doc.packages.append(Package("opensans", options="default"))  # For changing font
+        # doc.packages.append(Package("opensans", options="default"))  # For changing font
 
         geometry_options = ["a4paper", "margin=1in"]
         if landscape:
