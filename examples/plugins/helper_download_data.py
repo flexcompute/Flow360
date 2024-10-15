@@ -1,8 +1,8 @@
 import os
 import json
-from plugins.report.report import Report
-from plugins.report.report_items import Summary, Inputs, Table, Chart2D, Chart3D
-from plugins.report.utils import Delta
+from flow360.plugins.report.report import Report
+from flow360.plugins.report.report_items import Summary, Inputs, Table, Chart2D, Chart3D
+from flow360.plugins.report.utils import Delta
 
 
 import flow360 as fl
@@ -84,4 +84,4 @@ for requirement in report.get_requirements():
     for case in cases:
         if os.path.basename(requirement) == 'manifest.json':
             continue
-        case._download_file(file_name=requirement, to_folder=os.path.join(here, case.name))
+        case._download_file(file_name=requirement, to_file=os.path.join(here, case.name, requirement))
