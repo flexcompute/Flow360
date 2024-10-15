@@ -622,7 +622,7 @@ class Case(CaseBase, Flow360Resource):
             to_folder: str = ".",
             **kwargs,
         ):
-            expected_local_file = os.path.join(local_storage_path, os.path.basename(file_name))
+            expected_local_file = os.path.join(local_storage_path, file_name)
             if not os.path.exists(expected_local_file):
                 raise RuntimeError(
                     f"File {expected_local_file} not found. Make sure the file exists when using Case.from_local_storage()."

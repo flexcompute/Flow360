@@ -16,6 +16,8 @@ case1 = fl.Case("case-a8c58253-d76c-498c-8827-4a1dc3772389")  # alpha=5
 case2 = fl.Case("case-949b8362-feb5-4c9d-92f0-1d551f1d5f05")  # alpha=10
 case3 = fl.Case("case-7b3233b4-eaf2-4724-9b8c-926b9807049a")  # alpha=15
 
+SOLVER_VERSION = "reportPipeline-24.10.0"
+
 
 report = Report(
     items=[
@@ -77,7 +79,7 @@ report = Report(
 
 fl.Env.dev.active()
 
-report_wait = report.create_in_cloud("running_report_from_python", [case1, case2, case3], solver_version='report-24.10.0')
+report_wait = report.create_in_cloud("running_report_from_python", [case1, case2, case3], solver_version=SOLVER_VERSION)
 
 
 print(report_wait)
