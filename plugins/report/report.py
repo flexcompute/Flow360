@@ -17,7 +17,23 @@ from pylatex import (
 
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.interfaces import ReportInterface
+from flow360.cloud.rest_api import RestApi
+from flow360.cloud.requests import NewReportRequest
 from .report_items import Chart, Summary, Inputs, Table, Chart2D, Chart3D
+
+
+
+
+
+
+class ReportApi:
+    _webapi = RestApi(ReportInterface.endpoint)
+    @classmethod
+    def submit(cls, name: str, case_ids: List[str], config: str, landscape: bool=True, solver_version: str=None):
+        request = NewReportRequest(name=name, resources=[{"type": "Case", "id": id} for id in case_ids], config_json=config, solver_version=solver_version)
+        return cls._webapi.post(json=request.dict())
+
 
 
 class Report(Flow360BaseModel):
@@ -94,6 +110,8 @@ class Report(Flow360BaseModel):
             [requirements.add(req) for req in item.get_requirements()]
         return list(requirements)
         
+    def create_in_cloud(self, name: str, cases: list[Case], landscape: bool = False, solver_version: str=None):
+        return ReportApi.submit(name=name, case_ids=[case.id for case in cases], config=self.model_dump_json(), solver_version=solver_version)
 
     def create_pdf(self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = '.', use_mock_manifest: bool=False) -> None:
         # Create a new LaTeX document
