@@ -177,7 +177,7 @@
             "frequency": -1,
             "frequency_offset": 0,
             "output_format": "paraview",
-            "name": "Surface output 1",
+            "name": "Surface output",
             "write_single_file": false,
             "output_fields": {
                 "items": [
@@ -185,6 +185,17 @@
                     "yPlus",
                     "Cf",
                     "CfVec"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": [
+                        ]
+                    }
                 ]
             },
             "output_type": "SurfaceOutput"

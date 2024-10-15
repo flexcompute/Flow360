@@ -14,7 +14,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    get_attribute_from_instance_list,
+    get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -197,11 +197,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     if meshing_params.defaults.boundary_layer_first_layer_thickness is None:
         # `first_layer_thickness` can be locally overridden so after completeness check, we can
         # get away with the first instance's value if global one does not exist.
-        default_first_layer_thickness = get_attribute_from_instance_list(
+        default_first_layer_thickness = get_global_setting_from_first_instance(
             meshing_params.refinements,
             BoundaryLayer,
             "first_layer_thickness",
-            only_find_when_entities_none=False,
         )
     else:
         default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness

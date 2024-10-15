@@ -3,7 +3,6 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -52,10 +51,8 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady, Uns
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
-    get_attribute_from_instance_list,
-    get_global_setting_from_per_item_setting,
+    get_global_setting_from_first_instance,
     has_instance_in_list,
-    merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
@@ -81,11 +78,15 @@ def init_non_average_output(
     if has_average_capability:
         base["computeTimeAverages"] = False
 
-    base["animationFrequency"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequency"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency",
     )
-    base["animationFrequencyOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyOffset"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
     return base
 
@@ -97,14 +98,20 @@ def init_average_output(
 ):
     """Initialize the common output attribute for average output."""
     base["computeTimeAverages"] = True
-    base["animationFrequencyTimeAverage"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyTimeAverage"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency",
     )
-    base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
-    base["startAverageIntegrationStep"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "start_step", allow_get_from_first_instance_as_fallback=True
+    base["startAverageIntegrationStep"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "start_step",
     )
     return base
 
@@ -113,8 +120,10 @@ def init_output_base(obj_list, class_type: Type, has_average_capability: bool, i
     """Initialize the common output attribute."""
 
     base = {"outputFields": []}
-    output_format = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "output_format", allow_get_from_first_instance_as_fallback=True
+    output_format = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "output_format",
     )
     assert output_format is not None
     if output_format == "both":
@@ -179,7 +188,7 @@ def rotation_translator(model: Rotation):
     return volume_zone
 
 
-def merge_output_fields(
+def translate_output_fields(
     output_model: Union[
         SurfaceOutput,
         TimeAverageSurfaceOutput,
@@ -189,21 +198,14 @@ def merge_output_fields(
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
     ],
-    shared_output_fields: UniqueStringList,
 ):
-    """Get merged output fields"""
-    if shared_output_fields is None:
-        return {"outputFields": output_model.output_fields.items}
-    return {
-        "outputFields": merge_unique_item_lists(
-            output_model.output_fields.items, shared_output_fields.items
-        )
-    }
+    """Get output fields"""
+    return {"outputFields": output_model.output_fields.items}
 
 
-def surface_probe_setting_translation_func(entity: SurfaceProbeOutput, shared_output_fields):
+def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
     """Translate non-entitties part of SurfaceProbeOutput"""
-    dict_with_merged_output_fields = merge_output_fields(entity, shared_output_fields)
+    dict_with_merged_output_fields = translate_output_fields(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
         surface.full_name for surface in entity.target_surfaces.stored_entities
     ]
@@ -277,7 +279,7 @@ def translate_volume_output(
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_attribute_from_instance_list(
+            "outputFields": get_global_setting_from_first_instance(
                 output_params, volume_output_class, "output_fields"
             ).model_dump()["items"],
         }
@@ -300,33 +302,16 @@ def translate_surface_output(
         has_average_capability=True,
         is_average=surface_output_class is TimeAverageSurfaceOutput,
     )
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        surface_output_class,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         surface_output_class,
-        translation_func=merge_output_fields,
+        translation_func=translate_output_fields,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
     )
-    if shared_output_fields is not None:
-        # Note: User specified shared output fields for all surfaces. We need to manually add these for surfaces
-        # Note: that did not appear in the SurfaceOutput insntances.
-        for boundary_name in translated["boundaries"].keys():
-            if boundary_name not in surface_output["surfaces"]:
-                surface_output["surfaces"][boundary_name] = {
-                    "outputFields": shared_output_fields.items
-                }
-    surface_output["writeSingleFile"] = get_global_setting_from_per_item_setting(
+    surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
         surface_output_class,
         "write_single_file",
-        allow_get_from_first_instance_as_fallback=True,
     )
     return surface_output
 
@@ -341,42 +326,26 @@ def translate_slice_isosurface_output(
     translated_output = init_output_base(
         output_params, output_class, has_average_capability=False, is_average=False
     )
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        output_class,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,
-        translation_func=merge_output_fields,
+        translation_func=translate_output_fields,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
     )
     return translated_output
 
 
 def translate_monitor_output(
-    output_params: list, monitor_type, injection_function, translation_func=merge_output_fields
+    output_params: list, monitor_type, injection_function, translation_func=translate_output_fields
 ):
     """Translate monitor output settings."""
     translated_output = {"outputFields": []}
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        monitor_type,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     translated_output["monitors"] = translate_setting_and_apply_to_all_entities(
         output_params,
         monitor_type,
         translation_func=translation_func,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
@@ -877,29 +846,29 @@ def get_solver_json(
     solid_zone_boundaries = set()
     if has_instance_in_list(input_params.models, Solid):
         translated["heatEquationSolver"] = {
-            "equationEvalFrequency": get_attribute_from_instance_list(
+            "equationEvalFrequency": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "equation_evaluation_frequency"],
             ),
             "linearSolver": {
-                "maxIterations": get_attribute_from_instance_list(
+                "maxIterations": get_global_setting_from_first_instance(
                     input_params.models,
                     Solid,
                     ["heat_equation_solver", "linear_solver", "max_iterations"],
                 ),
             },
-            "absoluteTolerance": get_attribute_from_instance_list(
+            "absoluteTolerance": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "absolute_tolerance"],
             ),
-            "relativeTolerance": get_attribute_from_instance_list(
+            "relativeTolerance": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "relative_tolerance"],
             ),
-            "orderOfAccuracy": get_attribute_from_instance_list(
+            "orderOfAccuracy": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "order_of_accuracy"],
@@ -909,12 +878,12 @@ def get_solver_json(
             "maxForceJacUpdatePhysicalSteps": 0,
             "modelType": "HeatEquation",
         }
-        linear_solver_absolute_tolerance = get_attribute_from_instance_list(
+        linear_solver_absolute_tolerance = get_global_setting_from_first_instance(
             input_params.models,
             Solid,
             ["heat_equation_solver", "linear_solver", "absolute_tolerance"],
         )
-        linear_solver_relative_tolerance = get_attribute_from_instance_list(
+        linear_solver_relative_tolerance = get_global_setting_from_first_instance(
             input_params.models,
             Solid,
             ["heat_equation_solver", "linear_solver", "relative_tolerance"],
