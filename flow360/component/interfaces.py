@@ -57,3 +57,9 @@ DraftInterface = BaseInterface(
 )
 
 FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None, endpoint="folders")
+
+ReportInterface = BaseInterface(
+    resource_type="Report",
+    s3_transfer_method=S3TransferType.GEOMETRY,
+    endpoint="v2/report",
+)
