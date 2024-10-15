@@ -1,7 +1,7 @@
 import os
-from typing import List
+from typing import List, Union
 
-from pydantic import BaseModel
+from pydantic import Field
 from pylatex import (
     Command,
     Document,
@@ -16,11 +16,12 @@ from pylatex import (
 )
 
 from flow360 import Case
-from .report_items import ReportItem, Chart
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from .report_items import Chart, Summary, Inputs, Table, Chart2D, Chart3D
 
 
-class Report(BaseModel):
-    items: List[ReportItem]
+class Report(Flow360BaseModel):
+    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator='type')
     include_case_by_case: bool = True
 
     def _create_header_footer(self) -> PageStyle:
@@ -87,11 +88,16 @@ class Report(BaseModel):
         doc.append(Command("end", "titlepage"))
 
 
-    def get_download_result_list(self):
-        pass
+    def get_requirements(self):
+        requirements = set()
+        for item in self.items:
+            [requirements.add(req) for req in item.get_requirements()]
+        return list(requirements)
+        
 
-    def create_pdf(self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = '.') -> None:
+    def create_pdf(self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = '.', use_mock_manifest: bool=False) -> None:
         # Create a new LaTeX document
+        os.makedirs(data_storage, exist_ok=True)
         doc = Document(document_options=["10pt"])
         self._define_preamble(doc, landscape)
         self._make_title(doc)
@@ -115,7 +121,10 @@ class Report(BaseModel):
 
         # Iterate through all cases together
         for item in self.items:
-            item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
+            if isinstance(item, Chart3D):
+                item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage, use_mock_manifest=use_mock_manifest)
+            else:
+                item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:

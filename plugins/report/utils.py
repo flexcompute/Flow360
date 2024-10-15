@@ -4,6 +4,27 @@ from pylatex import NoEscape, Package, Tabular
 from numbers import Number
 
 from flow360 import Case
+from flow360.component.results import case_results
+
+
+_requirements_mapping = {
+    "params": "simulation.json",
+    "total_forces": case_results.TotalForcesResultCSVModel()._remote_path(),
+    "nonlinear_residuals": case_results.NonlinearResidualsResultCSVModel()._remote_path()
+}
+
+
+def get_requirements_from_data_path(data_path):
+    requirements = set()
+    for item in data_path:
+        root_path = get_root_path(item)
+        requirement = _requirements_mapping.get(root_path)
+        if requirement is None:
+            raise ValueError(f'Unknown result type: {item}')
+        requirements.add(requirement)
+    return list(requirements)
+
+
 
 
 def check_landscape(doc):
@@ -23,10 +44,19 @@ def get_case_from_id(id: str, cases: list[Case]) -> Case:
         if case.id == id:
             return case
 
+def get_root_path(data_path):
+    if data_path is not None:
+        if isinstance(data_path, Delta):
+            data_path = data_path.data_path
+        return data_path.split("/")[0]
+    return None
 
-def data_from_path(case: Case, path: str, cases: list[Case] = []) -> Any:
+
+def data_from_path(case: Case, path: str, cases: list[Case] = [], case_by_case: bool=False) -> Any:
     # Handle Delta values
     if isinstance(path, Delta):
+        if case_by_case:
+            return path.model_copy(update={"ref_index": None}).calculate(case, cases)
         return path.calculate(case, cases)
 
     # Split path into components
@@ -80,7 +110,7 @@ def data_from_path(case: Case, path: str, cases: list[Case] = []) -> Any:
         try:
             return case.values[component]
         except KeyError:
-            raise ValueError(f"Could not find path component: '{component}'")
+            raise ValueError(f"Could not find path component: '{component}', available: {case.values.keys()}")
 
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:

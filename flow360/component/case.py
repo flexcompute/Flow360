@@ -384,6 +384,8 @@ class Case(CaseBase, Flow360Resource):
     Case component
     """
 
+    _manifest_path = "visualize/manifest/manifest.json"
+
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
@@ -395,6 +397,7 @@ class Case(CaseBase, Flow360Resource):
         self._params = None
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
+        self._manifest = None
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -574,6 +577,17 @@ class Case(CaseBase, Flow360Resource):
             method="move",
         )
         return self
+    
+    def _get_manifest(self):
+        if self._manifest is None:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
+                try:
+                    self._download_file(self._manifest_path, to_file=temp_file.name)
+                except CloudFileNotFoundError as err:
+                    raise Flow360ValueError("Manifest file for visualisation not found for this case.") from err
+                with open(temp_file.name, "r") as fh:
+                    self._manifest = json.load(fh)
+        return self._manifest
 
     @classmethod
     def _interface(cls):
