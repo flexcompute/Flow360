@@ -23,27 +23,6 @@ case3 = fl.Case.from_local_storage(
 )
 
 
-
-print(case1.results.total_forces.averages['CD'])
-print(case2.results.total_forces.averages['CD'])
-print(case3.results.total_forces.averages['CD'])
-
-# report = Report(
-#     items=[
-#         Table(
-#             data_path=[
-#                 "params/reference_geometry/area",
-#                 "total_forces/averages/CD",
-#                 Delta(data_path="total_forces/averages/CD", ref_index=0),
-#             ],
-#             section_title="My Favourite Quantities",
-#         )
-#     ]
-# )
-
-# report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))
-
-
 report = Report(
     items=[
         Summary(text="Analysis of a new feature"),
@@ -90,6 +69,13 @@ report = Report(
             background=None,
             single_plot=True,
         ),
+        Chart2D(
+            data_path=["nonlinear_residuals/pseudo_step", "nonlinear_residuals/1_momx"],
+            section_title=None,
+            fig_name="residuals",
+            background=None,
+            single_plot=True,
+        ),
     ],
     include_case_by_case=True,
 )
@@ -97,4 +83,14 @@ report = Report(
 # # NOTE: There's a bug where something is being cached between create_pdf calls like this
 # # The issue seems to affect _assemble_fig_rows
 # # report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
-report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))
+# report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))
+
+
+report_filename = os.path.join(here, 'my_report', 'report.json')
+with open(report_filename, "w") as f:
+    f.write(report.model_dump_json()
+)
+    
+
+
+Report(filename=report_filename).create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))

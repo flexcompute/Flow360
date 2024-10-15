@@ -1,12 +1,12 @@
 import asyncio
 import json
 import os
-from typing import List, Literal, Union
+from typing import List, Literal, Union, Optional
 
 import aiohttp
 import backoff
 import matplotlib.pyplot as plt
-from pydantic import BaseModel, model_validator, NonNegativeInt
+from pydantic import Field, model_validator, NonNegativeInt
 from pylatex import (
     Command,
     Document,
@@ -20,14 +20,18 @@ from pylatex import (
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case
-from .utils import Delta, Tabulary, data_from_path
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from .utils import Delta, Tabulary, data_from_path, get_root_path, get_requirements_from_data_path, _requirements_mapping
+from .uvf_shutter import UVFshutter
 
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-class ReportItem(BaseModel):
+class ReportItem(Flow360BaseModel):
 
     boundaries: Union[Literal["ALL"], List[str]] = "ALL"
+    _requirements: List[str] = None
+
 
     def get_doc_item(
         self,
@@ -40,9 +44,16 @@ class ReportItem(BaseModel):
         with doc.create(section_func(self.__class__.__name__)):
             doc.append(f"this is {self.__class__.__name__}")
 
+    def get_requirements(self):
+        if self._requirements is not None:
+            return self._requirements
+        raise NotImplementedError(f'Internal error: get_requirements() not implemented for {self.__class__.__name__}')
+
 
 class Summary(ReportItem):
     text: str
+    type: Literal['Summary'] = Field("Summary", frozen=True)
+    _requirements: List[str] = []
 
     def get_doc_item(
         self,
@@ -64,6 +75,8 @@ class Inputs(ReportItem):
     """
     Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
     """
+    type: Literal['Inputs'] = Field("Inputs", frozen=True)
+    _requirements: List[str] = [_requirements_mapping["params"]]
 
     def get_doc_item(
         self,
@@ -96,6 +109,8 @@ class Table(ReportItem):
     data_path: list[Union[str, Delta]]
     section_title: Union[str, None]
     custom_headings: Union[list[str], None] = None
+    type: Literal['Table'] = Field("Table", frozen=True)
+
 
     @model_validator(mode="after")
     def check_custom_heading_count(self) -> None:
@@ -105,6 +120,11 @@ class Table(ReportItem):
                     f"Suppled `custom_headings` must be the same length as `data_path`: "
                     f"{len(self.custom_headings)} instead of {len(self.data_path)}"
                 )
+        return self
+            
+    def get_requirements(self):
+        return get_requirements_from_data_path(self.data_path)
+
 
     def get_doc_item(
         self,
@@ -144,7 +164,7 @@ class Table(ReportItem):
 
             # Build data rows
             for idx, case in enumerate(cases):
-                row_list = [data_from_path(case, path, cases) for path in self.data_path]
+                row_list = [data_from_path(case, path, cases, case_by_case=case_by_case) for path in self.data_path]
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
                 table.add_hline()
@@ -155,20 +175,20 @@ class Chart(ReportItem):
     fig_name: str
     fig_size: float = 0.7  # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
-    select_indices: List[NonNegativeInt] = None
+    select_indices: Optional[List[NonNegativeInt]] = None
+    single_plot: bool = False
     force_new_page: bool = False
 
     @model_validator(mode="after")
     def check_chart_args(self) -> None:
-        if self.items_in_row is not None:
-            if self.items_in_row == -1:
-                return
-            if self.items_in_row <= 1:
+        if self.items_in_row is not None and self.items_in_row != -1:
+            if self.items_in_row < 1:
                 raise ValueError(
                     f"`Items_in_row` should be greater than 1. Use -1 to include all cases on a single row. Use `None` to disable the argument."
                 )
         if self.items_in_row is not None and self.single_plot:
             raise ValueError(f"`Items_in_row` and `single_plot` cannot be used together.")
+        return self
 
     def _assemble_fig_rows(self, img_list: list[str], doc: Document, fig_caption: str):
         """
@@ -209,13 +229,27 @@ class Chart(ReportItem):
 class Chart2D(Chart):
     data_path: list[Union[str, Delta]]
     background: Union[Literal["geometry"], None] = None
-    single_plot: bool = False
+    _requirements: List[str] = [_requirements_mapping["total_forces"]]
+    type: Literal['Chart2D'] = Field("Chart2D", frozen=True)
+
+
+
+    def get_requirements(self):
+        return get_requirements_from_data_path(self.data_path)
+    
+    def is_log_plot(self):
+        root_path = get_root_path(self.data_path[1])
+        return root_path == 'nonlinear_residuals'
+    
 
     def _create_fig(
         self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str
     ) -> None:
         """Create a simple matplotlib figure"""
-        plt.plot(x_data, y_data)
+        if self.is_log_plot():
+            plt.semilogy(x_data, y_data)
+        else:
+            plt.plot(x_data, y_data)
         plt.xlabel(x_lab)
         plt.ylabel(y_lab)
         if self.single_plot:
@@ -276,12 +310,12 @@ class Chart2D(Chart):
                 fig = Figure(position="h!")
                 fig.add_image(save_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
                 fig.add_caption(
-                    NoEscape(f"{bold(x_lab)} against {bold(y_lab)} for {bold(case.name)}.")
+                    NoEscape(f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}.")
                 )
                 figure_list.append(fig)
 
         if self.items_in_row is not None:
-            fig_caption = NoEscape(f'{bold(x_lab)} against {bold(y_lab)} for {bold("all cases")}.')
+            fig_caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
             self._assemble_fig_rows(figure_list, doc, fig_caption)
 
         elif self.single_plot:
@@ -289,7 +323,7 @@ class Chart2D(Chart):
             fig = Figure(position="h!")
             fig.add_image(save_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
             fig.add_caption(
-                NoEscape(f'{bold(x_lab)} against {bold(y_lab)} for {bold("all cases")}.')
+                NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
             )
             doc.append(fig)
         else:
@@ -309,38 +343,8 @@ class Chart3D(Chart):
     # camera: List[float]
     # limits: List[float]
 
-    async def process_3d_images(
-        self, cases: list[Case], fig_name: str, url: str, manifest: list, data_storage: str = '.'
-    ) -> list[str]:
-        @backoff.on_exception(backoff.expo, ValueError, max_time=300)
-        async def _get_image(session: aiohttp.client.ClientSession, url: str, manifest: list[dict]):
-            async with session.post(url, json=manifest) as response:
-                if response.status == 503:
-                    raise ValueError("503 response received.")
-                else:
-                    return await response.read()
-
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-            img_names = []
-            existing_images = os.listdir()
-            for case in cases:
-                # Stops case_by_case re-requesting images from the server
-                # Empty list doesn't cause issues with later gather or zip
-                img_name = os.path.join(data_storage, fig_name + "_" + case.name + ".png")
-                img_names.append(img_name)
-                if img_name in existing_images:
-                    continue
-
-                task = _get_image(session=session, url=url, manifest=manifest)
-                tasks.append(task)
-            responses = await asyncio.gather(*tasks)
-
-            for response, img_name in zip(responses, img_names):
-                with open(img_name, "wb") as img_out:
-                    img_out.write(response)
-
-        return img_names
+    _requirements: List[str] = [Case._manifest_path]
+    type: Literal['Chart3D'] = Field("Chart3D", frozen=True)
 
     def get_doc_item(
         self,
@@ -348,7 +352,8 @@ class Chart3D(Chart):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case: bool = False,
-        data_storage: str = '.'
+        data_storage: str = '.',
+        use_mock_manifest: bool = False
     ):
         # Create new page is user requests one
         if self.force_new_page:
@@ -367,20 +372,7 @@ class Chart3D(Chart):
         # Reduce the case list by the selected IDs
         cases = [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
 
-
-        # url = "https://localhost:3000/screenshot" Local url
-        url = "https://uvf-shutter.dev-simulation.cloud/screenshot"
-
-        # Load manifest from case - move to loop later
-        # os.chdir("/home/matt/Documents/Flexcompute/flow360/uvf-shutter/server/src/manifests")
-        with open(os.path.join(here, "b777.json"), "r") as in_file:
-            manifest = json.load(in_file)
-
-        # os.chdir(current_dir)
-
-        img_list = asyncio.run(
-            self.process_3d_images(cases, self.fig_name, url=url, manifest=manifest, data_storage=data_storage)
-        )
+        img_list = UVFshutter(cases=cases, data_storage=data_storage).get_images(self.fig_name, use_mock_manifest=use_mock_manifest)
 
         if self.items_in_row is not None:
             fig_caption = f"Chart3D Row"
