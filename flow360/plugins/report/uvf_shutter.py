@@ -108,9 +108,9 @@ class UVFshutter(Flow360BaseModel):
             img_names = []
             for img_name, manifest in screenshots:
                 img_names.append(img_name)
-                task = _get_image_screeshot(session=session, url=self._url + "/screenshot", manifest=manifest)
+                # task = _get_image_screeshot(session=session, url=self._url + "/screenshot", manifest=manifest)
 
-                # task = _get_image_sequence(session=session, url=self._url + "//sequence/run", manifest=manifest)
+                task = _get_image_sequence(session=session, url=self._url + "//sequence/run", manifest=manifest)
 
                 tasks.append(task)
             responses = await asyncio.gather(*tasks)
