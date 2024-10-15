@@ -93,7 +93,8 @@ class UVFshutter(Flow360BaseModel):
                     raise ValueError("503 response received.")
                 else:
                     return await response.read()
-
+                
+        @backoff.on_exception(backoff.expo, ValueError, max_time=300)
         async def _get_image_sequence(session: aiohttp.client.ClientSession, url: str, manifest: list[dict]):
             log.debug(f'sending request to uvf-shutter: {url=}, {type(manifest)=}, {len(manifest)=}')
             async with session.post(url, json=manifest) as response:
