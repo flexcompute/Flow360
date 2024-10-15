@@ -111,6 +111,8 @@ def data_from_path(case: Case, path: str, cases: list[Case] = [], case_by_case: 
             return case.values[component]
         except KeyError:
             raise ValueError(f"Could not find path component: '{component}', available: {case.values.keys()}")
+        except AttributeError:
+            raise AttributeError(f'Could not find path for {case=}, {component=}')
 
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
