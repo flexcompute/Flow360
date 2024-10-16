@@ -110,54 +110,6 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
 def surface_output_config():
     return (
         [
-            SurfaceOutput(  # Global
-                frequency=11,
-                frequency_offset=21,
-                output_format="paraview",
-                output_fields=["vorticity", "mutRatio"],
-            ),
-            SurfaceOutput(  # Local
-                frequency=11,
-                frequency_offset=21,
-                entities=[Surface(name="surface1"), Surface(name="surface2")],
-                output_fields=["Cp"],
-            ),
-            SurfaceOutput(  # Local
-                frequency=11,
-                frequency_offset=21,
-                entities=[
-                    Surface(name="surface11", private_attribute_full_name="ZoneName/surface11"),
-                    Surface(name="surface22"),
-                ],
-                output_fields=["T"],
-            ),
-        ],
-        {
-            "animationFrequency": 11,
-            "animationFrequencyOffset": 21,
-            "animationFrequencyTimeAverage": -1,
-            "animationFrequencyTimeAverageOffset": 0,
-            "computeTimeAverages": False,
-            "outputFields": [],
-            "outputFormat": "paraview",
-            "startAverageIntegrationStep": -1,
-            "surfaces": {
-                "surface1": {"outputFields": ["Cp", "vorticity", "mutRatio"]},
-                "ZoneName/surface11": {"outputFields": ["T", "vorticity", "mutRatio"]},
-                "surface2": {"outputFields": ["Cp", "vorticity", "mutRatio"]},
-                "surface22": {"outputFields": ["T", "vorticity", "mutRatio"]},
-                "Wall1": {"outputFields": ["vorticity", "mutRatio"]},
-                "Wall2": {"outputFields": ["vorticity", "mutRatio"]},
-            },
-            "writeSingleFile": False,
-        },
-    )
-
-
-@pytest.fixture()
-def surface_output_config():
-    return (
-        [
             SurfaceOutput(  # Local
                 entities=[Surface(name="surface1"), Surface(name="surface2")],
                 output_fields=["Cp"],
@@ -201,13 +153,13 @@ def avg_surface_output_config():
             output_fields=["Cp"],
         ),
         TimeAverageSurfaceOutput(  # Local
-            entities=[Surface(name="surface11"), Surface(name="surface22")],
+            entities=[Surface(name="surface3")],
             output_fields=["T"],
         ),
     ]
 
 
-def test_surface_ouput(
+def test_surface_output(
     surface_output_config,
     avg_surface_output_config,
 ):
@@ -237,6 +189,7 @@ def test_surface_ouput(
             "surface11": {"outputFields": ["T"]},
             "surface2": {"outputFields": ["Cp"]},
             "surface22": {"outputFields": ["T"]},
+            "surface3": {"outputFields": ["T"]},
         },
         "writeSingleFile": False,
     }
@@ -287,6 +240,10 @@ def sliceoutput_config():
         {
             "animationFrequency": 33,
             "animationFrequencyOffset": 22,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "startAverageIntegrationStep": -1,
+            "computeTimeAverages": False,
             "outputFields": [],
             "outputFormat": "tecplot",
             "slices": {
