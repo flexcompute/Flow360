@@ -178,10 +178,10 @@ class Folder(Flow360Resource):
         all_records = []
         page = 0
         size = 1000  # Page size
-        total_records = size
+        total_record_count = size
 
         # Loop until all pages are fetched
-        while len(all_records) < total_records:
+        while len(all_records) < total_record_count:
             payload = {
                 "page": page,
                 "size": size,
@@ -195,7 +195,7 @@ class Folder(Flow360Resource):
             data = RestApi("/v2/items").get(params=payload)
             records = data.get("records", [])
             all_records.extend(records)
-            total_records = data.get("total", 0)
+            total_record_count = data.get("total", 0)
             page += 1
 
         return all_records
@@ -283,7 +283,7 @@ class Folder(Flow360Resource):
             The total storage size of the current folder and its subfolders.
         """
 
-        print("  " * indent + f"- [FOLDER] {tree['name']}")
+        log.info("  " * indent + f"- [FOLDER] {tree['name']}")
         total_storage = 0
         for subfolder in tree["subfolders"]:
             # pylint: disable=protected-access
@@ -299,20 +299,20 @@ class Folder(Flow360Resource):
             if item["type"] != "Folder":
                 storage_size = item.get("storageSize", 0)
                 total_storage += storage_size
-                print(
+                log.info(
                     "  " * (indent + 1)
                     + f"- [{item['type']}] {item['name']} (Size: {storage_size_formatter(storage_size)})"
                 )
 
         if len(remaining_items) > 0:
             total_remaining_size = sum(item.get("storageSize", 0) for item in remaining_items)
-            print(
+            log.info(
                 "  " * (indent + 1)
                 + f"+{len(remaining_items)} more (total {storage_size_formatter(total_remaining_size)})"
             )
             total_storage += total_remaining_size
 
-        print("  " * (indent + 1) + f"Total Storage: {storage_size_formatter(total_storage)}")
+        log.info("  " * (indent + 1) + f"Total Storage: {storage_size_formatter(total_storage)}")
         return total_storage
 
     @classmethod
