@@ -85,6 +85,16 @@ class AssetBase(metaclass=ABCMeta):
         )["simulationJson"]
         return json.loads(simulation_json)
 
+    def short_description(self) -> str:
+        """short_description
+
+        Returns
+        -------
+        str
+            generates short description of resource (name, id, status)
+        """
+        return self._webapi.short_description()
+
     @property
     def info(self) -> AssetMetaBaseModel:
         """Return the metadata of the resource"""

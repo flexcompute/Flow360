@@ -116,7 +116,7 @@ def generate_surface_mesh(
     params: SimulationParams,
     draft_name: str = None,
     async_mode: bool = True,
-):
+) -> SurfaceMesh:
     """generate surface mesh from the geometry"""
     return _run(source_asset, params, SurfaceMesh, draft_name, False, async_mode)
 
@@ -126,7 +126,7 @@ def generate_volume_mesh(
     params: SimulationParams,
     draft_name: str = None,
     async_mode: bool = True,
-):
+) -> VolumeMesh:
     """generate volume mesh from the geometry"""
     return _run(source_asset, params, VolumeMesh, draft_name, False, async_mode)
 
@@ -136,6 +136,6 @@ def run_case(
     params: SimulationParams,
     draft_name: str = None,
     async_mode: bool = True,
-):
+) -> Case:
     """run case from the geometry"""
     return _run(source_asset, params, Case, draft_name, False, async_mode)
