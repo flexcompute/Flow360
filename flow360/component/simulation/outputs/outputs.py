@@ -96,10 +96,10 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
 
 
 class VolumeOutput(_AnimationAndFileFormatSettings):
-    """Volume output settings."""
+    """Volume output settings. (test the code)"""
 
-    name: Optional[str] = pd.Field(None)
-    output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field()
+    name: Optional[str] = pd.Field(None, description="Name of this volume output.")
+    output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field(description="List of output variables.")
     output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
 
