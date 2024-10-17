@@ -8,18 +8,28 @@ import flow360 as fl
 from flow360 import log
 
 log.set_logging_level("DEBUG")
+fl.Env.dev.active()
+fl.UserConfig.set_profile('auto_test_1')
+
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+# print(fl.Case("case-21469d5e-257d-49de-8f5d-97f27c526a47").info.user_id)
+
+
+
 
 case1 = fl.Case.from_local_storage(
-    "case-a8c58253-d76c-498c-8827-4a1dc3772389", "Case_f_alpha=5", os.path.join(here, "Case_f_alpha=5")
+    "case-21469d5e-257d-49de-8f5d-97f27c526a47", "Case_f_alpha=5", os.path.join(here, "Case_f_alpha=5"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW"
 )
 case2 = fl.Case.from_local_storage(
-    "case-949b8362-feb5-4c9d-92f0-1d551f1d5f05", "Case_f_alpha=10", os.path.join(here, "Case_f_alpha=10")
+    "case-8f1e31fc-e8df-408f-aab8-62507bf85bf5", "Case_f_alpha=10", os.path.join(here, "Case_f_alpha=10"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW"
 )
 case3 = fl.Case.from_local_storage(
-    "case-7b3233b4-eaf2-4724-9b8c-926b9807049a", "Case_f_alpha=15", os.path.join(here, "Case_f_alpha=15")
+    "case-73e1d12f-a8d1-477c-95cf-45f6685e7971", "Case_f_alpha=15", os.path.join(here, "Case_f_alpha=15"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW"
 )
 
 
@@ -40,8 +50,10 @@ report = Report(
             fig_size=0.4,
             fig_name="c3d_std",
             force_new_page=True,
+            show='boundaries'
         ),
-        Chart3D(section_title="Chart3D Rows Testing", items_in_row=-1, fig_name="c3d_rows"),
+        Chart3D(section_title="Chart3D Rows Testing", items_in_row=-1, fig_name="c3d_rows", show='boundaries', field='yPlus', limits=(0.1, 82)),
+        Chart3D(section_title="Q-criterion in row", items_in_row=-1, fig_name="c3d_rows_qcriterion", show='qcriterion', field='Mach', limits=(0, 0.346)),
         Chart2D(
             data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
             section_title="Sanity Check Step against Step",

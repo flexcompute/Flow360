@@ -615,7 +615,7 @@ class Case(CaseBase, Flow360Resource):
         return cls(case_id)
 
     @classmethod
-    def from_local_storage(cls, id, name, local_storage_path) -> Case:
+    def from_local_storage(cls, id, name, local_storage_path, user_id: str='local') -> Case:
         def _local_download_file(
             file_name: str,
             to_file: str = None,
@@ -637,7 +637,7 @@ class Case(CaseBase, Flow360Resource):
                 caseId=id,
                 name=name,
                 status=Flow360Status.COMPLETED,
-                userId="local",
+                userId=user_id,
                 deleted=False,
                 caseMeshId="unknown",
             )

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from typing import List, Literal, Union, Optional
+from typing import List, Literal, Union, Optional, Tuple
 
 import aiohttp
 import backoff
@@ -21,8 +21,20 @@ from pylatex.utils import bold, escape_latex
 
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
 from .utils import Delta, Tabulary, data_from_path, get_root_path, get_requirements_from_data_path, _requirements_mapping
-from .uvf_shutter import UVFshutter
+from .uvf_shutter import (
+    UVFshutter, 
+    ActionPayload, 
+    SetObjectVisibilityPayload, 
+    SetFieldPayload, 
+    TakeScreenshotPayload, 
+    ResetFieldPayload,
+    SourceContext,
+    Scene,
+    ScenesData,
+    UvfObjectTypes
+)
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -243,7 +255,7 @@ class Chart2D(Chart):
     
 
     def _create_fig(
-        self, x_data: list, y_data: list, x_lab: str, y_lab: str, save_name: str
+        self, x_data: list, y_data: list, x_lab: str, y_lab: str, legend: str, save_name: str
     ) -> None:
         """Create a simple matplotlib figure"""
         if self.is_log_plot():
@@ -296,7 +308,8 @@ class Chart2D(Chart):
             # Create the figure using basic matplotlib
             cbc_str = "_cbc_" if case_by_case else ""
             save_name = os.path.join(data_storage, self.fig_name + cbc_str + case.name + ".png")
-            self._create_fig(x_data, y_data, x_lab, y_lab, save_name)
+            legend = case.name
+            self._create_fig(x_data, y_data, x_lab, y_lab, legend, save_name)
 
             # Allow for handling the figures later inside a subfig
             if self.items_in_row is not None:
@@ -339,12 +352,114 @@ class Chart2D(Chart):
 
 
 class Chart3D(Chart):
-    # field: str
+    field: Optional[SurfaceFieldNames] = None
     # camera: List[float]
-    # limits: List[float]
+    limits: Optional[Tuple[float, float]] = None
+    show: UvfObjectTypes
 
     _requirements: List[str] = [Case._manifest_path]
     type: Literal['Chart3D'] = Field("Chart3D", frozen=True)
+
+    def _get_uvf_qcriterion_script(self, script: List=None, field: str=None, limits: Tuple[float, float]=None):
+        if script is None:
+            script = []
+
+        script += [
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(
+                    object_ids=["slices"],
+                    visibility=False
+                )
+            ),
+            ActionPayload(
+                action="focus"
+            ),
+            ActionPayload(
+                action="set-field",
+                payload=SetFieldPayload(
+                    object_id="qcriterion",
+                    field_name=field,
+                    min_max=limits
+                )
+            ),
+        ]
+        return script
+
+
+    def _get_uvf_screenshot_script(self, script, screenshot_name):
+        script += [ActionPayload(
+                action="take-screenshot",
+                payload=TakeScreenshotPayload(
+                    file_name=screenshot_name,
+                    type="png"
+                )
+            )]
+        
+        return script
+
+    def _get_uvf_boundary_script(self, script: List=None, field: str=None, limits: Tuple[float, float]=None):
+        if script is None:
+            script = []
+        script += [
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(
+                    object_ids=["slices", "qcriterion"],
+                    visibility=False
+                )
+            ),
+            ActionPayload(
+                action="focus"
+            )
+        ]
+        if field is not None:
+            script += [
+                ActionPayload(
+                    action="set-field",
+                    payload=SetFieldPayload(
+                        object_id="boundaries",
+                        field_name="yPlus",
+                        min_max=limits
+                    )
+                )
+            ]
+        return script
+
+
+    def _get_uvf_request(self, fig_name, user_id, case_id):
+
+        if self.show == 'qcriterion':
+            script = self._get_uvf_qcriterion_script(field=self.field, limits=self.limits)
+        elif self.show == 'boundaries':
+            script = self._get_uvf_boundary_script(field=self.field, limits=self.limits)
+        elif self.show == 'slices':
+            raise NotImplementedError('Slices not implemented yet')
+        else:
+            raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
+        
+        script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
+
+
+        scene = Scene(
+            name='my-scene',
+            script=script
+        )
+        source_context = SourceContext(user_id=user_id, case_id=case_id)
+        scenes_data = ScenesData(scenes=[scene], context=source_context)
+        return scenes_data
+
+
+    def _get_images(self, cases: List[Case], data_storage):
+        fig_name = self.fig_name
+        uvf_requests = []
+        for case in cases:
+            uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
+        img_files = UVFshutter(cases=cases, data_storage=data_storage).get_images(fig_name, uvf_requests)
+        # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
+        img_list = [img_files[case.id][0] for case in cases]
+        return img_list
+
 
     def get_doc_item(
         self,
@@ -353,7 +468,6 @@ class Chart3D(Chart):
         section_func: Union[Section, Subsection] = Section,
         case_by_case: bool = False,
         data_storage: str = '.',
-        use_mock_manifest: bool = False
     ):
         # Create new page is user requests one
         if self.force_new_page:
@@ -372,7 +486,7 @@ class Chart3D(Chart):
         # Reduce the case list by the selected IDs
         cases = [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
 
-        img_list = UVFshutter(cases=cases, data_storage=data_storage).get_images(self.fig_name, use_mock_manifest=use_mock_manifest)
+        img_list = self._get_images(cases, data_storage)
 
         if self.items_in_row is not None:
             fig_caption = f"Chart3D Row"
