@@ -167,6 +167,7 @@ class S3TransferType(Enum):
     VOLUME_MESH = "VolumeMesh"
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
+    REPORT = "Report"
 
     def _get_grant_url(self, resource_id, file_name: str) -> str:
         """
@@ -175,16 +176,18 @@ class S3TransferType(Enum):
         :param file_name:
         :return:
         """
-        if self is S3TransferType.VOLUME_MESH:
-            return f"volumemeshes/{resource_id}/file?filename={file_name}"
-        if self is S3TransferType.SURFACE_MESH:
-            return f"surfacemeshes/{resource_id}/file?filename={file_name}"
-        if self is S3TransferType.CASE:
-            return f"cases/{resource_id}/file?filename={file_name}"
-        if self is S3TransferType.GEOMETRY:
-            return f"geometries/{resource_id}/file?filename={file_name}"
+        url_map = {
+            S3TransferType.VOLUME_MESH: "volumemeshes",
+            S3TransferType.SURFACE_MESH: "surfacemeshes",
+            S3TransferType.CASE: "cases",
+            S3TransferType.GEOMETRY: "geometries",
+            S3TransferType.REPORT: None
+        }
 
-        return None
+        base_path = url_map.get(self)
+        if base_path is not None:
+            return f"{base_path}/{resource_id}/file?filename={file_name}"
+        raise Flow360ValueError(f'unknown download method for {self}')
 
     def create_multipart_upload(
         self,
