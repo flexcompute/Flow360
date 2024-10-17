@@ -113,7 +113,7 @@ class Report(Flow360BaseModel):
     def create_in_cloud(self, name: str, cases: list[Case], landscape: bool = False, solver_version: str=None):
         return ReportApi.submit(name=name, case_ids=[case.id for case in cases], config=self.model_dump_json(), solver_version=solver_version)
 
-    def create_pdf(self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = '.', use_mock_manifest: bool=False) -> None:
+    def create_pdf(self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = '.') -> None:
         # Create a new LaTeX document
         os.makedirs(data_storage, exist_ok=True)
         doc = Document(document_options=["10pt"])
@@ -139,10 +139,7 @@ class Report(Flow360BaseModel):
 
         # Iterate through all cases together
         for item in self.items:
-            if isinstance(item, Chart3D):
-                item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage, use_mock_manifest=use_mock_manifest)
-            else:
-                item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
+            item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
