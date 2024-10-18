@@ -32,6 +32,15 @@ class AssetCache(Flow360BaseModel):
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
 
+    @property
+    def boundaries(self):
+        """
+        Get all boundaries from the cached entity info.
+        """
+        if self.project_entity_info is None:
+            return None
+        return self.project_entity_info.get_boundaries()
+
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
     """
