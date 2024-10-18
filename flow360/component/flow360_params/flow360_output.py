@@ -566,7 +566,7 @@ class AeroacousticOutput(Flow360BaseModel):
     patch_type: Optional[str] = pd.Field("solid", const=True, alias="patchType")
     observers: List[Coordinate] = pd.Field()
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
-
+    permeable_surfaces: Optional[List[str]] = pd.Field([], alias="permeableSurfaces")
 
 class UserDefinedField(Flow360BaseModel):
     """Variable that can be used as output variables"""
