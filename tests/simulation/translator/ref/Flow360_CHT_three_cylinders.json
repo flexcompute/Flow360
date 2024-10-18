@@ -154,20 +154,20 @@
     "volumeZones": {
         "solid-1": {
             "modelType": "HeatTransfer",
-            "thermalConductivity": 0.00239367
+            "thermalConductivity": 0.003472
         },
         "solid-2": {
             "modelType": "HeatTransfer",
-            "thermalConductivity": 0.00239367
+            "thermalConductivity": 0.003472
         },
         "solid-3": {
             "modelType": "HeatTransfer",
-            "thermalConductivity": 0.00239367,
+            "thermalConductivity": 0.003472,
             "volumetricHeatSource": 0.001
         },
         "solid-4": {
             "modelType": "HeatTransfer",
-            "thermalConductivity": 0.0239367,
+            "thermalConductivity": 0.03472,
             "volumetricHeatSource": 0.001
         }
     }
