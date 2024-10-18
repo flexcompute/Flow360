@@ -82,7 +82,7 @@ def create_conjugate_heat_transfer_param():
         surface_adiabatic_4 = Surface(
             name="adiabatic-4", private_attribute_full_name="solid-4/adiabatic-4"
         )
-        copper = SolidMaterial(name="copper", thermal_conductivity=401)
+        copper = SolidMaterial(name="copper", thermal_conductivity=581.65)
         params = SimulationParams(
             operating_condition=AerospaceCondition.from_mach(
                 mach=0.01,
@@ -121,7 +121,7 @@ def create_conjugate_heat_transfer_param():
                     entities=solid_zone_4,
                     heat_equation_solver=heat_equation_solver,
                     material=SolidMaterial(
-                        name="super_conductive", thermal_conductivity=4010
+                        name="super_conductive", thermal_conductivity=5816.5
                     ),  # unrealistic value for testing
                     volumetric_heat_source=volumetric_heat_source,
                 ),
