@@ -134,6 +134,15 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
+class TimeAverageSliceOutput(SliceOutput):
+    """TimeAverageSliceOutput output settings."""
+
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
+    output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
+
+
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
@@ -214,6 +223,7 @@ OutputTypes = Annotated[
         VolumeOutput,
         TimeAverageVolumeOutput,
         SliceOutput,
+        TimeAverageSliceOutput,
         IsosurfaceOutput,
         SurfaceIntegralOutput,
         ProbeOutput,
