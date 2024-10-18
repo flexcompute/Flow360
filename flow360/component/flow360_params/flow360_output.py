@@ -664,6 +664,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             "outputFields": fields,
             "startAverageIntegrationStep": self.start_average_integration_step,
             "surfaces": self.surfaces,
+            "writeSingleFile": self.write_single_file,
         }
 
         return SurfaceOutput.parse_obj(model)

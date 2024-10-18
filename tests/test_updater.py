@@ -153,6 +153,8 @@ def test_updater_from_files():
     assert params.initial_condition == ExpressionInitialCondition(
         constants={"gamma": "1.4"}, rho=1, u="x", v=0, w=0, p="1/gamma"
     )
+    assert params.surface_output.write_single_file is True
+
     params = fl.Flow360Params("data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
     assert params.turbulence_model_solver.model_constants is not None
