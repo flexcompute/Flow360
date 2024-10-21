@@ -73,6 +73,7 @@ def _valid_resource_id(resource_id) -> bool:
     pattern = re.compile(
         r"""
         ^                     # Start of the string
+        ROOT\.FLOW360|        # accept root folder
         (?P<content>          # Start of the content group
         [0-9a-zA-Z,-]{16,}    # Content: at least 16 characters, alphanumeric, comma, or dash
         )$                    # End of the string
@@ -523,3 +524,26 @@ class MeshNameParser:
     # pylint: disable=missing-function-docstring
     def is_valid_volume_mesh(self):
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
+
+
+def storage_size_formatter(size_in_bytes):
+    """
+    Format the size in bytes into a human-readable format (B, kB, MB, GB).
+
+    Parameters
+    ----------
+    size_in_bytes : int
+        The size in bytes to be formatted.
+
+    Returns
+    -------
+    str
+        A string representing the size in the most appropriate unit (B, kB, MB, GB).
+    """
+    if size_in_bytes < 1024:
+        return f"{size_in_bytes} B"
+    if size_in_bytes < 1024**2:
+        return f"{size_in_bytes / 1024:.2f} kB"
+    if size_in_bytes < 1024**3:
+        return f"{size_in_bytes / (1024 ** 2):.2f} MB"
+    return f"{size_in_bytes / (1024 ** 3):.2f} GB"
