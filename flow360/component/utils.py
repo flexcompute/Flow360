@@ -444,6 +444,7 @@ class CompressionFormat(Enum):
     """
 
     GZ = "gz"
+    TARGZ = "tar.gz"
     BZ2 = "bz2"
     ZST = "zst"
     NONE = None
@@ -455,6 +456,8 @@ class CompressionFormat(Enum):
         """
         if self is CompressionFormat.GZ:
             return ".gz"
+        if self is CompressionFormat.TARGZ:
+            return ".tar.gz"
         if self is CompressionFormat.BZ2:
             return ".bz2"
         if self is CompressionFormat.ZST:
@@ -466,6 +469,11 @@ class CompressionFormat(Enum):
         """
         detects compression from filename
         """
+        if CompressionFormat.TARGZ.ext() in file.lower() and file[-7:].lower().endswith(
+            CompressionFormat.TARGZ.ext()
+        ):
+            return CompressionFormat.TARGZ, file[:-7]
+
         file_name, ext = os.path.splitext(file)
         ext = ext.lower()
         if ext == CompressionFormat.GZ.ext():

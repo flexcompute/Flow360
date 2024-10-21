@@ -15,7 +15,13 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    AxisymmetricRefinement,
+    RotationCylinder,
+    UniformRefinement,
+)
+from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
     HeatEquationSolver,
     LinearSolver,
@@ -38,6 +44,7 @@ from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     Fluid,
+    ForcePerArea,
     PorousMedium,
     Rotation,
     Solid,
@@ -58,7 +65,12 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Edge, ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import (
+    Cylinder,
+    Edge,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -77,11 +89,15 @@ __all__ = [
     "MeshingDefaults",
     "SurfaceRefinement",
     "AutomatedFarfield",
+    "AxisymmetricRefinement",
+    "RotationCylinder",
+    "UniformRefinement",
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",
     "Surface",
     "Edge",
     "ReferenceGeometry",
+    "Cylinder",
     "AssetCache",
     "GeometryEntityInfo",
     "AerospaceCondition",
@@ -120,4 +136,8 @@ __all__ = [
     "TransitionModelSolverType",
     "TurbulenceModelSolverType",
     "LinearSolver",
+    "ForcePerArea",
+    "Air",
+    "Sutherland",
+    "SolidMaterial",
 ]
