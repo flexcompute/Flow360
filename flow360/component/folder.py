@@ -14,7 +14,9 @@ from ..exceptions import Flow360ValueError
 from ..log import log
 from .interfaces import FolderInterface
 from .resource_base import AssetMetaBaseModel, Flow360Resource, ResourceDraft
-from .utils import shared_account_confirm_proceed, validate_type
+from .utils import shared_account_confirm_proceed, storage_size_formatter, validate_type
+
+ROOT_FOLDER = "ROOT.FLOW360"
 
 
 # pylint: disable=E0213
@@ -162,6 +164,172 @@ class Folder(Flow360Resource):
             parent_folder=parent_folder,
         )
         return new_folder
+
+    def get_items(self):
+        """
+        Fetch all items within the current folder, handling pagination if needed.
+
+        Returns
+        -------
+        list
+            A list of all items found in the folder, sorted by storage size in descending order.
+        """
+
+        all_records = []
+        page = 0
+        size = 1000  # Page size
+        total_record_count = size
+
+        # Loop until all pages are fetched
+        while len(all_records) < total_record_count:
+            payload = {
+                "page": page,
+                "size": size,
+                "filterFolderIds": self.id,
+                "filterExcludeSubfolders": True,
+                "sortFields": ["storageSize"],
+                "sortDirections": ["desc"],
+                "expandFields": ["contentInfo"],
+            }
+
+            data = RestApi("/v2/items").get(params=payload)
+            records = data.get("records", [])
+            all_records.extend(records)
+            total_record_count = data.get("total", 0)
+            page += 1
+
+        return all_records
+
+    def _build_folder_tree(self, folders):
+        """
+        Build a hierarchical folder tree starting from the current folder.
+
+        Parameters
+        ----------
+        folders : list
+            A list of folder records.
+
+        Returns
+        -------
+        dict
+            A dictionary representing the folder hierarchy with nested subfolders.
+        """
+
+        folder_dict = {folder["id"]: folder for folder in folders}
+        folder_dict[ROOT_FOLDER] = {"id": ROOT_FOLDER, "name": "My workspace"}
+
+        for folder in folder_dict.values():
+            folder["subfolders"] = []
+
+        for folder in folders:
+            parent_id = folder.get("parentFolderId")
+            if parent_id is not None:
+                parent_folder = folder_dict.get(parent_id)
+                if parent_folder:
+                    parent_folder["subfolders"].append(
+                        {"name": folder["name"], "id": folder["id"], "subfolders": []}
+                    )
+
+        def build_hierarchy(folder_id):
+            folder = folder_dict.get(folder_id)
+            if not folder:
+                return None
+
+            return {
+                "name": folder["name"],
+                "id": folder["id"],
+                "subfolders": [
+                    build_hierarchy(subfolder["id"]) for subfolder in folder["subfolders"]
+                ],
+            }
+
+        return build_hierarchy(self.id)
+
+    def get_folder_tree(self):
+        """
+        Retrieve the folder tree including subfolders from the API.
+
+        Returns
+        -------
+        dict
+            A hierarchical representation of the folder tree starting from the current folder.
+        """
+
+        payload = {
+            "includeSubfolders": True,
+            "page": 0,
+            "size": 1000,
+        }  # it assumes user will not have more than 1000 folders
+        data = RestApi("/v2/folders").get(params=payload)
+        folder_tree = self._build_folder_tree(data["records"])
+        return folder_tree
+
+    def _print_storage(self, tree, indent: int, n_display: int):
+        """
+        Recursively print the folder tree along with its contents and total storage usage.
+
+        Parameters
+        ----------
+        tree : dict
+            The current folder tree to display.
+        indent : int
+            The indentation level for pretty-printing.
+        n_display : int
+            The number of items to display before summarizing the remaining items.
+
+        Returns
+        -------
+        int
+            The total storage size of the current folder and its subfolders.
+        """
+
+        log.info("  " * indent + f"- [FOLDER] {tree['name']}")
+        total_storage = 0
+        for subfolder in tree["subfolders"]:
+            # pylint: disable=protected-access
+            total_storage += Folder(subfolder["id"])._print_storage(
+                subfolder, indent + 1, n_display
+            )
+
+        items = self.get_items()
+        displayed_items = items[:n_display]
+        remaining_items = items[n_display:]
+
+        for item in displayed_items:
+            if item["type"] != "Folder":
+                storage_size = item.get("storageSize", 0)
+                total_storage += storage_size
+                log.info(
+                    "  " * (indent + 1)
+                    + f"- [{item['type']}] {item['name']} (Size: {storage_size_formatter(storage_size)})"
+                )
+
+        if len(remaining_items) > 0:
+            total_remaining_size = sum(item.get("storageSize", 0) for item in remaining_items)
+            log.info(
+                "  " * (indent + 1)
+                + f"+{len(remaining_items)} more (total {storage_size_formatter(total_remaining_size)})"
+            )
+            total_storage += total_remaining_size
+
+        log.info("  " * (indent + 1) + f"Total Storage: {storage_size_formatter(total_storage)}")
+        return total_storage
+
+    @classmethod
+    def print_storage(cls, folder_id: str = "ROOT.FLOW360", n_display: int = 10) -> None:
+        """
+        Display the storage details of a folder, including subfolders and a summary of all items.
+
+        Parameters
+        ----------
+        folder_id : str, optional
+            The ID of the folder to print storage details for. Defaults to "ROOT.FLOW360".
+        n_display : int, optional
+            The number of items to display before summarizing the remaining items. Defaults to 10.
+        """
+        folder = cls(id=folder_id)
+        tree = folder.get_folder_tree()
+        folder._print_storage(tree, 0, n_display)
 
 
 # FOLDER LIST uses different endpoint, requires separate implementation
