@@ -157,3 +157,15 @@ def test_mesh_name_parser_compressed_stl():
     assert parser.is_valid_surface_mesh()
     assert not parser.is_valid_volume_mesh()
     assert parser.is_compressed()
+
+
+def test_mesh_name_parser_compressed_targz():
+    parser = MeshNameParser("testMesh.lb8.ugrid.tar.gz")
+    assert parser.file_name_no_compression == "testMesh.lb8.ugrid"
+    assert parser.endianness == UGRIDEndianness.LITTLE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.TARGZ
+    assert parser.is_ugrid() == True
+    assert parser.is_valid_surface_mesh()
+    assert parser.is_valid_volume_mesh()
+    assert parser.is_compressed()
