@@ -119,7 +119,8 @@ class Fluid(PDEModelBase):
         description="Turbulence model solver settings, see TurbulenceModelSolver documentation.",
     )
     transition_model_solver: TransitionModelSolverType = pd.Field(
-        NoneSolver(), description="Transition solver settings, see TransitionModelSolver documentation."
+        NoneSolver(),
+        description="Transition solver settings, see TransitionModelSolver documentation.",
     )
 
     material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid")

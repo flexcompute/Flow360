@@ -157,7 +157,6 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
-
     name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`")
     entities: UniqueItemList[Isosurface] = pd.Field(
         alias="isosurfaces", description="List of isosurface entities."

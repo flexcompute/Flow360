@@ -474,8 +474,9 @@ class TransitionModelSolver(GenericSolverSettings):
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
     )
-    CFL_multiplier: PositiveFloat = pd.Field(2.0, description='Factor to the CFL definitions defined '
-                                                 + 'in "Time stepping" section')
+    CFL_multiplier: PositiveFloat = pd.Field(
+        2.0, description="Factor to the CFL definitions defined " + 'in "Time stepping" section'
+    )
     absolute_tolerance: PositiveFloat = pd.Field(
         1e-7,
         description="Tolerance for the transition model residual, below which the solver progresses to "
@@ -484,13 +485,13 @@ class TransitionModelSolver(GenericSolverSettings):
     equation_evaluation_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which to update the transition equation"
     )
-    turbulence_intensity_percent: pd.confloat(ge=0.03, le=2.5) = pd.Field(
+    turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         1.0,
         description=":ref:`Turbulence Intensity <TurbI>`, Range from [0.03-2.5]. "
         + "Only valid when :code:`Ncrit` is not specified.",
     )
     # pylint: disable=invalid-name
-    N_crit: pd.confloat(ge=1.0, le=11.0) = pd.Field(
+    N_crit: Optional[pd.confloat(ge=1.0, le=11.0)] = pd.Field(
         None,
         description=":ref:`Critical Amplification Factor <NCrit>`, Range from [1-11]. "
         + "Only valid when :code:`turbulenceIntensityPercent` is not specified.",
@@ -503,7 +504,7 @@ class TransitionModelSolver(GenericSolverSettings):
         description="For physical steps less than the input value, the jacobian matrix "
         + "is updated every pseudo-step overriding the :code:`updateJacobianFrequency` value",
     )
-      
+
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
 
     trip_regions: Optional[EntityList[Box]] = pd.Field(None)
@@ -512,7 +513,7 @@ class TransitionModelSolver(GenericSolverSettings):
         LinearSolver(max_iterations=20),
         description="Linear solver settings, see LinearSolver documentation.",
     )
-      
+
     @pd.model_validator(mode="after")
     def _set_aft_ncrit(self) -> Self:
         """
