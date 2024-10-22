@@ -567,7 +567,14 @@ def heat_transfer_volume_zone_translator(model: Solid):
     if model.volumetric_heat_source:
         volume_zone["volumetricHeatSource"] = model_dict["volumetricHeatSource"]
     if model.material.specific_heat_capacity and model.material.density:
-        volume_zone["heatCapacity"] = model_dict["density"] * model_dict["specificHeatCapacity"]
+        volume_zone["heatCapacity"] = (
+            model_dict["material"]["density"] * model_dict["material"]["specificHeatCapacity"]
+        )
+    if model.initial_condition:
+        volume_zone["initialCondition"] = {
+            "T": model_dict["initialCondition"]["temperature"],
+            "T_solid": model_dict["initialCondition"]["temperature"],
+        }
     return volume_zone
 
 
