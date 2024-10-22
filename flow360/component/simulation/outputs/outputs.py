@@ -136,8 +136,8 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
-    name: Optional[str] = pd.Field(None, description='Name of the iso-surface output.')
-    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces", description= 'List of iso-surface entities.')
+    name: Optional[str] = pd.Field(None, description='Name of the isosurface output.')
+    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces", description= 'List of isosurface entities.')
     output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field(description=' Isosurface field variable to be written. One of :code:`p`, :code:`rho`, :code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`.')
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
