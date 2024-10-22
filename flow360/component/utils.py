@@ -469,10 +469,8 @@ class CompressionFormat(Enum):
         """
         detects compression from filename
         """
-        if CompressionFormat.TARGZ.ext() in file.lower() and file[-7:].lower().endswith(
-            CompressionFormat.TARGZ.ext()
-        ):
-            return CompressionFormat.TARGZ, file[:-7]
+        if file.lower().endswith(CompressionFormat.TARGZ.ext()):
+            return CompressionFormat.TARGZ, file[: -1 * len(CompressionFormat.TARGZ.ext())]
 
         file_name, ext = os.path.splitext(file)
         ext = ext.lower()
