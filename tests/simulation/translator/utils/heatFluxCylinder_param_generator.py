@@ -13,7 +13,7 @@ from flow360.component.simulation.models.surface_models import (
     SlipWall,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid, Rotation
+from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
@@ -104,6 +104,7 @@ def create_heat_flux_cylinder_base_param():
                     ],
                 ),
                 SurfaceOutput(
+                    entities=[Surface(name="fluid/wall")],
                     output_format="paraview",
                     output_fields=["Cp", "primitiveVars", "T", "heatFlux"],
                 ),

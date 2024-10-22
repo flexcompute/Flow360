@@ -116,16 +116,6 @@ class UnitSystemManager:
 
         return self._current
 
-    def copy_current(self):
-        """
-        Get a copy of the current UnitSystem.
-        :return: UnitSystem
-        """
-        if self._current:
-            copy = self._current.model_copy(deep=True)
-            return copy
-        return None
-
     def set_current(self, unit_system: UnitSystem):
         """
         Set the current UnitSystem.
@@ -458,7 +448,14 @@ class _DimensionedType(metaclass=ABCMeta):
     # pylint: disable=too-few-public-methods
     class _VectorType:
         @classmethod
-        def get_class_object(cls, dim_type, allow_zero_coord=True, allow_zero_norm=True, length=3):
+        def get_class_object(
+            cls,
+            dim_type,
+            allow_zero_coord=True,
+            allow_zero_norm=True,
+            allow_negative_value=True,
+            length=3,
+        ):
             """Get a dynamically created metaclass representing the vector"""
 
             def __get_pydantic_json_schema__(
@@ -499,6 +496,8 @@ class _DimensionedType(metaclass=ABCMeta):
                         raise ValueError(f"arg '{value}' cannot have zero coordinate values")
                     if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
+                    if not vec_cls.allow_negative_value and any(item < 0 for item in value):
+                        raise ValueError(f"arg '{value}' cannot have negative values")
 
                     if vec_cls.type.has_defaults:
                         value = _unit_inference_validator(
@@ -521,6 +520,7 @@ class _DimensionedType(metaclass=ABCMeta):
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_coord = allow_zero_coord
+            cls_obj.allow_negative_value = allow_negative_value
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
             )
@@ -551,6 +551,14 @@ class _DimensionedType(metaclass=ABCMeta):
         Vector value which accepts zero-vectors
         """
         return self._VectorType.get_class_object(self)
+
+    # pylint: disable=invalid-name
+    @classproperty
+    def PositiveVector(self):
+        """
+        Vector value which accepts zero-vectors
+        """
+        return self._VectorType.get_class_object(self, allow_negative_value=False)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -900,6 +908,30 @@ class _Flow360BaseUnit(_DimensionedType):
         if isinstance(other, self.__class__):
             return self.val != other.val
         return True
+
+    def __lt__(self, other):
+        """
+        This seems consistent with unyt in that for numbers only value is compared
+        e.g.:
+        >>> 1*u.mm >0.1
+        array(True)
+        """
+        if isinstance(other, self.__class__):
+            return self.val < other.val
+        if isinstance(other, Number):
+            return self.val < other
+        raise ValueError(
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
+        )
+
+    def __gt__(self, other):
+        if isinstance(other, self.__class__):
+            return self.val > other.val
+        if isinstance(other, Number):
+            return self.val > other
+        raise ValueError(
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
+        )
 
     def __len__(self):
         if self.val and isinstance(self.val, Collection):

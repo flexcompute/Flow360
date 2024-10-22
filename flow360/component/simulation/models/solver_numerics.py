@@ -12,13 +12,17 @@ from __future__ import annotations
 from abc import ABCMeta
 from typing import Annotated, Literal, Optional, Union
 
+import numpy as np
 import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
+from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.primitives import Box
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -218,6 +222,15 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     type_name: Literal["SpalartAllmarasConsts"] = pd.Field("SpalartAllmarasConsts", frozen=True)
     C_DES: NonNegativeFloat = pd.Field(0.72)
     C_d: NonNegativeFloat = pd.Field(8.0)
+    C_cb1: NonNegativeFloat = pd.Field(0.1355)
+    C_cb2: NonNegativeFloat = pd.Field(0.622)
+    C_sigma: NonNegativeFloat = pd.Field(2.0 / 3.0)
+    C_v1: NonNegativeFloat = pd.Field(7.1)
+    C_vonKarman: NonNegativeFloat = pd.Field(0.41)
+    C_w2: NonNegativeFloat = pd.Field(0.3)
+    C_t3: NonNegativeFloat = pd.Field(1.2)
+    C_t4: NonNegativeFloat = pd.Field(0.5)
+    C_min_rd: NonNegativeFloat = pd.Field(10.0)
 
 
 class KOmegaSSTModelConstants(Flow360BaseModel):
@@ -228,6 +241,14 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
     C_DES2: NonNegativeFloat = pd.Field(0.61)
     C_d1: NonNegativeFloat = pd.Field(20.0)
     C_d2: NonNegativeFloat = pd.Field(3.0)
+    C_sigma_k1: NonNegativeFloat = pd.Field(0.85)
+    C_sigma_k2: NonNegativeFloat = pd.Field(1.0)
+    C_sigma_omega1: NonNegativeFloat = pd.Field(0.5)
+    C_sigma_omega2: NonNegativeFloat = pd.Field(0.856)
+    C_alpha1: NonNegativeFloat = pd.Field(0.31)
+    C_beta1: NonNegativeFloat = pd.Field(0.075)
+    C_beta2: NonNegativeFloat = pd.Field(0.0828)
+    C_beta_star: NonNegativeFloat = pd.Field(0.09)
 
 
 TurbulenceModelConstants = Annotated[
@@ -453,6 +474,8 @@ class TransitionModelSolver(GenericSolverSettings):
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
     )
+    CFL_multiplier: PositiveFloat = pd.Field(2.0, description='Factor to the CFL definitions defined '
+                                                 + 'in "Time stepping" section')
     absolute_tolerance: PositiveFloat = pd.Field(
         1e-7,
         description="Tolerance for the transition model residual, below which the solver progresses to "
@@ -466,8 +489,9 @@ class TransitionModelSolver(GenericSolverSettings):
         description=":ref:`Turbulence Intensity <TurbI>`, Range from [0.03-2.5]. "
         + "Only valid when :code:`Ncrit` is not specified.",
     )
-    N_crit: pd.confloat(ge=1, le=11) = pd.Field(
-        8.15,
+    # pylint: disable=invalid-name
+    N_crit: pd.confloat(ge=1.0, le=11.0) = pd.Field(
+        None,
         description=":ref:`Critical Amplification Factor <NCrit>`, Range from [1-11]. "
         + "Only valid when :code:`turbulenceIntensityPercent` is not specified.",
     )
@@ -479,8 +503,36 @@ class TransitionModelSolver(GenericSolverSettings):
         description="For physical steps less than the input value, the jacobian matrix "
         + "is updated every pseudo-step overriding the :code:`updateJacobianFrequency` value",
     )
+      
+    reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(1.0)
+
+    trip_regions: Optional[EntityList[Box]] = pd.Field(None)
 
     linear_solver: LinearSolver = pd.Field(
         LinearSolver(max_iterations=20),
         description="Linear solver settings, see LinearSolver documentation.",
     )
+      
+    @pd.model_validator(mode="after")
+    def _set_aft_ncrit(self) -> Self:
+        """
+        Compute the critical amplification factor for AFT transition solver based on
+        input turbulence intensity and input Ncrit. Computing Ncrit from turbulence
+        intensity takes priority if both are specified.
+        """
+
+        if self.turbulence_intensity_percent is not None:
+            ncrit_converted = -8.43 - 2.4 * np.log(
+                0.025 * np.tanh(self.turbulence_intensity_percent / 2.5)
+            )
+            self.turbulence_intensity_percent = None
+            self.N_crit = ncrit_converted
+        elif self.N_crit is None:
+            self.N_crit = 8.15
+
+        return self
+
+
+TransitionModelSolverType = Annotated[
+    Union[NoneSolver, TransitionModelSolver], pd.Field(discriminator="type_name")
+]

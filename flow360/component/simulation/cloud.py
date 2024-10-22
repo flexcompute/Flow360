@@ -1,20 +1,28 @@
 """Cloud communication for simulation related tasks"""
 
-import json
+from __future__ import annotations
+
 import time
-from datetime import datetime
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
-from flow360.component.interfaces import DraftInterface, ProjectInterface
+from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.volume_mesh import VolumeMesh
-from flow360.exceptions import Flow360WebError
 from flow360.log import log
 
 TIMEOUT_MINUTES = 60
+
+
+def _get_source_type_string(source_asset_class_name: str):
+    if source_asset_class_name.endswith("V2"):
+        return source_asset_class_name[:-2]  # Removes the last two characters (i.e., "V2")
+    return source_asset_class_name
 
 
 def _check_project_path_status(project_id: str, item_id: str, item_type: str) -> None:
@@ -25,10 +33,13 @@ def _check_project_path_status(project_id: str, item_id: str, item_type: str) ->
     # TODO: check all status on the given path
 
 
+# pylint: disable=too-many-arguments
 def _run(
     source_asset: AssetBase,
     params: SimulationParams,
     target_asset: type[AssetBase],
+    draft_name: str = None,
+    fork_case: bool = False,
     async_mode: bool = True,
 ) -> AssetBase:
     """
@@ -40,38 +51,44 @@ def _run(
             f"params argument must be a SimulationParams object but is of type {type(params)}"
         )
 
-    ##-- Get the latest draft of the project:
-    draft_id = RestApi(ProjectInterface.endpoint, id=source_asset.project_id).get()[
-        "lastOpenDraftId"
-    ]
-    if draft_id is None:  # No saved online session
-        ##-- Get new draft
-        draft_id = RestApi(DraftInterface.endpoint).post(
-            {
-                "name": "Client " + datetime.now().strftime("%m-%d %H:%M:%S"),
-                "projectId": source_asset.project_id,
-                "sourceItemId": source_asset.id,
-                "sourceItemType": "Geometry",
-                "solverVersion": source_asset.solver_version,
-                "forkCase": False,
-            }
-        )["id"]
-    ##-- Post the simulation param:
-    req = {"data": params.model_dump_json(), "type": "simulation", "version": ""}
-    RestApi(DraftInterface.endpoint, id=draft_id).post(json=req, method="simulation/file")
-    ##-- Kick off draft run:
-    try:
-        run_response = RestApi(DraftInterface.endpoint, id=draft_id).post(
-            json={"upTo": target_asset.__name__, "useInHouse": True},
-            method="run",
-        )
-    except Flow360WebError as err:
-        # Error found when translating/runing the simulation
-        detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
-        log.error(f"Failure detail: {detailed_error}")
-        raise RuntimeError(f"Failure detail: {detailed_error}") from err
+    ##-- Getting the project length unit from the current resource and store in the SimulationParams
+    # pylint: disable=protected-access
+    simulation_dict = AssetBase._get_simulation_json(source_asset)
 
-    destination_id = run_response["id"]
+    if (
+        "private_attribute_asset_cache" not in simulation_dict
+        or "project_length_unit" not in simulation_dict["private_attribute_asset_cache"]
+    ):
+        raise KeyError(
+            "[Internal] Could not find project length unit in the draft's simulation settings."
+        )
+
+    length_unit = simulation_dict["private_attribute_asset_cache"]["project_length_unit"]
+    with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+        # pylint: disable=no-member
+        params.private_attribute_asset_cache.project_length_unit = LengthType.validate(length_unit)
+
+    source_item_type = _get_source_type_string(source_asset.__class__.__name__)
+    ##-- Get new draft
+    _draft = Draft.create(
+        name=draft_name,
+        project_id=source_asset.project_id,
+        source_item_id=source_asset.id,
+        source_item_type=source_item_type,
+        solver_version=source_asset.solver_version,
+        fork_case=fork_case,
+    ).submit()
+
+    ##-- Store the entity info part for future retrival
+    # pylint: disable=protected-access
+    params = source_asset._inject_entity_info_to_params(params)
+
+    ##-- Post the simulation param:
+    _draft.update_simulation_params(params)
+
+    ##-- Kick off draft run:
+    destination_id = _draft.run_up_to_target_asset(target_asset)
+
     ##-- Patch project
     RestApi(ProjectInterface.endpoint, id=source_asset.project_id).patch(
         json={
@@ -80,35 +97,45 @@ def _run(
         }
     )
     destination_obj = target_asset.from_cloud(destination_id)
+
     if async_mode is False:
         start_time = time.time()
-        while destination_obj.status.is_final() is False:
+        while destination_obj._webapi.status.is_final() is False:
             if time.time() - start_time > TIMEOUT_MINUTES * 60:
                 raise TimeoutError(
                     "Timeout: Process did not finish within the specified timeout period"
                 )
-            _check_project_path_status(
-                source_asset.project_id, source_asset.id, source_asset.__class__.__name__
-            )
+            _check_project_path_status(source_asset.project_id, source_asset.id, source_item_type)
             log.info("Waiting for the process to finish...")
-            time.sleep(10)
+            time.sleep(2)
     return destination_obj
 
 
 def generate_surface_mesh(
-    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
 ):
     """generate surface mesh from the geometry"""
-    return _run(source_asset, params, SurfaceMesh, async_mode)
+    return _run(source_asset, params, SurfaceMesh, draft_name, False, async_mode)
 
 
 def generate_volume_mesh(
-    source_asset: AssetBase, params: SimulationParams, async_mode: bool = True
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
 ):
     """generate volume mesh from the geometry"""
-    return _run(source_asset, params, VolumeMesh, async_mode)
+    return _run(source_asset, params, VolumeMesh, draft_name, False, async_mode)
 
 
-def run_case(source_asset: AssetBase, params: SimulationParams, async_mode: bool = True):
+def run_case(
+    source_asset: AssetBase,
+    params: SimulationParams,
+    draft_name: str = None,
+    async_mode: bool = True,
+):
     """run case from the geometry"""
-    return _run(source_asset, params, Case, async_mode)
+    return _run(source_asset, params, Case, draft_name, False, async_mode)

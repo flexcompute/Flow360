@@ -73,6 +73,7 @@ def _valid_resource_id(resource_id) -> bool:
     pattern = re.compile(
         r"""
         ^                     # Start of the string
+        ROOT\.FLOW360|        # accept root folder
         (?P<content>          # Start of the content group
         [0-9a-zA-Z,-]{16,}    # Content: at least 16 characters, alphanumeric, comma, or dash
         )$                    # End of the string
@@ -245,16 +246,6 @@ def convert_caret_to_power(input_str):
     return result
 
 
-def add_trailing_semicolon(input_str):
-    """
-    Add trailing semicolon to comply with C++ syntax
-    """
-    regex = r";\s*$"
-    if not re.search(regex, input_str):
-        input_str += ";"
-    return input_str
-
-
 def convert_legacy_names(input_str):
     """
     Convert legacy var name to new ones.
@@ -276,7 +267,6 @@ def _process_string_expression(expression: str):
     if not isinstance(expression, str):
         return expression
     expression = str(expression)
-    expression = add_trailing_semicolon(expression)
     expression = convert_if_else(expression)
     expression = convert_caret_to_power(expression)
     expression = convert_legacy_names(expression)
@@ -454,6 +444,7 @@ class CompressionFormat(Enum):
     """
 
     GZ = "gz"
+    TARGZ = "tar.gz"
     BZ2 = "bz2"
     ZST = "zst"
     NONE = None
@@ -465,6 +456,8 @@ class CompressionFormat(Enum):
         """
         if self is CompressionFormat.GZ:
             return ".gz"
+        if self is CompressionFormat.TARGZ:
+            return ".tar.gz"
         if self is CompressionFormat.BZ2:
             return ".bz2"
         if self is CompressionFormat.ZST:
@@ -476,6 +469,9 @@ class CompressionFormat(Enum):
         """
         detects compression from filename
         """
+        if file.lower().endswith(CompressionFormat.TARGZ.ext()):
+            return CompressionFormat.TARGZ, file[: -1 * len(CompressionFormat.TARGZ.ext())]
+
         file_name, ext = os.path.splitext(file)
         ext = ext.lower()
         if ext == CompressionFormat.GZ.ext():
@@ -534,3 +530,26 @@ class MeshNameParser:
     # pylint: disable=missing-function-docstring
     def is_valid_volume_mesh(self):
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
+
+
+def storage_size_formatter(size_in_bytes):
+    """
+    Format the size in bytes into a human-readable format (B, kB, MB, GB).
+
+    Parameters
+    ----------
+    size_in_bytes : int
+        The size in bytes to be formatted.
+
+    Returns
+    -------
+    str
+        A string representing the size in the most appropriate unit (B, kB, MB, GB).
+    """
+    if size_in_bytes < 1024:
+        return f"{size_in_bytes} B"
+    if size_in_bytes < 1024**2:
+        return f"{size_in_bytes / 1024:.2f} kB"
+    if size_in_bytes < 1024**3:
+        return f"{size_in_bytes / (1024 ** 2):.2f} MB"
+    return f"{size_in_bytes / (1024 ** 3):.2f} GB"

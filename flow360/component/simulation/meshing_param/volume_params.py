@@ -3,7 +3,7 @@ Meshing settings that applies to volumes.
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 
 import pydantic as pd
 
@@ -17,7 +17,6 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import _model_attribute_unlock
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -55,10 +54,6 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
         "AxisymmetricRefinement", frozen=True
     )
     entities: EntityList[Cylinder] = pd.Field()
-    # pylint: disable=no-member
-
-
-VolumeRefinementTypes = Union[UniformRefinement, AxisymmetricRefinement]
 
 
 class RotationCylinder(CylindricalRefinementBase):
@@ -124,35 +119,6 @@ class AutomatedFarfield(Flow360BaseModel):
     private_attribute_entity: GenericVolume = pd.Field(
         GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
     )
-
-    def _set_up_zone_entity(self, found_rotating_zones: bool):
-        with _model_attribute_unlock(self.private_attribute_entity, "name"):
-            # pylint: disable=assigning-non-slot
-            if found_rotating_zones:
-                self.private_attribute_entity.name = "stationaryBlock"
-            else:
-                self.private_attribute_entity.name = "fluid"
-
-        with _model_attribute_unlock(
-            self.private_attribute_entity, "private_attribute_zone_boundary_names"
-        ):
-            # Is setting private_attribute_zone_boundary_names meaningful at all?
-            # We did not include other potential boundaries like walls or sliding interfaces
-            # so it is most likely incomplete.
-            # Besides in casePipeline we will overwrite private_attribute_zone_boundary_names
-            # with volume mesh metadata anyway.
-            self.private_attribute_entity.private_attribute_zone_boundary_names.append("farfield")
-            if self.method == "auto":
-                self.private_attribute_entity.private_attribute_zone_boundary_names.append(
-                    "symmetric"
-                )
-            elif self.method == "quasi-3d":
-                self.private_attribute_entity.private_attribute_zone_boundary_names.append(
-                    "symmetric-1"
-                )
-                self.private_attribute_entity.private_attribute_zone_boundary_names.append(
-                    "symmetric-2"
-                )
 
     @property
     def farfield(self):

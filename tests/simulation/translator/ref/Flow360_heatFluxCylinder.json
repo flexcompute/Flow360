@@ -97,54 +97,6 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
-            "fluid/inlet": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "fluid/outlet": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "fluid/top": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "fluid/bottom": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "fluid/periodic_0_l": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
-            "fluid/periodic_0_r": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux"
-                ]
-            },
             "fluid/wall": {
                 "outputFields": [
                     "Cp",

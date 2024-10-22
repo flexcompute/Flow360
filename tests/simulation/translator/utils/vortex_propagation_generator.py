@@ -14,7 +14,6 @@ from flow360.component.simulation.models.surface_models import (
     Translational,
 )
 from flow360.component.simulation.models.volume_models import (
-    BETDisk,
     Fluid,
     NavierStokesInitialCondition,
 )
@@ -22,15 +21,11 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
-from flow360.component.simulation.primitives import Cylinder, ReferenceGeometry, Surface
+from flow360.component.simulation.outputs.outputs import VolumeOutput
+from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Unsteady
-from flow360.component.simulation.unit_system import (
-    LengthType,
-    SI_unit_system,
-    ViscosityType,
-)
+from flow360.component.simulation.unit_system import SI_unit_system
 
 
 def create_vortex_propagation_freestream_surfaces():
@@ -141,7 +136,6 @@ def create_vortex_base(Beta, U_inf, alpha):
                     output_format="paraview",
                     output_fields=["primitiveVars"],
                 ),
-                SurfaceOutput(output_format="paraview", output_fields=[]),
             ],
         )
     return params

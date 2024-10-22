@@ -491,18 +491,18 @@
                 "bet_0_omega": "state[0];"
             },
             "stateVarsInitialValue": [
-                "0.003;",
-                "0.0;",
-                "0;",
-                "0;",
-                "0;"
+                "0.003",
+                "0.0",
+                "0",
+                "0",
+                "0"
             ],
             "updateLaw": [
                 "(physicalStep > 150 and pseudoStep == 0) ? (PConst * (ThrustTarget - bet_0_thrust)  + IConst * state[1] + omega0) : (state[0]);",
                 "(physicalStep > 150 and pseudoStep == 0) ? (state[1] + (ThrustTarget - bet_0_thrust)) : (state[1]);",
-                "(physicalStep > 150 and pseudoStep == 0);",
-                "ThrustTarget - bet_0_thrust;",
-                "IConst * state[1];"
+                "(physicalStep > 150 and pseudoStep == 0)",
+                "ThrustTarget - bet_0_thrust",
+                "IConst * state[1]"
             ]
         }
     ],

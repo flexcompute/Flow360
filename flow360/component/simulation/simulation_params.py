@@ -13,8 +13,8 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _set_boundary_full_name_with_zone_name,
+    _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
-    _update_zone_name_in_surface_with_metadata,
     register_entity_list,
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -27,8 +27,12 @@ from flow360.component.simulation.models.volume_models import Fluid, VolumeModel
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
-from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.primitives import (
+    ReferenceGeometry,
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     UnitSystem,
@@ -38,12 +42,22 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.validation.validation_simulation_params import (
+    _check_cht_solver_settings,
+    _check_consistency_ddes_volume_output,
+    _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_entities_in_models,
+    _check_low_mach_preconditioner_output,
+    _check_numerical_dissipation_factor_output,
+)
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
+
+from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
 
@@ -107,7 +121,7 @@ class _ParamModelBase(Flow360BaseModel):
         Initializes the simulation parameters with the given unit context.
         """
         kwargs = self._init_check_unit_system(**kwargs)
-        super().__init__(unit_system=unit_system_manager.copy_current(), **kwargs)
+        super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
@@ -153,9 +167,9 @@ class SimulationParams(_ParamModelBase):
         ones or how volumes/surfaces are intertwined.
         outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
 
-    meshing: Optional[MeshingParams] = pd.Field(MeshingParams())
-    reference_geometry: Optional[ReferenceGeometry] = pd.Field(None)
-    operating_condition: Optional[OperatingConditionTypes] = pd.Field(
+    meshing: Optional[MeshingParams] = ContextField(MeshingParams(), context=SURFACE_MESH)
+    reference_geometry: Optional[ReferenceGeometry] = CaseField(None)
+    operating_condition: Optional[OperatingConditionTypes] = CaseField(
         None, discriminator="type_name"
     )
     #
@@ -166,12 +180,14 @@ class SimulationParams(_ParamModelBase):
     3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
     3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
     """
-    models: Optional[List[ModelTypes]] = pd.Field(None)
+    models: Optional[List[ModelTypes]] = CaseField(None)
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = pd.Field(Steady(), discriminator="type_name")
-    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = pd.Field(None)
+    time_stepping: Optional[Union[Steady, Unsteady]] = CaseField(
+        Steady(), discriminator="type_name"
+    )
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
     """
     Support for user defined expression?
     If so:
@@ -180,7 +196,7 @@ class SimulationParams(_ParamModelBase):
     Limitations:
         1. No per volume zone output. (single volume output)
     """
-    outputs: Optional[List[OutputTypes]] = pd.Field(None)
+    outputs: Optional[List[OutputTypes]] = CaseField(None)
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
@@ -188,7 +204,6 @@ class SimulationParams(_ParamModelBase):
     # pylint: disable=arguments-differ
     def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
         """TBD"""
-
         if exclude is None:
             exclude = []
 
@@ -214,18 +229,39 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid())
         return v
 
-    @pd.field_validator("outputs", mode="after")
+    @pd.model_validator(mode="after")
+    def check_cht_solver_settings(self):
+        """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
+        return _check_cht_solver_settings(self)
+
+    @pd.model_validator(mode="after")
     @classmethod
-    def apply_defult_output_settings(cls, v):
-        """[Solver Capability Related] apply default SurfaceOutput settings if not found in outputs"""
-        if v is None:
-            v = []
-        assert isinstance(v, list)
-        if not any(isinstance(item, SurfaceOutput) for item in v):
-            v.append(
-                SurfaceOutput(name="Surface output 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
-            )
-        return v
+    def check_consistency_wall_function_and_surface_output(cls, v):
+        """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
+        return _check_consistency_wall_function_and_surface_output(v)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_consistency_ddes_volume_output(cls, v):
+        """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
+        return _check_consistency_ddes_volume_output(v)
+
+    @pd.model_validator(mode="after")
+    def check_duplicate_entities_in_models(self):
+        """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
+        return _check_duplicate_entities_in_models(self)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_numerical_dissipation_factor_output(cls, v):
+        """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
+        return _check_numerical_dissipation_factor_output(v)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_low_mach_preconditioner_output(cls, v):
+        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        return _check_low_mach_preconditioner_output(v)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
@@ -273,15 +309,16 @@ class SimulationParams(_ParamModelBase):
         return registry
 
     ##:: Internal Util functions
-    def _update_zone_info_from_volume_mesh(self, volume_mesh_meta_data: dict):
+    def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
         """
-        Update the zone info from volume mesh.
+        Update the zone info from the actual volume mesh before solver execution.
         Will be executed in the casePipeline as part of preprocessing.
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
         used_entity_registry = self._get_used_entity_registry()
-        _update_zone_name_in_surface_with_metadata(self, volume_mesh_meta_data)
+        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
+        _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self

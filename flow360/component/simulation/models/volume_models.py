@@ -19,8 +19,9 @@ from flow360.component.simulation.models.material import (
 from flow360.component.simulation.models.solver_numerics import (
     HeatEquationSolver,
     NavierStokesSolver,
+    NoneSolver,
     SpalartAllmaras,
-    TransitionModelSolver,
+    TransitionModelSolverType,
     TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.validation.validation_bet_disk import (
@@ -117,8 +118,8 @@ class Fluid(PDEModelBase):
         SpalartAllmaras(),
         description="Turbulence model solver settings, see TurbulenceModelSolver documentation.",
     )
-    transition_model_solver: Optional[TransitionModelSolver] = pd.Field(
-        None, description="Transition solver settings, see TransitionModelSolver documentation."
+    transition_model_solver: TransitionModelSolverType = pd.Field(
+        NoneSolver(), description="Transition solver settings, see TransitionModelSolver documentation."
     )
 
     material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid")
@@ -391,6 +392,22 @@ class Rotation(Flow360BaseModel):
     )
     parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(None)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+        """Ensure entities have sufficient attributes."""
+
+        for entity in value.stored_entities:
+            if entity.axis is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `axis` to be used under `Rotation`."
+                )
+            if entity.center is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `center` to be used under `Rotation`"
+                )
+        return value
+
 
 class PorousMedium(Flow360BaseModel):
     """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
@@ -412,6 +429,18 @@ class PorousMedium(Flow360BaseModel):
         None, description="The volumetric heat source"
     )
     # Note: Axes will always come from the entity
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+        """Ensure entities have sufficient attributes."""
+
+        for entity in value.stored_entities:
+            if entity.axes is None:
+                raise ValueError(
+                    f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
+                )
+        return value
 
 
 VolumeModelTypes = Union[

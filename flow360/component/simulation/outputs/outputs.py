@@ -17,17 +17,18 @@ from flow360.component.flow360_params.flow360_fields import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import (
-    UniqueAliasedStringList,
-    UniqueItemList,
-)
+from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
+    PointArray,
     Slice,
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_output import (
+    _check_unique_probe_type,
+)
 
 
 class _AnimationSettings(Flow360BaseModel):
@@ -64,9 +65,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
+
     name: Optional[str] = pd.Field(None, description="Name of the `SurfaceOutput`")
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
-        None,
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
         description="List of output surfaces. The name of the surface is used as the key. "
         + "These surface names have to be the patch name in the grid file or the alias name specified in case JSON.",
@@ -75,10 +76,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface."
         + "This option currently only supports Tecplot output format."
-        + "Will choose the value of the last instance of this option of the same output type "
+        + "Will choose the value of the last instance of this option of the same output type"
         + "(SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: UniqueAliasedStringList[SurfaceFieldNames] = pd.Field(
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>` "
         + "and :ref:`variables specific to surfaceOutput<SurfaceSpecificVariables>`. "
         + ":code:`outputFields` specified under :code:`surfaceOutput` will be added to all surfaces."
@@ -110,7 +111,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """Volume output settings."""
 
     name: Optional[str] = pd.Field(None, description="Name of the `VolumeOutput`")
-    output_fields: UniqueAliasedStringList[VolumeFieldNames] = pd.Field(
+    output_fields: UniqueItemList[VolumeFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>`, "
         + "and :ref:`variables specific to volumeOutput<VolumeAndSliceSpecificVariables>`."
     )
@@ -142,10 +143,10 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
     name: Optional[str] = pd.Field(None, description="Name of the `SliceOutput`")
-    entities: Optional[EntityList[Slice]] = pd.Field(
-        None, alias="slices", description="List of output slice entities."
+    entities: EntityList[Slice] = pd.Field(
+        alias="slices", description="List of output slice entities."
     )
-    output_fields: UniqueAliasedStringList[SliceFieldNames] = pd.Field(
+    output_fields: UniqueItemList[SliceFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>` "
         + "and :ref:`variables specific to sliceOutput<VolumeAndSliceSpecificVariables>`. "
         + ":code:`outputFields` specified under :code:`sliceOutput` will be added to all slices."
@@ -156,11 +157,12 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
+
     name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`")
-    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(
-        None, alias="isosurfaces", description="List of isosurface entities."
+    entities: UniqueItemList[Isosurface] = pd.Field(
+        alias="isosurfaces", description="List of isosurface entities."
     )
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field(
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description=" Isosurface field variable to be written. One of :code:`p`, :code:`rho`, "
         + ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`."
     )
@@ -171,12 +173,12 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
-        None,
+
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
         description="List of surface entities on which the surface integral will be calculated.",
     )
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field(
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description="List of output fields which will be added to all monitors within the monitor group,"
         + " see universal output variables."
     )
@@ -187,12 +189,11 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field(description="Name of the monitor group")
-    entities: Optional[EntityList[Point]] = pd.Field(
-        None,
+    entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
-        description="List of monitored point entities belonging to this monitor group.",
+        description="List of monitored `Point`/`PointArray` entities belonging to this monitor group.",
     )
-    output_fields: UniqueAliasedStringList[CommonFieldNames] = pd.Field(
+    output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description="List of output fields which will be added to all monitors within the monitor group,"
         + " see :ref:`universal output variables<UniversalVariables>`"
     )
@@ -201,6 +202,33 @@ class ProbeOutput(Flow360BaseModel):
     def load_point_location_from_file(self, file_path: str):
         """Load probe point locations from a file."""
         raise NotImplementedError("Not implemented yet.")
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "ProbeOutput")
+
+
+class SurfaceProbeOutput(Flow360BaseModel):
+    """
+    Probe monitor output settings.
+    The monitor location will be projected to the surface closest to the point.
+    """
+
+    name: str = pd.Field()
+    entities: EntityList[Point, PointArray] = pd.Field(None, alias="probe_points")
+    # Maybe add preprocess for this and by default add all Surfaces?
+    target_surfaces: EntityList[Surface] = pd.Field()
+
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "SurfaceProbeOutput")
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -236,6 +264,7 @@ OutputTypes = Annotated[
         IsosurfaceOutput,
         SurfaceIntegralOutput,
         ProbeOutput,
+        SurfaceProbeOutput,
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),
