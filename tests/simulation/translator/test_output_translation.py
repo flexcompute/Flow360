@@ -14,6 +14,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -700,3 +701,88 @@ def test_acoustic_output(aeroacoustic_output_config):
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
         translated["aeroacousticOutput"].items()
     )
+
+
+def test_surface_slice_output():
+    param_with_ref = (
+        [
+            SurfaceSliceOutput(
+                name="SS-1",
+                entities=[
+                    Slice(name="S1", origin=[1, 1.02, 0.03] * u.cm, normal=(0, 1, 0)),
+                    Slice(name="S3", origin=[1, 1.01, 0.03] * u.cm, normal=(0, 1, 0)),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneA/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneA/surface2"),
+                ],
+                output_fields=["Cp", "Cf", "primitiveVars"],
+                frequency=2,
+            ),
+            SurfaceSliceOutput(
+                name="SS-2",
+                entities=[
+                    Slice(name="P1", origin=[1, 1.02, 0.03] * u.cm, normal=(0, 0, 1)),
+                    Slice(name="P2", origin=[2, 1.01, 0.03] * u.m, normal=(0, 0, -1)),
+                    Slice(name="P3", origin=[3, 1.02, 0.03] * u.m, normal=(0, 0, 1)),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneB/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneB/surface2"),
+                ],
+                output_fields=["Mach", "primitiveVars", "yPlus"],
+            ),
+        ],
+        {
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "animationFrequency": 2,
+            "animationFrequencyOffset": 0,
+            "slices": [
+                {
+                    "name": "S1",
+                    "sliceOrigin": [0.01, 0.0102, 0.0003],
+                    "sliceNormal": [0.0, 1.0, 0.0],
+                    "outputFields": ["Cp", "Cf", "primitiveVars"],
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
+                },
+                {
+                    "name": "S3",
+                    "sliceOrigin": [0.01, 0.0101, 0.0003],
+                    "sliceNormal": [0.0, 1.0, 0.0],
+                    "outputFields": ["Cp", "Cf", "primitiveVars"],
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
+                },
+                {
+                    "name": "P1",
+                    "sliceOrigin": [0.01, 0.0102, 0.0003],
+                    "sliceNormal": [0.0, 0.0, 1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                },
+                {
+                    "name": "P2",
+                    "sliceOrigin": [2.0, 1.01, 0.03],
+                    "sliceNormal": [0.0, 0.0, -1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                },
+                {
+                    "name": "P3",
+                    "sliceOrigin": [3.0, 1.02, 0.03],
+                    "sliceNormal": [0.0, 0.0, 1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                },
+            ],
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_ref[0])
+    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+    print(json.dumps(translated, indent=4))
+    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
