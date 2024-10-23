@@ -43,7 +43,10 @@ assertions = unittest.TestCase("__init__")
 @pytest.fixture()
 def surface_output_with_wall_metric():
     surface_output = SurfaceOutput(
-        name="surface", write_single_file=True, output_fields=["wallFunctionMetric"]
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["wallFunctionMetric"],
     )
     return surface_output
 
@@ -63,7 +66,10 @@ def volume_output_with_kOmega_DDES():
 @pytest.fixture()
 def surface_output_with_low_mach_precond():
     surface_output = SurfaceOutput(
-        name="surface", write_single_file=True, output_fields=["lowMachPreconditionerSensor"]
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["lowMachPreconditionerSensor"],
     )
     return surface_output
 
@@ -71,7 +77,10 @@ def surface_output_with_low_mach_precond():
 @pytest.fixture()
 def surface_output_with_numerical_dissipation():
     surface_output = SurfaceOutput(
-        name="surface", write_single_file=True, output_fields=["numericalDissipationFactor"]
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["numericalDissipationFactor"],
     )
     return surface_output
 
@@ -240,7 +249,10 @@ def test_cht_solver_settings_validator(
         initial_condition=HeatEquationInitialCondition(temperature="10;"),
     )
     surface_output_with_residual_heat_solver = SurfaceOutput(
-        name="surface", write_single_file=True, output_fields=["residualHeatSolver"]
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["residualHeatSolver"],
     )
 
     # Valid simulation params

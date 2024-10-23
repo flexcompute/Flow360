@@ -353,24 +353,6 @@
             "value": 272.23520464657025
         }
     },
-    "outputs": [
-        {
-            "frequency": -1,
-            "frequency_offset": 0,
-            "name": "Surface output 1",
-            "output_fields": {
-                "items": [
-                    "Cp",
-                    "yPlus",
-                    "Cf",
-                    "CfVec"
-                ]
-            },
-            "output_format": "paraview",
-            "output_type": "SurfaceOutput",
-            "write_single_file": false
-        }
-    ],
     "time_stepping": {
         "CFL": {
             "convergence_limiting_factor": 0.25,

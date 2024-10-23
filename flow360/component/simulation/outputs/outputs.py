@@ -64,7 +64,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
     write_single_file: bool = pd.Field(
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface."
@@ -129,7 +129,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     """Slice output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[EntityList[Slice]] = pd.Field(None, alias="slices")
+    entities: EntityList[Slice] = pd.Field(alias="slices")
     output_fields: UniqueItemList[SliceFieldNames] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
@@ -138,7 +138,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """Isosurface output settings."""
 
     name: Optional[str] = pd.Field(None)
-    entities: Optional[UniqueItemList[Isosurface]] = pd.Field(None, alias="isosurfaces")
+    entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
@@ -147,7 +147,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """Surface integral output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Surface, GhostSurface]] = pd.Field(None, alias="surfaces")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
@@ -156,7 +156,7 @@ class ProbeOutput(Flow360BaseModel):
     """Probe monitor output settings."""
 
     name: str = pd.Field()
-    entities: Optional[EntityList[Point, PointArray]] = pd.Field(None, alias="probe_points")
+    entities: EntityList[Point, PointArray] = pd.Field(alias="probe_points")
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 

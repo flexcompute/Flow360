@@ -473,9 +473,6 @@ class Geometry(Flow360BaseModel):
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
 
-    if Flags.beta_features():
-        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
-
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
         """
@@ -1494,17 +1491,12 @@ class GeometryLegacy(Geometry, LegacyModel):
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 
-    if Flags.beta_features():
-        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
-
     def update_model(self) -> Flow360BaseModel:
         model = {
             "momentCenter": self.moment_center,
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if Flags.beta_features():
-            model.update({"decomposedMesh": self.decomposed_mesh})
 
         return Geometry.parse_obj(model)
 

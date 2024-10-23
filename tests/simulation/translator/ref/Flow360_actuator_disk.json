@@ -30,27 +30,6 @@
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "1": {
-                "outputFields": [
-                    "Cp",
-                    "yPlus",
-                    "Cf",
-                    "CfVec"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
     "timeStepping": {
         "CFL": {
             "convergenceLimitingFactor": 0.25,

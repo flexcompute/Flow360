@@ -64,6 +64,24 @@ def create_conjugate_heat_transfer_param():
         solid_zone_4 = GenericVolume(
             name="solid-4", private_attribute_zone_boundary_names=["solid-4/adiabatic-4"]
         )
+        surface_isothermal_1 = Surface(
+            name="isothermal-1", private_attribute_full_name="solid-1/isothermal-1"
+        )
+        surface_isothermal_2 = Surface(
+            name="isothermal-2", private_attribute_full_name="solid-2/isothermal-2"
+        )
+        surface_adiabatic_1 = Surface(
+            name="adiabatic-1", private_attribute_full_name="solid-1/adiabatic-1"
+        )
+        surface_adiabatic_2 = Surface(
+            name="adiabatic-2", private_attribute_full_name="solid-2/adiabatic-2"
+        )
+        surface_adiabatic_3 = Surface(
+            name="adiabatic-3", private_attribute_full_name="solid-3/adiabatic-3"
+        )
+        surface_adiabatic_4 = Surface(
+            name="adiabatic-4", private_attribute_full_name="solid-4/adiabatic-4"
+        )
         copper = SolidMaterial(name="copper", thermal_conductivity=401)
         params = SimulationParams(
             operating_condition=AerospaceCondition.from_mach(
@@ -109,31 +127,16 @@ def create_conjugate_heat_transfer_param():
                 ),
                 Freestream(entities=Surface(name="fluid/farfield")),
                 Wall(
-                    entities=[
-                        Surface(
-                            name="isothermal-1", private_attribute_full_name="solid-1/isothermal-1"
-                        ),
-                        Surface(
-                            name="isothermal-2", private_attribute_full_name="solid-2/isothermal-2"
-                        ),
-                    ],
+                    entities=[surface_isothermal_1, surface_isothermal_2],
                     heat_spec=Temperature(350 * u.K),
                 ),
                 Wall(
                     entities=[
-                        Surface(
-                            name="adiabatic-1", private_attribute_full_name="solid-1/adiabatic-1"
-                        ),
-                        Surface(
-                            name="adiabatic-2", private_attribute_full_name="solid-2/adiabatic-2"
-                        ),
-                        Surface(
-                            name="adiabatic-3", private_attribute_full_name="solid-3/adiabatic-3"
-                        ),
-                        Surface(
-                            name="adiabatic-4", private_attribute_full_name="solid-4/adiabatic-4"
-                        ),
-                    ]
+                        surface_adiabatic_1,
+                        surface_adiabatic_2,
+                        surface_adiabatic_3,
+                        surface_adiabatic_4,
+                    ],
                 ),
                 SlipWall(entities=Surface(name="fluid/slipWall")),
             ],
@@ -144,6 +147,11 @@ def create_conjugate_heat_transfer_param():
                     output_fields=["primitiveVars", "residualNavierStokes", "T"],
                 ),
                 SurfaceOutput(
+                    entities=[
+                        Surface(name="fluid/Interface_solid-1"),
+                        Surface(name="fluid/Interface_solid-2"),
+                        Surface(name="fluid/Interface_solid-3"),
+                    ],
                     output_format="paraview",
                     output_fields=[
                         "Cp",
@@ -151,6 +159,17 @@ def create_conjugate_heat_transfer_param():
                         "T",
                         "heatFlux",
                         "lowMachPreconditionerSensor",
+                    ],
+                ),
+                SurfaceOutput(
+                    entities=[
+                        Surface(name="solid-1/Interface_fluid"),
+                        Surface(name="solid-2/Interface_fluid"),
+                        Surface(name="solid-3/Interface_fluid"),
+                    ],
+                    output_format="paraview",
+                    output_fields=[
+                        "T",
                     ],
                 ),
             ],

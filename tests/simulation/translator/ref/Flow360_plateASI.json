@@ -130,21 +130,6 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
-            "farFieldBlock/farField": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
-            "farFieldBlock/slipWall": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
-            "plateBlock/slipWall": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
             "plateBlock/noSlipWall": {
                 "outputFields": [
                     "Cp"

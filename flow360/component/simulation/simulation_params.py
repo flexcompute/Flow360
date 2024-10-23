@@ -27,7 +27,7 @@ from flow360.component.simulation.models.volume_models import Fluid, VolumeModel
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes, SurfaceOutput
+from flow360.component.simulation.outputs.outputs import OutputTypes
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     _SurfaceEntityBase,
@@ -234,19 +234,6 @@ class SimulationParams(_ParamModelBase):
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
-        return v
-
-    @pd.field_validator("outputs", mode="after")
-    @classmethod
-    def apply_defult_output_settings(cls, v):
-        """[Solver Capability Related] apply default SurfaceOutput settings if not found in outputs"""
-        if v is None:
-            v = []
-        assert isinstance(v, list)
-        if not any(isinstance(item, SurfaceOutput) for item in v):
-            v.append(
-                SurfaceOutput(name="Surface output 1", output_fields=["Cp", "yPlus", "Cf", "CfVec"])
-            )
         return v
 
     @pd.model_validator(mode="after")

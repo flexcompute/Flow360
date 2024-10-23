@@ -61,37 +61,7 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "1": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "2": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "3": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "4": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "5": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
             "6": {
-                "outputFields": [
-                    "Cf"
-                ]
-            },
-            "7": {
                 "outputFields": [
                     "Cf"
                 ]

@@ -77,7 +77,7 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "fluid/farfield": {
+            "fluid/Interface_solid-1": {
                 "outputFields": [
                     "Cp",
                     "primitiveVars",
@@ -86,7 +86,7 @@
                     "lowMachPreconditionerSensor"
                 ]
             },
-            "fluid/slipWall": {
+            "fluid/Interface_solid-2": {
                 "outputFields": [
                     "Cp",
                     "primitiveVars",
@@ -95,7 +95,7 @@
                     "lowMachPreconditionerSensor"
                 ]
             },
-            "solid-1/adiabatic-1": {
+            "fluid/Interface_solid-3": {
                 "outputFields": [
                     "Cp",
                     "primitiveVars",
@@ -104,49 +104,19 @@
                     "lowMachPreconditionerSensor"
                 ]
             },
-            "solid-1/isothermal-1": {
+            "solid-1/Interface_fluid": {
                 "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
+                    "T"
                 ]
             },
-            "solid-2/adiabatic-2": {
+            "solid-2/Interface_fluid": {
                 "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
+                    "T"
                 ]
             },
-            "solid-2/isothermal-2": {
+            "solid-3/Interface_fluid": {
                 "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
-                ]
-            },
-            "solid-3/adiabatic-3": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
-                ]
-            },
-            "solid-4/adiabatic-4": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
+                    "T"
                 ]
             }
         },
