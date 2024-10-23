@@ -1,5 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
+# pylint: disable=too-many-lines
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -41,6 +42,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -197,6 +199,7 @@ def translate_output_fields(
         ProbeOutput,
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
+        SurfaceSliceOutput,
     ],
 ):
     """Get output fields"""
@@ -215,6 +218,15 @@ def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
 def inject_slice_info(entity: Slice):
     """inject entity info"""
     return {
+        "sliceOrigin": list(entity.origin.value),
+        "sliceNormal": list(entity.normal),
+    }
+
+
+def inject_surface_slice_info(entity: Slice):
+    """inject entity info"""
+    return {
+        "name": entity.name,
         "sliceOrigin": list(entity.origin.value),
         "sliceNormal": list(entity.normal),
     }
@@ -336,6 +348,28 @@ def translate_slice_isosurface_output(
     return translated_output
 
 
+def translate_surface_slice_output(
+    output_params: list,
+    output_class: Union[SurfaceSliceOutput],
+):
+    """Translate surface output settings."""
+
+    surface_slice_output = init_output_base(
+        output_params,
+        output_class,
+        has_average_capability=False,
+        is_average=False,
+    )
+    surface_slice_output["slices"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        output_class,
+        translation_func=surface_probe_setting_translation_func,
+        to_list=True,
+        entity_injection_func=inject_surface_slice_info,
+    )
+    return surface_slice_output
+
+
 def translate_monitor_output(
     output_params: list, monitor_type, injection_function, translation_func=translate_output_fields
 ):
@@ -446,6 +480,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
             surface_probe_setting_translation_func,
         )
         translated["surfaceMonitorOutput"] = surface_monitor_output
+
+    ##:: Step5.2: Get translated["surfaceMonitorOutput"]
+    surface_slice_output = {}
+    if has_instance_in_list(outputs, SurfaceSliceOutput):
+        surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
+        translated["surfaceSliceOutput"] = surface_slice_output
 
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
