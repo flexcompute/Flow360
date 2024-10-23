@@ -646,6 +646,9 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "Freestream"
         if model.velocity is not None:
             boundary["velocity"] = list(model_dict["velocity"])
+        if model.turbulence_quantities is not None:
+            boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
+            replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
     elif isinstance(model, SymmetryPlane):
         boundary["type"] = "SymmetryPlane"
 
