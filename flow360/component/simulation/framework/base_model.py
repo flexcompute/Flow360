@@ -163,6 +163,7 @@ class Flow360BaseModel(pd.BaseModel):
     # pylint: disable=no-self-argument
     # pylint: disable=duplicate-code
     @pd.model_validator(mode="before")
+    @classmethod
     def handle_conflicting_fields(cls, values):
         """
         root validator to handle deprecated aliases and fields
