@@ -51,10 +51,6 @@
     "sliceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
-        "startAverageIntegrationStep": -1,
         "outputFormat": "tecplot",
         "outputFields": [],
         "slices": {
