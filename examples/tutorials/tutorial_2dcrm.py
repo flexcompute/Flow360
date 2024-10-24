@@ -46,10 +46,20 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Tutorial_2dcrm
 
+"""
+This is a tutorial case based on the "7.3. RANS CFD on 2D High-Lift System Configuration Using the Flow360 Python Client" available in the documentation linked below.
+
+https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_Configuration/Multielement_Configuration.html
+
+In this case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration.
+
+Settings defined in this file are derived from the documentation and aim to represent the old tutorial case using the new Flow 360 python client.
+"""
+
 
 fl.Env.preprod.active()
 
-SOLVER_VERSION = "workbench-24.9.3"
+SOLVER_VERSION = "release-24.11"
 
 #you can use this to upload geometry from your computer
 geometry_draft = Geometry.from_file(Tutorial_2dcrm.geometry, project_name='Tutorial 2D CRM from Python', solver_version=SOLVER_VERSION)
@@ -80,10 +90,10 @@ with SI_unit_system:
             gap_treatment_strength=0.5,
             volume_zones=[farfield],
             refinements=[
-                UniformRefinement(name='refinement1', spacing=0.1, entities=[cylinder[0]]),
-                UniformRefinement(name='refinement2', spacing=0.15, entities=[cylinder[1]),
-                UniformRefinement(name='refinement3', spacing=0.225, entities=[cylinder[2]]),
-                UniformRefinement(name='refinement4', spacing=0.275, entities=[cylinder[3]]),
+                UniformRefinement(name='refinement1', spacing=0.1, entities=[cylinders[0]]),
+                UniformRefinement(name='refinement2', spacing=0.15, entities=[cylinders[1]]),
+                UniformRefinement(name='refinement3', spacing=0.225, entities=[cylinders[2]]),
+                UniformRefinement(name='refinement4', spacing=0.275, entities=[cylinders[3]]),
                 UniformRefinement(name='refinement5', spacing=0.325, entities=[cylinder5]),
                 SurfaceRefinement(name='wing', max_edge_length=0.74, faces=[
                     geometry['wing']
@@ -94,7 +104,6 @@ with SI_unit_system:
                     geometry['slat']
                     ]
                 ),
-                #this can be done by grouping using their ID's and not the grouped names since it gets reset at the mesh step
                 SurfaceRefinement(name='trailing', max_edge_length=0.36, faces=[
                     geometry['wingTrailing'],
                     geometry['flapTrailing'],
@@ -136,32 +145,6 @@ with SI_unit_system:
                 ramp_steps=500
             )
         ),
-        outputs=[
-            VolumeOutput(
-                name='VolumeOutput',
-                output_fields=[
-                    'primitiveVars',
-                    'vorticity',
-                    'residualNavierStokes',
-                    'residualTurbulence',
-                    'Cp',
-                    'Mach',
-                    'qcriterion',
-                    'mut'
-                    ]
-            ),
-            SurfaceOutput(
-                name='SurfaceOutput',
-                surfaces=geometry["*"],
-                output_fields=[
-                    'primitiveVars',
-                    'Cp',
-                    'Cf',
-                    'CfVec',
-                    'yPlus'
-                ]
-            )
-        ],
         models=[
             Wall(
                 surfaces=[
@@ -194,15 +177,39 @@ with SI_unit_system:
                 ), 
                 turbulence_model_solver=SpalartAllmaras(
                     absolute_tolerance=1e-10,
-                    relative_tolerance=1e-2,
                     linear_solver=LinearSolver(max_iterations=25),
-                    order_of_accuracy=2,
-                    update_jacobian_frequency=4,
                     equation_evaluation_frequency=1
                 )
+            )
+        ],
+        outputs=[
+            VolumeOutput(
+                name='VolumeOutput',
+                output_fields=[
+                    'primitiveVars',
+                    'vorticity',
+                    'residualNavierStokes',
+                    'residualTurbulence',
+                    'Cp',
+                    'Mach',
+                    'qcriterion',
+                    'mut'
+                    ]
+            ),
+            SurfaceOutput(
+                name='SurfaceOutput',
+                surfaces=geometry["*"],
+                output_fields=[
+                    'primitiveVars',
+                    'Cp',
+                    'Cf',
+                    'CfVec',
+                    'yPlus'
+                ]
             )
         ]
     )
 
 
 case = cloud.run_case(geometry, params=params, draft_name="Case of tutorial 2D CRM from Python", async_mode=True)
+
