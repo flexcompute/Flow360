@@ -1,6 +1,5 @@
 import flow360 as fl
 from flow360.component.project import Project
-
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -10,10 +9,10 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Airplane
 
@@ -21,7 +20,9 @@ fl.Env.dev.active()
 
 SOLVER_VERSION = "workbench-24.9.3"
 
-project = Project.from_file(Airplane.geometry, name='Simple Airplane from Python', solver_version=SOLVER_VERSION)
+project = Project.from_file(
+    Airplane.geometry, name="airplane-geometry-python-upload", solver_version=SOLVER_VERSION
+)
 
 geometry = project.geometry
 geometry.show_available_groupings(verbose_mode=True)
@@ -45,8 +46,9 @@ with SI_unit_system:
             ),
             Freestream(surfaces=[AutomatedFarfield().farfield], name="Freestream"),
         ],
-        outputs=[SurfaceOutput(surfaces=geometry["*"], output_fields=['Cp', 'Cf', 'yPlus', 'CfVec'])]
+        outputs=[
+            SurfaceOutput(surfaces=geometry["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])
+        ],
     )
 
 case = project.run_case(params=params, draft_name="Case of Simple Airplane from Python")
-

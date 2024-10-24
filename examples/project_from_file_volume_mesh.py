@@ -1,6 +1,5 @@
 import flow360 as fl
 import flow360.component.simulation.units as u
-
 from flow360.component.project import Project
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -11,7 +10,6 @@ from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.examples import OM6wing

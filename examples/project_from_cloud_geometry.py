@@ -1,9 +1,12 @@
 from flow360.component.project import Project
-from flow360.component.simulation.meshing_param.params import MeshingParams, MeshingDefaults
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.environment import dev
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.environment import dev
 
 dev.active()
 

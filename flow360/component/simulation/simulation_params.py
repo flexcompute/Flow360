@@ -56,7 +56,6 @@ from flow360.error_messages import (
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
-from .utils import _model_attribute_unlock
 
 from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
 
