@@ -51,4 +51,4 @@ with SI_unit_system:
         ],
     )
 
-case = project.run_case(params=params, draft_name="Case of Simple Airplane from Python")
+case = project.run_surface_mesher(params=params, draft_name="Case of Simple Airplane from Python")

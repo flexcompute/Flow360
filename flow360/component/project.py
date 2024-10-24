@@ -218,7 +218,7 @@ class Project(pd.BaseModel):
         elif root_type == RootType.VOLUME_MESH:
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
 
-        project = Project(info=meta, solver_version=root_asset.solver_version)
+        project = Project(metadata=meta, solver_version=root_asset.solver_version)
 
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
