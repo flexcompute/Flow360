@@ -41,6 +41,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -57,6 +58,7 @@ from flow360.component.simulation.translator.utils import (
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
+    update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
@@ -74,7 +76,6 @@ def init_non_average_output(
     has_average_capability: bool,
 ):
     """Initialize the common output attribute for non-average output."""
-    has_average_capability = class_type.__name__.endswith(("VolumeOutput", "SurfaceOutput"))
     if has_average_capability:
         base["computeTimeAverages"] = False
 
@@ -316,19 +317,42 @@ def translate_surface_output(
     return surface_output
 
 
-def translate_slice_isosurface_output(
+def translate_slice_output(
     output_params: list,
-    output_class: Union[SliceOutput, IsosurfaceOutput],
-    entities_name_key: str,
+    output_class: Union[SliceOutput, TimeAverageSliceOutput],
     injection_function,
 ):
     """Translate slice or isosurface output settings."""
     translated_output = init_output_base(
-        output_params, output_class, has_average_capability=False, is_average=False
-    )
-    translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,
+        has_average_capability=True,
+        is_average=output_class is TimeAverageSliceOutput,
+    )
+    translated_output["slices"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        output_class,
+        translation_func=translate_output_fields,
+        to_list=False,
+        entity_injection_func=injection_function,
+    )
+    return translated_output
+
+
+def translate_isosurface_output(
+    output_params: list,
+    injection_function,
+):
+    """Translate slice or isosurface output settings."""
+    translated_output = init_output_base(
+        output_params,
+        IsosurfaceOutput,
+        has_average_capability=False,
+        is_average=False,
+    )
+    translated_output["isoSurfaces"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        IsosurfaceOutput,
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
@@ -407,20 +431,28 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageSurfaceOutput, translated
         )
     # Merge
-    surface_output.update(**surface_output_average)
+    update_dict_recursively(surface_output, surface_output_average)
     if surface_output:
         translated["surfaceOutput"] = add_unused_output_settings_for_comparison(surface_output)
 
     ##:: Step3: Get translated["sliceOutput"]
+    slice_output = {}
+    slice_output_average = {}
     if has_instance_in_list(outputs, SliceOutput):
-        translated["sliceOutput"] = translate_slice_isosurface_output(
-            outputs, SliceOutput, "slices", inject_slice_info
+        slice_output = translate_slice_output(outputs, SliceOutput, inject_slice_info)
+    if has_instance_in_list(outputs, TimeAverageSliceOutput):
+        slice_output_average = translate_slice_output(
+            outputs, TimeAverageSliceOutput, inject_slice_info
         )
+    # Merge
+    update_dict_recursively(slice_output, slice_output_average)
+    if slice_output:
+        translated["sliceOutput"] = add_unused_output_settings_for_comparison(slice_output)
 
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
-        translated["isoSurfaceOutput"] = translate_slice_isosurface_output(
-            outputs, IsosurfaceOutput, "isoSurfaces", inject_isosurface_info
+        translated["isoSurfaceOutput"] = translate_isosurface_output(
+            outputs, inject_isosurface_info
         )
 
     ##:: Step5: Get translated["monitorOutput"]
