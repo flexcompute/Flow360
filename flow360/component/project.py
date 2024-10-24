@@ -1,5 +1,6 @@
 import json
-from typing import Optional
+import time
+from typing import Optional, Union, List
 
 import pydantic as pd
 
@@ -10,17 +11,25 @@ from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import ProjectInterface, GeometryInterface, VolumeMeshInterfaceV2
-from flow360.component.simulation import cloud
+from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.web.asset_base import AssetBase
+from flow360.component.simulation.web.draft import Draft
 from flow360.component.utils import SUPPORTED_GEOMETRY_FILE_PATTERNS, match_file_pattern, MeshNameParser
-from flow360.component.volume_mesh import VolumeMesh
+from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError, Flow360FileError, Flow360WebError
+
+# This is used before all resources are moved to V2 API as AssetBase subclasses
+AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
+RootAsset = Union[Geometry, VolumeMeshV2]
 
 
 class RootType(Enum):
     GEOMETRY = "Geometry"
-    VOLUME_MESH = "Volume mesh"
-    # SURFACE_MESH = "Surface mesh" - supported in a future iteration
+    VOLUME_MESH = "VolumeMesh"
+    # SURFACE_MESH = "SurfaceMesh" - supported in a future iteration
 
 
 class ProjectMeta(pd.BaseModel, extra=pd.Extra.allow):
@@ -33,12 +42,13 @@ class ProjectMeta(pd.BaseModel, extra=pd.Extra.allow):
 
 class Project(pd.BaseModel):
     info: ProjectMeta = pd.Field(None)
+    solver_version: str = pd.Field(None, frozen=True)
 
     # Right now the cached assets are all related to the
     # root asset - we will have full project tree traversal
     # in a future iteration.
     _geometry: Optional[Geometry] = pd.PrivateAttr(None)
-    _volume_mesh: Optional[VolumeMesh] = pd.PrivateAttr(None)
+    _volume_mesh: Optional[VolumeMeshV2] = pd.PrivateAttr(None)
     _surface_mesh: Optional[SurfaceMesh] = pd.PrivateAttr(None)
     _case: Optional[Case] = pd.PrivateAttr(None)
 
@@ -69,7 +79,7 @@ class Project(pd.BaseModel):
         return self._surface_mesh
 
     @property
-    def volume_mesh(self) -> VolumeMesh:
+    def volume_mesh(self) -> VolumeMeshV2:
         """
         Getter for the current project's volume mesh asset
 
@@ -112,7 +122,8 @@ class Project(pd.BaseModel):
         file: str = None,
         name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m"
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
     ):
         """
         Populates project data from a file
@@ -122,6 +133,7 @@ class Project(pd.BaseModel):
             file ():
             solver_version ():
             length_unit ():
+            tags ():
 
         Returns:
 
@@ -138,15 +150,18 @@ class Project(pd.BaseModel):
                     file,
                     name,
                     solver_version,
-                    length_unit
+                    length_unit,
+                    tags
                 )
                 root_asset = draft.submit()
             case RootType.VOLUME_MESH:
                 # Create a draft volume mesh asset and submit
-                draft = VolumeMesh.from_file(
+                draft = VolumeMeshV2.from_file(
                     file,
                     name,
                     solver_version,
+                    length_unit,
+                    tags
                 )
                 root_asset = draft.submit()
 
@@ -161,7 +176,7 @@ class Project(pd.BaseModel):
         if not info:
             raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
 
-        project = Project(info=ProjectMeta(**info))
+        project = Project(info=ProjectMeta(**info), solver_version=root_asset.solver_version)
 
         match root_type:
             case RootType.GEOMETRY:
@@ -183,28 +198,38 @@ class Project(pd.BaseModel):
         if not info:
             raise Flow360WebError(f"Couldn't retrieve project info for {project_id}")
 
-        project = Project(info=ProjectMeta(**info))
+        meta = ProjectMeta(**info)
 
-        root_type = project.info.root_item_type
+        root_asset = None
+        root_type = meta.root_item_type
 
         match root_type:
             case RootType.GEOMETRY:
-                root_asset = Geometry.from_cloud(project.info.root_item_id)
+                root_asset = Geometry.from_cloud(meta.root_item_id)
+            case RootType.VOLUME_MESH:
+                root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
+
+        project = Project(info=meta, solver_version=root_asset.solver_version)
+
+        if not root_asset:
+            raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
+
+        match root_type:
+            case RootType.GEOMETRY:
                 project._geometry = root_asset
             case RootType.VOLUME_MESH:
-                root_asset = VolumeMesh.from_cloud(project.info.root_item_id)
                 project._volume_mesh = root_asset
 
         return project
 
     def _check_initialized(self):
-        if not self.info:
+        if not self.info or not self.solver_version:
             raise Flow360ValueError("Project is not initialized - use Project.from_file or Project.from_cloud")
 
     def set_default_params(self, params: SimulationParams):
         self._params = params
 
-    def get_simulation_json(self):
+    def get_simulation_json(self) -> dict:
         """
         Get default simulation JSON for the project based on the root asset type
         """
@@ -233,20 +258,67 @@ class Project(pd.BaseModel):
 
         return simulation_json
 
+    def _run(self, params: SimulationParams, target: AssetOrResource, draft_name: str = None, fork: bool = False):
+        defaults = self.get_simulation_json()
+
+        cache_key = "private_attribute_asset_cache"
+        length_key = "project_length_unit"
+
+        if cache_key not in defaults or length_key not in defaults[cache_key]:
+            raise Flow360ValueError("Simulation params do not contain default length unit info")
+
+        length_unit = defaults[cache_key][length_key]
+
+        with _model_attribute_unlock(params.private_attribute_asset_cache, length_key):
+            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(length_unit)
+
+        root_asset = None
+        root_type = self.info.root_item_type
+
+        match root_type:
+            case RootType.GEOMETRY:
+                root_asset = self._geometry
+            case RootType.VOLUME_MESH:
+                root_asset = self._volume_mesh
+
+        if not root_asset:
+            raise Flow360ValueError(f"Root asset is not initialized")
+
+        draft = Draft.create(
+            name=draft_name,
+            project_id=self.info.id,
+            source_item_id=self.info.root_item_id,
+            source_item_type=root_type.value,
+            solver_version=self.solver_version,
+            fork_case=fork,
+        ).submit()
+
+        draft.update_simulation_params(params)
+        destination_id = draft.run_up_to_target_asset(target)
+
+        RestApi(ProjectInterface.endpoint, id=self.info.id).patch(
+            json={
+                "lastOpenItemId": destination_id,
+                "lastOpenItemType": target.__name__,
+            }
+        )
+
+        destination_obj = target.from_cloud(destination_id)
+        destination_obj.wait()
+
+        return destination_obj
+
     def run_surface_mesher(self, params: SimulationParams = None, draft_name: str = "Surface Mesh"):
         """Run surface mesher with the provided params or defaults"""
         self._check_initialized()
 
         if self.info.root_item_type is not RootType.GEOMETRY:
             raise Flow360ValueError("Surface mesher can only be ran by projects with a geometry root asset")
-        if self._geometry is None:
-            raise Flow360ValueError("This project object was not initialized using from_cloud or from_file")
-        # We should remove usages of cloud static functions here
-        self._surface_mesh = cloud.generate_surface_mesh(
-            self._geometry,
+
+        self._surface_mesh = self._run(
             params=params if params else self._params,
+            target=SurfaceMesh,
             draft_name=draft_name,
-            async_mode=False
         )
 
     def run_volume_mesher(self, params: SimulationParams = None, draft_name: str = "Volume Mesh"):
@@ -255,26 +327,19 @@ class Project(pd.BaseModel):
 
         if self.info.root_item_type is not RootType.GEOMETRY:
             raise Flow360ValueError("Volume mesher can only be ran by projects with a geometry root asset")
-        if self._surface_mesh is None:
-            raise Flow360ValueError("This project object is missing a surface mesh, fix by running run_surface_mesher")
-        # We should remove usages of cloud static functions here
-        self._volume_mesh = cloud.generate_volume_mesh(
-            self._surface_mesh,
+
+        self._volume_mesh = self._run(
             params=params if params else self._params,
+            target=VolumeMeshV2,
             draft_name=draft_name,
-            async_mode=False
         )
 
     def run_case(self, params: SimulationParams = None, draft_name: str = "Case"):
         """Run project with the provided params"""
         self._check_initialized()
 
-        if self._volume_mesh is None:
-            raise Flow360ValueError("This project object is missing a volume mesh, fix by running run_volume_mesher")
-        # We should remove usages of cloud static functions here
-        self._case = cloud.generate_volume_mesh(
-            self._volume_mesh,
+        self._case = self._run(
             params=params if params else self._params,
+            target=Case,
             draft_name=draft_name,
-            async_mode=False
         )

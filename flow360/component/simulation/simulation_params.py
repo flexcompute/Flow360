@@ -56,6 +56,7 @@ from flow360.error_messages import (
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
+from .utils import _model_attribute_unlock
 
 from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
 
@@ -308,7 +309,21 @@ class SimulationParams(_ParamModelBase):
         registry = self._update_entity_private_attrs(registry)
         return registry
 
-    ##:: Internal Util functions
+    def _inject_entity_info_to_params(self, entity_info):
+        """Inject the length unit into the SimulationParams"""
+        # Add used cylinder, box, point and slice entities to the entityInfo.
+        registry: EntityRegistry = self._get_used_entity_registry()
+        old_draft_entities = entity_info.draft_entities
+        for _, old_entity in enumerate(old_draft_entities):
+            try:
+                _ = registry.find_by_naming_pattern(old_entity.name)
+            except ValueError:  # old_entity did not appear in params.
+                continue
+
+        # pylint: disable=protected-access
+        with _model_attribute_unlock(self.private_attribute_asset_cache, "project_entity_info"):
+            self.private_attribute_asset_cache.project_entity_info = entity_info
+
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
         """
         Update the zone info from the actual volume mesh before solver execution.

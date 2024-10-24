@@ -5,6 +5,7 @@ Flow360 base Model
 import os
 import re
 import shutil
+import time
 import traceback
 from abc import ABCMeta
 from datetime import datetime
@@ -264,6 +265,17 @@ class Flow360Resource(RestApi):
         returns name of resource
         """
         return self.info.name
+
+    def wait(self, timeout_minutes=60):
+        """Wait until the Resource finishes processing, refresh periodically"""
+
+        start_time = time.time()
+        while self.status.is_final() is False:
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError(
+                    "Timeout: Process did not finish within the specified timeout period"
+                )
+            time.sleep(2)
 
     def short_description(self) -> str:
         """short_description
