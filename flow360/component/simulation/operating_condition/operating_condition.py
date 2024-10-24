@@ -12,7 +12,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, FluidMaterialTypes
+from flow360.component.simulation.models.material import Air, Sutherland, FluidMaterialTypes
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -252,3 +252,32 @@ class AerospaceCondition(MultiConstructorBaseModel):
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
 OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
+
+
+def create_operating_condition_from_mach_reynolds(
+    mach: pd.NonNegativeFloat = None,
+    reynolds: pd.PositiveFloat = None,
+    temperature: pd.PositiveFloat = None,
+    alpha: Optional[AngleType] = 0 * u.deg,
+    beta: Optional[AngleType] = 0 * u.deg,
+    reference_mach: Optional[pd.PositiveFloat] = None
+) -> AerospaceCondition:
+    default_thermal_state = ThermalState(temperature=temperature)
+    thermal_state = ThermalState(
+        temperature=temperature,
+        material=Air(
+            dynamic_viscosity=Sutherland(
+                reference_temperature=temperature,
+                reference_viscosity=(mach/reynolds) * default_thermal_state.density * default_thermal_state.speed_of_sound * u.m,
+                effective_temperature=110.4
+            )
+        )
+    )
+
+    return AerospaceCondition.from_mach(
+        mach=mach,
+        alpha=alpha,
+        beta=beta,
+        thermal_state=thermal_state,
+        reference_mach=reference_mach
+    )
