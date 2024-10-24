@@ -6,7 +6,7 @@ from .base_test_case import BaseTestCase
 
 
 class Tutorial_2dcrm(BaseTestCase):
-    name = "Tutorial_2dcrm"
+    name = "tutorial_2dcrm"
 
     class url:
         geometry = "local://geometry.csm"

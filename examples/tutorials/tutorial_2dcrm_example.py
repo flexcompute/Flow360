@@ -44,7 +44,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput
 )
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import tutorial_2dcrm
+from flow360.examples import Tutorial_2dcrm
 
 
 fl.Env.preprod.active()
@@ -52,7 +52,7 @@ fl.Env.preprod.active()
 SOLVER_VERSION = "workbench-24.9.3"
 
 #you can use this to upload geometry from your computer
-geometry_draft = Geometry.from_file(tutorial_2dcrm.geometry, project_name='Tutorial 2D CRM from Python', solver_version=SOLVER_VERSION)
+geometry_draft = Geometry.from_file(Tutorial_2dcrm.geometry, project_name='Tutorial 2D CRM from Python', solver_version=SOLVER_VERSION)
 geometry = geometry_draft.submit()
 # you can use this if geometry was submitted eariler:
 #geometry = Geometry.from_cloud(id=<provide-geo-id>)
