@@ -12,6 +12,8 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import ProjectInterface, GeometryInterface, VolumeMeshInterfaceV2
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.entity_info import GeometryEntityInfo, VolumeMeshEntityInfo
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -264,8 +266,9 @@ class Project(pd.BaseModel):
         cache_key = "private_attribute_asset_cache"
         length_key = "project_length_unit"
 
-        if cache_key not in defaults or length_key not in defaults[cache_key]:
-            raise Flow360ValueError("Simulation params do not contain default length unit info")
+        if cache_key not in defaults:
+            if length_key not in defaults[cache_key]:
+                raise Flow360ValueError("Simulation params do not contain default length unit info")
 
         length_unit = defaults[cache_key][length_key]
 
@@ -292,6 +295,18 @@ class Project(pd.BaseModel):
             solver_version=self.solver_version,
             fork_case=fork,
         ).submit()
+
+        entity_info = root_asset.entity_info
+        registry = params.used_entity_registry
+        old_draft_entities = entity_info.draft_entities
+        for _, old_entity in enumerate(old_draft_entities):
+            try:
+                registry.find_by_naming_pattern(old_entity.name)
+            except ValueError:
+                continue
+
+        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+            params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
         destination_id = draft.run_up_to_target_asset(target)

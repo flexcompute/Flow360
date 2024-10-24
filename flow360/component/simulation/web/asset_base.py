@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import json
 import time
 from abc import ABCMeta
@@ -74,8 +75,13 @@ class AssetBase(metaclass=ABCMeta):
 
     @property
     def info(self) -> AssetMetaBaseModel:
-        """Return the metadata of the resource"""
+        """Return the metadata of the asset"""
         return self._webapi.info
+
+    @property
+    def entity_info(self):
+        """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
+        return self._entity_info_class.model_validate(self._entity_info.model_dump())
 
     @classmethod
     def _interface(cls):

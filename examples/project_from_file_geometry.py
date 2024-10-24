@@ -1,18 +1,52 @@
 import flow360 as fl
 from flow360.component.project import Project
+
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.models.surface_models import Freestream, Wall
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
+from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Steady
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Airplane
 
 fl.Env.dev.active()
 
-Airplane.get_files()
+SOLVER_VERSION = "workbench-24.9.3"
 
-project = Project.from_file(
-    Airplane.geometry,
-    name="airplane-geometry-python-upload",
-    solver_version="workbench-24.9.3",
-    tags=["python"],
-)
+project = Project.from_file(Airplane.geometry, name='Simple Airplane from Python', solver_version=SOLVER_VERSION)
 
 geometry = project.geometry
+geometry.show_available_groupings(verbose_mode=True)
+geometry.group_faces_by_tag("groupName")
 
-print(geometry)
+with SI_unit_system:
+    params = SimulationParams(
+        meshing=MeshingParams(
+            defaults=MeshingDefaults(
+                boundary_layer_first_layer_thickness=0.001, surface_max_edge_length=1
+            ),
+            volume_zones=[AutomatedFarfield()],
+        ),
+        reference_geometry=ReferenceGeometry(),
+        operating_condition=AerospaceCondition(velocity_magnitude=100, alpha=5 * u.deg),
+        time_stepping=Steady(max_steps=1000),
+        models=[
+            Wall(
+                surfaces=[geometry["*"]],
+                name="Wall",
+            ),
+            Freestream(surfaces=[AutomatedFarfield().farfield], name="Freestream"),
+        ],
+        outputs=[SurfaceOutput(surfaces=geometry["*"], output_fields=['Cp', 'Cf', 'yPlus', 'CfVec'])]
+    )
+
+case = project.run_case(params=params, draft_name="Case of Simple Airplane from Python")
+
