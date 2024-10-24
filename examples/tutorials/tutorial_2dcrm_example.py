@@ -80,10 +80,10 @@ with SI_unit_system:
             gap_treatment_strength=0.5,
             volume_zones=[farfield],
             refinements=[
-                UniformRefinement(name='refinement1', spacing=0.1, entities=[cylinder1]),
-                UniformRefinement(name='refinement2', spacing=0.15, entities=[cylinder2]),
-                UniformRefinement(name='refinement3', spacing=0.225, entities=[cylinder3]),
-                UniformRefinement(name='refinement4', spacing=0.275, entities=[cylinder4]),
+                UniformRefinement(name='refinement1', spacing=0.1, entities=[cylinder[0]]),
+                UniformRefinement(name='refinement2', spacing=0.15, entities=[cylinder[1]),
+                UniformRefinement(name='refinement3', spacing=0.225, entities=[cylinder[2]]),
+                UniformRefinement(name='refinement4', spacing=0.275, entities=[cylinder[3]]),
                 UniformRefinement(name='refinement5', spacing=0.325, entities=[cylinder5]),
                 SurfaceRefinement(name='wing', max_edge_length=0.74, faces=[
                     geometry['wing']
