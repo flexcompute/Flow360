@@ -342,7 +342,7 @@ class Project(pd.BaseModel):
         return destination_obj
 
     def run_surface_mesher(
-        self, params: SimulationParams, draft_name: str = "SurfaceMesh", run_async: bool = False
+        self, params: SimulationParams, draft_name: str = "SurfaceMesh", run_async: bool = True
     ):
         """Run surface mesher with the provided params or defaults"""
         self._check_initialized()
@@ -357,7 +357,7 @@ class Project(pd.BaseModel):
         )
 
     def run_volume_mesher(
-        self, params: SimulationParams, draft_name: str = "VolumeMesh", run_async: bool = False
+        self, params: SimulationParams, draft_name: str = "VolumeMesh", run_async: bool = True
     ):
         """Run volume mesher with the provided params or defaults"""
         self._check_initialized()
@@ -371,7 +371,7 @@ class Project(pd.BaseModel):
             params=params, target=VolumeMeshV2, draft_name=draft_name, run_async=run_async
         )
 
-    def run_case(self, params: SimulationParams, draft_name: str = "Case", run_async: bool = False):
+    def run_case(self, params: SimulationParams, draft_name: str = "Case", run_async: bool = True):
         """Run project with the provided params"""
         self._check_initialized()
 
