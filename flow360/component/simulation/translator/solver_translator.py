@@ -1,5 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
+# pylint: disable=too-many-lines
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -656,6 +657,9 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
+        if model.turbulence_quantities is not None:
+            boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
+            replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
     elif isinstance(model, Outflow):
         if isinstance(model.spec, Pressure):
             boundary["type"] = "SubsonicOutflowPressure"
@@ -678,6 +682,9 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "Freestream"
         if model.velocity is not None:
             boundary["velocity"] = list(model_dict["velocity"])
+        if model.turbulence_quantities is not None:
+            boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
+            replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
     elif isinstance(model, SymmetryPlane):
         boundary["type"] = "SymmetryPlane"
 
