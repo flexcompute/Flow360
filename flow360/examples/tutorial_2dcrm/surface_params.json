@@ -1,0 +1,60 @@
+{
+    "maxEdgeLength": 1.1, 
+    "curvatureResolutionAngle": 12,
+    "growthRate": 1.17, 
+    "edges": {
+        "wingleadingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "wingtrailingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "flapleadingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "flaptrailingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "slatleadingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "slattrailingEdge":  {
+            "type": "aniso",
+            "method": "height",
+            "value": 7e-4
+        },
+        "symmetry":  {
+            "type": "projectAnisoSpacing"
+        }
+    },
+    "faces": {
+        "wing": {
+            "maxEdgeLength": 0.74
+        },
+        "flap": {
+            "maxEdgeLength": 0.55
+        },
+        "slat": {
+            "maxEdgeLength": 0.55
+        },
+        "wingTrailing": {
+            "maxEdgeLength": 0.36
+        },
+        "flapTrailing": {
+            "maxEdgeLength": 0.36
+        },
+        "slatTrailing": {
+            "maxEdgeLength": 0.36
+        }
+    }
+}
