@@ -341,8 +341,13 @@ class Project(pd.BaseModel):
 
         return destination_obj
 
+    # pylint: disable=too-many-arguments
     def run_surface_mesher(
-        self, params: SimulationParams, draft_name: str = "SurfaceMesh", run_async: bool = True
+        self,
+        params: SimulationParams,
+        draft_name: str = "SurfaceMesh",
+        run_async: bool = True,
+        fork: bool = False,
     ):
         """Run surface mesher with the provided params or defaults"""
         self._check_initialized()
@@ -353,11 +358,16 @@ class Project(pd.BaseModel):
             )
 
         self._surface_mesh = self._run(
-            params=params, target=SurfaceMesh, draft_name=draft_name, run_async=run_async
+            params=params, target=SurfaceMesh, draft_name=draft_name, run_async=run_async, fork=fork
         )
 
+    # pylint: disable=too-many-arguments
     def run_volume_mesher(
-        self, params: SimulationParams, draft_name: str = "VolumeMesh", run_async: bool = True
+        self,
+        params: SimulationParams,
+        draft_name: str = "VolumeMesh",
+        run_async: bool = True,
+        fork: bool = True,
     ):
         """Run volume mesher with the provided params or defaults"""
         self._check_initialized()
@@ -368,13 +378,24 @@ class Project(pd.BaseModel):
             )
 
         self._volume_mesh = self._run(
-            params=params, target=VolumeMeshV2, draft_name=draft_name, run_async=run_async
+            params=params,
+            target=VolumeMeshV2,
+            draft_name=draft_name,
+            run_async=run_async,
+            fork=fork,
         )
 
-    def run_case(self, params: SimulationParams, draft_name: str = "Case", run_async: bool = True):
+    # pylint: disable=too-many-arguments
+    def run_case(
+        self,
+        params: SimulationParams,
+        draft_name: str = "Case",
+        run_async: bool = True,
+        fork: bool = True,
+    ):
         """Run project with the provided params"""
         self._check_initialized()
 
         self._case = self._run(
-            params=params, target=Case, draft_name=draft_name, run_async=run_async
+            params=params, target=Case, draft_name=draft_name, run_async=run_async, fork=fork
         )

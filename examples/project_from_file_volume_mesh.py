@@ -38,5 +38,4 @@ with SI_unit_system:
         ],
     )
 
-project.set_default_params(params)
-project.run_case()
+project.run_case(params=params)
