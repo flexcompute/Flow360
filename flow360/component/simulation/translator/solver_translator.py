@@ -1,5 +1,6 @@
 """Flow360 solver setting parameter translator."""
 
+# pylint: disable=too-many-lines
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
