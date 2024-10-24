@@ -4,7 +4,10 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def _model_attribute_unlock(model, attr: str):
+def model_attribute_unlock(model, attr: str):
+    """
+    Helper function to set frozen fields of a pydantic model from internal systems
+    """
     try:
         # validate_assignment is set to False to allow for the attribute to be modified
         # Otherwise, the attribute will STILL be frozen and cannot be modified

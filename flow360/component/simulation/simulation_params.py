@@ -298,7 +298,8 @@ class SimulationParams(_ParamModelBase):
 
         return registry
 
-    def _get_used_entity_registry(self) -> EntityRegistry:
+    @property
+    def used_entity_registry(self) -> EntityRegistry:
         """
         Get a entity registry that collects all the entities used in the simulation.
         And also try to update the entities now that we have a global view of the simulation.
@@ -308,7 +309,6 @@ class SimulationParams(_ParamModelBase):
         registry = self._update_entity_private_attrs(registry)
         return registry
 
-    ##:: Internal Util functions
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
         """
         Update the zone info from the actual volume mesh before solver execution.
@@ -317,7 +317,7 @@ class SimulationParams(_ParamModelBase):
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
-        used_entity_registry = self._get_used_entity_registry()
+        used_entity_registry = self.used_entity_registry
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)

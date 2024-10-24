@@ -19,7 +19,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
-from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
 
 
@@ -110,9 +110,9 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
                 pattern = r"stationaryBlock|fluid"
             match = re.search(pattern, zone_full_name)
             if match is not None or entity_name == zone_full_name:
-                with _model_attribute_unlock(self, "private_attribute_full_name"):
+                with model_attribute_unlock(self, "private_attribute_full_name"):
                     self.private_attribute_full_name = zone_full_name
-                with _model_attribute_unlock(self, "private_attribute_zone_boundary_names"):
+                with model_attribute_unlock(self, "private_attribute_zone_boundary_names"):
                     self.private_attribute_zone_boundary_names = UniqueStringList(
                         items=zone_meta["boundaryNames"]
                     )
@@ -135,7 +135,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
         """
         Update parent zone name once the volume mesh is done.
         """
-        with _model_attribute_unlock(self, "private_attribute_full_name"):
+        with model_attribute_unlock(self, "private_attribute_full_name"):
             self.private_attribute_full_name = _get_boundary_full_name(
                 self.name, volume_mesh_meta_data
             )

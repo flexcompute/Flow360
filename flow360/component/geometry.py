@@ -23,7 +23,7 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import Edge, Surface
-from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
@@ -223,7 +223,7 @@ class Geometry(AssetBase):
 
     @face_group_tag.setter
     def face_group_tag(self, new_value: str):
-        with _model_attribute_unlock(self._entity_info, "face_group_tag"):
+        with model_attribute_unlock(self._entity_info, "face_group_tag"):
             self._entity_info.face_group_tag = new_value
 
     @property
@@ -233,7 +233,7 @@ class Geometry(AssetBase):
 
     @edge_group_tag.setter
     def edge_group_tag(self, new_value: str):
-        with _model_attribute_unlock(self._entity_info, "edge_group_tag"):
+        with model_attribute_unlock(self._entity_info, "edge_group_tag"):
             self._entity_info.edge_group_tag = new_value
 
     @classmethod

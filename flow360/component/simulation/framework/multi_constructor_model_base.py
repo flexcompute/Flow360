@@ -13,7 +13,7 @@ from typing import Any, Callable, Literal, Optional
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock
 
 
 class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
@@ -57,7 +57,7 @@ class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
                 for k, v in sig.parameters.items()
                 if v.default is not inspect.Parameter.empty
             }
-            with _model_attribute_unlock(obj, "private_attribute_input_cache"):
+            with model_attribute_unlock(obj, "private_attribute_input_cache"):
                 obj.private_attribute_input_cache = obj.private_attribute_input_cache.__class__(
                     # Note: obj.private_attribute_input_cache should not be included here
                     # Note: Because it carries over the previous cached inputs. Whatever the user choose not to specify
@@ -67,7 +67,7 @@ class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
                         **kwargs,  # User specified inputs (overwrites defaults)
                     }
                 )
-            with _model_attribute_unlock(obj, "private_attribute_constructor"):
+            with model_attribute_unlock(obj, "private_attribute_constructor"):
                 obj.private_attribute_constructor = func.__name__
             return obj
 

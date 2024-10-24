@@ -16,12 +16,8 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import EntityInfoModel
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.utils import remove_properties_by_name, validate_type
 from flow360.log import log
-
-TIMEOUT_MINUTES = 60
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -59,15 +55,6 @@ class AssetBase(metaclass=ABCMeta):
         resource._webapi._set_meta(meta)
         return resource
 
-    def _wait_until_final_status(self):
-        start_time = time.time()
-        while self._webapi.status.is_final() is False:
-            if time.time() - start_time > TIMEOUT_MINUTES * 60:
-                raise TimeoutError(
-                    "Timeout: Asset did not become avaliable within the specified timeout period"
-                )
-            time.sleep(2)
-
     @classmethod
     def _get_simulation_json(cls, asset: AssetBase) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
@@ -77,7 +64,7 @@ class AssetBase(metaclass=ABCMeta):
         if asset.id == _resp["rootItemId"]:
             log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
             # pylint: disable=protected-access
-            asset._wait_until_final_status()
+            asset.wait()
 
         # pylint: disable=protected-access
         simulation_json = asset._webapi.get(
@@ -87,8 +74,13 @@ class AssetBase(metaclass=ABCMeta):
 
     @property
     def info(self) -> AssetMetaBaseModel:
-        """Return the metadata of the resource"""
+        """Return the metadata of the asset"""
         return self._webapi.info
+
+    @property
+    def entity_info(self):
+        """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
+        return self._entity_info_class.model_validate(self._entity_info.model_dump())
 
     @classmethod
     def _interface(cls):
@@ -151,20 +143,13 @@ class AssetBase(metaclass=ABCMeta):
             length_unit=length_unit,
         )
 
-    def _inject_entity_info_to_params(self, params):
-        """Inject the length unit into the SimulationParams"""
-        # Add used cylinder, box, point and slice entities to the entityInfo.
-        # pylint: disable=protected-access
-        registry: EntityRegistry = params._get_used_entity_registry()
-        old_draft_entities = self._entity_info.draft_entities
-        # Step 1: Update old ones:
-        for _, old_entity in enumerate(old_draft_entities):
-            try:
-                _ = registry.find_by_naming_pattern(old_entity.name)
-            except ValueError:  # old_entity did not apperar in params.
-                continue
+    def wait(self, timeout_minutes=60):
+        """Wait until the Asset finishes processing, refresh periodically"""
 
-        # pylint: disable=protected-access
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = self._entity_info
-        return params
+        start_time = time.time()
+        while self._webapi.status.is_final() is False:
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError(
+                    "Timeout: Process did not finish within the specified timeout period"
+                )
+            time.sleep(2)
