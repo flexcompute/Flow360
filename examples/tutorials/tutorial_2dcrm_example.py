@@ -64,10 +64,7 @@ geometry.group_edges_by_tag("edgeName")
 
 
 with SI_unit_system:
-    cylinder1 = Cylinder(name='cylinder1', axis=[0,1,0], center=[0.7,0.5,0], outer_radius=1.1, height=1.0 )
-    cylinder2 = Cylinder(name='cylinder2', axis=[0,1,0], center=[0.7,0.5,0], outer_radius=2.2, height=1.0 )
-    cylinder3 = Cylinder(name='cylinder3', axis=[0,1,0], center=[0.7,0.5,0], outer_radius=3.3, height=1.0 )
-    cylinder4 = Cylinder(name='cylinder4', axis=[0,1,0], center=[0.7,0.5,0], outer_radius=4.5, height=1.0 )
+    cylinders = [Cylinder(name=f'cylinder{i}', axis=[0,1,0], center=[0.7,0.5,0], outer_radius=outer_radius, height=1.0 ) for i, outer_radius in enumerate([1.1, 2.2, 3.3, 4.5])]
     cylinder5 = Cylinder(name='cylinder5', axis=[-1,0,0], center=[6.5,0.5,0], outer_radius=6.5, height=1.0 )
     farfield = AutomatedFarfield(name='farfield', method='quasi-3d')
     params = SimulationParams(
