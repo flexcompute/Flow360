@@ -14,6 +14,9 @@ from flow360.component.simulation.models.surface_models import (
     SlipWall,
     Wall,
 )
+from flow360.component.simulation.models.turbulence_quantities import (
+    TurbulenceQuantities,
+)
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -171,6 +174,13 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
 
 def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
     params = get_om6Wing_tutorial_param
+    params.models[3].turbulence_quantities = TurbulenceQuantities(modified_viscosity_ratio=10)
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_FS_with_turbulence_quantities.json",
+    )
+    params.models[3].turbulence_quantities = None
     params.models[3].velocity = (01.0, 10.0, 0.0) * u.m / u.s
     translate_and_compare(
         get_om6Wing_tutorial_param,
