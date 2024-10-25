@@ -491,6 +491,17 @@ def test_unit_system():
             omega={"value": [1, 1, 1], "units": "rad/s"},
         )
 
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Value error, NaN or None found in input array which is not allowed.",
+    ):
+        data = VectorDataWithUnits(
+            pt=None,
+            vec={"value": [1, 1, None], "units": "N"},
+            ax={"value": [0, 0, 1], "units": "m"},
+            omega={"value": [1, 1, 1], "units": "rad/s"},
+        )
+
     with u.SI_unit_system:
         # Note that for union types the first element of union that passes validation is inferred!
         data = VectorDataWithUnits(

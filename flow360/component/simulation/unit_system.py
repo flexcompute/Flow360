@@ -157,25 +157,39 @@ def _has_dimensions(quant, dim):
     return arg_dim == dim
 
 
-def _unit_object_parser(value, unyt_types: List[type]):
+def _unit_object_parser(value, unyt_types: List[type], **kwargs):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
-    if isinstance(value, dict) and "units" in value:
-        if "value" in value:
-            for unyt_type in unyt_types:
-                try:
-                    return unyt_type(value["value"], value["units"], dtype=np.float64)
-                except u.exceptions.UnitParseError:
-                    pass
-                except RuntimeError:
-                    pass
-                except KeyError:
-                    pass
-        else:
-            raise TypeError(
-                f"Dimensioned type instance {value} expects a 'value' field which was not given"
-            )
+    if isinstance(value, dict) is False or "units" not in value:
+        return value
+    if "value" not in value:
+        raise TypeError(
+            f"Dimensioned type instance {value} expects a 'value' field which was not given"
+        )
+    for unyt_type in unyt_types:
+        try:
+            dimensioned_value = unyt_type(value["value"], value["units"], dtype=np.float64)
+            # Check for Nan. This usually is a result of None being in the input value.
+            # with dtype=np.float64, None will be converted to np.nan.
+            # We need (IIRC) np.float64 to ensure consistent hashing
+            if kwargs.get("allow_inf_nan", False) is False:
+                if np.ndim(dimensioned_value.value) == 0 and np.isnan(dimensioned_value.value):
+                    raise ValueError("NaN or None found in input scalar which is not allowed.")
+                if np.ndim(dimensioned_value.value) > 0 and any(np.isnan(dimensioned_value.value)):
+                    raise ValueError("NaN or None found in input array which is not allowed.")
+            return dimensioned_value
+        except u.exceptions.UnitParseError:
+            pass
+        except RuntimeError as e:
+            if str(e) == "unyt_quantity values must be numeric":
+                # Have to catch here otherwise there will
+                # be "No class found for unit_name" which is confusing.
+                raise ValueError(
+                    "The numerical part of the input dimensioned value is incorrect."
+                ) from e
+        except KeyError:
+            pass
     return value
 
 
@@ -285,13 +299,16 @@ class _DimensionedType(metaclass=ABCMeta):
     has_defaults = True
 
     @classmethod
-    def validate(cls, value):
+    # pylint: disable=unused-argument
+    def validate(cls, value, *args, **kwargs):
         """
         Validator for value
         """
 
         try:
-            value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
+            value = _unit_object_parser(
+                value, [u.unyt_quantity, _Flow360BaseUnit.factory], **kwargs
+            )
             value = _is_unit_validator(value)
             if cls.has_defaults:
                 value = _unit_inference_validator(value, cls.dim_name)
@@ -358,12 +375,18 @@ class _DimensionedType(metaclass=ABCMeta):
             """Get a dynamically created metaclass representing the constraint"""
 
             class _ConType(pd.BaseModel):
-                value: Annotated[float, annotated_types.Interval(**kwargs)]
+                kwargs.pop("allow_inf_nan", None)
+                value: Annotated[
+                    float,
+                    annotated_types.Interval(
+                        **{k: v for k, v in kwargs.items() if k != "allow_inf_nan"}
+                    ),
+                ]
 
-            def validate(con_cls, value, *args):
+            def validate(con_cls, value, *args, **kwargs):
                 """Additional validator for value"""
                 try:
-                    dimensioned_value = dim_type.validate(value)
+                    dimensioned_value = dim_type.validate(value, kwargs)
 
                     # Workaround to run annotated validation for numeric value of field
                     _ = _ConType(value=dimensioned_value.value)
@@ -411,7 +434,9 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         Utility method to generate a dimensioned type with constraints based on the pydantic confloat
         """
-        return cls._Constrained.get_class_object(cls, gt=gt, ge=ge, lt=lt, le=le)
+        return cls._Constrained.get_class_object(
+            cls, gt=gt, ge=ge, lt=lt, le=le, allow_inf_nan=allow_inf_nan
+        )
 
     # pylint: disable=invalid-name
     @classproperty
@@ -472,10 +497,12 @@ class _DimensionedType(metaclass=ABCMeta):
 
                 return schema
 
-            def validate(vec_cls, value, *args):
+            def validate(vec_cls, value, *args, **kwargs):
                 """additional validator for value"""
                 try:
-                    value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _unit_object_parser(
+                        value, [u.unyt_array, _Flow360BaseUnit.factory], **kwargs
+                    )
                     value = _is_unit_validator(value)
 
                     is_collection = isinstance(value, Collection) or (
