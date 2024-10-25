@@ -19,10 +19,7 @@ fl.Env.dev.active()
 OM6wing.get_files()
 # Creating and uploading a volume mesh from file
 project = Project.from_file(
-    OM6wing.mesh_filename,
-    name="wing-volume-mesh-python-upload",
-    solver_version="workbench-24.9.3",
-    tags=["python"],
+    OM6wing.mesh_filename, name="wing-volume-mesh-python-upload", tags=["python"]
 )
 
 volume_mesh = project.volume_mesh

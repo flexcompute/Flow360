@@ -12,7 +12,7 @@ from flow360.environment import dev
 dev.active()
 
 project = Project.from_cloud("prj-e8c6c7eb-c18b-4c15-bac8-edf5aaf9b155")
-print(project.get_simulation_json())
+print(project.get_root_simulation_json())
 
 volume_mesh = project.volume_mesh
 
@@ -20,7 +20,6 @@ with SI_unit_system:
     params = SimulationParams(
         operating_condition=AerospaceCondition(velocity_magnitude=100 * u.m / u.s),
         models=[
-            Fluid(),
             Wall(entities=[volume_mesh["fluid/wall"]]),
             Freestream(entities=[volume_mesh["fluid/farfield"]]),
         ],

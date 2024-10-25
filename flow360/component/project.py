@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 
 import pydantic as pd
 
-from flow360 import Case, SurfaceMesh
+from flow360 import Case, SurfaceMesh, __solver_version__
 from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry import Geometry
@@ -26,6 +26,7 @@ from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
+    SUPPORTED_MESH_FILE_PATTERNS,
     MeshNameParser,
     match_file_pattern,
 )
@@ -87,14 +88,6 @@ class Project(pd.BaseModel):
         Metadata of the project.
     solver_version : str
         Version of the solver being used.
-    geometry : Optional[Geometry]
-        Cached geometry asset, initialized on-demand.
-    volume_mesh : Optional[VolumeMeshV2]
-        Cached volume mesh asset, initialized on-demand.
-    surface_mesh : Optional[SurfaceMesh]
-        Cached surface mesh asset, initialized on-demand.
-    case : Optional[Case]
-        Cached case asset, initialized on-demand.
     """
 
     metadata: ProjectMeta = pd.Field()
@@ -104,6 +97,8 @@ class Project(pd.BaseModel):
     _volume_mesh: Optional[VolumeMeshV2] = pd.PrivateAttr(None)
     _surface_mesh: Optional[SurfaceMesh] = pd.PrivateAttr(None)
     _case: Optional[Case] = pd.PrivateAttr(None)
+    _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
+    _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
 
     @property
     def geometry(self) -> Geometry:
@@ -209,17 +204,22 @@ class Project(pd.BaseModel):
                 return RootType.VOLUME_MESH
         except Flow360FileError:
             pass
+
         raise Flow360FileError(
-            f"{file} is not a geometry or volume mesh file required for project initialization."
+            f"{file} is not a geometry or volume mesh file required for project initialization. "
+            "Accepted formats are: "
+            f"{SUPPORTED_GEOMETRY_FILE_PATTERNS} (geometry)"
+            f"{SUPPORTED_MESH_FILE_PATTERNS} (volume mesh)"
         )
 
     # pylint: disable=too-many-arguments
     @classmethod
+    @pd.validate_call
     def from_file(
         cls,
         file: str = None,
         name: str = None,
-        solver_version: str = None,
+        solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
@@ -265,13 +265,17 @@ class Project(pd.BaseModel):
         if not info:
             raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
         project = Project(metadata=ProjectMeta(**info), solver_version=root_asset.solver_version)
+        project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
             project._geometry = root_asset
+            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
         elif root_type == RootType.VOLUME_MESH:
             project._volume_mesh = root_asset
+            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         return project
 
     @classmethod
+    @pd.validate_call
     def from_cloud(cls, project_id: str):
         """
         Loads a project from the cloud.
@@ -307,12 +311,15 @@ class Project(pd.BaseModel):
         elif root_type == RootType.VOLUME_MESH:
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
         project = Project(metadata=meta, solver_version=root_asset.solver_version)
+        project._project_webapi = project_api
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
         if root_type == RootType.GEOMETRY:
             project._geometry = root_asset
+            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
         elif root_type == RootType.VOLUME_MESH:
             project._volume_mesh = root_asset
+            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         return project
 
     def _check_initialized(self):
@@ -329,7 +336,7 @@ class Project(pd.BaseModel):
                 "Project is not initialized - use Project.from_file or Project.from_cloud"
             )
 
-    def get_simulation_json(self) -> dict:
+    def get_root_simulation_json(self) -> dict:
         """
         Returns the default simulation JSON for the project based on the root asset type.
 
@@ -350,14 +357,9 @@ class Project(pd.BaseModel):
         root_id = self.metadata.root_item_id
         if not root_type or not root_id:
             raise Flow360ValueError("Root item type or ID is missing from project metadata")
-        root_api = None
-        if root_type == RootType.GEOMETRY:
-            root_api = RestApi(GeometryInterface.endpoint, id=root_id)
-        elif root_type == RootType.VOLUME_MESH:
-            root_api = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_id)
-        resp = root_api.get(method="simulation/file", params={"type": "simulation"})
+        resp = self._root_webapi.get(method="simulation/file", params={"type": "simulation"})
         if not isinstance(resp, dict) or "simulationJson" not in resp:
-            raise Flow360WebError("Root item type or ID is missing from project metadata")
+            raise Flow360WebError("Couldn't retrieve default simulation JSON for the project")
         simulation_json = json.loads(resp["simulationJson"])
         return simulation_json
 
@@ -397,7 +399,7 @@ class Project(pd.BaseModel):
             If the simulation parameters lack required length unit information, or if the
             root asset (Geometry or VolumeMesh) is not initialized.
         """
-        defaults = self.get_simulation_json()
+        defaults = self.get_root_simulation_json()
 
         cache_key = "private_attribute_asset_cache"
         length_key = "project_length_unit"
@@ -434,21 +436,13 @@ class Project(pd.BaseModel):
         ).submit()
 
         entity_info = root_asset.entity_info
-        registry = params.used_entity_registry
-        old_draft_entities = entity_info.draft_entities
-        for _, old_entity in enumerate(old_draft_entities):
-            try:
-                registry.find_by_naming_pattern(old_entity.name)
-            except ValueError:
-                continue
-
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
         destination_id = draft.run_up_to_target_asset(target)
 
-        RestApi(ProjectInterface.endpoint, id=self.metadata.id).patch(
+        self._project_webapi.patch(
             json={
                 "lastOpenItemId": destination_id,
                 "lastOpenItemType": target.__name__,
@@ -462,10 +456,11 @@ class Project(pd.BaseModel):
 
         return destination_obj
 
-    def run_surface_mesher(
+    @pd.validate_call
+    def generate_surface_mesh(
         self,
         params: SimulationParams,
-        draft_name: str = "SurfaceMesh",
+        name: str = "SurfaceMesh",
         run_async: bool = True,
         fork: bool = False,
     ):
@@ -476,7 +471,7 @@ class Project(pd.BaseModel):
         ----------
         params : SimulationParams
             Simulation parameters for running the mesher.
-        draft_name : str, optional
+        name : str, optional
             Name of the draft (default is "SurfaceMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
@@ -494,13 +489,14 @@ class Project(pd.BaseModel):
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
         self._surface_mesh = self._run(
-            params=params, target=SurfaceMesh, draft_name=draft_name, run_async=run_async, fork=fork
+            params=params, target=SurfaceMesh, draft_name=name, run_async=run_async, fork=fork
         )
 
-    def run_volume_mesher(
+    @pd.validate_call
+    def generate_volume_mesh(
         self,
         params: SimulationParams,
-        draft_name: str = "VolumeMesh",
+        name: str = "VolumeMesh",
         run_async: bool = True,
         fork: bool = True,
     ):
@@ -511,7 +507,7 @@ class Project(pd.BaseModel):
         ----------
         params : SimulationParams
             Simulation parameters for running the mesher.
-        draft_name : str, optional
+        name : str, optional
             Name of the draft (default is "VolumeMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
@@ -531,11 +527,12 @@ class Project(pd.BaseModel):
         self._volume_mesh = self._run(
             params=params,
             target=VolumeMeshV2,
-            draft_name=draft_name,
+            draft_name=name,
             run_async=run_async,
             fork=fork,
         )
 
+    @pd.validate_call
     def run_case(
         self,
         params: SimulationParams,

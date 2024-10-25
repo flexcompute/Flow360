@@ -50,6 +50,14 @@ SUPPORTED_GEOMETRY_FILE_PATTERNS = [
     ".ipt",
 ]
 
+SUPPORTED_MESH_FILE_PATTERNS = [
+    ".cgns",
+    ".stl",
+    ".ugrid",
+    ".b8.ugrid",
+    ".lb8.ugrid",
+]
+
 
 def match_file_pattern(patterns, filename):
     """

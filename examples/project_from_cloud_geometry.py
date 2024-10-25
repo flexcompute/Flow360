@@ -18,7 +18,7 @@ from flow360.environment import dev
 dev.active()
 
 project = Project.from_cloud("prj-f3569ba5-16a3-4e41-bfd2-b8840df79835")
-print(project.get_simulation_json())
+print(project.get_root_simulation_json())
 
 geometry = project.geometry
 geometry.show_available_groupings(verbose_mode=True)
@@ -47,4 +47,4 @@ with SI_unit_system:
         ],
     )
 
-project.run_surface_mesher(params=params, draft_name="Case of Simple Airplane from Python")
+project.generate_surface_mesh(params=params, name="Case of Simple Airplane from Python")

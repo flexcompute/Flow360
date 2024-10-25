@@ -18,11 +18,7 @@ from flow360.examples import Airplane
 
 fl.Env.dev.active()
 
-SOLVER_VERSION = "workbench-24.9.3"
-
-project = Project.from_file(
-    Airplane.geometry, name="airplane-geometry-python-upload", solver_version=SOLVER_VERSION
-)
+project = Project.from_file(Airplane.geometry, name="airplane-geometry-python-upload")
 
 geometry = project.geometry
 geometry.show_available_groupings(verbose_mode=True)
@@ -51,4 +47,4 @@ with SI_unit_system:
         ],
     )
 
-case = project.run_surface_mesher(params=params, draft_name="Case of Simple Airplane from Python")
+case = project.generate_surface_mesh(params=params, name="Case of Simple Airplane from Python")
