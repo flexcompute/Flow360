@@ -271,10 +271,9 @@ def _validate_cht_has_heat_transfer(params):
 
 
 def _check_complete_boundary_condition_and_unknown_surface(params):
-    print(">>>>Running...")
     ## Step 1: Get all boundaries patches from asset cache
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
-    if asset_boundary_entities is None:
+    if asset_boundary_entities is None or asset_boundary_entities == []:
         return params
     asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
 
@@ -315,7 +314,8 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
     if unknown_boundaries:
         unknown_list = ", ".join(sorted(unknown_boundaries))
         raise ValueError(
-            f"The following boundaries are not known `Surface` entities but appear in the `models` section: {unknown_list}."
+            f"The following boundaries are not known `Surface` "
+            f"entities but appear in the `models` section: {unknown_list}."
         )
 
     return params

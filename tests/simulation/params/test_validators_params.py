@@ -23,6 +23,9 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     Solid,
 )
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import GenericVolume, Surface
 from flow360.component.simulation.services import validate_model
@@ -410,3 +413,14 @@ def test_duplicate_entities_in_models():
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
+
+
+def test_valid_reference_velocity():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
+        ),
+    ):
+        with SI_unit_system:
+            SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=0))

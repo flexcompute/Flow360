@@ -176,7 +176,7 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
 
     Notes
     -----
-    This decorator is designed to be used with Pydantic **model** validators to ensure that
+    This decorator is designed to be used with Pydantic model validators to ensure that
     certain validations are only executed when the validation level matches the given context.
     """
 
