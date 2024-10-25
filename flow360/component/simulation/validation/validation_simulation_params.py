@@ -20,7 +20,6 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     GhostSurface,
-    Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -288,6 +287,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             continue
 
         entities = []
+        # pylint: disable=protected-access
         if hasattr(model, "entities"):
             entities = model.entities._get_expanded_entities(create_hard_copy=False)
         elif hasattr(model, "entity_pairs"):  # Periodic BC
