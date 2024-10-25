@@ -131,10 +131,10 @@ class ThermalState(MultiConstructorBaseModel):
 
     # TODO: should we make this private_attribute?
     @pd.validate_call
-    def _mu_ref(self, mesh_unit: LengthType.Positive) -> pd.PositiveFloat:
+    def _mu_ref(self) -> pd.PositiveFloat:
         """Computes nondimensional dynamic viscosity."""
         # TODO: use unit system for nondimensionalization
-        return (self.dynamic_viscosity / (self.speed_of_sound * self.density * mesh_unit)).v.item()
+        return (self.dynamic_viscosity / (self.speed_of_sound * self.density)).v.item()
 
 
 class GenericReferenceConditionCache(Flow360BaseModel):
@@ -262,13 +262,12 @@ def create_operating_condition_from_mach_reynolds(
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None
 ) -> AerospaceCondition:
-    default_thermal_state = ThermalState(temperature=temperature)
     thermal_state = ThermalState(
         temperature=temperature,
         material=Air(
             dynamic_viscosity=Sutherland(
                 reference_temperature=temperature,
-                reference_viscosity=(mach/reynolds) * default_thermal_state.density * default_thermal_state.speed_of_sound * u.m,
+                reference_viscosity=(mach/reynolds),
                 effective_temperature=110.4
             )
         )

@@ -685,7 +685,7 @@ def get_solver_json(
             else -1
         ),
         # pylint: disable=protected-access
-        "muRef": op.thermal_state._mu_ref(mesh_unit),
+        "muRef": op.thermal_state._mu_ref(),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
