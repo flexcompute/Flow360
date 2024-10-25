@@ -342,41 +342,41 @@ def test_incomplete_BC():
     )
     auto_farfield = AutomatedFarfield(name="my_farfield")
 
-    with SI_unit_system:
-        param = SimulationParams(
-            models=[
-                Fluid(),
-                Wall(entities=wall_1),
-                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                SlipWall(entities=[i_exist]),
-                Freestream(entities=auto_farfield.farfield),
-            ],
-            private_attribute_asset_cache=asset_cache,
-        )
-
-    def _validate_under_CASE(param):
-        param_dict = json.loads(param.model_dump_json())
-        with ValidationLevelContext(CASE):
-            with SI_unit_system:
-                SimulationParams.model_validate(param_dict)
-
     with pytest.raises(
         ValueError,
         match=re.escape(
-            r"no_bc does not have a boundary condition. Please add to it a model in the `models` section."
+            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a model in the `models` section."
         ),
     ):
-        _validate_under_CASE(param)
-
-    param.models.append(SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]))
-
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Wall(entities=wall_1),
+                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                    SlipWall(entities=[i_exist]),
+                    Freestream(entities=auto_farfield.farfield),
+                ],
+                private_attribute_asset_cache=asset_cache,
+            )
     with pytest.raises(
         ValueError,
         match=re.escape(
-            r"plz_dont_do_this is not a known `Surface` entity but it appears in the `models` section."
+            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        _validate_under_CASE(param)
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Wall(entities=[wall_1]),
+                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                    SlipWall(entities=[i_exist]),
+                    Freestream(entities=auto_farfield.farfield),
+                    SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+                ],
+                private_attribute_asset_cache=asset_cache,
+            )
 
 
 def test_duplicate_entities_in_models():
