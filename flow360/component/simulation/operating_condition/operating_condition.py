@@ -254,7 +254,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
 OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 
 
-def create_operating_condition_from_mach_reynolds(
+def operating_condition_from_mach_reynolds(
     mach: pd.NonNegativeFloat = None,
     reynolds: pd.PositiveFloat = None,
     temperature: pd.PositiveFloat = None,

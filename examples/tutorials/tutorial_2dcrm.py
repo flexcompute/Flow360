@@ -28,7 +28,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
-    create_operating_condition_from_mach_reynolds
+    operating_condition_from_mach_reynolds
 )
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
@@ -47,11 +47,9 @@ from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Tutorial_2dcrm
 
 """
-This is a tutorial case based on the "7.3. RANS CFD on 2D High-Lift System Configuration Using the Flow360 Python Client" available in the documentation linked below.
+In this tutorial case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration. Documentation for this tutorial is available in the link below.
 
 https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_Configuration/Multielement_Configuration.html
-
-In this case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration.
 
 Settings defined in this file are derived from the documentation and aim to represent the old tutorial case using the new Flow 360 python client.
 """
@@ -130,7 +128,7 @@ with SI_unit_system:
             moment_length=[1,1,1],
             area=0.01
         ),
-        operating_condition=create_operating_condition_from_mach_reynolds(
+        operating_condition=operating_condition_from_mach_reynolds(
             mach=0.2,
             reynolds=5e+6,
             temperature=272.1,
@@ -168,12 +166,8 @@ with SI_unit_system:
             Fluid(
                 navier_stokes_solver=NavierStokesSolver(
                     absolute_tolerance=1e-11,
-                    relative_tolerance=1e-2,
                     linear_solver=LinearSolver(max_iterations=35),
                     kappa_MUSCL=0.33,
-                    order_of_accuracy=2,
-                    update_jacobian_frequency=4,
-                    equation_evaluation_frequency=1
                 ), 
                 turbulence_model_solver=SpalartAllmaras(
                     absolute_tolerance=1e-10,
