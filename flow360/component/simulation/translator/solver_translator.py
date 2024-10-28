@@ -46,6 +46,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
@@ -210,22 +211,24 @@ def translate_output_fields(
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
     """Translate non-entitties part of SurfaceProbeOutput"""
-    dict_with_merged_output_fields = translate_output_fields(entity)
+    dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
         surface.full_name for surface in entity.target_surfaces.stored_entities
     ]
     return dict_with_merged_output_fields
 
 
-def volume_monitor_translator(
-    output_model: Union[ProbeOutput, TimeAverageProbeOutput],
+def monitor_translator(
+    output_model: Union[
+        ProbeOutput, TimeAverageProbeOutput, SurfaceProbeOutput, TimeAverageSurfaceProbeOutput
+    ],
 ):
     """Monitor translator"""
     monitor_group = translate_output_fields(output_model)
     monitor_group["computeTimeAverages"] = False
     monitor_group["animationFrequency"] = 1
     monitor_group["animationFrequencyOffset"] = 0
-    if isinstance(output_model, TimeAverageProbeOutput):
+    if isinstance(output_model, Union[TimeAverageProbeOutput, TimeAverageSurfaceProbeOutput]):
         monitor_group["computeTimeAverages"] = True
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
@@ -415,7 +418,7 @@ def translate_monitor_output(
     output_params: list,
     monitor_type,
     injection_function,
-    translation_func=volume_monitor_translator,
+    translation_func=monitor_translator,
 ):
     """Translate monitor output settings."""
     translated_output = {"outputFields": []}
@@ -531,6 +534,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step5.1: Get translated["surfaceMonitorOutput"]
     surface_monitor_output = {}
+    surface_monitor_output_average = {}
     if has_instance_in_list(outputs, SurfaceProbeOutput):
         surface_monitor_output = translate_monitor_output(
             outputs,
@@ -538,7 +542,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
             inject_surface_probe_info,
             surface_probe_setting_translation_func,
         )
-        translated["surfaceMonitorOutput"] = surface_monitor_output
+    if has_instance_in_list(outputs, TimeAverageSurfaceProbeOutput):
+        surface_monitor_output_average = translate_monitor_output(
+            outputs,
+            TimeAverageSurfaceProbeOutput,
+            inject_surface_probe_info,
+            surface_probe_setting_translation_func,
+        )
+    if surface_monitor_output or surface_monitor_output_average:
+        translated["surfaceMonitorOutput"] = merge_monitor_output(
+            surface_monitor_output, surface_monitor_output_average
+        )
 
     ##:: Step5.2: Get translated["surfaceMonitorOutput"]
     surface_slice_output = {}

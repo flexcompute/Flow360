@@ -587,18 +587,27 @@ def test_surface_probe_output():
         {
             "monitors": {
                 "SP-1": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Cp", "Cf"],
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03]],
                     "type": "surfaceProbe",
                 },
                 "SP-2": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03], [3, 1.02, 0.03]],
                     "type": "surfaceProbe",
                 },
                 "SP-3": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
                     "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
