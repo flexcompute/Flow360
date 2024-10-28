@@ -7,8 +7,6 @@ import pydantic.v1 as pd
 from pydantic import GetJsonSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
-from ..exceptions import Flow360ValidationError
-
 # type tag default name
 TYPE_TAG_STR = "_type"
 COMMENTS = "comments"
@@ -52,14 +50,12 @@ class Vector(Coordinate):
             c: Optional[Coordinate]
 
         if isinstance(vector, set):
-            raise TypeError(
-                Flow360ValidationError(f"set provided {vector}, but tuple or array expected.")
-            )
+            raise TypeError(f"set provided {vector}, but tuple or array expected.")
         _ = _PydanticValidate(c=vector)
         if not isinstance(vector, cls):
             vector = cls(vector)
         if vector == (0, 0, 0):
-            raise ValueError(Flow360ValidationError(f"{cls.__name__} cannot be (0, 0, 0)"), cls)
+            raise ValueError(f"{cls.__name__} cannot be (0, 0, 0)")
 
         return vector
 

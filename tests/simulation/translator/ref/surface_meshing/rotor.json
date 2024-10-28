@@ -1,49 +1,59 @@
 {
-    "maxEdgeLength": 10, 
     "curvatureResolutionAngle": 15,
-    "growthRate": 1.2, 
+    "growthRate": 1.2,
     "edges": {
-        "leadingEdge":  {
+        "body01_edge001": {
             "type": "aniso",
             "method": "angle",
             "value": 1
         },
-        "trailingEdge": {
+        "body01_edge002": {
             "type": "aniso",
             "method": "height",
             "value": 0.05
         },
-        "tipEdge": {
+        "body01_edge003": {
             "type": "aniso",
             "method": "height",
             "value": 0.05
         },
-        "bladeSplitEdge": {
+        "body01_edge004": {
             "type": "projectAnisoSpacing"
         },
-        "hubCircle": {
+        "body01_edge005": {
             "type": "aniso",
             "method": "height",
             "value": 0.01
         },
-        "hubSplitEdge": {
+        "body01_edge006": {
             "type": "projectAnisoSpacing"
         },
-        "junctionEdge": {
+        "body01_edge007": {
             "type": "aniso",
             "method": "height",
             "value": 0.01
         }
     },
     "faces": {
-        "hub":   {
+        "body01_face001": {
             "maxEdgeLength": 10
         },
-        "blade": {
+        "body01_face002": {
             "maxEdgeLength": 10
         },
-        "tip":   {
+        "body01_face003": {
             "maxEdgeLength": 0.1
+        }
+    },
+    "boundaries": {
+        "body01_face001": {
+            "boundaryName": "rotor"
+        },
+        "body01_face002": {
+            "boundaryName": "rotor"
+        },
+        "body01_face003": {
+            "boundaryName": "rotor"
         }
     }
 }

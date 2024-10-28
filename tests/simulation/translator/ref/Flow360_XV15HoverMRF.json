@@ -55,10 +55,18 @@
         "equationEvalFrequency": 4,
         "modelType": "kOmegaSST",
         "modelConstants": {
-            "CDES1": 0.78,
-            "CDES2": 0.61,
-            "CD1": 20.0,
-            "CD2": 3.0
+            "C_DES1": 0.78,
+            "C_DES2": 0.61,
+            "C_d1": 20.0,
+            "C_d2": 3.0,
+            "C_alpha1": 0.31,
+            "C_beta1": 0.075,
+            "C_beta2": 0.0828,
+            "C_beta_star": 0.09,
+            "C_sigma_k1": 0.85,
+            "C_sigma_k2": 1.0,
+            "C_sigma_omega1": 0.5,
+            "C_sigma_omega2": 0.856
         }
     },
     "volumeZones": {

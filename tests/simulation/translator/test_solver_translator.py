@@ -55,6 +55,9 @@ from tests.simulation.translator.utils.porousMedia_param_generator import (
 from tests.simulation.translator.utils.symmetryBC_param_generator import (
     create_symmetryBC_param,
 )
+from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator import (
+    create_turb_flat_plate_box_trip_param,
+)
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
     create_vortex_propagation_param,
@@ -166,6 +169,22 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
     )
 
 
+def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[3].velocity = (01.0, 10.0, 0.0) * u.m / u.s
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_FS_with_vel.json",
+    )
+    params.models[3].velocity = ["123", "12", "x*y-z"]
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_FS_with_vel_expression.json",
+    )
+
+
 ##::  Test with local test cases
 def test_xv15_bet_disk(
     create_steady_hover_param,
@@ -274,3 +293,10 @@ def test_heatFluxCylinder(create_heat_flux_cylinder_param):
 def test_plateASI(create_plateASI_param):
     param = create_plateASI_param
     translate_and_compare(param, mesh_unit=0.1016 * u.m, ref_json_file="Flow360_plateASI.json")
+
+
+def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
+    param = create_turb_flat_plate_box_trip_param
+    translate_and_compare(
+        param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_TurbFlatPlate137x97_BoxTrip.json"
+    )

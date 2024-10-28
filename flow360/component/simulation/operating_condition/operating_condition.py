@@ -25,6 +25,11 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.component.simulation.validation.validation_context import (
+    CASE,
+    ConditionalField,
+    context_validator,
+)
 from flow360.log import log
 
 # pylint: disable=no-member
@@ -147,7 +152,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
-    velocity_magnitude: VelocityType.Positive
+    velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(context=CASE)
     thermal_state: ThermalState = ThermalState()
     private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
@@ -187,7 +192,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = 0 * u.deg
     beta: AngleType = 0 * u.deg
-    velocity_magnitude: VelocityType.NonNegative
+    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(context=CASE)
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
     reference_velocity_magnitude: Optional[VelocityType.Positive] = None
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
@@ -225,6 +230,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
+    @context_validator(context=CASE)
     @pd.model_validator(mode="after")
     def check_valid_reference_velocity(self) -> Self:
         """Ensure reference velocity is provided when freestream velocity is 0."""

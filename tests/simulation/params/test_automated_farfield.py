@@ -24,71 +24,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
-def test_automated_farfield_names():
-    with SI_unit_system:
-        my_farfield = AutomatedFarfield(name="my_farfield")
-        _ = SimulationParams(
-            meshing=MeshingParams(
-                volume_zones=[
-                    my_farfield,
-                ]
-            ),
-        )
-
-    assert my_farfield.private_attribute_entity.name == "fluid"
-    assert isinstance(
-        my_farfield.private_attribute_entity.private_attribute_zone_boundary_names, UniqueStringList
-    )
-    assert sorted(
-        my_farfield.private_attribute_entity.private_attribute_zone_boundary_names.items
-    ) == sorted(["farfield", "symmetric"])
-
-    # Warning: volume_zones.append(RotationCylinder(...)) will not change the zone name
-    # because the append() will not trigger the validators. It is probably fine since we construct `SimulationParams`
-    # again in transltors anyway.
-    with SI_unit_system:
-        my_cylinder = Cylinder(
-            name="zone/Cylinder1",
-            height=11,
-            axis=(1, 0, 0),
-            inner_radius=1,
-            outer_radius=2,
-            center=(1, 2, 3),
-        )
-        my_farfield = AutomatedFarfield(name="my_farfield")
-        _ = SimulationParams(
-            meshing=MeshingParams(
-                volume_zones=[
-                    my_farfield,
-                    RotationCylinder(
-                        entities=my_cylinder,
-                        spacing_axial=0.1,
-                        spacing_radial=0.1,
-                        spacing_circumferential=0.1,
-                    ),
-                ]
-            ),
-        )
-
-    assert my_farfield.private_attribute_entity.name == "stationaryBlock"
-    assert set(
-        my_farfield.private_attribute_entity.private_attribute_zone_boundary_names.items
-    ) == set(["farfield", "symmetric"])
-
-    with SI_unit_system:
-        my_farfield = AutomatedFarfield(method="quasi-3d")
-        _ = SimulationParams(
-            meshing=MeshingParams(
-                volume_zones=[
-                    my_farfield,
-                ]
-            ),
-        )
-    assert set(
-        my_farfield.private_attribute_entity.private_attribute_zone_boundary_names.items
-    ) == set(["farfield", "symmetric-1", "symmetric-2"])
-
-
 def test_automated_farfield_surface_usage():
     # Test use of GhostSurface in meshing
     with pytest.raises(
@@ -168,29 +103,6 @@ def test_automated_farfield_surface_usage():
                 ),
             ],
         )
-
-    # Test that the GhostSurface will have updated full name through model_validators after entity register has been constructed
-    with SI_unit_system:
-        my_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
-        param = SimulationParams(
-            models=[
-                Freestream(name="fs", entities=my_farfield.farfield),
-                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_planes[1]),
-            ],
-            meshing=MeshingParams(
-                volume_zones=[
-                    my_farfield,
-                ],
-            ),
-        )
-    param._get_used_entity_registry()
-    assert (
-        param.models[0].entities.stored_entities[0].private_attribute_full_name == "fluid/farfield"
-    )
-    assert (
-        param.models[1].entities.stored_entities[0].private_attribute_full_name
-        == "fluid/symmetric-2"
-    )
 
 
 def test_automated_farfield_import_export():

@@ -11,6 +11,9 @@ import numpy as np
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
+from flow360.flags import Flags
+
+from ..types import Coordinate
 from .flow360_legacy import (
     LegacyModel,
     LinearSolverLegacy,
@@ -200,6 +203,25 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         default=[], alias="lowDissipationControlFactors"
     )
 
+    if Flags.beta_features():
+        debug_type: Optional[
+            Literal[
+                "minDensity",
+                "minPressure",
+                "maxVelocity",
+                "maxResCont",
+                "maxResMomX",
+                "maxResMomY",
+                "maxResMomZ",
+                "maxResEnergy",
+            ]
+        ] = pd.Field(alias="debugType")
+        debug_point: Optional[Coordinate] = pd.Field(alias="debugPoint")
+
+        # pylint: disable=missing-class-docstring,too-few-public-methods
+        class Config(GenericFlowSolverSettings.Config):
+            conflicting_fields = [Conflicts(field1="debug_type", field2="debug_point")]
+
     # pylint: disable=arguments-differ,invalid-name
     def to_solver(self, params, **kwargs) -> NavierStokesSolver:
         """
@@ -269,6 +291,15 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     )
     C_DES: Optional[pd.NonNegativeFloat] = pd.Field(0.72)
     C_d: Optional[pd.NonNegativeFloat] = pd.Field(8.0)
+    C_cb1: Optional[pd.NonNegativeFloat] = pd.Field(0.1355)
+    C_cb2: Optional[pd.NonNegativeFloat] = pd.Field(0.622)
+    C_sigma: Optional[pd.NonNegativeFloat] = pd.Field(2.0 / 3.0)
+    C_v1: Optional[pd.NonNegativeFloat] = pd.Field(7.1)
+    C_vonKarman: Optional[pd.NonNegativeFloat] = pd.Field(0.41)
+    C_w2: Optional[pd.NonNegativeFloat] = pd.Field(0.3)
+    C_t3: Optional[pd.NonNegativeFloat] = pd.Field(1.2)
+    C_t4: Optional[pd.NonNegativeFloat] = pd.Field(0.5)
+    C_min_rd: Optional[pd.NonNegativeFloat] = pd.Field(10.0)
 
 
 class KOmegaSSTModelConstants(Flow360BaseModel):
@@ -281,6 +312,14 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
     C_DES2: Optional[pd.NonNegativeFloat] = pd.Field(0.61)
     C_d1: Optional[pd.NonNegativeFloat] = pd.Field(20.0)
     C_d2: Optional[pd.NonNegativeFloat] = pd.Field(3.0)
+    C_sigma_k1: Optional[pd.NonNegativeFloat] = pd.Field(0.85)
+    C_sigma_k2: Optional[pd.NonNegativeFloat] = pd.Field(1.0)
+    C_sigma_omega1: Optional[pd.NonNegativeFloat] = pd.Field(0.5)
+    C_sigma_omega2: Optional[pd.NonNegativeFloat] = pd.Field(0.856)
+    C_alpha1: Optional[pd.NonNegativeFloat] = pd.Field(0.31)
+    C_beta1: Optional[pd.NonNegativeFloat] = pd.Field(0.075)
+    C_beta2: Optional[pd.NonNegativeFloat] = pd.Field(0.0828)
+    C_beta_star: Optional[pd.NonNegativeFloat] = pd.Field(0.09)
 
 
 TurbulenceModelConstants = Union[SpalartAllmarasModelConstants, KOmegaSSTModelConstants]

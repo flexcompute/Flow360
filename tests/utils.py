@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import tempfile
+from numbers import Number
 
 import numpy as np
 import pytest
@@ -80,7 +81,7 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
 
 def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
-    if isinstance(value1, float) and isinstance(value2, float):
+    if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
     elif isinstance(value1, dict) and isinstance(value2, dict):
         return compare_dicts(value1, value2, atol, rtol, ignore_keys)
@@ -219,6 +220,7 @@ def s3_download_override():
         overwrite: bool = True,
         progress_callback=None,
         log_error=True,
+        **kwargs,
     ):
         to_file = get_local_filename_and_create_folders(
             remote_file_name, to_file=to_file, to_folder=to_folder
@@ -227,6 +229,7 @@ def s3_download_override():
         print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
     S3TransferType.CASE.download_file = s3_mock_download
+    S3TransferType.GEOMETRY.download_file = s3_mock_download
 
 
 # for generating MOCK WEBAPI data:

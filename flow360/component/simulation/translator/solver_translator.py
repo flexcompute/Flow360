@@ -3,8 +3,8 @@
 from typing import Type, Union
 
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.unique_list import UniqueAliasedStringList
 from flow360.component.simulation.models.material import Sutherland
+from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
@@ -30,6 +30,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
+from flow360.component.simulation.outputs.output_entities import PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -39,6 +40,7 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    SurfaceProbeOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
@@ -49,10 +51,8 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady, Uns
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
-    get_attribute_from_instance_list,
-    get_global_setting_from_per_item_setting,
+    get_global_setting_from_first_instance,
     has_instance_in_list,
-    merge_unique_item_lists,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
@@ -78,11 +78,15 @@ def init_non_average_output(
     if has_average_capability:
         base["computeTimeAverages"] = False
 
-    base["animationFrequency"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequency"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency",
     )
-    base["animationFrequencyOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyOffset"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
     return base
 
@@ -94,14 +98,20 @@ def init_average_output(
 ):
     """Initialize the common output attribute for average output."""
     base["computeTimeAverages"] = True
-    base["animationFrequencyTimeAverage"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyTimeAverage"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency",
     )
-    base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "frequency_offset", allow_get_from_first_instance_as_fallback=True
+    base["animationFrequencyTimeAverageOffset"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_offset",
     )
-    base["startAverageIntegrationStep"] = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "start_step", allow_get_from_first_instance_as_fallback=True
+    base["startAverageIntegrationStep"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "start_step",
     )
     return base
 
@@ -110,8 +120,10 @@ def init_output_base(obj_list, class_type: Type, has_average_capability: bool, i
     """Initialize the common output attribute."""
 
     base = {"outputFields": []}
-    output_format = get_global_setting_from_per_item_setting(
-        obj_list, class_type, "output_format", allow_get_from_first_instance_as_fallback=True
+    output_format = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "output_format",
     )
     assert output_format is not None
     if output_format == "both":
@@ -176,15 +188,28 @@ def rotation_translator(model: Rotation):
     return volume_zone
 
 
-def merge_output_fields(output_model: SurfaceOutput, shared_output_fields: UniqueAliasedStringList):
-    """Get merged output fields"""
-    if shared_output_fields is None:
-        return {"outputFields": output_model.output_fields.items}
-    return {
-        "outputFields": merge_unique_item_lists(
-            output_model.output_fields.items, shared_output_fields.items
-        )
-    }
+def translate_output_fields(
+    output_model: Union[
+        SurfaceOutput,
+        TimeAverageSurfaceOutput,
+        SliceOutput,
+        IsosurfaceOutput,
+        ProbeOutput,
+        SurfaceIntegralOutput,
+        SurfaceProbeOutput,
+    ],
+):
+    """Get output fields"""
+    return {"outputFields": output_model.output_fields.items}
+
+
+def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
+    """Translate non-entitties part of SurfaceProbeOutput"""
+    dict_with_merged_output_fields = translate_output_fields(entity)
+    dict_with_merged_output_fields["surfacePatches"] = [
+        surface.full_name for surface in entity.target_surfaces.stored_entities
+    ]
+    return dict_with_merged_output_fields
 
 
 def inject_slice_info(entity: Slice):
@@ -205,9 +230,31 @@ def inject_isosurface_info(entity: Isosurface):
 
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
+    if isinstance(entity.stored_entities[0], PointArray):
+        return {
+            "start": [item.start.value.tolist() for item in entity.stored_entities],
+            "end": [item.end.value.tolist() for item in entity.stored_entities],
+            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
+            "type": "lineProbe",
+        }
     return {
         "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
         "type": "probe",
+    }
+
+
+def inject_surface_probe_info(entity: EntityList):
+    """inject entity info"""
+    if isinstance(entity.stored_entities[0], PointArray):
+        return {
+            "start": [item.start.value.tolist() for item in entity.stored_entities],
+            "end": [item.end.value.tolist() for item in entity.stored_entities],
+            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
+            "type": "lineProbe",
+        }
+    return {
+        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
+        "type": "surfaceProbe",
     }
 
 
@@ -232,7 +279,7 @@ def translate_volume_output(
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_attribute_from_instance_list(
+            "outputFields": get_global_setting_from_first_instance(
                 output_params, volume_output_class, "output_fields"
             ).model_dump()["items"],
         }
@@ -255,33 +302,16 @@ def translate_surface_output(
         has_average_capability=True,
         is_average=surface_output_class is TimeAverageSurfaceOutput,
     )
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        surface_output_class,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         surface_output_class,
-        translation_func=merge_output_fields,
+        translation_func=translate_output_fields,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
     )
-    if shared_output_fields is not None:
-        # Note: User specified shared output fields for all surfaces. We need to manually add these for surfaces
-        # Note: that did not appear in the SurfaceOutput insntances.
-        for boundary_name in translated["boundaries"].keys():
-            if boundary_name not in surface_output["surfaces"]:
-                surface_output["surfaces"][boundary_name] = {
-                    "outputFields": shared_output_fields.items
-                }
-    surface_output["writeSingleFile"] = get_global_setting_from_per_item_setting(
+    surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
         surface_output_class,
         "write_single_file",
-        allow_get_from_first_instance_as_fallback=True,
     )
     return surface_output
 
@@ -296,40 +326,26 @@ def translate_slice_isosurface_output(
     translated_output = init_output_base(
         output_params, output_class, has_average_capability=False, is_average=False
     )
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        output_class,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     translated_output[entities_name_key] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,
-        translation_func=merge_output_fields,
+        translation_func=translate_output_fields,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
     )
     return translated_output
 
 
-def translate_monitor_output(output_params: list, monitor_type, injection_function):
+def translate_monitor_output(
+    output_params: list, monitor_type, injection_function, translation_func=translate_output_fields
+):
     """Translate monitor output settings."""
     translated_output = {"outputFields": []}
-    shared_output_fields = get_global_setting_from_per_item_setting(
-        output_params,
-        monitor_type,
-        "output_fields",
-        allow_get_from_first_instance_as_fallback=False,
-        return_none_when_no_global_found=True,
-    )
     translated_output["monitors"] = translate_setting_and_apply_to_all_entities(
         output_params,
         monitor_type,
-        translation_func=merge_output_fields,
+        translation_func=translation_func,
         to_list=False,
-        translation_func_shared_output_fields=shared_output_fields,
         entity_injection_func=injection_function,
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
@@ -419,6 +435,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
     # Merge
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
+
+    ##:: Step5.1: Get translated["surfaceMonitorOutput"]
+    surface_monitor_output = {}
+    if has_instance_in_list(outputs, SurfaceProbeOutput):
+        surface_monitor_output = translate_monitor_output(
+            outputs,
+            SurfaceProbeOutput,
+            inject_surface_probe_info,
+            surface_probe_setting_translation_func,
+        )
+        translated["surfaceMonitorOutput"] = surface_monitor_output
 
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
@@ -540,7 +567,14 @@ def heat_transfer_volume_zone_translator(model: Solid):
     if model.volumetric_heat_source:
         volume_zone["volumetricHeatSource"] = model_dict["volumetricHeatSource"]
     if model.material.specific_heat_capacity and model.material.density:
-        volume_zone["heatCapacity"] = model_dict["density"] * model_dict["specificHeatCapacity"]
+        volume_zone["heatCapacity"] = (
+            model_dict["material"]["density"] * model_dict["material"]["specificHeatCapacity"]
+        )
+    if model.initial_condition:
+        volume_zone["initialCondition"] = {
+            "T": model_dict["initialCondition"]["temperature"],
+            "T_solid": model_dict["initialCondition"]["temperature"],
+        }
     return volume_zone
 
 
@@ -610,6 +644,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "SlipWall"
     elif isinstance(model, Freestream):
         boundary["type"] = "Freestream"
+        if model.velocity is not None:
+            boundary["velocity"] = list(model_dict["velocity"])
     elif isinstance(model, SymmetryPlane):
         boundary["type"] = "SymmetryPlane"
 
@@ -686,7 +722,14 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
+
         if isinstance(model, Fluid):
+
+            if model.navier_stokes_solver.low_mach_preconditioner:
+                if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
+                    model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                        input_params.operating_condition.mach
+                    )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -694,6 +737,7 @@ def get_solver_json(
                 "equationEvaluationFrequency",
                 "equationEvalFrequency",
             )
+
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
             replace_dict_key(
                 translated["turbulenceModelSolver"],
@@ -703,12 +747,62 @@ def get_solver_json(
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
-                if modeling_constants.pop("typeName", None) == "SpalartAllmarasConsts":
-                    modeling_constants["C_d"] = modeling_constants.pop("CD", None)
-                    modeling_constants["C_DES"] = modeling_constants.pop("CDES", None)
+                if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
+                    replace_dict_key(modeling_constants, "CDES", "C_DES")
+                    replace_dict_key(modeling_constants, "CD", "C_d")
+                    replace_dict_key(modeling_constants, "CCb1", "C_cb1")
+                    replace_dict_key(modeling_constants, "CCb2", "C_cb2")
+                    replace_dict_key(modeling_constants, "CSigma", "C_sigma")
+                    replace_dict_key(modeling_constants, "CV1", "C_v1")
+                    replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
+                    replace_dict_key(modeling_constants, "CW2", "C_w2")
+                    replace_dict_key(modeling_constants, "CT3", "C_t3")
+                    replace_dict_key(modeling_constants, "CT4", "C_t4")
+                    replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
+
+                if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
+                    replace_dict_key(modeling_constants, "CDES1", "C_DES1")
+                    replace_dict_key(modeling_constants, "CDES2", "C_DES2")
+                    replace_dict_key(modeling_constants, "CD1", "C_d1")
+                    replace_dict_key(modeling_constants, "CD2", "C_d2")
+                    replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
+                    replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
+                    replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
+                    replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
+                    replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
+                    replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
+                    replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
+                    replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
+
+                modeling_constants.pop("typeName")  # Not read by solver
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+
+            if not isinstance(model.transition_model_solver, NoneSolver):
+                # baseline dictionary dump for transition model object
+                translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
+                transition_dict = translated["transitionModelSolver"]
+                replace_dict_key(transition_dict, "typeName", "modelType")
+                replace_dict_key(
+                    transition_dict, "equationEvaluationFrequency", "equationEvalFrequency"
+                )
+                transition_dict.pop("turbulenceIntensityPercent", None)
+                replace_dict_key(transition_dict, "NCrit", "Ncrit")
+
+                # build trip region(s) if applicable
+                if "tripRegions" in transition_dict:
+                    transition_dict["tripRegions"] = []
+                    for trip_region in model.transition_model_solver.trip_regions.stored_entities:
+                        axes = trip_region.private_attribute_input_cache.axes
+                        transition_dict["tripRegions"].append(
+                            {
+                                "center": list(trip_region.center.value),
+                                "size": list(trip_region.size.value),
+                                "axes": [list(axes[0]), list(axes[1])],
+                            }
+                        )
+
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
 
@@ -759,29 +853,29 @@ def get_solver_json(
     solid_zone_boundaries = set()
     if has_instance_in_list(input_params.models, Solid):
         translated["heatEquationSolver"] = {
-            "equationEvalFrequency": get_attribute_from_instance_list(
+            "equationEvalFrequency": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "equation_evaluation_frequency"],
             ),
             "linearSolver": {
-                "maxIterations": get_attribute_from_instance_list(
+                "maxIterations": get_global_setting_from_first_instance(
                     input_params.models,
                     Solid,
                     ["heat_equation_solver", "linear_solver", "max_iterations"],
                 ),
             },
-            "absoluteTolerance": get_attribute_from_instance_list(
+            "absoluteTolerance": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "absolute_tolerance"],
             ),
-            "relativeTolerance": get_attribute_from_instance_list(
+            "relativeTolerance": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "relative_tolerance"],
             ),
-            "orderOfAccuracy": get_attribute_from_instance_list(
+            "orderOfAccuracy": get_global_setting_from_first_instance(
                 input_params.models,
                 Solid,
                 ["heat_equation_solver", "order_of_accuracy"],
@@ -789,13 +883,14 @@ def get_solver_json(
             "CFLMultiplier": 1.0,
             "updateJacobianFrequency": 1,
             "maxForceJacUpdatePhysicalSteps": 0,
+            "modelType": "HeatEquation",
         }
-        linear_solver_absolute_tolerance = get_attribute_from_instance_list(
+        linear_solver_absolute_tolerance = get_global_setting_from_first_instance(
             input_params.models,
             Solid,
             ["heat_equation_solver", "linear_solver", "absolute_tolerance"],
         )
-        linear_solver_relative_tolerance = get_attribute_from_instance_list(
+        linear_solver_relative_tolerance = get_global_setting_from_first_instance(
             input_params.models,
             Solid,
             ["heat_equation_solver", "linear_solver", "relative_tolerance"],

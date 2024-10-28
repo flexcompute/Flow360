@@ -9,11 +9,13 @@ from typing import Union
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.primitives import _SurfaceEntityBase
+from flow360.component.simulation.primitives import (
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
-from flow360.exceptions import Flow360TranslationError
 
 
 def preprocess_input(func):
@@ -164,11 +166,10 @@ def getattr_by_path(obj, path: Union[str, list], *args):
     return obj
 
 
-def get_attribute_from_instance_list(
+def get_global_setting_from_first_instance(
     obj_list: list,
     class_type,
     attribute_name: Union[str, list],
-    only_find_when_entities_none: bool = False,
 ):
     """In a list loop and find the first instance matching the given type and retrive the attribute"""
     if obj_list is not None:
@@ -177,13 +178,7 @@ def get_attribute_from_instance_list(
                 is_exact_instance(obj, class_type)
                 and getattr_by_path(obj, attribute_name, None) is not None
             ):
-                # Route 1: Requested to look into empty-entity instances
-                if only_find_when_entities_none and getattr(obj, "entities", None) is not None:
-                    # We only look for empty entities instances
-                    # Note: This poses requirement that entity list has to be under attribute name 'entities'
-                    continue
-
-                # Route 2: Allowed to look into non-empty-entity instances
+                # Allowed to look into non-empty-entity instances
                 # Then we return the first non-None value.
                 # Previously we return the value that is non-default.
                 # But this is deemed not intuitive and very hard to implement.
@@ -206,7 +201,7 @@ def update_dict_recursively(a: dict, b: dict):
 
 
 def _get_key_name(entity: EntityBase):
-    if isinstance(entity, _SurfaceEntityBase):
+    if isinstance(entity, (_SurfaceEntityBase, _VolumeEntityBase)):
         # Note: If the entity is a Surface/Boundary, we need to use the full name
         return entity.full_name
 
@@ -224,20 +219,67 @@ def translate_setting_and_apply_to_all_entities(
     custom_output_dict_entries=False,
     lump_list_of_entities=False,
     use_instance_name_as_key=False,
+    use_sub_item_as_key=False,
     **kwargs,
 ):
-    """Translate settings and apply them to all entities of a given type.
+    """
+    Translate settings and apply them to all entities of a given type.
 
-    Args:
-        obj_list (list): A list of objects to loop through.
-        class_type: The type of objects to match.
-        translation_func: The function to use for translation. This function should return a dictionary.
-        to_list (bool, optional): Whether the return is a list which does not differentiate entity name or a
-        dict (default).
+    This function iterates over a list of objects, applies a translation function to each object if
+    it matches the given `class_type`, and then processes its entities based on various customization
+    options. The function supports returning either a dictionary or a list of translated settings.
 
-    Returns:
-        dict: A dictionary containing the translated settings applied to all entities.
+    Parameters
+    ----------
+    obj_list : list
+        A list of objects to process.
+    class_type : type
+        The type of objects to match. Only objects of this type will be processed.
+    translation_func : callable
+        A function that translates the settings for each object. It should return a dictionary.
+    to_list : bool, optional
+        If True, the output is a list. If False (default), the output is a dictionary.
+    entity_injection_func : callable, optional
+        A function for injecting additional settings into each entity. Defaults to a lambda returning an empty dict.
+    pass_translated_setting_to_entity_injection : bool, optional
+        If True, passes the translated settings to `entity_injection_func`. Defaults to False.
+    custom_output_dict_entries : bool, optional
+        If True, allows customization of output dictionary entries. Defaults to False.
+    lump_list_of_entities : bool, optional
+        If True, lumps all entities into a single list. Defaults to False.
+    use_instance_name_as_key : bool, optional
+        If True, uses the instance name of the object as the key in the output dictionary.
+        Only valid if `lump_list_of_entities` is False. Defaults to False.
+    use_sub_item_as_key : bool, optional
+        If True, uses subcomponents of entities as keys in the output dictionary. Defaults to False.
+    **kwargs : dict, optional
+        Additional keyword arguments. Arguments prefixed with `translation_func_` are passed to
+        `translation_func`, and those prefixed with `entity_injection_` are passed to `entity_injection_func`.
 
+    Returns
+    -------
+    dict or list
+        A dictionary or list containing the translated settings applied to all entities.
+        If `to_list` is False (default), the output is a dictionary, where keys are entity names (or custom keys)
+        and values are the translated settings. If `to_list` is True, the output is a list.
+
+    Raises
+    ------
+    NotImplementedError
+        If `lump_list_of_entities` is used with `entity_pairs` or if `use_instance_name_as_key`
+        is used when `lump_list_of_entities` is True.
+
+    Notes
+    -----
+    - The `translation_func` must return a dictionary with the translated settings.
+    - The `entity_injection_func` allows additional customizations to be applied to each entity.
+    - If `lump_list_of_entities` is True, all entities are treated as a single group, and custom key usage
+      (e.g., `use_instance_name_as_key`) may be restricted.
+
+    Examples
+    --------
+    >>> translate_setting_and_apply_to_all_entities(obj_list, MyClass, my_translation_func)
+    {'entity1': {'setting1': 'value1'}, 'entity2': {'setting1': 'value2'}}
     """
     if not to_list:
         output = {}
@@ -263,7 +305,10 @@ def translate_setting_and_apply_to_all_entities(
 
             list_of_entities = []
             if "entities" in obj.model_fields:
-                if obj.entities is None:
+                if obj.entities is None or (
+                    "stored_entities" in obj.entities.model_fields
+                    and obj.entities.stored_entities is None
+                ):  # unique item list does not allow None "items" for now.
                     continue
                 if isinstance(obj.entities, EntityList):
                     list_of_entities = (
@@ -299,14 +344,25 @@ def translate_setting_and_apply_to_all_entities(
                                 "[Internal Error]: use_instance_name_as_key cannot be used"
                                 " when lump_list_of_entities is True"
                             )
-                        key_name = (
-                            _get_key_name(entity) if use_instance_name_as_key is False else obj.name
-                        )
-                        if output.get(key_name) is None:
-                            output[key_name] = entity_injection_func(
-                                entity, **entity_injection_kwargs
-                            )
-                        update_dict_recursively(output[key_name], translated_setting)
+                        if use_sub_item_as_key is True:
+                            # pylint: disable=fixme
+                            # TODO: Make sure when use_sub_item_as_key is True
+                            # TODO: the entity has private_attribute_sub_components
+                            key_names = entity.private_attribute_sub_components
+                        else:
+                            key_names = [
+                                (
+                                    _get_key_name(entity)
+                                    if use_instance_name_as_key is False
+                                    else obj.name
+                                )
+                            ]
+                        for key_name in key_names:
+                            if output.get(key_name) is None:
+                                output[key_name] = entity_injection_func(
+                                    entity, **entity_injection_kwargs
+                                )
+                            update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
                     # Note: Surface/Boundary logic should be handeled in the entity_injection_func
@@ -320,73 +376,3 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
     """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
-
-
-def get_global_setting_from_per_item_setting(
-    obj_list: list,
-    class_type,
-    attribute_name: str,
-    allow_get_from_first_instance_as_fallback: bool,
-    return_none_when_no_global_found: bool = False,
-):
-    """
-    [AI-Generated] Retrieves a global setting from the per-item settings in a list of objects.
-
-    This function searches through a list of objects to find the first instance of a given class type
-    with empty entities and retrieves a specified attribute. If no such instance is found and
-    `allow_get_from_first_instance_as_fallback` is True, it retrieves the attribute from the first instance of
-    the class type regardless of whether its entities are empty. If `allow_get_from_first_instance_as_fallback`
-    is False and no suitable instance is found, it raises a `Flow360TranslationError`.
-
-    Note: This function does not apply to SurfaceOutput situations.
-
-    Args:
-        obj_list (list):
-            A list of objects to search through.
-        class_type (type):
-            The class type of objects to match.
-        attribute_name (str):
-            The name of the attribute to retrieve.
-        allow_get_from_first_instance_as_fallback (bool, optional):
-            Whether to allow retrieving the attribute from any instance of the class
-            type if no instance with empty entities is found.
-
-    Returns:
-        The value of the specified attribute from the first matching object.
-
-    Raises:
-        Flow360TranslationError: If `allow_get_from_first_instance_as_fallback` is False and no suitable
-        instance is found.
-    """
-
-    # Get from the first instance of `class_type` with empty entities
-    global_setting = get_attribute_from_instance_list(
-        obj_list,
-        class_type,
-        attribute_name,
-        only_find_when_entities_none=True,
-    )
-
-    if global_setting is None:
-
-        if return_none_when_no_global_found is True:
-            return None
-
-        if allow_get_from_first_instance_as_fallback is True:
-            # Assume that no global setting is needed. Just get the first instance of `class_type`
-            # This is allowed because simulation will make sure global setting is not used anywhere.
-            global_setting = get_attribute_from_instance_list(
-                obj_list,
-                class_type,
-                attribute_name,
-                only_find_when_entities_none=False,
-            )
-        else:
-            # Ideally SimulationParams should have validation on this.
-            raise Flow360TranslationError(
-                f"Global setting of {attribute_name} is required but not found in"
-                f"`{class_type.__name__}` instances. \n[For developers]: This error message should not appear."
-                "SimulationParams should have caught this!!!",
-                input_value=obj_list,
-            )
-    return global_setting

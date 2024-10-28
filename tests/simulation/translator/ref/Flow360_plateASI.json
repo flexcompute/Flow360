@@ -67,8 +67,17 @@
         "equationEvalFrequency": 1,
         "modelType": "SpalartAllmaras",
         "modelConstants": {
+            "C_DES": 0.72,
             "C_d": 8.0,
-            "C_DES": 0.72
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_sigma": 0.6666666666666666,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_min_rd": 10.0
         }
     },
     "volumeZones": {
@@ -121,21 +130,6 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
-            "farFieldBlock/farField": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
-            "farFieldBlock/slipWall": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
-            "plateBlock/slipWall": {
-                "outputFields": [
-                    "Cp"
-                ]
-            },
             "plateBlock/noSlipWall": {
                 "outputFields": [
                     "Cp"
@@ -165,9 +159,9 @@
                 "theta": "state[2];"
             },
             "stateVarsInitialValue": [
-                "-0.0019023060869795023;",
-                "0.0;",
-                "0.13962634015954636;"
+                "-0.0019023060869795023",
+                "0.0",
+                "0.13962634015954636"
             ],
             "updateLaw": [
                 "(pseudoStep == 0) ? ((momentY - K * ( state[2] - theta0 ) - 2 * zeta * omegaN * I *state[1] ) / I) : (state[0]);",

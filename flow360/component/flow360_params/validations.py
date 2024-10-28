@@ -14,7 +14,7 @@ from .boundaries import (
     TranslationallyPeriodic,
     WallFunction,
 )
-from .flow360_fields import _distribute_shared_output_fields, get_aliases
+from .flow360_fields import _distribute_shared_output_fields
 from .initial_condition import ExpressionInitialCondition
 from .params_utils import get_all_output_fields
 from .solvers import IncompressibleNavierStokesSolver
@@ -85,9 +85,8 @@ def _check_consistency_wall_function_and_surface_output(values):
     surface_output = values.get("surface_output")
     if surface_output is not None:
         surface_output_fields = surface_output.output_fields
-    aliases = get_aliases("wallFunctionMetric", raise_on_not_found=True)
     fields = surface_output_fields
-    if [i for i in aliases if i in fields] and (not has_wall_function_boundary):
+    if "wallFunctionMetric" in fields and (not has_wall_function_boundary):
         raise ValueError(
             "'wallFunctionMetric' in 'surfaceOutput' is only valid for 'WallFunction' boundary type."
         )
@@ -502,6 +501,22 @@ def _check_low_mach_preconditioner_output(values):
         ):
             raise ValueError(
                 "Low-Mach preconditioner output requested, but low-Mach preconditioner mode is not enabled."
+            )
+    return values
+
+
+def _check_local_cfl_output(values):
+    time_stepping = values.get("time_stepping")
+    navier_stokes_solver = values.get("navier_stokes_solver")
+    if "localCFL" in _get_all_output_fields(values):
+        if time_stepping is None or isinstance(time_stepping, SteadyTimeStepping):
+            raise ValueError("Outputting local CFL with steady simulation is invalid.")
+
+        if navier_stokes_solver is not None and isinstance(
+            navier_stokes_solver, IncompressibleNavierStokesSolver
+        ):
+            raise ValueError(
+                "Local CFL output requested, but not supported in the incompressible Navier Stokes solver."
             )
     return values
 

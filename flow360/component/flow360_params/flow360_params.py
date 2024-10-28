@@ -112,6 +112,7 @@ from .validations import (
     _check_duplicate_boundary_name,
     _check_equation_eval_frequency_for_unsteady_simulations,
     _check_incompressible_navier_stokes_solver,
+    _check_local_cfl_output,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_output_fields,
@@ -471,9 +472,6 @@ class Geometry(Flow360BaseModel):
     ##Note: moment_length does not allow negative components I failed to enforce that here after attempts
     moment_length: Optional[LengthType.Moment] = pd.Field(alias="momentLength")
     mesh_unit: Optional[LengthType.Positive] = pd.Field(alias="meshUnit")
-
-    if Flags.beta_features():
-        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
 
     # pylint: disable=arguments-differ
     def to_solver(self, params: Flow360Params, **kwargs) -> Geometry:
@@ -1374,6 +1372,14 @@ class Flow360Params(Flow360BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.root_validator
+    def check_local_cfl_output(cls, values):
+        """
+        Detect output of local CFL if not supported in incompressible Navier Stokes solver or steady simulations.
+        """
+        return _check_local_cfl_output(values)
+
+    # pylint: disable=no-self-argument
+    @pd.root_validator
     def add_heat_equation_solver_if_HeatTransferVolumeZone_used(cls, values):
         """
         Add heat_equation_solver if it is not specified but HeatTransferVolumeZone is used.
@@ -1485,17 +1491,12 @@ class GeometryLegacy(Geometry, LegacyModel):
     moment_center: Optional[Coordinate] = pd.Field(alias="momentCenter")
     moment_length: Optional[Coordinate] = pd.Field(alias="momentLength")
 
-    if Flags.beta_features():
-        decomposed_mesh: Optional[bool] = pd.Field(alias="decomposedMesh", default=False)
-
     def update_model(self) -> Flow360BaseModel:
         model = {
             "momentCenter": self.moment_center,
             "momentLength": self.moment_length,
             "refArea": self.ref_area,
         }
-        if Flags.beta_features():
-            model.update({"decomposedMesh": self.decomposed_mesh})
 
         return Geometry.parse_obj(model)
 

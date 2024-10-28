@@ -15,6 +15,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
     MeshingParams,
     SurfaceEdgeRefinement,
 )
@@ -98,7 +99,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
-version_postfix = "release-24.6"
+version_postfix = "workbench-24.9"
 
 
 data_folder = "data_v2"
@@ -210,9 +211,15 @@ with SI_unit_system:
         name="my_cylinder-2",
     )
     meshing = MeshingParams(
+        defaults=MeshingDefaults(
+            boundary_layer_first_layer_thickness=0.001,
+            boundary_layer_growth_rate=1.3,
+            surface_max_edge_length=1,
+            surface_edge_growth_rate=1.4,
+            curvature_resolution_angle=16 * u.deg,
+        ),
         refinement_factor=1.0,
         gap_treatment_strength=0.5,
-        surface_layer_growth_rate=1.5,
         refinements=[
             UniformRefinement(entities=[my_box], spacing=0.1 * u.m),
             UniformRefinement(entities=[my_box, my_cylinder_2], spacing=0.1 * u.m),
@@ -308,14 +315,9 @@ write_example(param, "simulation_params", "example-1")
 
 with SI_unit_system:
     meshing = MeshingParams(
-        surface_layer_growth_rate=1.5,
         refinements=[
-            BoundaryLayer(first_layer_thickness=0.001),
-            SurfaceRefinement(
-                entities=[Surface(name="wing")],
-                max_edge_length=15 * u.cm,
-                curvature_resolution_angle=10 * u.deg,
-            ),
+            BoundaryLayer(faces=[Surface(name="wing")], first_layer_thickness=0.001),
+            SurfaceRefinement(entities=[Surface(name="wing")], max_edge_length=15 * u.cm),
         ],
     )
     param = SimulationParams(
@@ -638,6 +640,7 @@ write_example(setting, "outputs", "IsosurfaceOutput")
 write_schemas(SurfaceIntegralOutput, "outputs", file_suffix="SurfaceIntegralOutput")
 with imperial_unit_system:
     setting = SurfaceIntegralOutput(
+        name="my_surface_integral",
         output_fields=["primitiveVars", "vorticity"],
         entities=[my_inflow1, my_inflow2],
     )
@@ -646,6 +649,7 @@ write_example(setting, "outputs", "SurfaceIntegralOutput")
 write_schemas(ProbeOutput, "outputs", file_suffix="ProbeOutput")
 with imperial_unit_system:
     setting = ProbeOutput(
+        name="my_probe",
         output_fields=["primitiveVars", "vorticity"],
         entities=[
             Point(name="DoesNotMatter1", location=(1, 2, 3)),
@@ -786,3 +790,9 @@ example_dict = {
     }
 }
 write_example(example_dict, "multi_constructor", "box_mixed_with_cylinder.json")
+
+#### Primitives ####
+write_schemas(Box, "Primitives", file_suffix="Box")
+write_schemas(GenericVolume, "Primitives", file_suffix="GenericVolume")
+write_schemas(Surface, "Primitives", file_suffix="Surface")
+write_schemas(Edge, "Primitives", file_suffix="Edge")

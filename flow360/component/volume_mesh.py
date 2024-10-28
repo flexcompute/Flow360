@@ -2,29 +2,43 @@
 Volume mesh component
 """
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import os.path
+import threading
 from enum import Enum
-from typing import Iterator, List, Optional, Union
+from typing import Any, Iterator, List, Optional, Union
 
 import numpy as np
-from pydantic.v1 import Extra, Field, validator
+import pydantic as pd_v2
 
+# This will be split into two files in a future commit...
+# For now we keep it to not mix new features with file
+# structure refactors
+import pydantic.v1 as pd
+
+from flow360.cloud.heartbeat import post_upload_heartbeat
+from flow360.cloud.requests import (
+    CopyExampleVolumeMeshRequest,
+    LengthUnitType,
+    NewVolumeMeshRequest,
+    NewVolumeMeshRequestV2,
+)
+from flow360.cloud.rest_api import RestApi
 from flow360.component.compress_upload import compress_and_upload_chunks
-from flow360.flags import Flags
-
-from ..cloud.requests import CopyExampleVolumeMeshRequest, NewVolumeMeshRequest
-from ..cloud.rest_api import RestApi
-from ..exceptions import (
+from flow360.exceptions import (
     Flow360CloudFileError,
     Flow360FileError,
     Flow360NotImplementedError,
     Flow360RuntimeError,
     Flow360ValueError,
 )
-from ..log import log
-from ..solver_version import Flow360Version
+from flow360.flags import Flags
+from flow360.log import log
+from flow360.solver_version import Flow360Version
+
 from .case import Case, CaseDraft
 from .flow360_params.boundaries import NoSlipWall
 from .flow360_params.flow360_params import (
@@ -33,14 +47,19 @@ from .flow360_params.flow360_params import (
     _GenericBoundaryWrapper,
 )
 from .flow360_params.params_base import params_generic_validator
-from .interfaces import VolumeMeshInterface
+from .interfaces import VolumeMeshInterface, VolumeMeshInterfaceV2
 from .meshing.params import VolumeMeshingParams
 from .resource_base import (
     AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     Flow360ResourceListBase,
     ResourceDraft,
 )
+from .simulation.entity_info import VolumeMeshEntityInfo
+from .simulation.framework.entity_registry import EntityRegistry
+from .simulation.primitives import GenericVolume, Surface
+from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
 from .utils import (
     CompressionFormat,
@@ -214,37 +233,37 @@ class VolumeMeshDownloadable(Enum):
 
 
 # pylint: disable=E0213
-class VolumeMeshMeta(AssetMetaBaseModel, extra=Extra.allow):
+class VolumeMeshMeta(AssetMetaBaseModel, extra=pd.Extra.allow):
     """
     VolumeMeshMeta component
     """
 
-    id: str = Field(alias="meshId")
-    name: str = Field(alias="meshName")
-    created_at: str = Field(alias="meshAddTime")
-    surface_mesh_id: Optional[str] = Field(alias="surfaceMeshId")
-    mesh_params: Union[Flow360MeshParams, None, dict] = Field(alias="meshParams")
-    mesh_format: Union[MeshFileFormat, None] = Field(alias="meshFormat")
-    file_name: Union[str, None] = Field(alias="fileName")
-    endianness: UGRIDEndianness = Field(alias="meshEndianness")
-    compression: CompressionFormat = Field(alias="meshCompression")
+    id: str = pd.Field(alias="meshId")
+    name: str = pd.Field(alias="meshName")
+    created_at: str = pd.Field(alias="meshAddTime")
+    surface_mesh_id: Optional[str] = pd.Field(alias="surfaceMeshId")
+    mesh_params: Union[Flow360MeshParams, None, dict] = pd.Field(alias="meshParams")
+    mesh_format: Union[MeshFileFormat, None] = pd.Field(alias="meshFormat")
+    file_name: Union[str, None] = pd.Field(alias="fileName")
+    endianness: UGRIDEndianness = pd.Field(alias="meshEndianness")
+    compression: CompressionFormat = pd.Field(alias="meshCompression")
     boundaries: Union[List, None]
 
-    @validator("mesh_params", pre=True)
+    @pd.validator("mesh_params", pre=True)
     def init_mesh_params(cls, value):
         """
         validator for mesh_params
         """
         return params_generic_validator(value, Flow360MeshParams)
 
-    @validator("endianness", pre=True)
+    @pd.validator("endianness", pre=True)
     def init_endianness(cls, value):
         """
         validator for endianess
         """
         return UGRIDEndianness(value) or UGRIDEndianness.NONE
 
-    @validator("compression", pre=True)
+    @pd.validator("compression", pre=True)
     def init_compression(cls, value):
         """
         validator for compression
@@ -772,3 +791,337 @@ class VolumeMeshList(Flow360ResourceListBase):
     # pylint: disable=useless-parent-delegation
     def __iter__(self) -> Iterator[VolumeMesh]:
         return super().__iter__()
+
+
+###==== V2 API version ===###
+
+
+class VolumeMeshStatusV2(Enum):
+    """Status of volume mesh resource, the is_final method is overloaded"""
+
+    SUBMITTED = "submitted"
+    UPLOADING = "uploading"
+    UPLOADED = "uploaded"
+    COMPLETED = "completed"
+
+    def is_final(self):
+        """
+        Checks if status is final for volume mesh resource
+
+        Returns
+        -------
+        bool
+            True if status is final, False otherwise.
+        """
+        if self in [VolumeMeshStatusV2.COMPLETED]:
+            return True
+        return False
+
+
+class VolumeMeshMetaV2(AssetMetaBaseModelV2):
+    """
+    VolumeMeshMetaV2 component
+    """
+
+    project_id: str = pd_v2.Field(alias="projectId")
+    deleted: bool = pd_v2.Field()
+    status: VolumeMeshStatusV2 = pd_v2.Field()  # Overshadowing to ensure correct is_final() method
+
+
+class VolumeMeshDraftV2(ResourceDraft):
+    """
+    Volume mesh draft component
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        file_names: List[str],
+        project_name: str = None,
+        solver_version: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        if not isinstance(file_names, list) or len(file_names) != 1:
+            raise Flow360FileError(
+                "file_names field has to be a single-element list for the volume mesh draft."
+            )
+
+        self.file_name = file_names[0]
+        self.project_name = project_name
+        self.tags = tags if tags is not None else []
+        self.length_unit = length_unit
+        self.solver_version = solver_version
+        self._validate()
+        ResourceDraft.__init__(self)
+
+    def _validate(self):
+        self._validate_volume_mesh()
+
+    def _validate_volume_mesh(self):
+        if self.file_name is not None:
+            mesh_parser = MeshNameParser(self.file_name)
+            if not mesh_parser.is_valid_volume_mesh():
+                raise Flow360ValueError(
+                    f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
+                    f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
+                )
+
+        if self.project_name is None:
+            self.project_name = os.path.splitext(os.path.basename(self.file_name))[0]
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the volume mesh file name {self.project_name} as project name."
+            )
+
+        if self.length_unit not in LengthUnitType.__args__:
+            raise Flow360ValueError(
+                f"specified length_unit : {self.length_unit} is invalid. "
+                f"Valid options are: {list(LengthUnitType.__args__)}"
+            )
+
+        if self.solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
+
+    # pylint: disable=protected-access, too-many-locals
+    def submit(self, description="", progress_callback=None, compress=False) -> VolumeMeshV2:
+        """
+        Submit volume mesh to cloud and create a new project
+
+        Parameters
+        ----------
+        description : str, optional
+            description of the project, by default ""
+        progress_callback : callback, optional
+            Use for custom progress bar, by default None
+        compress : boolean, optional
+            Compress the volume mesh file when sending to S3, default is False
+        fetch_entities : boolean, optional
+            Whether to fetch and populate the entity info object after submitting, default is False
+
+        Returns
+        -------
+        VolumeMeshV2
+            Volume mesh object with id
+        """
+
+        self._validate()
+
+        if not shared_account_confirm_proceed():
+            raise Flow360ValueError("User aborted resource submit.")
+
+        mesh_parser = MeshNameParser(self.file_name)
+
+        original_compression = mesh_parser.compression
+        endianness = mesh_parser.endianness
+        mesh_format = mesh_parser.format
+
+        if original_compression == CompressionFormat.NONE:
+            compression = CompressionFormat.ZST
+        else:
+            compression = original_compression
+
+        if not compress:
+            compression = CompressionFormat.NONE
+
+        if mesh_format is MeshFileFormat.CGNS:
+            remote_name = "volumeMesh"
+        else:
+            remote_name = "mesh"
+        remote_name = f"{remote_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+
+        req = NewVolumeMeshRequestV2(
+            name=self.project_name,
+            solver_version=self.solver_version,
+            tags=self.tags,
+            file_name=remote_name,
+            length_unit=self.length_unit,
+            format=mesh_format.value,
+            description=description,
+        )
+
+        # Create new volume mesh resource and project
+        req_dict = req.dict()
+        resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req_dict)
+        info = VolumeMeshMetaV2(**resp)
+
+        volume_mesh = VolumeMeshV2(info.id)
+
+        # Upload volume mesh file, keep posting the heartbeat to keep server patient about uploading.
+        heartbeat_info = {"resourceId": info.id, "resourceType": "VolumeMesh", "stop": False}
+        heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
+        heartbeat_thread.start()
+
+        # Compress (if not already compressed) and upload
+        if original_compression == CompressionFormat.NONE and compress:
+            compressed_name = zstd_compress(self.file_name)
+            volume_mesh._webapi._upload_file(
+                remote_name, compressed_name, progress_callback=progress_callback
+            )
+            os.remove(compressed_name)
+        else:
+            volume_mesh._webapi._upload_file(
+                remote_name, self.file_name, progress_callback=progress_callback
+            )
+
+        heartbeat_info["stop"] = True
+        heartbeat_thread.join()
+
+        # Start processing pipeline
+        volume_mesh._webapi._complete_upload()
+        log.debug("Waiting for volume mesh to be processed.")
+        volume_mesh._webapi.get_info()
+        log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
+
+        return VolumeMeshV2.from_cloud(volume_mesh.id)
+
+
+class VolumeMeshV2(AssetBase):
+    """
+    Volume mesh component for workbench (simulation V2)
+    """
+
+    _interface_class = VolumeMeshInterfaceV2
+    _meta_class = VolumeMeshMetaV2
+    _draft_class = VolumeMeshDraftV2
+    _web_api_class = Flow360Resource
+    _entity_info_class = VolumeMeshEntityInfo
+
+    @classmethod
+    # pylint: disable=redefined-builtin
+    def from_cloud(cls, id: str) -> VolumeMeshV2:
+        """
+        Parameters
+        ----------
+        id : str
+            ID of the volume mesh resource in the cloud
+
+        Returns
+        -------
+        VolumeMeshV2
+            Volume mesh object
+        """
+        asset_obj = super().from_cloud(id)
+
+        return asset_obj
+
+    @classmethod
+    # pylint: disable=too-many-arguments
+    def from_file(
+        cls,
+        file_names: str,
+        project_name: str = None,
+        solver_version: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ) -> VolumeMeshDraftV2:
+        """
+        Parameters
+        ----------
+        file_names : str
+            The name of the input volume mesh file (*.cgns, *.ugrid)
+        project_name : str, optional
+            The name of the newly created project, defaults to file name if empty
+        solver_version: str
+            Solver version to use for the project
+        length_unit: LengthUnitType
+            Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
+        tags: List[str]
+            List of string tags to be added to the project upon creation
+
+        Returns
+        -------
+        VolumeMeshDraftV2
+            Draft of the volume mesh to be submitted
+        """
+        # For type hint only but proper fix is to fully abstract the Draft class too.
+        return super().from_file(file_names, project_name, solver_version, length_unit, tags)
+
+    def _populate_registry(self):
+        if hasattr(self, "_entity_info") is False or self._entity_info is None:
+            raise Flow360ValueError("The entity info object does not exist")
+
+        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
+            raise Flow360ValueError(
+                "Entity info is of invalid type for a "
+                f"volume mesh object {type(self._entity_info)}"
+            )
+
+        # Initialize the local registry
+        self.internal_registry = EntityRegistry()
+
+        # Populate boundaries
+        for boundary in self._entity_info.boundaries:
+            self.internal_registry.register(boundary)
+
+        for zone in self._entity_info.zones:
+            self.internal_registry.register(zone)
+
+    def _check_registry(self):
+        if not hasattr(self, "internal_registry") or self.internal_registry is None:
+            if hasattr(self, "_entity_info") and self._entity_info is not None:
+                self._populate_registry()
+                return
+
+            raise Flow360ValueError(
+                "The entity info registry has not been populated. "
+                "Currently entity info is populated only when loading "
+                "an asset from the cloud using the from_cloud method "
+            )
+
+    @property
+    def boundary_names(self) -> List[str]:
+        """
+        Retrieve all boundary names available in this volume mesh as a list
+
+        Returns
+        -------
+        List[str]
+            List of boundary names contained within the volume mesh
+        """
+        self._check_registry()
+
+        return [
+            surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
+        ]
+
+    @property
+    def zone_names(self) -> List[str]:
+        """
+        Retrieve all volume zone names available in this volume mesh as a list
+
+        Returns
+        -------
+        List[str]
+            List of zone names contained within the volume mesh
+        """
+        self._check_registry()
+
+        return [
+            volume.name
+            for volume in self.internal_registry.get_bucket(by_type=GenericVolume).entities
+        ]
+
+    def __getitem__(self, key: str):
+        """
+        Parameters
+        ----------
+        key : str
+            The name of the entity to be found
+
+        Returns
+        -------
+        Surface
+            The boundary object
+        """
+        if isinstance(key, str) is False:
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
+        self._check_registry()
+
+        return self.internal_registry.find_by_naming_pattern(
+            key, enforce_output_as_list=False, error_when_no_match=True
+        )
+
+    def __setitem__(self, key: str, value: Any):
+        raise NotImplementedError("Assigning/setting entities is not supported.")

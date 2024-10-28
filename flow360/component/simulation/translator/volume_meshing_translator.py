@@ -1,6 +1,9 @@
 """Volume meshing parameter translator."""
 
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    PassiveSpacing,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -11,7 +14,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    get_global_setting_from_per_item_setting,
+    get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -35,6 +38,36 @@ def cylindrical_refinement_translator(obj: CylindricalRefinementBase):
         "spacingAxial": obj.spacing_axial.value.item(),
         "spacingRadial": obj.spacing_radial.value.item(),
         "spacingCircumferential": obj.spacing_circumferential.value.item(),
+    }
+
+
+def boundary_layer_translator(obj: BoundaryLayer):
+    """
+    Translate BoundaryLayer.
+
+    """
+    return {
+        "firstLayerThickness": obj.first_layer_thickness.value.item(),
+        "type": "aniso",
+    }
+
+
+def passive_spacing_translator(obj: PassiveSpacing):
+    """
+    Translate BoundaryLayer.
+
+    """
+    spacing_type = None
+
+    if obj.type == "projected":
+        spacing_type = "projectAnisoSpacing"
+    elif obj.type == "unchanged":
+        spacing_type = "none"
+    else:
+        raise ValueError(f"Unknown type: {obj.type} for PassiveSpacing.")
+
+    return {
+        "type": spacing_type,
     }
 
 
@@ -105,7 +138,7 @@ def rotation_cylinder_entity_injector(entity: Cylinder):
 
 
 @preprocess_input
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,too-many-branches
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
@@ -160,22 +193,29 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##:: Step 3: Get volumetric global settings
     translated["volume"] = {}
-    # firstLayerThickness can be locally overridden so after completeness check, we can
-    # get away with the first instance's value.
-    translated["volume"]["firstLayerThickness"] = get_global_setting_from_per_item_setting(
-        meshing_params.refinements,
-        BoundaryLayer,
-        "first_layer_thickness",
-        allow_get_from_first_instance_as_fallback=True,
-    ).value.item()
-    # growthRate can only be global so after completeness check, and use same logic as curvature_resolution_angle.
-    translated["volume"]["growthRate"] = get_global_setting_from_per_item_setting(
-        meshing_params.refinements,
-        BoundaryLayer,
-        "growth_rate",
-        allow_get_from_first_instance_as_fallback=True,
-        # `allow_get_from_first_instance_as_fallback` can be true because completeness check is done in Params
-    )
+
+    if meshing_params.defaults.boundary_layer_first_layer_thickness is None:
+        # `first_layer_thickness` can be locally overridden so after completeness check, we can
+        # get away with the first instance's value if global one does not exist.
+        default_first_layer_thickness = get_global_setting_from_first_instance(
+            meshing_params.refinements,
+            BoundaryLayer,
+            "first_layer_thickness",
+        )
+    else:
+        default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness
+
+    translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
+
+    # growthRate can only be global
+    if meshing_params.defaults.boundary_layer_growth_rate is None:
+        raise Flow360TranslationError(
+            "`boundary_layer_growth_rate` is not set.",
+            None,
+            ["meshing", "defaults"],
+        )
+    translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
+
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
@@ -203,6 +243,23 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["rotorDisks"].extend(rotor_disk_refinement)
         rotor_disk_names = [item["name"] for item in rotor_disk_refinement]
 
+        faces_aniso_setting = translate_setting_and_apply_to_all_entities(
+            meshing_params.refinements,
+            BoundaryLayer,
+            boundary_layer_translator,
+            to_list=False,
+        )
+
+        faces_passive_setting = translate_setting_and_apply_to_all_entities(
+            meshing_params.refinements,
+            PassiveSpacing,
+            passive_spacing_translator,
+            to_list=False,
+        )
+
+        translated["faces"] = {}
+        translated["faces"].update(faces_aniso_setting)
+        translated["faces"].update(faces_passive_setting)
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,

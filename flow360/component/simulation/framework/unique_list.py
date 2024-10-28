@@ -1,12 +1,11 @@
 """Unique list classes for Simulation framework."""
 
-from collections import Counter, OrderedDict
+from collections import OrderedDict
 from copy import deepcopy
 from typing import Annotated, Any, List, Union
 
 import pydantic as pd
 
-from flow360.component.flow360_params.flow360_fields import get_aliases
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
@@ -31,13 +30,10 @@ class _UniqueListMeta(_CombinedMeta):
         return new_cls
 
 
-def _validate_unique_list(v: List) -> List:
-    if len(v) != len(set(v)):
-        raise ValueError(
-            "Input item to this list must be unique "
-            f"but {[str(item) for item, count in Counter(v).items() if count > 1]} appears multiple times."
-        )
-    return v
+def _remove_duplicates(v: List) -> List:
+    seen = set()
+    seen_add = seen.add
+    return [x for x in v if not (x in seen or seen_add(x))]
 
 
 class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
@@ -45,7 +41,7 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
     A list of general type items that must be unique
     (uniqueness is determined by the item's __eq__ and __hash__ method).
 
-    We will **not** try to remove duplicate items as choice is user's preference.
+    Duplicates present in the list will be removed.
     """
 
     items: Annotated[List, {"uniqueItems": True}]
@@ -54,7 +50,7 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
     @classmethod
     def check_unique(cls, v):
         """Check if the items are unique after type checking"""
-        return _validate_unique_list(v)
+        return _remove_duplicates(v)
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -75,38 +71,6 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
         items_copy = deepcopy(self.items)
         items_copy.append(obj)
         self.items = items_copy  # To trigger validation
-
-
-def _validate_unique_aliased_item(v: List[str]) -> List[str]:
-    deduplicated_list = []
-    for item in v:
-        if get_aliases(item)[1] not in deduplicated_list and item not in deduplicated_list:
-            deduplicated_list.append(item)
-    return deduplicated_list
-
-
-class UniqueAliasedStringList(Flow360BaseModel, metaclass=_UniqueListMeta):
-    """
-    A list of items that must be unique by original name or by aliased name.
-    Expect string only and we will remove the duplicate ones.
-    """
-
-    items: Annotated[List[str], {"uniqueItems": True}]
-
-    @pd.field_validator("items", mode="after")
-    @classmethod
-    def deduplicate(cls, v):
-        """Deduplicate the list by original name or aliased name."""
-        return _validate_unique_aliased_item(v)
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list, str]):
-        if isinstance(input_data, list):
-            return {"items": input_data}
-        if isinstance(input_data, dict):
-            return {"items": input_data["items"]}
-        return {"items": [input_data]}
 
 
 class UniqueStringList(Flow360BaseModel):

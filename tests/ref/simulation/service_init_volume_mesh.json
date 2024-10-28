@@ -1,5 +1,5 @@
 {
-    "version": "24.3.0",
+    "version": "24.11.0",
     "unit_system": {
         "name": "SI"
     },
@@ -71,6 +71,21 @@
     },
     "models": [
         {
+            "type": "Wall",
+            "entities": {
+              "stored_entities": []
+            },
+            "name": "Wall",
+            "use_wall_function": false
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+              "stored_entities": []
+            },
+            "name": "Freestream"
+        },
+        {
             "material": {
                 "type": "air",
                 "name": "air",
@@ -125,11 +140,23 @@
                 "modeling_constants": {
                     "type_name": "SpalartAllmarasConsts",
                     "C_DES": 0.72,
-                    "C_d": 8.0
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
                 },
                 "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0,
                 "rotation_correction": false
+            },
+            "transition_model_solver": {
+              "type_name": "None"
             }
         }
     ],
@@ -150,7 +177,7 @@
             "frequency": -1,
             "frequency_offset": 0,
             "output_format": "paraview",
-            "name": "Surface output 1",
+            "name": "Surface output",
             "write_single_file": false,
             "output_fields": {
                 "items": [
@@ -158,6 +185,17 @@
                     "yPlus",
                     "Cf",
                     "CfVec"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": [
+                        ]
+                    }
                 ]
             },
             "output_type": "SurfaceOutput"

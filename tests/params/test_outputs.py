@@ -96,7 +96,7 @@ def test_surface_output():
     to_file_from_file_test(output)
 
     output = SurfaceOutput(
-        output_fields=["Coefficient of pressure", "qcriterion"],
+        output_fields=["Cp", "qcriterion"],
     )
 
     with flow360.SI_unit_system:
@@ -161,7 +161,7 @@ def test_slice_output():
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            output_fields=["Coefficient of pressure", "qcriterion"],
+            output_fields=["Cp", "qcriterion"],
             slices={
                 "sliceName_1": flow360.Slice(
                     slice_normal=(0, 1, 0),
@@ -176,7 +176,7 @@ def test_slice_output():
         )
 
     output = SliceOutput(
-        output_fields=["Coefficient of pressure", "qcriterion"],
+        output_fields=["Cp", "qcriterion"],
         slices={
             "sliceName_1": flow360.Slice(
                 slice_normal=(0, 1, 0),
@@ -194,7 +194,7 @@ def test_slice_output():
 
     with pytest.raises(pd.ValidationError):
         output = SliceOutput(
-            output_fields=["Coefficient of pressure", "qcriterion"],
+            output_fields=["Cp", "qcriterion"],
             slices={
                 "sliceName_1": flow360.Slice(
                     slice_normal={0, 1},
@@ -205,7 +205,7 @@ def test_slice_output():
 
     with pytest.raises(unyt.exceptions.InvalidUnitOperation):
         output = SliceOutput(
-            output_fields=["Coefficient of pressure", "qcriterion"],
+            output_fields=["Cp", "qcriterion"],
             slices={
                 "sliceName_1": flow360.Slice(
                     slice_normal=(0, 1, 0),
@@ -215,7 +215,7 @@ def test_slice_output():
         )
 
     output = SliceOutput(
-        output_fields=["Coefficient of pressure", "qcriterion"],
+        output_fields=["Cp", "qcriterion"],
         slices={
             "sliceName_1": flow360.Slice(
                 slice_normal=[0, 1, 0],
@@ -255,7 +255,7 @@ def test_slice_output():
         params = Flow360Params(
             slice_output=SliceOutput(
                 output_fields=[
-                    "Coefficient of pressure",
+                    "Cp",
                     "qcriterion",
                     "nuHat",
                     "solutionTurbulence",
@@ -332,7 +332,7 @@ def test_volume_output():
     to_file_from_file_test(output)
 
     output = VolumeOutput(
-        output_fields=["Coefficient of pressure", "qcriterion"],
+        output_fields=["Cp", "qcriterion"],
     )
 
     output.output_format = "both"
