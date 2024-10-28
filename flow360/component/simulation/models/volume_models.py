@@ -310,7 +310,7 @@ class BETDisk(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
-    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
+    entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field(
         "rightHand",
@@ -464,7 +464,7 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: Optional[EntityList[GenericVolume, Box]] = pd.Field(None, alias="volumes")
+    entities: EntityList[GenericVolume, Box] = pd.Field(alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(
         description="Darcy coefficient of the porous media model which determines the scaling of the "
