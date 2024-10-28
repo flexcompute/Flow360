@@ -5,7 +5,7 @@
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
 import json
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import pydantic as pd
 
@@ -28,6 +28,7 @@ from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     SUPPORTED_MESH_FILE_PATTERNS,
     MeshNameParser,
+    ProjectAssetCache,
     match_file_pattern,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
@@ -78,6 +79,11 @@ class ProjectMeta(pd.BaseModel, extra=pd.Extra.allow):
     root_item_type: RootType = pd.Field(alias="rootItemType")
 
 
+_SurfaceMeshCache = ProjectAssetCache[SurfaceMesh]
+_VolumeMeshCache = ProjectAssetCache[VolumeMeshV2]
+_CaseCache = ProjectAssetCache[Case]
+
+
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
@@ -93,17 +99,20 @@ class Project(pd.BaseModel):
     metadata: ProjectMeta = pd.Field()
     solver_version: str = pd.Field(frozen=True)
 
-    _geometry: Optional[Geometry] = pd.PrivateAttr(None)
-    _volume_mesh: Optional[VolumeMeshV2] = pd.PrivateAttr(None)
-    _surface_mesh: Optional[SurfaceMesh] = pd.PrivateAttr(None)
-    _case: Optional[Case] = pd.PrivateAttr(None)
+    _root_asset: Union[Geometry, VolumeMeshV2] = pd.PrivateAttr(None)
+
+    _volume_mesh_cache: _VolumeMeshCache = pd.PrivateAttr(_VolumeMeshCache())
+    _surface_mesh_cache: _SurfaceMeshCache = pd.PrivateAttr(_SurfaceMeshCache())
+    _case_cache: _CaseCache = pd.PrivateAttr(_CaseCache())
+
     _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
+    _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
 
     @property
     def geometry(self) -> Geometry:
         """
-        Returns the geometry asset of the project.
+        Returns the geometry asset of the project. There is always only one geometry asset per project.
 
         Raises
         ------
@@ -115,12 +124,44 @@ class Project(pd.BaseModel):
         Geometry
             The geometry asset.
         """
-        if not self._geometry:
-            raise Flow360ValueError("Geometry asset is not available for this project")
-        return self._geometry
+        self._check_initialized()
+        if self.metadata.root_item_type is not RootType.GEOMETRY:
+            raise Flow360ValueError(
+                "Geometry asset is only present in projects initialized from geometry."
+            )
+
+        return self._root_asset
+
+    def get_surface_mesh(self, asset_id: str = None) -> SurfaceMesh:
+        """
+        Returns the surface mesh asset of the project.
+
+        Parameters
+        ----------
+        asset_id : str, optional
+            The ID of the asset from among the generated assets in this project instance. If not provided,
+            the property contains the most recently run asset.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the surface mesh asset is not available for the project.
+
+        Returns
+        -------
+        SurfaceMesh
+            The surface mesh asset.
+        """
+        self._check_initialized()
+        if self.metadata.root_item_type is not RootType.GEOMETRY:
+            raise Flow360ValueError(
+                "Surface mesh assets are only present in projects initialized from geometry."
+            )
+
+        return self._surface_mesh_cache.get_asset(asset_id)
 
     @property
-    def surface_mesh(self) -> SurfaceMesh:
+    def surface_mesh(self):
         """
         Returns the surface mesh asset of the project.
 
@@ -134,12 +175,42 @@ class Project(pd.BaseModel):
         SurfaceMesh
             The surface mesh asset.
         """
-        if not self._surface_mesh:
-            raise Flow360ValueError("Surface mesh asset is not available for this project")
-        return self._surface_mesh
+        return self.get_surface_mesh()
+
+    def get_volume_mesh(self, asset_id: str = None) -> VolumeMeshV2:
+        """
+        Returns the volume mesh asset of the project.
+
+        Parameters
+        ----------
+        asset_id : str, optional
+            The ID of the asset from among the generated assets in this project instance. If not provided,
+            the property contains the most recently run asset.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the volume mesh asset is not available for the project.
+
+        Returns
+        -------
+        VolumeMeshV2
+            The volume mesh asset.
+        """
+        self._check_initialized()
+        if self.metadata.root_item_type is RootType.VOLUME_MESH:
+            if asset_id is not None:
+                raise Flow360ValueError(
+                    "Cannot retrieve volume meshes by asset ID in a project created from volume mesh, "
+                    "there is only one root volume mesh asset in this project. Use project.volume_mesh()."
+                )
+
+            return self._root_asset
+
+        return self._volume_mesh_cache.get_asset(asset_id)
 
     @property
-    def volume_mesh(self) -> VolumeMeshV2:
+    def volume_mesh(self):
         """
         Returns the volume mesh asset of the project.
 
@@ -153,12 +224,33 @@ class Project(pd.BaseModel):
         VolumeMeshV2
             The volume mesh asset.
         """
-        if not self._volume_mesh:
-            raise Flow360ValueError("Volume mesh asset is not available for this project")
-        return self._volume_mesh
+        return self.get_volume_mesh()
+
+    def get_case(self, asset_id: str = None) -> Case:
+        """
+        Returns the case asset of the project.
+
+        Parameters
+        ----------
+        asset_id : str, optional
+            The ID of the asset from among the generated assets in this project instance. If not provided,
+            the property contains the most recently run asset.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the case asset is not available for the project.
+
+        Returns
+        -------
+        Case
+            The case asset.
+        """
+        self._check_initialized()
+        return self._case_cache.get_asset(asset_id)
 
     @property
-    def case(self) -> Case:
+    def case(self):
         """
         Returns the case asset of the project.
 
@@ -172,14 +264,56 @@ class Project(pd.BaseModel):
         Case
             The case asset.
         """
-        if not self._case:
-            raise Flow360ValueError("Case asset is not available for this project")
-        return self._case
+        return self.get_case()
+
+    def available_surface_meshes(self) -> Iterable[str]:
+        """
+        Returns the available IDs of surface meshes in the project
+
+        Returns
+        -------
+        Iterable[str]
+            An iterable of asset IDs.
+        """
+        if self.metadata.root_item_type is not RootType.GEOMETRY:
+            raise Flow360ValueError(
+                "Surface mesh assets are only present in objects initialized from geometry."
+            )
+
+        return self._surface_mesh_cache.get_ids()
+
+    def available_volume_meshes(self):
+        """
+        Returns the available IDs of volume meshes in the project
+
+        Returns
+        -------
+        Iterable[str]
+            An iterable of asset IDs.
+        """
+        if self.metadata.root_item_type is RootType.VOLUME_MESH:
+            raise Flow360ValueError(
+                "Cannot retrieve volume meshes by asset ID in a project created from volume mesh, "
+                "there is only one root volume mesh asset in this project. Use project.volume_mesh()."
+            )
+
+        return self._volume_mesh_cache.get_ids()
+
+    def available_cases(self):
+        """
+        Returns the available IDs of cases in the project
+
+        Returns
+        -------
+        Iterable[str]
+            An iterable of asset IDs.
+        """
+        return self._case_cache.get_ids()
 
     @classmethod
-    def _detect_root_type(cls, file):
+    def _detect_asset_type_from_file(cls, file):
         """
-        Detects the root type of a file based on its name or pattern.
+        Detects the asset type of a file based on its name or pattern.
 
         Parameters
         ----------
@@ -250,7 +384,7 @@ class Project(pd.BaseModel):
             If the project cannot be initialized from the file.
         """
         root_asset = None
-        root_type = cls._detect_root_type(file)
+        root_type = cls._detect_asset_type_from_file(file)
         if root_type == RootType.GEOMETRY:
             draft = Geometry.from_file(file, name, solver_version, length_unit, tags)
             root_asset = draft.submit()
@@ -267,11 +401,12 @@ class Project(pd.BaseModel):
         project = Project(metadata=ProjectMeta(**info), solver_version=root_asset.solver_version)
         project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
-            project._geometry = root_asset
+            project._root_asset = root_asset
             project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
         elif root_type == RootType.VOLUME_MESH:
-            project._volume_mesh = root_asset
+            project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._get_root_simulation_json()
         return project
 
     @classmethod
@@ -310,16 +445,17 @@ class Project(pd.BaseModel):
             root_asset = Geometry.from_cloud(meta.root_item_id)
         elif root_type == RootType.VOLUME_MESH:
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
-        project = Project(metadata=meta, solver_version=root_asset.solver_version)
-        project._project_webapi = project_api
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
+        project = Project(metadata=meta, solver_version=root_asset.solver_version)
+        project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
-            project._geometry = root_asset
+            project._root_asset = root_asset
             project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
         elif root_type == RootType.VOLUME_MESH:
-            project._volume_mesh = root_asset
+            project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._get_root_simulation_json()
         return project
 
     def _check_initialized(self):
@@ -331,19 +467,14 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project is not initialized.
         """
-        if not self.metadata or not self.solver_version:
+        if not self.metadata or not self.solver_version or not self._root_asset:
             raise Flow360ValueError(
-                "Project is not initialized - use Project.from_file or Project.from_cloud"
+                "Project not initialized - use Project.from_file or Project.from_cloud"
             )
 
-    def get_root_simulation_json(self) -> dict:
+    def _get_root_simulation_json(self):
         """
-        Returns the default simulation JSON for the project based on the root asset type.
-
-        Returns
-        -------
-        dict
-            The simulation JSON for the project.
+        Loads the default simulation JSON for the project based on the root asset type.
 
         Raises
         ------
@@ -361,7 +492,7 @@ class Project(pd.BaseModel):
         if not isinstance(resp, dict) or "simulationJson" not in resp:
             raise Flow360WebError("Couldn't retrieve default simulation JSON for the project")
         simulation_json = json.loads(resp["simulationJson"])
-        return simulation_json
+        self._root_simulation_json = simulation_json
 
     # pylint: disable=too-many-arguments, too-many-locals
     def _run(
@@ -371,6 +502,7 @@ class Project(pd.BaseModel):
         draft_name: str = None,
         fork: bool = False,
         run_async: bool = True,
+        solver_version: str = None,
     ):
         """
         Runs a simulation for the project.
@@ -399,7 +531,8 @@ class Project(pd.BaseModel):
             If the simulation parameters lack required length unit information, or if the
             root asset (Geometry or VolumeMesh) is not initialized.
         """
-        defaults = self.get_root_simulation_json()
+
+        defaults = self._root_simulation_json
 
         cache_key = "private_attribute_asset_cache"
         length_key = "project_length_unit"
@@ -415,29 +548,19 @@ class Project(pd.BaseModel):
                 length_unit
             )
 
-        root_asset = None
-        root_type = self.metadata.root_item_type
-
-        if root_type == RootType.GEOMETRY:
-            root_asset = self._geometry
-        elif root_type == RootType.VOLUME_MESH:
-            root_asset = self._volume_mesh
-
-        if not root_asset:
-            raise Flow360ValueError("Root asset is not initialized")
+        root_asset = self._root_asset
 
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
             source_item_id=self.metadata.root_item_id,
-            source_item_type=root_type.value,
-            solver_version=self.solver_version,
+            source_item_type=self.metadata.root_item_type.value,
+            solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork,
         ).submit()
 
-        entity_info = root_asset.entity_info
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = entity_info
+            params.private_attribute_asset_cache.project_entity_info = root_asset.entity_info
 
         draft.update_simulation_params(params)
         destination_id = draft.run_up_to_target_asset(target)
@@ -463,6 +586,7 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         fork: bool = False,
+        solver_version: str = None,
     ):
         """
         Runs the surface mesher for the project.
@@ -477,6 +601,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         fork : bool, optional
             Whether to fork the case (default is False).
+        solver_version : str, optional
+            Optional solver version to use during this run (defaults to the project solver version)
 
         Raises
         ------
@@ -488,8 +614,15 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
-        self._surface_mesh = self._run(
-            params=params, target=SurfaceMesh, draft_name=name, run_async=run_async, fork=fork
+        self._surface_mesh_cache.add_asset(
+            self._run(
+                params=params,
+                target=SurfaceMesh,
+                draft_name=name,
+                run_async=run_async,
+                fork=fork,
+                solver_version=solver_version,
+            )
         )
 
     @pd.validate_call
@@ -499,6 +632,7 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         fork: bool = True,
+        solver_version: str = None,
     ):
         """
         Runs the volume mesher for the project.
@@ -513,6 +647,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         fork : bool, optional
             Whether to fork the case (default is True).
+        solver_version : str, optional
+            Optional solver version to use during this run (defaults to the project solver version)
 
         Raises
         ------
@@ -524,12 +660,15 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry root asset"
             )
-        self._volume_mesh = self._run(
-            params=params,
-            target=VolumeMeshV2,
-            draft_name=name,
-            run_async=run_async,
-            fork=fork,
+        self._volume_mesh_cache.add_asset(
+            self._run(
+                params=params,
+                target=VolumeMeshV2,
+                draft_name=name,
+                run_async=run_async,
+                fork=fork,
+                solver_version=solver_version,
+            )
         )
 
     @pd.validate_call
@@ -539,6 +678,7 @@ class Project(pd.BaseModel):
         draft_name: str = "Case",
         run_async: bool = True,
         fork: bool = True,
+        solver_version: str = None,
     ):
         """
         Runs a case for the project.
@@ -553,8 +693,17 @@ class Project(pd.BaseModel):
             Whether to run the case asynchronously (default is True).
         fork : bool, optional
             Whether to fork the case (default is True).
+        solver_version : str, optional
+            Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
-        self._case = self._run(
-            params=params, target=Case, draft_name=draft_name, run_async=run_async, fork=fork
+        self._case_cache.add_asset(
+            self._run(
+                params=params,
+                target=Case,
+                draft_name=draft_name,
+                run_async=run_async,
+                fork=fork,
+                solver_version=solver_version,
+            )
         )

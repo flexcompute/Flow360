@@ -12,7 +12,6 @@ from flow360.environment import dev
 dev.active()
 
 project = Project.from_cloud("prj-e8c6c7eb-c18b-4c15-bac8-edf5aaf9b155")
-print(project.get_root_simulation_json())
 
 volume_mesh = project.volume_mesh
 

@@ -18,7 +18,9 @@ from flow360.examples import Airplane
 
 fl.Env.dev.active()
 
-project = Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+project = Project.from_file(
+    Airplane.geometry, name="Python Project (Geometry, from file, multiple runs)"
+)
 
 geometry = project.geometry
 geometry.show_available_groupings(verbose_mode=True)
@@ -47,4 +49,19 @@ with SI_unit_system:
         ],
     )
 
-project.run_case(params=params, name="Case of Simple Airplane from Python")
+# Run the mesher once
+project.generate_surface_mesh(params=params, name="Surface mesh 1")
+surface_mesh_1 = project.surface_mesh
+
+# Tweak some parameter in the params
+params.meshing.defaults.surface_max_edge_length = 2 * u.m
+
+# Run the mesher again
+project.generate_surface_mesh(params=params, name="Surface mesh 2")
+surface_mesh_2 = project.surface_mesh
+
+assert surface_mesh_1.id != surface_mesh_2.id
+
+# Check available surface mesh IDs in the project
+ids = project.available_surface_meshes()
+print(ids)
