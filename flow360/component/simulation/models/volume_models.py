@@ -198,7 +198,7 @@ class ActuatorDisk(Flow360BaseModel):
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
-    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
+    entities: EntityList[Cylinder] = pd.Field(alias="volumes")
     force_per_area: ForcePerArea = pd.Field()
     name: Optional[str] = pd.Field(None)
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
@@ -236,7 +236,7 @@ class BETDisk(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
-    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
+    entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
     number_of_blades: pd.StrictInt = pd.Field(gt=0, le=10)
@@ -332,7 +332,7 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None)
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: Optional[EntityList[GenericVolume, Box]] = pd.Field(None, alias="volumes")
+    entities: EntityList[GenericVolume, Box] = pd.Field(alias="volumes")
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
