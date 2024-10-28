@@ -54,14 +54,14 @@ class AngleExpression(SingleAttributeModel):
     """Angle expression for Rotation"""
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
-    value: StringExpression = pd.Field()
+    value: StringExpression = pd.Field(description="The expression for the angular velocity.")
 
 
 class AngularVelocity(SingleAttributeModel):
     """Angular velocity for Rotation"""
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
-    value: AngularVelocityType = pd.Field()
+    value: AngularVelocityType = pd.Field(description="The value of the angular velocity.")
 
 
 class FromUserDefinedDynamics(Flow360BaseModel):
@@ -71,19 +71,27 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
-    """:class:`ExpressionInitialCondition` class"""
+    """:class:`ExpressionInitialCondition` class for specifying the intial conditions of
+    :obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`."""
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
-    constants: Optional[Dict[str, str]] = pd.Field(None)
+    constants: Optional[Dict[str, str]] = pd.Field(
+        None, description="The expression for the initial condition."
+    )
 
 
 # pylint: disable=missing-class-docstring
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
-    rho: str = pd.Field()
-    u: str = pd.Field()
-    v: str = pd.Field()
-    w: str = pd.Field()
-    p: str = pd.Field()
+    """
+    :class:`NavierStokesInitialCondition` class for specifying the intial conditions of
+    :obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`.
+    """
+
+    rho: str = pd.Field(description="Density")
+    u: str = pd.Field(description="X-direction velocity")
+    v: str = pd.Field(description="Y-direction velocity")
+    w: str = pd.Field(description="Z-direction velocity")
+    p: str = pd.Field(description="Pressure")
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -91,7 +99,11 @@ class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
-    temperature: str = pd.Field()
+    """
+    :class:`HeatEquationInitialCondition` class for specifying the intial conditions of heat equation in :class:`Solid`.
+    """
+
+    temperature: str = pd.Field(description="The initial temperature value")
 
 
 class PDEModelBase(Flow360BaseModel):
@@ -110,15 +122,29 @@ class Fluid(PDEModelBase):
     """
 
     type: Literal["Fluid"] = pd.Field("Fluid", frozen=True)
-    navier_stokes_solver: NavierStokesSolver = pd.Field(NavierStokesSolver())
-    turbulence_model_solver: TurbulenceModelSolverType = pd.Field(SpalartAllmaras())
-    transition_model_solver: TransitionModelSolverType = pd.Field(NoneSolver())
+    navier_stokes_solver: NavierStokesSolver = pd.Field(
+        NavierStokesSolver(),
+        description="Navier-Stokes solver settings, see "
+        + ":obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver` documentation.",
+    )
+    turbulence_model_solver: TurbulenceModelSolverType = pd.Field(
+        SpalartAllmaras(),
+        description="Turbulence model solver settings, see "
+        + ":obj:`~flow360.component.simulation.models.solver_numerics.TurbulenceModelSolver` documentation.",
+    )
+    transition_model_solver: TransitionModelSolverType = pd.Field(
+        NoneSolver(),
+        description="Transition solver settings, see "
+        + ":obj:`~flow360.component.simulation.models.solver_numerics.TransitionModelSolver` documentation.",
+    )
 
-    material: FluidMaterialTypes = pd.Field(Air())
+    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid")
 
     initial_condition: Optional[
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
-    ] = pd.Field(None, discriminator="type")
+    ] = pd.Field(
+        None, discriminator="type", description="The initial condition of the fluid solver"
+    )
 
     # pylint: disable=fixme
     # fixme: Add support for other initial conditions
@@ -129,16 +155,27 @@ class Solid(PDEModelBase):
     General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Solid` model")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityList[GenericVolume] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume] = pd.Field(
+        alias="volumes",
+        description="The list of solid entities on which the heat transfer equation is solved.",
+    )
 
-    material: SolidMaterialTypes = pd.Field()
+    material: SolidMaterialTypes = pd.Field(description="The material property of solid")
 
-    heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
-    volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(0)
+    heat_equation_solver: HeatEquationSolver = pd.Field(
+        HeatEquationSolver(),
+        description="Heat equation solver settings, see "
+        + ":obj:`~flow360.component.simulation.models.solver_numerics.HeatEquationSolver` documentation.",
+    )
+    volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(
+        0, description="The volumetric heat source"
+    )
 
-    initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(None)
+    initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(
+        None, description="The initial condition of the heat equation solver"
+    )
 
 
 # pylint: disable=duplicate-code
@@ -194,65 +231,148 @@ class ForcePerArea(Flow360BaseModel):
 
 
 class ActuatorDisk(Flow360BaseModel):
-    """Same as Flow360Param ActuatorDisks.
+    """:class:`ActuatorDisk` class for setting up the inputs for an Actuator Disk.
+    Please refer to the :ref:`actuator disk knowledge base <knowledge_base_actuatorDisks>` for further information.
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
-    entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
-    force_per_area: ForcePerArea = pd.Field()
-    name: Optional[str] = pd.Field(None)
+    entities: Optional[EntityList[Cylinder]] = pd.Field(
+        None,
+        alias="volumes",
+        description="The list of `Cylinder` entities for the ActuatorDisk model",
+    )
+    force_per_area: ForcePerArea = pd.Field(
+        description="The force per area input for the ActuatorDisk model. "
+        + "See :class:`ForcePerArea` documentation."
+    )
+    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model")
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
 class BETDiskTwist(Flow360BaseModel):
-    """:class:`BETDiskTwist` class"""
+    """:class:`BETDiskTwist` class for setting up twist for BETDisk"""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None)
-    twist: Optional[float] = pd.Field(None)
+    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
+    twist: Optional[float] = pd.Field(
+        None,
+        description="The twist in degrees as a function of radial location. "
+        + "Entries in the list must already be sorted by radius.",
+    )
 
 
 class BETDiskChord(Flow360BaseModel):
-    """:class:`BETDiskChord` class"""
+    """:class:`BETDiskChord` class for setting up chord for BETDisk"""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None)
-    chord: Optional[float] = pd.Field(None)
+    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
+    chord: Optional[float] = pd.Field(
+        None,
+        description="The blade chord as a function of the radial location. "
+        + "Entries in the list must already be sorted by radius.",
+    )
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
-    """:class:`BETDiskSectionalPolar` class"""
+    """:class:`BETDiskSectionalPolar` class for setting up sectional polars for BETDisk.
+    There are two variables, “lift_coeffs” and “drag_coeffs”,
+    need to be set up as 3D arrays (implemented as nested lists).
+    The first index of the array corresponds to the :code:`MachNumbers` of the specified polar
+    data.
+    The second index of the array corresponds to the :code:`ReynoldsNumbers` of the polar
+    data.
+    The third index corresponds to the :code:`alphas`.
+    The value specifies the lift or drag coefficient, respectively.
+    """
 
-    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field()
-    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field()
+    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+        description="The 3D arrays specifying the list coefficient."
+    )
+    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+        description="The 3D arrays specifying the drag coefficient."
+    )
 
 
 # pylint: disable=no-member
 class BETDisk(Flow360BaseModel):
-    """Same as Flow360Param BETDisk.
+    """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
+    For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
+    To generate the sectional polars the BET translators can be used which are
+    outlined :ref:`here <BET_Translators>`
+    with best-practices for the sectional polars inputs available :ref:`here <secPolars_bestPractices>`.
+    A case study of the XV-15 rotor using the steady BET Disk method is available
+    in :ref:`Case Studies <XV15BETDisk_caseStudy>`.
+    Because a transient BET Line simulation is simply a time-accurate version of a steady-state
+    BET Disk simulation, most of the parameters below are applicable to both methods.
     Note that `center_of_rotation`, `axis_of_rotation`, `radius`, `thickness` can be acquired from `entity`
     so they are not required anymore.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: Optional[EntityList[Cylinder]] = pd.Field(None, alias="volumes")
 
-    rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field("rightHand")
-    number_of_blades: pd.StrictInt = pd.Field(gt=0, le=10)
-    omega: AngularVelocityType.NonNegative = pd.Field()
-    chord_ref: LengthType.Positive = pd.Field()
-    n_loading_nodes: pd.StrictInt = pd.Field(gt=0, le=1000)
-    blade_line_chord: LengthType.NonNegative = pd.Field(0)
-    initial_blade_direction: Optional[Axis] = pd.Field(None)
-    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field("inf")
-    mach_numbers: List[pd.NonNegativeFloat] = pd.Field()
-    reynolds_numbers: List[pd.PositiveFloat] = pd.Field()
-    alphas: List[float] = pd.Field()
-    twists: List[BETDiskTwist] = pd.Field()
-    chords: List[BETDiskChord] = pd.Field()
-    sectional_polars: List[BETDiskSectionalPolar] = pd.Field()
-    sectional_radiuses: List[float] = pd.Field()
+    rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field(
+        "rightHand",
+        description='The rule for rotation direction and thrust direction, "rightHand" or "leftHand".',
+    )
+    number_of_blades: pd.StrictInt = pd.Field(gt=0, le=10, description="Number of blades to model")
+    omega: AngularVelocityType.NonNegative = pd.Field(
+        description="Nondimensional rotating speed, radians/nondim-unit-time, "
+        + "= :math:`\\frac{\\Omega*L_{gridUnit}}{C_\\infty}`"
+    )
+    chord_ref: LengthType.Positive = pd.Field(
+        description="Nondimensional reference chord used to compute sectional blade loadings"
+    )
+    n_loading_nodes: pd.StrictInt = pd.Field(
+        gt=0,
+        le=1000,
+        description="Number of nodes used to compute the sectional thrust and "
+        + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`",
+    )
+    blade_line_chord: LengthType.NonNegative = pd.Field(
+        0,
+        description="Nondimensional chord to use if performing an unsteady BET Line simulation. "
+        + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
+    )
+    initial_blade_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Orientation of the first blade in the BET model. "
+        + "Must be specified if performing an unsteady BET Line simulation.",
+    )
+    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
+        "inf",
+        description="Nondimensional distance between blade tip and solid bodies to "
+        + "define a :ref:`tip loss factor <TipGap>`.",
+    )
+    mach_numbers: List[pd.NonNegativeFloat] = pd.Field(
+        description="Mach numbers associated with airfoil polars provided "
+        + "in :code:`sectionalPolars`"
+    )
+    reynolds_numbers: List[pd.PositiveFloat] = pd.Field(
+        description="Reynolds numbers associated with the airfoil polars "
+        + "provided in :code:`sectionalPolars`"
+    )
+    alphas: List[float] = pd.Field(
+        description="Alphas associated with airfoil polars provided in "
+        + ":code:`sectionalPolars` in degrees"
+    )
+    twists: List[BETDiskTwist] = pd.Field(
+        description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
+        + "function of radial location."
+    )
+    chords: List[BETDiskChord] = pd.Field(
+        description="A list of :class:`BETDiskChord` objects specifying the blade chord as a function "
+        + "of the radial location. "
+    )
+    sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
+        description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
+        + ":code:`sectional_radiuses`."
+    )
+    sectional_radiuses: List[float] = pd.Field(
+        description="A list of the radial locations in grid units at which :math:`C_l` "
+        + "and :math:`C_d` are specified in :code:`sectional_polars`"
+    )
 
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
@@ -295,20 +415,29 @@ class BETDisk(Flow360BaseModel):
 
 
 class Rotation(Flow360BaseModel):
-    """Similar to Flow360Param ReferenceFrame.
-    Note that `center`, `axis` can be acquired from `entity` so they are not required anymore.
-    Note: Should use the unit system to convert degree or degree per second to radian and radian per second
+    """
+    :class:`Rotation` class for specifying rotation settings.
+    Note: For specifying the rotation speed, please use the unit system to convert
+    degree or degree per second to radian and radian per second.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityList[GenericVolume, Cylinder] = pd.Field(alias="volumes")
+    entities: EntityList[GenericVolume, Cylinder] = pd.Field(
+        alias="volumes",
+        description="The entity list for the Rotation model. "
+        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+    )
 
     # TODO: Add test for each of the spec specification.
     spec: Union[AngleExpression, FromUserDefinedDynamics, AngularVelocity] = pd.Field(
-        discriminator="type_name"
+        discriminator="type_name",
+        description="The angular velocity for rotation. Should use the unit system "
+        + "to convert degree or degree per second to radian and radian per second.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(None)
+    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(
+        None, description="The parent rotating entity in a nested rotation case."
+    )
 
     @pd.field_validator("entities", mode="after")
     @classmethod
@@ -328,15 +457,27 @@ class Rotation(Flow360BaseModel):
 
 
 class PorousMedium(Flow360BaseModel):
-    """Constains Flow360Param PorousMediumBox and PorousMediumVolumeZone"""
+    """
+    :class:`PorousMedium` class for specifying porous media settings.`.
+    For further information please refer to the :ref:`porous media knowledge base <knowledge_base_porousMedia>`
+    """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
     entities: Optional[EntityList[GenericVolume, Box]] = pd.Field(None, alias="volumes")
 
-    darcy_coefficient: InverseAreaType.Point = pd.Field()
-    forchheimer_coefficient: InverseLengthType.Point = pd.Field()
-    volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
+    darcy_coefficient: InverseAreaType.Point = pd.Field(
+        description="Darcy coefficient of the porous media model which determines the scaling of the "
+        + "viscous loss term. The 3 values define the coefficient for each of the 3 axes defined by "
+        + "the reference frame of the volume zone."
+    )
+    forchheimer_coefficient: InverseLengthType.Point = pd.Field(
+        description="Forchheimer coefficient of the porous media model which determines "
+        + "the scaling of the inertial loss term"
+    )
+    volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(
+        None, description="The volumetric heat source"
+    )
     # Note: Axes will always come from the entity
 
     @pd.field_validator("entities", mode="after")
