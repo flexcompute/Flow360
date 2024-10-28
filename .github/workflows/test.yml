@@ -3,9 +3,9 @@ name: unit testing
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, main, release-candidate/* ]
+    branches: [ develop, main, release-candidate/*, BenY/OrganizingAndDocumentation ]
   pull_request:
-    branches: [ develop, main, release-candidate/* ]
+    branches: [ develop, main, release-candidate/*, BenY/OrganizingAndDocumentation ]
   workflow_call:
 
 jobs:
