@@ -587,14 +587,14 @@ class ProjectAssetCache(Generic[AssetT]):
 
     Attributes
     ----------
-    current_id : str, optional
+    current_asset_id : str, optional
         The ID of the currently set asset.
-    cache : dict of str to AssetT
+    asset_cache : dict of str to AssetT
         Dictionary storing assets with their IDs as keys.
     """
 
-    current_id: str = None
-    cache: dict[str, AssetT] = {}
+    current_asset_id: str = None
+    asset_cache: dict[str, AssetT] = {}
 
     def get_asset(self, asset_id: str = None) -> AssetT:
         """
@@ -615,10 +615,10 @@ class ProjectAssetCache(Generic[AssetT]):
         Flow360ValueError
             If the cache is empty or if the asset is not found.
         """
-        if not self.cache:
+        if not self.asset_cache:
             raise Flow360ValueError("Cache is empty, no assets are available")
 
-        asset = self.cache.get(self.current_id if not asset_id else asset_id)
+        asset = self.asset_cache.get(self.current_asset_id if not asset_id else asset_id)
 
         if not asset:
             raise Flow360ValueError(f"{asset_id} is not available in the project.")
@@ -634,7 +634,7 @@ class ProjectAssetCache(Generic[AssetT]):
         Iterable[str]
             An iterable of asset IDs.
         """
-        return list(self.cache.keys())
+        return list(self.asset_cache.keys())
 
     def add_asset(self, asset: AssetT):
         """
@@ -645,8 +645,8 @@ class ProjectAssetCache(Generic[AssetT]):
         asset : AssetT
             The asset to add. Must have a unique `id` attribute.
         """
-        self.cache[asset.id] = asset
-        self.current_id = asset.id
+        self.asset_cache[asset.id] = asset
+        self.current_asset_id = asset.id
 
     def set_id(self, asset_id: str):
         """
@@ -662,7 +662,7 @@ class ProjectAssetCache(Generic[AssetT]):
         Flow360ValueError
             If the specified `asset_id` does not exist in the cache.
         """
-        if asset_id not in self.cache:
+        if asset_id not in self.asset_cache:
             raise Flow360ValueError(f"{asset_id} is not available in the project.")
 
-        self.current_id = asset_id
+        self.current_asset_id = asset_id

@@ -19,6 +19,8 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
@@ -559,8 +561,18 @@ class Project(pd.BaseModel):
             fork_case=fork,
         ).submit()
 
+        entity_registry = params.used_entity_registry
+
+        # Check if there are any new draft entities that have been added in the params by the user
+        entity_info = root_asset.entity_info
+        for draft_type in [Box, Cylinder, Point, Slice]:
+            draft_entities = entity_registry.find_by_type(draft_type)
+            for draft_entity in draft_entities:
+                if draft_entity not in entity_info.draft_entities:
+                    entity_info.draft_entities.append(draft_entity)
+
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = root_asset.entity_info
+            params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
         destination_id = draft.run_up_to_target_asset(target)
