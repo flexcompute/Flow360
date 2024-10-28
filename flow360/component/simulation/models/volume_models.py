@@ -54,7 +54,9 @@ class AngleExpression(SingleAttributeModel):
     """Angle expression for Rotation"""
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
-    value: StringExpression = pd.Field(description="The expression for the angular velocity.")
+    value: StringExpression = pd.Field(
+        description="The expression defining the rotation angle " + "as a function of time."
+    )
 
 
 class AngularVelocity(SingleAttributeModel):
@@ -72,7 +74,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """:class:`ExpressionInitialCondition` class for specifying the intial conditions of
-    :obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`."""
+    :class:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`."""
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
     constants: Optional[Dict[str, str]] = pd.Field(
@@ -84,7 +86,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`NavierStokesInitialCondition` class for specifying the intial conditions of
-    :obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`.
+    :class:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver`.
     """
 
     rho: str = pd.Field(description="Density")
@@ -118,24 +120,25 @@ class PDEModelBase(Flow360BaseModel):
 
 class Fluid(PDEModelBase):
     """
-    General FluidDynamics volume model that contains all the common fields every fluid dynamics zone should have.
+    :class:`Fluid` class for setting up the volume model that contains
+    all the common fields every fluid dynamics zone should have.
     """
 
     type: Literal["Fluid"] = pd.Field("Fluid", frozen=True)
     navier_stokes_solver: NavierStokesSolver = pd.Field(
         NavierStokesSolver(),
         description="Navier-Stokes solver settings, see "
-        + ":obj:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver` documentation.",
+        + ":class:`~flow360.component.simulation.models.solver_numerics.NavierStokesSolver` documentation.",
     )
     turbulence_model_solver: TurbulenceModelSolverType = pd.Field(
         SpalartAllmaras(),
         description="Turbulence model solver settings, see "
-        + ":obj:`~flow360.component.simulation.models.solver_numerics.TurbulenceModelSolver` documentation.",
+        + ":class:`~flow360.component.simulation.models.solver_numerics.TurbulenceModelSolver` documentation.",
     )
     transition_model_solver: TransitionModelSolverType = pd.Field(
         NoneSolver(),
         description="Transition solver settings, see "
-        + ":obj:`~flow360.component.simulation.models.solver_numerics.TransitionModelSolver` documentation.",
+        + ":class:`~flow360.component.simulation.models.solver_numerics.TransitionModelSolver` documentation.",
     )
 
     material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid")
@@ -152,10 +155,11 @@ class Fluid(PDEModelBase):
 
 class Solid(PDEModelBase):
     """
-    General HeatTransfer volume model that contains all the common fields every heat transfer zone should have.
+    :class:`Solid` class for setting up the HeatTransfer volume model that
+    contains all the common fields every heat transfer zone should have.
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Solid` model")
+    name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
     entities: EntityList[GenericVolume] = pd.Field(
         alias="volumes",
@@ -167,7 +171,8 @@ class Solid(PDEModelBase):
     heat_equation_solver: HeatEquationSolver = pd.Field(
         HeatEquationSolver(),
         description="Heat equation solver settings, see "
-        + ":obj:`~flow360.component.simulation.models.solver_numerics.HeatEquationSolver` documentation.",
+        + ":class:`~flow360.component.simulation.models.solver_numerics.HeatEquationSolver` documentation. "
+        + ":class:`~flow360.component.simulation.outputs.outputs.SurfaceIntegralOutput`",
     )
     volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(
         0, description="The volumetric heat source"
@@ -182,25 +187,6 @@ class Solid(PDEModelBase):
 class ForcePerArea(Flow360BaseModel):
     """:class:`ForcePerArea` class for setting up force per area for Actuator Disk
 
-    Parameters
-    ----------
-    radius : LengthType.Array
-        Radius of the sampled locations in grid unit
-
-    thrust : PressureType.Array
-        Force per area in the axial direction, positive means the axial force follows the same direction as axisThrust.
-        It is non-dimensional: trustPerArea[SI=N/m2]/rho_inf/C_inf^2
-
-    circumferential : PressureType.Array
-        Force per area in the circumferential direction, positive means the circumferential force follows the same
-        direction as axisThrust with the right hand rule. It is non-dimensional:
-                                                                circumferentialForcePerArea[SI=N/m2]/rho_inf/C_inf^2
-
-    Returns
-    -------
-    :class:`ForcePerArea`
-        An instance of the component class ForcePerArea.
-
     Example
     -------
     >>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP
@@ -208,9 +194,20 @@ class ForcePerArea(Flow360BaseModel):
     TODO: Use dimensioned values
     """
 
-    radius: LengthType.Array  # pylint: disable=no-member
-    thrust: PressureType.Array  # pylint: disable=no-member
-    circumferential: PressureType.Array  # pylint: disable=no-member
+    # pylint: disable=no-member
+    radius: LengthType.Array = pd.Field(description="Radius of the sampled locations in grid unit.")
+    # pylint: disable=no-member
+    thrust: PressureType.Array = pd.Field(
+        description="Force per area in the axial direction, positive means the axial force follows the same "
+        + "direction as the thrust axis. "
+        + "It is non-dimensional: :math:`\\frac{\\text{thrustPerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`"
+    )
+    # pylint: disable=no-member
+    circumferential: PressureType.Array = pd.Field(
+        description="Force per area in the circumferential direction, positive means the circumferential force "
+        + "follows the same direction as the thrust axis with the right hand rule. It is non-dimensional: "
+        + ":math:`\\frac{\\text{circumferentialForcePerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`"
+    )
 
     # pylint: disable=no-self-argument, missing-function-docstring
     @pd.model_validator(mode="before")
@@ -236,8 +233,7 @@ class ActuatorDisk(Flow360BaseModel):
     Note that `center`, `axis_thrust`, `thickness` can be acquired from `entity` so they are not required anymore.
     """
 
-    entities: Optional[EntityList[Cylinder]] = pd.Field(
-        None,
+    entities: EntityList[Cylinder] = pd.Field(
         alias="volumes",
         description="The list of `Cylinder` entities for the ActuatorDisk model",
     )
@@ -245,7 +241,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the ActuatorDisk model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model")
+    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model.")
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
@@ -308,7 +304,7 @@ class BETDisk(Flow360BaseModel):
     so they are not required anymore.
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model")
+    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
@@ -367,7 +363,7 @@ class BETDisk(Flow360BaseModel):
     )
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
-        + ":code:`sectional_radiuses`."
+        + ":attr:`sectional_radiuses`."
     )
     sectional_radiuses: List[float] = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
@@ -417,11 +413,9 @@ class BETDisk(Flow360BaseModel):
 class Rotation(Flow360BaseModel):
     """
     :class:`Rotation` class for specifying rotation settings.
-    Note: For specifying the rotation speed, please use the unit system to convert
-    degree or degree per second to radian and radian per second.
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model")
+    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityList[GenericVolume, Cylinder] = pd.Field(
         alias="volumes",
@@ -432,8 +426,7 @@ class Rotation(Flow360BaseModel):
     # TODO: Add test for each of the spec specification.
     spec: Union[AngleExpression, FromUserDefinedDynamics, AngularVelocity] = pd.Field(
         discriminator="type_name",
-        description="The angular velocity for rotation. Should use the unit system "
-        + "to convert degree or degree per second to radian and radian per second.",
+        description="The angular velocity or rotation angle as a function of time.",
     )
     parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(
         None, description="The parent rotating entity in a nested rotation case."
@@ -462,7 +455,7 @@ class PorousMedium(Flow360BaseModel):
     For further information please refer to the :ref:`porous media knowledge base <knowledge_base_porousMedia>`
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model")
+    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
     entities: EntityList[GenericVolume, Box] = pd.Field(alias="volumes")
 

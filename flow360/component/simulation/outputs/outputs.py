@@ -61,15 +61,16 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings):
-    """Surface output settings."""
+    """:class:`SurfaceOutput` class for surface output settings."""
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: Optional[str] = pd.Field(None, description="Name of the `SurfaceOutput`")
+    name: Optional[str] = pd.Field(None, description="Name of the `SurfaceOutput`.")
     entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
-        description="List of output surfaces. The name of the surface is used as the key. "
+        description="List of output :class:`~flow360.component.simulation.primitives.Surface`/"
+        + ":class:`~flow360.component.simulation.primitives.GhostSurface` entities. "
         + "These surface names have to be the patch name in the grid file or the alias name specified in case JSON.",
     )
     write_single_file: bool = pd.Field(
@@ -82,13 +83,13 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>` "
         + "and :ref:`variables specific to surfaceOutput<SurfaceSpecificVariables>`. "
-        + ":code:`outputFields` specified under :code:`surfaceOutput` will be added to all surfaces."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """
+    :class:`TimeAverageSurfaceOutput` class for time average surface output settings.
     Caveats:
     Solver side only accept exactly the same set of output_fields (is shared) between
     VolumeOutput and TimeAverageVolumeOutput.
@@ -108,9 +109,9 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
 
 
 class VolumeOutput(_AnimationAndFileFormatSettings):
-    """Volume output settings. (test the code)"""
+    """:class:`VolumeOutput` class for volume output settings."""
 
-    name: Optional[str] = pd.Field(None, description="Name of the `VolumeOutput`")
+    name: Optional[str] = pd.Field(None, description="Name of the `VolumeOutput`.")
     output_fields: UniqueItemList[VolumeFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>`, "
         + "and :ref:`variables specific to volumeOutput<VolumeAndSliceSpecificVariables>`."
@@ -120,6 +121,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
 
 class TimeAverageVolumeOutput(VolumeOutput):
     """
+    :class:`TimeAverageVolumeOutput` class for time average volume output settings.
     Caveats:
     Solver side only accept exactly the same set of output_fields (is shared)
     between VolumeOutput and TimeAverageVolumeOutput.
@@ -140,22 +142,22 @@ class TimeAverageVolumeOutput(VolumeOutput):
 
 
 class SliceOutput(_AnimationAndFileFormatSettings):
-    """Slice output settings."""
+    """:class:`SliceOutput` class for slice output settings."""
 
-    name: Optional[str] = pd.Field(None, description="Name of the `SliceOutput`")
+    name: Optional[str] = pd.Field(None, description="Name of the `SliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
-        alias="slices", description="List of output slice entities."
+        alias="slices",
+        description="List of output :class:`~flow360.component.simulation.outputs.output_entities.Slice` entities.",
     )
     output_fields: UniqueItemList[SliceFieldNames] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariables>` "
         + "and :ref:`variables specific to sliceOutput<VolumeAndSliceSpecificVariables>`. "
-        + ":code:`outputFields` specified under :code:`sliceOutput` will be added to all slices."
     )
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
 class TimeAverageSliceOutput(SliceOutput):
-    """TimeAverageSliceOutput output settings."""
+    """:class:`TimeAverageSliceOutput` class for time average slice output settings."""
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
@@ -164,11 +166,12 @@ class TimeAverageSliceOutput(SliceOutput):
 
 
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
-    """Isosurface output settings."""
+    """:class:`IsosurfaceOutput` class for isosurface output settings."""
 
-    name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`")
+    name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`.")
     entities: UniqueItemList[Isosurface] = pd.Field(
-        alias="isosurfaces", description="List of isosurface entities."
+        alias="isosurfaces",
+        description="List of :class:`~flow360.component.simulation.outputs.output_entities.Isosurface` entities.",
     )
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description=" Isosurface field variable to be written. One of :code:`p`, :code:`rho`, "
@@ -178,13 +181,15 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 
 
 class SurfaceIntegralOutput(Flow360BaseModel):
-    """Surface integral output settings."""
+    """:class:`SurfaceIntegralOutput` class for surface integral output settings."""
 
     name: str = pd.Field()
 
     entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
-        description="List of surface entities on which the surface integral will be calculated.",
+        description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
+        + ":class:`~flow360.component.simulation.primitives.GhostSurface` entities on which "
+        + "the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description="List of output fields which will be added to all monitors within the monitor group,"
@@ -194,12 +199,15 @@ class SurfaceIntegralOutput(Flow360BaseModel):
 
 
 class ProbeOutput(Flow360BaseModel):
-    """Probe monitor output settings."""
+    """:class:`ProbeOutput` class for probe monitor output settings."""
 
-    name: str = pd.Field(description="Name of the monitor group")
+    name: str = pd.Field(description="Name of the monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
-        description="List of monitored `Point`/`PointArray` entities belonging to this monitor group.",
+        description="List of monitored :class:`~flow360.component.simulation.outputs.output_entities.Point`/"
+        + ":class:`~flow360.component.simulation.outputs.output_entities.PointArray` entities belonging to this "
+        + "monitor group. :class:`~flow360.component.simulation.outputs.output_entities.PointArray` is used to "
+        + "define monitored points along a line.",
     )
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
         description="List of output fields which will be added to all monitors within the monitor group,"
@@ -220,14 +228,23 @@ class ProbeOutput(Flow360BaseModel):
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
-    Probe monitor output settings.
+    :class:`SurfaceProbeOutput` class for surface probe monitor output settings.
     The monitor location will be projected to the surface closest to the point.
     """
 
-    name: str = pd.Field()
-    entities: EntityList[Point, PointArray] = pd.Field(alias="probe_points")
+    name: str = pd.Field(description="Name of the surface monitor group.")
+    entities: EntityList[Point, PointArray] = pd.Field(
+        alias="probe_points",
+        description="List of monitored :class:`~flow360.component.simulation.outputs.output_entities.Point`/"
+        + ":class:`~flow360.component.simulation.outputs.output_entities.PointArray` entities belonging to this "
+        + "surface monitor group. :class:`~flow360.component.simulation.outputs.output_entities.PointArray` "
+        + "is used to define monitored points along a line.",
+    )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface] = pd.Field()
+    target_surfaces: EntityList[Surface] = pd.Field(
+        description="List of :class:`~flow360.component.simulation.primitives.Surface` "
+        + "entities belonging to this monitor group."
+    )
 
     output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
@@ -240,9 +257,9 @@ class SurfaceProbeOutput(Flow360BaseModel):
 
 
 class AeroAcousticOutput(Flow360BaseModel):
-    """AeroAcoustic output settings."""
+    """:class:`AeroAcousticOutput` class for aeroacoustic output settings."""
 
-    name: Optional[str] = pd.Field(None, description="Name of the `AeroAcousticOutput`")
+    name: Optional[str] = pd.Field(None, description="Name of the `AeroAcousticOutput`.")
     patch_type: Literal["solid"] = pd.Field("solid", frozen=True)
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field(

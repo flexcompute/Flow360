@@ -33,29 +33,6 @@ HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
 class LinearSolver(Flow360BaseModel):
     """:class:`LinearSolver` class for setting up linear solver for heat equation
 
-
-    Parameters
-    ----------
-
-    max_iterations : PositiveInt, optional
-        Maximum number of linear solver iterations, by default 50
-
-    absolute_tolerance : PositiveFloat, optional
-        The linear solver converges when the final residual of the pseudo steps below this value. Either absolute
-        tolerance or relative tolerance can be used to determine convergence, by default 1e-10
-
-    relative_tolerance :
-        The linear solver converges when the ratio of the final residual and the initial
-        residual of the pseudo step is below this value.
-
-    validation: tolerance settings only available to HeatEquationSolver
-
-    Returns
-    -------
-    :class:`LinearSolver`
-        An instance of the component class LinearSolver.
-
-
     Example
     -------
     >>> ls = LinearSolver(
@@ -107,64 +84,6 @@ class NavierStokesSolver(GenericSolverSettings):
     For more information on setting up the numerical parameters for the Navier-Stokes solver,
     refer to :ref:`Navier-Stokes solver knowledge base <knowledge_base_navierStokesSolver>`.
 
-    Parameters
-    ----------
-
-    absolute_tolerance :
-        Tolerance for the NS residual, below which the solver goes to the next physical step
-
-    relative_tolerance :
-        Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is
-        defined as the ratio of the current pseudoStep’s residual to the maximum residual present in the first
-        10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and
-        only absoluteTolerance is used as the convergence criterion
-
-    CFL_multiplier :
-        Factor to the CFL definitions defined in “timeStepping” section
-
-    kappa_MUSCL :
-        Kappa for the MUSCL scheme, range from [-1, 1], with 1 being unstable. The default value of -1 leads to a 2nd
-        order upwind scheme and is the most stable. A value of 0.33 leads to a blended upwind/central scheme and is
-        recommended for low subsonic flows leading to reduced dissipation
-
-    update_jacobian_frequency :
-        Frequency at which the jacobian is updated.
-
-    equation_evaluation_frequency :
-        Frequency at which to update the compressible NS equation in loosely-coupled simulations
-
-    max_force_jac_update_physical_steps :
-        When which physical steps, the jacobian matrix is updated every pseudo step
-
-    order_of_accuracy :
-        Order of accuracy in space
-
-    limit_velocity :
-        Limiter for velocity
-
-    limit_pressure_density :
-        Limiter for pressure and density
-
-    numerical_dissipation_factor :
-        A factor in the range [0.01, 1.0] which exponentially reduces the dissipation of the numerical flux.
-        The recommended starting value for most low-dissipation runs is 0.2
-
-    linear_solver:
-        Linear solver settings, see :class:`LinearSolver` documentation.
-
-    low_mach_preconditioner:
-        Uses preconditioning for accelerating low Mach number flows.
-
-    low_mach_preconditioner_threshold:
-        For flow regions with Mach numbers smaller than threshold, the input Mach number to the preconditioner is
-        assumed to be the threshold value if it is smaller than the threshold.
-        The default value for the threshold is the freestream Mach number.
-
-    Returns
-    -------
-    :class:`NavierStokesSolver`
-        An instance of the component class NavierStokesSolver.
-
     Example
     -------
     >>> ns = NavierStokesSolver(absolute_tolerance=1e-10)
@@ -176,7 +95,7 @@ class NavierStokesSolver(GenericSolverSettings):
     )
 
     CFL_multiplier: PositiveFloat = pd.Field(
-        1.0, description="Factor to the CFL definitions defined in :code:`Time stepping` section"
+        1.0, description="Factor to the CFL definitions defined in :code:`time_stepping` section"
     )
     kappa_MUSCL: pd.confloat(ge=-1, le=1) = pd.Field(
         -1,
@@ -264,69 +183,13 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     For more information on setting up the numerical parameters for the turbulence model solver,
     refer to :ref:`the turbulence model solver knowledge base <knowledge_base_turbulenceModelSolver>`.
 
-    Parameters
-    ----------
-    absoluteTolerance :
-        Tolerance for the NS residual, below which the solver goes to the next physical step
-
-    relativeTolerance :
-        Tolerance to the relative residual, below which the solver goes to the next physical step. Relative residual is
-        defined as the ratio of the current pseudoStep’s residual to the maximum residual present in the first
-        10 pseudoSteps within the current physicalStep. NOTE: relativeTolerance is ignored in steady simulations and
-        only absoluteTolerance is used as the convergence criterion
-
-    CFL_multiplier :
-        Factor to the CFL definitions defined in “timeStepping” section
-
-    linearIterations :
-        Number of linear solver iterations
-
-    updateJacobianFrequency :
-        Frequency at which the jacobian is updated.
-
-    equationEvalFrequency :
-        Frequency at which to update the NS equation in loosely-coupled simulations
-
-    maxForceJacUpdatePhysicalSteps :
-        When which physical steps, the jacobian matrix is updated every pseudo step
-
-    orderOfAccuracy :
-        Order of accuracy in space
-
-    reconstruction_gradient_limiter :
-        The strength of gradient limiter used in reconstruction of solution variables at the faces (specified in the
-        range [0.0, 2.0]). 0.0 corresponds to setting the gradient equal to zero, and 2.0 means no limiting.
-
-    quadratic_constitutive_relation : bool, optional
-        Use quadratic constitutive relation for turbulence shear stress tensor instead of Boussinesq Approximation
-
-    DDES : bool, optional
-        Enables Delayed Detached Eddy Simulation. Supported for both SpalartAllmaras and kOmegaSST turbulence models,
-        with and without AmplificationFactorTransport transition model enabled.
-
-    grid_size_for_LES : Literal['maxEdgeLength', 'meanEdgeLength'], optional
-        Specifes the length used for the computation of LES length scale. The allowed inputs are "maxEdgeLength"
-        (default) and "meanEdgeLength"
-
-    modeling_constants :
-        Here, user can change the default values used for DDES coefficients in the solver:
-        SpalartAllmaras: "C_DES" (= 0.72), "C_d" (= 8.0)
-        kOmegaSST: "C_DES1" (= 0.78), "C_DES2" (= 0.61), "C_d1" (= 20.0), "C_d2" (= 3.0)
-        (values shown in the parentheses are the default values used in Flow360)
-        An example with kOmegaSST mode would be: {"C_DES1": 0.85, "C_d1": 8.0}
-
-    Returns
-    -------
-    :class:`TurbulenceModelSolver`
-        An instance of the component class TurbulenceModelSolver.
-
     Example
     -------
     >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
     CFL_multiplier: PositiveFloat = pd.Field(
-        2.0, description="Factor to the CFL definitions defined in “Time stepping” section"
+        2.0, description="Factor to the CFL definitions defined in :code:`time_stepping` section"
     )
     type_name: str = pd.Field()
     absolute_tolerance: PositiveFloat = pd.Field(
@@ -411,21 +274,7 @@ TurbulenceModelSolverType = Annotated[
 
 
 class HeatEquationSolver(GenericSolverSettings):
-    """:class:`HeatEquationSolver` class for setting up heat equation solver.
-
-
-    Parameters
-    ----------
-
-    equation_evaluation_frequency : PositiveInt, optional
-        Frequency at which to solve the heat equation in conjugate heat transfer simulations
-
-
-    Returns
-    -------
-    :class:`HeatEquationSolver`
-        An instance of the component class HeatEquationSolver.
-
+    """`HeatEquationSolver` class for setting up heat equation solver.
 
     Example
     -------
@@ -462,15 +311,6 @@ class TransitionModelSolver(GenericSolverSettings):
     For more information on setting up the numerical parameters for the transition model solver,
     refer to :ref:`the transition model solver knowledge base <knowledge_base_transitionModelSolver>`.
 
-    Parameters
-    ----------
-
-    (...)
-
-    Returns
-    -------
-    :class:`TransitionModelSolver`
-        An instance of the component class TransitionModelSolver.
 
     Example
     -------
@@ -481,7 +321,7 @@ class TransitionModelSolver(GenericSolverSettings):
         "AmplificationFactorTransport", frozen=True
     )
     CFL_multiplier: PositiveFloat = pd.Field(
-        2.0, description="Factor to the CFL definitions defined " + 'in "Time stepping" section'
+        2.0, description="Factor to the CFL definitions defined in :code:`time_stepping` section"
     )
     absolute_tolerance: PositiveFloat = pd.Field(
         1e-7,
