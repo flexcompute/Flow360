@@ -7,6 +7,7 @@ from flow360.plugins.report.utils import Delta
 
 import flow360 as fl
 from flow360.log import set_logging_level
+
 set_logging_level("DEBUG")
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,13 @@ case3 = fl.Case("case-7b3233b4-eaf2-4724-9b8c-926b9807049a")  # alpha=15
 #     with open(os.path.join(here, case.name, 'manifest.json'),  'w') as fh:
 #         json.dump(case._get_manifest(), fh)
 
+class Group:
+    pass
+
+# SimulationParams.get_entities(boundaries=["wing*"]) -> ["wing1", "wing2"]
+
+boundary_list = case1.volume_mesh["wing*"]
+                case.boundaries[]
 
 
 report = Report(
@@ -44,6 +52,9 @@ report = Report(
             fig_size=0.4,
             fig_name="c3d_std",
             force_new_page=True,
+            boundaries=Group(
+                include=["*"]
+            )
         ),
         Chart3D(section_title="Chart3D Rows Testing", items_in_row=-1, fig_name="c3d_rows"),
         Chart2D(
@@ -87,4 +98,10 @@ report = Report(
 # # NOTE: There's a bug where something is being cached between create_pdf calls like this
 # # The issue seems to affect _assemble_fig_rows
 # # report.create_pdf("test_report_landscape", [a2_case, b2_case, other_a2_case], landscape=True)
-report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report_from_cloud'), use_mock_manifest=True)
+report.create_pdf(
+    "test_report_portrait",
+    [case1, case2, case3],
+    landscape=True,
+    data_storage=os.path.join(here, "my_report_from_cloud"),
+    use_mock_manifest=True,
+)
