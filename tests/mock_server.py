@@ -144,7 +144,8 @@ class MockResponseGeometrySimConfigV2(MockResponse):
         with open(os.path.join(here, "data/mock_webapi/geometry_birth_simulation_json.json")) as fh:
             res = json.load(fh)
         return res
-    
+
+
 class MockResponseSimulationJsonFile(MockResponse):
     """response for Case(id="00000000-0000-0000-0000-000000000000").params simulation json"""
 

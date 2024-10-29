@@ -683,7 +683,6 @@ class _DimensionedCSVResultModel(pd.BaseModel):
     def _in_base_component(self, base, component, component_name, params):
         log.debug(f"   -> need conversion for: {component_name} = {component}")
 
-
         if isinstance(params, SimulationParams):
             flow360_conv_system = unit_converter_v2(
                 component.units.dimensions,

@@ -237,12 +237,8 @@ def s3_download_override(monkeypatch):
         shutil.copy(os.path.join("data", remote_file_name), to_file)
         print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
-    monkeypatch.setattr(
-        S3TransferType.CASE, "download_file", s3_mock_download
-    )
-    monkeypatch.setattr(
-        S3TransferType.GEOMETRY, "download_file", s3_mock_download
-    )
+    monkeypatch.setattr(S3TransferType.CASE, "download_file", s3_mock_download)
+    monkeypatch.setattr(S3TransferType.GEOMETRY, "download_file", s3_mock_download)
 
 
 # for generating MOCK WEBAPI data:

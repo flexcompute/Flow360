@@ -4,11 +4,9 @@ Case component
 
 from __future__ import annotations
 
-import os
 import json
 import tempfile
 import time
-import shutil
 from typing import Any, Iterator, List, Union, Optional
 
 import pydantic.v1 as pd_v1
@@ -52,7 +50,7 @@ from .results.case_results import (
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
 )
-from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
+from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type, _local_download_overwrite
 from .validator import Validator
 from .simulation.simulation_params import SimulationParams
 from .simulation import services
@@ -637,21 +635,7 @@ class Case(CaseBase, Flow360Resource):
 
     @classmethod
     def from_local_storage(cls, id, name, local_storage_path, user_id: str = "local") -> Case:
-        def _local_download_file(
-            file_name: str,
-            to_file: str = None,
-            to_folder: str = ".",
-            **kwargs,
-        ):
-            expected_local_file = os.path.join(local_storage_path, file_name)
-            if not os.path.exists(expected_local_file):
-                raise RuntimeError(
-                    f"File {expected_local_file} not found. Make sure the file exists when using Case.from_local_storage()."
-                )
-            new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
-            if new_local_file != expected_local_file:
-                shutil.copy(expected_local_file, new_local_file)
-
+        _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
         # we don't know if the status is completed, but if we load from local, we can assume
         case = cls._from_meta(
             CaseMeta(

@@ -5,6 +5,7 @@ from flow360.plugins.report.utils import Delta
 
 
 import flow360 as fl
+from flow360.component.volume_mesh import VolumeMeshV2
 from flow360 import log
 
 log.set_logging_level("DEBUG")
@@ -38,6 +39,10 @@ case3 = fl.Case.from_local_storage(
     os.path.join(here, "Case_f_alpha=15"),
     user_id="AIDAU77I6BZ2QYZLLVSRW",
 )
+
+vm = VolumeMeshV2
+
+case1.volume_mesh
 
 
 report = Report(
@@ -119,14 +124,14 @@ report = Report(
 # report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))
 
 
-report_filename = os.path.join(here, "my_report", "report.json")
-with open(report_filename, "w") as f:
-    f.write(report.model_dump_json())
+# report_filename = os.path.join(here, "my_report", "report.json")
+# with open(report_filename, "w") as f:
+#     f.write(report.model_dump_json())
 
 
-Report(filename=report_filename).create_pdf(
-    "test_report_portrait",
-    [case1, case2, case3],
-    landscape=True,
-    data_storage=os.path.join(here, "my_report"),
-)
+# Report(filename=report_filename).create_pdf(
+#     "test_report_portrait",
+#     [case1, case2, case3],
+#     landscape=True,
+#     data_storage=os.path.join(here, "my_report"),
+# )
