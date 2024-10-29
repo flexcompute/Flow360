@@ -28,7 +28,6 @@ from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    SUPPORTED_MESH_FILE_PATTERNS,
     MeshNameParser,
     ProjectAssetCache,
     match_file_pattern,
@@ -165,7 +164,7 @@ class Project(pd.BaseModel):
     @property
     def surface_mesh(self):
         """
-        Returns the surface mesh asset of the project.
+        Returns the last used surface mesh asset of the project.
 
         Raises
         ------
@@ -214,7 +213,7 @@ class Project(pd.BaseModel):
     @property
     def volume_mesh(self):
         """
-        Returns the volume mesh asset of the project.
+        Returns the last used volume mesh asset of the project.
 
         Raises
         ------
@@ -230,7 +229,7 @@ class Project(pd.BaseModel):
 
     def get_case(self, asset_id: str = None) -> Case:
         """
-        Returns the case asset of the project.
+        Returns the last used case asset of the project.
 
         Parameters
         ----------
@@ -268,7 +267,7 @@ class Project(pd.BaseModel):
         """
         return self.get_case()
 
-    def available_surface_meshes(self) -> Iterable[str]:
+    def get_cached_surface_meshes(self) -> Iterable[str]:
         """
         Returns the available IDs of surface meshes in the project
 
@@ -284,7 +283,7 @@ class Project(pd.BaseModel):
 
         return self._surface_mesh_cache.get_ids()
 
-    def available_volume_meshes(self):
+    def get_cached_volume_meshes(self):
         """
         Returns the available IDs of volume meshes in the project
 
@@ -301,7 +300,7 @@ class Project(pd.BaseModel):
 
         return self._volume_mesh_cache.get_ids()
 
-    def available_cases(self):
+    def get_cached_cases(self):
         """
         Returns the available IDs of cases in the project
 
@@ -345,7 +344,7 @@ class Project(pd.BaseModel):
             f"{file} is not a geometry or volume mesh file required for project initialization. "
             "Accepted formats are: "
             f"{SUPPORTED_GEOMETRY_FILE_PATTERNS} (geometry)"
-            f"{SUPPORTED_MESH_FILE_PATTERNS} (volume mesh)"
+            f"{MeshNameParser.all_patterns(mesh_type='volume')} (volume mesh)"
         )
 
     # pylint: disable=too-many-arguments

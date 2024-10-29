@@ -4,13 +4,16 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UniformRefinement,
+)
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import ReferenceGeometry
+from flow360.component.simulation.primitives import Box, ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.unit_system import SI_unit_system, u
@@ -33,6 +36,19 @@ with SI_unit_system:
                 boundary_layer_first_layer_thickness=0.001, surface_max_edge_length=1
             ),
             volume_zones=[AutomatedFarfield()],
+            refinements=[
+                UniformRefinement(
+                    entities=[
+                        Box.from_principal_axes(
+                            name="MyBox",
+                            center=(0, 1, 2),
+                            size=(4, 5, 6),
+                            axes=((2, 2, 0), (-2, 2, 0)),
+                        ),
+                    ],
+                    spacing=1.5,
+                ),
+            ],
         ),
         reference_geometry=ReferenceGeometry(),
         operating_condition=AerospaceCondition(velocity_magnitude=100, alpha=5 * u.deg),
@@ -63,5 +79,5 @@ surface_mesh_2 = project.surface_mesh
 assert surface_mesh_1.id != surface_mesh_2.id
 
 # Check available surface mesh IDs in the project
-ids = project.available_surface_meshes()
+ids = project.get_cached_surface_meshes()
 print(ids)

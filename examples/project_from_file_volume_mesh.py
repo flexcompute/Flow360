@@ -1,3 +1,5 @@
+from matplotlib.pyplot import show
+
 import flow360 as fl
 import flow360.component.simulation.units as u
 from flow360.component.project import Project
@@ -6,7 +8,6 @@ from flow360.component.simulation.models.surface_models import (
     SymmetryPlane,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -28,7 +29,6 @@ with SI_unit_system:
     params = SimulationParams(
         operating_condition=AerospaceCondition(velocity_magnitude=100 * u.m / u.s),
         models=[
-            Fluid(),
             Wall(entities=[volume_mesh["1"]]),
             Freestream(entities=[volume_mesh["3"]]),
             SymmetryPlane(entities=[volume_mesh["2"]]),
@@ -36,3 +36,7 @@ with SI_unit_system:
     )
 
 project.run_case(params=params)
+
+residuals = project.case.results.nonlinear_residuals
+residuals.as_dataframe().plot(x="pseudo_step", logy=True)
+show()

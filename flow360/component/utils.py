@@ -2,12 +2,13 @@
 Utility functions
 """
 
+import itertools
 import os
 import re
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Generic, Iterable, Protocol, TypeVar
+from typing import Generic, Iterable, Literal, Protocol, TypeVar
 
 import zstandard as zstd
 
@@ -49,14 +50,6 @@ SUPPORTED_GEOMETRY_FILE_PATTERNS = [
     ".xmt_bin",
     ".3dm",
     ".ipt",
-]
-
-SUPPORTED_MESH_FILE_PATTERNS = [
-    ".cgns",
-    ".stl",
-    ".ugrid",
-    ".b8.ugrid",
-    ".lb8.ugrid",
 ]
 
 
@@ -539,6 +532,29 @@ class MeshNameParser:
     # pylint: disable=missing-function-docstring
     def is_valid_volume_mesh(self):
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
+
+    # pylint: disable=missing-function-docstring
+    @staticmethod
+    def all_patterns(mesh_type: Literal["surface", "volume"]):
+        endian_format = [el.ext() for el in UGRIDEndianness]
+        mesh_format = [MeshFileFormat.UGRID.ext()]
+
+        prod = itertools.product(endian_format, mesh_format)
+
+        mesh_format = [endianness + file for (endianness, file) in prod]
+
+        allowed = []
+        if mesh_type == "surface":
+            allowed = [MeshFileFormat.UGRID, MeshFileFormat.CGNS, MeshFileFormat.STL]
+        elif mesh_type == "volume":
+            allowed = [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
+
+        mesh_format = mesh_format + [el.ext() for el in allowed]
+        compression = [el.ext() for el in CompressionFormat]
+
+        prod = itertools.product(mesh_format, compression)
+
+        return [file + compression for (file, compression) in prod]
 
 
 def storage_size_formatter(size_in_bytes):
