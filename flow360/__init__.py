@@ -145,7 +145,7 @@ from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env
 from .flags import Flags
 from .user_config import UserConfig
-from .version import __version__
+from .version import __solver_version__, __version__
 
 __all__ = [
     "Accounts",
@@ -262,6 +262,7 @@ __all__ = [
     "ZeroFreestream",
     "ZeroFreestreamFromVelocity",
     "__version__",
+    "__solver_version__",
     "air",
     "flow360",
     "flow360_unit_system",
