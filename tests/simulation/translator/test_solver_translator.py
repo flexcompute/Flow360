@@ -1,5 +1,6 @@
 import json
 import os
+import unittest
 
 import pytest
 
@@ -61,6 +62,9 @@ from tests.simulation.translator.utils.symmetryBC_param_generator import (
 from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator import (
     create_turb_flat_plate_box_trip_param,
 )
+from tests.simulation.translator.utils.tutorial_2dcrm_param_generator import (
+    get_2dcrm_tutorial_param,
+)
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
     create_vortex_propagation_param,
@@ -80,6 +84,9 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
+
+assertions = unittest.TestCase("__init__")
+
 from tests.utils import compare_values
 
 
@@ -309,4 +316,33 @@ def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
     param = create_turb_flat_plate_box_trip_param
     translate_and_compare(
         param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_TurbFlatPlate137x97_BoxTrip.json"
+    )
+
+
+def test_2dcrm_tutorial(get_2dcrm_tutorial_param):
+    param = get_2dcrm_tutorial_param
+    translate_and_compare(param, mesh_unit=1 * u.ft, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
+def test_operating_condition(get_2dcrm_tutorial_param):
+    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.ft)
+    assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.dynamic_viscosity,
+        4e-8 * u.flow360_viscosity_unit,
+    )
+    assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.dynamic_viscosity.reference_viscosity.value,
+        4e-8,
+    )
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.dynamic_viscosity.effective_temperature,
+        110.4 * u.K,
+    )
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
+            converted.operating_condition.thermal_state.temperature
+        ),
+        4e-8 * u.flow360_viscosity_unit,
     )
