@@ -1,6 +1,5 @@
 import flow360 as fl
-from flow360.component.geometry import Geometry
-from flow360.component.simulation import cloud
+from flow360.component.project import Project
 from flow360.component.simulation.meshing_param.edge_params import (
     HeightBasedRefinement,
     ProjectAnisoSpacing,
@@ -45,17 +44,8 @@ https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_C
 
 fl.Env.preprod.active()
 
-SOLVER_VERSION = "release-24.11"
-
-# you can use this to upload geometry from your computer
-geometry_draft = Geometry.from_file(
-    Tutorial_2dcrm.geometry,
-    project_name="Tutorial 2D CRM from Python",
-    solver_version=SOLVER_VERSION,
-)
-geometry = geometry_draft.submit()
-# you can use this if geometry was submitted eariler:
-# geometry = Geometry.from_cloud(id=<provide-geo-id>)
+project = Project.from_file(Tutorial_2dcrm.geometry, name="Tutorial 2D CRM from Python")
+geometry = project.geometry
 
 # show face and edge groupings
 geometry.show_available_groupings(verbose_mode=True)
@@ -185,6 +175,5 @@ with SI_unit_system:
     )
 
 
-case = cloud.run_case(
-    geometry, params=params, draft_name="Case of tutorial 2D CRM from Python", async_mode=True
-)
+project.run_case(params=params, name="Case of tutorial 2D CRM from Python")
+

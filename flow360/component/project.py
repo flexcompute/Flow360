@@ -606,7 +606,7 @@ class Project(pd.BaseModel):
         params : SimulationParams
             Simulation parameters for running the mesher.
         name : str, optional
-            Name of the draft (default is "SurfaceMesh").
+            Name of the surface mesh (default is "SurfaceMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
@@ -649,7 +649,7 @@ class Project(pd.BaseModel):
         params : SimulationParams
             Simulation parameters for running the mesher.
         name : str, optional
-            Name of the draft (default is "VolumeMesh").
+            Name of the volume mesh (default is "VolumeMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
@@ -680,7 +680,7 @@ class Project(pd.BaseModel):
     def run_case(
         self,
         params: SimulationParams,
-        draft_name: str = "Case",
+        name: str = "Case",
         run_async: bool = True,
         fork: bool = False,
         solver_version: str = None,
@@ -692,8 +692,8 @@ class Project(pd.BaseModel):
         ----------
         params : SimulationParams
             Simulation parameters for running the case.
-        draft_name : str, optional
-            Name of the draft (default is "Case").
+        name : str, optional
+            Name of the case (default is "Case").
         run_async : bool, optional
             Whether to run the case asynchronously (default is True).
         fork : bool, optional
@@ -706,7 +706,7 @@ class Project(pd.BaseModel):
             self._run(
                 params=params,
                 target=Case,
-                draft_name=draft_name,
+                draft_name=name,
                 run_async=run_async,
                 fork=fork,
                 solver_version=solver_version,

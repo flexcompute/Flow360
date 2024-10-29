@@ -1,7 +1,6 @@
 import flow360 as fl
+from flow360.component.project import Project
 from flow360.component.geometry import Geometry
-from flow360.component.simulation import cloud
-
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -20,15 +19,12 @@ from flow360.examples import Airplane
 
 fl.Env.preprod.active()
 
-SOLVER_VERSION = "workbench-24.9.3"
 
-geometry_draft = Geometry.from_file(Airplane.geometry, project_name='Simple Airplane from Python', solver_version=SOLVER_VERSION)
-geometry = geometry_draft.submit()
-# you can use this if geometry was submitted eariler:
-# geometry = Geometry(id=<provide-geo-id>)
+project = Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+geo = project.geometry
 
-geometry.show_available_groupings(verbose_mode=True)
-geometry.group_faces_by_tag("groupName")
+geo.show_available_groupings(verbose_mode=True)
+geo.group_faces_by_tag("groupName")
 
 
 with SI_unit_system:
@@ -44,13 +40,13 @@ with SI_unit_system:
         time_stepping=Steady(max_steps=1000),
         models=[
             Wall(
-                surfaces=[geometry["*"]],
+                surfaces=[geo["*"]],
                 name="Wall",
             ),
             Freestream(surfaces=[AutomatedFarfield().farfield], name="Freestream"),
         ],
-        outputs=[SurfaceOutput(surfaces=geometry["*"], output_fields=['Cp', 'Cf', 'yPlus', 'CfVec'])]
+        outputs=[SurfaceOutput(surfaces=geo["*"], output_fields=['Cp', 'Cf', 'yPlus', 'CfVec'])]
     )
 
-case = cloud.run_case(geometry, params=params, draft_name="Case of Simple Airplane from Python", async_mode=True)
+project.run_case(params=params, name="Case of Simple Airplane from Python")
 
