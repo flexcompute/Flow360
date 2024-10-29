@@ -50,8 +50,6 @@ from flow360.examples import Tutorial_2dcrm
 In this tutorial case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration. Documentation for this tutorial is available in the link below.
 
 https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_Configuration/Multielement_Configuration.html
-
-Settings defined in this file are derived from the documentation and aim to represent the old tutorial case using the new Flow 360 python client.
 """
 
 
