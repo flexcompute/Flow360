@@ -18,7 +18,7 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock
 
 
 class AssetCache(Flow360BaseModel):
@@ -108,7 +108,7 @@ def _update_zone_boundaries_with_metadata(
     """Update zone boundaries with volume mesh metadata."""
     for volume_entity in registry.get_bucket(by_type=_VolumeEntityBase).entities:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
-            with _model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
+            with model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
                 volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
                     items=volume_mesh_meta_data["zones"][volume_entity.name]["boundaryNames"]
                 )
@@ -128,5 +128,5 @@ def _set_boundary_full_name_with_zone_name(
                 # Note: We need to figure out how to handle this. Otherwise this may result in wrong
                 # Note: zone name getting prepended.
                 continue
-            with _model_attribute_unlock(surface, "private_attribute_full_name"):
+            with model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
