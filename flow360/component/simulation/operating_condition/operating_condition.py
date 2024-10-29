@@ -257,7 +257,7 @@ OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 def operating_condition_from_mach_reynolds(
     mach: pd.NonNegativeFloat = None,
     reynolds: pd.PositiveFloat = None,
-    temperature: pd.PositiveFloat = None,
+    temperature: TemperatureType.Positive = None,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None
@@ -267,8 +267,8 @@ def operating_condition_from_mach_reynolds(
         material=Air(
             dynamic_viscosity=Sutherland(
                 reference_temperature=temperature,
-                reference_viscosity=(mach/reynolds),
-                effective_temperature=110.4
+                reference_viscosity=(mach/reynolds) * u.flow360_viscosity_unit,
+                effective_temperature=110.4 * u.K
             )
         )
     )
