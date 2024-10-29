@@ -596,7 +596,6 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "SurfaceMesh",
         run_async: bool = True,
-        fork: bool = False,
         solver_version: str = None,
     ):
         """
@@ -610,8 +609,6 @@ class Project(pd.BaseModel):
             Name of the draft (default is "SurfaceMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
-        fork : bool, optional
-            Whether to fork the case (default is False).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
 
@@ -631,7 +628,6 @@ class Project(pd.BaseModel):
                 target=SurfaceMesh,
                 draft_name=name,
                 run_async=run_async,
-                fork=fork,
                 solver_version=solver_version,
             )
         )
@@ -642,7 +638,6 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "VolumeMesh",
         run_async: bool = True,
-        fork: bool = True,
         solver_version: str = None,
     ):
         """
@@ -656,8 +651,6 @@ class Project(pd.BaseModel):
             Name of the draft (default is "VolumeMesh").
         run_async : bool, optional
             Whether to run the mesher asynchronously (default is True).
-        fork : bool, optional
-            Whether to fork the case (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
 
@@ -677,7 +670,6 @@ class Project(pd.BaseModel):
                 target=VolumeMeshV2,
                 draft_name=name,
                 run_async=run_async,
-                fork=fork,
                 solver_version=solver_version,
             )
         )
@@ -688,7 +680,7 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         draft_name: str = "Case",
         run_async: bool = True,
-        fork: bool = True,
+        fork: bool = False,
         solver_version: str = None,
     ):
         """

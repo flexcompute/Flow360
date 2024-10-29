@@ -924,11 +924,8 @@ class VolumeMeshDraftV2(ResourceDraft):
         if not compress:
             compression = CompressionFormat.NONE
 
-        if mesh_format is MeshFileFormat.CGNS:
-            remote_name = "volumeMesh"
-        else:
-            remote_name = "mesh"
-        remote_name = f"{remote_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        remote_stem = "volumeMesh"
+        remote_name = f"{remote_stem}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
 
         req = NewVolumeMeshRequestV2(
             name=self.project_name,
@@ -943,6 +940,8 @@ class VolumeMeshDraftV2(ResourceDraft):
         # Create new volume mesh resource and project
         req_dict = req.dict()
         resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req_dict)
+        print("========debug")
+        print(resp)
         info = VolumeMeshMetaV2(**resp)
 
         volume_mesh = VolumeMeshV2(info.id)
