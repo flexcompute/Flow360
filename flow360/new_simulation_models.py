@@ -28,6 +28,9 @@ from flow360.component.simulation.models.solver_numerics import (
     NavierStokesSolver,
     NoneSolver,
     SpalartAllmaras,
+    KOmegaSST,
+    SpalartAllmarasModelConstants,
+    KOmegaSSTModelConstants,
     TransitionModelSolverType,
     TurbulenceModelSolverType,
 )
@@ -39,15 +42,23 @@ from flow360.component.simulation.models.surface_models import (
     SlipWall,
     SymmetryPlane,
     Wall,
+    Translational,
 )
+from flow360.component.simulation.models.turbulence_quantities import TurbulenceQuantities
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
+    AngularVelocity,
     BETDisk,
+    BETDiskChord,
+    BETDiskSectionalPolar,
+    BETDiskTwist,
     Fluid,
     ForcePerArea,
     PorousMedium,
     Rotation,
     Solid,
+    NavierStokesInitialCondition,
+    FromUserDefinedDynamics,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -65,6 +76,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.primitives import (
     Cylinder,
     Edge,
@@ -78,12 +90,14 @@ from flow360.component.simulation.time_stepping.time_stepping import (
     Steady,
     Unsteady,
 )
-from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system, imperial_unit_system
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import UserDefinedDynamic
 
 __all__ = [
     "u",
     "SimulationParams",
     "SI_unit_system",
+    "imperial_unit_system",
     "services",
     "MeshingParams",
     "MeshingDefaults",
@@ -116,7 +130,11 @@ __all__ = [
     "Fluid",
     "Solid",
     "ActuatorDisk",
+    "AngularVelocity",
     "BETDisk",
+    "BETDiskChord",
+    "BETDiskSectionalPolar",
+    "BETDiskTwist",
     "Rotation",
     "PorousMedium",
     "SurfaceOutput",
@@ -133,6 +151,9 @@ __all__ = [
     "NavierStokesSolver",
     "NoneSolver",
     "SpalartAllmaras",
+    "KOmegaSST",
+    "SpalartAllmarasModelConstants",
+    "KOmegaSSTModelConstants",
     "TransitionModelSolverType",
     "TurbulenceModelSolverType",
     "LinearSolver",
@@ -140,4 +161,10 @@ __all__ = [
     "Air",
     "Sutherland",
     "SolidMaterial",
+    "Slice",
+    "TurbulenceQuantities",
+    "UserDefinedDynamic",
+    "Translational",
+    "NavierStokesInitialCondition",
+    "FromUserDefinedDynamics",
 ]
