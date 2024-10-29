@@ -228,7 +228,7 @@ def monitor_translator(
     monitor_group["computeTimeAverages"] = False
     monitor_group["animationFrequency"] = 1
     monitor_group["animationFrequencyOffset"] = 0
-    if isinstance(output_model, Union[TimeAverageProbeOutput, TimeAverageSurfaceProbeOutput]):
+    if isinstance(output_model, (TimeAverageProbeOutput, TimeAverageSurfaceProbeOutput)):
         monitor_group["computeTimeAverages"] = True
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
