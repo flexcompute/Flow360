@@ -59,13 +59,13 @@ class AssetBase(metaclass=ABCMeta):
         return resource
 
     def short_description(self) -> str:
-         """short_description
-         Returns
-         -------
-         str
-             generates short description of resource (name, id, status)
-         """
-         return self._webapi.short_description()
+        """short_description
+        Returns
+        -------
+        str
+            generates short description of resource (name, id, status)
+        """
+        return self._webapi.short_description()
 
     @classmethod
     def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj):

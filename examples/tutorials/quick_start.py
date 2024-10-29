@@ -1,6 +1,6 @@
 import flow360 as fl
-from flow360.component.project import Project
 from flow360.component.geometry import Geometry
+from flow360.component.project import Project
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -10,10 +10,10 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Airplane
 
@@ -45,8 +45,7 @@ with SI_unit_system:
             ),
             Freestream(surfaces=[AutomatedFarfield().farfield], name="Freestream"),
         ],
-        outputs=[SurfaceOutput(surfaces=geo["*"], output_fields=['Cp', 'Cf', 'yPlus', 'CfVec'])]
+        outputs=[SurfaceOutput(surfaces=geo["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])],
     )
 
 project.run_case(params=params, name="Case of Simple Airplane from Python")
-

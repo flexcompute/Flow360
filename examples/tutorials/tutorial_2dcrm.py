@@ -176,4 +176,3 @@ with SI_unit_system:
 
 
 project.run_case(params=params, name="Case of tutorial 2D CRM from Python")
-
