@@ -82,6 +82,8 @@ print(report.get_requirements())
 
 for requirement in report.get_requirements():
     for case in cases:
-        if os.path.basename(requirement) == 'manifest.json':
+        if os.path.basename(requirement) == "manifest.json":
             continue
-        case._download_file(file_name=requirement, to_file=os.path.join(here, case.name, requirement))
+        case._download_file(
+            file_name=requirement, to_file=os.path.join(here, case.name, requirement)
+        )

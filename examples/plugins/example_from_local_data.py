@@ -1,5 +1,5 @@
 import os
-from flow360.plugins.report.report import Report
+from flow360.plugins.report.report import Report, DataNode
 from flow360.plugins.report.report_items import Summary, Inputs, Table, Chart2D, Chart3D
 from flow360.plugins.report.utils import Delta
 
@@ -9,7 +9,7 @@ from flow360 import log
 
 log.set_logging_level("DEBUG")
 fl.Env.dev.active()
-fl.UserConfig.set_profile('auto_test_1')
+fl.UserConfig.set_profile("auto_test_1")
 
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -17,19 +17,26 @@ here = os.path.dirname(os.path.abspath(__file__))
 # print(fl.Case("case-21469d5e-257d-49de-8f5d-97f27c526a47").info.user_id)
 
 
+data_path = DataNode()
 
 
 case1 = fl.Case.from_local_storage(
-    "case-21469d5e-257d-49de-8f5d-97f27c526a47", "Case_f_alpha=5", os.path.join(here, "Case_f_alpha=5"),
-    user_id="AIDAU77I6BZ2QYZLLVSRW"
+    "case-21469d5e-257d-49de-8f5d-97f27c526a47",
+    "Case_f_alpha=5",
+    os.path.join(here, "Case_f_alpha=5"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW",
 )
 case2 = fl.Case.from_local_storage(
-    "case-8f1e31fc-e8df-408f-aab8-62507bf85bf5", "Case_f_alpha=10", os.path.join(here, "Case_f_alpha=10"),
-    user_id="AIDAU77I6BZ2QYZLLVSRW"
+    "case-8f1e31fc-e8df-408f-aab8-62507bf85bf5",
+    "Case_f_alpha=10",
+    os.path.join(here, "Case_f_alpha=10"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW",
 )
 case3 = fl.Case.from_local_storage(
-    "case-73e1d12f-a8d1-477c-95cf-45f6685e7971", "Case_f_alpha=15", os.path.join(here, "Case_f_alpha=15"),
-    user_id="AIDAU77I6BZ2QYZLLVSRW"
+    "case-73e1d12f-a8d1-477c-95cf-45f6685e7971",
+    "Case_f_alpha=15",
+    os.path.join(here, "Case_f_alpha=15"),
+    user_id="AIDAU77I6BZ2QYZLLVSRW",
 )
 
 
@@ -50,10 +57,24 @@ report = Report(
             fig_size=0.4,
             fig_name="c3d_std",
             force_new_page=True,
-            show='boundaries'
+            show="boundaries",
         ),
-        Chart3D(section_title="Chart3D Rows Testing", items_in_row=-1, fig_name="c3d_rows", show='boundaries', field='yPlus', limits=(0.1, 82)),
-        Chart3D(section_title="Q-criterion in row", items_in_row=-1, fig_name="c3d_rows_qcriterion", show='qcriterion', field='Mach', limits=(0, 0.346)),
+        Chart3D(
+            section_title="Chart3D Rows Testing",
+            items_in_row=-1,
+            fig_name="c3d_rows",
+            show="boundaries",
+            field="yPlus",
+            limits=(0.1, 82),
+        ),
+        Chart3D(
+            section_title="Q-criterion in row",
+            items_in_row=-1,
+            fig_name="c3d_rows_qcriterion",
+            show="qcriterion",
+            field="Mach",
+            limits=(0, 0.346),
+        ),
         Chart2D(
             data_path=["total_forces/pseudo_step", "total_forces/pseudo_step"],
             section_title="Sanity Check Step against Step",
@@ -98,11 +119,14 @@ report = Report(
 # report.create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))
 
 
-report_filename = os.path.join(here, 'my_report', 'report.json')
+report_filename = os.path.join(here, "my_report", "report.json")
 with open(report_filename, "w") as f:
-    f.write(report.model_dump_json()
+    f.write(report.model_dump_json())
+
+
+Report(filename=report_filename).create_pdf(
+    "test_report_portrait",
+    [case1, case2, case3],
+    landscape=True,
+    data_storage=os.path.join(here, "my_report"),
 )
-    
-
-
-Report(filename=report_filename).create_pdf("test_report_portrait", [case1, case2, case3], landscape=True, data_storage=os.path.join(here, 'my_report'))

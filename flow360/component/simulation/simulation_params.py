@@ -23,11 +23,26 @@ from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    VolumeModelTypes,
+    ActuatorDisk,
+    BETDisk,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import (
+    OutputTypes,
+    SurfaceOutput,
+    IsosurfaceOutput,
+    VolumeOutput,
+    SliceOutput,
+    ProbeOutput,
+    SurfaceProbeOutput,
+    SurfaceIntegralOutput,
+    AeroAcousticOutput,
+)
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     _SurfaceEntityBase,
@@ -184,9 +199,7 @@ class SimulationParams(_ParamModelBase):
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = CaseField(
-        Steady(), discriminator="type_name"
-    )
+    time_stepping: Union[Steady, Unsteady] = CaseField(Steady(), discriminator="type_name")
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
     """
     Support for user defined expression?
@@ -322,3 +335,54 @@ class SimulationParams(_ParamModelBase):
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self
+
+    def is_steady(self):
+        """
+        returns True when SimulationParams is steady state
+        """
+        return isinstance(self.time_stepping, Steady)
+
+    def has_actuator_disks(self):
+        """
+        returns True when SimulationParams has ActuatorDisk disk
+        """
+        return any(isinstance(item, ActuatorDisk) for item in self.models)
+
+    def has_bet_disks(self):
+        """
+        returns True when SimulationParams has BET disk
+        """
+        return any(isinstance(item, BETDisk) for item in self.models)
+
+    def has_isosurfaces(self):
+        """
+        returns True when SimulationParams has isosurfaces
+        """
+        return any(isinstance(item, IsosurfaceOutput) for item in self.outputs)
+
+    def has_monitors(self):
+        """
+        returns True when SimulationParams has monitors
+        """
+        return any(
+            isinstance(item, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput))
+            for item in self.outputs
+        )
+
+    def has_volume_output(self):
+        """
+        returns True when SimulationParams has volume output
+        """
+        return any(isinstance(item, VolumeOutput) for item in self.outputs)
+
+    def has_aeroacoustics(self):
+        """
+        returns True when SimulationParams has aeroacoustics
+        """
+        return any(isinstance(item, (AeroAcousticOutput)) for item in self.outputs)
+
+    def has_user_defined_dynamics(self):
+        """
+        returns True when SimulationParams has user defined dynamics
+        """
+        return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0

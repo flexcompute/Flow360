@@ -170,8 +170,9 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
 
 
 class _Resource(Flow360RequestsV2):
-    type: Literal['Case', 'Project']
+    type: Literal["Case", "Project"]
     id: str
+
 
 class NewReportRequest(Flow360RequestsV2):
     name: str

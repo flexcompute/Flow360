@@ -1,4 +1,3 @@
-
 from typing import List, Tuple, Any, Optional, Union, Literal
 import pydantic as pd
 from pydantic import PrivateAttr
@@ -18,66 +17,65 @@ from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-
 class UVFShutterRequestBaseModel(Flow360BaseModel):
     def model_dump_json(self, **kwargs):
         return super().model_dump_json(by_alias=True, **kwargs)
 
 
-UvfObjectTypes = Literal[
-    "slices", "qcriterion", "boundaries"
-]
+UvfObjectTypes = Literal["slices", "qcriterion", "boundaries"]
+
 
 class SourceContext(Flow360BaseModel):
     user_id: str
     case_id: str
 
+
 class Resolution(Flow360BaseModel):
     width: int = 3840
     height: int = 2160
 
+
 class Settings(Flow360BaseModel):
     resolution: Resolution = Resolution()
+
 
 class SetObjectVisibilityPayload(Flow360BaseModel):
     object_ids: List[UvfObjectTypes]
     visibility: bool
+
 
 class SetFieldPayload(Flow360BaseModel):
     object_id: UvfObjectTypes
     field_name: str
     min_max: Tuple[float, float]
 
+
 class TakeScreenshotPayload(Flow360BaseModel):
-    file_name: str = pd.Field(alias='filename')
-    type: str = 'png'
+    file_name: str = pd.Field(alias="filename")
+    type: str = "png"
+
 
 class ResetFieldPayload(Flow360BaseModel):
     object_id: UvfObjectTypes
 
+
 ACTION_TYPES = Literal[
-    "focus",
-    "set-object-visibility",
-    "set-field",
-    "reset-field",
-    "take-screenshot"
+    "focus", "set-object-visibility", "set-field", "reset-field", "take-screenshot"
 ]
+
 
 class ActionPayload(Flow360BaseModel):
     action: ACTION_TYPES
     payload: Optional[
-        Union[
-            SetObjectVisibilityPayload, 
-            SetFieldPayload, 
-            TakeScreenshotPayload, 
-            ResetFieldPayload
-        ]
+        Union[SetObjectVisibilityPayload, SetFieldPayload, TakeScreenshotPayload, ResetFieldPayload]
     ] = None
+
 
 class Scene(Flow360BaseModel):
     name: str
     settings: Settings = Settings()
     script: List[ActionPayload]
+
 
 class ScenesData(Flow360BaseModel):
     context: SourceContext
@@ -104,9 +102,7 @@ def http_interceptor(func):
             if resp.status == 400:
                 error_message = await resp.json()
                 log.debug(f"{error_message=}")
-                raise Flow360WebError(
-                    f"Web: Bad request error: {error_message}"
-                )
+                raise Flow360WebError(f"Web: Bad request error: {error_message}")
 
             if resp.status == 404:
                 error_message = await resp.json()
@@ -114,13 +110,13 @@ def http_interceptor(func):
 
             if resp.status == 200:
                 try:
-                    content_type = resp.headers.get('Content-Type', '')
-                    if 'application/json' in content_type:
+                    content_type = resp.headers.get("Content-Type", "")
+                    if "application/json" in content_type:
                         result = await resp.json()
                         return result.get("data")
                     else:
                         data = await resp.read()
-                        log.debug('received binary data')
+                        log.debug("received binary data")
                         return data
                 except Exception as e:
                     log.error(f"Exception occurred while reading response: {e}")
@@ -135,29 +131,35 @@ def http_interceptor(func):
 class UVFshutter(Flow360BaseModel):
     cases: List[Any]
     data_storage: str = "."
-    _url: str = PrivateAttr("https://uvf-shutter.dev-simulation.cloud")
+    _url: str = PrivateAttr("https://shutter.dev-simulation.cloud")
 
-    async def _get_3d_images(
-        self, screenshots: dict[str, Tuple]
-    ) -> dict[str, list]:
+    async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=300)
         @http_interceptor
-        async def _get_image_sequence(session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]) -> str:
-            log.debug(f'sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {len(uvf_request)=}')
+        async def _get_image_sequence(
+            session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
+        ) -> str:
+            log.debug(
+                f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {len(uvf_request)=}"
+            )
             return session.post(url, json=uvf_request)
 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as session:
             tasks = []
             for _, _, uvf_request in screenshots:
-                tasks.append(_get_image_sequence(session=session, url=self._url + "/sequence/run", uvf_request=uvf_request))
-                
+                tasks.append(
+                    _get_image_sequence(
+                        session=session, url=self._url + "/sequence/run", uvf_request=uvf_request
+                    )
+                )
+
             responses = await asyncio.gather(*tasks, return_exceptions=True)
 
             for response, (_, img_folder, _) in zip(responses, screenshots):
                 if not isinstance(response, Exception):
                     os.makedirs(img_folder, exist_ok=True)
                     zip_file_path = os.path.join(img_folder, "images.zip")
-                    with open(zip_file_path, 'wb') as f:
+                    with open(zip_file_path, "wb") as f:
                         f.write(response)
                     log.info(f"Zip file saved to {zip_file_path}")
 
@@ -168,12 +170,12 @@ class UVFshutter(Flow360BaseModel):
             img_files = {}
             for id, img_folder, _ in screenshots:
                 zip_file_path = os.path.join(img_folder, "images.zip")
-                with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                     zip_ref.extractall(path=img_folder)
                     extracted = zip_ref.namelist()
                     img_files[id] = [os.path.join(img_folder, file) for file in extracted]
                     log.info(f"Extracted files: {extracted}")
-                
+
         return img_files
 
     def get_images(self, fig_name, data: List[ScenesData]) -> dict[str, List]:
@@ -182,20 +184,19 @@ class UVFshutter(Flow360BaseModel):
         for data_item in data:
             id = data_item.context.case_id
             img_folder = os.path.join(self.data_storage, id)
-            img_name =  fig_name + ".png"
+            img_name = fig_name + ".png"
             img_full_path = os.path.join(img_folder, img_name)
             if not os.path.exists(img_full_path):
-                screenshots.append((id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True)))
+                screenshots.append(
+                    (id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True))
+                )
             else:
-                log.debug(f'File: {img_name=} exists in cache, reusing.')
+                log.debug(f"File: {img_name=} exists in cache, reusing.")
                 if id not in cached_files:
                     cached_files[id] = [img_full_path]
                 else:
                     cached_files[id].append(img_full_path)
 
-        img_files_generated = asyncio.run(
-            self._get_3d_images(screenshots)
-        )
-        
+        img_files_generated = asyncio.run(self._get_3d_images(screenshots))
 
         return {**img_files_generated, **cached_files}

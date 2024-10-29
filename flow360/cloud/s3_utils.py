@@ -181,13 +181,13 @@ class S3TransferType(Enum):
             S3TransferType.SURFACE_MESH: "surfacemeshes",
             S3TransferType.CASE: "cases",
             S3TransferType.GEOMETRY: "geometries",
-            S3TransferType.REPORT: None
+            S3TransferType.REPORT: None,
         }
 
         base_path = url_map.get(self)
         if base_path is not None:
             return f"{base_path}/{resource_id}/file?filename={file_name}"
-        raise Flow360ValueError(f'unknown download method for {self}')
+        raise Flow360ValueError(f"unknown download method for {self}")
 
     def create_multipart_upload(
         self,

@@ -5,6 +5,7 @@ import pytest
 
 from flow360.cloud import http_util
 from flow360.cloud.http_util import http
+from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.environment import Env
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -143,6 +144,16 @@ class MockResponseGeometrySimConfigV2(MockResponse):
         with open(os.path.join(here, "data/mock_webapi/geometry_birth_simulation_json.json")) as fh:
             res = json.load(fh)
         return res
+    
+class MockResponseSimulationJsonFile(MockResponse):
+    """response for Case(id="00000000-0000-0000-0000-000000000000").params simulation json"""
+
+    @staticmethod
+    def json():
+        raise CloudFileNotFoundError(
+            error_response={"Error": {"Message": "file not found: simulation.json"}},
+            operation_name="download",
+        )
 
 
 class MockResponseCaseRuntimeParams(MockResponse):
@@ -244,6 +255,7 @@ GET_RESPONSE_MAP = {
     "/v2/projects/prj-29e35434-2148-47c8-b548-58b479c37b99": MockResponseGeometryProjectV2,
     "/v2/geometries/00000000-0000-0000-0000-000000000000/simulation/file": MockResponseGeometrySimConfigV2,
     "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
+    "/cases/00000000-0000-0000-0000-000000000000/file?filename=simulation.json": MockResponseSimulationJsonFile,
     "/cases/00000000-0000-0000-0000-000000000000": MockResponseCase,
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb": MockResponseCase,
     "/cases/00112233-4455-6677-8899-bbbbbbbbbbbb/runtimeParams": MockResponseCaseRuntimeParams,

@@ -22,18 +22,25 @@ from pylatex.utils import bold, escape_latex
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
-from .utils import Delta, Tabulary, data_from_path, get_root_path, get_requirements_from_data_path, _requirements_mapping
+from .utils import (
+    Delta,
+    Tabulary,
+    data_from_path,
+    get_root_path,
+    get_requirements_from_data_path,
+    _requirements_mapping,
+)
 from .uvf_shutter import (
-    UVFshutter, 
-    ActionPayload, 
-    SetObjectVisibilityPayload, 
-    SetFieldPayload, 
-    TakeScreenshotPayload, 
+    UVFshutter,
+    ActionPayload,
+    SetObjectVisibilityPayload,
+    SetFieldPayload,
+    TakeScreenshotPayload,
     ResetFieldPayload,
     SourceContext,
     Scene,
     ScenesData,
-    UvfObjectTypes
+    UvfObjectTypes,
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -44,14 +51,13 @@ class ReportItem(Flow360BaseModel):
     boundaries: Union[Literal["ALL"], List[str]] = "ALL"
     _requirements: List[str] = None
 
-
     def get_doc_item(
         self,
         cases: List[Case],
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
-        data_storage: str = '.'
+        data_storage: str = ".",
     ) -> None:
         with doc.create(section_func(self.__class__.__name__)):
             doc.append(f"this is {self.__class__.__name__}")
@@ -59,12 +65,14 @@ class ReportItem(Flow360BaseModel):
     def get_requirements(self):
         if self._requirements is not None:
             return self._requirements
-        raise NotImplementedError(f'Internal error: get_requirements() not implemented for {self.__class__.__name__}')
+        raise NotImplementedError(
+            f"Internal error: get_requirements() not implemented for {self.__class__.__name__}"
+        )
 
 
 class Summary(ReportItem):
     text: str
-    type: Literal['Summary'] = Field("Summary", frozen=True)
+    type: Literal["Summary"] = Field("Summary", frozen=True)
     _requirements: List[str] = []
 
     def get_doc_item(
@@ -73,7 +81,7 @@ class Summary(ReportItem):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
-        data_storage: str = '.'
+        data_storage: str = ".",
     ) -> None:
         section = section_func("Summary")
         doc.append(section)
@@ -87,7 +95,8 @@ class Inputs(ReportItem):
     """
     Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
     """
-    type: Literal['Inputs'] = Field("Inputs", frozen=True)
+
+    type: Literal["Inputs"] = Field("Inputs", frozen=True)
     _requirements: List[str] = [_requirements_mapping["params"]]
 
     def get_doc_item(
@@ -96,7 +105,7 @@ class Inputs(ReportItem):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
-        data_storage: str = '.'
+        data_storage: str = ".",
     ) -> None:
         Table(
             data_path=[
@@ -121,8 +130,7 @@ class Table(ReportItem):
     data_path: list[Union[str, Delta]]
     section_title: Union[str, None]
     custom_headings: Union[list[str], None] = None
-    type: Literal['Table'] = Field("Table", frozen=True)
-
+    type: Literal["Table"] = Field("Table", frozen=True)
 
     @model_validator(mode="after")
     def check_custom_heading_count(self) -> None:
@@ -133,10 +141,9 @@ class Table(ReportItem):
                     f"{len(self.custom_headings)} instead of {len(self.data_path)}"
                 )
         return self
-            
+
     def get_requirements(self):
         return get_requirements_from_data_path(self.data_path)
-
 
     def get_doc_item(
         self,
@@ -144,7 +151,7 @@ class Table(ReportItem):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
-        data_storage: str = '.'
+        data_storage: str = ".",
     ) -> None:
         # Only create a title if specified
         if self.section_title is not None:
@@ -176,7 +183,10 @@ class Table(ReportItem):
 
             # Build data rows
             for idx, case in enumerate(cases):
-                row_list = [data_from_path(case, path, cases, case_by_case=case_by_case) for path in self.data_path]
+                row_list = [
+                    data_from_path(case, path, cases, case_by_case=case_by_case)
+                    for path in self.data_path
+                ]
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
                 table.add_hline()
@@ -242,17 +252,14 @@ class Chart2D(Chart):
     data_path: list[Union[str, Delta]]
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
-    type: Literal['Chart2D'] = Field("Chart2D", frozen=True)
-
-
+    type: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
     def get_requirements(self):
         return get_requirements_from_data_path(self.data_path)
-    
+
     def is_log_plot(self):
         root_path = get_root_path(self.data_path[1])
-        return root_path == 'nonlinear_residuals'
-    
+        return root_path == "nonlinear_residuals"
 
     def _create_fig(
         self, x_data: list, y_data: list, x_lab: str, y_lab: str, legend: str, save_name: str
@@ -277,7 +284,7 @@ class Chart2D(Chart):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
-        data_storage: str = '.'
+        data_storage: str = ".",
     ) -> None:
         # Create new page is user requests one
         if self.force_new_page:
@@ -298,7 +305,11 @@ class Chart2D(Chart):
 
         figure_list = []
         if case_by_case is False:
-            cases = [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
+            cases = (
+                [cases[i] for i in self.select_indices]
+                if self.select_indices is not None
+                else cases
+            )
         for case in cases:
 
             # Extract data from the Case
@@ -358,108 +369,91 @@ class Chart3D(Chart):
     show: UvfObjectTypes
 
     _requirements: List[str] = [Case._manifest_path]
-    type: Literal['Chart3D'] = Field("Chart3D", frozen=True)
+    type: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
-    def _get_uvf_qcriterion_script(self, script: List=None, field: str=None, limits: Tuple[float, float]=None):
+    def _get_uvf_qcriterion_script(
+        self, script: List = None, field: str = None, limits: Tuple[float, float] = None
+    ):
         if script is None:
             script = []
 
         script += [
             ActionPayload(
                 action="set-object-visibility",
-                payload=SetObjectVisibilityPayload(
-                    object_ids=["slices"],
-                    visibility=False
-                )
+                payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
             ),
-            ActionPayload(
-                action="focus"
-            ),
+            ActionPayload(action="focus"),
             ActionPayload(
                 action="set-field",
-                payload=SetFieldPayload(
-                    object_id="qcriterion",
-                    field_name=field,
-                    min_max=limits
-                )
+                payload=SetFieldPayload(object_id="qcriterion", field_name=field, min_max=limits),
             ),
         ]
         return script
 
-
     def _get_uvf_screenshot_script(self, script, screenshot_name):
-        script += [ActionPayload(
+        script += [
+            ActionPayload(
                 action="take-screenshot",
-                payload=TakeScreenshotPayload(
-                    file_name=screenshot_name,
-                    type="png"
-                )
-            )]
-        
+                payload=TakeScreenshotPayload(file_name=screenshot_name, type="png"),
+            )
+        ]
+
         return script
 
-    def _get_uvf_boundary_script(self, script: List=None, field: str=None, limits: Tuple[float, float]=None):
+    def _get_uvf_boundary_script(
+        self, script: List = None, field: str = None, limits: Tuple[float, float] = None
+    ):
         if script is None:
             script = []
         script += [
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(
-                    object_ids=["slices", "qcriterion"],
-                    visibility=False
-                )
+                    object_ids=["slices", "qcriterion"], visibility=False
+                ),
             ),
-            ActionPayload(
-                action="focus"
-            )
+            ActionPayload(action="focus"),
         ]
         if field is not None:
             script += [
                 ActionPayload(
                     action="set-field",
                     payload=SetFieldPayload(
-                        object_id="boundaries",
-                        field_name="yPlus",
-                        min_max=limits
-                    )
+                        object_id="boundaries", field_name="yPlus", min_max=limits
+                    ),
                 )
             ]
         return script
 
-
     def _get_uvf_request(self, fig_name, user_id, case_id):
 
-        if self.show == 'qcriterion':
+        if self.show == "qcriterion":
             script = self._get_uvf_qcriterion_script(field=self.field, limits=self.limits)
-        elif self.show == 'boundaries':
+        elif self.show == "boundaries":
             script = self._get_uvf_boundary_script(field=self.field, limits=self.limits)
-        elif self.show == 'slices':
-            raise NotImplementedError('Slices not implemented yet')
+        elif self.show == "slices":
+            raise NotImplementedError("Slices not implemented yet")
         else:
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
-        
+
         script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
 
-
-        scene = Scene(
-            name='my-scene',
-            script=script
-        )
+        scene = Scene(name="my-scene", script=script)
         source_context = SourceContext(user_id=user_id, case_id=case_id)
         scenes_data = ScenesData(scenes=[scene], context=source_context)
         return scenes_data
-
 
     def _get_images(self, cases: List[Case], data_storage):
         fig_name = self.fig_name
         uvf_requests = []
         for case in cases:
             uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
-        img_files = UVFshutter(cases=cases, data_storage=data_storage).get_images(fig_name, uvf_requests)
+        img_files = UVFshutter(cases=cases, data_storage=data_storage).get_images(
+            fig_name, uvf_requests
+        )
         # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
         return img_list
-
 
     def get_doc_item(
         self,
@@ -467,7 +461,7 @@ class Chart3D(Chart):
         doc: Document,
         section_func: Union[Section, Subsection] = Section,
         case_by_case: bool = False,
-        data_storage: str = '.',
+        data_storage: str = ".",
     ):
         # Create new page is user requests one
         if self.force_new_page:
@@ -484,7 +478,9 @@ class Chart3D(Chart):
             doc.append(section)
 
         # Reduce the case list by the selected IDs
-        cases = [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
+        cases = (
+            [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
+        )
 
         img_list = self._get_images(cases, data_storage)
 

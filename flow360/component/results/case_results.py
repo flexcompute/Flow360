@@ -11,9 +11,9 @@ from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pandas
-import pydantic.v1 as pd
+import pydantic as pd
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
     ForceType,
     MomentType,
@@ -27,7 +27,9 @@ from ...cloud.s3_utils import (
 )
 from ...exceptions import Flow360ValueError
 from ...log import log
-from ..flow360_params.conversions import unit_converter
+from ..flow360_params.conversions import unit_converter as unit_converter_v1
+from ..simulation.conversion import unit_converter as unit_converter_v2
+from ..simulation.simulation_params import SimulationParams
 from ..flow360_params.flow360_params import Flow360Params
 
 # pylint: disable=consider-using-with
@@ -126,7 +128,7 @@ class ResultBaseModel(pd.BaseModel):
     local_storage: Optional[str] = pd.Field(None)
     _download_method: Optional[Callable] = pd.PrivateAttr()
     _get_params_method: Optional[Callable] = pd.PrivateAttr()
-    _is_downloadable: Callable = pd.PrivateAttr(lambda: True)
+    _is_downloadable: Optional[Callable] = pd.PrivateAttr()
 
     def download(self, to_file: str = None, to_folder: str = ".", overwrite: bool = False):
         """
@@ -186,7 +188,7 @@ class ResultCSVModel(ResultBaseModel):
     """
 
     temp_file: str = pd.Field(
-        const=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
+        frozen=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
     )
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
@@ -393,37 +395,37 @@ class ResultTarGZModel(ResultBaseModel):
 class NonlinearResidualsResultCSVModel(ResultCSVModel):
     """NonlinearResidualsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, frozen=True)
 
 
 class LinearResidualsResultCSVModel(ResultCSVModel):
     """LinearResidualsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, frozen=True)
 
 
 class CFLResultCSVModel(ResultCSVModel):
     """CFLResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, frozen=True)
 
 
 class MinMaxStateResultCSVModel(ResultCSVModel):
     """CFLResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, frozen=True)
 
 
 class MaxResidualLocationResultCSVModel(ResultCSVModel):
     """MaxResidualLocationResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
 
 
 class TotalForcesResultCSVModel(ResultCSVModel):
     """TotalForcesResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
     _averages: Optional[Dict] = pd.PrivateAttr(None)
 
     def average_last_fraction(self, column, avarage_fraction):
@@ -433,7 +435,10 @@ class TotalForcesResultCSVModel(ResultCSVModel):
         return average
 
     def get_averages(self, avarage_fraction):
-        return {column: self.average_last_fraction(column, avarage_fraction) for column in self.values.keys()}
+        return {
+            column: self.average_last_fraction(column, avarage_fraction)
+            for column in self.values.keys()
+        }
 
     @property
     def averages(self):
@@ -450,16 +455,17 @@ class TotalForcesResultCSVModel(ResultCSVModel):
             self._averages = self.get_averages(0.1)
         return self._averages
 
+
 class SurfaceForcesResultCSVModel(ResultCSVModel):
     """SurfaceForcesResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
 
 class ForceDistributionResultCSVModel(ResultCSVModel):
     """ForceDistributionResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, frozen=True)
 
     def wait(self, timeout_minutes=60):
         """Wait until the Case finishes processing, refresh periodically"""
@@ -481,13 +487,13 @@ class ForceDistributionResultCSVModel(ResultCSVModel):
 class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
     """SurfaceHeatTrasferResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
 
 
 class AeroacousticsResultCSVModel(ResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
 
 
 MonitorCSVModel = ResultCSVModel
@@ -500,8 +506,8 @@ class MonitorsResultModel(ResultTarGZModel):
     Inherits from ResultTarGZModel.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, const=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field()
+    remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
 
     _monitor_names: List[str] = pd.PrivateAttr([])
     _monitors: Dict[str, MonitorCSVModel] = pd.PrivateAttr({})
@@ -579,8 +585,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
     Inherits from ResultBaseModel.
     """
 
-    remote_file_name: str = pd.Field(None, const=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field()
+    remote_file_name: str = pd.Field(None, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
 
     _udd_names: List[str] = pd.PrivateAttr([])
     _udds: Dict[str, UserDefinedDynamicsCSVModel] = pd.PrivateAttr({})
@@ -677,11 +683,24 @@ class _DimensionedCSVResultModel(pd.BaseModel):
     def _in_base_component(self, base, component, component_name, params):
         log.debug(f"   -> need conversion for: {component_name} = {component}")
 
-        flow360_conv_system = unit_converter(
-            component.units.dimensions,
-            params=params,
-            required_by=[self._name, component_name],
-        )
+
+        if isinstance(params, SimulationParams):
+            flow360_conv_system = unit_converter_v2(
+                component.units.dimensions,
+                params.private_attribute_asset_cache.project_length_unit,
+                params=params,
+                required_by=[self._name, component_name],
+            )
+        elif isinstance(params, Flow360Params):
+            flow360_conv_system = unit_converter_v1(
+                component.units.dimensions,
+                params=params,
+                required_by=[self._name, component_name],
+            )
+        else:
+            raise Flow360ValueError(
+                f"Unknown type of params: {type(params)=}, expected one of (Flow360Params, SimulationParams)"
+            )
 
         if is_flow360_unit(component):
             converted = component.in_base(base, flow360_conv_system)
@@ -795,7 +814,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
     This class provides methods to handle actuator disk CSV results and convert them to the specified base system.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, frozen=True)
     _err_msg = "Case does not have any actuator disks."
 
     def to_base(self, base: str, params: Flow360Params = None):
@@ -902,7 +921,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         Convert the results to the specified base system.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, frozen=True)
     _err_msg = "Case does not have any BET disks."
 
     def to_base(self, base: str, params: Flow360Params = None):
