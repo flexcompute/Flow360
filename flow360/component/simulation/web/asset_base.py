@@ -31,21 +31,23 @@ class AssetBase(metaclass=ABCMeta):
     _entity_info: EntityInfoModel = None
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: str):
+    def __init__(self, id: str = None):
         # pylint: disable=not-callable
+        self.id = id
+        self.internal_registry = None
+        if id is None:
+            return
         self._webapi = self.__class__._web_api_class(
             interface=self._interface_class,
             meta_class=self._meta_class,
             id=id,
         )
-        self.id = id
         # get the project id according to resource id
         resp = self._webapi.get()
         project_id = resp["projectId"]
         solver_version = resp["solverVersion"]
         self.project_id: str = project_id
         self.solver_version: str = solver_version
-        self.internal_registry = None
 
     @classmethod
     # pylint: disable=protected-access
@@ -54,6 +56,28 @@ class AssetBase(metaclass=ABCMeta):
         resource = cls(id=meta.id)
         resource._webapi._set_meta(meta)
         return resource
+
+    @classmethod
+    def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj):
+        if "private_attribute_asset_cache" not in simulation_dict:
+            raise KeyError(
+                "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
+            )
+        asset_cache = simulation_dict["private_attribute_asset_cache"]
+
+        if "project_entity_info" not in asset_cache:
+            raise KeyError(
+                "[Internal] Could not find project_entity_info in the asset's simulation settings."
+            )
+        entity_info = asset_cache["project_entity_info"]
+        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
+        # Note: Only the draft's and non-root item simulation.json will have it.
+        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
+        # Note: This should be addressed when we design the new project client interface.
+        remove_properties_by_name(entity_info, "_id")
+        # pylint: disable=protected-access
+        asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
+        return asset_obj
 
     @classmethod
     def _get_simulation_json(cls, asset: AssetBase) -> dict:
@@ -96,23 +120,7 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj = cls(id)
         # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
-        if "private_attribute_asset_cache" not in simulation_dict:
-            raise KeyError(
-                "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
-            )
-        asset_cache = simulation_dict["private_attribute_asset_cache"]
-
-        if "project_entity_info" not in asset_cache:
-            raise KeyError(
-                "[Internal] Could not find project_entity_info in the asset's simulation settings."
-            )
-        entity_info = asset_cache["project_entity_info"]
-        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
-        # Note: Only the draft's and non-root item simulation.json will have it.
-        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
-        # Note: This should be addressed when we design the new project client interface.
-        remove_properties_by_name(entity_info, "_id")
-        asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
+        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
         return asset_obj
 
     @classmethod
