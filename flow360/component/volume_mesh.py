@@ -1009,11 +1009,11 @@ class VolumeMeshV2(AssetBase):
         return asset_obj
 
     @classmethod
-    def from_local_storage(cls, case_id: str = None, local_storage_path="") -> VolumeMeshV2:
+    def from_local_storage(cls, mesh_id: str = None, local_storage_path="") -> VolumeMeshV2:
         """
         Parameters
         ----------
-        case_id : str
+        mesh_id : str
             ID of the volume mesh resource
 
         local_storage_path:
@@ -1043,7 +1043,7 @@ class VolumeMeshV2(AssetBase):
         _local_download_file(file_name="simulation.json", to_folder=local_storage_path)
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
-        volume_mesh = super()._from_supplied_entity_info(params_dict, cls(case_id))
+        volume_mesh = super()._from_supplied_entity_info(params_dict, cls(mesh_id))
         return volume_mesh
 
     @classmethod

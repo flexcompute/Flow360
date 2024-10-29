@@ -31,7 +31,8 @@ class AssetBase(metaclass=ABCMeta):
     _entity_info: EntityInfoModel = None
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: str = None):
+    def __init__(self, id: Union[str, None]):
+        """When id is None, the asset is meant to be operating in local mode."""
         # pylint: disable=not-callable
         self.id = id
         self.internal_registry = None
