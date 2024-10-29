@@ -12,7 +12,11 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, Sutherland, FluidMaterialTypes
+from flow360.component.simulation.models.material import (
+    Air,
+    FluidMaterialTypes,
+    Sutherland,
+)
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -128,13 +132,6 @@ class ThermalState(MultiConstructorBaseModel):
     def dynamic_viscosity(self) -> ViscosityType.Positive:
         """Computes dynamic viscosity."""
         return self.material.get_dynamic_viscosity(self.temperature)
-
-    # TODO: should we make this private_attribute?
-    @pd.validate_call
-    def _mu_ref(self) -> pd.PositiveFloat:
-        """Computes nondimensional dynamic viscosity."""
-        # TODO: use unit system for nondimensionalization
-        return (self.dynamic_viscosity / (self.speed_of_sound * self.density)).v.item()
 
 
 class GenericReferenceConditionCache(Flow360BaseModel):
@@ -254,29 +251,83 @@ class AerospaceCondition(MultiConstructorBaseModel):
 OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 
 
+# pylint: disable=too-many-arguments
+@pd.validate_call
 def operating_condition_from_mach_reynolds(
     mach: pd.NonNegativeFloat = None,
     reynolds: pd.PositiveFloat = None,
     temperature: TemperatureType.Positive = None,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
-    reference_mach: Optional[pd.PositiveFloat] = None
+    reference_mach: Optional[pd.PositiveFloat] = None,
 ) -> AerospaceCondition:
+    """
+    Create an `AerospaceCondition` from Mach number and Reynolds number.
+
+    This function computes the thermal state based on the given Mach number,
+    Reynolds number, and temperature, and returns an `AerospaceCondition` object
+    initialized with the computed thermal state and given aerodynamic angles.
+
+    Parameters
+    ----------
+    mach : NonNegativeFloat, optional
+        The Mach number (must be non-negative). Default is None.
+    reynolds : PositiveFloat, optional
+        The Reynolds number (must be positive). Default is None.
+    temperature : TemperatureType.Positive, optional
+        The static temperature (must be a positive temperature value). Default is None.
+    alpha : AngleType, optional
+        Angle of attack. Default is 0 degrees.
+    beta : AngleType, optional
+        Sideslip angle. Default is 0 degrees.
+    reference_mach : PositiveFloat, optional
+        Reference Mach number for scaling purposes. Default is None.
+
+    Returns
+    -------
+    AerospaceCondition
+        An `AerospaceCondition` object initialized with the given parameters.
+
+    Raises
+    ------
+    ValidationError
+        If the input values do not meet the specified constraints.
+    ValueError
+        If required parameters are missing or calculations cannot be performed.
+
+    Examples
+    --------
+    Example usage:
+
+    >>> condition = operating_condition_from_mach_reynolds(
+    ...     mach=0.85,
+    ...     reynolds=1e6,
+    ...     temperature=288.15 * u.K,
+    ...     alpha=2.0 * u.deg,
+    ...     beta=0.0 * u.deg,
+    ...     reference_mach=0.85,
+    ... )
+    >>> print(condition)
+    AerospaceCondition(...)
+
+    """
+
     thermal_state = ThermalState(
         temperature=temperature,
         material=Air(
             dynamic_viscosity=Sutherland(
                 reference_temperature=temperature,
-                reference_viscosity=(mach/reynolds) * u.flow360_viscosity_unit,
-                effective_temperature=110.4 * u.K
+                reference_viscosity=(mach / reynolds) * u.flow360_viscosity_unit,
+                effective_temperature=110.4 * u.K,
             )
-        )
+        ),
     )
 
+    # pylint: disable=no-value-for-parameter
     return AerospaceCondition.from_mach(
         mach=mach,
         alpha=alpha,
         beta=beta,
         thermal_state=thermal_state,
-        reference_mach=reference_mach
+        reference_mach=reference_mach,
     )
