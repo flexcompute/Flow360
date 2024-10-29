@@ -3,6 +3,10 @@ import json
 import pytest
 
 from flow360.component.simulation import services
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    NavierStokesInitialCondition,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
@@ -550,3 +554,17 @@ def test_generate_process_json():
     assert res1 is not None
     assert res2 is not None
     assert res3 is not None
+
+
+def test_fork_case_json():
+    with SI_unit_system:
+        parent_case_param = SimulationParams(
+            models=[
+                Fluid(initial_condition=NavierStokesInitialCondition(rho="x+y-z", u="x+u+sqrt(2s)"))
+            ]
+        )
+    new_dict, modified = services.reset_initial_condition_when_fork(
+        parent_case_param.model_dump_json()
+    )
+    assert modified is True
+    assert new_dict["models"][0]["initial_condition"] is None

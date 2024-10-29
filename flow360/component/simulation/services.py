@@ -205,6 +205,23 @@ def get_default_params(
     )
 
 
+def reset_initial_condition_when_fork(params: dict) -> Tuple[dict, bool]:
+    """
+    Reset the initial condition for Fluid when forking simulation so that the parent case's solution is NOT
+    by default/accidentally overwritten by the child case.
+    """
+    modified = False
+    if params.get("models", None) is None:
+        return params
+    for model in params["models"]:
+        if model.get("type", None) != "Fluid":
+            continue
+        if model.get("initial_condition", None) is not None:
+            modified = True
+        model["initial_condition"] = None
+    return params, modified
+
+
 def validate_model(
     params_as_dict,
     unit_system_name,
