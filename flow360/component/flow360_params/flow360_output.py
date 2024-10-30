@@ -568,6 +568,7 @@ class AeroacousticOutput(Flow360BaseModel):
     write_per_surface_output: Optional[bool] = pd.Field(False, alias="writePerSurfaceOutput")
     permeable_surfaces: Optional[List[str]] = pd.Field([], alias="permeableSurfaces")
 
+
 class UserDefinedField(Flow360BaseModel):
     """Variable that can be used as output variables"""
 

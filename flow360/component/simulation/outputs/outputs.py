@@ -196,7 +196,7 @@ class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
     name: Optional[str] = pd.Field(None)
-    patch_type: Literal["solid"] = pd.Field("solid", frozen=True)
+    patch_type: Literal["solid", "permeable"] = pd.Field(default="solid")
     permeable_surfaces: Optional[List[str]] = pd.Field([], alias="permeableSurfaces")
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field()
