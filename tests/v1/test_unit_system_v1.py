@@ -4,8 +4,8 @@ from typing import Optional, Union
 import pydantic.v1 as pd
 import pytest
 
-import flow360 as fl
-from flow360 import units as u
+import flow360.component.v1 as fl
+from flow360.component.v1 import units as u
 from flow360.component.v1.params_base import Flow360BaseModel
 from flow360.component.v1.unit_system import (
     AngularVelocityType,

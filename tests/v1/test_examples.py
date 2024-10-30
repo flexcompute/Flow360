@@ -2,8 +2,7 @@ import os
 
 import pytest
 
-import flow360
-from flow360.examples import Airplane, Cylinder2D, OM6wing
+from flow360.examples import Airplane, Cylinder2D, OM6wing, base_test_case
 from flow360.examples.base_test_case import BaseTestCase
 
 
@@ -52,7 +51,7 @@ def test_version_parse():
         class url:
             case_json = "local://flow360.json"
 
-    flow360.examples.base_test_case.here = os.path.dirname(os.path.abspath(__file__))
+    base_test_case.here = os.path.dirname(os.path.abspath(__file__))
 
     TestCase.set_version("release-23.1.3.0")
     assert TestCase._get_version_prefix() == "release-23.1.3.0"

@@ -2,7 +2,6 @@ from io import StringIO
 
 import pytest
 
-from flow360 import Accounts
 from flow360.cli.dict_utils import merge_overwrite
 from flow360.component.utils import (
     CompressionFormat,
@@ -13,6 +12,7 @@ from flow360.component.utils import (
     shared_account_confirm_proceed,
     validate_type,
 )
+from flow360.component.v1 import Accounts
 from flow360.component.volume_mesh import VolumeMeshMeta
 from flow360.exceptions import Flow360TypeError, Flow360ValueError
 

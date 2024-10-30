@@ -1,6 +1,6 @@
 import pytest
 
-from flow360 import (
+from flow360.component.v1 import (
     Case,
     Flow360Params,
     FreestreamFromVelocity,

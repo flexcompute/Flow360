@@ -9,7 +9,6 @@ from typing import Iterable, List, Optional, Union
 
 import pydantic as pd
 
-from flow360 import Case, SurfaceMesh, __solver_version__
 from flow360.cloud.requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry import Geometry
@@ -32,6 +31,7 @@ from flow360.component.utils import (
     ProjectAssetCache,
     match_file_pattern,
 )
+from flow360.component.v1 import Case, SurfaceMesh, __solver_version__
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 

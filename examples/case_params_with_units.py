@@ -1,9 +1,9 @@
 import json
 from pprint import pprint
 
-import flow360 as fl
+import flow360.component.v1 as fl
 from flow360 import log
-from flow360 import units as u
+from flow360.component.v1 import units as u
 from flow360.component.v1.services import validate_model
 
 log.set_logging_level("DEBUG")

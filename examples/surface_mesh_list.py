@@ -1,4 +1,4 @@
-import flow360 as fl
+import flow360.component.v1 as fl
 
 my_meshes = fl.MySurfaceMeshes()
 

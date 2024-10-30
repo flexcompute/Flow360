@@ -1,4 +1,4 @@
-import flow360 as fl
+import flow360.component.v1 as fl
 from flow360.component.project import Project
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
