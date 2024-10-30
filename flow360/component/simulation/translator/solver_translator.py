@@ -699,6 +699,7 @@ def get_solver_json(
     input_params: SimulationParams,
     # pylint: disable=no-member
     mesh_unit: LengthType.Positive,
+    is_restart: bool = False,
 ):
     """
     Get the solver json from the simulation parameters.
@@ -844,6 +845,14 @@ def get_solver_json(
 
             if model.initial_condition:
                 translated["initialCondition"] = dump_dict(model.initial_condition)
+                translated["initialCondition"].pop(
+                    "typeName", None
+                )  # Not read by solver so no need to add to confusion
+                if is_restart is True:
+                    translated["initialCondition"]["type"] = "restartManipulation"
+                else:
+                    # Solver does not check for this literal string but we added for clarity
+                    translated["initialCondition"]["type"] = "initialSolution"
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):

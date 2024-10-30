@@ -563,8 +563,6 @@ def test_fork_case_json():
                 Fluid(initial_condition=NavierStokesInitialCondition(rho="x+y-z", u="x+u+sqrt(2s)"))
             ]
         )
-    new_dict, modified = services.reset_initial_condition_when_fork(
-        parent_case_param.model_dump_json()
-    )
+    new_dict, modified = services.reset_initial_condition_when_fork(parent_case_param.model_dump())
     assert modified is True
     assert new_dict["models"][0]["initial_condition"] is None
