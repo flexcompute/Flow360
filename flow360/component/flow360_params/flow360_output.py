@@ -757,7 +757,7 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
 
         if self.output_fields is not None:
             fields = list(set(fields + self.output_fields))
-        print("fields", fields)
+
         model = {
             "animationFrequency": self.animation_frequency,
             "animationFrequencyOffset": self.animation_frequency_offset,
