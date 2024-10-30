@@ -8,8 +8,8 @@ from typing import Union
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360ValidationError, Flow360ValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
+from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 
 
 class Validator(Enum):

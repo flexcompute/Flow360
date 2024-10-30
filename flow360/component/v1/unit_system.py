@@ -289,7 +289,7 @@ class DimensionedType(ValidatedType):
             field_schema["properties"]["units"]["dimension"] = cls.dim_name
             # Local import to prevent exposing mappings to the user
             # pylint: disable=import-outside-toplevel
-            from flow360.component.flow360_params.exposed_units import extra_units
+            from flow360.component.v1.exposed_units import extra_units
 
             units = [
                 str(_SI_system[cls.dim_name]),

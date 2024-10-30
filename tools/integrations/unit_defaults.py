@@ -4,7 +4,7 @@ from typing import Dict
 import pydantic.v1 as pd
 
 import flow360 as fl
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.v1.params_base import Flow360BaseModel
 
 
 class UnitDefaults(Flow360BaseModel):

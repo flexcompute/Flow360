@@ -9,7 +9,7 @@ import unyt
 import flow360 as fl
 from flow360 import Geometry
 from flow360 import units as u
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     AngularVelocityType,
     AreaType,
     BaseSystemType,

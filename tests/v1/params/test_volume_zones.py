@@ -5,8 +5,8 @@ import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.flow360_params import VolumeZones
-from flow360.component.flow360_params.volume_zones import (
+from flow360.component.v1.flow360_params import VolumeZones
+from flow360.component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,

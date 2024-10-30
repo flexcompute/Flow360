@@ -6,7 +6,7 @@ import os
 
 from numpy import pi
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     CGS_unit_system,
     SI_unit_system,
     UnitSystem,
@@ -21,8 +21,24 @@ from .cloud.s3_utils import ProgressCallbackInterface
 from .component import meshing
 from .component.case import Case
 from .component.case import CaseList as MyCases
-from .component.flow360_params import solvers, units
-from .component.flow360_params.boundaries import (
+from .component.folder import Folder
+from .component.meshing.params import (
+    Aniso,
+    BoxRefinement,
+    CylinderRefinement,
+    Edges,
+    Face,
+    Faces,
+    Farfield,
+    ProjectAniso,
+    RotorDisk,
+    SurfaceMeshingParams,
+    UseAdjacent,
+    Volume,
+    VolumeMeshingParams,
+)
+from .component.v1 import solvers, units
+from .component.v1.boundaries import (
     FreestreamBoundary,
     HeatFluxWall,
     IsothermalWall,
@@ -45,7 +61,7 @@ from .component.flow360_params.boundaries import (
     VelocityInflow,
     WallFunction,
 )
-from .component.flow360_params.flow360_output import (
+from .component.v1.flow360_output import (
     IsoSurfaceOutput,
     IsoSurfaces,
     MonitorOutput,
@@ -58,7 +74,7 @@ from .component.flow360_params.flow360_output import (
     SurfaceOutput,
     Surfaces,
 )
-from .component.flow360_params.flow360_params import (
+from .component.v1.flow360_params import (
     ActuatorDisk,
     AeroacousticOutput,
     AirDensityTemperature,
@@ -88,11 +104,11 @@ from .component.flow360_params.flow360_params import (
     ZeroFreestreamFromVelocity,
     air,
 )
-from .component.flow360_params.initial_condition import (
+from .component.v1.initial_condition import (
     ExpressionInitialCondition,
     ModifiedRestartSolution,
 )
-from .component.flow360_params.solvers import (
+from .component.v1.solvers import (
     IncompressibleNavierStokesSolver,
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -103,15 +119,17 @@ from .component.flow360_params.solvers import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
 )
-from .component.flow360_params.time_stepping import (
+from .component.v1.surface_mesh import SurfaceMesh
+from .component.v1.surface_mesh import SurfaceMeshList as MySurfaceMeshes
+from .component.v1.time_stepping import (
     AdaptiveCFL,
     RampCFL,
     SteadyTimeStepping,
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .component.flow360_params.turbulence_quantities import TurbulenceQuantities
-from .component.flow360_params.volume_zones import (
+from .component.v1.turbulence_quantities import TurbulenceQuantities
+from .component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
@@ -122,24 +140,6 @@ from .component.flow360_params.volume_zones import (
     ReferenceFrameOmegaDegrees,
     ReferenceFrameOmegaRadians,
 )
-from .component.folder import Folder
-from .component.meshing.params import (
-    Aniso,
-    BoxRefinement,
-    CylinderRefinement,
-    Edges,
-    Face,
-    Faces,
-    Farfield,
-    ProjectAniso,
-    RotorDisk,
-    SurfaceMeshingParams,
-    UseAdjacent,
-    Volume,
-    VolumeMeshingParams,
-)
-from .component.surface_mesh import SurfaceMesh
-from .component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .component.volume_mesh import VolumeMesh
 from .component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 from .environment import Env

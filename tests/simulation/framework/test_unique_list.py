@@ -4,13 +4,13 @@ from typing import Literal
 import pydantic as pd
 import pytest
 
-from flow360.component.flow360_params.flow360_fields import CommonFieldNames
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.unique_list import (
     UniqueItemList,
     UniqueStringList,
 )
 from flow360.component.simulation.primitives import Surface, SurfacePair
+from flow360.component.v1.flow360_fields import CommonFieldNames
 
 
 class _OutputItemBase(Flow360BaseModel):

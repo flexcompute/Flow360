@@ -7,19 +7,19 @@ from typing import Union
 
 import pydantic.v1 as pd
 
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
     Geometry,
 )
-from flow360.component.flow360_params.params_base import (
+from flow360.component.v1.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _schema_optional_toggle_name,
     flow360_json_encoder,
 )
-from flow360.component.flow360_params.solvers import NavierStokesSolver, SpalartAllmaras
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.solvers import NavierStokesSolver, SpalartAllmaras
+from flow360.component.v1.unit_system import (
     CGS_unit_system,
     SI_unit_system,
     UnitSystem,

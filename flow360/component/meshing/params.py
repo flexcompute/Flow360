@@ -9,13 +9,13 @@ from typing_extensions import Literal
 
 from flow360.flags import Flags
 
-from ..flow360_params.params_base import (
+from ..types import Axis, Coordinate
+from ..v1.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
     flow360_json_encoder,
 )
-from ..types import Axis, Coordinate
 
 
 class Aniso(Flow360BaseModel):

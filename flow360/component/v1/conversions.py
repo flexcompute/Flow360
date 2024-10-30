@@ -8,7 +8,7 @@ from typing import Callable, List
 
 import pydantic.v1 as pd
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     flow360_conversion_unit_system,
     is_flow360_unit,
     u,

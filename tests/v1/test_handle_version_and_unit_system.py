@@ -5,7 +5,7 @@ import pydantic.v1 as pd
 import pytest
 
 import flow360
-import flow360.component.flow360_params.units as u
+import flow360.component.v1.units as u
 from flow360 import Flow360Params
 from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
 

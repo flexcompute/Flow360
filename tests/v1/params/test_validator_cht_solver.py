@@ -4,11 +4,8 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.boundaries import (
-    SolidAdiabaticWall,
-    SolidIsothermalWall,
-)
-from flow360.component.flow360_params.flow360_output import (
+from flow360.component.v1.boundaries import SolidAdiabaticWall, SolidIsothermalWall
+from flow360.component.v1.flow360_output import (
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -16,16 +13,14 @@ from flow360.component.flow360_params.flow360_output import (
     SurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.flow360_params.flow360_params import Flow360Params
-from flow360.component.flow360_params.initial_condition import (
-    ExpressionInitialCondition,
-)
-from flow360.component.flow360_params.solvers import (
+from flow360.component.v1.flow360_params import Flow360Params
+from flow360.component.v1.initial_condition import ExpressionInitialCondition
+from flow360.component.v1.solvers import (
     HeatEquationSolver,
     IncompressibleNavierStokesSolver,
 )
-from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
-from flow360.component.flow360_params.volume_zones import (
+from flow360.component.v1.time_stepping import UnsteadyTimeStepping
+from flow360.component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,

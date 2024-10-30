@@ -6,7 +6,7 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     FreestreamFromMach,
     FreestreamFromMachReynolds,
     FreestreamFromVelocity,

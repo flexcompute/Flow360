@@ -9,12 +9,6 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.flow360_params.flow360_fields import (
-    CommonFieldNames,
-    SliceFieldNames,
-    SurfaceFieldNames,
-    VolumeFieldNames,
-)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -28,6 +22,12 @@ from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_output import (
     _check_unique_probe_type,
+)
+from flow360.component.v1.flow360_fields import (
+    CommonFieldNames,
+    SliceFieldNames,
+    SurfaceFieldNames,
+    VolumeFieldNames,
 )
 
 

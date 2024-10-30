@@ -12,20 +12,19 @@ import pydantic.v1 as pd
 
 from flow360.flags import Flags
 
-from ..cloud.requests import NewSurfaceMeshRequest
-from ..cloud.rest_api import RestApi
-from ..exceptions import Flow360FileError, Flow360ValueError
-from ..log import log
-from .flow360_params.params_base import params_generic_validator
-from .interfaces import SurfaceMeshInterface
-from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
-from .resource_base import (
+from ...cloud.requests import NewSurfaceMeshRequest
+from ...cloud.rest_api import RestApi
+from ...exceptions import Flow360FileError, Flow360ValueError
+from ...log import log
+from ..interfaces import SurfaceMeshInterface
+from ..meshing.params import SurfaceMeshingParams, VolumeMeshingParams
+from ..resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     Flow360ResourceListBase,
     ResourceDraft,
 )
-from .utils import (
+from ..utils import (
     CompressionFormat,
     MeshFileFormat,
     MeshNameParser,
@@ -35,8 +34,9 @@ from .utils import (
     validate_type,
     zstd_compress,
 )
-from .validator import Validator
-from .volume_mesh import VolumeMeshDraft
+from ..validator import Validator
+from ..volume_mesh import VolumeMeshDraft
+from .params_base import params_generic_validator
 
 SURFACE_MESH_NAME_STEM_V1 = "surfaceMesh"
 SURFACE_MESH_NAME_STEM_V2 = "surface_mesh"

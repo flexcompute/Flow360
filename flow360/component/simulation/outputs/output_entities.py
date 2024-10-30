@@ -5,11 +5,11 @@ from typing import Literal
 
 import pydantic as pd
 
-from flow360.component.flow360_params.flow360_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
+from flow360.component.v1.flow360_fields import IsoSurfaceFieldNames
 
 
 class _OutputItemBase(Flow360BaseModel):

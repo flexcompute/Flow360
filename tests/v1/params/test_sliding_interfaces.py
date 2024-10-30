@@ -2,10 +2,7 @@ import unittest
 
 import pytest
 
-from flow360.component.flow360_params.flow360_params import (
-    MeshSlidingInterface,
-    SlidingInterface,
-)
+from flow360.component.v1.flow360_params import MeshSlidingInterface, SlidingInterface
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

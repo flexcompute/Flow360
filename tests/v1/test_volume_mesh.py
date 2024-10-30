@@ -1,14 +1,14 @@
 import pytest
 
 import flow360
-from flow360.component.flow360_params.boundaries import NoSlipWall
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.utils import CompressionFormat, MeshFileFormat, UGRIDEndianness
+from flow360.component.v1.boundaries import NoSlipWall
+from flow360.component.v1.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     FreestreamFromMach,
     MeshBoundary,
 )
-from flow360.component.utils import CompressionFormat, MeshFileFormat, UGRIDEndianness
 from flow360.component.volume_mesh import (
     VolumeMesh,
     VolumeMeshMeta,

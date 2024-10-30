@@ -4,12 +4,12 @@ import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     Flow360Params,
     HeatEquationSolver,
     TransitionModelSolver,
 )
-from flow360.component.flow360_params.solvers import (
+from flow360.component.v1.solvers import (
     HEAT_EQUATION_EVAL_FREQUENCY_STEADY,
     KOmegaSST,
     LinearSolver,

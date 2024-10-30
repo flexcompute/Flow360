@@ -3,8 +3,8 @@ import unittest
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.boundaries import NoSlipWall
-from flow360.component.flow360_params.flow360_params import Flow360Params
+from flow360.component.v1.boundaries import NoSlipWall
+from flow360.component.v1.flow360_params import Flow360Params
 
 assertions = unittest.TestCase("__init__")
 

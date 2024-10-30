@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.flow360_params import UserDefinedDynamic
+from flow360.component.v1.flow360_params import UserDefinedDynamic
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

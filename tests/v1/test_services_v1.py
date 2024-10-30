@@ -4,7 +4,7 @@ import tempfile
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params import services
+from flow360.component.v1 import services
 
 
 @pytest.fixture(autouse=True)

@@ -8,7 +8,7 @@ import os
 
 from flow360.component.resource_base import Flow360Resource
 
-from ..cloud.utils import _get_progress, _S3Action
+from .utils import _get_progress, _S3Action
 
 
 # pylint: disable=too-many-arguments, too-many-locals

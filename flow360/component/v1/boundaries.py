@@ -10,7 +10,7 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic.v1 as pd
 from pydantic.v1 import StrictStr
 
-from flow360.component.flow360_params.unit_system import PressureType, VelocityType
+from flow360.component.v1.unit_system import PressureType, VelocityType
 
 from ..types import Axis, Vector
 from ..utils import process_expressions

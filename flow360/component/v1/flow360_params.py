@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple, Union, get_args
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     AngularVelocityType,
     AreaType,
     DensityType,

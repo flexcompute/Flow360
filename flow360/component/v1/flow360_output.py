@@ -10,7 +10,7 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic.v1 as pd
 from pydantic.v1 import conlist
 
-from flow360.component.flow360_params.unit_system import Flow360UnitSystem, LengthType
+from flow360.component.v1.unit_system import Flow360UnitSystem, LengthType
 
 from ..types import Axis, Coordinate
 from ..utils import process_expressions

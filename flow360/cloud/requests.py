@@ -8,7 +8,7 @@ from typing_extensions import Literal
 
 from flow360.flags import Flags
 
-from ..component.flow360_params.flow360_params import Flow360MeshParams
+from ..component.v1.flow360_params import Flow360MeshParams
 
 LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
 

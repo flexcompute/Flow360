@@ -7,14 +7,14 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     Flow360MeshParams,
     Flow360Params,
     FreestreamFromVelocity,
     MeshBoundary,
     PorousMediumBox,
 )
-from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
+from flow360.component.v1.time_stepping import UnsteadyTimeStepping
 from flow360.exceptions import Flow360RuntimeError
 
 from ..utils import compare_to_ref, to_file_from_file_test

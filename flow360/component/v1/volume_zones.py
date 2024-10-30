@@ -14,7 +14,7 @@ from numpy import array, dot
 from pydantic.v1 import StrictStr
 from typing_extensions import Literal
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,

@@ -6,8 +6,8 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.params_base import Flow360BaseModel
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.params_base import Flow360BaseModel
+from flow360.component.v1.unit_system import (
     AngularVelocityType,
     AreaType,
     DensityType,

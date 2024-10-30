@@ -1,4 +1,4 @@
-from flow360.component.flow360_params.params_base import Flow360BaseModel
+from flow360.component.v1.params_base import Flow360BaseModel
 
 
 def test_help():

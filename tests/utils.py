@@ -11,7 +11,7 @@ import unyt
 
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import S3TransferType, get_local_filename_and_create_folders
-from flow360.component.flow360_params import unit_system
+from flow360.component.v1 import unit_system
 
 
 @pytest.fixture

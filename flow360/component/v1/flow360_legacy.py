@@ -10,11 +10,8 @@ from typing import Dict, Literal, Optional
 
 import pydantic.v1 as pd
 
-from flow360.component.flow360_params.params_base import (
-    DeprecatedAlias,
-    Flow360BaseModel,
-)
-from flow360.component.flow360_params.unit_system import DimensionedType
+from flow360.component.v1.params_base import DeprecatedAlias, Flow360BaseModel
+from flow360.component.v1.unit_system import DimensionedType
 
 
 class LegacyModel(Flow360BaseModel, metaclass=ABCMeta):

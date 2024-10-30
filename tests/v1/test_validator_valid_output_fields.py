@@ -3,9 +3,9 @@ import unittest
 import pytest
 
 import flow360 as fl
-import flow360.component.flow360_params.units as u
-from flow360.component.flow360_params.boundaries import FreestreamBoundary, NoSlipWall
-from flow360.component.flow360_params.flow360_output import (
+import flow360.component.v1.units as u
+from flow360.component.v1.boundaries import FreestreamBoundary, NoSlipWall
+from flow360.component.v1.flow360_output import (
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -17,8 +17,8 @@ from flow360.component.flow360_params.flow360_output import (
     SurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.flow360_params.flow360_params import Flow360Params
-from flow360.component.flow360_params.solvers import NavierStokesSolver
+from flow360.component.v1.flow360_params import Flow360Params
+from flow360.component.v1.solvers import NavierStokesSolver
 
 assertions = unittest.TestCase("__init__")
 

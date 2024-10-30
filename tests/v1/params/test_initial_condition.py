@@ -3,9 +3,7 @@ import unittest
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.initial_condition import (
-    ExpressionInitialCondition,
-)
+from flow360.component.v1.initial_condition import ExpressionInitialCondition
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

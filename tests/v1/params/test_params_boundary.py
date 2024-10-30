@@ -4,7 +4,7 @@ import pydantic.v1 as pd
 import pytest
 
 import flow360 as fl
-from flow360.component.flow360_params.boundaries import (
+from flow360.component.v1.boundaries import (
     FreestreamBoundary,
     HeatFluxWall,
     IsothermalWall,
@@ -20,13 +20,13 @@ from flow360.component.flow360_params.boundaries import (
     SubsonicOutflowPressure,
     WallFunction,
 )
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     Flow360Params,
     FreestreamFromMach,
     MeshBoundary,
     SteadyTimeStepping,
 )
-from flow360.component.flow360_params.turbulence_quantities import TurbulenceQuantities
+from flow360.component.v1.turbulence_quantities import TurbulenceQuantities
 from tests.utils import compare_to_ref, to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

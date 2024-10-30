@@ -6,8 +6,8 @@ import pytest
 import unyt
 
 import flow360
-import flow360.component.flow360_params.units as u
-from flow360.component.flow360_params.flow360_output import (
+import flow360.component.v1.units as u
+from flow360.component.v1.flow360_output import (
     IsoSurface,
     IsoSurfaceOutput,
     MonitorOutput,
@@ -19,7 +19,7 @@ from flow360.component.flow360_params.flow360_output import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.flow360_params.flow360_params import (
+from flow360.component.v1.flow360_params import (
     AeroacousticOutput,
     Flow360Params,
     FreestreamFromMach,

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.v1.unit_system import (
     DensityType,
     PressureType,
     TemperatureType,

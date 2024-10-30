@@ -21,10 +21,7 @@ from pydantic.v1 import BaseModel
 from pydantic.v1.fields import ModelField
 from typing_extensions import Literal
 
-from flow360.component.flow360_params.unit_system import (
-    DimensionedType,
-    is_flow360_unit,
-)
+from flow360.component.v1.unit_system import DimensionedType, is_flow360_unit
 
 from ...error_messages import do_not_modify_file_manually_msg
 from ...exceptions import Flow360FileError, Flow360ValidationError

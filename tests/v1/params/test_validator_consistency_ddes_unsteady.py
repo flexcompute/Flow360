@@ -4,12 +4,9 @@ import pytest
 
 import flow360 as fl
 from flow360 import units as u
-from flow360.component.flow360_params.flow360_params import (
-    Flow360Params,
-    SteadyTimeStepping,
-)
-from flow360.component.flow360_params.solvers import SpalartAllmaras
-from flow360.component.flow360_params.time_stepping import UnsteadyTimeStepping
+from flow360.component.v1.flow360_params import Flow360Params, SteadyTimeStepping
+from flow360.component.v1.solvers import SpalartAllmaras
+from flow360.component.v1.time_stepping import UnsteadyTimeStepping
 
 assertions = unittest.TestCase("__init__")
 
