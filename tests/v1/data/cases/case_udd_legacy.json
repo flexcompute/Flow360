@@ -1,0 +1,219 @@
+{
+    "geometry": {
+        "refArea": 1,
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ]
+    },
+    "boundaries": {
+        "fluid/farfield": {
+            "type": "Freestream"
+        },
+        "fluid/rightWing": {
+            "type": "NoSlipWall"
+        },
+        "fluid/leftWing": {
+            "type": "NoSlipWall"
+        },
+        "fluid/fuselage": {
+            "type": "NoSlipWall"
+        }
+    },
+    "timeStepping": {
+        "maxPseudoSteps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000,
+            "maxRelativeChange": 1,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0,
+        "modelType": "SpalartAllmaras",
+        "updateJacobianFrequency": 4,
+        "equationEvalFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "DDES": false,
+        "gridSizeForLES": "maxEdgeLength",
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "linearSolverConfig": {
+            "maxIterations": 2,
+            "absoluteTolerance": 1e-10
+        },
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_d": 8.0
+        },
+        "rotationCorrection": false
+    },
+    "transitionModelSolver": {
+		"modelType": "AmplificationFactorTransport",
+		"orderOfAccuracy": 2,
+		"Ncrit": 3,
+        "linearSolverConfig": {
+            "maxIterations": 3,
+            "absoluteTolerance": 1e-10
+        }
+	},
+    "freestream": {
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "Mach": 0.2938635365101296,
+        "muRef": 4.2925193198151646e-08,
+        "Temperature": 288.15
+    },
+    "surfaceOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "Cp"
+        ]
+    },
+    "volumeOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "Cp",
+            "Mach",
+            "nuHat"
+        ]
+    },
+    "sliceOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "Mach",
+            "Cp"
+        ],
+        "slices": {
+            "newKey": {
+                "sliceNormal": [
+                    1,
+                    0,
+                    0
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0
+                ],
+                "outputFields": []
+            },
+            "newKey-1": {
+                "sliceNormal": [
+                    0,
+                    1,
+                    0
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0
+                ],
+                "outputFields": []
+            }
+        }
+    },
+    "isoSurfaceOutput": {
+        "animationFrequency": -1,
+        "outputFormat": "tecplot",
+        "isoSurfaces": {
+            "newKey": {
+                "surfaceField": "Mach",
+                "surfaceFieldMagnitude": 0.25,
+                "outputFields": [
+                    "Mach"
+                ]
+            }
+        }
+    },
+    "monitorOutput": {
+        "monitors": {
+            "newKey": {
+                "type": "surfaceIntegral",
+                "surfaces": [
+                    "fluid/rightWing"
+                ],
+                "outputFields": []
+            },
+            "newKey-1": {
+                "type": "probe",
+                "monitorLocations": [
+                    [
+                        10,
+                        0,
+                        0
+                    ]
+                ],
+                "outputFields": []
+            }
+        },
+        "outputFields": [
+            "Cp",
+            "Mach"
+        ]
+    },
+    "volumeZones": {
+        "fluid": {
+            "modelType": "FluidDynamics"
+        }
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0,
+        "CFLMultiplier": 1,
+        "kappaMUSCL": -1,
+        "updateJacobianFrequency": 4,
+        "equationEvalFrequency": 1,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "orderOfAccuracy": 2,
+        "numericalDissipationFactor": 1,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "linearSolverConfig": {
+            "maxIterations": 1,
+            "absoluteTolerance": 1e-10
+        }
+    },
+    "userDefinedDynamics": [
+        {
+            "dynamicsName": "alphaController",
+            "inputVars": [
+                "CL"
+            ],
+            "constants": {
+                "CLTarget": 0.4,
+                "Kp": 0.2,
+                "Ki": 0.002
+            },
+            "outputVars": [
+                "alphaAngle"
+            ],
+            "outputLaw":["if (pseudoStep > 500) state[0]; else alphaAngle;"],
+            "stateVarsInitialValue": [
+                "alphaAngle",
+                "0.0"
+            ],
+            "updateLaw": [
+                "if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
+                "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];"
+            ],
+            "inputBoundaryPatches": [
+                "fluid/rightWing",
+                "fluid/leftWing",
+                "fluid/fuselage"
+            ]
+        }
+    ]
+}

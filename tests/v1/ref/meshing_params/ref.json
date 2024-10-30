@@ -1,0 +1,17 @@
+{
+    "maxEdgeLength": 0.1,
+    "edges": {
+        "leadingEdge": {
+            "method": "angle",
+            "value": 1.0,
+            "type": "aniso"
+        }
+    },
+    "faces": {
+        "mysphere": {
+            "maxEdgeLength": 0.05
+        }
+    },
+    "curvatureResolutionAngle": 15.0,
+    "growthRate": 1.2
+}

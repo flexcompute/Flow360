@@ -1,7 +1,0 @@
-{
-    "noSlipWalls": [
-        "fluid/fuselage",
-        "fluid/leftWing",
-        "fluid/rightWing"
-    ]
-}

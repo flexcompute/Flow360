@@ -1,0 +1,175 @@
+{
+	"geometry": {
+		"meshName": "turboLabStator.cgns",
+		"refArea": 209701.3096271187,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"primitiveVars": true,
+		"vorticity": true,
+		"Cp": true,
+		"Mach": true,
+		"qcriterion": true,
+		"mut": true,
+		"nuHat": true,
+		"mutRatio": true,
+		"gradW": true,
+		"T": true,
+		"residualNavierStokes": true,
+		"animationFrequency": -1
+	},
+	"surfaceOutput": {
+		"outputFormat": "both",
+		"primitiveVars": true,
+		"Cp": true,
+		"Cf": true,
+		"CfTangent": true,
+		"CfNormal": true,
+		"CfVec": true,
+		"yPlus": true,
+		"nodeForcesPerUnitArea": true
+	},
+	"sliceOutput": {
+		"animationFrequency": -1,
+		"outputFormat": "both",
+		"outputFields": [
+			"Cp",
+			"primitiveVars",
+			"T",
+			"Mach",
+			"gradW"
+		],
+		"slices": {
+			"Inlet": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					-179,
+					0,
+					0
+				]
+			},
+			"Outlet": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					539,
+					0,
+					0
+				]
+			},
+			"trailingEdge": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					183,
+					0,
+					0
+				]
+			},
+			"wake": {
+				"sliceNormal": [
+					1,
+					0,
+					0
+				],
+				"sliceOrigin": [
+					294.65,
+					0,
+					0
+				]
+			}
+		}
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-11,
+		"linearIterations": 20,
+		"orderOfAccuracy": 2,
+		"kappaMUSCL": 0.33,
+		"updateJacobianFrequency": 1,
+		"equationEvalFrequency": 1,
+		"numericalDissipationFactor": 1
+	},
+	"turbulenceModelSolver": {
+		"modelType": "SpalartAllmaras",
+		"absoluteTolerance": 1e-10,
+		"linearIterations": 20,
+		"updateJacobianFrequency": 1,
+		"equationEvalFrequency": 1,
+		"orderOfAccuracy": 2,
+		"gridSizeForLES": "maxEdgeLength",
+		"DDES": false
+	},
+	"freestream": {
+		"Reynolds": 3200,
+		"Mach": 0.13989,
+		"Temperature": 298.25,
+		"alphaAngle": 0,
+		"betaAngle": 0
+	},
+	"boundaries": {
+		"fluid/vane_ss": {
+			"type": "NoSlipWall"
+		},
+		"fluid/vane_ps": {
+			"type": "NoSlipWall"
+		},
+		"fluid/bladeFillet_ss": {
+			"type": "NoSlipWall"
+		},
+		"fluid/bladeFillet_ps": {
+			"type": "NoSlipWall"
+		},
+		"fluid/shroud": {
+			"type": "NoSlipWall"
+		},
+		"fluid/hub": {
+			"type": "NoSlipWall"
+		},
+		"fluid/inlet": {
+			"type": "Freestream"
+		},
+		"fluid/outlet": {
+			"type": "SubsonicOutflowPressure",
+			"staticPressureRatio": 1.0032
+		},
+		"fluid/bottomFront": {
+			"type": "SlipWall"
+		},
+		"fluid/topFront": {
+			"type": "SlipWall"
+		},
+		"fluid/periodic-1": {
+			"type": "RotationallyPeriodic"
+		},
+		"fluid/periodic-2": {
+			"type": "RotationallyPeriodic",
+			"pairedPatchName": "fluid/periodic-1"
+		}
+	},
+	"timeStepping": {
+		"maxPseudoSteps": 5000,
+		"CFL": {
+			"type": "adaptive"
+		}
+	}
+}
