@@ -5,9 +5,12 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.solver_numerics import (
+    KOmegaSST,
+    KOmegaSSTModelConstants,
     LinearSolver,
     NavierStokesSolver,
     SpalartAllmaras,
+    SpalartAllmarasModelConstants,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -192,6 +195,31 @@ def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_FS_with_vel_expression.json",
+    )
+
+
+def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[0].turbulence_model_solver.modeling_constants = SpalartAllmarasModelConstants(
+        C_w2=2.718
+    )
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_SA_with_modified_C_w2.json",
+    )
+
+    params.models[0].turbulence_model_solver = KOmegaSST(
+        absolute_tolerance=1e-8,
+        linear_solver=LinearSolver(max_iterations=15),
+    )
+    params.models[0].turbulence_model_solver.modeling_constants = KOmegaSSTModelConstants(
+        C_sigma_omega1=2.718
+    )
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
     )
 
 
