@@ -142,16 +142,28 @@ def test_updater_from_files():
 
     params = fl.Flow360Params(f"data/cases/case_5.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 0.5
+    assert params.surface_output.write_single_file is True
+
     params = fl.Flow360Params(f"data/cases/case_7.json")
     assert params.turbulence_model_solver.reconstruction_gradient_limiter == 1.0
 
     params = fl.Flow360Params("data/cases/case_13.json")
+
     assert set(params.surface_output.output_fields) == {"Cp", "Cf", "uhh", "primitiveVars"}
     assert set(params.volume_output.output_fields) == {"hmmm", "primitiveVars", "Mach"}
     assert set(params.slice_output.slices["mid_Height"].output_fields) == {"uhh", "Cp"}
     assert set(params.iso_surface_output.iso_surfaces["newKey"].output_fields) == {"Mach", "hmmm"}
     assert set(params.monitor_output.monitors["newKey"].output_fields) == {"hmmm"}
     assert set(params.monitor_output.monitors["Group1"].output_fields) == {"primitiveVars", "uhh"}
+
+    params = params.to_solver()
+    assert set(params.surface_output.surfaces["wing"].output_fields) == {
+        "Cp",
+        "Cf",
+        "uhh",
+        "primitiveVars",
+        "yPlus",
+    }
 
 
 def test_version_update():
