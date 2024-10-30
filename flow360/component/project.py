@@ -31,7 +31,9 @@ from flow360.component.utils import (
     ProjectAssetCache,
     match_file_pattern,
 )
-from flow360.component.v1 import Case, SurfaceMesh, __solver_version__
+from flow360.component.case import Case
+from flow360.component.surface_mesh import SurfaceMesh
+from flow360.version import __solver_version__
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 

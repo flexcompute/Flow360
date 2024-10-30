@@ -121,8 +121,8 @@ from .solvers import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
 )
-from .surface_mesh import SurfaceMesh
-from .surface_mesh import SurfaceMeshList as MySurfaceMeshes
+from ..surface_mesh import SurfaceMesh
+from ..surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .time_stepping import (
     AdaptiveCFL,
     RampCFL,

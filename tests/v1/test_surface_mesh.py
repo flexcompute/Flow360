@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 from flow360 import exceptions as ex
-from flow360.component.v1.surface_mesh import SurfaceMesh
+from flow360.component.surface_mesh import SurfaceMesh
 
 assertions = unittest.TestCase("__init__")
 
