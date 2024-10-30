@@ -10,6 +10,8 @@ from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
+# pylint: disable=duplicate-code
+# inlined from v1 module to avoid circular import
 IsoSurfaceFieldNames = Literal[
     "p",
     "rho",
