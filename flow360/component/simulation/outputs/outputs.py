@@ -18,16 +18,16 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     Slice,
 )
-from flow360.component.simulation.primitives import GhostSurface, Surface
-from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.validation.validation_output import (
-    _check_unique_probe_type,
-)
-from flow360.component.v1.flow360_fields import (
+from flow360.component.simulation.outputs.output_fields import (
     CommonFieldNames,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+)
+from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_output import (
+    _check_unique_probe_type,
 )
 
 

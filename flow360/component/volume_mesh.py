@@ -26,11 +26,11 @@ from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.requests import (
     CopyExampleVolumeMeshRequest,
     LengthUnitType,
-    NewVolumeMeshRequest,
     NewVolumeMeshRequestV2,
 )
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import get_local_filename_and_create_folders
+from flow360.component.v1.cloud.requests import NewVolumeMeshRequest
 from flow360.exceptions import (
     Flow360CloudFileError,
     Flow360FileError,
