@@ -11,6 +11,7 @@ import pydantic as pd
 
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
+from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (
     GeometryInterface,
@@ -25,17 +26,16 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
+from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     MeshNameParser,
     ProjectAssetCache,
     match_file_pattern,
 )
-from flow360.component.case import Case
-from flow360.component.surface_mesh import SurfaceMesh
-from flow360.version import __solver_version__
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
 RootAsset = Union[Geometry, VolumeMeshV2]

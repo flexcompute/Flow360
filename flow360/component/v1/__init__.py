@@ -25,6 +25,8 @@ from ...version import __solver_version__, __version__
 from ..case import Case
 from ..case import CaseList as MyCases
 from ..folder import Folder
+from ..surface_mesh import SurfaceMesh
+from ..surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from ..volume_mesh import VolumeMesh
 from ..volume_mesh import VolumeMeshList as MyVolumeMeshes
 from . import meshing, solvers, units
@@ -121,8 +123,6 @@ from .solvers import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
 )
-from ..surface_mesh import SurfaceMesh
-from ..surface_mesh import SurfaceMeshList as MySurfaceMeshes
 from .time_stepping import (
     AdaptiveCFL,
     RampCFL,

@@ -37,9 +37,9 @@ from .utils import (
     validate_type,
     zstd_compress,
 )
+from .v1.params_base import params_generic_validator
 from .validator import Validator
 from .volume_mesh import VolumeMeshDraft
-from .v1.params_base import params_generic_validator
 
 SURFACE_MESH_NAME_STEM_V1 = "surfaceMesh"
 SURFACE_MESH_NAME_STEM_V2 = "surface_mesh"

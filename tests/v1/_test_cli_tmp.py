@@ -1,11 +1,10 @@
 import os.path
+import shutil
 from os.path import expanduser
 
-import shutil
-
+import pytest
 import toml
 from click.testing import CliRunner
-import pytest
 
 home = expanduser("~")
 
