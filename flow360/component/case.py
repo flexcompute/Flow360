@@ -11,7 +11,7 @@ from typing import Any, Iterator, List, Union
 import pydantic.v1 as pd
 
 from .. import error_messages
-from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log

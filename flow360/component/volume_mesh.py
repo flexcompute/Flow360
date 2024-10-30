@@ -22,15 +22,16 @@ import pydantic as pd_v2
 import pydantic.v1 as pd
 
 from flow360.cloud.compress_upload import compress_and_upload_chunks
-from flow360.cloud.heartbeat import post_upload_heartbeat
-from flow360.cloud.requests import (
+from flow360.cloud.flow360_requests import (
     CopyExampleVolumeMeshRequest,
     LengthUnitType,
     NewVolumeMeshRequestV2,
 )
+from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import get_local_filename_and_create_folders
-from flow360.component.v1.cloud.requests import NewVolumeMeshRequest
+from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
+from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (
     Flow360CloudFileError,
     Flow360FileError,
@@ -44,7 +45,6 @@ from flow360.solver_version import Flow360Version
 
 from .case import Case, CaseDraft
 from .interfaces import VolumeMeshInterface, VolumeMeshInterfaceV2
-from .meshing.params import VolumeMeshingParams
 from .resource_base import (
     AssetMetaBaseModel,
     AssetMetaBaseModelV2,

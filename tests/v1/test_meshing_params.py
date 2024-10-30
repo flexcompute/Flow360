@@ -1,6 +1,6 @@
 import pytest
 
-from flow360.component.meshing.params import (
+from flow360.component.v1.meshing.params import (
     Aniso,
     BoxRefinement,
     CylinderRefinement,

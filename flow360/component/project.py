@@ -9,7 +9,7 @@ from typing import Iterable, List, Optional, Union
 
 import pydantic as pd
 
-from flow360.cloud.requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (

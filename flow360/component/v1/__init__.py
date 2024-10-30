@@ -22,28 +22,12 @@ from ...environment import Env
 from ...flags import Flags
 from ...user_config import UserConfig
 from ...version import __solver_version__, __version__
-from .. import meshing
 from ..case import Case
 from ..case import CaseList as MyCases
 from ..folder import Folder
-from ..meshing.params import (
-    Aniso,
-    BoxRefinement,
-    CylinderRefinement,
-    Edges,
-    Face,
-    Faces,
-    Farfield,
-    ProjectAniso,
-    RotorDisk,
-    SurfaceMeshingParams,
-    UseAdjacent,
-    Volume,
-    VolumeMeshingParams,
-)
 from ..volume_mesh import VolumeMesh
 from ..volume_mesh import VolumeMeshList as MyVolumeMeshes
-from . import solvers, units
+from . import meshing, solvers, units
 from .boundaries import (
     FreestreamBoundary,
     HeatFluxWall,
@@ -111,6 +95,21 @@ from .flow360_params import (
     air,
 )
 from .initial_condition import ExpressionInitialCondition, ModifiedRestartSolution
+from .meshing.params import (
+    Aniso,
+    BoxRefinement,
+    CylinderRefinement,
+    Edges,
+    Face,
+    Faces,
+    Farfield,
+    ProjectAniso,
+    RotorDisk,
+    SurfaceMeshingParams,
+    UseAdjacent,
+    Volume,
+    VolumeMeshingParams,
+)
 from .solvers import (
     IncompressibleNavierStokesSolver,
     KOmegaSST,

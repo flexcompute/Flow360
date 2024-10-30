@@ -1,9 +1,11 @@
+"""V1 requests for cloud component"""
+
 from typing import List, Optional, Union
 
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from flow360.cloud.requests import Flow360Requests
+from flow360.cloud.flow360_requests import Flow360Requests
 from flow360.component.v1.flow360_params import Flow360MeshParams
 from flow360.flags import Flags
 

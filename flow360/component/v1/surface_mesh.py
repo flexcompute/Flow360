@@ -10,14 +10,17 @@ from typing import Iterator, List, Union
 
 import pydantic.v1 as pd
 
-from flow360.component.v1.cloud.requests import NewSurfaceMeshRequest
+from flow360.component.v1.cloud.flow360_requests import NewSurfaceMeshRequest
+from flow360.component.v1.meshing.params import (
+    SurfaceMeshingParams,
+    VolumeMeshingParams,
+)
 from flow360.flags import Flags
 
 from ...cloud.rest_api import RestApi
 from ...exceptions import Flow360FileError, Flow360ValueError
 from ...log import log
 from ..interfaces import SurfaceMeshInterface
-from ..meshing.params import SurfaceMeshingParams, VolumeMeshingParams
 from ..resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
