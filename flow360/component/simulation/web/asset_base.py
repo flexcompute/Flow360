@@ -141,6 +141,7 @@ class AssetBase(metaclass=ABCMeta):
         :param tags:
         :return:
         """
+        # pylint: disable=not-callable
         return cls._draft_class(
             file_names=file_names,
             project_name=project_name,

@@ -1040,7 +1040,7 @@ class VolumeMeshV2(AssetBase):
         return volume_mesh
 
     @classmethod
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,arguments-renamed
     def from_file(
         cls,
         file_name: str,
