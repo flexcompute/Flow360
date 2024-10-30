@@ -9,7 +9,18 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
-from flow360.component.v1.flow360_fields import IsoSurfaceFieldNames
+
+IsoSurfaceFieldNames = Literal[
+    "p",
+    "rho",
+    "Mach",
+    "qcriterion",
+    "s",
+    "T",
+    "Cp",
+    "mut",
+    "nuHat",
+]
 
 
 class _OutputItemBase(Flow360BaseModel):
