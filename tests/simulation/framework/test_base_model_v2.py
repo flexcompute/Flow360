@@ -8,7 +8,6 @@ import yaml
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.v1.flow360_params import Flow360BaseModel
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
