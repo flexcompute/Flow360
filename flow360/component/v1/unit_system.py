@@ -2,7 +2,8 @@
 Unit system definitions and utilities
 """
 
-# pylint: disable=too-many-lines, duplicate-code
+# pylint: disable=too-many-lines, duplicate-code,
+# pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
