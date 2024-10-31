@@ -79,8 +79,9 @@ class DraftDraft(ResourceDraft):
         """
         Submit draft to cloud and under a given project
         """
-        draft_id = RestApi(DraftInterface.endpoint).post(self._request.model_dump(by_alias=True))
-        return Draft.from_cloud(draft_id["id"])
+        draft_meta = RestApi(DraftInterface.endpoint).post(self._request.model_dump(by_alias=True))
+        self._id = draft_meta["id"]
+        return Draft.from_cloud(self._id)
 
 
 class Draft(Flow360Resource):

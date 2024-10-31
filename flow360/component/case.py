@@ -335,6 +335,7 @@ class CaseDraft(CaseBase, ResourceDraft):
             path=f"volumemeshes/{volume_mesh_id}/case",
         )
         info = CaseMeta(**resp)
+        # setting _id will disable "remember to submit draft" warning message
         self._id = info.id
 
         self._submitted_case = Case(self.id)

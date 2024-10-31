@@ -201,7 +201,9 @@ class GeometryDraft(ResourceDraft):
         heartbeat_thread.join()
         ##:: kick off pipeline
         geometry._webapi._complete_upload()
-        log.info("Geometry successfully submitted.")
+        log.info(f"Geometry successfully submitted: {geometry.short_description()}")
+        # setting _id will disable "remember to submit draft" warning message
+        self._id = info.id
         log.info("Waiting for geometry to be processed.")
         # uses from_cloud to ensure all metadata is ready before yielding the object
         return Geometry.from_cloud(info.id)

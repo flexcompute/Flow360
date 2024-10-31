@@ -201,6 +201,54 @@ class SurfaceProbeOutput(Flow360BaseModel):
         return _check_unique_probe_type(value, "SurfaceProbeOutput")
 
 
+class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
+    """
+    Surface slice settings.
+    """
+
+    name: str = pd.Field()
+    entities: EntityList[Slice] = pd.Field(alias="slices")
+    # Maybe add preprocess for this and by default add all Surfaces?
+    target_surfaces: EntityList[Surface] = pd.Field()
+
+    output_format: Literal["paraview"] = pd.Field(default="paraview")
+
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "SurfaceSliceOutput")
+
+
+class TimeAverageProbeOutput(ProbeOutput):
+    """Time average probe monitor output settings."""
+
+    # pylint: disable=abstract-method
+    frequency: int = pd.Field(default=1, ge=1)
+    frequency_offset: int = pd.Field(default=0, ge=0)
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
+    output_type: Literal["TimeAverageProbeOutput"] = pd.Field("TimeAverageProbeOutput", frozen=True)
+
+
+class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
+    """Time average probe monitor output settings."""
+
+    # pylint: disable=abstract-method
+    frequency: int = pd.Field(default=1, ge=1)
+    frequency_offset: int = pd.Field(default=0, ge=0)
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
+    output_type: Literal["TimeAverageSurfaceProbeOutput"] = pd.Field(
+        "TimeAverageSurfaceProbeOutput", frozen=True
+    )
+
+
 class AeroAcousticOutput(Flow360BaseModel):
     """AeroAcoustic output settings."""
 
@@ -228,6 +276,9 @@ OutputTypes = Annotated[
         SurfaceIntegralOutput,
         ProbeOutput,
         SurfaceProbeOutput,
+        SurfaceSliceOutput,
+        TimeAverageProbeOutput,
+        TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),

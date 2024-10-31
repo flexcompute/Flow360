@@ -14,7 +14,10 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
+    TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
@@ -399,17 +402,45 @@ def probe_output_config():
                 ],
                 output_fields=["primitiveVars", "Cp"],
             ),
+            TimeAverageProbeOutput(  # Local
+                name="prb average",
+                entities=[
+                    Point(
+                        name="a",
+                        location=[10, 10.02, 10.03] * u.cm,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp", "T"],
+                frequency=10,
+            ),
         ],
         {
             "monitors": {
                 "prb 10": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp"],
                     "type": "probe",
                 },
                 "prb 12": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                     "outputFields": ["primitiveVars", "Cp"],
+                    "type": "probe",
+                },
+                "prb average": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "animationFrequencyTimeAverage": 10,
+                    "animationFrequencyTimeAverageOffset": 0,
+                    "startAverageIntegrationStep": -1,
+                    "computeTimeAverages": True,
+                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "outputFields": ["primitiveVars", "Cp", "T"],
                     "type": "probe",
                 },
             },
@@ -462,11 +493,17 @@ def probe_output_with_point_array():
                     "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
                     "numberOfPoints": [5, 7],
                     "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "type": "lineProbe",
                 },
                 "prb point": {
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                     "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "type": "probe",
                 },
             },
@@ -499,11 +536,17 @@ def surface_integral_output_config():
         {
             "monitors": {
                 "prb 110": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Cp"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                     "type": "surfaceIntegral",
                 },
                 "prb 122": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Mach"],
                     "surfaces": ["surface21", "surface22"],
                     "type": "surfaceIntegral",
@@ -529,7 +572,7 @@ def test_surface_probe_output():
                 ],
                 output_fields=["Cp", "Cf"],
             ),
-            SurfaceProbeOutput(
+            TimeAverageSurfaceProbeOutput(
                 name="SP-2",
                 entities=[
                     Point(name="P1", location=[1, 1.02, 0.03] * u.cm),
@@ -568,18 +611,30 @@ def test_surface_probe_output():
         {
             "monitors": {
                 "SP-1": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Cp", "Cf"],
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03]],
                     "type": "surfaceProbe",
                 },
                 "SP-2": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "animationFrequencyTimeAverage": 1,
+                    "animationFrequencyTimeAverageOffset": 0,
+                    "startAverageIntegrationStep": -1,
+                    "computeTimeAverages": True,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
                     "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03], [3, 1.02, 0.03]],
                     "type": "surfaceProbe",
                 },
                 "SP-3": {
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
                     "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
@@ -606,7 +661,7 @@ def test_monitor_output(
     probe_output_with_point_array,
     surface_integral_output_config,
 ):
-    ##:: monitorOutput with global probe settings
+    ##:: monitorOutput
     with SI_unit_system:
         param = SimulationParams(outputs=probe_output_config[0])
     param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
@@ -626,7 +681,7 @@ def test_monitor_output(
         translated["monitorOutput"].items()
     )
 
-    ##:: surfaceIntegral with global probe settings
+    ##:: surfaceIntegral
     with SI_unit_system:
         param = SimulationParams(outputs=surface_integral_output_config[0])
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
@@ -647,24 +702,47 @@ def test_monitor_output(
     ref = {
         "monitors": {
             "prb 10": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
                 "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 110": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "outputFields": ["Cp"],
                 "surfaces": ["zoneName/surface1", "surface2"],
                 "type": "surfaceIntegral",
             },
             "prb 12": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
                 "outputFields": ["primitiveVars", "Cp"],
                 "type": "probe",
             },
             "prb 122": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": False,
                 "outputFields": ["Mach"],
                 "surfaces": ["surface21", "surface22"],
                 "type": "surfaceIntegral",
+            },
+            "prb average": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "animationFrequencyTimeAverage": 10,
+                "animationFrequencyTimeAverageOffset": 0,
+                "startAverageIntegrationStep": -1,
+                "computeTimeAverages": True,
+                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "outputFields": ["primitiveVars", "Cp", "T"],
+                "type": "probe",
             },
         },
         "outputFields": [],
@@ -700,3 +778,103 @@ def test_acoustic_output(aeroacoustic_output_config):
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
         translated["aeroacousticOutput"].items()
     )
+
+
+def test_surface_slice_output():
+    param_with_ref = (
+        [
+            SurfaceSliceOutput(
+                name="SS-1",
+                entities=[
+                    Slice(name="S1", origin=[1, 1.02, 0.03] * u.cm, normal=(0, 1, 0)),
+                    Slice(name="S3", origin=[1, 1.01, 0.03] * u.cm, normal=(0, 1, 0)),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneA/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneA/surface2"),
+                ],
+                output_fields=["Cp", "Cf", "primitiveVars"],
+                frequency=2,
+            ),
+            SurfaceSliceOutput(
+                name="SS-2",
+                entities=[
+                    Slice(name="P1", origin=[1, 1.02, 0.03] * u.cm, normal=(0, 0, 1)),
+                    Slice(name="P2", origin=[2, 1.01, 0.03] * u.m, normal=(0, 0, -1)),
+                    Slice(name="P3", origin=[3, 1.02, 0.03] * u.m, normal=(0, 0, 1)),
+                ],
+                target_surfaces=[
+                    Surface(name="surface1", private_attribute_full_name="zoneB/surface1"),
+                    Surface(name="surface2", private_attribute_full_name="zoneB/surface2"),
+                ],
+                output_fields=["Mach", "primitiveVars", "yPlus"],
+            ),
+        ],
+        {
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "animationFrequency": 2,
+            "animationFrequencyOffset": 0,
+            "slices": [
+                {
+                    "name": "S1",
+                    "sliceOrigin": [0.01, 0.0102, 0.0003],
+                    "sliceNormal": [0.0, 1.0, 0.0],
+                    "outputFields": ["Cp", "Cf", "primitiveVars"],
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                },
+                {
+                    "name": "S3",
+                    "sliceOrigin": [0.01, 0.0101, 0.0003],
+                    "sliceNormal": [0.0, 1.0, 0.0],
+                    "outputFields": ["Cp", "Cf", "primitiveVars"],
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                },
+                {
+                    "name": "P1",
+                    "sliceOrigin": [0.01, 0.0102, 0.0003],
+                    "sliceNormal": [0.0, 0.0, 1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                },
+                {
+                    "name": "P2",
+                    "sliceOrigin": [2.0, 1.01, 0.03],
+                    "sliceNormal": [0.0, 0.0, -1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                },
+                {
+                    "name": "P3",
+                    "sliceOrigin": [3.0, 1.02, 0.03],
+                    "sliceNormal": [0.0, 0.0, 1.0],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                },
+            ],
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_ref[0])
+    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+    print(json.dumps(translated, indent=4))
+    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
