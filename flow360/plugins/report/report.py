@@ -1,3 +1,7 @@
+"""
+Report generation interface
+"""
+
 import os
 from typing import List, Union
 
@@ -20,22 +24,56 @@ from flow360.cloud.requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.plugins.report.report_items import (
+    Chart,
+    Chart2D,
+    Chart3D,
+    Inputs,
+    Summary,
+    Table,
+)
 
-from .report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table
 
-
+# pylint: disable=too-few-public-methods
 class ReportApi:
+    """
+    ReportApi interface
+    """
+
     _webapi = RestApi(ReportInterface.endpoint)
 
+    # pylint: disable=too-many-arguments
     @classmethod
     def submit(
         cls,
         name: str,
         case_ids: List[str],
         config: str,
-        landscape: bool = True,
+        landscape: bool = True,  # pylint: disable=unused-argument
         solver_version: str = None,
     ):
+        """
+        Submits a new report request.
+
+        Parameters
+        ----------
+        name : str
+            The name of the report.
+        case_ids : List[str]
+            List of case IDs to include in the report.
+        config : str
+            JSON configuration for report settings.
+        landscape : bool, default=True
+            Whether the report should be landscape-oriented (unused argument).
+        solver_version : str, optional
+            Version of the solver for report generation.
+
+        Returns
+        -------
+        Response
+            The response object from the web API post request.
+        """
+
         request = NewReportRequest(
             name=name,
             resources=[{"type": "Case", "id": id} for id in case_ids],
@@ -46,6 +84,19 @@ class ReportApi:
 
 
 class Report(Flow360BaseModel):
+    """
+    A model representing a report containing various components such as summaries, inputs, tables,
+    and charts in both 2D and 3D.
+
+    Parameters
+    ----------
+    items : List[Union[Summary, Inputs, Table, Chart2D, Chart3D]]
+        A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart.
+        The `type` field acts as a discriminator for differentiating item types.
+    include_case_by_case : bool, default=True
+        Flag indicating whether to include a case-by-case analysis in the report.
+    """
+
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
     include_case_by_case: bool = True
 
@@ -113,14 +164,48 @@ class Report(Flow360BaseModel):
         doc.append(Command("end", "titlepage"))
 
     def get_requirements(self):
+        """
+        Collects and returns unique requirements from all items.
+
+        This method iterates over all items, retrieves each item's requirements,
+        and aggregates them into a unique list.
+
+        Returns
+        -------
+        list
+            A list of unique requirements aggregated from all items.
+        """
+
         requirements = set()
-        for item in self.items:
-            [requirements.add(req) for req in item.get_requirements()]
+        for item in self.items:  # pylint: disable=not-an-iterable
+            for req in item.get_requirements():
+                requirements.add(req)
         return list(requirements)
 
+    # pylint: disable=unused-argument
     def create_in_cloud(
         self, name: str, cases: list[Case], landscape: bool = False, solver_version: str = None
     ):
+        """
+        Creates a report in the cloud for a specified set of cases.
+
+        Parameters
+        ----------
+        name : str
+            The name of the report to create.
+        cases : list[Case]
+            A list of `Case` instances to include in the report.
+        landscape : bool, default=False
+            Orientation of the report, where `True` represents landscape.
+        solver_version : str, optional
+            Version of the solver for report generation.
+
+        Returns
+        -------
+        Response
+            The response from the Report API submission.
+        """
+
         return ReportApi.submit(
             name=name,
             case_ids=[case.id for case in cases],
@@ -131,7 +216,24 @@ class Report(Flow360BaseModel):
     def create_pdf(
         self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = "."
     ) -> None:
-        # Create a new LaTeX document
+        """
+        Generates a PDF report for a specified set of cases.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the output PDF file.
+        cases : list[Case]
+            A list of `Case` instances to include in the PDF report.
+        landscape : bool, default=False
+            Orientation of the report, where `True` represents landscape.
+        data_storage : str, default="."
+            Directory where the PDF file will be saved.
+
+        Returns
+        -------
+        None
+        """
         os.makedirs(data_storage, exist_ok=True)
         doc = Document(document_options=["10pt"])
         self._define_preamble(doc, landscape)
@@ -149,13 +251,15 @@ class Report(Flow360BaseModel):
         )
         doc.preamble.append(
             NoEscape(
-                r"\captionsetup{position=bottom, font=large, labelformat=graybox, labelsep=none, justification=raggedright, singlelinecheck=false}"
+                r"\captionsetup{position=bottom, font=large, labelformat=graybox, "
+                r"labelsep=none, justification=raggedright, singlelinecheck=false}"
             )
         )
+
         doc.change_document_style("header")
 
         # Iterate through all cases together
-        for item in self.items:
+        for item in self.items:  # pylint: disable=not-an-iterable
             item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
 
         # Iterate each case one at a time
@@ -163,8 +267,9 @@ class Report(Flow360BaseModel):
             with doc.create(Section("Appendix", numbering=False)):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
-                        for item in self.items:
-                            # Don't attempt to create ReportItems that have a select_case_ids which don't include the current case.id
+                        for item in self.items:  # pylint: disable=not-an-iterable
+                            # Don't attempt to create ReportItems that have a select_case_ids which don't
+                            # include the current case.id
                             # Checks for valid selecte_case_ids can be done later
                             if isinstance(item, Chart) and item.select_indices is not None:
                                 selected_case_ids = [cases[i].id for i in item.select_indices]
