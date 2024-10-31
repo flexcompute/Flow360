@@ -349,9 +349,8 @@ class SimulationParams(_ParamModelBase):
         """
         if self.models is None:
             return False
-        return any(
-            isinstance(item, ActuatorDisk) for item in self.models
-        )  # pylint: disable=not-an-iterable
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, ActuatorDisk) for item in self.models)
 
     def has_bet_disks(self):
         """
@@ -359,9 +358,8 @@ class SimulationParams(_ParamModelBase):
         """
         if self.models is None:
             return False
-        return any(
-            isinstance(item, BETDisk) for item in self.models
-        )  # pylint: disable=not-an-iterable
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, BETDisk) for item in self.models)
 
     def has_isosurfaces(self):
         """
@@ -369,9 +367,8 @@ class SimulationParams(_ParamModelBase):
         """
         if self.outputs is None:
             return False
-        return any(
-            isinstance(item, IsosurfaceOutput) for item in self.outputs
-        )  # pylint: disable=not-an-iterable
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, IsosurfaceOutput) for item in self.outputs)
 
     def has_monitors(self):
         """
@@ -379,9 +376,10 @@ class SimulationParams(_ParamModelBase):
         """
         if self.outputs is None:
             return False
+        # pylint: disable=not-an-iterable
         return any(
             isinstance(item, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput))
-            for item in self.outputs  # pylint: disable=not-an-iterable
+            for item in self.outputs
         )
 
     def has_volume_output(self):
@@ -390,9 +388,8 @@ class SimulationParams(_ParamModelBase):
         """
         if self.outputs is None:
             return False
-        return any(
-            isinstance(item, VolumeOutput) for item in self.outputs
-        )  # pylint: disable=not-an-iterable
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, VolumeOutput) for item in self.outputs)
 
     def has_aeroacoustics(self):
         """
@@ -400,9 +397,8 @@ class SimulationParams(_ParamModelBase):
         """
         if self.outputs is None:
             return False
-        return any(
-            isinstance(item, (AeroAcousticOutput)) for item in self.outputs
-        )  # pylint: disable=not-an-iterable
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, (AeroAcousticOutput)) for item in self.outputs)
 
     def has_user_defined_dynamics(self):
         """

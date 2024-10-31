@@ -813,12 +813,10 @@ class CaseResultsModel(pd.BaseModel):
         for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
-                value._download_method = (
-                    self.case._download_file
-                )  # pylint: disable=protected-access,no-member
-                value._get_params_method = (
-                    lambda: self.case.params
-                )  # pylint: disable=protected-access,no-member
+                # pylint: disable=protected-access,no-member
+                value._download_method = self.case._download_file
+                # pylint: disable=protected-access,no-member
+                value._get_params_method = lambda: self.case.params
                 value.local_storage = self.local_storage
 
         return self
@@ -828,9 +826,8 @@ class CaseResultsModel(pd.BaseModel):
         """
         Pass file getters into fields of the case results
         """
-        self.monitors.get_download_file_list_method = (
-            self.case.get_download_file_list
-        )  # pylint: disable=no-member,assigning-non-slot
+        # pylint: disable=no-member,assigning-non-slot
+        self.monitors.get_download_file_list_method = self.case.get_download_file_list
         return self
 
     # pylint: disable=protected-access,no-member
