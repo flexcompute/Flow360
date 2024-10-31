@@ -84,7 +84,7 @@ class GeometryDraft(ResourceDraft):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        file_names: List[str],
+        file_names: Union[List[str], str],
         project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
@@ -135,6 +135,8 @@ class GeometryDraft(ResourceDraft):
     @property
     def file_names(self) -> List[str]:
         """geometry file"""
+        if isinstance(self._file_names, str):
+            return [self._file_names]
         return self._file_names
 
     # pylint: disable=protected-access
