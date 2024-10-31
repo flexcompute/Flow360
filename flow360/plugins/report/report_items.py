@@ -7,6 +7,9 @@ from typing import List, Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 from pydantic import Field, NonNegativeInt, model_validator
+
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
 from pylatex import (
     Command,
     Document,
@@ -17,6 +20,8 @@ from pylatex import (
     SubFigure,
     Subsection,
 )
+
+# pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case

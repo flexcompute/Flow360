@@ -6,6 +6,9 @@ import os
 from typing import List, Union
 
 from pydantic import Field
+
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
 from pylatex import (
     Command,
     Document,

@@ -6,6 +6,9 @@ from numbers import Number
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, NonNegativeInt
+
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
 from flow360 import Case
@@ -281,6 +284,7 @@ class Delta(BaseModel):
         return f"Delta {self.data.split('/')[-1]}"
 
 
+# pylint: disable=too-few-public-methods
 class Tabulary(Tabular):
     """The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex"""
 

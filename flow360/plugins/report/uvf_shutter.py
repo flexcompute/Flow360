@@ -8,6 +8,8 @@ import zipfile
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
 
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
+# pylint: disable=import-error
 import aiohttp
 import backoff
 import pydantic as pd
