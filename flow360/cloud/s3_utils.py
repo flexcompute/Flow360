@@ -113,6 +113,7 @@ class _UserCredential(BaseModel):
 
 
 class _S3STSToken(BaseModel):
+    cloud_path_prefix: str = Field(alias="cloudpathPrefix")
     cloud_path: str = Field(alias="cloudpath")
     user_credential: _UserCredential = Field(alias="userCredentials")
 
@@ -176,17 +177,15 @@ class S3TransferType(Enum):
         :param file_name:
         :return:
         """
-        url_map = {
-            S3TransferType.VOLUME_MESH: "volumemeshes",
-            S3TransferType.SURFACE_MESH: "surfacemeshes",
-            S3TransferType.CASE: "cases",
-            S3TransferType.GEOMETRY: "geometries",
-            S3TransferType.REPORT: None,
-        }
+        if self is S3TransferType.VOLUME_MESH:
+            return f"v2/volume-meshes/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.SURFACE_MESH:
+            return f"v2/surface-meshes/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.CASE:
+            return f"v2/cases/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.GEOMETRY:
+            return f"v2/geometries/{resource_id}/file?filename={file_name}"
 
-        base_path = url_map.get(self)
-        if base_path is not None:
-            return f"{base_path}/{resource_id}/file?filename={file_name}"
         raise Flow360ValueError(f"unknown download method for {self}")
 
     def create_multipart_upload(
@@ -385,13 +384,17 @@ class S3TransferType(Enum):
         return to_file
 
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
-        session_key = f"{resource_id}:{self.value}:{file_name}"
+        session_key = f"{resource_id}:{self.value}"
         if session_key not in _s3_sts_tokens or _s3_sts_tokens[session_key].is_expired():
             path = self._get_grant_url(resource_id, file_name)
             resp = http.get(path)
             token = _S3STSToken.parse_obj(resp)
             _s3_sts_tokens[session_key] = token
-        return _s3_sts_tokens[session_key]
+            return token
+        token = _s3_sts_tokens[session_key]
+        return token.copy(
+            deep=True, update={"cloud_path": os.path.join(token.cloud_path_prefix, file_name)}
+        )
 
 
 _s3_sts_tokens: [str, _S3STSToken] = {}
