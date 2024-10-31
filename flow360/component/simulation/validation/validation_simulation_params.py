@@ -274,7 +274,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
     if asset_boundary_entities is None or asset_boundary_entities == []:
         return params
-    asset_boundaries = set(asset_boundary_entities)
+    asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
 
     ## Step 2: Collect all used boundaries from the models
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):

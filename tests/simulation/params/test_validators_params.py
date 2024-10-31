@@ -348,7 +348,7 @@ def test_incomplete_BC():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a model in the `models` section."
+            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
         ),
     ):
         with SI_unit_system:
