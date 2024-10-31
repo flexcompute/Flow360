@@ -29,7 +29,14 @@
             "Cp",
             "Cf",
             "uhh"
-        ]
+        ],
+        "surfaces": {
+            "wing": {
+                "outputFields": [
+                    "yPlus"
+                ]
+            }
+        }
     },
     "sliceOutput": {
         "outputFormat": "paraview",

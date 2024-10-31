@@ -37,7 +37,8 @@
       "Cf": true,
       "CfVec": true,
       "yPlus": true,
-      "wallDistance": false
+      "wallDistance": false,
+      "writeSingleFile": true
    },
    "navierStokesSolver": {
       "tolerance": 1e-10,

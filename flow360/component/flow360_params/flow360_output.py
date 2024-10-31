@@ -766,6 +766,8 @@ class SurfaceOutputLegacy(SurfaceOutput, LegacyOutputFormat, LegacyModel):
             "computeTimeAverages": self.compute_time_averages,
             "outputFormat": self.output_format,
             "outputFields": fields,
+            "surfaces": self.surfaces,
+            "writeSingleFile": self.write_single_file,
             "startAverageIntegrationStep": self.start_average_integration_step,
         }
 
