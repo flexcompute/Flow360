@@ -829,6 +829,7 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     project_id: str = pd_v2.Field(alias="projectId")
     deleted: bool = pd_v2.Field()
     status: VolumeMeshStatusV2 = pd_v2.Field()  # Overshadowing to ensure correct is_final() method
+    file_name: str = pd_v2.Field(alias="fileName")
 
 
 class VolumeMeshDraftV2(ResourceDraft):
@@ -839,18 +840,13 @@ class VolumeMeshDraftV2(ResourceDraft):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        file_names: List[str],
+        file_names: str,
         project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
-        if not isinstance(file_names, list) or len(file_names) != 1:
-            raise Flow360FileError(
-                "file_names field has to be a single-element list for the volume mesh draft."
-            )
-
-        self.file_name = file_names[0]
+        self.file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
@@ -887,7 +883,7 @@ class VolumeMeshDraftV2(ResourceDraft):
             raise Flow360ValueError("solver_version field is required.")
 
     # pylint: disable=protected-access, too-many-locals
-    def submit(self, description="", progress_callback=None, compress=False) -> VolumeMeshV2:
+    def submit(self, description="", progress_callback=None, compress=True) -> VolumeMeshV2:
         """
         Submit volume mesh to cloud and create a new project
 
@@ -898,7 +894,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         progress_callback : callback, optional
             Use for custom progress bar, by default None
         compress : boolean, optional
-            Compress the volume mesh file when sending to S3, default is False
+            Compress the volume mesh file when sending to S3, default is True
         fetch_entities : boolean, optional
             Whether to fetch and populate the entity info object after submitting, default is False
 
@@ -916,28 +912,22 @@ class VolumeMeshDraftV2(ResourceDraft):
         mesh_parser = MeshNameParser(self.file_name)
 
         original_compression = mesh_parser.compression
-        endianness = mesh_parser.endianness
         mesh_format = mesh_parser.format
+        file_name_no_compression = mesh_parser.file_name_no_compression
 
-        if original_compression == CompressionFormat.NONE:
+        compression = original_compression
+        do_compression = False
+        if compress and original_compression == CompressionFormat.NONE:
             compression = CompressionFormat.ZST
-        else:
-            compression = original_compression
+            do_compression = True
 
-        if not compress:
-            compression = CompressionFormat.NONE
-
-        if mesh_format is MeshFileFormat.CGNS:
-            remote_name = "volumeMesh"
-        else:
-            remote_name = "mesh"
-        remote_name = f"{remote_name}{endianness.ext()}{mesh_format.ext()}{compression.ext()}"
+        original_file_with_compression = f"{file_name_no_compression}{compression.ext()}"
 
         req = NewVolumeMeshRequestV2(
             name=self.project_name,
             solver_version=self.solver_version,
             tags=self.tags,
-            file_name=remote_name,
+            file_name=original_file_with_compression,
             length_unit=self.length_unit,
             format=mesh_format.value,
             description=description,
@@ -947,6 +937,7 @@ class VolumeMeshDraftV2(ResourceDraft):
         req_dict = req.dict()
         resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req_dict)
         info = VolumeMeshMetaV2(**resp)
+        renamed_file_on_remote = info.file_name
 
         volume_mesh = VolumeMeshV2(info.id)
 
@@ -956,15 +947,17 @@ class VolumeMeshDraftV2(ResourceDraft):
         heartbeat_thread.start()
 
         # Compress (if not already compressed) and upload
-        if original_compression == CompressionFormat.NONE and compress:
-            compressed_name = zstd_compress(self.file_name)
+        if do_compression:
+            zstd_compress(self.file_name, original_file_with_compression)
             volume_mesh._webapi._upload_file(
-                remote_name, compressed_name, progress_callback=progress_callback
+                renamed_file_on_remote,
+                original_file_with_compression,
+                progress_callback=progress_callback,
             )
-            os.remove(compressed_name)
+            os.remove(original_file_with_compression)
         else:
             volume_mesh._webapi._upload_file(
-                remote_name, self.file_name, progress_callback=progress_callback
+                renamed_file_on_remote, self.file_name, progress_callback=progress_callback
             )
 
         heartbeat_info["stop"] = True
@@ -1047,10 +1040,10 @@ class VolumeMeshV2(AssetBase):
         return volume_mesh
 
     @classmethod
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,arguments-renamed
     def from_file(
         cls,
-        file_names: str,
+        file_name: str,
         project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
@@ -1059,7 +1052,7 @@ class VolumeMeshV2(AssetBase):
         """
         Parameters
         ----------
-        file_names : str
+        file_name : str
             The name of the input volume mesh file (*.cgns, *.ugrid)
         project_name : str, optional
             The name of the newly created project, defaults to file name if empty
@@ -1076,7 +1069,13 @@ class VolumeMeshV2(AssetBase):
             Draft of the volume mesh to be submitted
         """
         # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(file_names, project_name, solver_version, length_unit, tags)
+        return super().from_file(
+            file_names=file_name,
+            project_name=project_name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
 
     def _populate_registry(self):
         if hasattr(self, "_entity_info") is False or self._entity_info is None:
