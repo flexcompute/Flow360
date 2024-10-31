@@ -141,12 +141,12 @@ class Fluid(PDEModelBase):
         + ":class:`~flow360.component.simulation.models.solver_numerics.TransitionModelSolver` documentation.",
     )
 
-    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid")
+    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid.")
 
     initial_condition: Optional[
         Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
     ] = pd.Field(
-        None, discriminator="type", description="The initial condition of the fluid solver"
+        None, discriminator="type", description="The initial condition of the fluid solver."
     )
 
     # pylint: disable=fixme
@@ -163,29 +163,29 @@ class Solid(PDEModelBase):
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
     entities: EntityList[GenericVolume] = pd.Field(
         alias="volumes",
-        description="The list of solid entities on which the heat transfer equation is solved.",
+        description="The list of :class:`~flow360.component.simulation.primitives.GenericVolume` "+
+          "entities on which the heat transfer equation is solved.",
     )
 
-    material: SolidMaterialTypes = pd.Field(description="The material property of solid")
+    material: SolidMaterialTypes = pd.Field(description="The material property of solid.")
 
     heat_equation_solver: HeatEquationSolver = pd.Field(
         HeatEquationSolver(),
         description="Heat equation solver settings, see "
-        + ":class:`~flow360.component.simulation.models.solver_numerics.HeatEquationSolver` documentation. "
-        + ":class:`~flow360.component.simulation.outputs.outputs.SurfaceIntegralOutput`",
+        + ":class:`~flow360.component.simulation.models.solver_numerics.HeatEquationSolver` documentation."
     )
     volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(
-        0, description="The volumetric heat source"
+        0, description="The volumetric heat source."
     )
 
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(
-        None, description="The initial condition of the heat equation solver"
+        None, description="The initial condition of the heat equation solver."
     )
 
 
 # pylint: disable=duplicate-code
 class ForcePerArea(Flow360BaseModel):
-    """:class:`ForcePerArea` class for setting up force per area for Actuator Disk
+    """:class:`ForcePerArea` class for setting up force per area for Actuator Disk.
 
     Example
     -------
@@ -200,13 +200,13 @@ class ForcePerArea(Flow360BaseModel):
     thrust: PressureType.Array = pd.Field(
         description="Force per area in the axial direction, positive means the axial force follows the same "
         + "direction as the thrust axis. "
-        + "It is non-dimensional: :math:`\\frac{\\text{thrustPerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`"
+        + "It is non-dimensional: :math:`\\frac{\\text{thrustPerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`."
     )
     # pylint: disable=no-member
     circumferential: PressureType.Array = pd.Field(
         description="Force per area in the circumferential direction, positive means the circumferential force "
         + "follows the same direction as the thrust axis with the right hand rule. It is non-dimensional: "
-        + ":math:`\\frac{\\text{circumferentialForcePerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`"
+        + ":math:`\\frac{\\text{circumferentialForcePerArea}(SI=N/m^2)}{\\rho_\\infty C^2_\\infty}`."
     )
 
     # pylint: disable=no-self-argument, missing-function-docstring
@@ -235,10 +235,11 @@ class ActuatorDisk(Flow360BaseModel):
 
     entities: EntityList[Cylinder] = pd.Field(
         alias="volumes",
-        description="The list of `Cylinder` entities for the ActuatorDisk model",
+        description="The list of :class:`~flow360.component.simulation.primitives.Cylinder` entities "+
+        "for the `ActuatorDisk` model",
     )
     force_per_area: ForcePerArea = pd.Field(
-        description="The force per area input for the ActuatorDisk model. "
+        description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
     name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model.")
@@ -246,7 +247,7 @@ class ActuatorDisk(Flow360BaseModel):
 
 
 class BETDiskTwist(Flow360BaseModel):
-    """:class:`BETDiskTwist` class for setting up twist for BETDisk"""
+    """:class:`BETDiskTwist` class for setting up twist for BETDisk."""
 
     # TODO: Use dimensioned values, why optional?
     radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
@@ -258,7 +259,7 @@ class BETDiskTwist(Flow360BaseModel):
 
 
 class BETDiskChord(Flow360BaseModel):
-    """:class:`BETDiskChord` class for setting up chord for BETDisk"""
+    """:class:`BETDiskChord` class for setting up chord for BETDisk."""
 
     # TODO: Use dimensioned values, why optional?
     radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
@@ -273,11 +274,14 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     """:class:`BETDiskSectionalPolar` class for setting up sectional polars for BETDisk.
     There are two variables, “lift_coeffs” and “drag_coeffs”,
     need to be set up as 3D arrays (implemented as nested lists).
-    The first index of the array corresponds to the :code:`MachNumbers` of the specified polar
-    data.
-    The second index of the array corresponds to the :code:`ReynoldsNumbers` of the polar
-    data.
-    The third index corresponds to the :code:`alphas`.
+    The first index of the array corresponds to the 
+    :paramref:`~flow360.component.simulation.models.volume_models.BETDisk.mach_numbers` 
+    of the specified polar data.
+    The second index of the array corresponds to the 
+    :paramref:`~flow360.component.simulation.models.volume_models.BETDisk.reynolds_numbers` 
+    of the polar data.
+    The third index corresponds to the 
+    :paramref:`~flow360.component.simulation.models.volume_models.BETDisk.alphas`.
     The value specifies the lift or drag coefficient, respectively.
     """
 
@@ -343,15 +347,15 @@ class BETDisk(Flow360BaseModel):
     )
     mach_numbers: List[pd.NonNegativeFloat] = pd.Field(
         description="Mach numbers associated with airfoil polars provided "
-        + "in :code:`sectionalPolars`"
+        + "in :class:`BETDiskSectionalPolar`."
     )
     reynolds_numbers: List[pd.PositiveFloat] = pd.Field(
         description="Reynolds numbers associated with the airfoil polars "
-        + "provided in :code:`sectionalPolars`"
+        + "provided in :class:`BETDiskSectionalPolar`."
     )
     alphas: List[float] = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":code:`sectionalPolars` in degrees"
+        + ":class:`BETDiskSectionalPolar` in degrees"
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
@@ -367,7 +371,7 @@ class BETDisk(Flow360BaseModel):
     )
     sectional_radiuses: List[float] = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
-        + "and :math:`C_d` are specified in :code:`sectional_polars`"
+        + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`"
     )
 
     @pd.model_validator(mode="after")
