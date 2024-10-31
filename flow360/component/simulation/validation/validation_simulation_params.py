@@ -308,7 +308,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
         missing_list = ", ".join(sorted(missing_boundaries))
         raise ValueError(
             f"The following boundaries do not have a boundary condition: {missing_list}. "
-            "Please add them to a model in the `models` section."
+            "Please add them to a boundary condition model in the `models` section."
         )
 
     if unknown_boundaries:
