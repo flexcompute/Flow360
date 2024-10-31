@@ -165,6 +165,7 @@ class SurfaceMeshDraft(ResourceDraft):
             )
         resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
         info = SurfaceMeshMeta(**resp)
+        # setting _id will disable "remember to submit draft" warning message
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
@@ -200,6 +201,7 @@ class SurfaceMeshDraft(ResourceDraft):
 
         resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
         info = SurfaceMeshMeta(**resp)
+        # setting _id will disable "remember to submit draft" warning message
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
 

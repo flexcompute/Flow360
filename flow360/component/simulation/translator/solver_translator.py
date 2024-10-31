@@ -736,7 +736,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
 @preprocess_input
 def get_solver_json(
     input_params: SimulationParams,
-    # pylint: disable=no-member
+    # pylint: disable=no-member,unused-argument
     mesh_unit: LengthType.Positive,
 ):
     """
@@ -760,6 +760,8 @@ def get_solver_json(
 
     ##:: Step 2: Get freestream
     op = input_params.operating_condition
+    # check if all units are flow360:
+    _ = remove_units_in_dict(dump_dict(op))
     translated["freestream"] = {
         "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.model_fields else 0,
         "betaAngle": op.beta.to("degree").v.item() if "beta" in op.model_fields else 0,
@@ -769,8 +771,7 @@ def get_solver_json(
             if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        # pylint: disable=protected-access
-        "muRef": op.thermal_state._mu_ref(mesh_unit),
+        "muRef": op.thermal_state.dynamic_viscosity.v.item(),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()

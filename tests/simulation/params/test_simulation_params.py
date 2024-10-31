@@ -32,6 +32,7 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
+    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -271,3 +272,22 @@ def test_subsequent_param_with_different_unit_system(get_the_param):
     assert param_SI.meshing.defaults.boundary_layer_first_layer_thickness == 0.2 * u.m
     assert param_CGS.unit_system.name == "CGS"
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
+
+
+def test_mach_reynodls_op_cond():
+
+    condition = operating_condition_from_mach_reynolds(
+        mach=0.2,
+        reynolds=5e6,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+    )
+    assert condition.thermal_state.dynamic_viscosity == 4e-8 * u.flow360_viscosity_unit
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        condition = operating_condition_from_mach_reynolds(
+            mach=0.2,
+            reynolds=0,
+            temperature=288.15 * u.K,
+        )
