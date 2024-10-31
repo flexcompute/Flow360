@@ -5,6 +5,7 @@ Utility functions
 import itertools
 import os
 import re
+import shutil
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -13,6 +14,7 @@ from typing import Generic, Iterable, Literal, Protocol, TypeVar
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
+from ..cloud.s3_utils import get_local_filename_and_create_folders
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
 from ..exceptions import (
@@ -682,3 +684,23 @@ class ProjectAssetCache(Generic[AssetT]):
             raise Flow360ValueError(f"{asset_id} is not available in the project.")
 
         self.current_asset_id = asset_id
+
+
+def _local_download_overwrite(local_storage_path, class_name):
+    def _local_download_file(
+        file_name: str,
+        to_file: str = None,
+        to_folder: str = ".",
+        **_,
+    ):
+        expected_local_file = os.path.join(local_storage_path, file_name)
+        if not os.path.exists(expected_local_file):
+            raise RuntimeError(
+                f"File {expected_local_file} not found. Make sure the file exists when using "
+                f"{class_name}.from_local_storage()."
+            )
+        new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
+        if new_local_file != expected_local_file:
+            shutil.copy(expected_local_file, new_local_file)
+
+    return _local_download_file

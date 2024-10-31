@@ -168,6 +168,7 @@ class S3TransferType(Enum):
     VOLUME_MESH = "VolumeMesh"
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
+    REPORT = "Report"
 
     def _get_grant_url(self, resource_id, file_name: str) -> str:
         """
@@ -185,7 +186,7 @@ class S3TransferType(Enum):
         if self is S3TransferType.GEOMETRY:
             return f"v2/geometries/{resource_id}/file?filename={file_name}"
 
-        return None
+        raise Flow360ValueError(f"unknown download method for {self}")
 
     def create_multipart_upload(
         self,

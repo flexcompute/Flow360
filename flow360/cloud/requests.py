@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 
 import pydantic as pd_v2
 import pydantic.v1 as pd
+from pydantic.alias_generators import to_camel
 from typing_extensions import Literal
 
 from flow360.flags import Flags
@@ -125,7 +126,7 @@ class Flow360RequestsV2(pd_v2.BaseModel):
         """returns dict representation of request"""
         return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
 
-    model_config = pd_v2.ConfigDict(populate_by_name=True)
+    model_config = pd_v2.ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
 
 class GeometryFileMeta(pd_v2.BaseModel):
@@ -166,3 +167,16 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
     )
     description: str = pd_v2.Field(default="", description="project description")
     format: Literal["cgns", "aflr3"] = pd_v2.Field(description="data format")
+
+
+class _Resource(Flow360RequestsV2):
+    type: Literal["Case", "Project"]
+    id: str
+
+
+class NewReportRequest(Flow360RequestsV2):
+    "New report request"
+    name: str
+    resources: List[_Resource]
+    config_json: str
+    solver_version: str
