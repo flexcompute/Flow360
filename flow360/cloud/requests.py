@@ -3,8 +3,8 @@
 from typing import List, Optional, Union
 
 import pydantic as pd_v2
-from pydantic.alias_generators import to_camel
 import pydantic.v1 as pd
+from pydantic.alias_generators import to_camel
 from typing_extensions import Literal
 
 from flow360.flags import Flags
@@ -175,6 +175,7 @@ class _Resource(Flow360RequestsV2):
 
 
 class NewReportRequest(Flow360RequestsV2):
+    "New report request"
     name: str
     resources: List[_Resource]
     config_json: str

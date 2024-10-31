@@ -1,11 +1,12 @@
-from typing import Any, Optional, List
+from numbers import Number
+from typing import Any, List, Optional
+
 from pydantic import BaseModel, NonNegativeInt
 from pylatex import NoEscape, Package, Tabular
-from numbers import Number
 
 from flow360 import Case
 from flow360.component.results import case_results
-
+from flow360.log import log
 
 _requirements_mapping = {
     "params": "simulation.json",
@@ -115,7 +116,8 @@ def data_from_path(
                 f"Could not find path component: '{component}', available: {case.values.keys()}"
             )
         except AttributeError:
-            raise AttributeError(f"Could not find path for {case=}, {component=}")
+            log.warning(f"unknown value for path: {case=}, {component=}")
+            return None
 
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
@@ -125,7 +127,7 @@ def data_from_path(
 
 
 class Delta(BaseModel):
-    data_path: str
+    data: str
     ref_index: Optional[NonNegativeInt] = 0
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
@@ -133,11 +135,11 @@ class Delta(BaseModel):
         if self.ref_index is None or self.ref_index >= len(cases):
             return "Ref not found."
         ref = cases[self.ref_index]
-        case_result = data_from_path(case, self.data_path)
-        ref_result = data_from_path(ref, self.data_path)
+        case_result = data_from_path(case, self.data)
+        ref_result = data_from_path(ref, self.data)
         return case_result - ref_result
 
-    __str__ = lambda self: f"Delta {self.data_path.split('/')[-1]}"
+    __str__ = lambda self: f"Delta {self.data.split('/')[-1]}"
 
 
 class Tabulary(Tabular):

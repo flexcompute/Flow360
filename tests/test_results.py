@@ -8,13 +8,13 @@ import pytest
 
 import flow360 as fl
 import flow360.component.flow360_params.units as u1
-from flow360.component.simulation import units as u2
 from flow360 import log
-
+from flow360.component.simulation import units as u2
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.operating_condition.operating_condition import AerospaceCondition
-from flow360.component.simulation.utils import _model_attribute_unlock
-
+from flow360.component.simulation.utils import model_attribute_unlock
 
 log.set_logging_level("DEBUG")
 
@@ -107,7 +107,7 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
 
     with u2.SI_unit_system:
         params = SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=286))
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
             params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
 
     results = case.results

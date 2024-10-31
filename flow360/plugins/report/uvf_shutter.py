@@ -1,18 +1,19 @@
-from typing import List, Tuple, Any, Optional, Union, Literal
+import asyncio
+import json
+import os
+import zipfile
+from functools import wraps
+from typing import Any, List, Literal, Optional, Tuple, Union
+
+import aiohttp
+import backoff
 import pydantic as pd
 from pydantic import PrivateAttr
-import backoff
-import aiohttp
-import asyncio
-import os
-import json
-from functools import wraps
-import zipfile
 
-
+from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.log import log
 from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
+from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -131,7 +132,7 @@ def http_interceptor(func):
 class UVFshutter(Flow360BaseModel):
     cases: List[Any]
     data_storage: str = "."
-    _url: str = PrivateAttr("https://shutter.dev-simulation.cloud")
+    url: str = pd.Field(default_factory=lambda: f"https://shutter.{Env.current.domain}")
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=300)
@@ -149,7 +150,7 @@ class UVFshutter(Flow360BaseModel):
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
-                        session=session, url=self._url + "/sequence/run", uvf_request=uvf_request
+                        session=session, url=self.url + "/sequence/run", uvf_request=uvf_request
                     )
                 )
 

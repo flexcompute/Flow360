@@ -2,7 +2,9 @@
 Environment Setup
 """
 
-from pydantic.v1 import BaseModel
+from __future__ import annotations
+
+from pydantic import BaseModel
 
 
 class EnvironmentConfig(BaseModel):
@@ -11,11 +13,43 @@ class EnvironmentConfig(BaseModel):
     """
 
     name: str
+    domain: str
     web_api_endpoint: str
     web_url: str
     aws_region: str
     apikey_profile: str
     portal_web_api_endpoint: str = None
+
+    @classmethod
+    def from_domain(cls, name, domain, aws_region, apikey_profile="default") -> EnvironmentConfig:
+        """Create EnvironmentConfig using domain and populating to web_api_endpoint, web_url and portal_web_api_endpoint
+
+        Parameters
+        ----------
+        name : str
+            name, for example DEV
+        domain : str
+            domain, for example dev-simulation.cloud
+        aws_region : str
+            aws region
+        apikey_profile : str, optional
+            profile to be used from flow360 config for apikey, by default 'default'
+
+        Returns
+        -------
+        EnvironmentConfig
+            completed EnvironmentConfig
+        """
+        env = cls(
+            name=name,
+            domain=domain,
+            web_api_endpoint=f"https://flow360-api.{domain}",
+            web_url=f"https://flow360.{domain}",
+            portal_web_api_endpoint=f"https://portal-api.{domain}",
+            aws_region=aws_region,
+            apikey_profile=apikey_profile,
+        )
+        return env
 
     def active(self):
         """
@@ -49,36 +83,19 @@ class EnvironmentConfig(BaseModel):
         return "/".join([self.web_url, path])
 
 
-dev = EnvironmentConfig(
-    name="dev",
-    web_api_endpoint="https://flow360-api.dev-simulation.cloud",
-    web_url="https://flow360.dev-simulation.cloud",
-    portal_web_api_endpoint="https://portal-api.dev-simulation.cloud",
-    aws_region="us-east-1",
-    apikey_profile="dev",
+dev = EnvironmentConfig.from_domain(
+    name="dev", domain="dev-simulation.cloud", aws_region="us-east-1", apikey_profile="dev"
 )
-
-uat = EnvironmentConfig(
-    name="uat",
-    web_api_endpoint="https://flow360-api.uat-simulation.cloud",
-    web_url="https://flow360.uat-simulation.cloud",
-    portal_web_api_endpoint="https://portal-api.uat-simulation.cloud",
-    aws_region="us-west-2",
-    apikey_profile="default",
+uat = EnvironmentConfig.from_domain(
+    name="uat", domain="uat-simulation.cloud", aws_region="us-west-2"
 )
-
-prod = EnvironmentConfig(
-    name="prod",
-    web_api_endpoint="https://flow360-api.simulation.cloud",
-    web_url="https://flow360.simulation.cloud",
-    portal_web_api_endpoint="https://portal-api.simulation.cloud",
-    aws_region="us-gov-west-1",
-    apikey_profile="default",
+prod = EnvironmentConfig.from_domain(
+    name="prod", domain="simulation.cloud", aws_region="us-gov-west-1"
 )
-
 
 preprod = EnvironmentConfig(
     name="preprod",
+    domain="simulation.cloud",
     web_api_endpoint="https://preprod-flow360-api.simulation.cloud",
     web_url="https://preprod-flow360.simulation.cloud",
     portal_web_api_endpoint="https://preprod-portal-api.simulation.cloud",

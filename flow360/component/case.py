@@ -2,20 +2,20 @@
 Case component
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
 import tempfile
-import time
-from typing import Any, Iterator, List, Union, Optional
+from typing import Any, Iterator, List, Optional, Union
 
-import pydantic.v1 as pd_v1
 import pydantic as pd
+import pydantic.v1 as pd_v1
 
 from .. import error_messages
 from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import CloudFileNotFoundError, get_local_filename_and_create_folders
+from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
@@ -50,10 +50,15 @@ from .results.case_results import (
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
 )
-from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type, _local_download_overwrite
-from .validator import Validator
-from .simulation.simulation_params import SimulationParams
 from .simulation import services
+from .simulation.simulation_params import SimulationParams
+from .utils import (
+    _local_download_overwrite,
+    is_valid_uuid,
+    shared_account_confirm_proceed,
+    validate_type,
+)
+from .validator import Validator
 
 
 class CaseBase:
@@ -406,6 +411,9 @@ class Case(CaseBase, Flow360Resource):
         return case
 
     def get_simulation_params(self):
+        """
+        returns simulation params
+        """
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
             try:
                 self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
@@ -415,10 +423,10 @@ class Case(CaseBase, Flow360Resource):
                 ) from err
 
             # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-            with open(temp_file.name, "r") as fh:
+            with open(temp_file.name, "r", encoding="utf-8") as fh:
                 params_as_dict = json.load(fh)
                 params_as_dict = services.clean_params_dict(params_as_dict, "VolumeMesh")
-            with open(temp_file.name, "w") as fh:
+            with open(temp_file.name, "w", encoding="utf-8") as fh:
                 json.dump(params_as_dict, fh)
             return SimulationParams(filename=temp_file.name)
 
@@ -604,7 +612,7 @@ class Case(CaseBase, Flow360Resource):
                     raise Flow360ValueError(
                         "Manifest file for visualisation not found for this case."
                     ) from err
-                with open(temp_file.name, "r") as fh:
+                with open(temp_file.name, "r", encoding="utf-8") as fh:
                     self._manifest = json.load(fh)
         return self._manifest
 
@@ -635,6 +643,25 @@ class Case(CaseBase, Flow360Resource):
 
     @classmethod
     def from_local_storage(cls, id, name, local_storage_path, user_id: str = "local") -> Case:
+        """
+        Create a `Case` instance from local storage.
+
+        Parameters
+        ----------
+        id : str
+            The unique identifier for the case.
+        name : str
+            The name of the case.
+        local_storage_path : str
+            The path to the local storage directory.
+        user_id : str, optional
+            The user ID associated with the case, by default "local".
+
+        Returns
+        -------
+        Case
+            An instance of `Case` with data loaded from local storage.
+        """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
         # we don't know if the status is completed, but if we load from local, we can assume
         case = cls._from_meta(
@@ -783,11 +810,15 @@ class CaseResultsModel(pd.BaseModel):
         if not isinstance(self.case, Case):
             raise TypeError("case must be of type Case")
 
-        for field_name in self.model_fields.keys():
+        for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
-                value._download_method = self.case._download_file
-                value._get_params_method = lambda: self.case.params
+                value._download_method = (
+                    self.case._download_file
+                )  # pylint: disable=protected-access,no-member
+                value._get_params_method = (
+                    lambda: self.case.params
+                )  # pylint: disable=protected-access,no-member
                 value.local_storage = self.local_storage
 
         return self
@@ -797,10 +828,12 @@ class CaseResultsModel(pd.BaseModel):
         """
         Pass file getters into fields of the case results
         """
-        self.monitors.get_download_file_list_method = self.case.get_download_file_list
+        self.monitors.get_download_file_list_method = (
+            self.case.get_download_file_list
+        )  # pylint: disable=no-member,assigning-non-slot
         return self
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access,no-member
     @pd.model_validator(mode="after")
     def pass_has_functions(self):
         """
@@ -817,11 +850,11 @@ class CaseResultsModel(pd.BaseModel):
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
         }
 
-        for field_name in self.model_fields.keys():
+        for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 function = has_function_map.get(field_name, lambda: True)
-                value._is_downloadable = function
+                value._is_downloadable = function  # pylint: disable=protected-access
 
         return self
 

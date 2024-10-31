@@ -17,6 +17,7 @@ from flow360.component.simulation.framework.param_utils import (
     _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
+from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -24,24 +25,22 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import (
-    Fluid,
-    VolumeModelTypes,
     ActuatorDisk,
     BETDisk,
+    Fluid,
+    VolumeModelTypes,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
 from flow360.component.simulation.outputs.outputs import (
-    OutputTypes,
-    SurfaceOutput,
-    IsosurfaceOutput,
-    VolumeOutput,
-    SliceOutput,
-    ProbeOutput,
-    SurfaceProbeOutput,
-    SurfaceIntegralOutput,
     AeroAcousticOutput,
+    IsosurfaceOutput,
+    OutputTypes,
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+    VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
@@ -122,7 +121,9 @@ class _ParamModelBase(Flow360BaseModel):
         unit_system = model_dict.get("unit_system")
         if version is not None and unit_system is not None:
             if version != __version__:
-                raise NotImplementedError("No legacy support at the time being.")
+                model_dict = updater(  # pylint: disable=R0801
+                    version_from=version, version_to=__version__, params_as_dict=model_dict
+                )
             # pylint: disable=not-context-manager
             with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)
@@ -346,40 +347,62 @@ class SimulationParams(_ParamModelBase):
         """
         returns True when SimulationParams has ActuatorDisk disk
         """
-        return any(isinstance(item, ActuatorDisk) for item in self.models)
+        if self.models is None:
+            return False
+        return any(
+            isinstance(item, ActuatorDisk) for item in self.models
+        )  # pylint: disable=not-an-iterable
 
     def has_bet_disks(self):
         """
         returns True when SimulationParams has BET disk
         """
-        return any(isinstance(item, BETDisk) for item in self.models)
+        if self.models is None:
+            return False
+        return any(
+            isinstance(item, BETDisk) for item in self.models
+        )  # pylint: disable=not-an-iterable
 
     def has_isosurfaces(self):
         """
         returns True when SimulationParams has isosurfaces
         """
-        return any(isinstance(item, IsosurfaceOutput) for item in self.outputs)
+        if self.outputs is None:
+            return False
+        return any(
+            isinstance(item, IsosurfaceOutput) for item in self.outputs
+        )  # pylint: disable=not-an-iterable
 
     def has_monitors(self):
         """
         returns True when SimulationParams has monitors
         """
+        if self.outputs is None:
+            return False
         return any(
             isinstance(item, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput))
-            for item in self.outputs
+            for item in self.outputs  # pylint: disable=not-an-iterable
         )
 
     def has_volume_output(self):
         """
         returns True when SimulationParams has volume output
         """
-        return any(isinstance(item, VolumeOutput) for item in self.outputs)
+        if self.outputs is None:
+            return False
+        return any(
+            isinstance(item, VolumeOutput) for item in self.outputs
+        )  # pylint: disable=not-an-iterable
 
     def has_aeroacoustics(self):
         """
         returns True when SimulationParams has aeroacoustics
         """
-        return any(isinstance(item, (AeroAcousticOutput)) for item in self.outputs)
+        if self.outputs is None:
+            return False
+        return any(
+            isinstance(item, (AeroAcousticOutput)) for item in self.outputs
+        )  # pylint: disable=not-an-iterable
 
     def has_user_defined_dynamics(self):
         """

@@ -11,9 +11,9 @@ import unyt
 
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import (
+    CloudFileNotFoundError,
     S3TransferType,
     get_local_filename_and_create_folders,
-    CloudFileNotFoundError,
 )
 from flow360.component.flow360_params import unit_system
 

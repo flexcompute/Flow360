@@ -1,12 +1,12 @@
 import asyncio
 import json
 import os
-from typing import List, Literal, Union, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import backoff
 import matplotlib.pyplot as plt
-from pydantic import Field, model_validator, NonNegativeInt
+from pydantic import Field, NonNegativeInt, model_validator
 from pylatex import (
     Command,
     Document,
@@ -22,25 +22,26 @@ from pylatex.utils import bold, escape_latex
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
+
 from .utils import (
     Delta,
     Tabulary,
-    data_from_path,
-    get_root_path,
-    get_requirements_from_data_path,
     _requirements_mapping,
+    data_from_path,
+    get_requirements_from_data_path,
+    get_root_path,
 )
 from .uvf_shutter import (
-    UVFshutter,
     ActionPayload,
-    SetObjectVisibilityPayload,
-    SetFieldPayload,
-    TakeScreenshotPayload,
     ResetFieldPayload,
-    SourceContext,
     Scene,
     ScenesData,
+    SetFieldPayload,
+    SetObjectVisibilityPayload,
+    SourceContext,
+    TakeScreenshotPayload,
     UvfObjectTypes,
+    UVFshutter,
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -86,7 +87,7 @@ class Summary(ReportItem):
         section = section_func("Summary")
         doc.append(section)
         doc.append(f"{self.text}\n")
-        Table(data_path=["name"], section_title=None, custom_headings=["Case Name"]).get_doc_item(
+        Table(data=["name"], section_title=None, headers=["Case Name"]).get_doc_item(
             cases, doc, section_func, case_by_case
         )
 
@@ -108,7 +109,7 @@ class Inputs(ReportItem):
         data_storage: str = ".",
     ) -> None:
         Table(
-            data_path=[
+            data=[
                 "params/version",
                 "params/time_stepping/type_name",
                 "params/outputs/0/output_format",
@@ -116,7 +117,7 @@ class Inputs(ReportItem):
                 "params/operating_condition/alpha",
             ],
             section_title="Inputs",
-            custom_headings=[
+            headers=[
                 "Version",
                 "Time stepping",
                 "Output Format",
@@ -127,23 +128,23 @@ class Inputs(ReportItem):
 
 
 class Table(ReportItem):
-    data_path: list[Union[str, Delta]]
+    data: list[Union[str, Delta]]
     section_title: Union[str, None]
-    custom_headings: Union[list[str], None] = None
+    headers: Union[list[str], None] = None
     type: Literal["Table"] = Field("Table", frozen=True)
 
     @model_validator(mode="after")
     def check_custom_heading_count(self) -> None:
-        if self.custom_headings is not None:
-            if len(self.data_path) != len(self.custom_headings):
+        if self.headers is not None:
+            if len(self.data) != len(self.headers):
                 raise ValueError(
-                    f"Suppled `custom_headings` must be the same length as `data_path`: "
-                    f"{len(self.custom_headings)} instead of {len(self.data_path)}"
+                    f"Suppled `headers` must be the same length as `data`: "
+                    f"{len(self.headers)} instead of {len(self.data)}"
                 )
         return self
 
     def get_requirements(self):
-        return get_requirements_from_data_path(self.data_path)
+        return get_requirements_from_data_path(self.data)
 
     def get_doc_item(
         self,
@@ -160,14 +161,14 @@ class Table(ReportItem):
 
         # Getting tables to wrap is a pain - Tabulary seems the best approach
         with doc.create(
-            Tabulary("|C" * (len(self.data_path) + 1) + "|", width=len(self.data_path) + 1)
+            Tabulary("|C" * (len(self.data) + 1) + "|", width=len(self.data) + 1)
         ) as table:
             table.add_hline()
 
             # Manage column headings
             field_titles = [bold("Case No.")]
-            if self.custom_headings is None:
-                for path in self.data_path:
+            if self.headers is None:
+                for path in self.data:
                     if isinstance(path, Delta):
                         field = path.__str__()
                     else:
@@ -175,7 +176,7 @@ class Table(ReportItem):
 
                     field_titles.append(bold(str(field)))
             else:
-                field_titles.extend([bold(heading) for heading in self.custom_headings])
+                field_titles.extend([bold(heading) for heading in self.headers])
 
             table.append(Command("rowcolor", "gray!20"))
             table.add_row(field_titles)
@@ -185,7 +186,7 @@ class Table(ReportItem):
             for idx, case in enumerate(cases):
                 row_list = [
                     data_from_path(case, path, cases, case_by_case=case_by_case)
-                    for path in self.data_path
+                    for path in self.data
                 ]
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
@@ -249,16 +250,17 @@ class Chart(ReportItem):
 
 
 class Chart2D(Chart):
-    data_path: list[Union[str, Delta]]
+    x: Union[str, Delta]
+    y: Union[str, Delta]
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
     def get_requirements(self):
-        return get_requirements_from_data_path(self.data_path)
+        return get_requirements_from_data_path([self.x, self.y])
 
     def is_log_plot(self):
-        root_path = get_root_path(self.data_path[1])
+        root_path = get_root_path(self.y)
         return root_path == "nonlinear_residuals"
 
     def _create_fig(
@@ -300,8 +302,8 @@ class Chart2D(Chart):
             section = section_func(self.section_title)
             doc.append(section)
 
-        x_lab = self.data_path[0].split("/")[-1]
-        y_lab = self.data_path[1].split("/")[-1]
+        x_lab = self.x.split("/")[-1]
+        y_lab = self.y.split("/")[-1]
 
         figure_list = []
         if case_by_case is False:
@@ -313,8 +315,8 @@ class Chart2D(Chart):
         for case in cases:
 
             # Extract data from the Case
-            x_data = data_from_path(case, self.data_path[0], cases)
-            y_data = data_from_path(case, self.data_path[1], cases)
+            x_data = data_from_path(case, self.x, cases)
+            y_data = data_from_path(case, self.y, cases)
 
             # Create the figure using basic matplotlib
             cbc_str = "_cbc_" if case_by_case else ""

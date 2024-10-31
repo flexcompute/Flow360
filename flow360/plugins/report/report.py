@@ -16,28 +16,12 @@ from pylatex import (
 )
 
 from flow360 import Case
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.interfaces import ReportInterface
-from flow360.cloud.rest_api import RestApi
 from flow360.cloud.requests import NewReportRequest
-from .report_items import Chart, Summary, Inputs, Table, Chart2D, Chart3D
+from flow360.cloud.rest_api import RestApi
+from flow360.component.interfaces import ReportInterface
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
-
-class DataNode:
-    def __init__(self, path=""):
-        self._path = path
-
-    def __getattr__(self, name):
-        new_path = f"{self._path}/{name}" if self._path else name
-        return DataNode(new_path)
-
-    def __str__(self):
-        return self._path
-
-    # Optionally, for IDE support
-    def __dir__(self):
-        # Return a list of expected attributes for autocompletion
-        return ["params", "reference_geometry", "area", "total_forces", "averages", "CD"]
+from .report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table
 
 
 class ReportApi:
