@@ -212,10 +212,8 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(
-                    self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"]
-                )
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"])
+                return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
+        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")

@@ -42,6 +42,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -199,6 +200,7 @@ def translate_output_fields(
         ProbeOutput,
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
+        SurfaceSliceOutput,
     ],
 ):
     """Get output fields"""
@@ -217,6 +219,15 @@ def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
 def inject_slice_info(entity: Slice):
     """inject entity info"""
     return {
+        "sliceOrigin": list(entity.origin.value),
+        "sliceNormal": list(entity.normal),
+    }
+
+
+def inject_surface_slice_info(entity: Slice):
+    """inject entity info"""
+    return {
+        "name": entity.name,
         "sliceOrigin": list(entity.origin.value),
         "sliceNormal": list(entity.normal),
     }
@@ -361,6 +372,28 @@ def translate_isosurface_output(
     return translated_output
 
 
+def translate_surface_slice_output(
+    output_params: list,
+    output_class: Union[SurfaceSliceOutput],
+):
+    """Translate surface output settings."""
+
+    surface_slice_output = init_output_base(
+        output_params,
+        output_class,
+        has_average_capability=False,
+        is_average=False,
+    )
+    surface_slice_output["slices"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        output_class,
+        translation_func=surface_probe_setting_translation_func,
+        to_list=True,
+        entity_injection_func=inject_surface_slice_info,
+    )
+    return surface_slice_output
+
+
 def translate_monitor_output(
     output_params: list, monitor_type, injection_function, translation_func=translate_output_fields
 ):
@@ -479,6 +512,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
             surface_probe_setting_translation_func,
         )
         translated["surfaceMonitorOutput"] = surface_monitor_output
+
+    ##:: Step5.2: Get translated["surfaceMonitorOutput"]
+    surface_slice_output = {}
+    if has_instance_in_list(outputs, SurfaceSliceOutput):
+        surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
+        translated["surfaceSliceOutput"] = surface_slice_output
 
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
@@ -697,7 +736,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
 @preprocess_input
 def get_solver_json(
     input_params: SimulationParams,
-    # pylint: disable=no-member
+    # pylint: disable=no-member,unused-argument
     mesh_unit: LengthType.Positive,
 ):
     """
@@ -721,6 +760,8 @@ def get_solver_json(
 
     ##:: Step 2: Get freestream
     op = input_params.operating_condition
+    # check if all units are flow360:
+    _ = remove_units_in_dict(dump_dict(op))
     translated["freestream"] = {
         "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.model_fields else 0,
         "betaAngle": op.beta.to("degree").v.item() if "beta" in op.model_fields else 0,
@@ -730,8 +771,7 @@ def get_solver_json(
             if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        # pylint: disable=protected-access
-        "muRef": op.thermal_state._mu_ref(mesh_unit),
+        "muRef": op.thermal_state.dynamic_viscosity.v.item(),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()

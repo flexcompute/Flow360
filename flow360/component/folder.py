@@ -63,6 +63,7 @@ class FolderDraft(ResourceDraft):
             req.parent_folder_id = self._parent_folder.id
         resp = RestApi(FolderInterface.endpoint).post(req.dict())
         info = FolderMeta(**resp)
+        # setting _id will disable "remember to submit draft" warning message
         self._id = info.id
         submitted_folder = Folder(self.id)
         log.info(f"Folder successfully created: {info.name}, {info.id}")
