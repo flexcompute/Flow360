@@ -2,6 +2,11 @@
 This module is flow360 for simulation based models
 """
 
+# Web related
+from flow360 import environment as env
+from flow360.component.project import Project
+from flow360.component.case import Case
+
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -116,6 +121,9 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 
 __all__ = [
+    "env",
+    "Project",
+    "Case",
     "u",
     "SimulationParams",
     "SI_unit_system",
