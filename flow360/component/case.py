@@ -604,19 +604,6 @@ class Case(CaseBase, Flow360Resource):
         )
         return self
 
-    def _get_manifest(self):
-        if self._manifest is None:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-                try:
-                    self._download_file(self._manifest_path, to_file=temp_file.name)
-                except CloudFileNotFoundError as err:
-                    raise Flow360ValueError(
-                        "Manifest file for visualisation not found for this case."
-                    ) from err
-                with open(temp_file.name, "r", encoding="utf-8") as fh:
-                    self._manifest = json.load(fh)
-        return self._manifest
-
     @classmethod
     def _interface(cls):
         return CaseInterface
