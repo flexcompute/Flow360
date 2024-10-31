@@ -11,8 +11,12 @@ from typing import Any, List, Literal, Union
 
 import pydantic as pd
 
+from flow360.cloud.flow360_requests import (
+    GeometryFileMeta,
+    LengthUnitType,
+    NewGeometryRequest,
+)
 from flow360.cloud.heartbeat import post_upload_heartbeat
-from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (

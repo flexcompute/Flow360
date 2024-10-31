@@ -1,4 +1,4 @@
-import flow360 as fl
+import flow360.component.v1 as fl
 from flow360.examples import Airplane
 
 params = fl.SurfaceMeshingParams(Airplane.surface_json)

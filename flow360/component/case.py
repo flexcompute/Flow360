@@ -11,11 +11,10 @@ from typing import Any, Iterator, List, Union
 import pydantic.v1 as pd
 
 from .. import error_messages
-from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .folder import Folder
 from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
 from .resource_base import (
@@ -48,6 +47,7 @@ from .results.case_results import (
     UserDefinedDynamicsResultModel,
 )
 from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
+from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .validator import Validator
 
 

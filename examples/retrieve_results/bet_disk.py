@@ -1,7 +1,7 @@
 import os
 
-import flow360 as fl
-import flow360.component.flow360_params.units as u
+import flow360.component.v1 as fl
+import flow360.component.v1.units as u
 from flow360.examples import BETDisk
 
 BETDisk.get_files()

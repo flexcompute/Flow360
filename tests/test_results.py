@@ -6,8 +6,8 @@ import numpy as np
 import pandas
 import pytest
 
-import flow360 as fl
-import flow360.component.flow360_params.units as u
+import flow360.component.v1 as fl
+import flow360.component.v1.units as u
 from flow360 import log
 
 log.set_logging_level("DEBUG")

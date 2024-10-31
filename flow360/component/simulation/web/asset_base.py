@@ -7,7 +7,7 @@ import time
 from abc import ABCMeta
 from typing import List, Union
 
-from flow360.cloud.requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (

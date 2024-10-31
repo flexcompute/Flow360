@@ -4,26 +4,19 @@ from typing import List, Literal, Optional, Type, Union, get_args
 
 import pydantic.v1 as pd
 
-import flow360 as fl
-from flow360.component.flow360_params.flow360_params import (
+import flow360.component.v1 as fl
+from flow360.component.v1.flow360_params import (
     BETDiskChord,
     BETDiskSectionalPolar,
     BETDiskTwist,
 )
-from flow360.component.flow360_params.initial_condition import (
+from flow360.component.v1.initial_condition import (
     ExpressionInitialCondition,
     ModifiedRestartSolution,
 )
-from flow360.component.flow360_params.params_base import (
-    Flow360BaseModel,
-    Flow360SortableBaseModel,
-)
-from flow360.component.flow360_params.unit_system import (
-    DensityType,
-    PressureType,
-    TemperatureType,
-)
-from flow360.component.flow360_params.volume_zones import (
+from flow360.component.v1.params_base import Flow360BaseModel, Flow360SortableBaseModel
+from flow360.component.v1.unit_system import DensityType, PressureType, TemperatureType
+from flow360.component.v1.volume_zones import (
     ReferenceFrame,
     ReferenceFrameDynamic,
     ReferenceFrameExpression,
