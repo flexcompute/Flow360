@@ -43,9 +43,8 @@ class Sutherland(Flow360BaseModel):
         self, temperature: TemperatureType.Positive
     ) -> ViscosityType.NonNegative:
         """dynamic viscosity"""
-        return (
-            self.reference_viscosity
-            * pow(temperature / self.reference_temperature, 1.5)
+        return self.reference_viscosity * float(
+            pow(temperature / self.reference_temperature, 1.5)
             * (self.reference_temperature + self.effective_temperature)
             / (temperature + self.effective_temperature)
         )
