@@ -187,7 +187,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field()
-    entities: EntityList[Point, PointArray] = pd.Field(None, alias="probe_points")
+    entities: EntityList[Point, PointArray] = pd.Field(alias="probe_points")
     # Maybe add preprocess for this and by default add all Surfaces?
     target_surfaces: EntityList[Surface] = pd.Field()
 
@@ -199,6 +199,28 @@ class SurfaceProbeOutput(Flow360BaseModel):
     def check_unique_probe_type(cls, value):
         """Check to ensure every entity has the same type"""
         return _check_unique_probe_type(value, "SurfaceProbeOutput")
+
+
+class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
+    """
+    Surface slice settings.
+    """
+
+    name: str = pd.Field()
+    entities: EntityList[Slice] = pd.Field(alias="slices")
+    # Maybe add preprocess for this and by default add all Surfaces?
+    target_surfaces: EntityList[Surface] = pd.Field()
+
+    output_format: Literal["paraview"] = pd.Field(default="paraview")
+
+    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def check_unique_probe_type(cls, value):
+        """Check to ensure every entity has the same type"""
+        return _check_unique_probe_type(value, "SurfaceSliceOutput")
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -228,6 +250,7 @@ OutputTypes = Annotated[
         SurfaceIntegralOutput,
         ProbeOutput,
         SurfaceProbeOutput,
+        SurfaceSliceOutput,
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),

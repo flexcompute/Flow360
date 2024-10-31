@@ -92,7 +92,7 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
             ],
         )
     params._update_param_with_actual_volume_mesh_meta(get_volume_mesh_metadata)
-    my_reg = params._get_used_entity_registry()
+    my_reg = params.used_entity_registry
     assert isinstance(
         my_reg.find_single_entity_by_name("rotating_zone"),
         Cylinder,

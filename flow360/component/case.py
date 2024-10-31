@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import tempfile
-import time
 from typing import Any, Iterator, List, Union
 
 import pydantic.v1 as pd
@@ -326,6 +325,7 @@ class CaseDraft(CaseBase, ResourceDraft):
             path=f"volumemeshes/{volume_mesh_id}/case",
         )
         info = CaseMeta(**resp)
+        # setting _id will disable "remember to submit draft" warning message
         self._id = info.id
 
         self._submitted_case = Case(self.id)
@@ -524,12 +524,6 @@ class Case(CaseBase, Flow360Resource):
         """
         return self.params.user_defined_dynamics is not None
 
-    def is_finished(self):
-        """
-        returns False when case is in running or preprocessing state
-        """
-        return self.status.is_final()
-
     def move_to_folder(self, folder: Folder):
         """
         Move the current case to the specified folder.
@@ -625,17 +619,6 @@ class Case(CaseBase, Flow360Resource):
             solver_version=solver_version,
         )
         return new_case
-
-    def wait(self, timeout_minutes=60):
-        """Wait until the Case finishes processing, refresh periodically"""
-
-        start_time = time.time()
-        while self.is_finished() is False:
-            if time.time() - start_time > timeout_minutes * 60:
-                raise TimeoutError(
-                    "Timeout: Process did not finish within the specified timeout period"
-                )
-            time.sleep(2)
 
 
 # pylint: disable=unnecessary-lambda

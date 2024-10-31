@@ -23,7 +23,7 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import Edge, Surface
-from flow360.component.simulation.utils import _model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
@@ -84,7 +84,7 @@ class GeometryDraft(ResourceDraft):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        file_names: List[str],
+        file_names: Union[List[str], str],
         project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
@@ -135,6 +135,8 @@ class GeometryDraft(ResourceDraft):
     @property
     def file_names(self) -> List[str]:
         """geometry file"""
+        if isinstance(self._file_names, str):
+            return [self._file_names]
         return self._file_names
 
     # pylint: disable=protected-access
@@ -199,7 +201,9 @@ class GeometryDraft(ResourceDraft):
         heartbeat_thread.join()
         ##:: kick off pipeline
         geometry._webapi._complete_upload()
-        log.info("Geometry successfully submitted.")
+        log.info(f"Geometry successfully submitted: {geometry.short_description()}")
+        # setting _id will disable "remember to submit draft" warning message
+        self._id = info.id
         log.info("Waiting for geometry to be processed.")
         # uses from_cloud to ensure all metadata is ready before yielding the object
         return Geometry.from_cloud(info.id)
@@ -223,7 +227,7 @@ class Geometry(AssetBase):
 
     @face_group_tag.setter
     def face_group_tag(self, new_value: str):
-        with _model_attribute_unlock(self._entity_info, "face_group_tag"):
+        with model_attribute_unlock(self._entity_info, "face_group_tag"):
             self._entity_info.face_group_tag = new_value
 
     @property
@@ -233,7 +237,7 @@ class Geometry(AssetBase):
 
     @edge_group_tag.setter
     def edge_group_tag(self, new_value: str):
-        with _model_attribute_unlock(self._entity_info, "edge_group_tag"):
+        with model_attribute_unlock(self._entity_info, "edge_group_tag"):
             self._entity_info.edge_group_tag = new_value
 
     @classmethod

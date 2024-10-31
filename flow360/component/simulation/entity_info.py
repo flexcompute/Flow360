@@ -15,7 +15,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 
-DraftEntityTypess = Annotated[
+DraftEntityTypes = Annotated[
     Union[Box, Cylinder, Point, Slice],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
@@ -34,7 +34,7 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
     )
     # Storing entities that appeared in the simulation JSON. (Otherwise when front end loads the JSON it will delete
     # entities that appear in simulation JSON but did not appear in EntityInfo)
-    draft_entities: List[DraftEntityTypess] = pd.Field([])
+    draft_entities: List[DraftEntityTypes] = pd.Field([])
 
     @abstractmethod
     def get_boundaries(self, attribute_name: str = None) -> list:

@@ -16,12 +16,8 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import EntityInfoModel
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.utils import _model_attribute_unlock
 from flow360.component.utils import remove_properties_by_name, validate_type
 from flow360.log import log
-
-TIMEOUT_MINUTES = 60
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -35,21 +31,24 @@ class AssetBase(metaclass=ABCMeta):
     _entity_info: EntityInfoModel = None
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: str):
+    def __init__(self, id: Union[str, None]):
+        """When id is None, the asset is meant to be operating in local mode."""
         # pylint: disable=not-callable
+        self.id = id
+        self.internal_registry = None
+        if id is None:
+            return
         self._webapi = self.__class__._web_api_class(
             interface=self._interface_class,
             meta_class=self._meta_class,
             id=id,
         )
-        self.id = id
         # get the project id according to resource id
         resp = self._webapi.get()
         project_id = resp["projectId"]
         solver_version = resp["solverVersion"]
         self.project_id: str = project_id
         self.solver_version: str = solver_version
-        self.internal_registry = None
 
     @classmethod
     # pylint: disable=protected-access
@@ -59,51 +58,17 @@ class AssetBase(metaclass=ABCMeta):
         resource._webapi._set_meta(meta)
         return resource
 
-    def _wait_until_final_status(self):
-        start_time = time.time()
-        while self._webapi.status.is_final() is False:
-            if time.time() - start_time > TIMEOUT_MINUTES * 60:
-                raise TimeoutError(
-                    "Timeout: Asset did not become avaliable within the specified timeout period"
-                )
-            time.sleep(2)
+    def short_description(self) -> str:
+        """short_description
+        Returns
+        -------
+        str
+            generates short description of resource (name, id, status)
+        """
+        return self._webapi.short_description()
 
     @classmethod
-    def _get_simulation_json(cls, asset: AssetBase) -> dict:
-        """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
-        ##>> Check if the current asset is project's root item.
-        ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
-        _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
-        if asset.id == _resp["rootItemId"]:
-            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
-            # pylint: disable=protected-access
-            asset._wait_until_final_status()
-
-        # pylint: disable=protected-access
-        simulation_json = asset._webapi.get(
-            method="simulation/file", params={"type": "simulation"}
-        )["simulationJson"]
-        return json.loads(simulation_json)
-
-    @property
-    def info(self) -> AssetMetaBaseModel:
-        """Return the metadata of the resource"""
-        return self._webapi.info
-
-    @classmethod
-    def _interface(cls):
-        return cls._interface_class
-
-    @classmethod
-    def _meta_class(cls):
-        return cls._meta_class
-
-    @classmethod
-    def from_cloud(cls, id: str):
-        """Create asset with the given ID"""
-        asset_obj = cls(id)
-        # populating the entityInfo object
-        simulation_dict = cls._get_simulation_json(asset_obj)
+    def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj):
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -120,7 +85,52 @@ class AssetBase(metaclass=ABCMeta):
         # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
         # Note: This should be addressed when we design the new project client interface.
         remove_properties_by_name(entity_info, "_id")
+        # pylint: disable=protected-access
         asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
+        return asset_obj
+
+    @classmethod
+    def _get_simulation_json(cls, asset: AssetBase) -> dict:
+        """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
+        ##>> Check if the current asset is project's root item.
+        ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
+        _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
+        if asset.id == _resp["rootItemId"]:
+            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
+            # pylint: disable=protected-access
+            asset.wait()
+
+        # pylint: disable=protected-access
+        simulation_json = asset._webapi.get(
+            method="simulation/file", params={"type": "simulation"}
+        )["simulationJson"]
+        return json.loads(simulation_json)
+
+    @property
+    def info(self) -> AssetMetaBaseModel:
+        """Return the metadata of the asset"""
+        return self._webapi.info
+
+    @property
+    def entity_info(self):
+        """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
+        return self._entity_info_class.model_validate(self._entity_info.model_dump())
+
+    @classmethod
+    def _interface(cls):
+        return cls._interface_class
+
+    @classmethod
+    def _meta_class(cls):
+        return cls._meta_class
+
+    @classmethod
+    def from_cloud(cls, id: str):
+        """Create asset with the given ID"""
+        asset_obj = cls(id)
+        # populating the entityInfo object
+        simulation_dict = cls._get_simulation_json(asset_obj)
+        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
         return asset_obj
 
     @classmethod
@@ -140,8 +150,6 @@ class AssetBase(metaclass=ABCMeta):
         :param tags:
         :return:
         """
-        if isinstance(file_names, str):
-            file_names = [file_names]
         # pylint: disable=not-callable
         return cls._draft_class(
             file_names=file_names,
@@ -151,20 +159,13 @@ class AssetBase(metaclass=ABCMeta):
             length_unit=length_unit,
         )
 
-    def _inject_entity_info_to_params(self, params):
-        """Inject the length unit into the SimulationParams"""
-        # Add used cylinder, box, point and slice entities to the entityInfo.
-        # pylint: disable=protected-access
-        registry: EntityRegistry = params._get_used_entity_registry()
-        old_draft_entities = self._entity_info.draft_entities
-        # Step 1: Update old ones:
-        for _, old_entity in enumerate(old_draft_entities):
-            try:
-                _ = registry.find_by_naming_pattern(old_entity.name)
-            except ValueError:  # old_entity did not apperar in params.
-                continue
+    def wait(self, timeout_minutes=60):
+        """Wait until the Asset finishes processing, refresh periodically"""
 
-        # pylint: disable=protected-access
-        with _model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = self._entity_info
-        return params
+        start_time = time.time()
+        while self._webapi.status.is_final() is False:
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError(
+                    "Timeout: Process did not finish within the specified timeout period"
+                )
+            time.sleep(2)
