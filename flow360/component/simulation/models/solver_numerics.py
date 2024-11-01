@@ -288,7 +288,7 @@ class KOmegaSST(TurbulenceModelSolver):
     type_name: Literal["kOmegaSST"] = pd.Field("kOmegaSST", frozen=True)
     modeling_constants: KOmegaSSTModelConstants = pd.Field(
         KOmegaSSTModelConstants(),
-        description="A :class:`TurbulenceModelConstants` object containing the coefficients "
+        description="A :class:`KOmegaSSTModelConstants` object containing the coefficients "
         + "used in the SST k-omega model. For the default values used in Flow360, "
         + "please refer to :class:`KOmegaSSTModelConstants`.",
     )
@@ -313,7 +313,7 @@ class SpalartAllmaras(TurbulenceModelSolver):
 
     modeling_constants: Optional[SpalartAllmarasModelConstants] = pd.Field(
         SpalartAllmarasModelConstants(),
-        description="A :class:`TurbulenceModelConstants` object containing the coefficients "
+        description="A :class:`SpalartAllmarasModelConstants` object containing the coefficients "
         + "used in the Spalart-Allmaras model. For the default values used in Flow360, "
         + "please refer to :class:`SpalartAllmarasModelConstants`.",
     )
