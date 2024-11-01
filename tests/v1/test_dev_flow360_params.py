@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 
 from ..utils import compare_to_ref, to_file_from_file_test
 

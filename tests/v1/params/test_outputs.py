@@ -5,7 +5,7 @@ import pydantic.v1 as pd
 import pytest
 import unyt
 
-import flow360.component.v1 as v1
+import flow360.component.v1xxx as v1xxx
 import flow360.component.v1.units as u
 from flow360.component.v1.flow360_output import (
     IsoSurface,
@@ -99,7 +99,7 @@ def test_surface_output():
         output_fields=["Cp", "qcriterion"],
     )
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             surface_output=SurfaceOutput(
                 output_fields=["Cp"],
@@ -107,9 +107,9 @@ def test_surface_output():
                 output_format="both",
             ),
             boundaries={
-                "1": v1.NoSlipWall(name="wing"),
-                "2": v1.SlipWall(name="symmetry"),
-                "3": v1.FreestreamBoundary(name="freestream"),
+                "1": v1xxx.NoSlipWall(name="wing"),
+                "2": v1xxx.SlipWall(name="symmetry"),
+                "3": v1xxx.FreestreamBoundary(name="freestream"),
             },
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
@@ -125,7 +125,7 @@ def test_surface_output():
             else:
                 assert surface_item["output_fields"] == ["Cp"]
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             surface_output=SurfaceOutput(
                 output_fields=["Cp", "solutionTurbulence", "nuHat"],
@@ -133,9 +133,9 @@ def test_surface_output():
                 output_format="tecplot",
             ),
             boundaries={
-                "1": v1.NoSlipWall(name="wing"),
-                "2": v1.SlipWall(name="symmetry"),
-                "3": v1.FreestreamBoundary(name="freestream"),
+                "1": v1xxx.NoSlipWall(name="wing"),
+                "2": v1xxx.SlipWall(name="symmetry"),
+                "3": v1xxx.FreestreamBoundary(name="freestream"),
             },
             freestream=FreestreamFromMach(Mach=1, temperature=1, mu_ref=1),
         )
@@ -163,11 +163,11 @@ def test_slice_output():
         output = SliceOutput(
             output_fields=["Cp", "qcriterion"],
             slices={
-                "sliceName_1": v1.Slice(
+                "sliceName_1": v1xxx.Slice(
                     slice_normal=(0, 1, 0),
                     slice_origin=(0, 0.56413, 0) * u.m,
                 ),
-                "sliceName_2": v1.Slice(
+                "sliceName_2": v1xxx.Slice(
                     slice_normal=(0, 0, 1),
                     slice_origin=(0, 0.56413 * u.inch, 0),
                     output_fields=["Mach"],
@@ -178,11 +178,11 @@ def test_slice_output():
     output = SliceOutput(
         output_fields=["Cp", "qcriterion"],
         slices={
-            "sliceName_1": v1.Slice(
+            "sliceName_1": v1xxx.Slice(
                 slice_normal=(0, 1, 0),
                 slice_origin=(0, 0.56413, 0) * u.m,
             ),
-            "sliceName_2": v1.Slice(
+            "sliceName_2": v1xxx.Slice(
                 slice_normal=(0, 0, 1),
                 slice_origin=(0, 0.56413, 0) * u.inch,
                 output_fields=["Mach"],
@@ -196,7 +196,7 @@ def test_slice_output():
         output = SliceOutput(
             output_fields=["Cp", "qcriterion"],
             slices={
-                "sliceName_1": v1.Slice(
+                "sliceName_1": v1xxx.Slice(
                     slice_normal={0, 1},
                     slice_origin=(0, 0.56413, 0) * u.m,
                 )
@@ -207,7 +207,7 @@ def test_slice_output():
         output = SliceOutput(
             output_fields=["Cp", "qcriterion"],
             slices={
-                "sliceName_1": v1.Slice(
+                "sliceName_1": v1xxx.Slice(
                     slice_normal=(0, 1, 0),
                     slice_origin={0, 0.56413} * u.m,
                 )
@@ -217,11 +217,11 @@ def test_slice_output():
     output = SliceOutput(
         output_fields=["Cp", "qcriterion"],
         slices={
-            "sliceName_1": v1.Slice(
+            "sliceName_1": v1xxx.Slice(
                 slice_normal=[0, 1, 0],
                 slice_origin=(0, 0.56413, 0) * u.flow360_length_unit,
             ),
-            "sliceName_2": v1.Slice(
+            "sliceName_2": v1xxx.Slice(
                 slice_normal=(0, 0, 1),
                 slice_origin=(0, 0.56413, 0) * u.inch,
                 output_fields=["Mach"],
@@ -234,7 +234,7 @@ def test_slice_output():
     to_file_from_file_test(output)
 
     output.output_format = "both"
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             slice_output=output,
             boundaries={},
@@ -251,7 +251,7 @@ def test_slice_output():
             else:
                 assert {"Cp", "qcriterion"} == set(slice_item["output_fields"])
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             slice_output=SliceOutput(
                 output_fields=[
@@ -261,11 +261,11 @@ def test_slice_output():
                     "solutionTurbulence",
                 ],
                 slices={
-                    "sliceName_1": v1.Slice(
+                    "sliceName_1": v1xxx.Slice(
                         slice_normal=[5, 1, 0],
                         slice_origin=(0, 0.56413, 0) * u.flow360_length_unit,
                     ),
-                    "sliceName_2": v1.Slice(
+                    "sliceName_2": v1xxx.Slice(
                         slice_normal=(0, 1, 1),
                         slice_origin=(0, 0.56413, 0) * u.inch,
                         output_fields=["Mach"],
@@ -337,7 +337,7 @@ def test_volume_output():
 
     output.output_format = "both"
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             volume_output=output,
             boundaries={},
@@ -347,7 +347,7 @@ def test_volume_output():
 
         assert set(solver_params.volume_output.output_fields) == {"Cp", "qcriterion"}
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         """
         Test addition of betMetrics/betMetricsPerDisk from slice output field
         """
@@ -356,11 +356,11 @@ def test_volume_output():
             slice_output=SliceOutput(
                 output_fields=["betMetrics"],
                 slices={
-                    "sliceName_1": v1.Slice(
+                    "sliceName_1": v1xxx.Slice(
                         slice_normal=(0, 1, 0),
                         slice_origin=(0, 0.56413, 0) * u.m,
                     ),
-                    "sliceName_2": v1.Slice(
+                    "sliceName_2": v1xxx.Slice(
                         slice_normal=(0, 1, 0),
                         slice_origin=(50, 0.56413, 0) * u.m,
                         output_fields=["betMetricsPerDisk"],
@@ -383,7 +383,7 @@ def test_volume_output():
     }
 
     output.output_fields = ["qcriterion", "Cp", "solutionTurbulence", "kOmega"]
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         """
         Test removing duplicate output fields
         """
@@ -432,7 +432,7 @@ def test_iso_surface_output():
 
     output.output_format = "both"
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             iso_surface_output=output,
             boundaries={},
@@ -451,7 +451,7 @@ def test_iso_surface_output():
             else:
                 assert {"Mach"} == set(iso_surface_item["output_fields"])
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             iso_surface_output=IsoSurfaceOutput(
                 output_fields=["Mach", "kOmega", "solutionTurbulence"],
@@ -505,7 +505,7 @@ def test_monitor_output():
 
     to_file_from_file_test(output)
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             monitor_output=output,
             boundaries={},
@@ -523,7 +523,7 @@ def test_monitor_output():
             else:
                 assert {"Cp", "qcriterion", "Mach"} == set(monitor_item["output_fields"])
 
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             monitor_output=MonitorOutput(
                 output_fields=["Cp", "solutionTurbulence", "kOmega"],
@@ -548,7 +548,7 @@ def test_monitor_output():
 
 
 def test_output_fields():
-    with v1.SI_unit_system:
+    with v1xxx.SI_unit_system:
         params = Flow360Params(
             geometry=Geometry(mesh_unit=1),
             volume_output=VolumeOutput(output_fields=["Cp", "qcriterion", "my_var"]),
@@ -556,7 +556,7 @@ def test_output_fields():
             slice_output=SliceOutput(
                 output_fields=["primitiveVars", "my_var", "mutRatio"],
                 slices={
-                    "sliceName_1": v1.Slice(
+                    "sliceName_1": v1xxx.Slice(
                         slice_normal=[5, 1, 0], slice_origin=(0, 1.56413, 0), output_fields=["Mach"]
                     ),
                 },
@@ -598,7 +598,7 @@ def test_output_fields():
     with pytest.raises(
         pd.ValidationError, match=r"surface_output:, prmitiveVars is not valid output field name."
     ):
-        with v1.SI_unit_system:
+        with v1xxx.SI_unit_system:
             Flow360Params(
                 surface_output=SurfaceOutput(output_fields=["prmitiveVars", "my_var"]),
                 boundaries={},
@@ -609,7 +609,7 @@ def test_output_fields():
     with pytest.raises(
         pd.ValidationError, match=r"surface_output->wing:, my__var is not valid output field name."
     ):
-        with v1.SI_unit_system:
+        with v1xxx.SI_unit_system:
             Flow360Params(
                 surface_output=SurfaceOutput(
                     output_fields=["primitiveVars", "my__var"],

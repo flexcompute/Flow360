@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 from flow360.component.v1.flow360_params import (
     BETDisk,
     BETDiskChord,

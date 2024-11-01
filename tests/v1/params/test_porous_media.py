@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 
-from flow360.component.v1 import SI_unit_system
+from flow360.component.v1.unit_system import SI_unit_system
 from flow360.component.v1.flow360_params import PorousMediumBox
 from tests.utils import to_file_from_file_test
 

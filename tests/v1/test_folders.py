@@ -1,4 +1,4 @@
-from flow360.component.v1 import Case, Folder
+from flow360.component.v1xxx import Case, Folder
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")

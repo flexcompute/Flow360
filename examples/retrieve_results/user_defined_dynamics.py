@@ -1,6 +1,6 @@
 from pylab import show
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 from flow360.examples import OM6wingUserDefinedDynamics
 
 OM6wingUserDefinedDynamics.get_files()

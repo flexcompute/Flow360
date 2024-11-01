@@ -4,15 +4,28 @@ import numpy as np
 import pydantic.v1 as pd
 import pytest
 
-import flow360.component.v1 as fl
 from flow360.component.v1.flow360_params import VolumeZones
 from flow360.component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
     ReferenceFrame,
+    ReferenceFrameDynamic,
+    ReferenceFrameExpression,
+    ReferenceFrameOmegaRadians,
+    ReferenceFrameOmegaDegrees
 )
 from tests.utils import to_file_from_file_test
+
+from flow360.component.v1.unit_system import (
+    CGS_unit_system,
+    SI_unit_system,
+    UnitSystem,
+    flow360_unit_system,
+    imperial_unit_system,
+)
+from flow360.component.v1.flow360_params import Flow360Params, Geometry, air
+from flow360.component.v1.flow360_params import FreestreamFromMach
 
 assertions = unittest.TestCase("__init__")
 
@@ -25,13 +38,13 @@ def change_test_dir(request, monkeypatch):
 @pytest.mark.usefixtures("array_equality_override")
 def test_volume_zones():
     with pytest.raises(pd.ValidationError):
-        with fl.SI_unit_system:
+        with SI_unit_system:
             rf = ReferenceFrame(
                 center=(0, 0, 0),
                 axis=(0, 0, 1),
             )
 
-    with fl.SI_unit_system:
+    with SI_unit_system:
         rf = ReferenceFrame(center=(0, 0, 0), axis=(0, 0, 1), omega=1)
 
     assert rf
@@ -64,33 +77,33 @@ def test_volume_zones():
 
     assert zones
 
-    with fl.SI_unit_system:
-        param = fl.Flow360Params(
-            geometry=fl.Geometry(mesh_unit=1),
-            fluid_properties=fl.air,
+    with SI_unit_system:
+        param = Flow360Params(
+            geometry=Geometry(mesh_unit=1),
+            fluid_properties=air,
             boundaries={},
-            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
+            freestream=FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
             volume_zones={
-                "zone1": fl.FluidDynamicsVolumeZone(
-                    reference_frame=fl.ReferenceFrameDynamic(axis=(1, 2, 3), center=(1, 1, 1))
+                "zone1": FluidDynamicsVolumeZone(
+                    reference_frame=ReferenceFrameDynamic(axis=(1, 2, 3), center=(1, 1, 1))
                 ),
-                "zone2": fl.FluidDynamicsVolumeZone(
-                    reference_frame=fl.ReferenceFrameExpression(
+                "zone2": FluidDynamicsVolumeZone(
+                    reference_frame=ReferenceFrameExpression(
                         axis=(1, 2, 3), center=(1, 1, 1), theta_degrees="0.2*t"
                     )
                 ),
-                "zone3": fl.FluidDynamicsVolumeZone(
-                    reference_frame=fl.ReferenceFrameOmegaRadians(
+                "zone3": FluidDynamicsVolumeZone(
+                    reference_frame=ReferenceFrameOmegaRadians(
                         axis=(1, 4, 3), center=(1, 1, 1), omega_radians=0.5
                     )
                 ),
-                "zone4": fl.FluidDynamicsVolumeZone(
-                    reference_frame=fl.ReferenceFrameOmegaDegrees(
+                "zone4": FluidDynamicsVolumeZone(
+                    reference_frame=ReferenceFrameOmegaDegrees(
                         axis=(1, 5, 3), center=(1, 1, 1), omega_degrees=1.5
                     )
                 ),
-                "zone5": fl.FluidDynamicsVolumeZone(
-                    reference_frame=fl.ReferenceFrame(axis=(-5, 2, 3), center=(1, 1, 1), omega=2.5)
+                "zone5": FluidDynamicsVolumeZone(
+                    reference_frame=ReferenceFrame(axis=(-5, 2, 3), center=(1, 1, 1), omega=2.5)
                 ),
             },
         )
@@ -117,12 +130,12 @@ def test_volume_zones():
 
     to_file_from_file_test(zones)
 
-    with fl.SI_unit_system:
-        param = fl.Flow360Params(
-            geometry=fl.Geometry(mesh_unit=1),
-            fluid_properties=fl.air,
+    with SI_unit_system:
+        param = Flow360Params(
+            geometry=Geometry(mesh_unit=1),
+            fluid_properties=air,
             boundaries={},
-            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
+            freestream=FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
             volume_zones={
                 "zone1": fl.HeatTransferVolumeZone(
                     thermal_conductivity=1,
@@ -138,12 +151,12 @@ def test_volume_zones():
     assert solver_params.heat_equation_solver is not None
     assert solver_params.heat_equation_solver.equation_eval_frequency == 11
 
-    with fl.SI_unit_system:
-        param = fl.Flow360Params(
-            geometry=fl.Geometry(mesh_unit=1),
-            fluid_properties=fl.air,
+    with SI_unit_system:
+        param = Flow360Params(
+            geometry=Geometry(mesh_unit=1),
+            fluid_properties=air,
             boundaries={},
-            freestream=fl.FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
+            freestream=FreestreamFromMach(Mach=1, temperature=288.15, mu_ref=1),
             volume_zones={
                 "zone1": fl.HeatTransferVolumeZone(
                     thermal_conductivity=1,

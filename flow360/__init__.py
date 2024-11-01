@@ -2,7 +2,10 @@
 This module is flow360 for simulation based models
 """
 
-from flow360.component.simulation import services
+import flow360.environment as Env
+from version import __solver_version__, __version__
+
+from flow360.component.simulation import services 
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -116,6 +119,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 
 __all__ = [
+    "Env"
     "u",
     "SimulationParams",
     "SI_unit_system",

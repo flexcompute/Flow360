@@ -1,6 +1,6 @@
-import flow360.component.v1 as fl
+from flow360.component.volume_mesh import VolumeMeshList as MyVolumeMeshes
 
-meshes = fl.MyVolumeMeshes()
+meshes = MyVolumeMeshes()
 mesh = meshes[0]
 
 for mesh in meshes:

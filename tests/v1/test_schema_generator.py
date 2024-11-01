@@ -1,6 +1,6 @@
 import json
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 
 
 def test_schema_generators():

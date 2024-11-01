@@ -1,6 +1,7 @@
-import flow360.component.v1 as fl
+from flow360.component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
 
-my_meshes = fl.MySurfaceMeshes()
+
+my_meshes = MySurfaceMeshes()
 
 
 for mesh in my_meshes:

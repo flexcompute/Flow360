@@ -1,7 +1,7 @@
 from matplotlib.pyplot import show
 
 import flow360.component.simulation.units as u
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 from flow360.component.project import Project
 from flow360.component.simulation.models.surface_models import (
     Freestream,

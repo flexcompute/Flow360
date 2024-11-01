@@ -1,6 +1,6 @@
 import os
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 import flow360.component.v1.units as u
 from flow360.examples import OM6wing
 

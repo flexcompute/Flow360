@@ -6,8 +6,8 @@ import numpy as np
 import pydantic.v1 as pd
 import unyt
 
-import flow360.component.v1 as fl
-from flow360.component.v1 import Geometry
+import flow360.component.v1xxx as fl
+from flow360.component.v1xxx import Geometry
 from flow360.component.v1 import units as u
 from flow360.component.v1.unit_system import (
     AngularVelocityType,

@@ -6,7 +6,7 @@ import numpy as np
 import pandas
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 import flow360.component.v1.units as u1
 from flow360 import log
 from flow360.component.simulation import units as u2

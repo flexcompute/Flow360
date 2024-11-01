@@ -1,7 +1,9 @@
 import json
 import os
 
-import flow360.component.v1 as fl
+import flow360 as fl
+from flow360.user_config import UserConfig
+from flow360.component.v1.flow360_params import Geometry
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
@@ -25,10 +27,9 @@ from flow360.component.simulation.simulation_params import (
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.unit_system import SI_unit_system, u
 
-fl.UserConfig.set_profile("auto_test_1")
+UserConfig.set_profile("auto_test_1")
 fl.Env.dev.active()
 
-from flow360.component.geometry_v1 import Geometry
 from flow360.examples import Airplane
 
 SOLVER_VERSION = "workbench-24.6.0"

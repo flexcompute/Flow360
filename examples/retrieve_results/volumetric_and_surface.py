@@ -2,7 +2,7 @@ import os
 import tarfile
 import tempfile
 
-import flow360.component.v1 as fl
+import flow360.component.v1xxx as fl
 from flow360.examples import MonitorsAndSlices
 
 MonitorsAndSlices.get_files()

@@ -1,4 +1,4 @@
-import flow360.component.v1 as fl
+import flow360 as fl
 from flow360.examples import OM6wing
 
 fl.Env.dev.active()

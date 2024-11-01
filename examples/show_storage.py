@@ -1,6 +1,7 @@
-import flow360.component.v1 as fl
+import flow360 as fl
+from flow360.component.folder import Folder
 
 fl.Env.preprod.active()
 
 
-fl.Folder.print_storage()
+Folder.print_storage()

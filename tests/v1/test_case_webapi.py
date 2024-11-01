@@ -1,6 +1,6 @@
 import pytest
 
-from flow360.component.v1 import Case
+from flow360.component.v1xxx import Case
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import Logger, log
 
