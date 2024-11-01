@@ -173,8 +173,8 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
         description="List of :class:`~flow360.Isosurface` entities.",
     )
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
-        description=" Isosurface field variable to be written. One of :code:`p`, :code:`rho`, "
-        + ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`."
+        description="List of output variables, see "
+        + ":ref:`universal output variables<UniversalVariablesV2>`."
     )
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
@@ -191,7 +191,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
         + "the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[CommonFieldNames] = pd.Field(
-        description="List of output variables. Including "
+        description="List of output variables, see "
         + ":ref:`universal output variables<UniversalVariablesV2>`."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
