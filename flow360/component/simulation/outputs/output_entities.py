@@ -51,16 +51,16 @@ class _PointEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 class Slice(_SliceEntityBase):
-    """Slice output item."""
+    """:class:`Slice` class for defining a slice for :class:`~flow360.SliceOutput`."""
 
     private_attribute_entity_type_name: Literal["Slice"] = pd.Field("Slice", frozen=True)
-    normal: Axis = pd.Field()
+    normal: Axis = pd.Field(description="Normal direction of the slice.")
     # pylint: disable=no-member
-    origin: LengthType.Point = pd.Field()
+    origin: LengthType.Point = pd.Field(description="A single point on the slice.")
 
 
 class Isosurface(_OutputItemBase):
-    """Isosurface output item."""
+    """:class:`Isosurface` class for defining an isosurface for :class:`~flow360.IsosurfaceOutput`."""
 
     field: Literal[IsoSurfaceFieldNames] = pd.Field()
     # pylint: disable=fixme
@@ -69,18 +69,24 @@ class Isosurface(_OutputItemBase):
 
 
 class Point(_PointEntityBase):
-    """A single point for probe output"""
+    """
+    :class:`Point` class for defining a single point for
+    :class:`~flow360.ProbeOutput`/:class:`~flow360.SurfaceProbeOutput`.
+    """
 
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     # pylint: disable=no-member
-    location: LengthType.Point = pd.Field()
+    location: LengthType.Point = pd.Field(description="The coordinate of the point.")
 
 
 class PointArray(_PointEntityBase):
-    """A single point for probe output"""
+    """
+    :class:`PointArray` class for defining a line for
+    :class:`~flow360.ProbeOutput`/:class:`~flow360.SurfaceProbeOutput`.
+    """
 
     private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)
     # pylint: disable=no-member
-    start: LengthType.Point = pd.Field()
-    end: LengthType.Point = pd.Field()
-    number_of_points: int = pd.Field(gt=2)
+    start: LengthType.Point = pd.Field(description="The starting point of the line.")
+    end: LengthType.Point = pd.Field(description="The end point of the line.")
+    number_of_points: int = pd.Field(gt=2, description="Number of points along the line.")

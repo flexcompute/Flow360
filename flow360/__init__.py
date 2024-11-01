@@ -7,7 +7,6 @@ from flow360.component.project import Project
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.edge_params import (
     HeightBasedRefinement,
     SurfaceEdgeRefinement,
@@ -34,13 +33,13 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
-    TransitionModelSolverType,
-    TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
     Inflow,
+    Mach,
+    MassFlowRate,
     Outflow,
     Periodic,
     Pressure,
@@ -78,6 +77,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
     Point,
     PointArray,
     Slice,
@@ -90,18 +90,12 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-    Edge,
-    GenericVolume,
-    ReferenceGeometry,
-    Surface,
-)
+from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -139,11 +133,8 @@ __all__ = [
     "UniformRefinement",
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",
-    "Surface",
-    "Edge",
     "ReferenceGeometry",
     "Cylinder",
-    "AssetCache",
     "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
@@ -173,6 +164,7 @@ __all__ = [
     "VolumeOutput",
     "TimeAverageVolumeOutput",
     "SliceOutput",
+    "TimeAverageSliceOutput",
     "IsosurfaceOutput",
     "SurfaceIntegralOutput",
     "ProbeOutput",
@@ -185,21 +177,19 @@ __all__ = [
     "KOmegaSST",
     "SpalartAllmarasModelConstants",
     "KOmegaSSTModelConstants",
-    "TransitionModelSolverType",
-    "TurbulenceModelSolverType",
     "LinearSolver",
     "ForcePerArea",
     "Air",
     "Sutherland",
     "SolidMaterial",
     "Slice",
+    "Isosurface",
     "TurbulenceQuantities",
     "UserDefinedDynamic",
     "Translational",
     "NavierStokesInitialCondition",
     "FromUserDefinedDynamics",
     "HeatEquationInitialCondition",
-    "GenericVolume",
     "Temperature",
     "HeatFlux",
     "Point",
@@ -211,4 +201,6 @@ __all__ = [
     "Pressure",
     "TotalPressure",
     "Rotational",
+    "Mach",
+    "MassFlowRate",
 ]

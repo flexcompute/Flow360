@@ -99,6 +99,7 @@ docs = [
     "sphinx-prompt",
     "sphinx_design",
     "sphinx_toolbox",
+    "sphinx_paramlinks",
 ]
 
 [tool.isort]
