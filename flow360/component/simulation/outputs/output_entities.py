@@ -62,7 +62,10 @@ class Slice(_SliceEntityBase):
 class Isosurface(_OutputItemBase):
     """:class:`Isosurface` class for defining an isosurface for :class:`~flow360.IsosurfaceOutput`."""
 
-    field: Literal[IsoSurfaceFieldNames] = pd.Field()
+    field: Literal[IsoSurfaceFieldNames] = pd.Field(
+        description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
+        + ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`."
+    )
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
     iso_value: float = pd.Field(description="Expect non-dimensional value.")
