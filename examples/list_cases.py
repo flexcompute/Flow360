@@ -1,4 +1,4 @@
-import flow360.component.v1 as fl
+import flow360.component.v1.modules as fl
 
 # get all cases:
 my_cases = fl.MyCases()

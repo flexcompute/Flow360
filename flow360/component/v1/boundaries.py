@@ -10,12 +10,11 @@ from typing import Literal, Optional, Tuple, Union
 import pydantic.v1 as pd
 from pydantic.v1 import StrictStr
 
+from flow360.component.types import Axis, Vector
+from flow360.component.utils import process_expressions
+from flow360.component.v1.params_base import Flow360BaseModel
+from flow360.component.v1.turbulence_quantities import TurbulenceQuantitiesType
 from flow360.component.v1.unit_system import PressureType, VelocityType
-
-from ..types import Axis, Vector
-from ..utils import process_expressions
-from .params_base import Flow360BaseModel
-from .turbulence_quantities import TurbulenceQuantitiesType
 
 BoundaryVelocityType = Union[VelocityType.Vector, Tuple[StrictStr, StrictStr, StrictStr]]
 BoundaryAxisType = Union[Axis, Tuple[StrictStr, StrictStr, StrictStr]]

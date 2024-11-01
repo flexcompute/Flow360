@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.component.v1.modules as fl
 from flow360.component.v1.boundaries import NoSlipWall
 from flow360.component.v1.flow360_params import Flow360Params
 

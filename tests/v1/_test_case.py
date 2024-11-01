@@ -1,6 +1,6 @@
 from flow360.component.case import Case
-from flow360.component.v1 import Env
 from flow360.component.v1.flow360_params import Flow360Params, UnsteadyTimeStepping
+from flow360.component.v1.modules import Env
 
 
 def test_from_cloud():

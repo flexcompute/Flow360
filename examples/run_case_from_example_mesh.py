@@ -1,4 +1,4 @@
-import flow360.component.v1 as fl
+import flow360.component.v1.modules as fl
 from flow360.examples import OM6wing
 
 vm = fl.VolumeMesh.copy_from_example("2ad77a88-1676-4f89-8652-13bd7e34f257")

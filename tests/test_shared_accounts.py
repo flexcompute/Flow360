@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 
-from flow360.component.v1 import Accounts, Env
+from flow360.component.v1.modules import Accounts, Env
 
 
 def test_shared_account(mock_response, monkeypatch):

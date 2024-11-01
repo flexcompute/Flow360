@@ -10,11 +10,9 @@ from typing import List, Literal, Optional, Union, get_args
 import pydantic.v1 as pd
 from pydantic.v1 import conlist
 
-from flow360.component.v1.unit_system import Flow360UnitSystem, LengthType
-
-from ..types import Axis, Coordinate
-from ..utils import process_expressions
-from .flow360_fields import (
+from flow360.component.types import Axis, Coordinate
+from flow360.component.utils import process_expressions
+from flow360.component.v1.flow360_fields import (
     CommonFieldNames,
     IsoSurfaceFieldNames,
     SliceFieldNames,
@@ -23,12 +21,13 @@ from .flow360_fields import (
     _distribute_shared_output_fields,
     get_field_values,
 )
-from .flow360_legacy import LegacyModel, get_output_fields
-from .params_base import (
+from flow360.component.v1.flow360_legacy import LegacyModel, get_output_fields
+from flow360.component.v1.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
 )
+from flow360.component.v1.unit_system import Flow360UnitSystem, LengthType
 
 OutputFormat = Literal[
     "paraview", "tecplot", "both", "paraview,tecplot"

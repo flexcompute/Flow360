@@ -11,18 +11,21 @@ import numpy as np
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from flow360.flags import Flags
-
-from ..types import Coordinate
-from .flow360_legacy import (
+from flow360.component.types import Coordinate
+from flow360.component.v1.flow360_legacy import (
     LegacyModel,
     LinearSolverLegacy,
     set_linear_solver_config_if_none,
     try_set,
     try_update,
 )
-from .params_base import Conflicts, DeprecatedAlias, Flow360BaseModel
-from .time_stepping import UnsteadyTimeStepping
+from flow360.component.v1.params_base import (
+    Conflicts,
+    DeprecatedAlias,
+    Flow360BaseModel,
+)
+from flow360.component.v1.time_stepping import UnsteadyTimeStepping
+from flow360.flags import Flags
 
 HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
 HEAT_EQUATION_EVAL_FREQUENCY_STEADY = 10

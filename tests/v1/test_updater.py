@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.component.v1.modules as fl
 from flow360.component.v1.flow360_legacy import LinearSolverLegacy
 from flow360.component.v1.initial_condition import ExpressionInitialCondition
 from flow360.component.v1.updater import UPDATE_MAP, _find_update_path, _no_update

@@ -9,9 +9,9 @@ from typing import Dict, Optional, Union
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from ..utils import process_expressions
-from .flow360_legacy import LegacyModel
-from .params_base import Flow360BaseModel
+from flow360.component.utils import process_expressions
+from flow360.component.v1.flow360_legacy import LegacyModel
+from flow360.component.v1.params_base import Flow360BaseModel
 
 
 class InitialCondition(Flow360BaseModel):

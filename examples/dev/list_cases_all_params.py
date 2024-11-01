@@ -1,4 +1,4 @@
-import flow360.component.v1 as fl
+import flow360.component.v1.modules as fl
 from flow360.exceptions import Flow360ValidationError
 
 for case in fl.MyCases(limit=10000):

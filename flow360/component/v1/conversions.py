@@ -13,8 +13,7 @@ from flow360.component.v1.unit_system import (
     is_flow360_unit,
     u,
 )
-
-from ...exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError
 
 
 class ExtraDimensionedProperty(pd.BaseModel):

@@ -13,6 +13,69 @@ from typing import Dict, List, Optional, Tuple, Union, get_args
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
+from flow360.component.types import Axis, Coordinate, Vector
+from flow360.component.utils import convert_legacy_names, process_expressions
+from flow360.component.v1 import units
+from flow360.component.v1.boundaries import BoundaryType
+from flow360.component.v1.conversions import ExtraDimensionedProperty
+from flow360.component.v1.flow360_legacy import (
+    FreestreamInitialConditionLegacy,
+    LegacyModel,
+    try_add_discriminator,
+    try_add_unit,
+    try_set,
+    try_update,
+)
+from flow360.component.v1.flow360_output import (
+    AeroacousticOutput,
+    IsoSurfaceOutput,
+    IsoSurfaceOutputLegacy,
+    MonitorOutput,
+    MonitorOutputLegacy,
+    SliceOutput,
+    SliceOutputLegacy,
+    SurfaceOutput,
+    SurfaceOutputLegacy,
+    UserDefinedField,
+    UserDefinedFieldLegacy,
+    VolumeOutput,
+    VolumeOutputLegacy,
+)
+from flow360.component.v1.initial_condition import (
+    ExpressionInitialCondition,
+    ExpressionInitialConditionLegacy,
+    InitialConditions,
+    ModifiedRestartSolution,
+    ModifiedRestartSolutionLegacy,
+)
+from flow360.component.v1.params_base import (
+    Conflicts,
+    Flow360BaseModel,
+    Flow360SortableBaseModel,
+    _self_named_property_validator,
+    flow360_json_encoder,
+)
+from flow360.component.v1.physical_properties import _AirModel
+from flow360.component.v1.solvers import (
+    HeatEquationSolver,
+    HeatEquationSolverLegacy,
+    NavierStokesSolver,
+    NavierStokesSolverLegacy,
+    NavierStokesSolverType,
+    TransitionModelSolver,
+    TransitionModelSolverLegacy,
+    TurbulenceModelSolverLegacy,
+    TurbulenceModelSolverType,
+)
+from flow360.component.v1.time_stepping import (
+    BaseTimeStepping,
+    SteadyTimeStepping,
+    TimeStepping,
+)
+from flow360.component.v1.turbulence_quantities import (
+    TurbulenceQuantitiesType,
+    TurbulentViscosityRatio,
+)
 from flow360.component.v1.unit_system import (
     AngularVelocityType,
     AreaType,
@@ -30,75 +93,8 @@ from flow360.component.v1.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.flags import Flags
-
-from ...error_messages import unit_system_inconsistent_msg, use_unit_system_msg
-from ...exceptions import (
-    Flow360ConfigError,
-    Flow360NotImplementedError,
-    Flow360RuntimeError,
-)
-from ...log import log
-from ...user_config import UserConfig
-from ...version import __version__
-from ..types import Axis, Coordinate, Vector
-from ..utils import convert_legacy_names, process_expressions
-from . import units
-from .boundaries import BoundaryType
-from .conversions import ExtraDimensionedProperty
-from .flow360_legacy import (
-    FreestreamInitialConditionLegacy,
-    LegacyModel,
-    try_add_discriminator,
-    try_add_unit,
-    try_set,
-    try_update,
-)
-from .flow360_output import (
-    AeroacousticOutput,
-    IsoSurfaceOutput,
-    IsoSurfaceOutputLegacy,
-    MonitorOutput,
-    MonitorOutputLegacy,
-    SliceOutput,
-    SliceOutputLegacy,
-    SurfaceOutput,
-    SurfaceOutputLegacy,
-    UserDefinedField,
-    UserDefinedFieldLegacy,
-    VolumeOutput,
-    VolumeOutputLegacy,
-)
-from .initial_condition import (
-    ExpressionInitialCondition,
-    ExpressionInitialConditionLegacy,
-    InitialConditions,
-    ModifiedRestartSolution,
-    ModifiedRestartSolutionLegacy,
-)
-from .params_base import (
-    Conflicts,
-    Flow360BaseModel,
-    Flow360SortableBaseModel,
-    _self_named_property_validator,
-    flow360_json_encoder,
-)
-from .physical_properties import _AirModel
-from .solvers import (
-    HeatEquationSolver,
-    HeatEquationSolverLegacy,
-    NavierStokesSolver,
-    NavierStokesSolverLegacy,
-    NavierStokesSolverType,
-    TransitionModelSolver,
-    TransitionModelSolverLegacy,
-    TurbulenceModelSolverLegacy,
-    TurbulenceModelSolverType,
-)
-from .time_stepping import BaseTimeStepping, SteadyTimeStepping, TimeStepping
-from .turbulence_quantities import TurbulenceQuantitiesType, TurbulentViscosityRatio
-from .updater import updater
-from .validations import (
+from flow360.component.v1.updater import updater
+from flow360.component.v1.validations import (
     _check_aero_acoustics,
     _check_bet_disks_3d_coefficients_in_polars,
     _check_bet_disks_alphas_in_order,
@@ -120,13 +116,23 @@ from .validations import (
     _check_tri_quad_boundaries,
     _ignore_velocity_type_in_boundaries,
 )
-from .volume_zones import (
+from flow360.component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     PorousMediumBase,
     ReferenceFrameType,
     VolumeZoneType,
 )
+from flow360.error_messages import unit_system_inconsistent_msg, use_unit_system_msg
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360NotImplementedError,
+    Flow360RuntimeError,
+)
+from flow360.flags import Flags
+from flow360.log import log
+from flow360.user_config import UserConfig
+from flow360.version import __version__
 
 
 # pylint: disable=invalid-name

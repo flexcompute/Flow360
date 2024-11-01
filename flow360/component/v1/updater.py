@@ -4,7 +4,7 @@ Module containing updaters from version to version
 
 import re
 
-from ...exceptions import Flow360NotImplementedError, Flow360RuntimeError
+from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
 
 
 def _no_update(params_as_dict):

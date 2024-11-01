@@ -57,7 +57,7 @@ class RootType(Enum):
     VOLUME_MESH = "VolumeMesh"
 
 
-class ProjectMeta(pd.BaseModel, extra=pd.Extra.allow):
+class ProjectMeta(pd.BaseModel, extra="allow"):
     """
     Metadata class for a project.
 

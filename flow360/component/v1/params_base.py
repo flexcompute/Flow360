@@ -21,13 +21,12 @@ from pydantic.v1 import BaseModel
 from pydantic.v1.fields import ModelField
 from typing_extensions import Literal
 
+from flow360.component.types import COMMENTS, TYPE_TAG_STR
+from flow360.component.v1.conversions import need_conversion, require, unit_converter
 from flow360.component.v1.unit_system import DimensionedType, is_flow360_unit
-
-from ...error_messages import do_not_modify_file_manually_msg
-from ...exceptions import Flow360FileError, Flow360ValidationError
-from ...log import log
-from ..types import COMMENTS, TYPE_TAG_STR
-from .conversions import need_conversion, require, unit_converter
+from flow360.error_messages import do_not_modify_file_manually_msg
+from flow360.exceptions import Flow360FileError, Flow360ValidationError
+from flow360.log import log
 
 
 def json_dumps(value, *args, **kwargs):

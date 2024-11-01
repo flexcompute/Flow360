@@ -1,6 +1,6 @@
 import pytest
 
-import flow360.component.v1 as v1
+import flow360.component.v1.modules as modules
 from flow360.component.utils import CompressionFormat, MeshFileFormat, UGRIDEndianness
 from flow360.component.v1.boundaries import NoSlipWall
 from flow360.component.v1.flow360_params import (
@@ -47,7 +47,7 @@ def test_get_no_slip_walls():
     assert walls
     assert len(walls) == 3
 
-    with v1.SI_unit_system:
+    with modules.SI_unit_system:
         param = Flow360Params(
             boundaries={
                 "fluid/fuselage": NoSlipWall(),
@@ -66,7 +66,7 @@ def test_get_no_slip_walls():
 
 
 def test_validate_cgns():
-    with v1.SI_unit_system:
+    with modules.SI_unit_system:
         param = Flow360Params(
             boundaries={
                 "fluid/fuselage": NoSlipWall(),
