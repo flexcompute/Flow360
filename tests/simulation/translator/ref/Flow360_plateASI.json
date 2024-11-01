@@ -198,6 +198,10 @@
                 "outerRadius": {
                     "value": 14.763779527559056,
                     "units": "flow360_length_unit"
+                },
+                "innerRadius": {
+                    "value": 0,
+                    "units": "flow360_length_unit"
                 }
             },
             "dynamicsName": "dynamicTheta",
