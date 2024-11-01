@@ -1,6 +1,6 @@
 import pytest
 
-import flow360.component.v1 as v1
+import flow360.v1 as v1
 from flow360.component.utils import CompressionFormat, MeshFileFormat, UGRIDEndianness
 from flow360.component.v1.boundaries import NoSlipWall
 from flow360.component.v1.flow360_params import (

@@ -5,8 +5,8 @@ import pydantic.v1 as pd
 import pytest
 import unyt
 
-import flow360.component.v1 as v1
 import flow360.component.v1.units as u
+import flow360.v1 as v1
 from flow360.component.v1.flow360_output import (
     IsoSurface,
     IsoSurfaceOutput,

@@ -1,6 +1,6 @@
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.v1 as fl
 from flow360.examples import OM6wing
 from flow360.exceptions import Flow360RuntimeError, Flow360ValidationError
 from flow360.log import set_logging_level

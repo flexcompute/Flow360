@@ -7,6 +7,7 @@ from typing import Union
 
 import pydantic.v1 as pd
 
+from flow360.component.utils import remove_properties_with_prefix
 from flow360.component.v1.flow360_params import (
     Flow360Params,
     FreestreamFromVelocity,
@@ -28,8 +29,6 @@ from flow360.component.v1.unit_system import (
     unit_system_manager,
 )
 from flow360.exceptions import Flow360ConfigurationError
-
-from ..utils import remove_properties_with_prefix
 
 unit_system_map = {
     "SI": SI_unit_system,

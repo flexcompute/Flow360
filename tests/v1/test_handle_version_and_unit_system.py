@@ -4,10 +4,11 @@ import tempfile
 import pydantic.v1 as pd
 import pytest
 
-import flow360.component.v1 as v1
 import flow360.component.v1.units as u
-from flow360.component.v1 import Flow360Params
+import flow360.v1 as v1
 from flow360.exceptions import Flow360NotImplementedError, Flow360RuntimeError
+from flow360.v1 import Flow360Params
+from flow360.version import __version__
 
 params_old_version = {
     "version": "0.2.0b01",
@@ -277,7 +278,7 @@ def test_parse_with_version():
         json.dump(params_no_hash, temp_file)
 
     params = Flow360Params(temp_file.name)
-    assert params.version == v1.__version__
+    assert params.version == __version__
 
 
 def test_parse_no_version():
