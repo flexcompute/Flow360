@@ -6,9 +6,8 @@ import numpy as np
 import pydantic.v1 as pd
 import unyt
 
-import flow360.component.v1.modules as fl
+import flow360.v1 as fl
 from flow360.component.v1 import units as u
-from flow360.component.v1.modules import Geometry
 from flow360.component.v1.unit_system import (
     AngularVelocityType,
     AreaType,
@@ -23,6 +22,7 @@ from flow360.component.v1.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.v1 import Geometry
 
 
 class DataWithUnits(pd.BaseModel):

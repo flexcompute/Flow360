@@ -3,7 +3,7 @@ from typing import List
 
 from pylab import plot, show, xlabel, ylabel
 
-import flow360.component.v1.modules as fl
+import flow360.v1 as fl
 from flow360.examples import OM6wing
 
 OM6wing.get_files()

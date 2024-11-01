@@ -1,8 +1,8 @@
 import pytest
 
-from flow360.component.v1.modules import Case
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import Logger, log
+from flow360.v1 import Case
 
 Logger.log_to_file = False
 

@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 from flow360.component.v1.flow360_params import PorousMediumBox
-from flow360.component.v1.modules import SI_unit_system
+from flow360.v1 import SI_unit_system
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")

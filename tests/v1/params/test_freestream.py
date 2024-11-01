@@ -4,7 +4,7 @@ import numpy as np
 import pydantic.v1 as pd
 import pytest
 
-import flow360.component.v1.modules as fl
+import flow360.v1 as fl
 from flow360.component.v1 import units as u
 from flow360.component.v1.flow360_params import (
     FreestreamFromMach,

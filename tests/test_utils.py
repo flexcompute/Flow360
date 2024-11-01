@@ -12,9 +12,9 @@ from flow360.component.utils import (
     shared_account_confirm_proceed,
     validate_type,
 )
-from flow360.component.v1.modules import Accounts
 from flow360.component.volume_mesh import VolumeMeshMeta
 from flow360.exceptions import Flow360TypeError, Flow360ValueError
+from flow360.v1 import Accounts
 
 
 def test_validate_type():
