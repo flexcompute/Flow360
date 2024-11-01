@@ -316,7 +316,7 @@ class Cylinder(_VolumeEntityBase):
     center: LengthType.Point = pd.Field(description="The center point of the cylinder.")
     height: LengthType.Positive = pd.Field(description="The height of the cylinder.")
     inner_radius: Optional[LengthType.NonNegative] = pd.Field(
-        None, description="The inner radius of the cylinder."
+        0 * u.m, description="The inner radius of the cylinder."
     )
     outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
 
