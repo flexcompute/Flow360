@@ -60,6 +60,7 @@ sphinx-prompt = {version="*", optional = true}
 sphinx_design = {version="*", optional = true}
 sphinx_toolbox = {version="*", optional = true}
 sphinx_paramlinks = {version="*", optional = true}
+numpydoc = "^1.8.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -101,6 +102,7 @@ docs = [
     "sphinx_design",
     "sphinx_toolbox",
     "sphinx_paramlinks",
+    "numpydoc"
 ]
 
 [tool.isort]
