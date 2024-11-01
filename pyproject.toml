@@ -59,6 +59,7 @@ sphinxcontrib-svg2pdfconverter = {version="*", optional = true}
 sphinx-prompt = {version="*", optional = true}
 sphinx_design = {version="*", optional = true}
 sphinx_toolbox = {version="*", optional = true}
+sphinx_paramlinks = {version="*", optional = true}
 
 
 [tool.poetry.group.dev.dependencies]
