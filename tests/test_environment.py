@@ -1,4 +1,4 @@
-from flow360.v1 import Env
+from flow360 import Env
 
 
 def test_version():

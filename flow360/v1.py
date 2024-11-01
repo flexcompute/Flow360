@@ -7,7 +7,6 @@ import os
 from numpy import pi
 
 from flow360 import global_exception_handler
-from flow360.accounts_utils import Accounts
 from flow360.cli import flow360
 from flow360.cloud.s3_utils import ProgressCallbackInterface
 from flow360.component.case import Case
@@ -140,13 +139,10 @@ from flow360.component.v1.volume_zones import (
 )
 from flow360.component.volume_mesh import VolumeMesh
 from flow360.component.volume_mesh import VolumeMeshList as MyVolumeMeshes
-from flow360.environment import Env
 from flow360.flags import Flags
 from flow360.user_config import UserConfig
-from flow360.version import __solver_version__, __version__
 
 __all__ = [
-    "Accounts",
     "ActuatorDisk",
     "AdaptiveCFL",
     "AeroacousticOutput",
@@ -163,7 +159,6 @@ __all__ = [
     "Case",
     "CylinderRefinement",
     "Edges",
-    "Env",
     "ExpressionInitialCondition",
     "Face",
     "Faces",
@@ -259,8 +254,6 @@ __all__ = [
     "WallFunction",
     "ZeroFreestream",
     "ZeroFreestreamFromVelocity",
-    "__version__",
-    "__solver_version__",
     "air",
     "flow360",
     "flow360_unit_system",

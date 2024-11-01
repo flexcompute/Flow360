@@ -8,6 +8,7 @@ from flow360.component.v1.flow360_legacy import LinearSolverLegacy
 from flow360.component.v1.initial_condition import ExpressionInitialCondition
 from flow360.component.v1.updater import UPDATE_MAP, _find_update_path, _no_update
 from flow360.exceptions import Flow360NotImplementedError
+from flow360.version import __version__
 
 
 @pytest.fixture(autouse=True)
@@ -265,4 +266,4 @@ def test_updater_map():
     assert len(update_path) == 3
 
     update_path = _find_update_path(version_from=UPDATE_MAP[0][0], version_to=UPDATE_MAP[-1][1])
-    update_path = _find_update_path(version_from=UPDATE_MAP[0][0], version_to=fl.__version__)
+    update_path = _find_update_path(version_from=UPDATE_MAP[0][0], version_to=__version__)

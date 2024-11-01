@@ -2,6 +2,7 @@
 This module is flow360 for simulation based models
 """
 
+from flow360.accounts_utils import Accounts
 from flow360.component.project import Project
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
@@ -115,8 +116,14 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.environment import Env
+from flow360.version import __solver_version__, __version__
 
 __all__ = [
+    "Env",
+    "__solver_version__",
+    "__version__",
+    "Accounts",
     "Project",
     "u",
     "SimulationParams",
