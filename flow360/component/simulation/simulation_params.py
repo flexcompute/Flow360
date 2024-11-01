@@ -17,17 +17,31 @@ from flow360.component.simulation.framework.param_utils import (
     _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
+from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    Fluid,
+    VolumeModelTypes,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import (
+    AeroAcousticOutput,
+    IsosurfaceOutput,
+    OutputTypes,
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+    VolumeOutput,
+)
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     _SurfaceEntityBase,
@@ -114,7 +128,9 @@ class _ParamModelBase(Flow360BaseModel):
         unit_system = model_dict.get("unit_system")
         if version is not None and unit_system is not None:
             if version != __version__:
-                raise NotImplementedError("No legacy support at the time being.")
+                model_dict = updater(  # pylint: disable=R0801
+                    version_from=version, version_to=__version__, params_as_dict=model_dict
+                )
             # pylint: disable=not-context-manager
             with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)
@@ -191,9 +207,7 @@ class SimulationParams(_ParamModelBase):
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = CaseField(
-        Steady(), discriminator="type_name"
-    )
+    time_stepping: Union[Steady, Unsteady] = CaseField(Steady(), discriminator="type_name")
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
     """
     Support for user defined expression?
@@ -329,3 +343,72 @@ class SimulationParams(_ParamModelBase):
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self
+
+    def is_steady(self):
+        """
+        returns True when SimulationParams is steady state
+        """
+        return isinstance(self.time_stepping, Steady)
+
+    def has_actuator_disks(self):
+        """
+        returns True when SimulationParams has ActuatorDisk disk
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, ActuatorDisk) for item in self.models)
+
+    def has_bet_disks(self):
+        """
+        returns True when SimulationParams has BET disk
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, BETDisk) for item in self.models)
+
+    def has_isosurfaces(self):
+        """
+        returns True when SimulationParams has isosurfaces
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, IsosurfaceOutput) for item in self.outputs)
+
+    def has_monitors(self):
+        """
+        returns True when SimulationParams has monitors
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(
+            isinstance(item, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput))
+            for item in self.outputs
+        )
+
+    def has_volume_output(self):
+        """
+        returns True when SimulationParams has volume output
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, VolumeOutput) for item in self.outputs)
+
+    def has_aeroacoustics(self):
+        """
+        returns True when SimulationParams has aeroacoustics
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, (AeroAcousticOutput)) for item in self.outputs)
+
+    def has_user_defined_dynamics(self):
+        """
+        returns True when SimulationParams has user defined dynamics
+        """
+        return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
