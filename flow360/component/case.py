@@ -2,17 +2,20 @@
 Case component
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
 import tempfile
-from typing import Any, Iterator, List, Union
+from typing import Any, Iterator, List, Optional, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
+import pydantic.v1 as pd_v1
 
 from .. import error_messages
 from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
+from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .folder import Folder
@@ -46,7 +49,14 @@ from .results.case_results import (
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
 )
-from .utils import is_valid_uuid, shared_account_confirm_proceed, validate_type
+from .simulation import services
+from .simulation.simulation_params import SimulationParams
+from .utils import (
+    _local_download_overwrite,
+    is_valid_uuid,
+    shared_account_confirm_proceed,
+    validate_type,
+)
 from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .validator import Validator
 
@@ -131,13 +141,13 @@ class CaseMeta(AssetMetaBaseModel):
     CaseMeta data component
     """
 
-    id: str = pd.Field(alias="caseId")
-    case_mesh_id: str = pd.Field(alias="caseMeshId")
-    parent_id: Union[str, None] = pd.Field(alias="parentId")
-    status: Flow360Status = pd.Field()
+    id: str = pd_v1.Field(alias="caseId")
+    case_mesh_id: str = pd_v1.Field(alias="caseMeshId")
+    parent_id: Union[str, None] = pd_v1.Field(alias="parentId")
+    status: Flow360Status = pd_v1.Field()
 
     # Resource status change, revisit when updating the case class
-    @pd.validator("status")
+    @pd_v1.validator("status")
     @classmethod
     def set_status_type(cls, value: Flow360Status):
         """set_status_type when case uploaded"""
@@ -379,6 +389,8 @@ class Case(CaseBase, Flow360Resource):
     Case component
     """
 
+    _manifest_path = "visualize/manifest/manifest.json"
+
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
@@ -390,6 +402,7 @@ class Case(CaseBase, Flow360Resource):
         self._params = None
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
+        self._manifest = None
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -398,12 +411,38 @@ class Case(CaseBase, Flow360Resource):
         case._set_meta(meta)
         return case
 
+    def get_simulation_params(self):
+        """
+        returns simulation params
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
+            try:
+                self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
+            except CloudFileNotFoundError as err:
+                raise Flow360ValueError(
+                    "Simulation params not found for this case. It is likely it was created with old interface"
+                ) from err
+
+            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
+            with open(temp_file.name, "r", encoding="utf-8") as fh:
+                params_as_dict = json.load(fh)
+                params_as_dict = services.clean_params_dict(params_as_dict, "VolumeMesh")
+            with open(temp_file.name, "w", encoding="utf-8") as fh:
+                json.dump(params_as_dict, fh)
+            return SimulationParams(filename=temp_file.name)
+
     @property
-    def params(self) -> Flow360Params:
+    def params(self) -> Union[Flow360Params, SimulationParams]:
         """
         returns case params
         """
         if self._params is None:
+            try:
+                self._params = self.get_simulation_params()
+                return self._params
+            except Flow360ValueError:
+                pass
+
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
             try:
                 with tempfile.NamedTemporaryFile(
@@ -412,7 +451,7 @@ class Case(CaseBase, Flow360Resource):
                     json.dump(self._raw_params, temp_file)
 
                 self._params = Flow360Params(temp_file.name)
-            except pd.ValidationError as err:
+            except pd_v1.ValidationError as err:
                 raise Flow360ValidationError(error_messages.params_fetching_error(err)) from err
 
         return self._params
@@ -480,49 +519,65 @@ class Case(CaseBase, Flow360Resource):
         """
         returns True when case is steady state
         """
-        return self.params.time_stepping.time_step_size == "inf"
+        if isinstance(self.params, Flow360Params):
+            return self.params.time_stepping.time_step_size == "inf"
+        return self.params.is_steady()
 
     def has_actuator_disks(self):
         """
         returns True when case has actuator disk
         """
-        if self.params.actuator_disks is not None:
-            if len(self.params.actuator_disks) > 0:
-                return True
-        return False
+        if isinstance(self.params, Flow360Params):
+            return self.params.actuator_disks is not None and len(self.params.actuator_disks) > 0
+        return self.params.has_actuator_disks()
 
     def has_bet_disks(self):
         """
         returns True when case has BET disk
         """
-        if self.params.bet_disks is not None:
-            if len(self.params.bet_disks) > 0:
-                return True
-        return False
+        if isinstance(self.params, Flow360Params):
+            return self.params.bet_disks is not None and len(self.params.bet_disks) > 0
+        return self.params.has_bet_disks()
 
     def has_isosurfaces(self):
         """
         returns True when case has isosurfaces
         """
-        return self.params.iso_surface_output is not None
+        if isinstance(self.params, Flow360Params):
+            return self.params.iso_surface_output is not None
+        return self.params.has_isosurfaces()
 
     def has_monitors(self):
         """
         returns True when case has monitors
         """
-        return self.params.monitor_output is not None
+        if isinstance(self.params, Flow360Params):
+            return self.params.monitor_output is not None
+        return self.params.has_monitors()
+
+    def has_volume_output(self):
+        """
+        returns True when case has volume output
+        """
+        if isinstance(self.params, Flow360Params):
+            return self.params.volume_output is not None
+        return self.params.has_volume_output()
 
     def has_aeroacoustics(self):
         """
         returns True when case has aeroacoustics
         """
-        return self.params.aeroacoustic_output is not None
+        if isinstance(self.params, Flow360Params):
+            return self.params.aeroacoustic_output is not None
+        return self.params.has_aeroacoustics()
 
     def has_user_defined_dynamics(self):
         """
         returns True when case has user defined dynamics
         """
-        return self.params.user_defined_dynamics is not None
+        if isinstance(self.params, Flow360Params):
+            return self.params.user_defined_dynamics is not None
+        return self.params.has_user_defined_dynamics()
 
     def move_to_folder(self, folder: Folder):
         """
@@ -573,6 +628,43 @@ class Case(CaseBase, Flow360Resource):
         get case from cloud
         """
         return cls(case_id)
+
+    @classmethod
+    def from_local_storage(cls, id, name, local_storage_path, user_id: str = "local") -> Case:
+        """
+        Create a `Case` instance from local storage.
+
+        Parameters
+        ----------
+        id : str
+            The unique identifier for the case.
+        name : str
+            The name of the case.
+        local_storage_path : str
+            The path to the local storage directory.
+        user_id : str, optional
+            The user ID associated with the case, by default "local".
+
+        Returns
+        -------
+        Case
+            An instance of `Case` with data loaded from local storage.
+        """
+        _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
+        # we don't know if the status is completed, but if we load from local, we can assume
+        case = cls._from_meta(
+            CaseMeta(
+                caseId=id,
+                name=name,
+                status=Flow360Status.COMPLETED,
+                userId=user_id,
+                deleted=False,
+                caseMeshId="unknown",
+            )
+        )
+        case._download_file = _local_download_file
+        case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
+        return case
 
     # pylint: disable=too-many-arguments
     @classmethod
@@ -691,93 +783,65 @@ class CaseResultsModel(pd.BaseModel):
         default_factory=lambda: AeroacousticsResultCSVModel()
     )
 
+    local_storage: Optional[str] = None
+
     _downloader_settings: ResultsDownloaderSettings = pd.PrivateAttr(ResultsDownloaderSettings())
 
-    # pylint: disable=no-self-argument, protected-access
-    @pd.root_validator(pre=False)
-    def pass_download_function(cls, values):
+    @pd.model_validator(mode="after")
+    def pass_download_function(self):
         """
-        Pass download methods into fields of the case results
+        Pass download methods into fields of the case results.
         """
-        if "case" not in values:
+        if self.case is None:
             raise ValueError("case (type Case) is required")
 
-        if not isinstance(values["case"], Case):
+        if not isinstance(self.case, Case):
             raise TypeError("case must be of type Case")
 
-        for field in cls.__fields__.values():
-            if field.name in values.keys():
-                value = values[field.name]
-                if isinstance(value, ResultBaseModel):
-                    value._download_method = values["case"]._download_file
-                    value._get_params_method = lambda: values["case"].params
+        for field_name in self.model_fields:
+            value = getattr(self, field_name)
+            if isinstance(value, ResultBaseModel):
+                # pylint: disable=protected-access,no-member
+                value._download_method = self.case._download_file
+                # pylint: disable=protected-access,no-member
+                value._get_params_method = lambda: self.case.params
+                value.local_storage = self.local_storage
 
-                    values[field.name] = value
+        return self
 
-        return values
-
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("monitors", "user_defined_dynamics", always=True)
-    def pass_get_files_function(cls, value, values):
+    @pd.model_validator(mode="after")
+    def pass_get_files_function(self):
         """
         Pass file getters into fields of the case results
         """
-        value.get_download_file_list_method = values["case"].get_download_file_list
-        return value
+        # pylint: disable=no-member,assigning-non-slot
+        self.monitors.get_download_file_list_method = self.case.get_download_file_list
+        return self
 
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("bet_forces", always=True)
-    def pass_has_bet_forces_function(cls, value, values):
+    # pylint: disable=protected-access,no-member
+    @pd.model_validator(mode="after")
+    def pass_has_functions(self):
         """
         Pass check to see if result is downloadable based on params
         """
-        value._is_downloadable = values["case"].has_bet_disks
-        return value
 
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("actuator_disks", always=True)
-    def pass_has_actuator_disks_function(cls, value, values):
-        """
-        Pass check to see if result is downloadable based on params
-        """
-        value._is_downloadable = values["case"].has_actuator_disks
-        return value
+        has_function_map = {
+            "actuator_disks": self.case.has_actuator_disks,
+            "bet_forces": self.case.has_bet_disks,
+            "isosurfaces": self.case.has_isosurfaces,
+            "monitors": self.case.has_monitors,
+            "volumes": self.case.has_volume_output,
+            "aeroacoustics": self.case.has_aeroacoustics,
+            "user_defined_dynamics": self.case.has_user_defined_dynamics,
+        }
 
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("isosurfaces", always=True)
-    def pass_has_isosurfaces_function(cls, value, values):
-        """
-        Pass check to see if result is downloadable based on params
-        """
-        value._is_downloadable = values["case"].has_isosurfaces
-        return value
+        for field_name in self.model_fields:
+            value = getattr(self, field_name)
+            if isinstance(value, ResultBaseModel):
+                function = has_function_map.get(field_name, lambda: True)
+                value._is_downloadable = function  # pylint: disable=protected-access
 
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("monitors", always=True)
-    def pass_has_monitors_function(cls, value, values):
-        """
-        Pass check to see if result is downloadable based on params
-        """
-        value._is_downloadable = values["case"].has_monitors
-        return value
-
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("aeroacoustics", always=True)
-    def pass_has_aeroacoustics_function(cls, value, values):
-        """
-        Pass check to see if result is downloadable based on params
-        """
-        value._is_downloadable = values["case"].has_aeroacoustics
-        return value
-
-    # pylint: disable=no-self-argument, protected-access
-    @pd.validator("user_defined_dynamics", always=True)
-    def pass_has_user_defined_dynamics_function(cls, value, values):
-        """
-        Pass check to see if result is downloadable based on params
-        """
-        value._is_downloadable = values["case"].has_user_defined_dynamics
-        return value
+        return self
 
     def _execute_downloading(self):
         """

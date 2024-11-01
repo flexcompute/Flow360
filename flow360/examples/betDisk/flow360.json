@@ -25,7 +25,7 @@
       "startAverageIntegrationStep": -1
     },
     "surfaceOutput": {
-      "outputFormat": "both",
+      "outputFormat": "tecplot",
       "primitiveVars": false,
       "Cp": true,
       "Cf": true,
