@@ -13,8 +13,7 @@ from flow360.component.v1.unit_system import (
     is_flow360_unit,
     u,
 )
-
-from ...exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError
 
 
 class ExtraDimensionedProperty(pd.BaseModel):
@@ -135,7 +134,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     -------
     flow360_conversion_unit_system
         The conversion unit system for the specified dimension. This unit system allows for
-        .in_base(unit_system="flow360") conversion.
+        .in_base(unit_system="flow360_v1") conversion.
 
     Raises
     ------

@@ -5,8 +5,7 @@ validation logic
 from copy import deepcopy
 from typing import List, Literal, Optional, Tuple, Union, get_args, get_origin
 
-from ...log import log
-from .boundaries import (
+from flow360.component.v1.boundaries import (
     RotationallyPeriodic,
     SlipWall,
     SolidAdiabaticWall,
@@ -14,12 +13,13 @@ from .boundaries import (
     TranslationallyPeriodic,
     WallFunction,
 )
-from .flow360_fields import _distribute_shared_output_fields
-from .initial_condition import ExpressionInitialCondition
-from .params_utils import get_all_output_fields
-from .solvers import IncompressibleNavierStokesSolver
-from .time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
-from .volume_zones import HeatTransferVolumeZone
+from flow360.component.v1.flow360_fields import _distribute_shared_output_fields
+from flow360.component.v1.initial_condition import ExpressionInitialCondition
+from flow360.component.v1.params_utils import get_all_output_fields
+from flow360.component.v1.solvers import IncompressibleNavierStokesSolver
+from flow360.component.v1.time_stepping import SteadyTimeStepping, UnsteadyTimeStepping
+from flow360.component.v1.volume_zones import HeatTransferVolumeZone
+from flow360.log import log
 
 
 def _ignore_velocity_type_in_boundaries(values):

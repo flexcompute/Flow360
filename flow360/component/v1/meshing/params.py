@@ -7,15 +7,14 @@ from typing import List, Optional, Tuple, Union, get_args
 import pydantic.v1 as pd
 from typing_extensions import Literal
 
-from flow360.flags import Flags
-
-from ...types import Axis, Coordinate
-from ..params_base import (
+from flow360.component.types import Axis, Coordinate
+from flow360.component.v1.params_base import (
     Flow360BaseModel,
     Flow360SortableBaseModel,
     _self_named_property_validator,
     flow360_json_encoder,
 )
+from flow360.flags import Flags
 
 
 class Aniso(Flow360BaseModel):

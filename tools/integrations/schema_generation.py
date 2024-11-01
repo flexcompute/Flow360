@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, Type, Union, get_args
 
 import pydantic.v1 as pd
 
-import flow360.component.v1 as fl
+import flow360.v1 as fl
 from flow360.component.v1.flow360_params import (
     BETDiskChord,
     BETDiskSectionalPolar,

@@ -1,36 +1,21 @@
 """
-This module is flow360.
+Flow360 V1 (legacy) modules.
 """
 
 import os
 
 from numpy import pi
 
-from flow360.component.v1.unit_system import (
-    CGS_unit_system,
-    SI_unit_system,
-    UnitSystem,
-    flow360_unit_system,
-    imperial_unit_system,
-)
-
-from ... import global_exception_handler
-from ...accounts_utils import Accounts
-from ...cli import flow360
-from ...cloud.s3_utils import ProgressCallbackInterface
-from ...environment import Env
-from ...flags import Flags
-from ...user_config import UserConfig
-from ...version import __solver_version__, __version__
-from ..case import Case
-from ..case import CaseList as MyCases
-from ..folder import Folder
-from ..surface_mesh import SurfaceMesh
-from ..surface_mesh import SurfaceMeshList as MySurfaceMeshes
-from ..volume_mesh import VolumeMesh
-from ..volume_mesh import VolumeMeshList as MyVolumeMeshes
-from . import meshing, solvers, units
-from .boundaries import (
+from flow360 import global_exception_handler
+from flow360.cli import flow360
+from flow360.cloud.s3_utils import ProgressCallbackInterface
+from flow360.component.case import Case
+from flow360.component.case import CaseList as MyCases
+from flow360.component.folder import Folder
+from flow360.component.surface_mesh import SurfaceMesh
+from flow360.component.surface_mesh import SurfaceMeshList as MySurfaceMeshes
+from flow360.component.v1 import meshing, solvers, units
+from flow360.component.v1.boundaries import (
     FreestreamBoundary,
     HeatFluxWall,
     IsothermalWall,
@@ -53,7 +38,7 @@ from .boundaries import (
     VelocityInflow,
     WallFunction,
 )
-from .flow360_output import (
+from flow360.component.v1.flow360_output import (
     IsoSurfaceOutput,
     IsoSurfaces,
     MonitorOutput,
@@ -66,7 +51,7 @@ from .flow360_output import (
     SurfaceOutput,
     Surfaces,
 )
-from .flow360_params import (
+from flow360.component.v1.flow360_params import (
     ActuatorDisk,
     AeroacousticOutput,
     AirDensityTemperature,
@@ -96,8 +81,11 @@ from .flow360_params import (
     ZeroFreestreamFromVelocity,
     air,
 )
-from .initial_condition import ExpressionInitialCondition, ModifiedRestartSolution
-from .meshing.params import (
+from flow360.component.v1.initial_condition import (
+    ExpressionInitialCondition,
+    ModifiedRestartSolution,
+)
+from flow360.component.v1.meshing.params import (
     Aniso,
     BoxRefinement,
     CylinderRefinement,
@@ -112,7 +100,7 @@ from .meshing.params import (
     Volume,
     VolumeMeshingParams,
 )
-from .solvers import (
+from flow360.component.v1.solvers import (
     IncompressibleNavierStokesSolver,
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -123,15 +111,22 @@ from .solvers import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
 )
-from .time_stepping import (
+from flow360.component.v1.time_stepping import (
     AdaptiveCFL,
     RampCFL,
     SteadyTimeStepping,
     TimeStepping,
     UnsteadyTimeStepping,
 )
-from .turbulence_quantities import TurbulenceQuantities
-from .volume_zones import (
+from flow360.component.v1.turbulence_quantities import TurbulenceQuantities
+from flow360.component.v1.unit_system import (
+    CGS_unit_system,
+    SI_unit_system,
+    UnitSystem,
+    flow360_unit_system,
+    imperial_unit_system,
+)
+from flow360.component.v1.volume_zones import (
     FluidDynamicsVolumeZone,
     HeatTransferVolumeZone,
     InitialConditionHeatTransfer,
@@ -142,9 +137,12 @@ from .volume_zones import (
     ReferenceFrameOmegaDegrees,
     ReferenceFrameOmegaRadians,
 )
+from flow360.component.volume_mesh import VolumeMesh
+from flow360.component.volume_mesh import VolumeMeshList as MyVolumeMeshes
+from flow360.flags import Flags
+from flow360.user_config import UserConfig
 
 __all__ = [
-    "Accounts",
     "ActuatorDisk",
     "AdaptiveCFL",
     "AeroacousticOutput",
@@ -161,7 +159,6 @@ __all__ = [
     "Case",
     "CylinderRefinement",
     "Edges",
-    "Env",
     "ExpressionInitialCondition",
     "Face",
     "Faces",
@@ -257,8 +254,6 @@ __all__ = [
     "WallFunction",
     "ZeroFreestream",
     "ZeroFreestreamFromVelocity",
-    "__version__",
-    "__solver_version__",
     "air",
     "flow360",
     "flow360_unit_system",

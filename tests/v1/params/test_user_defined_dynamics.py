@@ -2,7 +2,7 @@ import unittest
 
 import pytest
 
-import flow360.component.v1 as fl
+import flow360.v1 as fl
 from flow360.component.v1.flow360_params import UserDefinedDynamic
 from tests.utils import to_file_from_file_test
 

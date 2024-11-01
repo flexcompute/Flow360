@@ -676,7 +676,7 @@ class Flow360BaseModel(pd.BaseModel):
                 )
                 # pylint: disable=no-member
                 value.units.registry = flow360_conv_system.registry
-                solver_values[property_name] = value.in_base(unit_system="flow360")
+                solver_values[property_name] = value.in_base(unit_system="flow360_v2")
                 log.debug(f"      converted to: {solver_values[property_name]}")
             elif isinstance(value, list) and property_name not in exclude:
                 new_value = []
@@ -690,7 +690,7 @@ class Flow360BaseModel(pd.BaseModel):
                         )
                         # pylint: disable=no-member
                         item.units.registry = flow360_conv_system.registry
-                        new_value.append(item.in_base(unit_system="flow360"))
+                        new_value.append(item.in_base(unit_system="flow360_v2"))
                     else:
                         new_value.append(item)
                 solver_values[property_name] = new_value
@@ -759,6 +759,6 @@ class Flow360BaseModel(pd.BaseModel):
                             exclude=exclude,
                         )
                     elif isinstance(item, unyt_quantity):
-                        solver_values[property_name][i] = item.in_base(unit_system="flow360")
+                        solver_values[property_name][i] = item.in_base(unit_system="flow360_v2")
 
         return self.__class__(**solver_values)

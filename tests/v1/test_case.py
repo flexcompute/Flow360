@@ -1,6 +1,8 @@
 import pytest
 
-from flow360.component.v1 import (
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
+from flow360.log import set_logging_level
+from flow360.v1 import (
     Case,
     Flow360Params,
     FreestreamFromVelocity,
@@ -9,8 +11,6 @@ from flow360.component.v1 import (
     VolumeMesh,
     air,
 )
-from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
-from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
 

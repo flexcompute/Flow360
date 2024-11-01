@@ -8,7 +8,7 @@ from typing import Literal, Optional, Union
 
 import pydantic.v1 as pd
 
-from .params_base import Flow360BaseModel
+from flow360.component.v1.params_base import Flow360BaseModel
 
 
 class TurbulentKineticEnergy(Flow360BaseModel):
