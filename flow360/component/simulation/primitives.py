@@ -61,11 +61,16 @@ OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_o
 class ReferenceGeometry(Flow360BaseModel):
     """
     :class:`ReferenceGeometry` class contains all geometrical related refrence values.
+
+    Example
+    -------
+    >>> ReferenceGeometry(moment_center=(1, 2, 1) * u.m, moment_length=(1, 1, 1) * u.m, area=1.5 * u.m**2)
+    >>> ReferenceGeometry(moment_center=(1, 2, 1) * u.m, moment_length=1 * u.m, area=1.5 * u.m**2)  # Equivalent to above
     """
 
     # pylint: disable=no-member
     moment_center: Optional[LengthType.Point] = pd.Field(
-        None, description="The x, y, z moment center of the geometry in grid units."
+        None, description="The x, y, z coordinate of moment center."
     )
     moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."

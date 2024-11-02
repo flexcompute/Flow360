@@ -51,26 +51,20 @@ class ThermalStateCache(Flow360BaseModel):
 class ThermalState(MultiConstructorBaseModel):
     """
     Represents the thermal state of a fluid with specific properties.
-
-    Attributes:
-    -----------
-    temperature : TemperatureType.Positive
-        The temperature of the fluid, initialized to 288.15 K. This field is frozen and should not be modified after
-        construction.
-    density : DensityType.Positive
-        The density of the fluid, initialized to 1.225 kg/m^3. This field is frozen and should not be modified after
-        construction.
-    material : FluidMaterialTypes
-        The type of fluid material, initialized to Air(). This field is frozen and should not be modified after
-        construction.
     """
 
     # pylint: disable=fixme
     # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: TemperatureType.Positive = pd.Field(288.15 * u.K, frozen=True)
-    density: DensityType.Positive = pd.Field(1.225 * u.kg / u.m**3, frozen=True)
-    material: FluidMaterialTypes = pd.Field(Air(), frozen=True)
+    temperature: TemperatureType.Positive = pd.Field(
+        288.15 * u.K, frozen=True, description="The temperature of the fluid."
+    )
+    density: DensityType.Positive = pd.Field(
+        1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
+    )
+    material: FluidMaterialTypes = pd.Field(
+        Air(), frozen=True, description="The material of the fluid."
+    )
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
     private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
         default="default", frozen=True
@@ -84,14 +78,49 @@ class ThermalState(MultiConstructorBaseModel):
         altitude: LengthType = 0 * u.m,
         temperature_offset: TemperatureType = 0 * u.K,
     ):
-        """Constructs a thermal state from the standard atmosphere model.
+        """
+        Constructs a :class:`ThermalState` instance from the standard atmosphere model.
 
-        Parameters:
-        altitude (LengthType): The altitude at which the state is calculated.
-        temperature_offset (TemperatureType): The offset to be applied to the standard temperature.
+        Parameters
+        ----------
+        altitude : LengthType, optional
+            The altitude at which the thermal state is calculated. Defaults to ``0 * u.m``.
+        temperature_offset : TemperatureType, optional
+            The temperature offset to be applied to the standard temperature at the given altitude.
+            Defaults to ``0 * u.K``.
 
-        Returns:
-        ThermalState: The thermal state at the given altitude.
+        Returns
+        -------
+        ThermalState
+            A thermal state representing the atmospheric conditions at the specified altitude and temperature offset.
+
+        Notes
+        -----
+        - This method uses the :class:`StandardAtmosphereModel` to compute the standard atmospheric
+        conditions based on the given altitude.
+        - The ``temperature_offset`` allows for adjustments to the standard temperature, simulating
+        non-standard atmospheric conditions.
+
+        Examples
+        --------
+        Create a thermal state at an altitude of 10,000 meters:
+
+        >>> thermal_state = ThermalState.from_standard_atmosphere(altitude=10000 * u.m)
+        >>> thermal_state.temperature
+        <calculated_temperature>
+        >>> thermal_state.density
+        <calculated_density>
+
+        Apply a temperature offset of -5 Kelvin at 5,000 meters:
+
+        >>> thermal_state = ThermalState.from_standard_atmosphere(
+        ...     altitude=5000 * u.m,
+        ...     temperature_offset=-5 * u.K
+        ... )
+        >>> thermal_state.temperature
+        <adjusted_temperature>
+        >>> thermal_state.density
+        <adjusted_density>
         """
         standard_atmosphere_model = StandardAtmosphereModel(
             altitude.in_units(u.m).value, temperature_offset.in_units(u.K).value
@@ -182,16 +211,20 @@ class AerospaceConditionCache(Flow360BaseModel):
 
 
 class AerospaceCondition(MultiConstructorBaseModel):
-    """A specialized GenericReferenceCondition for aerospace applications."""
+    """Operating condition for aerospace applications."""
 
-    # pylint: disable=fixme
-    # TODO: valildate reference_velocity_magnitude defined if velocity_magnitude=0
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
-    alpha: AngleType = 0 * u.deg
-    beta: AngleType = 0 * u.deg
-    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(context=CASE)
+    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+        description="Freestream velocity magnitude.", context=CASE
+    )
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
-    reference_velocity_magnitude: Optional[VelocityType.Positive] = None
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
+        None,
+        description="Reference velocity magnitude. Is required when :paramref:`velocity_magnitude` is 0.",
+        context=CASE,
+    )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
@@ -206,11 +239,52 @@ class AerospaceCondition(MultiConstructorBaseModel):
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
         """
-        Constructs a `AerospaceCondition` from Mach number and thermal state.
+        Constructs an :class:`AerospaceCondition` instance from a Mach number and thermal state.
 
-        Note:
-        Decided to move `velocity==0 ref_velocity is not None` check to dedicated validator because user can
-        still construct by just calling AerospaceCondition()
+        Parameters
+        ----------
+        mach : float
+            The Mach number (non-negative).
+        alpha : AngleType, optional
+            The angle of attack. Defaults to ``0 * u.deg``.
+        beta : AngleType, optional
+            The side slip angle. Defaults to ``0 * u.deg``.
+        thermal_state : ThermalState, optional
+            The atmospheric thermal state. Defaults to a standard :class:`ThermalState`.
+        reference_mach : float, optional
+            The reference Mach number (positive). If provided, calculates the reference velocity magnitude.
+
+        Returns
+        -------
+        AerospaceCondition
+            An instance of :class:`AerospaceCondition` with the calculated velocity magnitude and provided parameters.
+
+        Notes
+        -----
+        - The ``velocity_magnitude`` is calculated as ``mach * thermal_state.speed_of_sound``.
+        - If ``reference_mach`` is provided, the ``reference_velocity_magnitude`` is calculated as
+        ``reference_mach * thermal_state.speed_of_sound``.
+
+        Examples
+        --------
+        Create an aerospace condition with a Mach number of 0.85:
+
+        >>> condition = AerospaceCondition.from_mach(mach=0.85)
+        >>> condition.velocity_magnitude
+        <calculated_value>
+
+        Specify angle of attack and side slip angle:
+
+        >>> condition = AerospaceCondition.from_mach(mach=0.85, alpha=5 * u.deg, beta=2 * u.deg)
+
+        Include a custom thermal state and reference Mach number:
+
+        >>> custom_thermal = ThermalState(temperature=250 * u.K)
+        >>> condition = AerospaceCondition.from_mach(
+        ...     mach=0.85,
+        ...     thermal_state=custom_thermal,
+        ...     reference_mach=0.8
+        ... )
         """
 
         velocity_magnitude = mach * thermal_state.speed_of_sound
@@ -241,9 +315,6 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
-
-    # pylint: disable=fixme
-    # TODO:  Add after model validation that reference_velocity_magnitude is set when velocity_magnitude is 0
 
 
 # pylint: disable=fixme
