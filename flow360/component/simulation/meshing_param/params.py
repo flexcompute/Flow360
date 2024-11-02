@@ -90,29 +90,23 @@ class MeshingDefaults(Flow360BaseModel):
 
 class MeshingParams(Flow360BaseModel):
     """
-    Meshing parameters for volume and/or surface mesher.
-
-    In `Simulation` this only contains what the user specifies. `Simulation` can derive and add more items according
-    to other aspects of simulation. (E.g. BETDisk volume -> ZoneRefinement)
-
-    Meshing related but may and maynot (user specified) need info from `Simulation`:
-    1. Add rotational zones.
-    2. Add default BETDisk refinement.
+    Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
     """
 
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
-        description="If refinementFactor=r is provided all spacings in refinementregions"
-        + "and first layer thickness will be adjusted to generate r-times finer mesh.",
+        description="All spacings in refinement regions"
+        + "and first layer thickness will be adjusted to generate `r`-times"
+        + " finer mesh where r is the refinement_factor value.",
     )
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
-        "Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
-        + "This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        + "However the impact on regions without close proximity is negligible.",
+        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        " However the impact on regions without close proximity is negligible.",
         context=VOLUME_MESH,
     )
 
