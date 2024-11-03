@@ -426,7 +426,7 @@ class Case(CaseBase, Flow360Resource):
             # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
             with open(temp_file.name, "r", encoding="utf-8") as fh:
                 params_as_dict = json.load(fh)
-                params_as_dict = services.clean_params_dict(params_as_dict, "VolumeMesh")
+                params_as_dict = services.clean_params_dict(params_as_dict, None)
             with open(temp_file.name, "w", encoding="utf-8") as fh:
                 json.dump(params_as_dict, fh)
             return SimulationParams(filename=temp_file.name)
