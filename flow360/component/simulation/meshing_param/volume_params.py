@@ -49,7 +49,8 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     - The mesh inside the :class:`AxisymmetricRefinement` is semi-structured.
     - The :class:`AxisymmetricRefinement` cannot enclose/intersect with other objects.
     - Users could create a donut-shape :class:`AxisymmetricRefinement` and place their hub/centerbody in the middle.
-    - :class:`AxisymmetricRefinement` can be used for resolving the strong flow gradient along the axial direction for the actuator or BET disks.
+    - :class:`AxisymmetricRefinement` can be used for resolving the strong flow gradient
+       along the axial direction for the actuator or BET disks.
     - The spacings along the axial, radial and circumferential directions can be adjusted independently.
     """
 

@@ -36,6 +36,7 @@ class Sutherland(Flow360BaseModel):
     as a function of temperature.
     """
 
+    # pylint: disable=no-member
     reference_viscosity: ViscosityType.NonNegative = pd.Field(
         description="The reference dynamic viscosity at the reference temperature."
     )

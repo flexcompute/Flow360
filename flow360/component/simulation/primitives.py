@@ -64,8 +64,16 @@ class ReferenceGeometry(Flow360BaseModel):
 
     Example
     -------
-    >>> ReferenceGeometry(moment_center=(1, 2, 1) * u.m, moment_length=(1, 1, 1) * u.m, area=1.5 * u.m**2)
-    >>> ReferenceGeometry(moment_center=(1, 2, 1) * u.m, moment_length=1 * u.m, area=1.5 * u.m**2)  # Equivalent to above
+    >>> ReferenceGeometry(
+    ...     moment_center=(1, 2, 1) * u.m,
+    ...     moment_length=(1, 1, 1) * u.m,
+    ...     area=1.5 * u.m**2
+    ... )
+    >>> ReferenceGeometry(
+    ...     moment_center=(1, 2, 1) * u.m,
+    ...     moment_length=1 * u.m,
+    ...     area=1.5 * u.m**2
+    ... )  # Equivalent to above
     """
 
     # pylint: disable=no-member

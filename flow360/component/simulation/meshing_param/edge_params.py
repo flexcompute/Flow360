@@ -55,5 +55,6 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         ProjectAnisoSpacing,
     ] = pd.Field(
         discriminator="type",
-        description="Method for determining the spacing. See :class:`AngleBasedRefinement`, :class:`HeightBasedRefinement`, :class:`AspectRatioBasedRefinement`, :class:`ProjectAnisoSpacing`",
+        description="Method for determining the spacing. See :class:`AngleBasedRefinement`,"
+        " :class:`HeightBasedRefinement`, :class:`AspectRatioBasedRefinement`, :class:`ProjectAnisoSpacing`",
     )
