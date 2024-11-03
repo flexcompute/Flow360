@@ -678,7 +678,7 @@ class Project(pd.BaseModel):
             )
         )
 
-    @pd.validate_call
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def run_case(
         self,
         params: SimulationParams,
