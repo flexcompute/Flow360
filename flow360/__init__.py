@@ -8,10 +8,17 @@ from flow360.component.simulation import services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
+    AngleBasedRefinement,
+    AspectRatioBasedRefinement,
     HeightBasedRefinement,
+    ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    PassiveSpacing,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
