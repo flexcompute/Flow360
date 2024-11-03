@@ -31,6 +31,7 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.validation.validation_context import (
     CASE,
+    CaseField,
     ConditionalField,
     context_validator,
 )
@@ -220,10 +221,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
         description="Freestream velocity magnitude.", context=CASE
     )
     thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
-    reference_velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :paramref:`velocity_magnitude` is 0.",
-        context=CASE,
     )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
