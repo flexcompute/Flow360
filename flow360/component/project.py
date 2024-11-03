@@ -501,7 +501,7 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         target: AssetOrResource,
         draft_name: str = None,
-        fork: bool = False,
+        fork_from: Case = None,
         run_async: bool = True,
         solver_version: str = None,
     ):
@@ -554,10 +554,10 @@ class Project(pd.BaseModel):
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
-            source_item_id=self.metadata.root_item_id,
-            source_item_type=self.metadata.root_item_type.value,
+            source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
+            source_item_type=self.metadata.root_item_type.value if fork_from is None else "Case",
             solver_version=solver_version if solver_version else self.solver_version,
-            fork_case=fork,
+            fork_case=fork_from is not None,
         ).submit()
 
         entity_registry = params.used_entity_registry
@@ -628,7 +628,7 @@ class Project(pd.BaseModel):
                 target=SurfaceMesh,
                 draft_name=name,
                 run_async=run_async,
-                fork=False,
+                fork_from=None,
                 solver_version=solver_version,
             )
         )
@@ -671,7 +671,7 @@ class Project(pd.BaseModel):
                 target=VolumeMeshV2,
                 draft_name=name,
                 run_async=run_async,
-                fork=False,
+                fork_from=None,
                 solver_version=solver_version,
             )
         )
@@ -682,7 +682,7 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "Case",
         run_async: bool = True,
-        fork: bool = False,
+        fork_from: Case = None,
         solver_version: str = None,
     ):
         """
@@ -696,8 +696,8 @@ class Project(pd.BaseModel):
             Name of the case (default is "Case").
         run_async : bool, optional
             Whether to run the case asynchronously (default is True).
-        fork : bool, optional
-            Whether to fork the case (default is True).
+        fork_from : Case, optional
+            Which Case we should fork from (if fork).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
         """
@@ -708,7 +708,7 @@ class Project(pd.BaseModel):
                 target=Case,
                 draft_name=name,
                 run_async=run_async,
-                fork=fork,
+                fork_from=fork_from,
                 solver_version=solver_version,
             )
         )
