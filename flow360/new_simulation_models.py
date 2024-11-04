@@ -91,6 +91,9 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
+    TimeAverageProbeOutput,
+    TimeAverageSurfaceProbeOutput,
+    TimeAverageSliceOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
@@ -169,6 +172,9 @@ __all__ = [
     "SurfaceIntegralOutput",
     "ProbeOutput",
     "SurfaceProbeOutput",
+    "TimeAverageProbeOutput",
+    "TimeAverageSurfaceProbeOutput",
+    "TimeAverageSliceOutput",
     "SurfaceSliceOutput",
     "AeroAcousticOutput",
     "HeatEquationSolver",
