@@ -3,6 +3,7 @@ This module is flow360 for simulation based models
 """
 
 from flow360.accounts_utils import Accounts
+from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.project import Project
 from flow360.component.simulation import services
