@@ -289,6 +289,27 @@ class Geometry(AssetBase):
             show_ids_in_each_group=verbose_mode,
         )
 
+    @classmethod
+    def from_local_storage(cls, geometry_id: str = None, local_storage_path="") -> Geometry:
+        """
+        Parameters
+        ----------
+        geometry_id : str
+            ID of the geometry resource
+
+        local_storage_path:
+            The folder of the project, defaults to current working directory
+
+        Returns
+        -------
+        Geometry
+            Geometry object
+        """
+
+        return super()._from_local_storage(
+            asset_id=geometry_id, local_storage_path=local_storage_path
+        )
+
     def _show_avaliable_entity_groups(
         self,
         entity_type_name: Literal["faces", "edges"],

@@ -6,9 +6,7 @@ Volume mesh component
 
 from __future__ import annotations
 
-import json
 import os.path
-import shutil
 import threading
 from enum import Enum
 from typing import Any, Iterator, List, Optional, Union
@@ -29,7 +27,6 @@ from flow360.cloud.requests import (
     NewVolumeMeshRequestV2,
 )
 from flow360.cloud.rest_api import RestApi
-from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.compress_upload import compress_and_upload_chunks
 from flow360.exceptions import (
     Flow360CloudFileError,
@@ -1019,27 +1016,7 @@ class VolumeMeshV2(AssetBase):
         VolumeMeshV2
             Volume mesh object
         """
-
-        def _local_download_file(
-            file_name: str,
-            to_file: str = None,
-            to_folder: str = ".",
-        ):
-            expected_local_file = os.path.join(local_storage_path, file_name)
-            if not os.path.exists(expected_local_file):
-                raise RuntimeError(
-                    f"File {expected_local_file} not found. Make sure the file exists when using "
-                    + "VolumeMeshV2.from_local_storage()."
-                )
-            new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
-            if new_local_file != expected_local_file:
-                shutil.copy(expected_local_file, new_local_file)
-
-        _local_download_file(file_name="simulation.json", to_folder=local_storage_path)
-        with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
-            params_dict = json.load(f)
-        volume_mesh = super()._from_supplied_entity_info(params_dict, cls(mesh_id))
-        return volume_mesh
+        return super()._from_local_storage(asset_id=mesh_id, local_storage_path=local_storage_path)
 
     @classmethod
     # pylint: disable=too-many-arguments,arguments-renamed
