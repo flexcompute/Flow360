@@ -212,15 +212,24 @@ class AerospaceConditionCache(Flow360BaseModel):
 
 
 class AerospaceCondition(MultiConstructorBaseModel):
-    """Operating condition for aerospace applications."""
+    """
+    Operating condition for aerospace applications. Defines both reference paramenters used to compute nondimensional
+    coefficients in postprocessing and the default :class:`Freestream` boundary condition for the simulation.
+    """
 
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
     velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
-        description="Freestream velocity magnitude.", context=CASE
+        description="Freestream velocity magnitude. Used as reference velocity magnitude"
+        + " when :paramref:`reference_velocity_magnitude` is not specified.",
+        context=CASE,
     )
-    thermal_state: ThermalState = pd.Field(ThermalState(), alias="atmosphere")
+    thermal_state: ThermalState = pd.Field(
+        ThermalState(),
+        alias="atmosphere",
+        description="Reference and freestream thermal state. Defaults to US standard atomsphere at sea level.",
+    )
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :paramref:`velocity_magnitude` is 0.",
@@ -244,15 +253,16 @@ class AerospaceCondition(MultiConstructorBaseModel):
         Parameters
         ----------
         mach : float
-            The Mach number (non-negative).
+            Freestream Mach number (non-negative).
+            Used as reference Mach number when ``reference_mach`` is not specified.
         alpha : AngleType, optional
             The angle of attack. Defaults to ``0 * u.deg``.
         beta : AngleType, optional
             The side slip angle. Defaults to ``0 * u.deg``.
         thermal_state : ThermalState, optional
-            The atmospheric thermal state. Defaults to a standard :class:`ThermalState`.
+            Reference and freestream thermal state. Defaults to US standard atomsphere at sea level.
         reference_mach : float, optional
-            The reference Mach number (positive). If provided, calculates the reference velocity magnitude.
+            Reference Mach number (positive). If provided, calculates the reference velocity magnitude.
 
         Returns
         -------
@@ -325,9 +335,9 @@ OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 # pylint: disable=too-many-arguments
 @pd.validate_call
 def operating_condition_from_mach_reynolds(
-    mach: pd.NonNegativeFloat = None,
-    reynolds: pd.PositiveFloat = None,
-    temperature: TemperatureType.Positive = None,
+    mach: pd.NonNegativeFloat,
+    reynolds: pd.PositiveFloat,
+    temperature: TemperatureType.Positive = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -342,17 +352,17 @@ def operating_condition_from_mach_reynolds(
     Parameters
     ----------
     mach : NonNegativeFloat, optional
-        The Mach number (must be non-negative). Default is None.
+        Freestream Mach number (must be non-negative).
     reynolds : PositiveFloat, optional
-        The Reynolds number (must be positive). Default is None.
+        Freestream Reynolds number defined with mesh unit (must be positive).
     temperature : TemperatureType.Positive, optional
-        The static temperature (must be a positive temperature value). Default is None.
+        Freestream static temperature (must be a positive temperature value). Default is ``288.15 * u.K``.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
     beta : AngleType, optional
         Sideslip angle. Default is 0 degrees.
     reference_mach : PositiveFloat, optional
-        Reference Mach number for scaling purposes. Default is None.
+        Reference Mach number. Default is None.
 
     Returns
     -------
