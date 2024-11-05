@@ -1001,12 +1001,11 @@ class VolumeMeshV2(AssetBase):
         return asset_obj
 
     @classmethod
-    # pylint: disable=redefined-builtin
-    def from_local_storage(cls, id: str = None, local_storage_path="") -> VolumeMeshV2:
+    def from_local_storage(cls, mesh_id: str = None, local_storage_path="") -> VolumeMeshV2:
         """
         Parameters
         ----------
-        id : str
+        mesh_id : str
             ID of the volume mesh resource
 
         local_storage_path:
@@ -1017,7 +1016,7 @@ class VolumeMeshV2(AssetBase):
         VolumeMeshV2
             Volume mesh object
         """
-        return super().from_local_storage(id, local_storage_path)
+        return super()._from_local_storage(asset_id=mesh_id, local_storage_path=local_storage_path)
 
     @classmethod
     # pylint: disable=too-many-arguments,arguments-renamed

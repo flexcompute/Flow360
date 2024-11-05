@@ -290,12 +290,11 @@ class Geometry(AssetBase):
         )
 
     @classmethod
-    # pylint: disable=redefined-builtin
-    def from_local_storage(cls, id: str = None, local_storage_path="") -> Geometry:
+    def from_local_storage(cls, geometry_id: str = None, local_storage_path="") -> Geometry:
         """
         Parameters
         ----------
-        id : str
+        geometry_id : str
             ID of the geometry resource
 
         local_storage_path:
@@ -307,7 +306,9 @@ class Geometry(AssetBase):
             Geometry object
         """
 
-        return super().from_local_storage(id, local_storage_path)
+        return super()._from_local_storage(
+            asset_id=geometry_id, local_storage_path=local_storage_path
+        )
 
     def _show_avaliable_entity_groups(
         self,

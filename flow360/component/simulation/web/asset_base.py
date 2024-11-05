@@ -163,11 +163,10 @@ class AssetBase(metaclass=ABCMeta):
         )
 
     @classmethod
-    # pylint: disable=too-many-arguments
-    def from_local_storage(cls, id: str = None, local_storage_path=""):
+    def _from_local_storage(cls, asset_id: str = None, local_storage_path=""):
         """
         Create asset from local storage
-        :param id: ID of the asset
+        :param asset_id: ID of the asset
         :param local_storage_path: The folder of the project, defaults to current working directory
         :return: asset object
         """
@@ -192,7 +191,7 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(id))
+        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
         return asset_obj
 
     def wait(self, timeout_minutes=60):
