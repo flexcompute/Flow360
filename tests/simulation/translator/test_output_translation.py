@@ -19,6 +19,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Surface
@@ -605,7 +606,7 @@ def test_surface_probe_output():
                     Surface(name="surface1", private_attribute_full_name="zoneC/surface1"),
                     Surface(name="surface2", private_attribute_full_name="zoneC/surface2"),
                 ],
-                output_fields=["Mach", "primitiveVars", "yPlus"],
+                output_fields=["Mach", "primitiveVars", "yPlus", "my_own_field"],
             ),
         ],
         {
@@ -648,7 +649,10 @@ def test_surface_probe_output():
     )
 
     with SI_unit_system:
-        param = SimulationParams(outputs=param_with_ref[0])
+        param = SimulationParams(
+            outputs=param_with_ref[0],
+            user_defined_fields=[UserDefinedField(name="my_own_field", expression="1+1")],
+        )
     param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}

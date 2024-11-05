@@ -2,13 +2,9 @@ import re
 
 import pytest
 
-from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import (
-    AutomatedFarfield,
-    RotationCylinder,
-)
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -18,8 +14,9 @@ from flow360.component.simulation.models.surface_models import (
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
+    UserDefinedField,
 )
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 
@@ -99,9 +96,10 @@ def test_automated_farfield_surface_usage():
                         my_farfield.symmetry_planes,
                         Surface(name="surface2"),
                     ],
-                    output_fields=["Cp"],
+                    output_fields=["Cpt"],
                 ),
             ],
+            user_defined_fields=[UserDefinedField(name="Cpt", expression="Cp-123")],
         )
 
 
