@@ -66,6 +66,7 @@ class ReportItem(Flow360BaseModel):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
+        accessToken: str ="",
     ) -> None:
         """
         returns doc item for report item
@@ -110,6 +111,7 @@ class Summary(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
+        accessToken: str ="",
     ) -> None:
         """
         returns doc item for report item
@@ -138,6 +140,7 @@ class Inputs(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
+        accessToken: str ="",
     ) -> None:
         """
         returns doc item for inputs
@@ -206,6 +209,7 @@ class Table(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
+        accessToken: str ="",
     ) -> None:
         """
         Returns doc item for table
@@ -401,6 +405,7 @@ class Chart2D(Chart):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
+        accessToken: str ="",
     ) -> None:
         """
         returns doc item for chart
@@ -573,12 +578,12 @@ class Chart3D(Chart):
         scenes_data = ScenesData(scenes=[scene], context=source_context)
         return scenes_data
 
-    def _get_images(self, cases: List[Case], data_storage):
+    def _get_images(self, cases: List[Case], data_storage, accessToken: str):
         fig_name = self.fig_name
         uvf_requests = []
         for case in cases:
             uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
-        img_files = UVFshutter(cases=cases, data_storage=data_storage).get_images(
+        img_files = UVFshutter(cases=cases, data_storage=data_storage, accessToken=accessToken).get_images(
             fig_name, uvf_requests
         )
         # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
@@ -593,6 +598,7 @@ class Chart3D(Chart):
         section_func: Union[Section, Subsection] = Section,
         case_by_case: bool = False,
         data_storage: str = ".",
+        accessToken: str ="",
     ):
         # Create new page is user requests one
         if self.force_new_page:
@@ -614,7 +620,7 @@ class Chart3D(Chart):
             [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
         )
 
-        img_list = self._get_images(cases, data_storage)
+        img_list = self._get_images(cases, data_storage, accessToken)
 
         if self.items_in_row is not None:
             fig_caption = "Chart3D Row"

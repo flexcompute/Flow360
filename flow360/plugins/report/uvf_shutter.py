@@ -269,24 +269,25 @@ class UVFshutter(Flow360BaseModel):
     cases: List[Any]
     data_storage: str = "."
     url: str = pd.Field(default_factory=lambda: f"https://shutter.{Env.current.domain}")
+    accessToken: str = ""
 
-    async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
+    async def _get_3d_images(self, screenshots: dict[str, Tuple], key: str) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=300)
         @http_interceptor
         async def _get_image_sequence(
-            session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
+            session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict], headers=dict
         ) -> str:
             log.debug(
                 f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {len(uvf_request)=}"
             )
-            return session.post(url, json=uvf_request)
+            return session.post(url, json=uvf_request, headers=headers)
 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as session:
             tasks = []
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
-                        session=session, url=self.url + "/sequence/run", uvf_request=uvf_request
+                        session=session, url=self.url + "/sequence/run", uvf_request=uvf_request, headers={'Authorization': f'Bearer {self.accessToken}'}
                     )
                 )
 

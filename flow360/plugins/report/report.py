@@ -217,7 +217,7 @@ class Report(Flow360BaseModel):
         )
 
     def create_pdf(
-        self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = "."
+        self, filename: str, accessToken: str, cases: list[Case], landscape: bool = False, data_storage: str = "."
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -263,7 +263,7 @@ class Report(Flow360BaseModel):
 
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
-            item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
+            item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage, accessToken=accessToken)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
@@ -285,6 +285,7 @@ class Report(Flow360BaseModel):
                                 Subsection,
                                 self.include_case_by_case,
                                 data_storage=data_storage,
+                                accessToken=accessToken,
                             )
 
         # Generate the PDF
