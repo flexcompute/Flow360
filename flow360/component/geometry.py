@@ -4,9 +4,7 @@ Geometry component
 
 from __future__ import annotations
 
-import json
 import os
-import shutil
 import threading
 from enum import Enum
 from typing import Any, List, Literal, Union
@@ -16,7 +14,6 @@ import pydantic as pd
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.requests import GeometryFileMeta, LengthUnitType, NewGeometryRequest
 from flow360.cloud.rest_api import RestApi
-from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -293,12 +290,13 @@ class Geometry(AssetBase):
         )
 
     @classmethod
-    def from_local_storage(cls, mesh_id: str = None, local_storage_path="") -> Geometry:
+    # pylint: disable=redefined-builtin
+    def from_local_storage(cls, id: str = None, local_storage_path="") -> Geometry:
         """
         Parameters
         ----------
-        mesh_id : str
-            ID of the volume mesh resource
+        id : str
+            ID of the geometry resource
 
         local_storage_path:
             The folder of the project, defaults to current working directory
@@ -306,29 +304,10 @@ class Geometry(AssetBase):
         Returns
         -------
         Geometry
-            Volume mesh object
+            Geometry object
         """
 
-        def _local_download_file(
-            file_name: str,
-            to_file: str = None,
-            to_folder: str = ".",
-        ):
-            expected_local_file = os.path.join(local_storage_path, file_name)
-            if not os.path.exists(expected_local_file):
-                raise RuntimeError(
-                    f"File {expected_local_file} not found. Make sure the file exists when using "
-                    + "Geometry.from_local_storage()."
-                )
-            new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
-            if new_local_file != expected_local_file:
-                shutil.copy(expected_local_file, new_local_file)
-
-        _local_download_file(file_name="simulation.json", to_folder=local_storage_path)
-        with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
-            params_dict = json.load(f)
-        geometry = super()._from_supplied_entity_info(params_dict, cls(mesh_id))
-        return geometry
+        return super().from_local_storage(id, local_storage_path)
 
     def _show_avaliable_entity_groups(
         self,
