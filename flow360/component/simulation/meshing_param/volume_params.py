@@ -136,3 +136,14 @@ class AutomatedFarfield(Flow360BaseModel):
                 GhostSurface(name="symmetric-2"),
             ]
         raise ValueError(f"Unsupported method: {self.method}")
+
+
+class UserDefinedFarfield(Flow360BaseModel):
+    """
+    Setting for user defined farfield zone generation.
+    This means the "farfield" boundaires are comming from the supplied geometry file 
+    and meshing will take place inside this "geometry".
+    """
+
+    type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
+    name: Optional[str] = pd.Field(None)
