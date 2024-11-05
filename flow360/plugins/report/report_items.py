@@ -66,7 +66,7 @@ class ReportItem(Flow360BaseModel):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ) -> None:
         """
         returns doc item for report item
@@ -111,7 +111,7 @@ class Summary(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ) -> None:
         """
         returns doc item for report item
@@ -140,7 +140,7 @@ class Inputs(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ) -> None:
         """
         returns doc item for inputs
@@ -209,7 +209,7 @@ class Table(ReportItem):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ) -> None:
         """
         Returns doc item for table
@@ -405,7 +405,7 @@ class Chart2D(Chart):
         section_func: Union[Section, Subsection] = Section,
         case_by_case=False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ) -> None:
         """
         returns doc item for chart
@@ -583,9 +583,9 @@ class Chart3D(Chart):
         uvf_requests = []
         for case in cases:
             uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
-        img_files = UVFshutter(cases=cases, data_storage=data_storage, accessToken=accessToken).get_images(
-            fig_name, uvf_requests
-        )
+        img_files = UVFshutter(
+            cases=cases, data_storage=data_storage, accessToken=accessToken
+        ).get_images(fig_name, uvf_requests)
         # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
         return img_list
@@ -598,7 +598,7 @@ class Chart3D(Chart):
         section_func: Union[Section, Subsection] = Section,
         case_by_case: bool = False,
         data_storage: str = ".",
-        accessToken: str ="",
+        accessToken: str = "",
     ):
         # Create new page is user requests one
         if self.force_new_page:

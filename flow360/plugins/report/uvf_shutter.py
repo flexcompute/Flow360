@@ -287,7 +287,10 @@ class UVFshutter(Flow360BaseModel):
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
-                        session=session, url=self.url + "/sequence/run", uvf_request=uvf_request, headers={'Authorization': f'Bearer {self.accessToken}'}
+                        session=session,
+                        url=self.url + "/sequence/run",
+                        uvf_request=uvf_request,
+                        headers={"Authorization": f"Bearer {self.accessToken}"},
                     )
                 )
 
