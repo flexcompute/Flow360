@@ -141,7 +141,7 @@ class AutomatedFarfield(Flow360BaseModel):
 class UserDefinedFarfield(Flow360BaseModel):
     """
     Setting for user defined farfield zone generation.
-    This means the "farfield" boundaires are comming from the supplied geometry file 
+    This means the "farfield" boundaires are comming from the supplied geometry file
     and meshing will take place inside this "geometry".
     """
 
