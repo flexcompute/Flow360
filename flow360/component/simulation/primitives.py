@@ -3,6 +3,7 @@ Primitive type definitions for simulation entities.
 """
 
 import re
+import uuid
 from abc import ABCMeta
 from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
@@ -235,6 +236,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     axis_of_rotation: Axis = pd.Field(default=(0, 0, 1))
     angle_of_rotation: AngleType = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
 
     # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
@@ -319,6 +321,7 @@ class Cylinder(_VolumeEntityBase):
         0 * u.m, description="The inner radius of the cylinder."
     )
     outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
+    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
 
     @pd.model_validator(mode="after")
     def _check_inner_radius_is_less_than_outer_radius(self) -> Self:

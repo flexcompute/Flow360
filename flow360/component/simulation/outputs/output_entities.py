@@ -1,5 +1,6 @@
 """Output for simulation."""
 
+import uuid
 from abc import ABCMeta
 from typing import Literal
 
@@ -41,6 +42,7 @@ class Slice(_SliceEntityBase):
     """Slice output item."""
 
     private_attribute_entity_type_name: Literal["Slice"] = pd.Field("Slice", frozen=True)
+    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
     normal: Axis = pd.Field()
     # pylint: disable=no-member
     origin: LengthType.Point = pd.Field()
@@ -59,6 +61,7 @@ class Point(_PointEntityBase):
     """A single point for probe output"""
 
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
+    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
     # pylint: disable=no-member
     location: LengthType.Point = pd.Field()
 

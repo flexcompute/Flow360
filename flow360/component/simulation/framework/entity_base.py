@@ -37,6 +37,12 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     private_attribute_registry_bucket_name: str = "Invalid"
     private_attribute_entity_type_name: str = "Invalid"
+    private_attribute_id: Optional[str] = pd.Field(
+        None,
+        frozen=True,
+        description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",
+    )
+
     name: str = pd.Field(frozen=True)
 
     def __init__(self, **data):
