@@ -270,7 +270,6 @@ class Periodic(Flow360BaseModel):
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
         alias="surface_pairs",
         description="List of matching pairs of :class:`~flow360.Surface`. "
-        + "Needs to be specified for one side of each of the periodic boundary pairs.",
     )
     spec: Union[Translational, Rotational] = pd.Field(
         discriminator="type_name",
