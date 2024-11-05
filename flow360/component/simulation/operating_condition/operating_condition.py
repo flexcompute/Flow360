@@ -213,7 +213,7 @@ class AerospaceConditionCache(Flow360BaseModel):
 
 class AerospaceCondition(MultiConstructorBaseModel):
     """
-    Operating condition for aerospace applications. Defines both reference paramenters used to compute nondimensional
+    Operating condition for aerospace applications. Defines both reference parameters used to compute nondimensional
     coefficients in postprocessing and the default :class:`Freestream` boundary condition for the simulation.
     """
 
@@ -228,7 +228,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
         alias="atmosphere",
-        description="Reference and freestream thermal state. Defaults to US standard atomsphere at sea level.",
+        description="Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.",
     )
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
@@ -260,7 +260,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         beta : AngleType, optional
             The side slip angle. Defaults to ``0 * u.deg``.
         thermal_state : ThermalState, optional
-            Reference and freestream thermal state. Defaults to US standard atomsphere at sea level.
+            Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.
         reference_mach : float, optional
             Reference Mach number (positive). If provided, calculates the reference velocity magnitude.
 
@@ -351,12 +351,12 @@ def operating_condition_from_mach_reynolds(
 
     Parameters
     ----------
-    mach : NonNegativeFloat, optional
+    mach : NonNegativeFloat
         Freestream Mach number (must be non-negative).
-    reynolds : PositiveFloat, optional
+    reynolds : PositiveFloat
         Freestream Reynolds number defined with mesh unit (must be positive).
     temperature : TemperatureType.Positive, optional
-        Freestream static temperature (must be a positive temperature value). Default is ``288.15 * u.K``.
+        Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
     beta : AngleType, optional
