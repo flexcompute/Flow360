@@ -89,11 +89,11 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
-    TimeAverageSurfaceOutput,
-    TimeAverageVolumeOutput,
     TimeAverageProbeOutput,
-    TimeAverageSurfaceProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
+    TimeAverageVolumeOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (

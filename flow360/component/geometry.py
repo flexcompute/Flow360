@@ -4,11 +4,11 @@ Geometry component
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import threading
 from enum import Enum
-import json
-import shutil
 from typing import Any, List, Literal, Union
 
 import pydantic as pd
@@ -329,7 +329,6 @@ class Geometry(AssetBase):
             params_dict = json.load(f)
         geometry = super()._from_supplied_entity_info(params_dict, cls(mesh_id))
         return geometry
-
 
     def _show_avaliable_entity_groups(
         self,
