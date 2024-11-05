@@ -102,6 +102,7 @@ class Report(Flow360BaseModel):
 
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
     include_case_by_case: bool = True
+    access_token: str = ""
 
     def _create_header_footer(self) -> PageStyle:
         header = PageStyle("header")
@@ -219,7 +220,6 @@ class Report(Flow360BaseModel):
     def create_pdf(
         self,
         filename: str,
-        access_token: str,
         cases: list[Case],
         landscape: bool = False,
         data_storage: str = ".",
@@ -269,7 +269,7 @@ class Report(Flow360BaseModel):
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
             item.get_doc_item(
-                cases, doc, case_by_case=False, data_storage=data_storage, access_token=access_token
+                cases, doc, case_by_case=False, data_storage=data_storage, access_token=self.access_token
             )
 
         # Iterate each case one at a time
@@ -292,7 +292,7 @@ class Report(Flow360BaseModel):
                                 Subsection,
                                 self.include_case_by_case,
                                 data_storage=data_storage,
-                                access_token=access_token,
+                                access_token=self.access_token,
                             )
 
         # Generate the PDF
