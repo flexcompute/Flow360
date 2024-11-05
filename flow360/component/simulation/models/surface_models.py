@@ -269,7 +269,7 @@ class Periodic(Flow360BaseModel):
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
         alias="surface_pairs",
-        description=" Patch name of the matching pair of a :class:`~flow360.Surface` patch. "
+        description="List of matching pairs of :class:`~flow360.Surface`. "
         + "Needs to be specified for one side of each of the periodic boundary pairs.",
     )
     spec: Union[Translational, Rotational] = pd.Field(
