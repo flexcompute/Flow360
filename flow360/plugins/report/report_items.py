@@ -5,8 +5,11 @@ Module containg detailed report items
 import os
 from typing import List, Literal, Optional, Tuple, Union
 
+import unyt
+import numpy as np
+
 import matplotlib.pyplot as plt
-from pydantic import Field, NonNegativeInt, model_validator
+from pydantic import Field, NonNegativeInt, model_validator, field_validator, BaseModel
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -41,7 +44,7 @@ from flow360.plugins.report.uvf_shutter import (
     ScenesData,
     SetFieldPayload,
     SetObjectVisibilityPayload,
-    SourceContext,
+    Resource,
     TakeScreenshotPayload,
     UvfObjectTypes,
     UVFshutter,
@@ -264,8 +267,8 @@ class Chart(ReportItem):
         Number of items to display in a row within the chart section.
     select_indices : Optional[List[NonNegativeInt]], optional
         Specific indices to select for the chart.
-    single_plot : bool, default=False
-        If True, display as a single plot; otherwise, use multiple plots.
+    separate_plots : bool, default=None
+        If True, display as multiple plots; otherwise single plot.
     force_new_page : bool, default=False
         If True, starts the chart on a new page in the report.
     """
@@ -275,7 +278,7 @@ class Chart(ReportItem):
     fig_size: float = 0.7  # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
     select_indices: Optional[List[NonNegativeInt]] = None
-    single_plot: bool = False
+    separate_plots: Optional[bool] = None
     force_new_page: bool = False
 
     @model_validator(mode="after")
@@ -286,11 +289,21 @@ class Chart(ReportItem):
                     "`Items_in_row` should be greater than 1. Use -1 to include all "
                     "cases on a single row. Use `None` to disable the argument."
                 )
-        if self.items_in_row is not None and self.single_plot:
-            raise ValueError("`Items_in_row` and `single_plot` cannot be used together.")
+        if self.items_in_row is not None:
+            if self.separate_plots is False:
+                raise ValueError("`Items_in_row` and `separate_plots=False` cannot be used together.")
+            elif self.separate_plots is None:
+                self.separate_plots = True
         return self
 
-    def _assemble_fig_rows(self, img_list: list[str], doc: Document, fig_caption: str):
+    def _add_figure(self, doc, file_name, caption):
+        fig = Figure(position="h!")
+        fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
+        fig.add_caption(caption)
+        doc.append(fig)
+
+
+    def _add_row_figure(self, doc: Document, img_list: list[str], fig_caption: str):
         """
         Build a figure from SubFigures which displays images in rows
 
@@ -298,7 +311,7 @@ class Chart(ReportItem):
         """
 
         # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
-        minipage_size = 0.95 / self.items_in_row if self.items_in_row != 1 else 0.7
+        minipage_size = 0.98 / self.items_in_row if self.items_in_row != 1 else 0.7
         doc.append(NoEscape(r"\begin{figure}[h!]"))
         doc.append(NoEscape(r"\centering"))
 
@@ -317,13 +330,76 @@ class Chart(ReportItem):
                     sub_fig.add_caption(idx)
 
                 doc.append(sub_fig)
-
                 doc.append(NoEscape(r"\hfill"))
-
             doc.append(NoEscape(r"\\"))
-
         doc.append(NoEscape(r"\caption{" + escape_latex(fig_caption) + "}"))
         doc.append(NoEscape(r"\end{figure}"))
+
+
+
+class PlotModel(BaseModel):
+    x_data: Union[List[float], List[List[float]]]
+    y_data: Union[List[float], List[List[float]]]
+    x_label: str
+    y_label: str
+    legend: Optional[List[str]] = None
+    is_log: bool = False
+    style: str = "-"
+
+    @field_validator('x_data', 'y_data', mode='before')
+    def ensure_y_data_is_list_of_lists(cls, v):
+        if isinstance(v, list):
+            if all(isinstance(item, list) for item in v):
+                return v
+            else:
+                return [v]
+        else:
+            raise ValueError('x_data/y_data must be a list')
+
+    @model_validator(mode='after')
+    def check_lengths(self):
+        if len(self.x_data) == 1:
+            self.x_data = [self.x_data[0] for _ in self.y_data]
+        if len(self.x_data) != len(self.y_data):
+            raise ValueError(f'Number of x_data series but be one or equal to number of y_data series.')
+        for idx, (x_series, y_series) in enumerate(zip(self.x_data, self.y_data)):
+            if len(x_series) != len(y_series):
+                raise ValueError(f'Length of y_data series at index {idx} ({len(y_series)}) does not match length of x_data ({len(x_series)})')
+        if self.legend is not None:
+            if len(self.legend) != len(self.y_data):
+                raise ValueError(f'Length of legend ({len(self.legend)}) must match number of y_data series ({len(self.y_data)})')
+        
+        return self 
+
+    @property
+    def x_data_as_np(self):
+        return [np.array(x_series) for x_series in self.x_data]
+    
+    @property
+    def y_data_as_np(self):
+        return [np.array(y_series) for y_series in self.y_data]
+    
+
+    def get_plot(self):
+        fig, ax = plt.subplots()
+        num_series = len(self.y_data)
+
+        for idx in range(num_series):
+            x_series = self.x_data_as_np[idx]
+            y_series = self.y_data_as_np[idx]
+            label = self.legend[idx] if self.legend and idx < len(self.legend) else f"Series {idx+1}"
+            if self.is_log:
+                ax.semilogy(x_series, y_series, self.style, label=label)
+            else:
+                ax.plot(x_series, y_series, self.style, label=label)
+
+        ax.set_xlabel(self.x_label)
+        ax.set_ylabel(self.y_label)
+        if self.legend:
+            ax.legend()
+
+        return fig
+
 
 
 class Chart2D(Chart):
@@ -368,30 +444,119 @@ class Chart2D(Chart):
         """
         root_path = get_root_path(self.y)
         return root_path == "nonlinear_residuals"
+    
 
-    # pylint: disable=unused-argument,too-many-arguments
-    def _create_fig(
-        self, x_data: list, y_data: list, x_lab: str, y_lab: str, legend: str, save_name: str
-    ) -> None:
-        """Create a simple matplotlib figure"""
-        if self.is_log_plot():
-            plt.semilogy(x_data, y_data)
-        else:
-            plt.plot(x_data, y_data)
-        plt.xlabel(x_lab)
-        plt.ylabel(y_lab)
-        if self.single_plot:
-            plt.legend([val + 1 for val in range(len(x_data))])
+    def _check_dimensions_consistency(self, data):
+        if any(isinstance(d, unyt.unyt_array) for d in data):
+            for d in data:
+                if d is None:
+                    continue
+                if not isinstance(d, unyt.unyt_array):
+                    raise ValueError(f'data: {data} contains data with units and without, cannot create plot.')
+                
+            dimesions = set([v.units.dimensions for v in data if data is not None])
+            if len(dimesions) > 1:
+                raise ValueError(f'{data} contains data with different dimensions {dimesions=}, cannot create plot.')
+            units = [d.units for d in data if d is not None][0]
+            data = [d.to(units) for d in data if data]
+            return True
+        return False
 
-        plt.savefig(save_name)
-        if not self.single_plot:
-            plt.close()
+
+    def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+
+        if self._check_dimensions_consistency(x_data) is True:
+            x_unit = x_data[0].units
+            x_data = [data.value for data in x_data]
+            x_label += f" [{x_unit}]"
+
+        if self._check_dimensions_consistency(y_data):
+            y_unit = y_data[0].units
+            y_data = [data.value for data in y_data]
+            y_label += f" [{y_unit}]"
+
+
+        return x_data, y_data, x_label, y_label
+
+    def _is_multiline_data(self, x_data, y_data):
+        return all(not isinstance(data, list) for data in x_data) and all(not isinstance(data, list) for data in y_data)
+        
+
+    def get_data(self, cases: List[Case])->PlotModel:
+        x_label = self.x.split("/")[-1]
+        y_label = self.y.split("/")[-1]
+
+        x_data = [data_from_path(case, self.x, cases) for case in cases]
+        y_data = [data_from_path(case, self.y, cases) for case in cases]
+
+        x_data, y_data, x_label, y_label = self._handle_data_with_units(x_data, y_data, x_label, y_label)
+
+        if self._is_multiline_data(x_data, y_data):
+            # every case is one point, eg CL/CD plot
+            return PlotModel(
+                x_data=[float(data) for data in x_data],
+                y_data=[float(data) for data in y_data],
+                x_label=x_label,
+                y_label=y_label,
+                style='o-'
+            )
+
+        return PlotModel(
+            x_data=x_data,
+            y_data=y_data,
+            x_label=x_label,
+            y_label=y_label,
+            legend=[case.name for case in cases]
+        )
 
     def _handle_title(self, doc, section_func):
         if self.section_title is not None:
             section = section_func(self.section_title)
             doc.append(section)
-        return doc
+
+    def _handle_new_page(self, doc):
+        if self.force_new_page:
+            doc.append(NewPage())
+
+    def _handle_grid_input(self, cases):
+        # Change items in row to be the number of cases if higher number is supplied
+        if self.items_in_row is not None:
+            if self.items_in_row > len(cases) or self.items_in_row == -1:
+                self.items_in_row = len(cases)
+
+    def _filter_input_cases(self, cases ,case_by_case):
+        if case_by_case is False:
+            cases = (
+                [cases[i] for i in self.select_indices]
+                if self.select_indices is not None
+                else cases
+            )
+
+        return cases
+
+    def _get_figures(self, cases, case_by_case, data_storage):
+        file_names = []
+        cbc_str = "_cbc_" if case_by_case else ""
+
+        if self.separate_plots:
+            for case in cases:
+                file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".png")
+                data = self.get_data([case])
+                fig = data.get_plot()
+                fig.savefig(file_name)
+                file_names.append(file_name)
+                plt.close()
+
+        else:
+            file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".png")
+            data = self.get_data(cases)
+            fig = data.get_plot()
+            fig.savefig(file_name)
+            file_names.append(file_name)
+            plt.close()
+
+        return file_names, data.x_label, data.y_label
+
 
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(
@@ -405,78 +570,27 @@ class Chart2D(Chart):
         """
         returns doc item for chart
         """
+        self._handle_new_page(doc)
+        self._handle_grid_input(cases)
+        self._handle_title(doc, section_func)
+        cases = self._filter_input_cases(cases, case_by_case)
 
-        if self.force_new_page:
-            doc.append(NewPage())
+        file_names, x_lab, y_lab = self._get_figures(cases, case_by_case, data_storage)
 
-        # Change items in row to be the number of cases if higher number is supplied
-        if self.items_in_row is not None:
-            if self.items_in_row > len(cases) or self.items_in_row == -1:
-                self.items_in_row = len(cases)
-
-        doc = self._handle_title(doc, section_func)
-
-        x_lab = self.x.split("/")[-1]
-        y_lab = self.y.split("/")[-1]
-
-        figure_list = []
-        # pylint: disable=not-an-iterable
-        if case_by_case is False:
-            cases = (
-                [cases[i] for i in self.select_indices]
-                if self.select_indices is not None
-                else cases
-            )
-        for case in cases:
-
-            # Extract data from the Case
-            x_data = data_from_path(case, self.x, cases)
-            y_data = data_from_path(case, self.y, cases)
-
-            # Create the figure using basic matplotlib
-            cbc_str = "_cbc_" if case_by_case else ""
-            save_name = os.path.join(data_storage, self.fig_name + cbc_str + case.name + ".png")
-            legend = case.name
-            self._create_fig(x_data, y_data, x_lab, y_lab, legend, save_name)
-
-            # Allow for handling the figures later inside a subfig
-            if self.items_in_row is not None:
-                figure_list.append(save_name)
-
-            elif self.single_plot:
-                continue
-
-            else:
-                # Fig is added to doc later to facilitate method of creating single_plot
-                fig = Figure(position="h!")
-                fig.add_image(save_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
-                fig.add_caption(
-                    NoEscape(f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}.")
-                )
-                figure_list.append(fig)
+        caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
 
         if self.items_in_row is not None:
-            fig_caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
-            self._assemble_fig_rows(figure_list, doc, fig_caption)
-
-        elif self.single_plot:
-            # Takes advantage of plot cached by matplotlib and that the last save_name is the full plot
-            fig = Figure(position="h!")
-            fig.add_image(save_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
-            fig.add_caption(
-                NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
-            )
-            doc.append(fig)
+            self._add_row_figure(doc, file_names, caption)
         else:
-            for fig in figure_list:
-                doc.append(fig)
+            if self.separate_plots is True:
+                for case, file_name in zip(cases, file_names):
+                    caption = NoEscape(f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}.")
+                    self._add_figure(doc, file_name, caption)
+            else:   
+                self._add_figure(doc, file_names[-1], caption)
 
-        # Stops figures floating away from their sections
         doc.append(NoEscape(r"\FloatBarrier"))
         doc.append(NoEscape(r"\clearpage"))
-
-        # Clear the matplotlib cache to be certain figure won't appear
-        plt.close()
 
 
 class Chart3D(Chart):
@@ -544,12 +658,23 @@ class Chart3D(Chart):
             ),
             ActionPayload(action="focus"),
         ]
-        if field is not None:
+        if field is None:
+            pass
+            # script += [
+            #     ActionPayload(
+            #         action="set-object-visibility",
+            #         payload=SetObjectVisibilityPayload(
+            #             object_ids=["edge0001"], visibility=True
+            #         ),
+            #     ),
+            #     ActionPayload(action="focus"),
+            # ]
+        else:
             script += [
                 ActionPayload(
                     action="set-field",
                     payload=SetFieldPayload(
-                        object_id="boundaries", field_name="yPlus", min_max=limits
+                        object_id="boundaries", field_name=field, min_max=limits
                     ),
                 )
             ]
@@ -569,8 +694,9 @@ class Chart3D(Chart):
         script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
 
         scene = Scene(name="my-scene", script=script)
-        source_context = SourceContext(user_id=user_id, case_id=case_id)
-        scenes_data = ScenesData(scenes=[scene], context=source_context)
+        path_prefix=f"s3://flow360cases-v1/users/{user_id}"
+        resource = Resource(path_prefix=path_prefix, id=case_id)
+        scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
 
     def _get_images(self, cases: List[Case], data_storage):
@@ -618,7 +744,7 @@ class Chart3D(Chart):
 
         if self.items_in_row is not None:
             fig_caption = "Chart3D Row"
-            self._assemble_fig_rows(img_list, doc, fig_caption)
+            self._add_row_figure(doc, img_list, fig_caption)
 
         else:
             for filename in img_list:

@@ -101,7 +101,7 @@ class Report(Flow360BaseModel):
     """
 
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
-    include_case_by_case: bool = True
+    include_case_by_case: bool = False
 
     def _create_header_footer(self) -> PageStyle:
         header = PageStyle("header")
@@ -217,7 +217,7 @@ class Report(Flow360BaseModel):
         )
 
     def create_pdf(
-        self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = "."
+        self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = ".", use_cache: bool=True
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -232,7 +232,9 @@ class Report(Flow360BaseModel):
             Orientation of the report, where `True` represents landscape.
         data_storage : str, default="."
             Directory where the PDF file will be saved.
-
+        use_cache : bool    
+            Whether to force generate data or use cached data
+        
         Returns
         -------
         None

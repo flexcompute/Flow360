@@ -31,23 +31,24 @@ class UVFShutterRequestBaseModel(Flow360BaseModel):
         return super().model_dump_json(by_alias=True, **kwargs)
 
 
-UvfObjectTypes = Literal["slices", "qcriterion", "boundaries"]
+UvfObjectTypes = Literal["slices", "qcriterion", "boundaries", "edges"]
 
 
-class SourceContext(Flow360BaseModel):
+class Resource(Flow360BaseModel):
     """
-    Context for identifying the source of a request.
+    Resource context for identifying the source of a request.
 
     Parameters
     ----------
-    user_id : str
-        Identifier for the user initiating the request.
-    case_id : str
+    path_prefix : str
+        Prefix with identifier for the user initiating the request.
+    id : str
         Identifier for the case associated with the request.
     """
 
-    user_id: str
-    case_id: str
+    path_prefix: str
+    id: str
+    type: str = 'case'
 
 
 class Resolution(Flow360BaseModel):
@@ -91,7 +92,7 @@ class SetObjectVisibilityPayload(Flow360BaseModel):
         Boolean indicating the visibility state.
     """
 
-    object_ids: List[UvfObjectTypes]
+    object_ids: List[Union[UvfObjectTypes, str]]
     visibility: bool
 
 
@@ -187,17 +188,17 @@ class Scene(Flow360BaseModel):
 
 class ScenesData(Flow360BaseModel):
     """
-    Data structure holding multiple scenes and associated context.
+    Data structure holding multiple scenes and associated resource.
 
     Parameters
     ----------
-    context : SourceContext
-        Context data related to the source.
+    resource : Resource
+        Resource data related to the source.
     scenes : List[Scene]
         List of scenes with actions and settings.
     """
 
-    context: SourceContext
+    resource: Resource
     scenes: List[Scene]
 
 
@@ -263,15 +264,19 @@ class UVFshutter(Flow360BaseModel):
     data_storage : str, default="."
         Path to the directory where data will be stored.
     url : str
-        URL endpoint for the shutter service, defaults to "https://shutter.{Env.current.domain}".
+        URL endpoint for the shutter service, defaults to "https://shutter-api.{Env.current.domain}".
+    use_cache : bool    
+        Whether to force generate data or use cached data
     """
 
     cases: List[Any]
     data_storage: str = "."
-    url: str = pd.Field(default_factory=lambda: f"https://shutter.{Env.current.domain}")
+    url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
+    use_cache: bool = True
+
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=300)
+        @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=600)
         @http_interceptor
         async def _get_image_sequence(
             session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
@@ -334,11 +339,11 @@ class UVFshutter(Flow360BaseModel):
         screenshots = []
         cached_files = {}
         for data_item in data:
-            case_id = data_item.context.case_id
+            case_id = data_item.resource.id
             img_folder = os.path.join(self.data_storage, case_id)
             img_name = fig_name + ".png"
             img_full_path = os.path.join(img_folder, img_name)
-            if not os.path.exists(img_full_path):
+            if not os.path.exists(img_full_path) or self.use_cache is False:
                 screenshots.append(
                     (case_id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True))
                 )
