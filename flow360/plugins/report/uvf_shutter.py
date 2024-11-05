@@ -269,9 +269,9 @@ class UVFshutter(Flow360BaseModel):
     cases: List[Any]
     data_storage: str = "."
     url: str = pd.Field(default_factory=lambda: f"https://shutter.{Env.current.domain}")
-    accessToken: str = ""
+    access_token: str = ""
 
-    async def _get_3d_images(self, screenshots: dict[str, Tuple], key: str) -> dict[str, list]:
+    async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=300)
         @http_interceptor
         async def _get_image_sequence(
@@ -290,7 +290,7 @@ class UVFshutter(Flow360BaseModel):
                         session=session,
                         url=self.url + "/sequence/run",
                         uvf_request=uvf_request,
-                        headers={"Authorization": f"Bearer {self.accessToken}"},
+                        headers={"Authorization": f"Bearer {self.access_token}"},
                     )
                 )
 
