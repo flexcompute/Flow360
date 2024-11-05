@@ -269,7 +269,11 @@ class Report(Flow360BaseModel):
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
             item.get_doc_item(
-                cases, doc, case_by_case=False, data_storage=data_storage, access_token=self.access_token
+                cases,
+                doc,
+                case_by_case=False,
+                data_storage=data_storage,
+                access_token=self.access_token,
             )
 
         # Iterate each case one at a time
