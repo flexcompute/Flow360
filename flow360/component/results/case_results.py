@@ -43,9 +43,9 @@ def _temp_file_generator(suffix: str = ""):
     return file_path
 
 
-def _find_by_pattern(all_entities: list, pattern):
+def _find_by_pattern(all_items: list, pattern):
 
-    matched_entities = []
+    matched_items = []
     if pattern is not None and "*" in pattern:
         regex_pattern = pattern.replace("*", ".*")
     else:
@@ -53,11 +53,11 @@ def _find_by_pattern(all_entities: list, pattern):
 
     regex = re.compile(regex_pattern)
     # pylint: disable=no-member
-    matched_entities.extend(filter(lambda x: regex.match(x), all_entities))
-    return matched_entities
+    matched_items.extend(filter(lambda x: regex.match(x), all_items))
+    return matched_items
 
 
-def _filter_headers(
+def _filter_headers_by_prefix(
     headers: List[str], include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
 ) -> List[str]:
     """
@@ -494,8 +494,8 @@ class ResultOperations:
     @classmethod
     def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
         df = obj.as_dataframe()
-        last_10_percent = df.tail(int(len(df) * avarage_fraction))
-        average = last_10_percent[column].mean()
+        selected_fraction = df.tail(int(len(df) * avarage_fraction))
+        average = selected_fraction[column].mean()
         return average
 
 
@@ -550,7 +550,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         """
         if self._values is None:
             super().values
-            self._sum()
+            self._filtered_sum()
         return super().values
 
     @property
@@ -591,18 +591,20 @@ class PerEntityResultCSVModel(ResultCSVModel):
             chain.from_iterable(_find_by_pattern(self.entities, exc) for exc in exclude)
         )
 
-        headers = _filter_headers(self._raw_values.keys(), include_resolved, exclude_resolved)
+        headers = _filter_headers_by_prefix(
+            self._raw_values.keys(), include_resolved, exclude_resolved
+        )
         self._values = {
             key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]
         }
-        self._sum()
+        self._filtered_sum()
 
-    def _sum(self):
+    def _filtered_sum(self):
+        df = self.as_dataframe()
         for variable in self._variables:
             new_col_name = "total" + variable
-            self._values.pop(new_col_name, None)
-            df = self.as_dataframe()
-            self._values[new_col_name] = df.filter(regex=f"{variable}$").sum(axis=1)
+            regex_pattern = rf"^(?!total).*{variable}$"
+            self._values[new_col_name] = df.filter(regex=regex_pattern).sum(axis=1)
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
