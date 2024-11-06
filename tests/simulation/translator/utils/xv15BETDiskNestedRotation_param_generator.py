@@ -21,7 +21,8 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
 @pytest.fixture
 def cylinder_inner():
     return Cylinder(
-        name="inner",
+        name="inner-but-not-full-name",
+        private_attribute_full_name="inner",
         center=(0, 0, 0) * u.inch,
         axis=[0, 0, 1],
         # filler values
@@ -33,7 +34,8 @@ def cylinder_inner():
 @pytest.fixture
 def cylinder_middle():
     return Cylinder(
-        name="middle",
+        name="middle-but-not-full-name",
+        private_attribute_full_name="middle",
         center=(0, 0, 0) * u.inch,
         axis=[0, 0, 1],
         inner_radius=50 * u.inch,

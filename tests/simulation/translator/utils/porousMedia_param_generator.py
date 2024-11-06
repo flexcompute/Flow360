@@ -139,7 +139,8 @@ def create_porous_media_volume_zone_param():
     inflow = Surface(name="blk-3/inflow")
     outflow = Surface(name="blk-1/outflow")
     porous_zone = GenericVolume(
-        name="blk-2",
+        name="blk-2-but-not-full-name",
+        private_attribute_full_name="blk-2",
     )
     porous_zone.axes = [[0, 1, 0], [0, 0, 1]]
     return _create_porous_media_param(
