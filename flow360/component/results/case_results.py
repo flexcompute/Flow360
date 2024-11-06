@@ -7,6 +7,7 @@ import tempfile
 import time
 import uuid
 from enum import Enum
+from itertools import chain
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
@@ -42,6 +43,53 @@ def _temp_file_generator(suffix: str = ""):
     return file_path
 
 
+def _find_by_pattern(all_entities: list, pattern):
+
+    matched_entities = []
+    if pattern is not None and "*" in pattern:
+        regex_pattern = pattern.replace("*", ".*")
+    else:
+        regex_pattern = f"^{pattern}$"  # Exact match if no '*'
+
+    regex = re.compile(regex_pattern)
+    # pylint: disable=no-member
+    matched_entities.extend(filter(lambda x: regex.match(x), all_entities))
+    return matched_entities
+
+
+def _filter_headers(
+    headers: List[str], include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> List[str]:
+    """
+    Filters headers based on provided include and exclude prefix lists.
+
+    Parameters
+    ----------
+    headers : List[str]
+        List of headers to filter.
+    include : Optional[List[str]]
+        List of prefixes to include in the result. If None, includes all.
+    exclude : Optional[List[str]]
+        List of prefixes to exclude from the result. If None, excludes none.
+
+    Returns
+    -------
+    List[str]
+        Filtered list of headers.
+    """
+    if include:
+        headers = [
+            header for header in headers if any(header.startswith(prefix) for prefix in include)
+        ]
+
+    if exclude:
+        headers = [
+            header for header in headers if not any(header.startswith(prefix) for prefix in exclude)
+        ]
+
+    return headers
+
+
 class CaseDownloadable(Enum):
     """
     Case results filenames
@@ -66,7 +114,9 @@ class CaseDownloadable(Enum):
     TOTAL_FORCES = "total_forces_v2.csv"
     BET_FORCES = "bet_forces_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
-    FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
+    LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
+    Y_SLICING_FORCE_DISTRIBUTION = "postprocess/Y_slicing_forceDistribution.csv"
+    X_SLICING_FORCE_DISTRIBUTION = "postprocess/X_slicing_forceDistribution.csv"
 
     # user defined:
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
@@ -362,6 +412,24 @@ class ResultCSVModel(ResultBaseModel):
 
         return pandas.DataFrame(self.values)
 
+    def wait(self, timeout_minutes=60):
+        """
+        Wait until the Case finishes processing, refresh periodically. Useful for postprocessing, eg sectional data
+        """
+
+        start_time = time.time()
+        while time.time() - start_time < timeout_minutes * 60:
+            try:
+                self.load_from_remote(log_error=False)
+                return None
+            except CloudFileNotFoundError:
+                pass
+            time.sleep(2)
+
+        raise TimeoutError(
+            "Timeout: post-processing did not finish within the specified timeout period."
+        )
+
 
 class ResultTarGZModel(ResultBaseModel):
     """
@@ -422,21 +490,24 @@ class MaxResidualLocationResultCSVModel(ResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
 
 
+class ResultOperations:
+    @classmethod
+    def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
+        df = obj.as_dataframe()
+        last_10_percent = df.tail(int(len(df) * avarage_fraction))
+        average = last_10_percent[column].mean()
+        return average
+
+
 class TotalForcesResultCSVModel(ResultCSVModel):
     """TotalForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
     _averages: Optional[Dict] = pd.PrivateAttr(None)
 
-    def average_last_fraction(self, column, avarage_fraction):
-        df = self.as_dataframe()
-        last_10_percent = df.tail(int(len(df) * avarage_fraction))
-        average = last_10_percent[column].mean()
-        return average
-
     def get_averages(self, avarage_fraction):
         return {
-            column: self.average_last_fraction(column, avarage_fraction)
+            column: ResultOperations.average_last_fraction(self, column, avarage_fraction)
             for column in self.values.keys()
         }
 
@@ -462,26 +533,104 @@ class SurfaceForcesResultCSVModel(ResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
 
-class ForceDistributionResultCSVModel(ResultCSVModel):
+class PerEntityResultCSVModel(ResultCSVModel):
+    _variables: List[str] = []
+    _x_columns: List[str] = []
+    _entities: List[str] = None
+
+    @property
+    def values(self):
+        """
+        Get the current data.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the current data.
+        """
+        if self._values is None:
+            super().values
+            self._sum()
+        return super().values
+
+    @property
+    def entities(self):
+        """
+        Returns list of entities (boundary names) available for this result
+        """
+        if self._entities is None:
+            pattern = re.compile(rf"(.*)_({'|'.join(self._variables)})$")
+            prefixes = {
+                match.group(1) for col in self.as_dict().keys() if (match := pattern.match(col))
+            }
+            self._entities = sorted(prefixes)
+        return self._entities
+
+    def filter(self, include: list = None, exclude: list = None):
+        """
+        Filters entities based on include and exclude lists.
+
+        Parameters
+        ----------
+        include : list or single item, optional
+            List of patterns or single pattern to include.
+        exclude : list or single item, optional
+            List of patterns or single pattern to exclude.
+        """
+        include = (
+            [include] if include is not None and not isinstance(include, list) else include or []
+        )
+        exclude = (
+            [exclude] if exclude is not None and not isinstance(exclude, list) else exclude or []
+        )
+
+        include_resolved = list(
+            chain.from_iterable(_find_by_pattern(self.entities, inc) for inc in include)
+        )
+        exclude_resolved = list(
+            chain.from_iterable(_find_by_pattern(self.entities, exc) for exc in exclude)
+        )
+
+        headers = _filter_headers(self._raw_values.keys(), include_resolved, exclude_resolved)
+        self._values = {
+            key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]
+        }
+        self._sum()
+
+    def _sum(self):
+        for variable in self._variables:
+            new_col_name = "total" + variable
+            self._values.pop(new_col_name, None)
+            df = self.as_dataframe()
+            self._values[new_col_name] = df.filter(regex=f"{variable}$").sum(axis=1)
+
+
+class LegacyForceDistributionResultCSVModel(ResultCSVModel):
     """ForceDistributionResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, frozen=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.LEGACY_FORCE_DISTRIBUTION.value, frozen=True)
 
-    def wait(self, timeout_minutes=60):
-        """Wait until the Case finishes processing, refresh periodically"""
 
-        start_time = time.time()
-        while time.time() - start_time < timeout_minutes * 60:
-            try:
-                self.load_from_remote(log_error=False)
-                return None
-            except CloudFileNotFoundError:
-                pass
-            time.sleep(2)
+class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
+    """ForceDistributionResultCSVModel"""
 
-        raise TimeoutError(
-            "Timeout: post-processing did not finish within the specified timeout period."
-        )
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
+    )
+
+    _variables: List[str] = ["Cumulative_CD_Curve", "CD_per_length"]
+    _x_columns: List[str] = ["X"]
+
+
+class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
+    """ForceDistributionResultCSVModel"""
+
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.Y_SLICING_FORCE_DISTRIBUTION.value, frozen=True
+    )
+
+    _variables: List[str] = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
+    _x_columns: List[str] = ["Y"]
 
 
 class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
