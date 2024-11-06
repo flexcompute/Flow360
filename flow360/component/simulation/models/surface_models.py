@@ -268,8 +268,7 @@ class Periodic(Flow360BaseModel):
     name: Optional[str] = pd.Field(None, description="Name of the `Periodic` boundary condition.")
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
-        alias="surface_pairs",
-        description="List of matching pairs of :class:`~flow360.Surface`. "
+        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
     )
     spec: Union[Translational, Rotational] = pd.Field(
         discriminator="type_name",
