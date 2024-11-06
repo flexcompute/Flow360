@@ -35,6 +35,7 @@ from flow360.plugins.report.report_items import (
     Summary,
     Table,
 )
+from flow360.plugins.report.report_context import ReportContext
 
 
 # pylint: disable=too-few-public-methods
@@ -217,7 +218,12 @@ class Report(Flow360BaseModel):
         )
 
     def create_pdf(
-        self, filename: str, cases: list[Case], landscape: bool = False, data_storage: str = ".", use_cache: bool=True
+        self,
+        filename: str,
+        cases: list[Case],
+        landscape: bool = False,
+        data_storage: str = ".",
+        use_cache: bool = True,
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -232,9 +238,9 @@ class Report(Flow360BaseModel):
             Orientation of the report, where `True` represents landscape.
         data_storage : str, default="."
             Directory where the PDF file will be saved.
-        use_cache : bool    
+        use_cache : bool
             Whether to force generate data or use cached data
-        
+
         Returns
         -------
         None
@@ -263,31 +269,36 @@ class Report(Flow360BaseModel):
 
         doc.change_document_style("header")
 
+        context = ReportContext(
+            cases, doc, case_by_case=False, data_storage=data_storage, access_token=str
+        )
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
-            item.get_doc_item(cases, doc, case_by_case=False, data_storage=data_storage)
+            item.get_doc_item(context)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
             with doc.create(Section("Appendix", numbering=False)):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
+                        case_context = ReportContext(
+                            [case],
+                            doc,
+                            Subsection,
+                            case_by_case=self.include_case_by_case,
+                            data_storage=data_storage,
+                            config=self.config,
+                        )
                         for item in self.items:  # pylint: disable=not-an-iterable
-                            # Don't attempt to create ReportItems that have a select_case_ids which don't
-                            # include the current case.id
+                            # Don't attempt to create ReportItems that have a
+                            # select_case_ids which don't include the current case.id
                             # Checks for valid selecte_case_ids can be done later
                             if isinstance(item, Chart) and item.select_indices is not None:
                                 selected_case_ids = [cases[i].id for i in item.select_indices]
                                 if case.id not in selected_case_ids:
                                     continue
 
-                            item.get_doc_item(
-                                [case],
-                                doc,
-                                Subsection,
-                                self.include_case_by_case,
-                                data_storage=data_storage,
-                            )
+                            item.get_doc_item(case_context)
 
         # Generate the PDF
         doc.generate_pdf(os.path.join(data_storage, filename), clean_tex=False)
