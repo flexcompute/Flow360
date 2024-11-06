@@ -234,6 +234,7 @@
     "output_type": "SurfaceOutput"
   }
 ],
+"user_defined_fields":[],
 "private_attribute_asset_cache": {
   "project_length_unit": {
     "value": 1.0,
