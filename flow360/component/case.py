@@ -35,7 +35,7 @@ from .results.case_results import (
     BETForcesResultCSVModel,
     CaseDownloadable,
     CFLResultCSVModel,
-    ForceDistributionResultCSVModel,
+    LegacyForceDistributionResultCSVModel,
     LinearResidualsResultCSVModel,
     MaxResidualLocationResultCSVModel,
     MinMaxStateResultCSVModel,
@@ -48,6 +48,8 @@ from .results.case_results import (
     SurfaceHeatTrasferResultCSVModel,
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
+    XSlicingForceDistributionResultCSVModel,
+    YSlicingForceDistributionResultCSVModel,
 )
 from .simulation import services
 from .simulation.simulation_params import SimulationParams
@@ -766,8 +768,14 @@ class CaseResultsModel(pd.BaseModel):
     bet_forces: BETForcesResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesResultCSVModel()
     )
-    force_distribution: ForceDistributionResultCSVModel = pd.Field(
-        default_factory=lambda: ForceDistributionResultCSVModel()
+    legacy_force_distribution: LegacyForceDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: LegacyForceDistributionResultCSVModel()
+    )
+    x_slicing_force_distribution: XSlicingForceDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: XSlicingForceDistributionResultCSVModel()
+    )
+    y_slicing_force_distribution: YSlicingForceDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: YSlicingForceDistributionResultCSVModel()
     )
 
     # user defined:
@@ -912,7 +920,9 @@ class CaseResultsModel(pd.BaseModel):
         total_forces: bool = None,
         bet_forces: bool = None,
         actuator_disks: bool = None,
-        force_distribution: bool = None,
+        legacy_force_distribution: bool = None,
+        x_slicing_force_distribution: bool = None,
+        y_slicing_force_distribution: bool = None,
         user_defined_dynamics: bool = None,
         aeroacoustics: bool = None,
         surface_heat_transfer: bool = None,
@@ -969,7 +979,9 @@ class CaseResultsModel(pd.BaseModel):
         self.total_forces.do_download = total_forces
         self.bet_forces.do_download = bet_forces
         self.actuator_disks.do_download = actuator_disks
-        self.force_distribution.do_download = force_distribution
+        self.legacy_force_distribution.do_download = legacy_force_distribution
+        self.x_slicing_force_distribution.do_download = x_slicing_force_distribution
+        self.y_slicing_force_distribution.do_download = y_slicing_force_distribution
 
         self.user_defined_dynamics.do_download = user_defined_dynamics
         self.aeroacoustics.do_download = aeroacoustics

@@ -19,8 +19,9 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.outputs.output_entities import Point, Slice
-from flow360.component.simulation.primitives import Box, Cylinder
+from flow360.component.simulation.primitives import Box, Cylinder, Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
@@ -39,6 +40,45 @@ from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
 RootAsset = Union[Geometry, VolumeMeshV2]
+
+
+def _set_up_param_entity_info(entity_info, params: SimulationParams):
+    """
+    Setting up the entity info part of the params.
+    1. For non-persistent entities (AKA draft entities), add the ones used in params.
+    2. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    """
+
+    def _get_tag(entity_registry, entity_type: Union[Surface | Edge]):
+        group_tag = None
+        for entity in entity_registry.find_by_type(entity_type):
+            if entity.private_attribute_tag_key is None:
+                raise Flow360ValueError(
+                    f"`{entity_type.__name__}` without taging information is found."
+                    f" Please make sure all `{entity_type.__name__}` come from the geometry and is not created ad-hoc."
+                )
+            if group_tag is not None and group_tag != entity.private_attribute_tag_key:
+                raise Flow360ValueError(
+                    f"Multiple `{entity_type.__name__}` group tags detected in"
+                    " the simulation parameters which is not supported."
+                )
+            group_tag = entity.private_attribute_tag_key
+        return group_tag
+
+    entity_registry = params.used_entity_registry
+    # Creating draft entities
+    for draft_type in [Box, Cylinder, Point, Slice]:
+        draft_entities = entity_registry.find_by_type(draft_type)
+        for draft_entity in draft_entities:
+            if draft_entity not in entity_info.draft_entities:
+                entity_info.draft_entities.append(draft_entity)
+
+    if isinstance(entity_info, GeometryEntityInfo):
+        with model_attribute_unlock(entity_info, "face_group_tag"):
+            entity_info.face_group_tag = _get_tag(entity_registry, Surface)
+        with model_attribute_unlock(entity_info, "edge_group_tag"):
+            entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
+    return entity_info
 
 
 class RootType(Enum):
@@ -562,15 +602,8 @@ class Project(pd.BaseModel):
             fork_case=fork_from is not None,
         ).submit()
 
-        entity_registry = params.used_entity_registry
-
         # Check if there are any new draft entities that have been added in the params by the user
-        entity_info = root_asset.entity_info
-        for draft_type in [Box, Cylinder, Point, Slice]:
-            draft_entities = entity_registry.find_by_type(draft_type)
-            for draft_entity in draft_entities:
-                if draft_entity not in entity_info.draft_entities:
-                    entity_info.draft_entities.append(draft_entity)
+        entity_info = _set_up_param_entity_info(root_asset.entity_info, params)
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = entity_info
