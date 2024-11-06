@@ -14,6 +14,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -309,3 +310,20 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     }
 
     assert sorted(translated.items()) == sorted(ref_dict.items())
+
+
+def test_user_defined_farfield(get_test_param, get_surface_mesh):
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=100),
+                volume_zones=[UserDefinedFarfield()],
+            )
+        )
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    reference = {
+        "refinementFactor": 1.0,
+        "farfield": {"type": "user-defined"},
+        "volume": {"firstLayerThickness": 100.0, "growthRate": 1.2, "gapTreatmentStrength": 0.0},
+    }
+    assert sorted(translated.items()) == sorted(reference.items())
