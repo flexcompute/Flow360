@@ -31,7 +31,6 @@ class MaterialBase(Flow360BaseModel):
 class Sutherland(Flow360BaseModel):
     """
     Represents Sutherland's law for calculating dynamic viscosity.
-
     This class implements Sutherland's formula to compute the dynamic viscosity of a gas
     as a function of temperature.
     """
