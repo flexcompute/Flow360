@@ -195,7 +195,6 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
     import json
 
-    print("====TRANSLATED====\n", json.dumps(translated, indent=4))
     ref_dict = {
         "refinementFactor": 1.45,
         "farfield": {"type": "auto"},

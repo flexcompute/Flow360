@@ -523,7 +523,7 @@ def surface_integral_output_config():
                     Surface(name="surface1", private_attribute_full_name="zoneName/surface1"),
                     Surface(name="surface2"),
                 ],
-                output_fields=["Cp"],
+                output_fields=["My_field_1"],
             ),
             SurfaceIntegralOutput(
                 name="prb 122",
@@ -531,7 +531,7 @@ def surface_integral_output_config():
                     Surface(name="surface21"),
                     Surface(name="surface22"),
                 ],
-                output_fields=["Mach"],
+                output_fields=["My_field_2"],
             ),  # Local
         ],
         {
@@ -540,7 +540,7 @@ def surface_integral_output_config():
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "outputFields": ["Cp"],
+                    "outputFields": ["My_field_1"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                     "type": "surfaceIntegral",
                 },
@@ -548,7 +548,7 @@ def surface_integral_output_config():
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "outputFields": ["Mach"],
+                    "outputFields": ["My_field_2"],
                     "surfaces": ["surface21", "surface22"],
                     "type": "surfaceIntegral",
                 },
@@ -617,7 +617,7 @@ def test_surface_probe_output():
                     "computeTimeAverages": False,
                     "outputFields": ["Cp", "Cf"],
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03]],
+                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
                     "type": "surfaceProbe",
                 },
                 "SP-2": {
@@ -629,14 +629,18 @@ def test_surface_probe_output():
                     "computeTimeAverages": True,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2, 1.01, 0.03], [3, 1.02, 0.03]],
+                    "monitorLocations": [
+                        [1e-2, 1.02e-2, 0.0003],
+                        [2.0, 1.01, 0.03],
+                        [3.0, 1.02, 0.03],
+                    ],
                     "type": "surfaceProbe",
                 },
                 "SP-3": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "outputFields": ["Mach", "primitiveVars", "yPlus"],
+                    "outputFields": ["Mach", "primitiveVars", "yPlus", "my_own_field"],
                     "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
                     "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
                     "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
@@ -687,7 +691,13 @@ def test_monitor_output(
 
     ##:: surfaceIntegral
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_integral_output_config[0])
+        param = SimulationParams(
+            outputs=surface_integral_output_config[0],
+            user_defined_fields=[
+                UserDefinedField(name="My_field_1", expression="1+1"),
+                UserDefinedField(name="My_field_2", expression="1+12"),
+            ],
+        )
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
@@ -698,7 +708,13 @@ def test_monitor_output(
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_integral_output_config[0] + probe_output_config[0])
+        param = SimulationParams(
+            outputs=surface_integral_output_config[0] + probe_output_config[0],
+            user_defined_fields=[
+                UserDefinedField(name="My_field_1", expression="1+1"),
+                UserDefinedField(name="My_field_2", expression="1+12"),
+            ],
+        )
     param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
@@ -717,7 +733,7 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "outputFields": ["Cp"],
+                "outputFields": ["My_field_1"],
                 "surfaces": ["zoneName/surface1", "surface2"],
                 "type": "surfaceIntegral",
             },
@@ -733,7 +749,7 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "outputFields": ["Mach"],
+                "outputFields": ["My_field_2"],
                 "surfaces": ["surface21", "surface22"],
                 "type": "surfaceIntegral",
             },

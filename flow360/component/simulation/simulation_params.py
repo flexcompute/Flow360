@@ -250,6 +250,21 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid())
         return v
 
+    @pd.field_validator("user_defined_fields", mode="after")
+    @classmethod
+    def chec_duplicate_user_defined_fields(cls, v):
+        """Check if we have duplicate user defined fields"""
+        if v == []:
+            return v
+
+        known_user_defined_fields = set()
+        for field in v:
+            if field.name in known_user_defined_fields:
+                raise ValueError(f"Duplicate user defined field name: {field.name}")
+            known_user_defined_fields.add(field.name)
+
+        return v
+
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):
         """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
