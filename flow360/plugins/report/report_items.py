@@ -5,49 +5,30 @@ Module containg detailed report items
 import os
 from typing import List, Literal, Optional, Tuple, Union
 
-import unyt
-import numpy as np
-
 import matplotlib.pyplot as plt
-from pydantic import Field, NonNegativeInt, model_validator, field_validator, BaseModel
-
-# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
-# pylint: disable=import-error
-from pylatex import (
-    Command,
-    Document,
-    Figure,
-    NewPage,
-    NoEscape,
-    SubFigure,
-)
-
-# pylint: disable=import-error
-from pylatex.utils import bold, escape_latex
-
+import numpy as np
+import unyt
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
-from flow360.plugins.report.utils import (
-    Delta,
-    Tabulary,
-    _requirements_mapping,
-    data_from_path,
-    get_requirements_from_data_path,
-    get_root_path,
-)
-from flow360.plugins.report.uvf_shutter import (
-    ActionPayload,
-    Scene,
-    ScenesData,
-    SetFieldPayload,
-    SetObjectVisibilityPayload,
-    Resource,
-    TakeScreenshotPayload,
-    UvfObjectTypes,
-    UVFshutter,
-)
 from flow360.plugins.report.report_context import ReportContext
+from flow360.plugins.report.utils import (Delta, Tabulary,
+                                          _requirements_mapping,
+                                          data_from_path,
+                                          get_requirements_from_data_path,
+                                          get_root_path)
+from flow360.plugins.report.uvf_shutter import (ActionPayload, Resource, Scene,
+                                                ScenesData, SetFieldPayload,
+                                                SetObjectVisibilityPayload,
+                                                TakeScreenshotPayload,
+                                                UvfObjectTypes, UVFshutter)
+from pydantic import (BaseModel, Field, NonNegativeInt, field_validator,
+                      model_validator)
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
+from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
+# pylint: disable=import-error
+from pylatex.utils import bold, escape_latex
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -697,7 +678,8 @@ class Chart3D(Chart):
         img_files = UVFshutter(
             cases=cases, data_storage=context.data_storage, access_token=context.access_token
         ).get_images(fig_name, uvf_requests)
-        # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
+        # taking "first" image from returned images as UVF-shutter
+        # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
         return img_list
 

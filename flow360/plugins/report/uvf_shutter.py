@@ -13,7 +13,6 @@ from typing import Any, List, Literal, Optional, Tuple, Union
 import aiohttp
 import backoff
 import pydantic as pd
-
 from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
