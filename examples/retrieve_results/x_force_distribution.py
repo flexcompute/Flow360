@@ -1,3 +1,5 @@
+from pylab import show
+
 import flow360 as fl
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
@@ -16,8 +18,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Airplane
-
-from pylab import show
 
 fl.Env.preprod.active()
 
