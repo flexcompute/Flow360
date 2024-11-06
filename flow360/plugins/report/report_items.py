@@ -5,31 +5,13 @@ Module containg detailed report items
 import os
 from typing import List, Literal, Optional, Tuple, Union
 
-import unyt
-import numpy as np
-
 import matplotlib.pyplot as plt
-from pydantic import Field, NonNegativeInt, model_validator, field_validator, BaseModel
-
-# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
-# pylint: disable=import-error
-from pylatex import (
-    Command,
-    Document,
-    Figure,
-    NewPage,
-    NoEscape,
-    Section,
-    SubFigure,
-    Subsection,
-)
-
-# pylint: disable=import-error
-from pylatex.utils import bold, escape_latex
-
+import numpy as np
+import unyt
 from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
+from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
     Delta,
     Tabulary,
@@ -40,15 +22,23 @@ from flow360.plugins.report.utils import (
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
+    Resource,
     Scene,
     ScenesData,
     SetFieldPayload,
     SetObjectVisibilityPayload,
-    Resource,
     TakeScreenshotPayload,
     UvfObjectTypes,
     UVFshutter,
 )
+from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator
+
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
+from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
+
+# pylint: disable=import-error
+from pylatex.utils import bold, escape_latex
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -64,17 +54,13 @@ class ReportItem(Flow360BaseModel):
     # pylint: disable=unused-argument,too-many-arguments
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case=False,
-        data_storage: str = ".",
+        context: ReportContext,
     ) -> None:
         """
         returns doc item for report item
         """
-        with doc.create(section_func(self.__class__.__name__)):
-            doc.append(f"this is {self.__class__.__name__}")
+        with context.doc.create(context.section_func(self.__class__.__name__)):
+            context.doc.append(f"this is {self.__class__.__name__}")
 
     def get_requirements(self):
         """
@@ -108,21 +94,15 @@ class Summary(ReportItem):
     # pylint: disable=too-many-arguments
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case=False,
-        data_storage: str = ".",
+        context: ReportContext,
     ) -> None:
         """
         returns doc item for report item
         """
-        section = section_func("Summary")
-        doc.append(section)
-        doc.append(f"{self.text}\n")
-        Table(data=["name"], section_title=None, headers=["Case Name"]).get_doc_item(
-            cases, doc, section_func, case_by_case
-        )
+        section = context.section_func("Summary")
+        context.doc.append(section)
+        context.doc.append(f"{self.text}\n")
+        Table(data=["name"], section_title=None, headers=["Case Name"]).get_doc_item(context)
 
 
 class Inputs(ReportItem):
@@ -136,11 +116,7 @@ class Inputs(ReportItem):
     # pylint: disable=too-many-arguments
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case=False,
-        data_storage: str = ".",
+        context: ReportContext,
     ) -> None:
         """
         returns doc item for inputs
@@ -161,7 +137,7 @@ class Inputs(ReportItem):
                 "Velocity",
                 "Alpha",
             ],
-        ).get_doc_item(cases, doc, section_func, case_by_case, data_storage)
+        ).get_doc_item(context)
 
 
 class Table(ReportItem):
@@ -204,21 +180,17 @@ class Table(ReportItem):
     # pylint: disable=too-many-arguments
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case=False,
-        data_storage: str = ".",
+        context: ReportContext,
     ) -> None:
         """
         Returns doc item for table
         """
         if self.section_title is not None:
-            section = section_func(self.section_title)
-            doc.append(section)
+            section = context.section_func(self.section_title)
+            context.doc.append(section)
 
         # Getting tables to wrap is a pain - Tabulary seems the best approach
-        with doc.create(
+        with context.doc.create(
             Tabulary("|C" * (len(self.data) + 1) + "|", width=len(self.data) + 1)
         ) as table:
             table.add_hline()
@@ -241,9 +213,9 @@ class Table(ReportItem):
             table.add_hline()
 
             # Build data rows
-            for idx, case in enumerate(cases):
+            for idx, case in enumerate(context.cases):
                 row_list = [
-                    data_from_path(case, path, cases, case_by_case=case_by_case)
+                    data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
                     for path in self.data
                 ]
                 row_list.insert(0, str(idx + 1))  # Case numbers
@@ -291,7 +263,9 @@ class Chart(ReportItem):
                 )
         if self.items_in_row is not None:
             if self.separate_plots is False:
-                raise ValueError("`Items_in_row` and `separate_plots=False` cannot be used together.")
+                raise ValueError(
+                    "`Items_in_row` and `separate_plots=False` cannot be used together."
+                )
             elif self.separate_plots is None:
                 self.separate_plots = True
         return self
@@ -301,7 +275,6 @@ class Chart(ReportItem):
         fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
         fig.add_caption(caption)
         doc.append(fig)
-
 
     def _add_row_figure(self, doc: Document, img_list: list[str], fig_caption: str):
         """
@@ -336,7 +309,6 @@ class Chart(ReportItem):
         doc.append(NoEscape(r"\end{figure}"))
 
 
-
 class PlotModel(BaseModel):
     x_data: Union[List[float], List[List[float]]]
     y_data: Union[List[float], List[List[float]]]
@@ -346,7 +318,7 @@ class PlotModel(BaseModel):
     is_log: bool = False
     style: str = "-"
 
-    @field_validator('x_data', 'y_data', mode='before')
+    @field_validator("x_data", "y_data", mode="before")
     def ensure_y_data_is_list_of_lists(cls, v):
         if isinstance(v, list):
             if all(isinstance(item, list) for item in v):
@@ -354,31 +326,36 @@ class PlotModel(BaseModel):
             else:
                 return [v]
         else:
-            raise ValueError('x_data/y_data must be a list')
+            raise ValueError("x_data/y_data must be a list")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_lengths(self):
         if len(self.x_data) == 1:
             self.x_data = [self.x_data[0] for _ in self.y_data]
         if len(self.x_data) != len(self.y_data):
-            raise ValueError(f'Number of x_data series but be one or equal to number of y_data series.')
+            raise ValueError(
+                f"Number of x_data series but be one or equal to number of y_data series."
+            )
         for idx, (x_series, y_series) in enumerate(zip(self.x_data, self.y_data)):
             if len(x_series) != len(y_series):
-                raise ValueError(f'Length of y_data series at index {idx} ({len(y_series)}) does not match length of x_data ({len(x_series)})')
+                raise ValueError(
+                    f"Length of y_data series at index {idx} ({len(y_series)}) does not match length of x_data ({len(x_series)})"
+                )
         if self.legend is not None:
             if len(self.legend) != len(self.y_data):
-                raise ValueError(f'Length of legend ({len(self.legend)}) must match number of y_data series ({len(self.y_data)})')
-        
-        return self 
+                raise ValueError(
+                    f"Length of legend ({len(self.legend)}) must match number of y_data series ({len(self.y_data)})"
+                )
+
+        return self
 
     @property
     def x_data_as_np(self):
         return [np.array(x_series) for x_series in self.x_data]
-    
+
     @property
     def y_data_as_np(self):
         return [np.array(y_series) for y_series in self.y_data]
-    
 
     def get_plot(self):
         fig, ax = plt.subplots()
@@ -387,7 +364,9 @@ class PlotModel(BaseModel):
         for idx in range(num_series):
             x_series = self.x_data_as_np[idx]
             y_series = self.y_data_as_np[idx]
-            label = self.legend[idx] if self.legend and idx < len(self.legend) else f"Series {idx+1}"
+            label = (
+                self.legend[idx] if self.legend and idx < len(self.legend) else f"Series {idx+1}"
+            )
             if self.is_log:
                 ax.semilogy(x_series, y_series, self.style, label=label)
             else:
@@ -399,7 +378,6 @@ class PlotModel(BaseModel):
             ax.legend()
 
         return fig
-
 
 
 class Chart2D(Chart):
@@ -444,7 +422,6 @@ class Chart2D(Chart):
         """
         root_path = get_root_path(self.y)
         return root_path == "nonlinear_residuals"
-    
 
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
@@ -452,16 +429,19 @@ class Chart2D(Chart):
                 if d is None:
                     continue
                 if not isinstance(d, unyt.unyt_array):
-                    raise ValueError(f'data: {data} contains data with units and without, cannot create plot.')
-                
+                    raise ValueError(
+                        f"data: {data} contains data with units and without, cannot create plot."
+                    )
+
             dimesions = set([v.units.dimensions for v in data if data is not None])
             if len(dimesions) > 1:
-                raise ValueError(f'{data} contains data with different dimensions {dimesions=}, cannot create plot.')
+                raise ValueError(
+                    f"{data} contains data with different dimensions {dimesions=}, cannot create plot."
+                )
             units = [d.units for d in data if d is not None][0]
             data = [d.to(units) for d in data if data]
             return True
         return False
-
 
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
 
@@ -475,21 +455,23 @@ class Chart2D(Chart):
             y_data = [data.value for data in y_data]
             y_label += f" [{y_unit}]"
 
-
         return x_data, y_data, x_label, y_label
 
     def _is_multiline_data(self, x_data, y_data):
-        return all(not isinstance(data, list) for data in x_data) and all(not isinstance(data, list) for data in y_data)
-        
+        return all(not isinstance(data, list) for data in x_data) and all(
+            not isinstance(data, list) for data in y_data
+        )
 
-    def get_data(self, cases: List[Case])->PlotModel:
+    def get_data(self, cases: List[Case]) -> PlotModel:
         x_label = self.x.split("/")[-1]
         y_label = self.y.split("/")[-1]
 
         x_data = [data_from_path(case, self.x, cases) for case in cases]
         y_data = [data_from_path(case, self.y, cases) for case in cases]
 
-        x_data, y_data, x_label, y_label = self._handle_data_with_units(x_data, y_data, x_label, y_label)
+        x_data, y_data, x_label, y_label = self._handle_data_with_units(
+            x_data, y_data, x_label, y_label
+        )
 
         if self._is_multiline_data(x_data, y_data):
             # every case is one point, eg CL/CD plot
@@ -498,7 +480,7 @@ class Chart2D(Chart):
                 y_data=[float(data) for data in y_data],
                 x_label=x_label,
                 y_label=y_label,
-                style='o-'
+                style="o-",
             )
 
         return PlotModel(
@@ -506,7 +488,7 @@ class Chart2D(Chart):
             y_data=y_data,
             x_label=x_label,
             y_label=y_label,
-            legend=[case.name for case in cases]
+            legend=[case.name for case in cases],
         )
 
     def _handle_title(self, doc, section_func):
@@ -524,7 +506,7 @@ class Chart2D(Chart):
             if self.items_in_row > len(cases) or self.items_in_row == -1:
                 self.items_in_row = len(cases)
 
-    def _filter_input_cases(self, cases ,case_by_case):
+    def _filter_input_cases(self, cases, case_by_case):
         if case_by_case is False:
             cases = (
                 [cases[i] for i in self.select_indices]
@@ -557,40 +539,39 @@ class Chart2D(Chart):
 
         return file_names, data.x_label, data.y_label
 
-
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case=False,
-        data_storage: str = ".",
+        context: ReportContext,
     ) -> None:
         """
         returns doc item for chart
         """
-        self._handle_new_page(doc)
-        self._handle_grid_input(cases)
-        self._handle_title(doc, section_func)
-        cases = self._filter_input_cases(cases, case_by_case)
+        self._handle_new_page(context.doc)
+        self._handle_grid_input(context.cases)
+        self._handle_title(context.doc, context.section_func)
+        cases = self._filter_input_cases(context.cases, context.case_by_case)
 
-        file_names, x_lab, y_lab = self._get_figures(cases, case_by_case, data_storage)
+        file_names, x_lab, y_lab = self._get_figures(
+            cases, context.case_by_case, context.data_storage
+        )
 
         caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
 
         if self.items_in_row is not None:
-            self._add_row_figure(doc, file_names, caption)
+            self._add_row_figure(context.doc, file_names, caption)
         else:
             if self.separate_plots is True:
                 for case, file_name in zip(cases, file_names):
-                    caption = NoEscape(f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}.")
-                    self._add_figure(doc, file_name, caption)
-            else:   
-                self._add_figure(doc, file_names[-1], caption)
+                    caption = NoEscape(
+                        f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+                    )
+                    self._add_figure(context.doc, file_name, caption)
+            else:
+                self._add_figure(context.doc, file_names[-1], caption)
 
-        doc.append(NoEscape(r"\FloatBarrier"))
-        doc.append(NoEscape(r"\clearpage"))
+        context.doc.append(NoEscape(r"\FloatBarrier"))
+        context.doc.append(NoEscape(r"\clearpage"))
 
 
 class Chart3D(Chart):
@@ -694,45 +675,42 @@ class Chart3D(Chart):
         script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
 
         scene = Scene(name="my-scene", script=script)
-        path_prefix=f"s3://flow360cases-v1/users/{user_id}"
+        path_prefix = f"s3://flow360cases-v1/users/{user_id}"
         resource = Resource(path_prefix=path_prefix, id=case_id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
 
-    def _get_images(self, cases: List[Case], data_storage):
+    def _get_images(self, cases: List[Case], context: ReportContext):
         fig_name = self.fig_name
         uvf_requests = []
         for case in cases:
             uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
-        img_files = UVFshutter(cases=cases, data_storage=data_storage).get_images(
-            fig_name, uvf_requests
-        )
-        # taking "first" image from returned images as UVF-shutter supports many screenshots generation on one call
+        img_files = UVFshutter(
+            cases=cases, data_storage=context.data_storage, access_token=context.access_token
+        ).get_images(fig_name, uvf_requests)
+        # taking "first" image from returned images as UVF-shutter
+        # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
         return img_list
 
     # pylint: disable=too-many-arguments
     def get_doc_item(
         self,
-        cases: List[Case],
-        doc: Document,
-        section_func: Union[Section, Subsection] = Section,
-        case_by_case: bool = False,
-        data_storage: str = ".",
+        context: ReportContext,
     ):
         # Create new page is user requests one
         if self.force_new_page:
-            doc.append(NewPage())
+            context.doc.append(NewPage())
 
         # Change items in row to be the number of cases if higher number is supplied
         if self.items_in_row is not None:
-            if self.items_in_row > len(cases) or self.items_in_row == -1:
-                self.items_in_row = len(cases)
+            if self.items_in_row > len(context.cases) or self.items_in_row == -1:
+                self.items_in_row = len(context.cases)
 
         # Only create a title if specified
         if self.section_title is not None:
-            section = section_func(self.section_title)
-            doc.append(section)
+            section = context.section_func(self.section_title)
+            context.doc.append(section)
 
         # Reduce the case list by the selected IDs
         # pylint: disable=not-an-iterable
@@ -740,19 +718,19 @@ class Chart3D(Chart):
             [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
         )
 
-        img_list = self._get_images(cases, data_storage)
+        img_list = self._get_images(cases, context)
 
         if self.items_in_row is not None:
             fig_caption = "Chart3D Row"
-            self._add_row_figure(doc, img_list, fig_caption)
+            self._add_row_figure(context.doc, img_list, fig_caption)
 
         else:
             for filename in img_list:
                 fig = Figure(position="h!")
                 fig.add_image(filename, width=NoEscape(rf"{self.fig_size}\textwidth"))
                 fig.add_caption("A Chart3D test picture.")
-                doc.append(fig)
+                context.doc.append(fig)
 
         # Stops figures floating away from their sections
-        doc.append(NoEscape(r"\FloatBarrier"))
-        doc.append(NoEscape(r"\clearpage"))
+        context.doc.append(NoEscape(r"\FloatBarrier"))
+        context.doc.append(NoEscape(r"\clearpage"))

@@ -13,7 +13,6 @@ from typing import Any, List, Literal, Optional, Tuple, Union
 import aiohttp
 import backoff
 import pydantic as pd
-
 from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
@@ -48,7 +47,7 @@ class Resource(Flow360BaseModel):
 
     path_prefix: str
     id: str
-    type: str = 'case'
+    type: str = "case"
 
 
 class Resolution(Flow360BaseModel):
@@ -265,7 +264,7 @@ class UVFshutter(Flow360BaseModel):
         Path to the directory where data will be stored.
     url : str
         URL endpoint for the shutter service, defaults to "https://shutter-api.{Env.current.domain}".
-    use_cache : bool    
+    use_cache : bool
         Whether to force generate data or use cached data
     """
 
@@ -273,7 +272,7 @@ class UVFshutter(Flow360BaseModel):
     data_storage: str = "."
     url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
     use_cache: bool = True
-
+    access_token: str = ""
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=600)
@@ -291,7 +290,10 @@ class UVFshutter(Flow360BaseModel):
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
-                        session=session, url=self.url + "/sequence/run", uvf_request=uvf_request
+                        session=session,
+                        url=self.url + "/sequence/run",
+                        uvf_request=uvf_request,
+                        headers={"Authorization": f"Bearer {self.access_token}"},
                     )
                 )
 
