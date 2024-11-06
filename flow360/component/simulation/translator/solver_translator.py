@@ -179,7 +179,7 @@ def rotation_translator(model: Rotation):
         "referenceFrame": {},
     }
     if model.parent_volume is not None:
-        volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.name
+        volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.full_name
     spec = dump_dict(model)["spec"]
     if spec is not None:
         spec_value = spec.get("value", None)
@@ -581,7 +581,7 @@ def porous_media_entity_info_serializer(volume):
     axes = volume.axes
     return {
         "zoneType": "mesh",
-        "zoneName": volume.name,
+        "zoneName": volume.full_name,
         "axes": [list(axes[0]), list(axes[1])],
     }
 
