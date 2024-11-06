@@ -4,8 +4,6 @@ Validation for output parameters
 
 from typing import List, Literal, Union, get_args, get_origin
 
-# from flow360.component.simulation.simulation_params import SimulationParams
-
 
 def _check_unique_probe_type(value, probe_output_type_str: str):
     """check to ensure every entity has the same type"""

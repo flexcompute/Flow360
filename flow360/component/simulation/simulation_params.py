@@ -252,7 +252,7 @@ class SimulationParams(_ParamModelBase):
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
-    def chec_duplicate_user_defined_fields(cls, v):
+    def check_duplicate_user_defined_fields(cls, v):
         """Check if we have duplicate user defined fields"""
         if v == []:
             return v
