@@ -11,13 +11,23 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.plugins.report.report_context import ReportContext
-from flow360.plugins.report.report_items import (Chart, Chart2D, Chart3D,
-                                                 Inputs, Summary, Table)
+from flow360.plugins.report.report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table
 from pydantic import Field
+
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
-from pylatex import (Command, Document, Foot, Head, NewPage, NoEscape, Package,
-                     PageStyle, Section, Subsection)
+from pylatex import (
+    Command,
+    Document,
+    Foot,
+    Head,
+    NewPage,
+    NoEscape,
+    Package,
+    PageStyle,
+    Section,
+    Subsection,
+)
 
 
 # pylint: disable=too-few-public-methods

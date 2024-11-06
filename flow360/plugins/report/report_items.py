@@ -12,21 +12,31 @@ from flow360 import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
 from flow360.plugins.report.report_context import ReportContext
-from flow360.plugins.report.utils import (Delta, Tabulary,
-                                          _requirements_mapping,
-                                          data_from_path,
-                                          get_requirements_from_data_path,
-                                          get_root_path)
-from flow360.plugins.report.uvf_shutter import (ActionPayload, Resource, Scene,
-                                                ScenesData, SetFieldPayload,
-                                                SetObjectVisibilityPayload,
-                                                TakeScreenshotPayload,
-                                                UvfObjectTypes, UVFshutter)
-from pydantic import (BaseModel, Field, NonNegativeInt, field_validator,
-                      model_validator)
+from flow360.plugins.report.utils import (
+    Delta,
+    Tabulary,
+    _requirements_mapping,
+    data_from_path,
+    get_requirements_from_data_path,
+    get_root_path,
+)
+from flow360.plugins.report.uvf_shutter import (
+    ActionPayload,
+    Resource,
+    Scene,
+    ScenesData,
+    SetFieldPayload,
+    SetObjectVisibilityPayload,
+    TakeScreenshotPayload,
+    UvfObjectTypes,
+    UVFshutter,
+)
+from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator
+
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
 from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
+
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
 
