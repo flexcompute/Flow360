@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
@@ -55,6 +56,9 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
+)
+from flow360.component.simulation.validation.validation_output import (
+    _check_output_fields,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_cht_solver_settings,
@@ -197,6 +201,11 @@ class SimulationParams(_ParamModelBase):
         None,
         description="User defined dynamics. See :ref:`User defined dynamics <user_defined_dynamics>` for more details.",
     )
+
+    user_defined_fields: List[UserDefinedField] = CaseField(
+        [], description="User defined fields that can be used in outputs."
+    )
+
     # Support for user defined expression?
     # If so:
     #    1. Move over the expression validation functions.
@@ -236,6 +245,21 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid())
         return v
 
+    @pd.field_validator("user_defined_fields", mode="after")
+    @classmethod
+    def check_duplicate_user_defined_fields(cls, v):
+        """Check if we have duplicate user defined fields"""
+        if v == []:
+            return v
+
+        known_user_defined_fields = set()
+        for field in v:
+            if field.name in known_user_defined_fields:
+                raise ValueError(f"Duplicate user defined field name: {field.name}")
+            known_user_defined_fields.add(field.name)
+
+        return v
+
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):
         """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
@@ -269,6 +293,11 @@ class SimulationParams(_ParamModelBase):
     def check_low_mach_preconditioner_output(cls, v):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(v)
+
+    @pd.model_validator(mode="after")
+    def check_output_fields(params):
+        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        return _check_output_fields(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
