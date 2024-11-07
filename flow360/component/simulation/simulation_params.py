@@ -169,6 +169,7 @@ class _ParamModelBase(Flow360BaseModel):
         return super().copy(update=update, **kwargs)
 
 
+# pylint: disable=too-many-public-methods
 class SimulationParams(_ParamModelBase):
     """
         meshing (Optional[MeshingParams]): Contains all the user specified meshing parameters that either enrich or
