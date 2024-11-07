@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 
@@ -502,7 +503,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'SurfaceMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "SurfaceMesh"
@@ -519,7 +522,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'VolumeMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "VolumeMesh"
@@ -536,7 +541,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'Case'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "Case"
