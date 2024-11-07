@@ -285,8 +285,6 @@ def _check_parent_volume_is_rotating(models):
         for entity in model.entities.stored_entities
     }
 
-    print(">>> rotating_zone_names: ", rotating_zone_names)
-
     for model_index, model in enumerate(models):
         if isinstance(model, Rotation) is False:
             continue
