@@ -20,6 +20,7 @@ from flow360.plugins.report.utils import (
     get_requirements_from_data_path,
     get_root_path,
 )
+from flow360.log import log
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
     Resource,
@@ -30,6 +31,9 @@ from flow360.plugins.report.uvf_shutter import (
     TakeScreenshotPayload,
     UvfObjectTypes,
     UVFshutter,
+    FocusPayload,
+    SetCameraPayload,
+    Camera
 )
 from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator
 
@@ -270,7 +274,34 @@ class Chart(ReportItem):
                 self.separate_plots = True
         return self
 
-    def _add_figure(self, doc, file_name, caption):
+    def _handle_title(self, doc, section_func):
+        if self.section_title is not None:
+            section = section_func(self.section_title)
+            doc.append(section)
+
+    def _handle_new_page(self, doc):
+        if self.force_new_page:
+            doc.append(NewPage())
+
+    def _handle_grid_input(self, cases):
+        # Change items in row to be the number of cases if higher number is supplied
+        if self.items_in_row is not None:
+            if self.items_in_row > len(cases) or self.items_in_row == -1:
+                self.items_in_row = len(cases)
+
+    def _filter_input_cases(self, cases, case_by_case):
+        # Reduce the case list by the selected IDs
+        # pylint: disable=not-an-iterable
+        if case_by_case is False:
+            cases = (
+                [cases[i] for i in self.select_indices]
+                if self.select_indices is not None
+                else cases
+            )
+
+        return cases
+
+    def _add_figure(self, doc: Document, file_name, caption):
         fig = Figure(position="h!")
         fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
         fig.add_caption(caption)
@@ -491,31 +522,6 @@ class Chart2D(Chart):
             legend=[case.name for case in cases],
         )
 
-    def _handle_title(self, doc, section_func):
-        if self.section_title is not None:
-            section = section_func(self.section_title)
-            doc.append(section)
-
-    def _handle_new_page(self, doc):
-        if self.force_new_page:
-            doc.append(NewPage())
-
-    def _handle_grid_input(self, cases):
-        # Change items in row to be the number of cases if higher number is supplied
-        if self.items_in_row is not None:
-            if self.items_in_row > len(cases) or self.items_in_row == -1:
-                self.items_in_row = len(cases)
-
-    def _filter_input_cases(self, cases, case_by_case):
-        if case_by_case is False:
-            cases = (
-                [cases[i] for i in self.select_indices]
-                if self.select_indices is not None
-                else cases
-            )
-
-        return cases
-
     def _get_figures(self, cases, case_by_case, data_storage):
         file_names = []
         cbc_str = "_cbc_" if case_by_case else ""
@@ -574,6 +580,8 @@ class Chart2D(Chart):
         context.doc.append(NoEscape(r"\clearpage"))
 
 
+
+
 class Chart3D(Chart):
     """
     Represents a 3D chart within a report, displaying a specific surface field.
@@ -584,12 +592,14 @@ class Chart3D(Chart):
         The name of the surface field to display in the chart.
     limits : Optional[Tuple[float, float]], default=None
         Optional limits for the field values, specified as a tuple (min, max).
+    camera: Camera
+        Camera settings: camera position, look at, up.
     show : UvfObjectTypes
         Type of object to display in the 3D chart.
     """
 
     field: Optional[SurfaceFieldNames] = None
-    # camera: List[float]
+    camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     show: UvfObjectTypes
 
@@ -607,7 +617,7 @@ class Chart3D(Chart):
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
             ),
-            ActionPayload(action="focus"),
+            ActionPayload(action="focus", payload=FocusPayload(object_ids=['boundaries'], zoom=1.5)),
             ActionPayload(
                 action="set-field",
                 payload=SetFieldPayload(object_id="qcriterion", field_name=field, min_max=limits),
@@ -622,7 +632,21 @@ class Chart3D(Chart):
                 payload=TakeScreenshotPayload(file_name=screenshot_name, type="png"),
             )
         ]
-
+        return script
+    
+    def _get_uvf_set_camera(self, script, camera: Camera):
+        script += [
+            ActionPayload(
+                action="set-camera",
+                payload=SetCameraPayload(**camera.model_dump(exclude_none=True))
+            )
+        ]
+        return script
+    
+    def _get_focus_camera(self, script):
+        script += [
+            ActionPayload(action="focus", payload=FocusPayload(object_ids=['boundaries'], zoom=1.5))
+        ]
         return script
 
     def _get_uvf_boundary_script(
@@ -630,6 +654,7 @@ class Chart3D(Chart):
     ):
         if script is None:
             script = []
+ 
         script += [
             ActionPayload(
                 action="set-object-visibility",
@@ -637,8 +662,8 @@ class Chart3D(Chart):
                     object_ids=["slices", "qcriterion"], visibility=False
                 ),
             ),
-            ActionPayload(action="focus"),
         ]
+
         if field is None:
             pass
             # script += [
@@ -661,7 +686,7 @@ class Chart3D(Chart):
             ]
         return script
 
-    def _get_uvf_request(self, fig_name, user_id, case_id):
+    def _get_uvf_request(self, fig_name, case: Case):
 
         if self.show == "qcriterion":
             script = self._get_uvf_qcriterion_script(field=self.field, limits=self.limits)
@@ -672,10 +697,20 @@ class Chart3D(Chart):
         else:
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
 
+        script = self._get_uvf_set_camera(script, self.camera)
+        if self.camera.dimension is None:
+            script = self._get_focus_camera(script)
+
         script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
 
+        user_id, case_id = case.info.user_id, case.id
+
         scene = Scene(name="my-scene", script=script)
-        path_prefix = f"s3://flow360cases-v1/users/{user_id}"
+        path_prefix = case.get_cloud_path_prefix()
+        if self.field is None and self.show is 'boundaries':
+            log.debug('Not implemented: getting geometry resource for showing geoemtry. Currently using case resource.')
+            # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
+            # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")
         resource = Resource(path_prefix=path_prefix, id=case_id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
@@ -684,10 +719,15 @@ class Chart3D(Chart):
         fig_name = self.fig_name
         uvf_requests = []
         for case in cases:
-            uvf_requests.append(self._get_uvf_request(fig_name, case.info.user_id, case.id))
-        img_files = UVFshutter(
-            cases=cases, data_storage=context.data_storage, access_token=context.access_token
-        ).get_images(fig_name, uvf_requests)
+            uvf_requests.append(self._get_uvf_request(fig_name, case))
+
+        context_data = {
+            "data_storage": context.data_storage,
+            "url": context.shutter_url,
+            "access_token": context.shutter_access_token,
+        }
+        context_data = {k: v for k, v in context_data.items() if v is not None}
+        img_files = UVFshutter(cases=cases, **context_data ).get_images(fig_name, uvf_requests)
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
@@ -698,25 +738,13 @@ class Chart3D(Chart):
         self,
         context: ReportContext,
     ):
-        # Create new page is user requests one
-        if self.force_new_page:
-            context.doc.append(NewPage())
-
-        # Change items in row to be the number of cases if higher number is supplied
-        if self.items_in_row is not None:
-            if self.items_in_row > len(context.cases) or self.items_in_row == -1:
-                self.items_in_row = len(context.cases)
-
-        # Only create a title if specified
-        if self.section_title is not None:
-            section = context.section_func(self.section_title)
-            context.doc.append(section)
-
-        # Reduce the case list by the selected IDs
-        # pylint: disable=not-an-iterable
-        cases = (
-            [cases[i] for i in self.select_indices] if self.select_indices is not None else cases
-        )
+        """
+        returns doc item for 3D chart
+        """
+        self._handle_new_page(context.doc)
+        self._handle_grid_input(context.cases)
+        self._handle_title(context.doc, context.section_func)
+        cases = self._filter_input_cases(context.cases, context.case_by_case)
 
         img_list = self._get_images(cases, context)
 
@@ -726,10 +754,9 @@ class Chart3D(Chart):
 
         else:
             for filename in img_list:
-                fig = Figure(position="h!")
-                fig.add_image(filename, width=NoEscape(rf"{self.fig_size}\textwidth"))
-                fig.add_caption("A Chart3D test picture.")
-                context.doc.append(fig)
+                fig_caption = 'Chart 3D'
+                self._add_figure(context.doc, filename, fig_caption)
+
 
         # Stops figures floating away from their sections
         context.doc.append(NoEscape(r"\FloatBarrier"))

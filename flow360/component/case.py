@@ -630,20 +630,22 @@ class Case(CaseBase, Flow360Resource):
         return cls(case_id)
 
     @classmethod
-    def from_local_storage(cls, id, name, local_storage_path, user_id: str = "local") -> Case:
+    def from_local_storage(cls, local_storage_path, meta_data: CaseMeta) -> Case:
         """
         Create a `Case` instance from local storage.
 
         Parameters
         ----------
-        id : str
-            The unique identifier for the case.
-        name : str
-            The name of the case.
         local_storage_path : str
             The path to the local storage directory.
-        user_id : str, optional
-            The user ID associated with the case, by default "local".
+        meta_data : CaseMeta    
+            case metadata such as:
+            id : str
+                The unique identifier for the case.
+            name : str
+                The name of the case.
+            user_id : str
+                The user ID associated with the case, can be "local".
 
         Returns
         -------
@@ -652,16 +654,7 @@ class Case(CaseBase, Flow360Resource):
         """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
         # we don't know if the status is completed, but if we load from local, we can assume
-        case = cls._from_meta(
-            CaseMeta(
-                caseId=id,
-                name=name,
-                status=Flow360Status.COMPLETED,
-                userId=user_id,
-                deleted=False,
-                caseMeshId="unknown",
-            )
-        )
+        case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
         case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
         return case

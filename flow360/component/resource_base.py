@@ -83,7 +83,8 @@ class AssetMetaBaseModel(pd.BaseModel):
     created_at: Optional[str] = pd.Field(alias="createdAt")
     updated_at: Optional[datetime] = pd.Field(alias="updatedAt")
     updated_by: Optional[str] = pd.Field(alias="updatedBy")
-    deleted: bool
+    deleted: Optional[bool]
+    cloud_path_prefix: Optional[str] = None
 
     # pylint: disable=no-self-argument
     @pd.validator("*", pre=True)
@@ -307,6 +308,17 @@ class Flow360Resource(RestApi):
             List of files available for download
         """
         return self.get(method="files")
+    
+
+    def get_cloud_path_prefix(self):
+        if self.info.cloud_path_prefix is not None:
+            return self.info.cloud_path_prefix
+        else:
+            files = self.get_download_file_list()
+            print(files)
+            if len(files) == 0:
+                raise ValueError('Cannot determine cloud path prefix. Not files accociated with this resource.')
+            return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
 
     # pylint: disable=too-many-arguments
     def _download_file(

@@ -114,6 +114,36 @@ class SetFieldPayload(Flow360BaseModel):
     min_max: Tuple[float, float]
 
 
+class Camera(Flow360BaseModel):
+    """
+    Represents the camera configuration payload.
+
+    Attributes
+    ----------
+    position : Vector3
+        Camera eye position, think of the eye position as a position on the unit sphere centered at the `lookAt`.
+    up : Vector3
+        Up orientation of the camera.
+    look_at : Vector3
+        Target point the camera will look at from the position. Default: center of bbox
+    pan_target : Vector3 or None
+        Position to pan the viewport center to; if undefined, the default is `look_at`.
+    dimension_direction : {'width', 'height', 'diagonal'}
+        The direction `dimension_size_model_units` is for.
+    dimension_size_model_units : float
+        The camera zoom will be set such that the extents of the scene's projection is this number of model units for the applicable `dimensionDirection`.
+    """
+
+    position: Optional[Tuple[float, float, float]] = (-1, -1, 1)
+    up: Optional[Tuple[float, float, float]] = (0, 0, 1)
+    look_at: Optional[Tuple[float, float, float]] = None
+    pan_target: Optional[Tuple[float, float, float]] = None
+    dimension_dir: Optional[Literal['width', 'height', 'diagonal']] = pd.Field('width', alias='dimensionDirection')
+    dimension: Optional[float] = pd.Field(None, alias='dimensionSizeModelUnits')
+
+class SetCameraPayload(Camera):
+    pass
+
 class TakeScreenshotPayload(Flow360BaseModel):
     """
     Payload for taking a screenshot.
@@ -143,8 +173,24 @@ class ResetFieldPayload(Flow360BaseModel):
     object_id: UvfObjectTypes
 
 
+class FocusPayload(Flow360BaseModel):
+    """
+    Payload for focusing camera on an object.
+
+    Parameters
+    ----------
+    object_id : UvfObjectTypes
+        Identifier of the object for which the field is reset.
+    zoom: pd.PositiveFloat
+        Zoom multiplier can be used to add padding, default 1
+    """
+
+    object_ids: List[Union[UvfObjectTypes, str]]
+    zoom: Optional[pd.PositiveFloat] = 1
+
+
 ActionTypes = Literal[
-    "focus", "set-object-visibility", "set-field", "reset-field", "take-screenshot"
+    "focus", "set-object-visibility", "set-field", "reset-field", "set-camera", "take-screenshot"
 ]
 
 
@@ -162,7 +208,7 @@ class ActionPayload(Flow360BaseModel):
 
     action: ActionTypes
     payload: Optional[
-        Union[SetObjectVisibilityPayload, SetFieldPayload, TakeScreenshotPayload, ResetFieldPayload]
+        Union[SetObjectVisibilityPayload, SetFieldPayload, TakeScreenshotPayload, ResetFieldPayload, SetCameraPayload, FocusPayload]
     ] = None
 
 
@@ -263,16 +309,16 @@ class UVFshutter(Flow360BaseModel):
     data_storage : str, default="."
         Path to the directory where data will be stored.
     url : str
-        URL endpoint for the shutter service, defaults to "https://shutter-api.{Env.current.domain}".
+        URL endpoint for the shutter service, defaults to "https://shutter-api-development.{Env.current.domain}".
     use_cache : bool
         Whether to force generate data or use cached data
     """
 
     cases: List[Any]
     data_storage: str = "."
-    url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
+    url: str = pd.Field(default_factory=lambda: f"https://shutter-api-development.{Env.current.domain}")
     use_cache: bool = True
-    access_token: str = ""
+    access_token: Optional[str] = None
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=600)
@@ -285,15 +331,14 @@ class UVFshutter(Flow360BaseModel):
             )
             return session.post(url, json=uvf_request)
 
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600), headers={"Authorization": f"Bearer {self.access_token}"}) as session:
             tasks = []
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
                         session=session,
                         url=self.url + "/sequence/run",
-                        uvf_request=uvf_request,
-                        headers={"Authorization": f"Bearer {self.access_token}"},
+                        uvf_request=uvf_request
                     )
                 )
 

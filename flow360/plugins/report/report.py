@@ -216,6 +216,8 @@ class Report(Flow360BaseModel):
         landscape: bool = False,
         data_storage: str = ".",
         use_cache: bool = True,
+        shutter_url: str = None,
+        shutter_access_token: str = None
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -262,7 +264,7 @@ class Report(Flow360BaseModel):
         doc.change_document_style("header")
 
         context = ReportContext(
-            cases, doc, case_by_case=False, data_storage=data_storage, access_token=str
+            cases=cases, doc=doc, data_storage=data_storage, shutter_url=shutter_url, shutter_access_token=shutter_access_token
         )
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
@@ -274,12 +276,13 @@ class Report(Flow360BaseModel):
                 for case in cases:
                     with doc.create(Section(f"Case: {case.id}")):
                         case_context = ReportContext(
-                            [case],
-                            doc,
-                            Subsection,
-                            case_by_case=self.include_case_by_case,
+                            cases=[case],
+                            doc=doc,
+                            section_func=Subsection,
+                            case_by_case=True,
                             data_storage=data_storage,
-                            config=self.config,
+                            shutter_url=shutter_url,
+                            shutter_access_token=shutter_access_token,
                         )
                         for item in self.items:  # pylint: disable=not-an-iterable
                             # Don't attempt to create ReportItems that have a
