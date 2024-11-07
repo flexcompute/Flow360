@@ -24,34 +24,61 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
     HeatEquationSolver,
+    KOmegaSST,
+    KOmegaSSTModelConstants,
     LinearSolver,
     NavierStokesSolver,
     NoneSolver,
     SpalartAllmaras,
+    SpalartAllmarasModelConstants,
+    TransitionModelSolver,
     TransitionModelSolverType,
     TurbulenceModelSolverType,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    HeatFlux,
     Inflow,
     Outflow,
     Periodic,
+    Pressure,
+    Rotational,
     SlipWall,
     SymmetryPlane,
+    Temperature,
+    TotalPressure,
+    Translational,
     Wall,
+)
+from flow360.component.simulation.models.turbulence_quantities import (
+    TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
+    AngleExpression,
+    AngularVelocity,
     BETDisk,
+    BETDiskChord,
+    BETDiskSectionalPolar,
+    BETDiskTwist,
     Fluid,
     ForcePerArea,
+    FromUserDefinedDynamics,
+    HeatEquationInitialCondition,
+    NavierStokesInitialCondition,
     PorousMedium,
     Rotation,
     Solid,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    GenericReferenceCondition,
     ThermalState,
+)
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -61,13 +88,19 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
+    TimeAverageProbeOutput,
+    TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    Box,
     Cylinder,
     Edge,
+    GenericVolume,
     ReferenceGeometry,
     Surface,
 )
@@ -78,12 +111,19 @@ from flow360.component.simulation.time_stepping.time_stepping import (
     Steady,
     Unsteady,
 )
-from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.unit_system import (
+    SI_unit_system,
+    imperial_unit_system,
+)
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamic,
+)
 
 __all__ = [
     "u",
     "SimulationParams",
     "SI_unit_system",
+    "imperial_unit_system",
     "services",
     "MeshingParams",
     "MeshingDefaults",
@@ -116,7 +156,11 @@ __all__ = [
     "Fluid",
     "Solid",
     "ActuatorDisk",
+    "AngularVelocity",
     "BETDisk",
+    "BETDiskChord",
+    "BETDiskSectionalPolar",
+    "BETDiskTwist",
     "Rotation",
     "PorousMedium",
     "SurfaceOutput",
@@ -128,11 +172,18 @@ __all__ = [
     "SurfaceIntegralOutput",
     "ProbeOutput",
     "SurfaceProbeOutput",
+    "TimeAverageProbeOutput",
+    "TimeAverageSurfaceProbeOutput",
+    "TimeAverageSliceOutput",
+    "SurfaceSliceOutput",
     "AeroAcousticOutput",
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",
     "SpalartAllmaras",
+    "KOmegaSST",
+    "SpalartAllmarasModelConstants",
+    "KOmegaSSTModelConstants",
     "TransitionModelSolverType",
     "TurbulenceModelSolverType",
     "LinearSolver",
@@ -140,4 +191,23 @@ __all__ = [
     "Air",
     "Sutherland",
     "SolidMaterial",
+    "Slice",
+    "TurbulenceQuantities",
+    "UserDefinedDynamic",
+    "Translational",
+    "NavierStokesInitialCondition",
+    "FromUserDefinedDynamics",
+    "HeatEquationInitialCondition",
+    "GenericVolume",
+    "Temperature",
+    "HeatFlux",
+    "Point",
+    "PointArray",
+    "AngleExpression",
+    "Box",
+    "GenericReferenceCondition",
+    "TransitionModelSolver",
+    "Pressure",
+    "TotalPressure",
+    "Rotational",
 ]

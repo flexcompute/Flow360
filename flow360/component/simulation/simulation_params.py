@@ -17,17 +17,32 @@ from flow360.component.simulation.framework.param_utils import (
     _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
+from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
-from flow360.component.simulation.models.volume_models import Fluid, VolumeModelTypes
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    Fluid,
+    VolumeModelTypes,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     OperatingConditionTypes,
 )
-from flow360.component.simulation.outputs.outputs import OutputTypes
+from flow360.component.simulation.outputs.outputs import (
+    AeroAcousticOutput,
+    IsosurfaceOutput,
+    OutputTypes,
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+    UserDefinedField,
+    VolumeOutput,
+)
 from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     _SurfaceEntityBase,
@@ -42,6 +57,9 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.validation.validation_output import (
+    _check_output_fields,
+)
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_cht_solver_settings,
     _check_consistency_ddes_volume_output,
@@ -49,6 +67,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
+    _check_parent_volume_is_rotating,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -107,7 +126,9 @@ class _ParamModelBase(Flow360BaseModel):
         unit_system = model_dict.get("unit_system")
         if version is not None and unit_system is not None:
             if version != __version__:
-                raise NotImplementedError("No legacy support at the time being.")
+                model_dict = updater(  # pylint: disable=R0801
+                    version_from=version, version_to=__version__, params_as_dict=model_dict
+                )
             # pylint: disable=not-context-manager
             with UnitSystem.from_dict(**unit_system):
                 super().__init__(**model_dict)
@@ -184,10 +205,13 @@ class SimulationParams(_ParamModelBase):
     """
     Below can be mostly reused with existing models 
     """
-    time_stepping: Optional[Union[Steady, Unsteady]] = CaseField(
-        Steady(), discriminator="type_name"
-    )
+    time_stepping: Union[Steady, Unsteady] = CaseField(Steady(), discriminator="type_name")
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
+
+    user_defined_fields: List[UserDefinedField] = CaseField(
+        [], description="User defined fields that can be used in outputs."
+    )
+
     """
     Support for user defined expression?
     If so:
@@ -212,10 +236,8 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(
-                    self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"]
-                )
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude + ["thermal_state"])
+                return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
+        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
@@ -227,6 +249,27 @@ class SimulationParams(_ParamModelBase):
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
+        return v
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_parent_volume_is_rotating(cls, models):
+        """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
+        return _check_parent_volume_is_rotating(models)
+
+    @pd.field_validator("user_defined_fields", mode="after")
+    @classmethod
+    def check_duplicate_user_defined_fields(cls, v):
+        """Check if we have duplicate user defined fields"""
+        if v == []:
+            return v
+
+        known_user_defined_fields = set()
+        for field in v:
+            if field.name in known_user_defined_fields:
+                raise ValueError(f"Duplicate user defined field name: {field.name}")
+            known_user_defined_fields.add(field.name)
+
         return v
 
     @pd.model_validator(mode="after")
@@ -263,6 +306,11 @@ class SimulationParams(_ParamModelBase):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(v)
 
+    @pd.model_validator(mode="after")
+    def check_output_fields(params):
+        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        return _check_output_fields(params)
+
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
@@ -298,7 +346,8 @@ class SimulationParams(_ParamModelBase):
 
         return registry
 
-    def _get_used_entity_registry(self) -> EntityRegistry:
+    @property
+    def used_entity_registry(self) -> EntityRegistry:
         """
         Get a entity registry that collects all the entities used in the simulation.
         And also try to update the entities now that we have a global view of the simulation.
@@ -308,7 +357,6 @@ class SimulationParams(_ParamModelBase):
         registry = self._update_entity_private_attrs(registry)
         return registry
 
-    ##:: Internal Util functions
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
         """
         Update the zone info from the actual volume mesh before solver execution.
@@ -317,8 +365,77 @@ class SimulationParams(_ParamModelBase):
         Do we also need to update the params when the **surface meshing** is done?
         """
         # pylint:disable=no-member
-        used_entity_registry = self._get_used_entity_registry()
+        used_entity_registry = self.used_entity_registry
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
         return self
+
+    def is_steady(self):
+        """
+        returns True when SimulationParams is steady state
+        """
+        return isinstance(self.time_stepping, Steady)
+
+    def has_actuator_disks(self):
+        """
+        returns True when SimulationParams has ActuatorDisk disk
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, ActuatorDisk) for item in self.models)
+
+    def has_bet_disks(self):
+        """
+        returns True when SimulationParams has BET disk
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, BETDisk) for item in self.models)
+
+    def has_isosurfaces(self):
+        """
+        returns True when SimulationParams has isosurfaces
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, IsosurfaceOutput) for item in self.outputs)
+
+    def has_monitors(self):
+        """
+        returns True when SimulationParams has monitors
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(
+            isinstance(item, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput))
+            for item in self.outputs
+        )
+
+    def has_volume_output(self):
+        """
+        returns True when SimulationParams has volume output
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, VolumeOutput) for item in self.outputs)
+
+    def has_aeroacoustics(self):
+        """
+        returns True when SimulationParams has aeroacoustics
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, (AeroAcousticOutput)) for item in self.outputs)
+
+    def has_user_defined_dynamics(self):
+        """
+        returns True when SimulationParams has user defined dynamics
+        """
+        return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0

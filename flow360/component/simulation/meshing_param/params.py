@@ -18,6 +18,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.unit_system import AngleType, LengthType
@@ -41,7 +42,7 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield], pd.Field(discriminator="type")
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
 ]
 
 
@@ -136,9 +137,15 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        has_farfield = any(isinstance(volume_zone, AutomatedFarfield) for volume_zone in v)
-        if not has_farfield:
-            raise ValueError("AutomatedFarfield is required in volume_zones.")
+        total_farfield = sum(
+            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+        )
+        if total_farfield == 0:
+            raise ValueError("Farfield zone is required in `volume_zones`.")
+
+        if total_farfield > 1:
+            raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
         return v
 
     @pd.model_validator(mode="after")

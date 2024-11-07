@@ -7,13 +7,14 @@ import tempfile
 import time
 import uuid
 from enum import Enum
+from itertools import chain
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pandas
-import pydantic.v1 as pd
+import pydantic as pd
 
-from flow360.component.flow360_params.unit_system import (
+from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
     ForceType,
     MomentType,
@@ -27,8 +28,10 @@ from ...cloud.s3_utils import (
 )
 from ...exceptions import Flow360ValueError
 from ...log import log
-from ..flow360_params.conversions import unit_converter
+from ..flow360_params.conversions import unit_converter as unit_converter_v1
 from ..flow360_params.flow360_params import Flow360Params
+from ..simulation.conversion import unit_converter as unit_converter_v2
+from ..simulation.simulation_params import SimulationParams
 
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
@@ -38,6 +41,53 @@ def _temp_file_generator(suffix: str = ""):
     random_name = str(uuid.uuid4()) + suffix
     file_path = os.path.join(TMP_DIR.name, random_name)
     return file_path
+
+
+def _find_by_pattern(all_items: list, pattern):
+
+    matched_items = []
+    if pattern is not None and "*" in pattern:
+        regex_pattern = pattern.replace("*", ".*")
+    else:
+        regex_pattern = f"^{pattern}$"  # Exact match if no '*'
+
+    regex = re.compile(regex_pattern)
+    # pylint: disable=no-member
+    matched_items.extend(filter(lambda x: regex.match(x), all_items))
+    return matched_items
+
+
+def _filter_headers_by_prefix(
+    headers: List[str], include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> List[str]:
+    """
+    Filters headers based on provided include and exclude prefix lists.
+
+    Parameters
+    ----------
+    headers : List[str]
+        List of headers to filter.
+    include : Optional[List[str]]
+        List of prefixes to include in the result. If None, includes all.
+    exclude : Optional[List[str]]
+        List of prefixes to exclude from the result. If None, excludes none.
+
+    Returns
+    -------
+    List[str]
+        Filtered list of headers.
+    """
+    if include:
+        headers = [
+            header for header in headers if any(header.startswith(prefix) for prefix in include)
+        ]
+
+    if exclude:
+        headers = [
+            header for header in headers if not any(header.startswith(prefix) for prefix in exclude)
+        ]
+
+    return headers
 
 
 class CaseDownloadable(Enum):
@@ -64,7 +114,9 @@ class CaseDownloadable(Enum):
     TOTAL_FORCES = "total_forces_v2.csv"
     BET_FORCES = "bet_forces_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
-    FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
+    LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
+    Y_SLICING_FORCE_DISTRIBUTION = "postprocess/Y_slicing_forceDistribution.csv"
+    X_SLICING_FORCE_DISTRIBUTION = "postprocess/X_slicing_forceDistribution.csv"
 
     # user defined:
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
@@ -123,9 +175,10 @@ class ResultBaseModel(pd.BaseModel):
     remote_file_name: str = pd.Field()
     local_file_name: str = pd.Field(None)
     do_download: Optional[bool] = pd.Field(None)
+    local_storage: Optional[str] = pd.Field(None)
     _download_method: Optional[Callable] = pd.PrivateAttr()
     _get_params_method: Optional[Callable] = pd.PrivateAttr()
-    _is_downloadable: Callable = pd.PrivateAttr(lambda: True)
+    _is_downloadable: Optional[Callable] = pd.PrivateAttr()
 
     def download(self, to_file: str = None, to_folder: str = ".", overwrite: bool = False):
         """
@@ -185,7 +238,7 @@ class ResultCSVModel(ResultBaseModel):
     """
 
     temp_file: str = pd.Field(
-        const=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
+        frozen=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
     )
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
@@ -228,9 +281,11 @@ class ResultCSVModel(ResultBaseModel):
         Load CSV data from a remote source.
         """
 
-        self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
-        self._raw_values = self._read_csv_file(self.temp_file)
-        self.local_file_name = self.temp_file
+        if self.local_storage is not None:
+            self.download(to_folder=self.local_storage, overwrite=True, **kwargs_download)
+        else:
+            self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
+        self._raw_values = self._read_csv_file(self.local_file_name)
 
     def download(
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
@@ -265,8 +320,9 @@ class ResultCSVModel(ResultBaseModel):
                     overwrite=overwrite,
                     **kwargs,
                 )
+                self.local_file_name = local_file_path
             else:
-                shutil.copy(self.temp_file, local_file_path)
+                shutil.copy(self.local_file_name, local_file_path)
                 log.info(f"Saved to {local_file_path}")
 
     def __str__(self):
@@ -356,6 +412,24 @@ class ResultCSVModel(ResultBaseModel):
 
         return pandas.DataFrame(self.values)
 
+    def wait(self, timeout_minutes=60):
+        """
+        Wait until the Case finishes processing, refresh periodically. Useful for postprocessing, eg sectional data
+        """
+
+        start_time = time.time()
+        while time.time() - start_time < timeout_minutes * 60:
+            try:
+                self.load_from_remote(log_error=False)
+                return None
+            except CloudFileNotFoundError:
+                pass
+            time.sleep(2)
+
+        raise TimeoutError(
+            "Timeout: post-processing did not finish within the specified timeout period."
+        )
+
 
 class ResultTarGZModel(ResultBaseModel):
     """
@@ -389,77 +463,188 @@ class ResultTarGZModel(ResultBaseModel):
 class NonlinearResidualsResultCSVModel(ResultCSVModel):
     """NonlinearResidualsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, frozen=True)
 
 
 class LinearResidualsResultCSVModel(ResultCSVModel):
     """LinearResidualsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, frozen=True)
 
 
 class CFLResultCSVModel(ResultCSVModel):
     """CFLResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, frozen=True)
 
 
 class MinMaxStateResultCSVModel(ResultCSVModel):
     """CFLResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, frozen=True)
 
 
 class MaxResidualLocationResultCSVModel(ResultCSVModel):
     """MaxResidualLocationResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
+
+
+class ResultOperations:
+    @classmethod
+    def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
+        df = obj.as_dataframe()
+        selected_fraction = df.tail(int(len(df) * avarage_fraction))
+        average = selected_fraction[column].mean()
+        return average
 
 
 class TotalForcesResultCSVModel(ResultCSVModel):
     """TotalForcesResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
+    _averages: Optional[Dict] = pd.PrivateAttr(None)
+
+    def get_averages(self, avarage_fraction):
+        return {
+            column: ResultOperations.average_last_fraction(self, column, avarage_fraction)
+            for column in self.values.keys()
+        }
+
+    @property
+    def averages(self):
+        """
+        Get average data over last 10%
+
+        Returns
+        -------
+        dict
+            Dictionary containing CL, CD, CFx/y/z, CMx/y/z
+        """
+
+        if self._averages is None:
+            self._averages = self.get_averages(0.1)
+        return self._averages
 
 
 class SurfaceForcesResultCSVModel(ResultCSVModel):
     """SurfaceForcesResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
 
-class ForceDistributionResultCSVModel(ResultCSVModel):
+class PerEntityResultCSVModel(ResultCSVModel):
+    _variables: List[str] = []
+    _x_columns: List[str] = []
+    _entities: List[str] = None
+
+    @property
+    def values(self):
+        """
+        Get the current data.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the current data.
+        """
+        if self._values is None:
+            super().values
+            self._filtered_sum()
+        return super().values
+
+    @property
+    def entities(self):
+        """
+        Returns list of entities (boundary names) available for this result
+        """
+        if self._entities is None:
+            pattern = re.compile(rf"(.*)_({'|'.join(self._variables)})$")
+            prefixes = {
+                match.group(1) for col in self.as_dict().keys() if (match := pattern.match(col))
+            }
+            self._entities = sorted(prefixes)
+        return self._entities
+
+    def filter(self, include: list = None, exclude: list = None):
+        """
+        Filters entities based on include and exclude lists.
+
+        Parameters
+        ----------
+        include : list or single item, optional
+            List of patterns or single pattern to include.
+        exclude : list or single item, optional
+            List of patterns or single pattern to exclude.
+        """
+        include = (
+            [include] if include is not None and not isinstance(include, list) else include or []
+        )
+        exclude = (
+            [exclude] if exclude is not None and not isinstance(exclude, list) else exclude or []
+        )
+
+        include_resolved = list(
+            chain.from_iterable(_find_by_pattern(self.entities, inc) for inc in include)
+        )
+        exclude_resolved = list(
+            chain.from_iterable(_find_by_pattern(self.entities, exc) for exc in exclude)
+        )
+
+        headers = _filter_headers_by_prefix(
+            self._raw_values.keys(), include_resolved, exclude_resolved
+        )
+        self._values = {
+            key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]
+        }
+        self._filtered_sum()
+
+    def _filtered_sum(self):
+        df = self.as_dataframe()
+        for variable in self._variables:
+            new_col_name = "total" + variable
+            regex_pattern = rf"^(?!total).*{variable}$"
+            self._values[new_col_name] = df.filter(regex=regex_pattern).sum(axis=1)
+
+
+class LegacyForceDistributionResultCSVModel(ResultCSVModel):
     """ForceDistributionResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.FORCE_DISTRIBUTION.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.LEGACY_FORCE_DISTRIBUTION.value, frozen=True)
 
-    def wait(self, timeout_minutes=60):
-        """Wait until the Case finishes processing, refresh periodically"""
 
-        start_time = time.time()
-        while time.time() - start_time < timeout_minutes * 60:
-            try:
-                self.load_from_remote(log_error=False)
-                return None
-            except CloudFileNotFoundError:
-                pass
-            time.sleep(2)
+class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
+    """ForceDistributionResultCSVModel"""
 
-        raise TimeoutError(
-            "Timeout: post-processing did not finish within the specified timeout period."
-        )
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
+    )
+
+    _variables: List[str] = ["Cumulative_CD_Curve", "CD_per_length"]
+    _x_columns: List[str] = ["X"]
+
+
+class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
+    """ForceDistributionResultCSVModel"""
+
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.Y_SLICING_FORCE_DISTRIBUTION.value, frozen=True
+    )
+
+    _variables: List[str] = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
+    _x_columns: List[str] = ["Y"]
 
 
 class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
     """SurfaceHeatTrasferResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
 
 
 class AeroacousticsResultCSVModel(ResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
-    remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
 
 
 MonitorCSVModel = ResultCSVModel
@@ -472,8 +657,8 @@ class MonitorsResultModel(ResultTarGZModel):
     Inherits from ResultTarGZModel.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, const=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field()
+    remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
 
     _monitor_names: List[str] = pd.PrivateAttr([])
     _monitors: Dict[str, MonitorCSVModel] = pd.PrivateAttr({})
@@ -551,8 +736,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
     Inherits from ResultBaseModel.
     """
 
-    remote_file_name: str = pd.Field(None, const=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field()
+    remote_file_name: str = pd.Field(None, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
 
     _udd_names: List[str] = pd.PrivateAttr([])
     _udds: Dict[str, UserDefinedDynamicsCSVModel] = pd.PrivateAttr({})
@@ -649,11 +834,23 @@ class _DimensionedCSVResultModel(pd.BaseModel):
     def _in_base_component(self, base, component, component_name, params):
         log.debug(f"   -> need conversion for: {component_name} = {component}")
 
-        flow360_conv_system = unit_converter(
-            component.units.dimensions,
-            params=params,
-            required_by=[self._name, component_name],
-        )
+        if isinstance(params, SimulationParams):
+            flow360_conv_system = unit_converter_v2(
+                component.units.dimensions,
+                params.private_attribute_asset_cache.project_length_unit,
+                params=params,
+                required_by=[self._name, component_name],
+            )
+        elif isinstance(params, Flow360Params):
+            flow360_conv_system = unit_converter_v1(
+                component.units.dimensions,
+                params=params,
+                required_by=[self._name, component_name],
+            )
+        else:
+            raise Flow360ValueError(
+                f"Unknown type of params: {type(params)=}, expected one of (Flow360Params, SimulationParams)"
+            )
 
         if is_flow360_unit(component):
             converted = component.in_base(base, flow360_conv_system)
@@ -767,7 +964,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
     This class provides methods to handle actuator disk CSV results and convert them to the specified base system.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, frozen=True)
     _err_msg = "Case does not have any actuator disks."
 
     def to_base(self, base: str, params: Flow360Params = None):
@@ -874,7 +1071,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         Convert the results to the specified base system.
     """
 
-    remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, const=True)
+    remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, frozen=True)
     _err_msg = "Case does not have any BET disks."
 
     def to_base(self, base: str, params: Flow360Params = None):

@@ -1,13 +1,17 @@
 import json
 import os
+import unittest
 
 import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.solver_numerics import (
+    KOmegaSST,
+    KOmegaSSTModelConstants,
     LinearSolver,
     NavierStokesSolver,
     SpalartAllmaras,
+    SpalartAllmarasModelConstants,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -61,6 +65,9 @@ from tests.simulation.translator.utils.symmetryBC_param_generator import (
 from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator import (
     create_turb_flat_plate_box_trip_param,
 )
+from tests.simulation.translator.utils.tutorial_2dcrm_param_generator import (
+    get_2dcrm_tutorial_param,
+)
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
     create_vortex_propagation_param,
@@ -80,6 +87,9 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
+
+assertions = unittest.TestCase("__init__")
+
 from tests.utils import compare_values
 
 
@@ -192,6 +202,31 @@ def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_FS_with_vel_expression.json",
+    )
+
+
+def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[0].turbulence_model_solver.modeling_constants = SpalartAllmarasModelConstants(
+        C_w2=2.718
+    )
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_SA_with_modified_C_w2.json",
+    )
+
+    params.models[0].turbulence_model_solver = KOmegaSST(
+        absolute_tolerance=1e-8,
+        linear_solver=LinearSolver(max_iterations=15),
+    )
+    params.models[0].turbulence_model_solver.modeling_constants = KOmegaSSTModelConstants(
+        C_sigma_omega1=2.718
+    )
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
     )
 
 
@@ -309,4 +344,33 @@ def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
     param = create_turb_flat_plate_box_trip_param
     translate_and_compare(
         param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_TurbFlatPlate137x97_BoxTrip.json"
+    )
+
+
+def test_2dcrm_tutorial(get_2dcrm_tutorial_param):
+    param = get_2dcrm_tutorial_param
+    translate_and_compare(param, mesh_unit=1 * u.ft, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
+def test_operating_condition(get_2dcrm_tutorial_param):
+    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.ft)
+    assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.dynamic_viscosity,
+        4e-8 * u.flow360_viscosity_unit,
+    )
+    assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.dynamic_viscosity.reference_viscosity.value,
+        4e-8,
+    )
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.dynamic_viscosity.effective_temperature,
+        110.4 * u.K,
+    )
+    assertions.assertEqual(
+        converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
+            converted.operating_condition.thermal_state.temperature
+        ),
+        4e-8 * u.flow360_viscosity_unit,
     )

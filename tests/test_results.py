@@ -1,14 +1,21 @@
 import os
 import tempfile
 from copy import deepcopy
+from itertools import product
 
 import numpy as np
 import pandas
 import pytest
 
 import flow360 as fl
-import flow360.component.flow360_params.units as u
+import flow360.component.flow360_params.units as u1
 from flow360 import log
+from flow360.component.simulation import units as u2
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.utils import model_attribute_unlock
 
 log.set_logging_level("DEBUG")
 
@@ -24,7 +31,7 @@ def test_actuator_disk_results(mock_id, mock_response):
     with fl.SI_unit_system:
         params = fl.Flow360Params(
             geometry=fl.Geometry(
-                mesh_unit=u.m,
+                mesh_unit=u1.m,
             ),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
             fluid_properties=fl.air,
@@ -70,7 +77,7 @@ def test_bet_disk_results(mock_id, mock_response):
     with fl.SI_unit_system:
         params = fl.Flow360Params(
             geometry=fl.Geometry(
-                mesh_unit=u.m,
+                mesh_unit=u1.m,
             ),
             freestream=fl.FreestreamFromVelocity(velocity=286, alpha=3.06),
             fluid_properties=fl.air,
@@ -96,8 +103,34 @@ def test_bet_disk_results(mock_id, mock_response):
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
 
-@pytest.mark.usefixtures("s3_download_override")
-def test_downloading(mock_id, mock_response):
+def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
+    case = fl.Case(id=mock_id)
+
+    with u2.SI_unit_system:
+        params = SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=286))
+        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
+
+    results = case.results
+    results.bet_forces.load_from_local("data/results/bet_forces_v2.csv")
+
+    print(results.bet_forces.as_dataframe())
+    assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
+
+    results.bet_forces.to_base("SI", params=params)
+
+    assert isinstance(results.bet_forces.as_dataframe(), pandas.DataFrame)
+    assert isinstance(results.bet_forces.as_dict(), dict)
+    assert isinstance(results.bet_forces.as_numpy(), np.ndarray)
+
+    assert float(results.bet_forces.values["Disk0_Force_x"][0].v) == -198185092.5822863
+    assert str(results.bet_forces.values["Disk0_Force_x"][0].units) == "kg*m/s**2"
+
+    assert float(results.bet_forces.values["Disk0_Moment_x"][0].v) == 23068914203.12496
+    assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
+
+
+def test_downloading(mock_id, mock_response, s3_download_override):
     case = fl.Case(id=mock_id)
     results = case.results
 
@@ -128,7 +161,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 12
+        assert len(files) == 14
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
@@ -138,7 +171,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, total_forces=False, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 11
+        assert len(files) == 13
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
@@ -149,3 +182,113 @@ def test_downloader(mock_id, mock_response):
         assert len(files) == 1
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_x_sectional_results(mock_id, mock_response):
+    case = fl.Case(id=mock_id)
+    cd_curve = case.results.x_slicing_force_distribution
+    # wait for postprocessing to finish
+    cd_curve.wait()
+
+    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    variables = ["Cumulative_CD_Curve", "CD_per_length"]
+    x_columns = ["X"]
+    total = [f"total{postfix}" for postfix in variables]
+
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.42326354287032886
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(include="*Wing*")
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(exclude="*fuselage*")
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(include=["fluid/leftWing", "fluid/rightWing"])
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_y_sectional_results(mock_id, mock_response):
+    case = fl.Case(id=mock_id)
+    y_slicing = case.results.y_slicing_force_distribution
+    # wait for postprocessing to finish
+    y_slicing.wait()
+
+    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
+    x_columns = ["Y"]
+    total = [f"total{postfix}" for postfix in variables]
+
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(include="*Wing*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(exclude="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(include=["fluid/leftWing", "fluid/rightWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
