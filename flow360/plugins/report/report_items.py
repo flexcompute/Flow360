@@ -707,7 +707,7 @@ class Chart3D(Chart):
 
         scene = Scene(name="my-scene", script=script)
         path_prefix = case.get_cloud_path_prefix()
-        if self.field is None and self.show is 'boundaries':
+        if self.field is None and self.show == 'boundaries':
             log.debug('Not implemented: getting geometry resource for showing geoemtry. Currently using case resource.')
             # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
             # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")
