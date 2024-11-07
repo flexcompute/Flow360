@@ -1,6 +1,7 @@
 import os
 import tempfile
 from copy import deepcopy
+from itertools import product
 
 import numpy as np
 import pandas
@@ -160,7 +161,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 12
+        assert len(files) == 14
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
@@ -170,7 +171,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, total_forces=False, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 11
+        assert len(files) == 13
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
@@ -181,3 +182,113 @@ def test_downloader(mock_id, mock_response):
         assert len(files) == 1
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_x_sectional_results(mock_id, mock_response):
+    case = fl.Case(id=mock_id)
+    cd_curve = case.results.x_slicing_force_distribution
+    # wait for postprocessing to finish
+    cd_curve.wait()
+
+    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    variables = ["Cumulative_CD_Curve", "CD_per_length"]
+    x_columns = ["X"]
+    total = [f"total{postfix}" for postfix in variables]
+
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.42326354287032886
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(include="*Wing*")
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(exclude="*fuselage*")
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+    cd_curve.filter(include=["fluid/leftWing", "fluid/rightWing"])
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(cd_curve.values.keys()) == set(all_headers)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_y_sectional_results(mock_id, mock_response):
+    case = fl.Case(id=mock_id)
+    y_slicing = case.results.y_slicing_force_distribution
+    # wait for postprocessing to finish
+    y_slicing.wait()
+
+    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
+    x_columns = ["Y"]
+    total = [f"total{postfix}" for postfix in variables]
+
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(include="*Wing*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(exclude="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
+    y_slicing.filter(include=["fluid/leftWing", "fluid/rightWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+
+    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
