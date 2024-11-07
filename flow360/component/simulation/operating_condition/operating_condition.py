@@ -98,9 +98,9 @@ class ThermalState(MultiConstructorBaseModel):
         Notes
         -----
         - This method uses the :class:`StandardAtmosphereModel` to compute the standard atmospheric
-        conditions based on the given altitude.
+          conditions based on the given altitude.
         - The ``temperature_offset`` allows for adjustments to the standard temperature, simulating
-        non-standard atmospheric conditions.
+          non-standard atmospheric conditions.
 
         Examples
         --------
@@ -273,7 +273,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         -----
         - The ``velocity_magnitude`` is calculated as ``mach * thermal_state.speed_of_sound``.
         - If ``reference_mach`` is provided, the ``reference_velocity_magnitude`` is calculated as
-        ``reference_mach * thermal_state.speed_of_sound``.
+          ``reference_mach * thermal_state.speed_of_sound``.
 
         Examples
         --------

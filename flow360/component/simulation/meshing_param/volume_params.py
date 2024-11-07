@@ -66,6 +66,7 @@ class RotationCylinder(CylindricalRefinementBase):
     - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
     - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
+
     This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
     """
 
@@ -79,7 +80,7 @@ class RotationCylinder(CylindricalRefinementBase):
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
         description="Entities enclosed by :class:`RotationCylinder`."
-        " Can be `Surface`s and/or other `Cylinders`.",
+        " Can be `Surfaces` and/or other `Cylinders`.",
     )
 
     @pd.field_validator("entities", mode="after")

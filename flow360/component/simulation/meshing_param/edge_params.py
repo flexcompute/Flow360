@@ -40,7 +40,7 @@ class ProjectAnisoSpacing(Flow360BaseModel):
 
 class SurfaceEdgeRefinement(Flow360BaseModel):
     """
-    Setting for growing anisotropic layers orthogonal to the specified `Edge`s.
+    Setting for growing anisotropic layers orthogonal to the specified `Edges`.
     """
 
     name: Optional[str] = pd.Field(None)

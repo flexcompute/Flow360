@@ -101,6 +101,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
@@ -217,4 +218,5 @@ __all__ = [
     "Rotational",
     "Mach",
     "MassFlowRate",
+    "UserDefinedField",
 ]
