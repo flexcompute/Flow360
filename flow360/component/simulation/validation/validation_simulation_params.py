@@ -9,6 +9,7 @@ from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import (
     Fluid,
     NavierStokesInitialCondition,
+    Rotation,
     Solid,
 )
 from flow360.component.simulation.outputs.outputs import (
@@ -24,6 +25,11 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    get_validation_levels,
+)
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -319,3 +325,29 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
         )
 
     return params
+
+
+def _check_parent_volume_is_rotating(models):
+
+    current_lvls = get_validation_levels() if get_validation_levels() else []
+    if all(level not in current_lvls for level in (ALL, CASE)):
+        return models
+
+    rotating_zone_names = {
+        entity.name
+        for model in models
+        if isinstance(model, Rotation)
+        for entity in model.entities.stored_entities
+    }
+
+    for model_index, model in enumerate(models):
+        if isinstance(model, Rotation) is False:
+            continue
+        if model.parent_volume is None:
+            continue
+        if model.parent_volume.name not in rotating_zone_names:
+            raise ValueError(
+                f"For model #{model_index}, the parent rotating volume ({model.parent_volume.name}) is not "
+                "used in any other `Rotation` model's `volumes`."
+            )
+    return models

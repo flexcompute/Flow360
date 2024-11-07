@@ -18,17 +18,26 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
     Fluid,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
+    Rotation,
     Solid,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
-from flow360.component.simulation.primitives import GenericVolume, Surface
-from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.outputs.outputs import (
+    ProbeOutput,
+    SliceOutput,
+    SurfaceIntegralOutput,
+    SurfaceOutput,
+    UserDefinedField,
+    VolumeOutput,
+)
+from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -424,3 +433,130 @@ def test_valid_reference_velocity():
     ):
         with SI_unit_system:
             SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=0))
+
+
+def test_output_fields_with_user_defined_fields():
+    surface_1 = Surface(name="some_random_surface")
+    # 1: No user defined fields
+    msg = "In `outputs`[0]:, not_valid_field is not valid output field name. Allowed fields are ['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        name="surface", output_fields=["not_valid_field"], entities=[surface_1]
+                    )
+                ],
+            )
+
+    # 2: User defined fields
+    with SI_unit_system:
+        _ = SimulationParams(
+            outputs=[VolumeOutput(name="vo", output_fields=["not_valid_field"])],
+            user_defined_fields=[
+                UserDefinedField(name="not_valid_field", expression="primitiveVars[0] *3.1415926")
+            ],
+        )
+
+    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'Cpt', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="po",
+                        output_fields=["not_valid_field"],
+                        probe_points=[Point(name="pt1", location=(1, 2, 3))],
+                    ),
+                    SliceOutput(
+                        name="so",
+                        output_fields=["not_valid_field_2"],
+                        slices=[Slice(name="slice", normal=(1, 2, 3), origin=(0, 0, 0))],
+                    ),
+                ],
+                user_defined_fields=[
+                    UserDefinedField(
+                        name="not_valid_field", expression="primitiveVars[0] *3.1415926"
+                    )
+                ],
+            )
+
+    msg = "In `outputs`[0]:, Cp is not valid output field name. Allowed fields are ['not_valid_field']."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    SurfaceIntegralOutput(
+                        name="po",
+                        output_fields=["Cp"],
+                        surfaces=[surface_1],
+                    )
+                ],
+                user_defined_fields=[
+                    UserDefinedField(
+                        name="not_valid_field", expression="primitiveVars[0] *3.1415926"
+                    )
+                ],
+            )
+
+    msg = "`SurfaceIntegralOutput` can only be used with `UserDefinedField`."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    SurfaceIntegralOutput(
+                        name="po",
+                        output_fields=["Cp"],
+                        surfaces=[surface_1],
+                    )
+                ]
+            )
+
+
+def test_rotation_parent_volumes():
+
+    c_1 = Cylinder(
+        name="inner_rotating_cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_2 = Cylinder(
+        name="outer_rotating_cylinder",
+        outer_radius=12 * u.cm,
+        height=12 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_3 = Cylinder(
+        name="stationary_cylinder",
+        outer_radius=12 * u.m,
+        height=13 * u.m,
+        center=(0, 0, 0) * u.m,
+        axis=(0, 1, 2),
+    )
+
+    msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
+    "used in any other `Rotation` model's `volumes`."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with ValidationLevelContext(CASE):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
+                    ]
+                )
+
+    with ValidationLevelContext(CASE):
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2),
+                    Rotation(entities=[c_2], spec=AngleExpression("1+5")),
+                ]
+            )

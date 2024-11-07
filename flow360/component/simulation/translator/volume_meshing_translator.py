@@ -10,6 +10,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CylindricalRefinementBase,
     RotationCylinder,
     UniformRefinement,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -180,6 +181,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in input_params.meshing.volume_zones:
+        if isinstance(zone, UserDefinedFarfield):
+            translated["farfield"] = {"type": "user-defined"}
+            break
+
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {"type": zone.method}
             break
