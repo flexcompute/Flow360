@@ -67,6 +67,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
+    _check_parent_volume_is_rotating,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -244,6 +245,12 @@ class SimulationParams(_ParamModelBase):
         if not any(isinstance(item, Fluid) for item in v):
             v.append(Fluid())
         return v
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_parent_volume_is_rotating(cls, models):
+        """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
+        return _check_parent_volume_is_rotating(models)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod

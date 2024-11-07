@@ -7,9 +7,11 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.surface_models import SlipWall, Wall
 from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
     Fluid,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
+    Rotation,
     Solid,
 )
 from flow360.component.simulation.outputs.output_entities import Point, Slice
@@ -21,10 +23,14 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.validation.validation_context import (
+    CASE,
+    ValidationLevelContext,
+)
 
 assertions = unittest.TestCase("__init__")
 
@@ -408,5 +414,54 @@ def test_output_fields_with_user_defined_fields():
                         output_fields=["Cp"],
                         surfaces=[surface_1],
                     )
+                ]
+            )
+
+
+def test_rotation_parent_volumes():
+
+    c_1 = Cylinder(
+        name="inner_rotating_cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_2 = Cylinder(
+        name="outer_rotating_cylinder",
+        outer_radius=12 * u.cm,
+        height=12 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_3 = Cylinder(
+        name="stationary_cylinder",
+        outer_radius=12 * u.m,
+        height=13 * u.m,
+        center=(0, 0, 0) * u.m,
+        axis=(0, 1, 2),
+    )
+
+    msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
+    "used in any other `Rotation` model's `volumes`."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with ValidationLevelContext(CASE):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
+                    ]
+                )
+
+    with ValidationLevelContext(CASE):
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2),
+                    Rotation(entities=[c_2], spec=AngleExpression("1+5")),
                 ]
             )
