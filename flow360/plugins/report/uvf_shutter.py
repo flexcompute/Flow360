@@ -7,6 +7,8 @@ import os
 import zipfile
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
+from urllib.parse import urljoin
+
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
 # pylint: disable=import-error
@@ -337,7 +339,7 @@ class UVFshutter(Flow360BaseModel):
                 tasks.append(
                     _get_image_sequence(
                         session=session,
-                        url=self.url + "/sequence/run",
+                        url=urljoin(self.url, "/sequence/run"),
                         uvf_request=uvf_request
                     )
                 )
