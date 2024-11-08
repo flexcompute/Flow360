@@ -57,7 +57,7 @@ class Report(Flow360Resource):
         """
         # pylint: disable=no-member
         return self._download_file(
-            file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
+            file_name='results/' + file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
 
 
