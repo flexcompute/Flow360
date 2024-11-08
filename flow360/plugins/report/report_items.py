@@ -710,17 +710,19 @@ class Chart3D(Chart):
 
         script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
 
-        user_id, case_id = case.info.user_id, case.id
-
         scene = Scene(name="my-scene", script=script)
         path_prefix = case.get_cloud_path_prefix()
         if self.field is None and self.show == 'boundaries':
             log.debug('Not implemented: getting geometry resource for showing geoemtry. Currently using case resource.')
             # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
             # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")
-        resource = Resource(path_prefix=path_prefix, id=case_id)
+        resource = Resource(path_prefix=path_prefix, id=case.id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
+
+    def get_requirements(self):
+        """get requirements"""
+        return []
 
     def _get_images(self, cases: List[Case], context: ReportContext):
         fig_name = self.fig_name

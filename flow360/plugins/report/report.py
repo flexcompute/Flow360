@@ -40,6 +40,25 @@ class Report(Flow360Resource):
             id=id,
         )
 
+    def download(self, file_name, to_file=None, to_folder=".", overwrite: bool = True):
+        """
+        Download the file to the specified location.
+
+        Parameters
+        ----------
+        file_name : str
+            File name to download.
+        to_file : str, optional
+            The name of the file after downloading.
+        to_folder : str, optional
+            The folder where the file will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+        # pylint: disable=no-member
+        return self._download_file(
+            file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
+        )
 
 
 # pylint: disable=too-few-public-methods

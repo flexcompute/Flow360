@@ -48,6 +48,7 @@ class Flow360Status(Enum):
     DELETED = "deleted"
     PENDING = "pending"
     UNKNOWN = "unknown"
+    SUBMITTED = "submitted"
 
     def is_final(self):
         """Checks if status is final

@@ -60,6 +60,6 @@ FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None,
 
 ReportInterface = BaseInterface(
     resource_type="Report",
-    s3_transfer_method=S3TransferType.GEOMETRY,
+    s3_transfer_method=S3TransferType.REPORT,
     endpoint="v2/report",
 )
