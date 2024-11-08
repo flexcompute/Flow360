@@ -83,6 +83,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
+    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -219,4 +220,5 @@ __all__ = [
     "Mach",
     "MassFlowRate",
     "UserDefinedField",
+    "operating_condition_from_mach_reynolds",
 ]
