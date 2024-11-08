@@ -184,6 +184,25 @@
     },
     "models": [
         {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "surface_x",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": [
+                            "face_x_1",
+                            "face_x_2",
+                            "face_x_3"
+                        ]
+                    }
+                ]
+            },
+            "use_wall_function": false
+        },
+        {
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
@@ -368,5 +387,35 @@
     "unit_system": {
         "name": "SI"
     },
-    "version": "24.2.0"
+    "version": "24.2.0",
+    "private_attribute_asset_cache": {
+        "project_length_unit": "m",
+        "project_entity_info": {
+            "type_name": "GeometryEntityInfo",
+            "face_ids": [
+                "face_x_1",
+                "face_x_2",
+                "face_x_3"
+            ],
+            "face_group_tag": "some_tag",
+            "face_attribute_names": [
+                "some_tag"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "surface_x",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": [
+                            "face_x_1",
+                            "face_x_2",
+                            "face_x_3"
+                        ]
+                    }
+                ]
+            ]
+        }
+    }
 }

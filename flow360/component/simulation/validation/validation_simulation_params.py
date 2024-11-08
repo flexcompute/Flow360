@@ -277,14 +277,21 @@ def _validate_cht_has_heat_transfer(params):
 
 def _check_complete_boundary_condition_and_unknown_surface(params):
     ## Step 1: Get all boundaries patches from asset cache
-    asset_boundary_entities = params.private_attribute_asset_cache.boundaries
-    if asset_boundary_entities is None or asset_boundary_entities == []:
+
+    current_lvls = get_validation_levels() if get_validation_levels() else []
+    if all(level not in current_lvls for level in (ALL, CASE)):
         return params
+
+    asset_boundary_entities = params.private_attribute_asset_cache.boundaries
+
+    if asset_boundary_entities is None or asset_boundary_entities == []:
+        raise ValueError("[Internal] Failed to retrieve asset boundaries")
+
     asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
 
     ## Step 2: Collect all used boundaries from the models
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
-        return params
+        raise ValueError("No boundary conditions are defined in the `models` section.")
 
     used_boundaries = set()
 

@@ -3,8 +3,9 @@ import json
 import pytest
 
 from flow360.component.simulation import services
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -50,7 +51,43 @@ def test_validate_service():
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "Mysurface",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "user_defined_dynamics": [],
+        "private_attribute_asset_cache": {
+            "project_length_unit": None,
+            "project_entity_info": {
+                "draft_entities": [],
+                "type_name": "VolumeMeshEntityInfo",
+                "zones": [],
+                "boundaries": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "Mysurface",
+                        "private_attribute_full_name": None,
+                        "private_attribute_is_interface": False,
+                        "private_attribute_tag_key": None,
+                        "private_attribute_sub_components": [],
+                    }
+                ],
+            },
+        },
     }
 
     params_data_from_geo = params_data_from_vm
@@ -424,6 +461,51 @@ def test_front_end_JSON_with_multi_constructor():
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "private_attribute_asset_cache": {
+            "project_length_unit": "m",
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
+            },
+        },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "from_mach",
@@ -489,13 +571,49 @@ def test_generate_process_json():
             "beta": {"value": 0.0, "units": "degree"},
             # "velocity_magnitude": {"value": 0.8, "units": "km/s"},
         },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
-                "face_ids": ["face_x"],
-                "face_group_tag": "not_used",
-                "face_attribute_names": ["not_used"],
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
             },
         },
     }

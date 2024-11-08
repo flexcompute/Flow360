@@ -360,35 +360,37 @@ def test_incomplete_BC():
             r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
         ),
     ):
-        with SI_unit_system:
-            SimulationParams(
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    Freestream(entities=auto_farfield.farfield),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Wall(entities=wall_1),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        Freestream(entities=auto_farfield.farfield),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
     with pytest.raises(
         ValueError,
         match=re.escape(
             r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        with SI_unit_system:
-            SimulationParams(
-                models=[
-                    Fluid(),
-                    Wall(entities=[wall_1]),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    Freestream(entities=auto_farfield.farfield),
-                    SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Wall(entities=[wall_1]),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        Freestream(entities=auto_farfield.farfield),
+                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
 
 
 def test_duplicate_entities_in_models():
@@ -539,6 +541,8 @@ def test_rotation_parent_volumes():
         axis=(0, 1, 2),
     )
 
+    my_wall = Surface(name="my_wall", private_attribute_is_interface=False)
+
     msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
     "used in any other `Rotation` model's `volumes`."
     with pytest.raises(ValueError, match=re.escape(msg)):
@@ -558,5 +562,10 @@ def test_rotation_parent_volumes():
                     Fluid(),
                     Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2),
                     Rotation(entities=[c_2], spec=AngleExpression("1+5")),
-                ]
+                    Wall(entities=[my_wall]),
+                ],
+                private_attribute_asset_cache=AssetCache(
+                    project_length_unit="cm",
+                    project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
+                ),
             )
