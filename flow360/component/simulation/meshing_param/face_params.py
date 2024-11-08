@@ -46,7 +46,7 @@ class PassiveSpacing(Flow360BaseModel):
 
 class BoundaryLayer(Flow360BaseModel):
     """
-    Setting for growing anisotropic layers orthogonal to the specified `Surface`s.
+    Setting for growing anisotropic layers orthogonal to the specified `Surface` (s).
     """
 
     name: Optional[str] = pd.Field(None)
@@ -54,5 +54,5 @@ class BoundaryLayer(Flow360BaseModel):
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
     first_layer_thickness: LengthType.Positive = pd.Field(
-        description="First layer thickness for volumetric anisotropic layers grown from given `Surface`s."
+        description="First layer thickness for volumetric anisotropic layers grown from given `Surface` (s)."
     )
