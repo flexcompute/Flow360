@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 import pydantic as pd
 import pytest
+from numpy import nan
 
 from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -493,7 +494,7 @@ def test_unit_system():
 
     with pytest.raises(
         pd.ValidationError,
-        match=r"Value error, NaN or None found in input array which is not allowed.",
+        match=r"NaN/Inf/None found in input array. Please ensure your input is complete.",
     ):
         data = VectorDataWithUnits(
             pt=None,

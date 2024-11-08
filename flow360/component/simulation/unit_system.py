@@ -157,7 +157,7 @@ def _has_dimensions(quant, dim):
     return arg_dim == dim
 
 
-def _unit_object_parser(value, unyt_types: List[type], **kwargs):
+def _unit_object_parser(value, unyt_types: List[type]):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
@@ -169,25 +169,11 @@ def _unit_object_parser(value, unyt_types: List[type], **kwargs):
         )
     for unyt_type in unyt_types:
         try:
-            dimensioned_value = unyt_type(value["value"], value["units"], dtype=np.float64)
-            # Check for Nan. This usually is a result of None being in the input value.
-            # with dtype=np.float64, None will be converted to np.nan.
-            # We need (IIRC) np.float64 to ensure consistent hashing
-            if kwargs.get("allow_inf_nan", False) is False:
-                if np.ndim(dimensioned_value.value) == 0 and np.isnan(dimensioned_value.value):
-                    raise ValueError("NaN or None found in input scalar which is not allowed.")
-                if np.ndim(dimensioned_value.value) > 0 and any(np.isnan(dimensioned_value.value)):
-                    raise ValueError("NaN or None found in input array which is not allowed.")
-            return dimensioned_value
+            return unyt_type(value["value"], value["units"], dtype=np.float64)
         except u.exceptions.UnitParseError:
             pass
-        except RuntimeError as e:
-            if str(e) == "unyt_quantity values must be numeric":
-                # Have to catch here otherwise there will
-                # be "No class found for unit_name" which is confusing.
-                raise ValueError(
-                    "The numerical part of the input dimensioned value is incorrect."
-                ) from e
+        except RuntimeError:
+            pass
         except KeyError:
             pass
     return value
@@ -268,6 +254,12 @@ def _has_dimensions_validator(value, dim):
     return value
 
 
+def _nan_inf_vector_validator(value):
+    if np.ndim(value.value) > 0 and (any(np.isnan(value.value)) or any(np.isinf(value.value))):
+        raise ValueError("NaN/Inf/None found in input array. Please ensure your input is complete.")
+    return value
+
+
 def _enforce_float64(unyt_obj):
     """
     This make sure all the values are float64 to minimize floating point errors
@@ -306,9 +298,7 @@ class _DimensionedType(metaclass=ABCMeta):
         """
 
         try:
-            value = _unit_object_parser(
-                value, [u.unyt_quantity, _Flow360BaseUnit.factory], **kwargs
-            )
+            value = _unit_object_parser(value, [u.unyt_quantity, _Flow360BaseUnit.factory])
             value = _is_unit_validator(value)
             if cls.has_defaults:
                 value = _unit_inference_validator(value, cls.dim_name)
@@ -500,9 +490,7 @@ class _DimensionedType(metaclass=ABCMeta):
             def validate(vec_cls, value, *args, **kwargs):
                 """additional validator for value"""
                 try:
-                    value = _unit_object_parser(
-                        value, [u.unyt_array, _Flow360BaseUnit.factory], **kwargs
-                    )
+                    value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                     value = _is_unit_validator(value)
 
                     is_collection = isinstance(value, Collection) or (
@@ -531,6 +519,10 @@ class _DimensionedType(metaclass=ABCMeta):
                             value, vec_cls.type.dim_name, is_array=True
                         )
                     value = _unit_array_validator(value, vec_cls.type.dim)
+
+                    if kwargs.get("allow_inf_nan", False) is False:
+                        value = _nan_inf_vector_validator(value)
+
                     value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                     return value
