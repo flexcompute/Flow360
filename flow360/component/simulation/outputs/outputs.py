@@ -17,6 +17,7 @@ from flow360.component.flow360_params.flow360_fields import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -29,6 +30,16 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_output import (
     _check_unique_probe_type,
 )
+
+
+class UserDefinedField(Flow360BaseModel):
+    """Defines additional fields that can be used as output variables"""
+
+    type_name: Literal["UserDefinedField"] = pd.Field("UserDefinedField", frozen=True)
+    name: str = pd.Field(description="The name of the output field.")
+    expression: StringExpression = pd.Field(
+        description="The mathematical expression for the field."
+    )
 
 
 class _AnimationSettings(Flow360BaseModel):
@@ -72,7 +83,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type"
         + "(SurfaceOutput or TimeAverageSurfaceOutput) in the `output` list.",
     )
-    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 
@@ -100,7 +111,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """Volume output settings."""
 
     name: Optional[str] = pd.Field(None)
-    output_fields: UniqueItemList[VolumeFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[VolumeFieldNames, str]] = pd.Field()
     output_type: Literal["VolumeOutput"] = pd.Field("VolumeOutput", frozen=True)
 
 
@@ -130,7 +141,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 
     name: Optional[str] = pd.Field(None)
     entities: EntityList[Slice] = pd.Field(alias="slices")
-    output_fields: UniqueItemList[SliceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[SliceFieldNames, str]] = pd.Field()
     output_type: Literal["SliceOutput"] = pd.Field("SliceOutput", frozen=True)
 
 
@@ -148,7 +159,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 
     name: Optional[str] = pd.Field(None)
     entities: UniqueItemList[Isosurface] = pd.Field(alias="isosurfaces")
-    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field()
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
@@ -157,7 +168,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
 
     name: str = pd.Field()
     entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
-    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[str] = pd.Field()
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
 
@@ -166,7 +177,7 @@ class ProbeOutput(Flow360BaseModel):
 
     name: str = pd.Field()
     entities: EntityList[Point, PointArray] = pd.Field(alias="probe_points")
-    output_fields: UniqueItemList[CommonFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field()
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
     def load_point_location_from_file(self, file_path: str):
@@ -191,7 +202,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     # Maybe add preprocess for this and by default add all Surfaces?
     target_surfaces: EntityList[Surface] = pd.Field()
 
-    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field()
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
     @pd.field_validator("entities", mode="after")
@@ -213,7 +224,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
 
     output_format: Literal["paraview"] = pd.Field(default="paraview")
 
-    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field()
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field()
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
 
     @pd.field_validator("entities", mode="after")
@@ -258,10 +269,6 @@ class AeroAcousticOutput(Flow360BaseModel):
     observers: List[LengthType.Point] = pd.Field()
     write_per_surface_output: bool = pd.Field(False)
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
-
-
-class UserDefinedFields(Flow360BaseModel):
-    """Ignore this for now"""
 
 
 OutputTypes = Annotated[

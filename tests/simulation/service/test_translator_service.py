@@ -355,7 +355,7 @@ def test_simulation_to_case_json():
                         },
                     ]
                 },
-                "output_fields": {"items": ["primitiveVars", "vorticity"]},
+                "output_fields": {"items": ["my_field"]},
                 "output_type": "SurfaceIntegralOutput",
             },
             {
@@ -389,6 +389,12 @@ def test_simulation_to_case_json():
             "type_name": "Steady",
             "order_of_accuracy": 2,
         },
+        "user_defined_fields": [
+            {
+                "name": "my_field",
+                "expression": "sqrt(Ux^2 + Uy^2 + Uz^2)",
+            }
+        ],
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
     }

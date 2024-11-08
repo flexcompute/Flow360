@@ -59,7 +59,7 @@ class ValidationLevelContext:
         _validation_level_ctx.reset(self.token)
 
 
-def get_validation_levels():
+def get_validation_levels() -> list:
     """
     Retrieves the current validation level from the context.
 

@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
@@ -56,6 +57,9 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.validation.validation_output import (
+    _check_output_fields,
+)
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_cht_solver_settings,
     _check_consistency_ddes_volume_output,
@@ -63,6 +67,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
+    _check_parent_volume_is_rotating,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -202,6 +207,11 @@ class SimulationParams(_ParamModelBase):
     """
     time_stepping: Union[Steady, Unsteady] = CaseField(Steady(), discriminator="type_name")
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
+
+    user_defined_fields: List[UserDefinedField] = CaseField(
+        [], description="User defined fields that can be used in outputs."
+    )
+
     """
     Support for user defined expression?
     If so:
@@ -241,6 +251,27 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid())
         return v
 
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_parent_volume_is_rotating(cls, models):
+        """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
+        return _check_parent_volume_is_rotating(models)
+
+    @pd.field_validator("user_defined_fields", mode="after")
+    @classmethod
+    def check_duplicate_user_defined_fields(cls, v):
+        """Check if we have duplicate user defined fields"""
+        if v == []:
+            return v
+
+        known_user_defined_fields = set()
+        for field in v:
+            if field.name in known_user_defined_fields:
+                raise ValueError(f"Duplicate user defined field name: {field.name}")
+            known_user_defined_fields.add(field.name)
+
+        return v
+
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):
         """Check the Conjugate Heat Transfer settings, transferred from checkCHTSolverSettings"""
@@ -274,6 +305,11 @@ class SimulationParams(_ParamModelBase):
     def check_low_mach_preconditioner_output(cls, v):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(v)
+
+    @pd.model_validator(mode="after")
+    def check_output_fields(params):
+        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        return _check_output_fields(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

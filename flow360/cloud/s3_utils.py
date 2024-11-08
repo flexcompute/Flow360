@@ -403,7 +403,7 @@ class S3TransferType(Enum):
             return token
         token = _s3_sts_tokens[session_key]
         return token.copy(
-            deep=True, update={"cloud_path": os.path.join(token.cloud_path_prefix, file_name)}
+            deep=True, update={"cloud_path": token.cloud_path_prefix + "/" + file_name}
         )
 
 
