@@ -121,7 +121,7 @@ class MeshingParams(Flow360BaseModel):
         MeshingDefaults(),
         description="Default settings for meshing."
         " In other words the settings specified here will be applied"
-        " as a default setting for all `Surface` and `Edges`.",
+        " as a default setting for all `Surface` (s) and `Edge` (s).",
     )
 
     refinements: List[RefinementTypes] = pd.Field(
