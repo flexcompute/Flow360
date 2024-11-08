@@ -25,7 +25,8 @@ class UniformRefinement(Flow360BaseModel):
     name: Optional[str] = pd.Field(None)
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
     entities: EntityList[Box, Cylinder] = pd.Field(
-        description=":class:`UniformRefinement` can be applied to `Box` and `Cylinder` regions."
+        description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box` "
+        + "and :class:`~flow360.Cylinder` regions."
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
@@ -66,8 +67,7 @@ class RotationCylinder(CylindricalRefinementBase):
     - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
     - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
-
-    This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
+    - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
     """
 
     # Note: Please refer to
@@ -79,8 +79,8 @@ class RotationCylinder(CylindricalRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationCylinder`."
-        " Can be `Surfaces` and/or other `Cylinders`.",
+        description="Entities enclosed by :class:`RotationCylinder`. "
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder` (s).",
     )
 
     @pd.field_validator("entities", mode="after")
