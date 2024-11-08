@@ -3,7 +3,7 @@ Report generation interface
 """
 
 import os
-from typing import List, Union
+from typing import List, Union, Set
 
 from flow360 import Case
 from flow360.cloud.requests import NewReportRequest
@@ -11,8 +11,8 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.plugins.report.report_context import ReportContext
-from flow360.plugins.report.report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table
-from pydantic import Field
+from flow360.plugins.report.report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table, FileNameStr
+from pydantic import Field, validate_call, model_validator
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -95,6 +95,26 @@ class Report(Flow360BaseModel):
 
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
     include_case_by_case: bool = False
+
+
+    @model_validator(mode='after')
+    def check_fig_names(cls, model):
+        """Validate and assign unique fig_names to report items."""
+        used_fig_names: Set[str] = set()
+        for idx, item in enumerate(model.items):
+            if hasattr(item, 'fig_name'):
+                fig_name = getattr(item, 'fig_name', None)
+                if not fig_name:
+                    class_name = item.__class__.__name__
+                    fig_name = f"{class_name}_{idx}"
+                    item.fig_name = fig_name 
+                else:
+                    fig_name = item.fig_name
+                if fig_name in used_fig_names:
+                    raise ValueError(f"Duplicate fig_name '{fig_name}' found in item at index {idx}")
+                used_fig_names.add(fig_name)
+        return model
+
 
     def _create_header_footer(self) -> PageStyle:
         header = PageStyle("header")
@@ -209,9 +229,10 @@ class Report(Flow360BaseModel):
             solver_version=solver_version,
         )
 
+    @validate_call(config={"arbitrary_types_allowed": True})
     def create_pdf(
         self,
-        filename: str,
+        filename: FileNameStr,
         cases: list[Case],
         landscape: bool = False,
         data_storage: str = ".",

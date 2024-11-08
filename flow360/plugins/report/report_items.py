@@ -3,7 +3,7 @@ Module containg detailed report items
 """
 
 import os
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union, Annotated
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ from flow360.plugins.report.uvf_shutter import (
     SetCameraPayload,
     Camera
 )
-from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator
+from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator, StringConstraints
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -45,6 +45,11 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 from pylatex.utils import bold, escape_latex
 
 here = os.path.dirname(os.path.abspath(__file__))
+
+
+
+FileNameStr = Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$')]
+
 
 
 class ReportItem(Flow360BaseModel):
@@ -128,18 +133,16 @@ class Inputs(ReportItem):
         Table(
             data=[
                 "params/version",
-                "params/time_stepping/type_name",
-                "params/outputs/0/output_format",
                 "params/operating_condition/velocity_magnitude",
                 "params/operating_condition/alpha",
+                "params/time_stepping/type_name",
             ],
             section_title="Inputs",
             headers=[
                 "Version",
-                "Time stepping",
-                "Output Format",
                 "Velocity",
                 "Alpha",
+                "Time stepping",
             ],
         ).get_doc_item(context)
 
@@ -222,6 +225,11 @@ class Table(ReportItem):
                     data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
                     for path in self.data
                 ]
+                row_list = [
+                    f"{x:.5g}" if isinstance(x, (int, float)) else x
+                    for x in row_list
+                ]
+
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
                 table.add_hline()
@@ -235,8 +243,8 @@ class Chart(ReportItem):
     ----------
     section_title : Union[str, None]
         The title of the chart section.
-    fig_name : str
-        Name of the figure file or identifier for the chart.
+    fig_name : FileNameStr, optional
+        Name of the figure file or identifier for the chart (). Only '^[a-zA-Z0-9._-]+$' allowed.
     fig_size : float, default=0.7
         Relative size of the figure as a fraction of text width.
     items_in_row : Union[int, None], optional
@@ -250,7 +258,7 @@ class Chart(ReportItem):
     """
 
     section_title: Union[str, None]
-    fig_name: str
+    fig_name: Optional[FileNameStr] = None
     fig_size: float = 0.7  # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
     select_indices: Optional[List[NonNegativeInt]] = None
