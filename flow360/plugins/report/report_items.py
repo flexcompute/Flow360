@@ -533,7 +533,7 @@ class Chart2D(Chart):
 
     def _get_figures(self, cases, case_by_case, data_storage):
         file_names = []
-        cbc_str = "_cbc_" if case_by_case else ""
+        cbc_str = "_cbc_" if case_by_case else "_"
 
         if self.separate_plots:
             for case in cases:
