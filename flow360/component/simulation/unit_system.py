@@ -255,6 +255,8 @@ def _has_dimensions_validator(value, dim):
 
 
 def _nan_inf_vector_validator(value):
+    if not isinstance(value, np.ndarray):
+        return value
     if np.ndim(value.value) > 0 and (any(np.isnan(value.value)) or any(np.isinf(value.value))):
         raise ValueError("NaN/Inf/None found in input array. Please ensure your input is complete.")
     return value
