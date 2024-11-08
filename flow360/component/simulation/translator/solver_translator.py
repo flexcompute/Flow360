@@ -1068,19 +1068,19 @@ def get_solver_json(
         translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:
             udd_dict = dump_dict(udd)
-            udd_dict["dynamicsName"] = udd_dict.pop("name")
+            udd_dict_translated = {}
+            udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
+            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", [])
+            udd_dict_translated["outputVars"] = udd_dict.pop("outputVars", [])
+            udd_dict_translated["stateVarsInitialValue"] = udd_dict.pop("stateVarsInitialValue", [])
+            udd_dict_translated["updateLaw"] = udd_dict.pop("updateLaw", [])
+            udd_dict_translated["constants"] = udd_dict.pop("constants", {})
             if udd.input_boundary_patches is not None:
-                udd_dict["inputBoundaryPatches"] = []
+                udd_dict_translated["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
-                    udd_dict["inputBoundaryPatches"].append(_get_key_name(surface))
+                    udd_dict_translated["inputBoundaryPatches"].append(_get_key_name(surface))
             if udd.output_target is not None:
-                udd_dict["outputTargetName"] = udd.output_target.name
-                if udd.output_target.axis is not None:
-                    udd_dict["outputTarget"]["axis"] = list(udd.output_target.axis)
-                if udd.output_target.center is not None:
-                    udd_dict["outputTarget"]["center"]["value"] = list(
-                        udd_dict["outputTarget"]["center"]["value"]
-                    )
-            translated["userDefinedDynamics"].append(udd_dict)
+                udd_dict_translated["outputTargetName"] = udd.output_target.full_name
+            translated["userDefinedDynamics"].append(udd_dict_translated)
 
     return translated
