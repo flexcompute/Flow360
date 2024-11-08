@@ -520,6 +520,7 @@ class Chart2D(Chart):
             x_label=x_label,
             y_label=y_label,
             legend=[case.name for case in cases],
+            is_log=self.is_log_plot()
         )
 
     def _get_figures(self, cases, case_by_case, data_storage):
