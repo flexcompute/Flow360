@@ -492,7 +492,7 @@ class MaxResidualLocationResultCSVModel(ResultCSVModel):
 
 class ResultOperations:
     @classmethod
-    def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
+    def average_last_fraction(cls, obj: ResultCSVModel, column, avarage_fraction):
         df = obj.as_dataframe()
         selected_fraction = df.tail(int(len(df) * avarage_fraction))
         average = selected_fraction[column].mean()
@@ -604,7 +604,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         for variable in self._variables:
             new_col_name = "total" + variable
             regex_pattern = rf"^(?!total).*{variable}$"
-            self._values[new_col_name] = df.filter(regex=regex_pattern).sum(axis=1)
+            self._values[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):

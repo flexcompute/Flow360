@@ -241,7 +241,7 @@ class Chart(ReportItem):
 
     Parameters
     ----------
-    section_title : Union[str, None]
+    section_title : str, optional
         The title of the chart section.
     fig_name : FileNameStr, optional
         Name of the figure file or identifier for the chart (). Only '^[a-zA-Z0-9._-]+$' allowed.
@@ -257,7 +257,7 @@ class Chart(ReportItem):
         If True, starts the chart on a new page in the report.
     """
 
-    section_title: Optional[str]
+    section_title: Optional[str] = None
     fig_name: Optional[FileNameStr] = None
     fig_size: float = 0.7  # Relates to fraction of the textwidth
     items_in_row: Union[int, None] = None
