@@ -6,6 +6,7 @@ import os
 from typing import List, Union, Set
 
 from flow360 import Case
+from flow360.component.resource_base import Flow360Resource, AssetMetaBaseModel
 from flow360.cloud.requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
@@ -28,6 +29,17 @@ from pylatex import (
     Section,
     Subsection,
 )
+
+
+class Report(Flow360Resource):
+    # pylint: disable=redefined-builtin
+    def __init__(self, id: str):
+        super().__init__(
+            interface=ReportInterface,
+            meta_class=AssetMetaBaseModel,
+            id=id,
+        )
+
 
 
 # pylint: disable=too-few-public-methods
@@ -76,10 +88,11 @@ class ReportApi:
             config_json=config,
             solver_version=solver_version,
         )
-        return cls._webapi.post(json=request.dict())
+        resp = cls._webapi.post(json=request.dict())
+        return Report(resp['id'])
 
 
-class Report(Flow360BaseModel):
+class ReportTemplate(Flow360BaseModel):
     """
     A model representing a report containing various components such as summaries, inputs, tables,
     and charts in both 2D and 3D.

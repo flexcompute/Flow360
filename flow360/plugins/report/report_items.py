@@ -611,8 +611,6 @@ class Chart3D(Chart):
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     show: UvfObjectTypes
-
-    _requirements: List[str] = [Case._manifest_path]  # pylint: disable=protected-access
     type: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
     def _get_uvf_qcriterion_script(

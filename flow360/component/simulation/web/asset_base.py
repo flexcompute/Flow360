@@ -123,7 +123,17 @@ class AssetBase(metaclass=ABCMeta):
     @classmethod
     def _meta_class(cls):
         return cls._meta_class
+    
+    def get_download_file_list(self) -> List:
+        """return list of files available for download
 
+        Returns
+        -------
+        List
+            List of files available for download
+        """
+        return self._webapi.get_download_file_list()
+            
     @classmethod
     def from_cloud(cls, id: str):
         """Create asset with the given ID"""

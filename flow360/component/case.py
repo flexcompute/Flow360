@@ -389,8 +389,6 @@ class Case(CaseBase, Flow360Resource):
     Case component
     """
 
-    _manifest_path = "visualize/manifest/manifest.json"
-
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
@@ -402,7 +400,6 @@ class Case(CaseBase, Flow360Resource):
         self._params = None
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
-        self._manifest = None
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):

@@ -185,6 +185,8 @@ class S3TransferType(Enum):
             return f"v2/cases/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.GEOMETRY:
             return f"v2/geometries/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.REPORT:
+            return f"v2/report/{resource_id}/file?filename={file_name}"
 
         raise Flow360ValueError(f"unknown download method for {self}")
 
