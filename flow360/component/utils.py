@@ -704,3 +704,50 @@ def _local_download_overwrite(local_storage_path, class_name):
             shutil.copy(expected_local_file, new_local_file)
 
     return _local_download_file
+
+
+
+class LocalResourceCache:
+    """
+    A cache for preloading and storing resources to avoid redundant construction.
+
+    Class Attributes
+    ----------------
+    _storage : dict
+        A class-level dictionary storing resources keyed by their unique identifiers.
+    """
+    
+    _storage = {}
+
+    def __init__(self) -> None:
+        """
+        Initializes the resource cache instance.
+        """
+        pass
+
+    def add(self, resource):
+        """
+        Adds a resource to the cache.
+
+        Parameters
+        ----------
+        resource : object
+            The resource object to add to the cache. Must have an 'id' attribute.
+        """
+        self._storage[resource.id] = resource
+
+    def __getitem__(self, item):
+        """
+        Retrieves a resource from the cache using dictionary-like access.
+
+        Parameters
+        ----------
+        item : hashable
+            The unique identifier of the resource to retrieve.
+
+        Returns
+        -------
+        object or None
+            The resource associated with the given identifier, or None if not found.
+        """
+        return self._storage.get(item)

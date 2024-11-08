@@ -21,7 +21,7 @@ from flow360 import error_messages
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.webbrowser import open_browser
 from flow360.component.interfaces import BaseInterface
-from flow360.component.utils import is_valid_uuid, validate_type
+from flow360.component.utils import is_valid_uuid, validate_type, LocalResourceCache
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
 from flow360.user_config import UserConfig
@@ -198,6 +198,7 @@ class Flow360Resource(RestApi):
         self.meta_class = meta_class
         self._info = None
         self.logs = RemoteResourceLogs(self)
+        self._local_resource_cache = LocalResourceCache()
         super().__init__(endpoint=interface.endpoint, id=id)
 
     def __str__(self):
@@ -319,6 +320,11 @@ class Flow360Resource(RestApi):
             if len(files) == 0:
                 raise ValueError('Cannot determine cloud path prefix. Not files accociated with this resource.')
             return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
+
+    @property
+    def local_resource_cache(self):
+        """local resource cache"""
+        return self._local_resource_cache
 
     # pylint: disable=too-many-arguments
     def _download_file(
