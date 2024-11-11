@@ -74,16 +74,16 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     """:class:`ExpressionInitialCondition` class"""
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
-    constants: Optional[Dict[str, str]] = pd.Field(None)
+    constants: Optional[Dict[str, StringExpression]] = pd.Field(None)
 
 
 # pylint: disable=missing-class-docstring
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
-    rho: str = pd.Field()
-    u: str = pd.Field()
-    v: str = pd.Field()
-    w: str = pd.Field()
-    p: str = pd.Field()
+    rho: StringExpression = pd.Field()
+    u: StringExpression = pd.Field()
+    v: StringExpression = pd.Field()
+    w: StringExpression = pd.Field()
+    p: StringExpression = pd.Field()
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -91,7 +91,7 @@ class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
-    temperature: str = pd.Field()
+    temperature: StringExpression = pd.Field()
 
 
 class PDEModelBase(Flow360BaseModel):
