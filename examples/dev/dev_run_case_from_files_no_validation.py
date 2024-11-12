@@ -1,6 +1,6 @@
 import os
 
-import flow360 as fl
+import flow360.v1 as fl
 from flow360.examples import OM6wing
 
 fl.UserConfig.disable_validation()

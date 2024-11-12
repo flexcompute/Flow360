@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import uuid
 from abc import ABCMeta
 from numbers import Number
 from typing import List, Optional, Union, get_args, get_origin
@@ -17,6 +18,11 @@ from flow360.component.simulation.utils import is_exact_instance
 
 class MergeConflictError(Exception):
     """Raised when a merge conflict is detected."""
+
+
+def generate_uuid():
+    """generate a unique identifier for non-persistent entities. Required by front end."""
+    return str(uuid.uuid4())
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -37,6 +43,12 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     private_attribute_registry_bucket_name: str = "Invalid"
     private_attribute_entity_type_name: str = "Invalid"
+    private_attribute_id: Optional[str] = pd.Field(
+        None,
+        frozen=True,
+        description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",
+    )
+
     name: str = pd.Field(frozen=True)
 
     def __init__(self, **data):
@@ -172,7 +184,11 @@ def _merge_fields(field_old, field_new):
     # Iterate over all attributes and values of the new object
     for attr, value in field_new.__dict__.items():
         # Ignore certain private attributes meant for entity type definition
-        if attr in ["private_attribute_entity_type_name", "private_attribute_registry_bucket_name"]:
+        if attr in [
+            "private_attribute_entity_type_name",
+            "private_attribute_registry_bucket_name",
+            "private_attribute_id",
+        ]:
             continue
 
         if field_new.__dict__[attr] is None:

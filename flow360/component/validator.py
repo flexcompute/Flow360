@@ -5,11 +5,15 @@ Validator API
 from enum import Enum
 from typing import Union
 
+from flow360.component.v1.meshing.params import (
+    SurfaceMeshingParams,
+    VolumeMeshingParams,
+)
+
 from ..cloud.rest_api import RestApi
 from ..exceptions import Flow360ValidationError, Flow360ValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
-from .meshing.params import SurfaceMeshingParams, VolumeMeshingParams
+from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 
 
 class Validator(Enum):

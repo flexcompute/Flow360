@@ -1,7 +1,7 @@
 import time
 
-import flow360 as fl
 import flow360.component.simulation.units as u
+import flow360.v1 as fl
 from flow360.component.simulation.cloud import run_case
 from flow360.component.simulation.models.surface_models import (
     Freestream,

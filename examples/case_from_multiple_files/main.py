@@ -1,7 +1,7 @@
 import os
 
-import flow360 as fl
-import flow360.component.flow360_params.units as u
+import flow360.component.v1.units as u
+import flow360.v1 as fl
 from flow360.examples import OM6wing
 
 here = os.path.dirname(os.path.abspath(__file__))

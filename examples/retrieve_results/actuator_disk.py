@@ -1,7 +1,7 @@
 import os
 
-import flow360 as fl
 import flow360.units as u
+import flow360.v1 as fl
 from flow360.examples import ActuatorDisk
 
 ActuatorDisk.get_files()

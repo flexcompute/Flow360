@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 
@@ -410,6 +411,7 @@ def test_front_end_JSON_with_multi_constructor():
                             {
                                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                                 "private_attribute_entity_type_name": "Box",
+                                "private_attribute_id": "hardcoded_id-1",
                                 "name": "my_box_default",
                                 "private_attribute_zone_boundary_names": {"items": []},
                                 "type_name": "Box",
@@ -422,6 +424,7 @@ def test_front_end_JSON_with_multi_constructor():
                             },
                             {
                                 "type_name": "Box",
+                                "private_attribute_id": "hardcoded_id-2",
                                 "private_attribute_constructor": "from_principal_axes",
                                 "private_attribute_input_cache": {
                                     "axes": [[0.6, 0.8, 0.0], [0.8, -0.6, 0.0]],
@@ -433,6 +436,7 @@ def test_front_end_JSON_with_multi_constructor():
                             {
                                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                                 "private_attribute_entity_type_name": "Cylinder",
+                                "private_attribute_id": "hardcoded_id-3",
                                 "name": "my_cylinder_default",
                                 "private_attribute_zone_boundary_names": {"items": []},
                                 "axis": [0.0, 1.0, 0.0],
@@ -453,6 +457,7 @@ def test_front_end_JSON_with_multi_constructor():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_id": "hardcoded_id-4",
                         "name": "automated_farfied_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
@@ -620,7 +625,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'SurfaceMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "SurfaceMesh"
@@ -637,7 +644,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'VolumeMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "VolumeMesh"
@@ -654,7 +663,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'Case'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "Case"
