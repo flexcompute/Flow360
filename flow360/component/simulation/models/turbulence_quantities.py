@@ -202,7 +202,55 @@ def TurbulenceQuantities(
     turbulent_length_scale=None,
     turbulent_intensity=None,
 ) -> TurbulenceQuantitiesType:
-    """Return a matching tubulence specification object"""
+    """
+
+    :func:`TurbulenceQuantities` function specifies turbulence conditions
+    for the :class:`~flow360.Inflow` or :class:`~flow360.Freestream`
+    at boundaries. The turbulence properties that can be
+    specified are listed below. All values are dimensional.
+    For valid specifications as well as the default values,
+    please refer to :ref:`knowledge base<knowledgeBaseTurbulenceQuantities>`.
+
+    Parameters
+    ----------
+    viscosity_ratio : >= 0
+        The ratio between the turbulent viscosity and freestream laminar
+        viscosity. Applicable to both :class:`~flow360.KOmegaSST` and
+        `~flow360.SpalartAllmaras`. Its value will be converted to
+        :paramref:`modifiedTurbulentViscosityRatio` when using
+        SpalartAllmaras model.
+    modified_viscosity_ratio : >= 0
+        The ratio between the modified turbulent viscosity (in SA model) and
+        freestream laminar viscosity.
+        Applicable to :class:`~flow360.SpalartAllmaras`.
+    modified_viscosity : >=0
+        The modified turbulent viscosity, aka nuHat.
+        Applicable to :class:`~flow360.SpalartAllmaras`.
+    specific_dissipation_rate : >= 0
+        The turbulent specific dissipation rate. Applicable to :class:`~flow360.KOmegaSST`.
+    turbulent_kinetic_energy : >=0
+        The turbulent kinetic energy. Applicable to :class:`~flow360.KOmegaSST`.
+    turbulent_length_scale : > 0
+        The turbulent length scale is an estimation of the size of
+        the eddies that are modeled/not resolved.
+        Applicable to :class:`~flow360.KOmegaSST`.
+    turbulent_intensity : >= 0
+        The turbulent intensity is related to the turbulent kinetic energy by
+        :math:`k = 1.5(U_{ref} * I)^2` where :math:`k` is the dimensional
+        turbulent kinetic energy, :math:`U_{ref}` is the reference velocity
+        and :math:`I` is the turbulent intensity. The value represents the
+        actual magnitude of intensity instead of percentage. Applicable to
+        :class:`~flow360.KOmegaSST`.
+
+    Returns
+    -------
+        A matching tubulence specification object.
+
+    Raises
+    -------
+    ValueError
+        If the TurbulenceQuantities inputs do not represent a valid specification.
+    """
     non_none_arg_count = sum(arg is not None for arg in locals().values())
     if non_none_arg_count == 0:
         return None

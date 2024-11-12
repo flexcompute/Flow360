@@ -1512,7 +1512,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
                     )
 
         conversion_system = u.UnitSystem(
-            "flow360",
+            "flow360_v2",
             "flow360_length_unit",
             "flow360_mass_unit",
             "flow360_time_unit",

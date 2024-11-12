@@ -28,10 +28,10 @@ from ...cloud.s3_utils import (
 )
 from ...exceptions import Flow360ValueError
 from ...log import log
-from ..flow360_params.conversions import unit_converter as unit_converter_v1
-from ..flow360_params.flow360_params import Flow360Params
 from ..simulation.conversion import unit_converter as unit_converter_v2
 from ..simulation.simulation_params import SimulationParams
+from ..v1.conversions import unit_converter as unit_converter_v1
+from ..v1.flow360_params import Flow360Params
 
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()

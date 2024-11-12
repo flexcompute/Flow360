@@ -20,33 +20,39 @@ from flow360.component.simulation.unit_system import LengthType
 
 
 class UniformRefinement(Flow360BaseModel):
-    """Uniform spacing refinement."""
+    """Uniform spacing refinement inside specified region of mesh."""
 
     name: Optional[str] = pd.Field(None)
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
-    entities: EntityList[Box, Cylinder] = pd.Field()
+    entities: EntityList[Box, Cylinder] = pd.Field(
+        description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box` "
+        + "and :class:`~flow360.Cylinder` regions."
+    )
     # pylint: disable=no-member
-    spacing: LengthType.Positive = pd.Field()
+    spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
 class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     """Base class for all refinements that requires spacing in axia, radial and circumferential directions."""
 
     # pylint: disable=no-member
-    spacing_axial: LengthType.Positive = pd.Field()
-    spacing_radial: LengthType.Positive = pd.Field()
-    spacing_circumferential: LengthType.Positive = pd.Field()
+    spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
+    spacing_radial: LengthType.Positive = pd.Field(
+        description="Spacing along the radial direction."
+    )
+    spacing_circumferential: LengthType.Positive = pd.Field(
+        description="Spacing along the circumferential direction."
+    )
 
 
 class AxisymmetricRefinement(CylindricalRefinementBase):
     """
-    Note:
-    - This basically creates the "rotorDisks" type of volume refinement that we used to have.
-
-
-
-    - We may provide a helper function to automatically determine what is inside the encloeud_objects list based on
-    the mesh data. But this currently is out of scope due to the estimated efforts.
+    - The mesh inside the :class:`AxisymmetricRefinement` is semi-structured.
+    - The :class:`AxisymmetricRefinement` cannot enclose/intersect with other objects.
+    - Users could create a donut-shape :class:`AxisymmetricRefinement` and place their hub/centerbody in the middle.
+    - :class:`AxisymmetricRefinement` can be used for resolving the strong flow gradient
+       along the axial direction for the actuator or BET disks.
+    - The spacings along the axial, radial and circumferential directions can be adjusted independently.
     """
 
     name: Optional[str] = pd.Field(None)
@@ -58,25 +64,23 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
 
 class RotationCylinder(CylindricalRefinementBase):
     """
-    This is the original SlidingInterface. This will create new volume zones
-    Will add RotationSphere class in the future.
-    Please refer to
-    https://www.notion.so/flexcompute/Python-model-design-document-
-    78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
-
-    - `enclosed_entities` is actually just a way of specifying the enclosing patches of a volume zone.
-    Therefore in the future when supporting arbitrary-axisymmetric shaped sliding interface, we may not need this
-    attribute at all. For example if the new class already has an entry to list all the enclosing patches.
+    - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
+    - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
+    - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
+    - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
     """
+
+    # Note: Please refer to
+    # Note: https://www.notion.so/flexcompute/Python-model-design-document-
+    # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
     name: Optional[str] = pd.Field(None, description="Name to display in the GUI.")
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,
-        description="Entities enclosed by this sliding interface."
-        + " Can be faces, boxes and/or other cylinders etc."
-        + "This helps determining the volume zone boundary.",
+        description="Entities enclosed by :class:`RotationCylinder`. "
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder` (s).",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -98,24 +102,23 @@ class RotationCylinder(CylindricalRefinementBase):
 
 class AutomatedFarfield(Flow360BaseModel):
     """
-    - auto: The mesher will Sphere or semi-sphere will be generated based on the bounding box of the geometry
-
-        - Full sphere if min{Y} < 0 and max{Y} > 0
-
-        - +Y semi sphere if min{Y} = 0 and max{Y} > 0
-
-        - -Y semi sphere if min{Y} < 0 and max{Y} = 0
-
-    - quasi-3d: Thin disk will be generated for quasi 3D cases.
-                Both sides of the farfield disk will be treated as “symmetric plane”.
-
-    - user-defined: The farfield shape is provided by the user in ESP.
-                    Note: "user-defined" are left out due to scarce usage and will not be implemented.
+    Settings for automatic farfield volume zone generation.
     """
 
     type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
-    method: Literal["auto", "quasi-3d"] = pd.Field(default="auto", frozen=True)
+    method: Literal["auto", "quasi-3d"] = pd.Field(
+        default="auto",
+        frozen=True,
+        description="""
+        - auto: The mesher will Sphere or semi-sphere will be generated based on the bounding box of the geometry.
+            - Full sphere if min{Y} < 0 and max{Y} > 0.
+            - +Y semi sphere if min{Y} = 0 and max{Y} > 0.
+            - -Y semi sphere if min{Y} < 0 and max{Y} = 0.
+        - quasi-3d: Thin disk will be generated for quasi 3D cases.
+                    Both sides of the farfield disk will be treated as “symmetric plane”.
+        """,
+    )
     private_attribute_entity: GenericVolume = pd.Field(
         GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
     )

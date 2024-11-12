@@ -171,40 +171,6 @@
             "inputBoundaryPatches": [
                 "plateBlock/noSlipWall"
             ],
-            "outputTarget": {
-                "privateAttributeRegistryBucketName": "VolumetricEntityType",
-                "privateAttributeEntityTypeName": "Cylinder",
-                "privateAttributeId": "33b163d4-6933-4e5f-905a-01cbcac24b60",
-                "name": "plateBlock",
-                "privateAttributeZoneBoundaryNames": {
-                    "items": []
-                },
-                "axis": [
-                    0.0,
-                    1.0,
-                    0.0
-                ],
-                "center": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "flow360_length_unit"
-                },
-                "height": {
-                    "value": 5.536417322834646,
-                    "units": "flow360_length_unit"
-                },
-                "outerRadius": {
-                    "value": 14.763779527559056,
-                    "units": "flow360_length_unit"
-                },
-                "innerRadius": {
-                    "value": 0,
-                    "units": "flow360_length_unit"
-                }
-            },
             "dynamicsName": "dynamicTheta",
             "outputTargetName": "plateBlock"
         }
