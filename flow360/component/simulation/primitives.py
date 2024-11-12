@@ -8,6 +8,7 @@ from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
+from pydantic import PositiveFloat
 from scipy.linalg import eig
 from typing_extensions import Self
 
@@ -372,7 +373,6 @@ class Surface(_SurfaceEntityBase):
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
 
-@final
 class GhostSurface(_SurfaceEntityBase):
     """
     Represents a boudary surface that may or may not be generated therefore may or may not exist.
@@ -393,6 +393,27 @@ class GhostSurface(_SurfaceEntityBase):
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
         "GhostSurface", frozen=True
     )
+
+
+# pylint: disable=missing-class-docstring
+@final
+class GhostSphere(GhostSurface):
+    private_attribute_entity_type_name: Literal["GhostSphere"] = pd.Field(
+        "GhostSphere", frozen=True
+    )
+    center: List = pd.Field(alias="center")
+    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
+
+
+# pylint: disable=missing-class-docstring
+@final
+class GhostCircularPlane(GhostSurface):
+    private_attribute_entity_type_name: Literal["GhostCircularPlane"] = pd.Field(
+        "GhostCircularPlane", frozen=True
+    )
+    center: List = pd.Field(alias="center")
+    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
+    normal_axis: List = pd.Field(alias="normalAxis")
 
 
 class SurfacePair(Flow360BaseModel):
