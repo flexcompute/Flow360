@@ -265,7 +265,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """
         Construct box from principal axes
         """
-        print("--- kwargs: ", kwargs)
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
