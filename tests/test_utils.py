@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 
-from flow360 import Accounts
+from flow360.accounts_utils import Accounts
 from flow360.cli.dict_utils import merge_overwrite
 from flow360.component.utils import (
     CompressionFormat,

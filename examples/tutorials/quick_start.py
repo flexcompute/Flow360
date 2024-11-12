@@ -1,51 +1,67 @@
+# Import necessary modules from the Flow360 library
 import flow360 as fl
-from flow360.component.geometry import Geometry
-from flow360.component.project import Project
-from flow360.component.simulation.meshing_param.params import (
-    MeshingDefaults,
-    MeshingParams,
-)
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.models.surface_models import Freestream, Wall
-from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
-)
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import ReferenceGeometry
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360 import SI_unit_system, u
 from flow360.examples import Airplane
 
+# Activate the pre-production environment because of beta testing status
 fl.Env.preprod.active()
 
+# Step 1: Create a new project from a predefined geometry file in the Airplane example
+# This initializes a project with the specified geometry and assigns it a name.
+project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+geo = project.geometry  # Access the geometry of the project
 
-project = Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
-geo = project.geometry
-
+# Step 2: Display available groupings in the geometry (helpful for identifying group names)
 geo.show_available_groupings(verbose_mode=True)
+
+# Step 3: Group faces by a specific tag for easier reference in defining `Surface` objects
 geo.group_faces_by_tag("groupName")
 
-
+# Step 4: Define simulation parameters within a specific unit system
 with SI_unit_system:
-    params = SimulationParams(
-        meshing=MeshingParams(
-            defaults=MeshingDefaults(
-                boundary_layer_first_layer_thickness=0.001, surface_max_edge_length=1
+    # Define an automated far-field boundary condition for the simulation
+    far_field_zone = fl.AutomatedFarfield()
+
+    # Set up the main simulation parameters
+    params = fl.SimulationParams(
+        # Meshing parameters, including boundary layer and maximum edge length
+        meshing=fl.MeshingParams(
+            defaults=fl.MeshingDefaults(
+                boundary_layer_first_layer_thickness=0.001,  # Boundary layer thickness
+                surface_max_edge_length=1,  # Maximum edge length on surfaces
             ),
-            volume_zones=[AutomatedFarfield()],
+            volume_zones=[far_field_zone],  # Apply the automated far-field boundary condition
         ),
-        reference_geometry=ReferenceGeometry(),
-        operating_condition=AerospaceCondition(velocity_magnitude=100, alpha=5 * u.deg),
-        time_stepping=Steady(max_steps=1000),
+        # Reference geometry parameters for the simulation (e.g., center of pressure)
+        reference_geometry=fl.ReferenceGeometry(),
+        # Operating conditions: setting speed and angle of attack for the simulation
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=100,  # Velocity of 100 m/s
+            alpha=5 * u.deg,  # Angle of attack of 5 degrees
+        ),
+        # Time-stepping configuration: specifying steady-state with a maximum step limit
+        time_stepping=fl.Steady(max_steps=1000),
+        # Define models for the simulation, such as walls and freestream conditions
         models=[
-            Wall(
-                surfaces=[geo["*"]],
+            fl.Wall(
+                surfaces=[geo["*"]],  # Apply wall boundary conditions to all surfaces in geometry
                 name="Wall",
             ),
-            Freestream(surfaces=[AutomatedFarfield().farfield], name="Freestream"),
+            fl.Freestream(
+                surfaces=[
+                    far_field_zone.farfield
+                ],  # Apply freestream boundary to the far-field zone
+                name="Freestream",
+            ),
         ],
-        outputs=[SurfaceOutput(surfaces=geo["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])],
+        # Define output parameters for the simulation
+        outputs=[
+            fl.SurfaceOutput(
+                surfaces=geo["*"],  # Select all surfaces for output
+                output_fields=["Cp", "Cf", "yPlus", "CfVec"],  # Output fields for post-processing
+            )
+        ],
     )
 
+# Step 5: Run the simulation case with the specified parameters
 project.run_case(params=params, name="Case of Simple Airplane from Python")
