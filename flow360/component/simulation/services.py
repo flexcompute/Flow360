@@ -535,9 +535,15 @@ def generate_process_json(
     validation_level = _determine_validation_level(up_to)
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
-    params, _, _ = validate_model(
+    params, errors, _ = validate_model(
         params_as_dict, unit_system_name, root_item_type, validation_level=validation_level
     )
+
+    if errors is not None:
+        raise ValueError(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: "
+            + str(errors)
+        )
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)

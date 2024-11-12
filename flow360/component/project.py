@@ -49,8 +49,11 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
     2. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
     """
 
-    def _get_tag(entity_registry, entity_type: Union[Surface | Edge]):
+    def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
         group_tag = None
+        if not entity_registry.find_by_type(entity_type):
+            # Did not use any entity of this type, so we add default grouping tag
+            return "edgeId" if entity_type == Edge else "faceId"
         for entity in entity_registry.find_by_type(entity_type):
             if entity.private_attribute_tag_key is None:
                 raise Flow360ValueError(
