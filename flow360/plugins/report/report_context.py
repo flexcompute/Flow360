@@ -20,7 +20,7 @@ class ReportContext(pd.BaseModel):
     """
 
     cases: List[Case]
-    doc: Document
+    doc: Document = Document()
     section_func: Union[Type[Section], Type[Subsection]] = Section
     case_by_case: bool = False
     data_storage: str = "."

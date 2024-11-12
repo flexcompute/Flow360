@@ -3,13 +3,14 @@ Module containg detailed report items
 """
 
 import os
-from typing import List, Literal, Optional, Tuple, Union, Annotated
+from typing import List, Literal, Optional, Tuple, Union, Annotated, Callable
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
 import unyt
 from flow360 import Case
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import Flow360BaseModel, Conflicts
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -33,9 +34,20 @@ from flow360.plugins.report.uvf_shutter import (
     UVFshutter,
     FocusPayload,
     SetCameraPayload,
-    Camera
+    Camera,
+    SetLICPayload,
 )
-from pydantic import BaseModel, Field, NonNegativeInt, field_validator, model_validator, StringConstraints
+import pydantic as pd
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    NonNegativeFloat,
+    PositiveFloat,
+    field_validator,
+    model_validator,
+    StringConstraints,
+)
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -47,9 +59,9 @@ from pylatex.utils import bold, escape_latex
 here = os.path.dirname(os.path.abspath(__file__))
 
 
+FileNameStr = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9._-]+$")]
 
-FileNameStr = Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$')]
-
+FIG_ASPECT_RATIO = 16 / 9
 
 
 class ReportItem(Flow360BaseModel):
@@ -225,10 +237,7 @@ class Table(ReportItem):
                     data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
                     for path in self.data
                 ]
-                row_list = [
-                    f"{x:.5g}" if isinstance(x, (int, float)) else x
-                    for x in row_list
-                ]
+                row_list = [f"{x:.5g}" if isinstance(x, (int, float)) else x for x in row_list]
 
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
@@ -356,6 +365,7 @@ class PlotModel(BaseModel):
     legend: Optional[List[str]] = None
     is_log: bool = False
     style: str = "-"
+    backgroung_png: Optional[str] = None
 
     @field_validator("x_data", "y_data", mode="before")
     def ensure_y_data_is_list_of_lists(cls, v):
@@ -396,9 +406,31 @@ class PlotModel(BaseModel):
     def y_data_as_np(self):
         return [np.array(y_series) for y_series in self.y_data]
 
+    def _get_extent_for_background(self):
+        """
+        calculates good extend for background image
+        """
+        extent = [
+            np.amin(self.x_data_as_np[0]),
+            np.amax(self.x_data_as_np[0]),
+            np.amin(self.y_data_as_np),
+            np.amax(self.y_data_as_np),
+        ]
+        y_extent = extent[3] - extent[2]
+        extent[2] -= y_extent * 0.1
+        extent[3] += y_extent * 0.1
+        return extent
+
     def get_plot(self):
-        fig, ax = plt.subplots()
+        figsize = 8
+        fig, ax = plt.subplots(figsize=(figsize, figsize / FIG_ASPECT_RATIO))
         num_series = len(self.y_data)
+
+        if self.backgroung_png is not None:
+            background_img = mpimg.imread(self.backgroung_png)
+            extent = self._get_extent_for_background()
+            ax.imshow(background_img, extent=extent, aspect="auto", alpha=0.7, zorder=0)
+            ax.grid(True)
 
         for idx in range(num_series):
             x_series = self.x_data_as_np[idx]
@@ -408,6 +440,7 @@ class PlotModel(BaseModel):
             )
             if self.is_log:
                 ax.semilogy(x_series, y_series, self.style, label=label)
+                ax.grid(axis="y")
             else:
                 ax.plot(x_series, y_series, self.style, label=label)
 
@@ -417,6 +450,32 @@ class PlotModel(BaseModel):
             ax.legend()
 
         return fig
+
+
+class Average(Flow360BaseModel):
+    start_step: Optional[NonNegativeInt] = None
+    end_step: Optional[NonNegativeInt] = None
+    start_time: Optional[NonNegativeFloat] = None
+    end_time: Optional[NonNegativeFloat] = None
+    fraction: Optional[PositiveFloat] = Field(None, le=1)
+
+    model_config = pd.ConfigDict(
+        conflicting_fields=[
+            Conflicts(field1="start_step", field2="start_time"),
+            Conflicts(field1="start_step", field2="fraction"),
+            Conflicts(field1="start_time", field2="fraction"),
+            Conflicts(field1="end_step", field2="end_time"),
+            Conflicts(field1="end_step", field2="fraction"),
+            Conflicts(field1="end_time", field2="fraction"),
+        ],
+        require_one_of=["start_step", "start_time", "fraction"],
+    )
+
+    def calculate(self, data, cases):
+        pass
+
+
+OperationTypes = Union[Average]
 
 
 class Chart2D(Chart):
@@ -442,6 +501,7 @@ class Chart2D(Chart):
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+    operation: Optional[Union[List[OperationTypes], OperationTypes]] = None
 
     def get_requirements(self):
         """
@@ -501,7 +561,7 @@ class Chart2D(Chart):
             not isinstance(data, list) for data in y_data
         )
 
-    def get_data(self, cases: List[Case]) -> PlotModel:
+    def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         x_label = self.x.split("/")[-1]
         y_label = self.y.split("/")[-1]
 
@@ -512,6 +572,32 @@ class Chart2D(Chart):
             x_data, y_data, x_label, y_label
         )
 
+        background_png = None
+        if self.background == "geometry":
+            dimension = np.amax(x_data[0]) - np.amin(x_data[0])
+            if self.x == "x_slicing_force_distribution/X":
+                log.warning(
+                    "First case is used as a background image with dimensiones matched to the extent of X data"
+                )
+                camera = Camera(
+                    position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
+                )
+            elif self.x == "y_slicing_force_distribution/Y":
+                log.warning(
+                    "First case is used as a background image with dimensiones matched to the extent of X data"
+                )
+                camera = Camera(
+                    position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
+                )
+            else:
+                raise ValueError(
+                    f"background={self.background} can be only used with x == x_slicing_force_distribution/X OR x == y_slicing_force_distribution/Y"
+                )
+            background = Chart3D(
+                show="boundaries", camera=camera, fig_name="background_" + self.fig_name
+            )
+            background_png = background._get_images([cases[0]], context)[0]
+
         if self._is_multiline_data(x_data, y_data):
             # every case is one point, eg CL/CD plot
             return PlotModel(
@@ -520,6 +606,7 @@ class Chart2D(Chart):
                 x_label=x_label,
                 y_label=y_label,
                 style="o-",
+                backgroung_png=background_png,
             )
 
         return PlotModel(
@@ -528,17 +615,19 @@ class Chart2D(Chart):
             x_label=x_label,
             y_label=y_label,
             legend=[case.name for case in cases],
-            is_log=self.is_log_plot()
+            is_log=self.is_log_plot(),
+            backgroung_png=background_png,
         )
 
-    def _get_figures(self, cases, case_by_case, data_storage):
+    def _get_figures(self, cases, context: ReportContext):
         file_names = []
+        case_by_case, data_storage = context.case_by_case, context.data_storage
         cbc_str = "_cbc_" if case_by_case else "_"
-
+        case_by_case, data_storage
         if self.separate_plots:
             for case in cases:
                 file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".png")
-                data = self.get_data([case])
+                data = self.get_data([case], context)
                 fig = data.get_plot()
                 fig.savefig(file_name)
                 file_names.append(file_name)
@@ -546,7 +635,7 @@ class Chart2D(Chart):
 
         else:
             file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".png")
-            data = self.get_data(cases)
+            data = self.get_data(cases, context)
             fig = data.get_plot()
             fig.savefig(file_name)
             file_names.append(file_name)
@@ -567,9 +656,7 @@ class Chart2D(Chart):
         self._handle_title(context.doc, context.section_func)
         cases = self._filter_input_cases(context.cases, context.case_by_case)
 
-        file_names, x_lab, y_lab = self._get_figures(
-            cases, context.case_by_case, context.data_storage
-        )
+        file_names, x_lab, y_lab = self._get_figures(cases, context)
 
         caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
 
@@ -587,8 +674,6 @@ class Chart2D(Chart):
 
         context.doc.append(NoEscape(r"\FloatBarrier"))
         context.doc.append(NoEscape(r"\clearpage"))
-
-
 
 
 class Chart3D(Chart):
@@ -610,11 +695,16 @@ class Chart3D(Chart):
     field: Optional[SurfaceFieldNames] = None
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
+    is_log_scale: bool = False
     show: UvfObjectTypes
     type: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
     def _get_uvf_qcriterion_script(
-        self, script: List = None, field: str = None, limits: Tuple[float, float] = None
+        self,
+        script: List = None,
+        field: str = None,
+        limits: Tuple[float, float] = None,
+        is_log_scale: bool = None,
     ):
         if script is None:
             script = []
@@ -624,10 +714,17 @@ class Chart3D(Chart):
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
             ),
-            ActionPayload(action="focus", payload=FocusPayload(object_ids=['boundaries'], zoom=1.5)),
+            ActionPayload(
+                action="focus", payload=FocusPayload(object_ids=["boundaries"], zoom=1.5)
+            ),
             ActionPayload(
                 action="set-field",
-                payload=SetFieldPayload(object_id="qcriterion", field_name=field, min_max=limits),
+                payload=SetFieldPayload(
+                    object_id="qcriterion",
+                    field_name=field,
+                    min_max=limits,
+                    is_log_scale=is_log_scale,
+                ),
             ),
         ]
         return script
@@ -640,28 +737,32 @@ class Chart3D(Chart):
             )
         ]
         return script
-    
+
     def _get_uvf_set_camera(self, script, camera: Camera):
         script += [
             ActionPayload(
                 action="set-camera",
-                payload=SetCameraPayload(**camera.model_dump(exclude_none=True))
+                payload=SetCameraPayload(**camera.model_dump(exclude_none=True)),
             )
         ]
         return script
-    
+
     def _get_focus_camera(self, script):
         script += [
-            ActionPayload(action="focus", payload=FocusPayload(object_ids=['boundaries'], zoom=1.5))
+            ActionPayload(action="focus", payload=FocusPayload(object_ids=["boundaries"], zoom=1.5))
         ]
         return script
 
     def _get_uvf_boundary_script(
-        self, script: List = None, field: str = None, limits: Tuple[float, float] = None
+        self,
+        script: List = None,
+        field: str = None,
+        limits: Tuple[float, float] = None,
+        is_log_scale: bool = None,
     ):
         if script is None:
             script = []
- 
+
         script += [
             ActionPayload(
                 action="set-object-visibility",
@@ -673,32 +774,39 @@ class Chart3D(Chart):
 
         if field is None:
             pass
-            # script += [
-            #     ActionPayload(
-            #         action="set-object-visibility",
-            #         payload=SetObjectVisibilityPayload(
-            #             object_ids=["edge0001"], visibility=True
-            #         ),
-            #     ),
-            #     ActionPayload(action="focus"),
-            # ]
+            # get geometry id?
         else:
             script += [
                 ActionPayload(
                     action="set-field",
                     payload=SetFieldPayload(
-                        object_id="boundaries", field_name=field, min_max=limits
+                        object_id="boundaries",
+                        field_name=field,
+                        min_max=limits,
+                        is_log_scale=is_log_scale,
                     ),
                 )
             ]
+            if field == "CfVec":
+                script += [
+                    ActionPayload(
+                        action="set-lic",
+                        payload=SetLICPayload(object_id="boundaries", visibility=True),
+                    )
+                ]
+
         return script
 
     def _get_uvf_request(self, fig_name, case: Case):
 
         if self.show == "qcriterion":
-            script = self._get_uvf_qcriterion_script(field=self.field, limits=self.limits)
+            script = self._get_uvf_qcriterion_script(
+                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+            )
         elif self.show == "boundaries":
-            script = self._get_uvf_boundary_script(field=self.field, limits=self.limits)
+            script = self._get_uvf_boundary_script(
+                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+            )
         elif self.show == "slices":
             raise NotImplementedError("Slices not implemented yet")
         else:
@@ -712,8 +820,10 @@ class Chart3D(Chart):
 
         scene = Scene(name="my-scene", script=script)
         path_prefix = case.get_cloud_path_prefix()
-        if self.field is None and self.show == 'boundaries':
-            log.debug('Not implemented: getting geometry resource for showing geoemtry. Currently using case resource.')
+        if self.field is None and self.show == "boundaries":
+            log.debug(
+                "Not implemented: getting geometry resource for showing geoemtry. Currently using case resource."
+            )
             # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
             # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")
         resource = Resource(path_prefix=path_prefix, id=case.id)
@@ -736,7 +846,7 @@ class Chart3D(Chart):
             "access_token": context.shutter_access_token,
         }
         context_data = {k: v for k, v in context_data.items() if v is not None}
-        img_files = UVFshutter(cases=cases, **context_data ).get_images(fig_name, uvf_requests)
+        img_files = UVFshutter(cases=cases, **context_data).get_images(fig_name, uvf_requests)
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]
@@ -763,9 +873,8 @@ class Chart3D(Chart):
 
         else:
             for filename in img_list:
-                fig_caption = 'Chart 3D'
+                fig_caption = "Chart 3D"
                 self._add_figure(context.doc, filename, fig_caption)
-
 
         # Stops figures floating away from their sections
         context.doc.append(NoEscape(r"\FloatBarrier"))

@@ -310,7 +310,6 @@ class Flow360Resource(RestApi):
             List of files available for download
         """
         return self.get(method="files")
-    
 
     def get_cloud_path_prefix(self):
         if self.info.cloud_path_prefix is not None:
@@ -319,7 +318,9 @@ class Flow360Resource(RestApi):
             files = self.get_download_file_list()
             print(files)
             if len(files) == 0:
-                raise ValueError('Cannot determine cloud path prefix. Not files accociated with this resource.')
+                raise ValueError(
+                    "Cannot determine cloud path prefix. Not files accociated with this resource."
+                )
             return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
 
     @property

@@ -706,7 +706,6 @@ def _local_download_overwrite(local_storage_path, class_name):
     return _local_download_file
 
 
-
 class LocalResourceCache:
     """
     A cache for preloading and storing resources to avoid redundant construction.
@@ -716,7 +715,7 @@ class LocalResourceCache:
     _storage : dict
         A class-level dictionary storing resources keyed by their unique identifiers.
     """
-    
+
     _storage = {}
 
     def __init__(self) -> None:

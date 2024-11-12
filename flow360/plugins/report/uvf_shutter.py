@@ -4,6 +4,7 @@ This module is reponsible for communicating with UVF-shutter service
 
 import asyncio
 import os
+import time
 import zipfile
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
@@ -114,6 +115,23 @@ class SetFieldPayload(Flow360BaseModel):
     object_id: UvfObjectTypes
     field_name: str
     min_max: Tuple[float, float]
+    is_log_scale: bool
+
+
+class SetLICPayload(Flow360BaseModel):
+    """
+    Payload for setting the visibility of objects.
+
+    Parameters
+    ----------
+    object_id : UvfObjectTypes
+        Object identifier for which LIC will be set.
+    visibility : bool
+        Boolean indicating the visibility state.
+    """
+
+    object_id: Union[UvfObjectTypes, str]
+    visibility: bool
 
 
 class Camera(Flow360BaseModel):
@@ -140,11 +158,15 @@ class Camera(Flow360BaseModel):
     up: Optional[Tuple[float, float, float]] = (0, 0, 1)
     look_at: Optional[Tuple[float, float, float]] = None
     pan_target: Optional[Tuple[float, float, float]] = None
-    dimension_dir: Optional[Literal['width', 'height', 'diagonal']] = pd.Field('width', alias='dimensionDirection')
-    dimension: Optional[float] = pd.Field(None, alias='dimensionSizeModelUnits')
+    dimension_dir: Optional[Literal["width", "height", "diagonal"]] = pd.Field(
+        "width", alias="dimensionDirection"
+    )
+    dimension: Optional[float] = pd.Field(None, alias="dimensionSizeModelUnits")
+
 
 class SetCameraPayload(Camera):
     pass
+
 
 class TakeScreenshotPayload(Flow360BaseModel):
     """
@@ -192,7 +214,13 @@ class FocusPayload(Flow360BaseModel):
 
 
 ActionTypes = Literal[
-    "focus", "set-object-visibility", "set-field", "reset-field", "set-camera", "take-screenshot"
+    "focus",
+    "set-object-visibility",
+    "set-field",
+    "set-lic",
+    "reset-field",
+    "set-camera",
+    "take-screenshot",
 ]
 
 
@@ -210,7 +238,15 @@ class ActionPayload(Flow360BaseModel):
 
     action: ActionTypes
     payload: Optional[
-        Union[SetObjectVisibilityPayload, SetFieldPayload, TakeScreenshotPayload, ResetFieldPayload, SetCameraPayload, FocusPayload]
+        Union[
+            SetObjectVisibilityPayload,
+            SetFieldPayload,
+            TakeScreenshotPayload,
+            ResetFieldPayload,
+            SetCameraPayload,
+            FocusPayload,
+            SetLICPayload,
+        ]
     ] = None
 
 
@@ -265,6 +301,8 @@ def http_interceptor(func):
         """A wrapper function"""
 
         log.debug(f"call: {func.__name__}({args}, {kwargs})")
+        start_time = time.time()
+
         async with await func(*args, **kwargs) as resp:
             log.debug(f"response: {resp}")
 
@@ -282,6 +320,10 @@ def http_interceptor(func):
                 raise Flow360WebNotFoundError(f"Web: Not found error: {error_message}")
 
             if resp.status == 200:
+                end_time = time.time()
+                execution_time = end_time - start_time
+                log.debug(f"UVF Shutter execution time: {execution_time:.4f} seconds")
+
                 try:
                     content_type = resp.headers.get("Content-Type", "")
                     if "application/json" in content_type:
@@ -318,7 +360,9 @@ class UVFshutter(Flow360BaseModel):
 
     cases: List[Any]
     data_storage: str = "."
-    url: str = pd.Field(default_factory=lambda: f"https://shutter-api-development.{Env.current.domain}")
+    url: str = pd.Field(
+        default_factory=lambda: f"https://shutter-api-development.{Env.current.domain}"
+    )
     use_cache: bool = True
     access_token: Optional[str] = None
 
@@ -333,14 +377,17 @@ class UVFshutter(Flow360BaseModel):
             )
             return session.post(url, json=uvf_request)
 
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600), headers={"Authorization": f"Bearer {self.access_token}"}) as session:
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=600),
+            headers={"Authorization": f"Bearer {self.access_token}"},
+        ) as session:
             tasks = []
             for _, _, uvf_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
                         session=session,
                         url=urljoin(self.url, "/sequence/run"),
-                        uvf_request=uvf_request
+                        uvf_request=uvf_request,
                     )
                 )
 

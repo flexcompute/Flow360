@@ -21,7 +21,7 @@ _requirements_mapping = {
     "total_forces": case_results.TotalForcesResultCSVModel()._remote_path(),
     "nonlinear_residuals": case_results.NonlinearResidualsResultCSVModel()._remote_path(),
     "x_slicing_force_distribution": case_results.XSlicingForceDistributionResultCSVModel()._remote_path(),
-    "y_slicing_force_distribution": case_results.YSlicingForceDistributionResultCSVModel()._remote_path()
+    "y_slicing_force_distribution": case_results.YSlicingForceDistributionResultCSVModel()._remote_path(),
 }
 
 

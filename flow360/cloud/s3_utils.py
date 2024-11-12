@@ -195,7 +195,7 @@ class S3TransferType(Enum):
         returns path prefix (without resource_id) to corresponding bucket
         """
         token = self._get_s3_sts_token(resource_id, file_name)
-        base_path = token.cloud_path_prefix.rsplit('/', 1)[0]
+        base_path = token.cloud_path_prefix.rsplit("/", 1)[0]
         return base_path
 
     def create_multipart_upload(

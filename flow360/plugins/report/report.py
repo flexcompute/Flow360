@@ -12,7 +12,15 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.plugins.report.report_context import ReportContext
-from flow360.plugins.report.report_items import Chart, Chart2D, Chart3D, Inputs, Summary, Table, FileNameStr
+from flow360.plugins.report.report_items import (
+    Chart,
+    Chart2D,
+    Chart3D,
+    Inputs,
+    Summary,
+    Table,
+    FileNameStr,
+)
 from pydantic import Field, validate_call, model_validator
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
@@ -57,7 +65,10 @@ class Report(Flow360Resource):
         """
         # pylint: disable=no-member
         return self._download_file(
-            file_name='results/' + file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
+            file_name="results/" + file_name,
+            to_file=to_file,
+            to_folder=to_folder,
+            overwrite=overwrite,
         )
 
 
@@ -108,7 +119,7 @@ class ReportApi:
             solver_version=solver_version,
         )
         resp = cls._webapi.post(json=request.dict())
-        return Report(resp['id'])
+        return Report(resp["id"])
 
 
 class ReportTemplate(Flow360BaseModel):
@@ -128,25 +139,25 @@ class ReportTemplate(Flow360BaseModel):
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
     include_case_by_case: bool = False
 
-
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_fig_names(cls, model):
         """Validate and assign unique fig_names to report items."""
         used_fig_names: Set[str] = set()
         for idx, item in enumerate(model.items):
-            if hasattr(item, 'fig_name'):
-                fig_name = getattr(item, 'fig_name', None)
+            if hasattr(item, "fig_name"):
+                fig_name = getattr(item, "fig_name", None)
                 if not fig_name:
                     class_name = item.__class__.__name__
                     fig_name = f"{class_name}_{idx}"
-                    item.fig_name = fig_name 
+                    item.fig_name = fig_name
                 else:
                     fig_name = item.fig_name
                 if fig_name in used_fig_names:
-                    raise ValueError(f"Duplicate fig_name '{fig_name}' found in item at index {idx}")
+                    raise ValueError(
+                        f"Duplicate fig_name '{fig_name}' found in item at index {idx}"
+                    )
                 used_fig_names.add(fig_name)
         return model
-
 
     def _create_header_footer(self) -> PageStyle:
         header = PageStyle("header")
@@ -270,7 +281,7 @@ class ReportTemplate(Flow360BaseModel):
         data_storage: str = ".",
         use_cache: bool = True,
         shutter_url: str = None,
-        shutter_access_token: str = None
+        shutter_access_token: str = None,
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -317,7 +328,11 @@ class ReportTemplate(Flow360BaseModel):
         doc.change_document_style("header")
 
         context = ReportContext(
-            cases=cases, doc=doc, data_storage=data_storage, shutter_url=shutter_url, shutter_access_token=shutter_access_token
+            cases=cases,
+            doc=doc,
+            data_storage=data_storage,
+            shutter_url=shutter_url,
+            shutter_access_token=shutter_access_token,
         )
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
