@@ -1,6 +1,5 @@
 """Output for simulation."""
 
-import uuid
 from abc import ABCMeta
 from typing import Literal
 
@@ -8,7 +7,7 @@ import pydantic as pd
 
 from flow360.component.flow360_params.flow360_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
@@ -42,7 +41,7 @@ class Slice(_SliceEntityBase):
     """Slice output item."""
 
     private_attribute_entity_type_name: Literal["Slice"] = pd.Field("Slice", frozen=True)
-    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     normal: Axis = pd.Field()
     # pylint: disable=no-member
     origin: LengthType.Point = pd.Field()
@@ -61,7 +60,7 @@ class Point(_PointEntityBase):
     """A single point for probe output"""
 
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
-    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
     location: LengthType.Point = pd.Field()
 

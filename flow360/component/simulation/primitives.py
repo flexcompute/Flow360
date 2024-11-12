@@ -3,7 +3,6 @@ Primitive type definitions for simulation entities.
 """
 
 import re
-import uuid
 from abc import ABCMeta
 from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
@@ -14,7 +13,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -236,7 +235,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     axis_of_rotation: Axis = pd.Field(default=(0, 0, 1))
     angle_of_rotation: AngleType = pd.Field(default=0 * u.degree)
     private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
-    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
@@ -247,10 +246,12 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         center: LengthType.Point,
         size: LengthType.PositiveVector,
         axes: OrthogonalAxes,
+        **kwargs,
     ):
         """
         Construct box from principal axes
         """
+        print("--- kwargs: ", kwargs)
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
@@ -277,6 +278,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             size=size,
             axis_of_rotation=tuple(axis),
             angle_of_rotation=angle * u.rad,
+            **kwargs,
         )
 
     @pd.model_validator(mode="after")
@@ -321,7 +323,7 @@ class Cylinder(_VolumeEntityBase):
         0 * u.m, description="The inner radius of the cylinder."
     )
     outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
-    private_attribute_id: str = pd.Field(default=str(uuid.uuid4()), frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.model_validator(mode="after")
     def _check_inner_radius_is_less_than_outer_radius(self) -> Self:

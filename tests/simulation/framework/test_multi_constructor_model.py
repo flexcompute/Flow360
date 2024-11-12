@@ -1,4 +1,3 @@
-import json
 from copy import deepcopy
 
 import pydantic as pd
@@ -16,6 +15,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.utils import model_attribute_unlock
 
 
 @pytest.fixture
@@ -122,7 +122,6 @@ def test_recursive_incomplete_model(get_aerospace_condition_using_from):
 
 
 def test_entity_with_multi_constructor():
-    import json
 
     class ModelWithEntityList(Flow360BaseModel):
         entities: EntityList[Box, Cylinder] = pd.Field()
@@ -166,6 +165,7 @@ def test_entity_with_multi_constructor():
             "type_name",
             "private_attribute_constructor",
             "private_attribute_input_cache",
+            "private_attribute_id",
         ]:
             incomplete_entity[key] = value
     incomplete_data["entities"]["stored_entities"].append(incomplete_entity)
