@@ -1,4 +1,4 @@
-import flow360 as fl
+import flow360.v1 as fl
 
 # get all cases:
 my_cases = fl.MyCases()
