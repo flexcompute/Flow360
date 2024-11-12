@@ -1,0 +1,29 @@
+{
+    "refinement": [
+        {
+            "type": "cylinder",
+            "radius": 4.1,
+            "length": 5,
+            "spacing": 0.1,
+            "axis": [1,0,0],
+            "center": [0,5,0]
+        }
+    ],
+    "rotorDisks": [
+     {
+         "name": "BET_Disk",
+         "innerRadius": 0,
+         "outerRadius": 4.0,
+         "thickness": 0.6,
+         "axisThrust": [1, 0, 0],
+         "center": [-2, 5.0, 0],
+         "spacingAxial": 0.02,
+         "spacingRadial": 0.03,
+         "spacingCircumferential": 0.06
+     }
+    ],
+    "volume": {
+        "firstLayerThickness": 1e-06,
+        "growthRate": 1.15
+    }
+}

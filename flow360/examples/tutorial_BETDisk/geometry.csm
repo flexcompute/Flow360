@@ -1,0 +1,160 @@
+# wing
+
+# design parameters
+DESPMTR   Xroot     0.00      # X-coordinte of root leading edge
+DESPMTR   Yroot     0.00      # Y-coordinte of root leading edge
+DESPMTR   Zroot     0.00      # Z-coordinte of root leading edge
+DESPMTR   croot     1.50      # chord of root
+DESPMTR   troot     0.12      # thickness/chord of root
+DESPMTR   mroot     0.04      # camber/chord of root
+DESPMTR   aroot     7.50      # angle of attack of root (deg)
+DESPMTR   Xtip      0.5     # X-coordinte of tip leading edge
+DESPMTR   Ytip      10.00      # Y-coordinte of tip leading edge
+DESPMTR   Ztip      0.00      # Z-coordinte of tip leading edge
+DESPMTR   ctip      1.0      # chord of tip
+DESPMTR   ttip      0.08      # thickness/chord of tip
+DESPMTR   mtip      0.04      # camber/chord of tip
+DESPMTR   atip     -5.00      # angle of attack of tip (deg)
+
+MARK
+
+   # rite wing tip
+   UDPRIM    naca   thickness  ttip   camber  mtip
+   SCALE     ctip
+   ROTATEX   90     0      0
+   ROTATEY  atip   0      0
+   TRANSLATE Xtip   Ytip  Ztip
+   store tipAirfoil
+
+
+   # wing root
+   UDPRIM    naca   thickness  troot  camber  mroot
+   SCALE     croot
+   ROTATEX   90     0      0
+   ROTATEY   aroot  0      0
+   TRANSLATE Xroot  Yroot  Zroot
+   store rootAirfoil
+
+# TIP FACE
+#--------------------------------------------------------------------------------------------
+restore tipAirfoil
+
+# COLLECTING NODE COORDINATES AT TIP FACE TO ADD ATTRIBUTE AFTER BLEND
+#--------------------------------------------------------------------------------------------
+dimension tipLeadingPoint  1 3
+dimension tipTrailingPointUp 1 3
+dimension tipTrailingPointLow 1 3
+
+set xmin @xmax
+set zmin @zmax
+set zmax @zmin
+
+set numNodes @nnode
+patbeg inode numNodes
+    evaluate node @ibody inode
+    IFTHEN @edata[1] LT xmin
+        set xmin @edata[1]
+        set tipLeadingPoint "xmin;@edata[2];@edata[3];"
+        set leadingNodeID inode
+    ENDIF
+patend
+
+patbeg inode numNodes
+    IFTHEN inode NE leadingNodeID
+        evaluate node @ibody inode
+        IFTHEN @edata[3] GT zmax
+            set zmax @edata[3]
+            set tipTrailingPointUp "@edata[1];@edata[2];zmax;"
+        ENDIF
+
+        IFTHEN @edata[3] LT zmin
+            set zmin @edata[3]
+            set tipTrailingPointLow "@edata[1];@edata[2];zmin;"
+        ENDIF
+    ENDIF
+
+patend
+
+set nFaces @nface
+	patbeg i nFaces
+	    select face i
+	    attribute faceName $tip
+	    attribute groupName $tip
+	patend
+store tipAirfoil
+
+# ROOT FACE
+#--------------------------------------------------------------------------------------------
+restore rootAirfoil
+
+# COLLECTING NODE COORDINATES AT ROOT FACE TO ADD ATTRIBUTE AFTER BLEND
+#--------------------------------------------------------------------------------------------
+# defining arrays with one row and three columns
+dimension rootLeadingPoint  1 3
+dimension rootTrailingPointUp 1 3
+dimension rootTrailingPointLow 1 3
+
+# initializing xmin, zmin, zmax with their opposite extremes
+set xmin @xmax
+set zmin @zmax
+set zmax @zmin
+
+set numNodes @nnode
+patbeg inode numNodes
+    evaluate node @ibody inode
+    IFTHEN @edata[1] LT xmin
+        set xmin @edata[1]
+        set rootLeadingPoint "xmin;@edata[2];@edata[3];"
+        set leadingNodeID inode
+    ENDIF
+patend
+
+patbeg inode numNodes
+    IFTHEN inode NE leadingNodeID
+        evaluate node @ibody inode
+        IFTHEN @edata[3] GT zmax
+            set zmax @edata[3]
+            set rootTrailingPointUp  "@edata[1];@edata[2];zmax;"
+        ENDIF
+
+        IFTHEN @edata[3] LT zmin
+            set zmin @edata[3]
+            set rootTrailingPointLow "@edata[1];@edata[2];zmin;"
+        ENDIF
+    ENDIF
+patend
+store rootAirfoil
+
+mark
+restore tipAirfoil
+restore rootAirfoil
+blend "-1;1.1"
+
+udparg edgeAttr attrname $edgeName  attrstr $wingLeadingEdge
+udprim edgeAttr xyzs "rootLeadingPoint[1];rootLeadingPoint[2];rootLeadingPoint[3];tipLeadingPoint[1];tipLeadingPoint[2];tipLeadingPoint[3];"
+udparg edgeAttr attrname $edgeName  attrstr $wingTrailingEdge
+udprim edgeAttr xyzs "rootTrailingPointUp[1];rootTrailingPointUp[2];rootTrailingPointUp[3];tipTrailingPointUp[1];tipTrailingPointUp[2];tipTrailingPointUp[3];"
+udparg edgeAttr attrname $edgeName  attrstr $wingTrailingEdge
+udprim edgeAttr xyzs "rootTrailingPointLow[1];rootTrailingPointLow[2];rootTrailingPointLow[3];tipTrailingPointLow[1];tipTrailingPointLow[2];tipTrailingPointLow[3];"
+
+select edge @xmin @xmax -0.01 0.01 @zmin @zmax
+attribute edgeName $rootAirfoilEdge
+
+select edge -3 2 9.5 10.5 -3 3
+attribute edgeName $tipAirfoilEdge
+
+set nFaces @nface
+        patbeg i nFaces
+            select face i
+            attribute faceName $wing
+            attribute groupName $wing
+        patend
+
+store wingModel
+restore wingModel
+
+ select face 4
+            attribute faceName $tip
+            attribute groupName $tip
+
+
