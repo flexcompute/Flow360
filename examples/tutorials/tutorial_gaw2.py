@@ -1,10 +1,17 @@
 import flow360 as fl
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import Tutorial_2dcrm
+from flow360.examples import Tutorial_gaw2
+
+"""
+In this tutorial case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration. Documentation for this tutorial is available in the link below.
+
+https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_Configuration/Multielement_Configuration.html
+"""
+
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial_2dcrm.geometry, name="Tutorial 2D CRM from Python")
+project = fl.Project.from_file(Tutorial_gaw2.geometry, name="Tutorial 2D GA(W)-2 from Python")
 geometry = project.geometry
 
 # show face and edge groupings
@@ -16,7 +23,7 @@ geometry.group_edges_by_tag("edgeName")
 with SI_unit_system:
     cylinders = [
         fl.Cylinder(
-            name=f"cylinder{i}",
+            name=f"cylinder{i+1}",
             axis=[0, 1, 0],
             center=[0.7, 0.5, 0],
             outer_radius=outer_radius,
@@ -25,17 +32,17 @@ with SI_unit_system:
         for i, outer_radius in enumerate([1.1, 2.2, 3.3, 4.5])
     ]
     cylinder5 = fl.Cylinder(
-        name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=1.0
+        name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=10
     )
     farfield = fl.AutomatedFarfield(name="farfield", method="quasi-3d")
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
-            defaults=fl.MeshingDefaults(
+            defaults=MeshingDefaults(
                 surface_edge_growth_rate=1.17,
                 surface_max_edge_length=1.1,
                 curvature_resolution_angle=12 * u.deg,
-                boundary_layer_growth_rate=1.17,
-                boundary_layer_first_layer_thickness=1.8487111e-06,
+                boundary_layer_growth_rate=1.12,
+                boundary_layer_first_layer_thickness=2.8089171e-06,
             ),
             refinement_factor=1.35,
             gap_treatment_strength=0.5,
@@ -48,9 +55,9 @@ with SI_unit_system:
                 fl.UniformRefinement(name="refinement5", spacing=0.325, entities=[cylinder5]),
                 fl.SurfaceRefinement(name="wing", max_edge_length=0.74, faces=[geometry["wing"]]),
                 fl.SurfaceRefinement(
-                    name="flap-slat",
+                    name="flap",
                     max_edge_length=0.55,
-                    faces=[geometry["flap"], geometry["slat"]],
+                    faces=[geometry["flap"]],
                 ),
                 fl.SurfaceRefinement(
                     name="trailing",
@@ -58,7 +65,6 @@ with SI_unit_system:
                     faces=[
                         geometry["wingTrailing"],
                         geometry["flapTrailing"],
-                        geometry["slatTrailing"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
@@ -69,8 +75,6 @@ with SI_unit_system:
                         geometry["wingleadingEdge"],
                         geometry["flaptrailingEdge"],
                         geometry["flapleadingEdge"],
-                        geometry["slattrailingEdge"],
-                        geometry["slatFrontLEadingEdge"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
@@ -82,7 +86,7 @@ with SI_unit_system:
             moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            mach=0.2, reynolds=5e6, temperature=272.1, alpha=16 * u.deg, beta=0 * u.deg
+            mach=0.13, reynolds=2.2e06, temperature=288.16, alpha=4 * u.deg, beta=0 * u.deg
         ),
         time_stepping=fl.Steady(
             max_steps=3000, CFL=fl.RampCFL(initial=20, final=300, ramp_steps=500)
@@ -92,14 +96,12 @@ with SI_unit_system:
                 surfaces=[
                     geometry["wing"],
                     geometry["flap"],
-                    geometry["slat"],
                     geometry["wingTrailing"],
                     geometry["flapTrailing"],
-                    geometry["slatTrailing"],
                 ],
                 name="wall",
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="fl.Freestream"),
+            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
             fl.SlipWall(surfaces=farfield.symmetry_planes, name="slipwall"),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
@@ -116,7 +118,7 @@ with SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
+                name="VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "vorticity",
@@ -129,7 +131,7 @@ with SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
+                name="SurfaceOutput",
                 surfaces=geometry["*"],
                 output_fields=["primitiveVars", "Cp", "Cf", "CfVec", "yPlus"],
             ),
@@ -137,4 +139,4 @@ with SI_unit_system:
     )
 
 
-project.run_case(params=params, name="Case of tutorial 2D CRM from Python")
+project.run_case(params=params, name="Case of tutorial 2D GA(W)-2 from Python")

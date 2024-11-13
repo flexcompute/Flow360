@@ -1,0 +1,821 @@
+# DESIGN PARAMETERS
+DESPMTR flapDeflection 0
+DIMENSION flapDefAxis 1 3 1
+CFGPMTR span 0.01
+CFGPMTR flapDefAxis "0.716;-0.102;0.0;"
+CONPMTR slatStatus 0
+CONPMTR flapStatus 1
+mark
+skbeg 0.875 0.0 0.0285
+spline 0.8742135213739618 0.0 0.02867734534328516
+spline 0.8733490884724475 0.0 0.02887226882192858
+spline 0.8723991495220706 0.0 0.02908647330718355
+spline 0.871355457803772 0.0 0.0293218183756159
+spline 0.8702090153938321 0.0 0.02958033299510614
+spline 0.868950014000278 0.0 0.02986422886581927
+spline 0.8675677731301815 0.0 0.03017591436303976
+spline 0.8660506382865976 0.0 0.03051784186490357
+spline 0.8643858564941922 0.0 0.03089226598169325
+spline 0.8625597768498485 0.0 0.0313024297700135
+spline 0.8605575067281253 0.0 0.03175138661953165
+spline 0.8583629317349881 0.0 0.03224236480053237
+spline 0.8559586454860635 0.0 0.03277877177553687
+spline 0.8533258657940804 0.0 0.03336409788009184
+spline 0.8504443723460475 0.0 0.03400188995298361
+spline 0.847292485242658 0.0 0.03469586467296935
+spline 0.8438470365230777 0.0 0.03544997341725024
+spline 0.8400834180357789 0.0 0.03626859572442314
+spline 0.8359754851269783 0.0 0.03715627447027427
+spline 0.831495602318647 0.0 0.03811769647926356
+spline 0.8266146928476698 0.0 0.03915769074127657
+spline 0.821302323930877 0.0 0.04028118978178873
+spline 0.815526797894444 0.0 0.04149305101368441
+spline 0.8092552155636735 0.0 0.04279745941351249
+spline 0.8024537859969112 0.0 0.04419825249380951
+spline 0.7950880969927571 0.0 0.04569874679157869
+spline 0.7871234402413964 0.0 0.04730148069334352
+spline 0.7785251741955074 0.0 0.04900781609516638
+spline 0.7692593114965711 0.0 0.05081799137278344
+spline 0.7592937810641307 0.0 0.05273487742575637
+spline 0.7485992522666924 0.0 0.05476445698008631
+spline 0.7371475917985352 0.0 0.05690395721035237
+spline 0.7249081462141264 0.0 0.05911616033613074
+spline 0.7118542014616888 0.0 0.0613563909719215
+spline 0.6979729628953214 0.0 0.06362559302601331
+spline 0.6832600240719434 0.0 0.06593782564285702
+spline 0.6677155910195837 0.0 0.06829161817027396
+spline 0.651338650241184 0.0 0.07062021986494209
+spline 0.6341322851535691 0.0 0.07280824566293709
+spline 0.6161359954771366 0.0 0.07493929865133502
+spline 0.5973819425170473 0.0 0.07695951882531366
+spline 0.5778999639830805 0.0 0.0786702544899577
+spline 0.5577611776774583 0.0 0.0801759094655594
+spline 0.5370372003494179 0.0 0.08150449665536834
+spline 0.5158043499222822 0.0 0.08262660028612666
+spline 0.4941479790004215 0.0 0.08351372576937283
+spline 0.4721619138365377 0.0 0.08415963948133927
+spline 0.4499465161211419 0.0 0.08460096785022518
+spline 0.4276049921743335 0.0 0.0848664303269237
+spline 0.4052418179234077 0.0 0.08492236578979034
+spline 0.3829627789666671 0.0 0.08472746115844951
+spline 0.3608724357622513 0.0 0.0842930844766809
+spline 0.3390709808309457 0.0 0.08365640954557313
+spline 0.3176533874680999 0.0 0.08283483189658185
+spline 0.2967084854434333 0.0 0.08182760871260898
+spline 0.2763170546082537 0.0 0.08064103831283728
+spline 0.25655035419561 0.0 0.07929129359529283
+spline 0.2374696602706078 0.0 0.07779662565266958
+spline 0.2191274991180156 0.0 0.07615804303381635
+spline 0.2015670859670133 0.0 0.07437097750011418
+spline 0.1848211041432007 0.0 0.07244033299407307
+spline 0.1689103718615325 0.0 0.07039024998997365
+spline 0.1538430549949281 0.0 0.06826615031992823
+spline 0.1396168255321155 0.0 0.06611903506412889
+spline 0.1262341013899307 0.0 0.06391560440699992
+spline 0.1136942901442786 0.0 0.06161116092018575
+spline 0.1019807913960419 0.0 0.05922610053978432
+spline 0.09106875686083503 0.0 0.05679390303639052
+spline 0.08093094326034189 0.0 0.05433540517245092
+spline 0.07153722858976781 0.0 0.05186743997063886
+spline 0.06286304441735227 0.0 0.0493771065739658
+spline 0.05489147101065898 0.0 0.04682646598261333
+spline 0.04760105813219011 0.0 0.04420069513245548
+spline 0.04096017072139228 0.0 0.04151698571499598
+spline 0.03492660671302122 0.0 0.03881493356598442
+spline 0.02947215378893208 0.0 0.03609904461933737
+spline 0.02458248239704812 0.0 0.03335123205798075
+spline 0.02023519353292261 0.0 0.03057690416075819
+spline 0.01639577785495547 0.0 0.02780283221856651
+spline 0.01302550819041289 0.0 0.02505837122401394
+spline 0.01008980809328335 0.0 0.02236444502584898
+spline 0.007589684639670546 0.0 0.01970611648761876
+spline 0.005530208922583874 0.0 0.01707682775866253
+spline 0.003899402056689161 0.0 0.0144938927283412
+spline 0.002660058790660523 0.0 0.01199172995034619
+spline 0.001768116069184822 0.0 0.009601835572358029
+spline 0.001157802348516898 0.0 0.007353621763540662
+spline 0.00073608348505315 0.0 0.00526950816270046
+spline 0.00043194629560097 0.0 0.003353638822976744
+spline 0.0001970886127736506 0.0 0.00160036167516391
+spline 0.0 0.0 0.0
+skend
+skbeg 0.0 0.0 0.0
+spline 0.0002716521393575658 0.0 -0.001589377131251711
+spline 0.0006529958883733796 0.0 -0.003351511867970363
+spline 0.001291230123010355 0.0 -0.005261408228800142
+spline 0.002426744358252845 0.0 -0.007198437660628642
+spline 0.004170388348815945 0.0 -0.009003871860226356
+spline 0.006363998546009822 0.0 -0.0107492858895292
+spline 0.008961021998845268 0.0 -0.01248662863497754
+spline 0.01201023779791117 0.0 -0.01416230269541692
+spline 0.0155539091815616 0.0 -0.01571930105014128
+spline 0.01960757157651769 0.0 -0.01715840096157405
+spline 0.02417262393950418 0.0 -0.01855602743949732
+spline 0.02924919353101437 0.0 -0.02004661535428378
+spline 0.03488639185726999 0.0 -0.02162508726955528
+spline 0.04116537408476145 0.0 -0.02316789174999653
+spline 0.04814135084189684 0.0 -0.02463400994045002
+spline 0.05584200013083867 0.0 -0.02611767100726587
+spline 0.06431261735952373 0.0 -0.02764664957394872
+spline 0.07360979269622088 0.0 -0.02918394651800173
+spline 0.08378770072646537 0.0 -0.03068534528676597
+spline 0.09488852797679609 0.0 -0.03215787141997326
+spline 0.1069448141633187 0.0 -0.03365059183421657
+spline 0.1199897868787927 0.0 -0.03516032660639982
+spline 0.1340559814446212 0.0 -0.03660791445655619
+spline 0.1491610419519936 0.0 -0.03793308996115846
+spline 0.1653040940667145 0.0 -0.03912759340038716
+spline 0.1824607769248603 0.0 -0.04032168517684277
+spline 0.2005998970849464 0.0 -0.04153729133545662
+spline 0.2196856693606348 0.0 -0.04258940004783598
+spline 0.239652493922421 0.0 -0.0434417974881933
+spline 0.2604139273277928 0.0 -0.04411121255021436
+spline 0.2818668222100247 0.0 -0.04461103627156923
+spline 0.3038924593071219 0.0 -0.04494760563883699
+spline 0.3263582546442623 0.0 -0.04513541428010424
+spline 0.349120725629107 0.0 -0.04519960690433061
+spline 0.372029025891346 0.0 -0.0451575722151171
+spline 0.3949282469314944 0.0 -0.04496785233451976
+spline 0.4176627985082644 0.0 -0.0445820721502781
+spline 0.4400816187426971 0.0 -0.04400876772436778
+spline 0.4620427973808212 0.0 -0.04328359616657915
+spline 0.4834165391767837 0.0 -0.04243974784138922
+spline 0.5040878010521026 0.0 -0.04150675194891706
+spline 0.5239555475753044 0.0 -0.04046062277636141
+spline 0.5429293620247342 0.0 -0.03917930103279047
+spline 0.5609353140868818 0.0 -0.03758830059858762
+spline 0.5779437981886584 0.0 -0.03591322100729984
+spline 0.5939444273385235 0.0 -0.03434114181216866
+spline 0.6089051265923183 0.0 -0.03267706393365222
+spline 0.6228321737457045 0.0 -0.03096841612839267
+spline 0.6357598979679018 0.0 -0.02937829671185778
+spline 0.6477124185063502 0.0 -0.02789164812897369
+spline 0.6587184376328313 0.0 -0.02646256195809287
+spline 0.6688225817056693 0.0 -0.02511863856090596
+spline 0.6780757823817748 0.0 -0.02389652873582514
+spline 0.6865271788157072 0.0 -0.0227943035156185
+spline 0.69422391393843 0.0 -0.0217804016184673
+spline 0.7012149901754758 0.0 -0.02083270648372463
+spline 0.7075513764799156 0.0 -0.0199463004831679
+spline 0.7132855003733545 0.0 -0.01913393873039583
+spline 0.7184674063940881 0.0 -0.0184027005254566
+spline 0.7231441275669159 0.0 -0.01775333791162911
+spline 0.7273596708354715 0.0 -0.01718237937779304
+spline 0.731154669514913 0.0 -0.01668107688473942
+spline 0.7345668150382724 0.0 -0.01623892774183202
+spline 0.7376313370644841 0.0 -0.01584747056632814
+spline 0.7403809761820846 0.0 -0.01549992240035867
+spline 0.7428459188985397 0.0 -0.01519062118603853
+spline 0.7450539477806569 0.0 -0.01491495536830455
+spline 0.7470304813000246 0.0 -0.01466897081250314
+spline 0.7487986987729078 0.0 -0.01444920600333324
+spline 0.7503791589427762 0.0 -0.01424856429627811
+spline 0.7517901323199727 0.0 -0.01405787188916635
+spline 0.7530505839044708 0.0 -0.01388752243354915
+spline 0.7541761482409991 0.0 -0.01373540292785148
+spline 0.755180923070596 0.0 -0.01359960806881465
+spline 0.7560776022271621 0.0 -0.0134784222905881
+spline 0.7568776009629543 0.0 -0.01337030282704608
+spline 0.7575911731955616 0.0 -0.01327386386591248
+skend
+group
+store wing
+mark
+skbeg 1.084788753427739 0.0 -0.07945232357701215
+spline 1.084016178615769 0.0 -0.07915725698051249
+spline 1.083243562966396 0.0 -0.07886229723879869
+spline 1.082398830913326 0.0 -0.07854001132752023
+spline 1.081529026965362 0.0 -0.0782085508939112
+spline 1.080606731044469 0.0 -0.07785782405950926
+spline 1.07962878055132 0.0 -0.07748688016172892
+spline 1.078623246695817 0.0 -0.077106701857404
+spline 1.077525367041284 0.0 -0.07669336802209654
+spline 1.076426782852475 0.0 -0.07628190899780227
+spline 1.075199987905457 0.0 -0.07582531376570235
+spline 1.073968297990014 0.0 -0.07537042703114391
+spline 1.072632533618937 0.0 -0.07488158575547806
+spline 1.071253917378576 0.0 -0.07438252760263657
+spline 1.069801473657203 0.0 -0.0738634895934475
+spline 1.068261192117735 0.0 -0.07332127224548467
+spline 1.066683894713284 0.0 -0.07277558101640473
+spline 1.064966473517347 0.0 -0.07219342996645248
+spline 1.063244891785902 0.0 -0.07162370354510945
+spline 1.061344645732794 0.0 -0.07101202276776496
+spline 1.059428240919312 0.0 -0.07041465651093
+spline 1.057370524072292 0.0 -0.06979445288243907
+spline 1.055244691981372 0.0 -0.06917536481813658
+spline 1.053023208589714 0.0 -0.06855011393661069
+spline 1.050675822867603 0.0 -0.06791164292277366
+spline 1.048285267509616 0.0 -0.06728291211260225
+spline 1.045706267679215 0.0 -0.06662640242670041
+spline 1.04312247779184 0.0 -0.06598899553825366
+spline 1.040324291739151 0.0 -0.06531870554037494
+spline 1.037502404963109 0.0 -0.06466060959566941
+spline 1.034522591023423 0.0 -0.06398206237102164
+spline 1.03145875291657 0.0 -0.06330024139087322
+spline 1.028296880878979 0.0 -0.0626127879963591
+spline 1.024989444333356 0.0 -0.06191049686465148
+spline 1.021645214108231 0.0 -0.06121705350917228
+spline 1.01809667261158 0.0 -0.06049869046729157
+spline 1.0145448571934 0.0 -0.05979669501937976
+spline 1.010788567962672 0.0 -0.0590719476739672
+spline 1.00700286846714 0.0 -0.05836021229476081
+spline 1.003078212297679 0.0 -0.05764481984531458
+spline 0.9990691019526348 0.0 -0.05694081656555397
+spline 0.9949816755222018 0.0 -0.0562541153709191
+spline 0.9906880731837391 0.0 -0.05557018915661505
+spline 0.9862959846504202 0.0 -0.05491422514594711
+spline 0.9816758220970063 0.0 -0.05427092087031666
+spline 0.9769882706381812 0.0 -0.05365847839588793
+spline 0.9721155288635539 0.0 -0.05305367133757087
+spline 0.9671692877256199 0.0 -0.05246107398544581
+spline 0.9621108270172848 0.0 -0.05186519461565982
+spline 0.9569704927890347 0.0 -0.05126253797285087
+spline 0.9517739506645415 0.0 -0.05066247389796236
+spline 0.9465038230402516 0.0 -0.05007332627832994
+spline 0.9412134247562018 0.0 -0.04951137722226946
+spline 0.9358797292814001 0.0 -0.04898448507249367
+spline 0.9305437426406811 0.0 -0.04849995570532105
+spline 0.9252180660324261 0.0 -0.0480512759616929
+spline 0.9199084071347398 0.0 -0.04763053981153322
+spline 0.9146482584329184 0.0 -0.04723193048295826
+spline 0.9094392428974677 0.0 -0.04684782645702254
+spline 0.9042957596725053 0.0 -0.04647880025550177
+spline 0.8992557956299173 0.0 -0.04613147910360552
+spline 0.8942746719069747 0.0 -0.04580631472867921
+spline 0.8894654660074718 0.0 -0.04551339861675154
+spline 0.8847198213811508 0.0 -0.04524785111875251
+spline 0.8801660275952468 0.0 -0.04501383700631145
+spline 0.8757170086942392 0.0 -0.04480082518161002
+spline 0.8714450476773312 0.0 -0.04460721710331385
+spline 0.8673384563997697 0.0 -0.04442799506057123
+spline 0.8633759094727453 0.0 -0.04425829701370293
+spline 0.8596481747670606 0.0 -0.04408842115009101
+spline 0.8560174221531314 0.0 -0.04391981977598931
+spline 0.8526940024947176 0.0 -0.04376549003233393
+spline 0.8494666808076199 0.0 -0.0435813041093577
+spline 0.8466208231284902 0.0 -0.04279931060022697
+spline 0.8441802510326424 0.0 -0.04141687930843178
+spline 0.8422839104470871 0.0 -0.03965491910109226
+spline 0.8409234748441952 0.0 -0.03770274140064295
+spline 0.8400360257006375 0.0 -0.03566234415784975
+spline 0.839591176599219 0.0 -0.03375911898083998
+spline 0.8394675217034275 0.0 -0.0318985781956702
+spline 0.8396443952710239 0.0 -0.03004240008650454
+skend
+skbeg 0.8396443952710239 0.0 -0.03004240008650454
+spline 0.8404183949076094 0.0 -0.02839044152692762
+spline 0.8412168713422838 0.0 -0.02679420509782969
+spline 0.8420737178357378 0.0 -0.02527162096146106
+spline 0.8430197935216928 0.0 -0.02384537936253088
+spline 0.8441249772982449 0.0 -0.02249373558201453
+spline 0.8454473494098589 0.0 -0.02121810714594622
+spline 0.846858199041576 0.0 -0.02008654461606949
+spline 0.8483067814196725 0.0 -0.01904976579231525
+spline 0.8497675867804655 0.0 -0.01807571059830072
+spline 0.8512356501173628 0.0 -0.01715683557820405
+spline 0.8528409072956946 0.0 -0.0162141905834972
+spline 0.8545120750299479 0.0 -0.01530640692209318
+spline 0.8562004074856642 0.0 -0.01447259383261587
+spline 0.8579044562807178 0.0 -0.01371256555562802
+spline 0.8596203620138421 0.0 -0.01302026647445256
+spline 0.8613611475683205 0.0 -0.01238481153878922
+spline 0.8633179873356309 0.0 -0.01174225792074006
+spline 0.865283556314571 0.0 -0.01116461937581931
+spline 0.8672555415078994 0.0 -0.01064526391936678
+spline 0.8692324273282033 0.0 -0.01017849257544298
+spline 0.8712135213050747 0.0 -0.009760491859732677
+spline 0.8733092067533439 0.0 -0.009372102535438173
+spline 0.8755579873704358 0.0 -0.009016523273367973
+spline 0.8778135614972484 0.0 -0.008723632130086176
+spline 0.8800756603054557 0.0 -0.00849388776678936
+spline 0.8823439944138758 0.0 -0.008328019761136625
+spline 0.8846181381118978 0.0 -0.008224809580638153
+spline 0.8871233170281483 0.0 -0.008178926675072003
+spline 0.8896953330297795 0.0 -0.00819927723293574
+spline 0.8922725274226583 0.0 -0.008282121521749779
+spline 0.8948551724269476 0.0 -0.00842159774878694
+spline 0.8974438813035344 0.0 -0.008612841718926236
+spline 0.9000841369182717 0.0 -0.00885750836111797
+spline 0.9029998273093507 0.0 -0.009181674894935231
+spline 0.9059231358777996 0.0 -0.009558901923366456
+spline 0.9088553128170774 0.0 -0.009985164841641173
+spline 0.9117981325371035 0.0 -0.01045467119398093
+spline 0.9147537751669734 0.0 -0.0109609707365804
+spline 0.9178734541158204 0.0 -0.01152493548095171
+spline 0.9211578073666445 0.0 -0.01214188749014951
+spline 0.9248819241441597 0.0 -0.01285926660598136
+spline 0.9290400712618847 0.0 -0.0136683297628311
+spline 0.9336206132844019 0.0 -0.0145536493301407
+spline 0.9385949381995453 0.0 -0.01554672512159844
+spline 0.944216016308073 0.0 -0.01684106661808312
+spline 0.9501477050863452 0.0 -0.01850607938497954
+spline 0.9563053516904322 0.0 -0.02044500750778968
+spline 0.9626696735057922 0.0 -0.02253263135763246
+spline 0.9691941336446325 0.0 -0.02472203816306231
+spline 0.9759003921105891 0.0 -0.027019828966319
+spline 0.9829338333919704 0.0 -0.02950234069580354
+spline 0.9899158795836762 0.0 -0.03209095138287313
+spline 0.9967620440146288 0.0 -0.03481234150780347
+spline 1.003421895266779 0.0 -0.03760874395775247
+spline 1.00986169679893 0.0 -0.04039752956204504
+spline 1.016275507177853 0.0 -0.04320286089929779
+spline 1.022575729525464 0.0 -0.04594829809888729
+spline 1.028554747842556 0.0 -0.04854509388038931
+spline 1.034178084250374 0.0 -0.05098518532160188
+spline 1.039419522155404 0.0 -0.05326137196171655
+spline 1.044260399439835 0.0 -0.05536865499692073
+spline 1.049074607785401 0.0 -0.0574720947984498
+spline 1.053501584076122 0.0 -0.05941576474298429
+spline 1.057513141391587 0.0 -0.06118679196978544
+spline 1.061115914397793 0.0 -0.06278673271489199
+spline 1.06432089018228 0.0 -0.06421841831754233
+spline 1.067266425492302 0.0 -0.06554100267766366
+spline 1.070154962675481 0.0 -0.06684338664876474
+spline 1.072696033201941 0.0 -0.06799293875845669
+spline 1.074909619496948 0.0 -0.06899675214595026
+spline 1.076816182339801 0.0 -0.06986280681241237
+spline 1.078436256435525 0.0 -0.07059963980206016
+spline 1.080078058346241 0.0 -0.07134714165805353
+spline 1.081633451747732 0.0 -0.07205575556358484
+spline 1.082961655171556 0.0 -0.0726610833199087
+spline 1.084080965304037 0.0 -0.07317132159832457
+spline 1.085008709730302 0.0 -0.07359429762451627
+spline 1.085761183157763 0.0 -0.07393740017030061
+skend
+group
+store flap
+mark
+skbeg 0.7573982952732946 0.0 -0.01184671940069777
+spline 0.7567358788978051 0.0 -0.01156472013521883
+spline 0.7559019247272991 0.0 -0.01113649211443982
+spline 0.7549597423757475 0.0 -0.0105414526430388
+spline 0.7540131588212912 0.0 -0.009802605223759734
+spline 0.7530838965817823 0.0 -0.00890227009817365
+spline 0.7523439412990062 0.0 -0.008017144952127901
+spline 0.7516954942918538 0.0 -0.007062934059047636
+spline 0.7511457731756723 0.0 -0.006048645402750941
+spline 0.7506486010055 0.0 -0.004842562879454038
+spline 0.7502885078974388 0.0 -0.003588702987802248
+spline 0.7500706072502147 0.0 -0.002302501237623575
+spline 0.7500000233739998 0.0 -0.0009999137021599984
+spline 0.7503391838377902 0.0 0.0002596288050798296
+spline 0.7507638175703694 0.0 0.001748990236956679
+spline 0.7513304515616331 0.0 0.003484920702972415
+spline 0.7521422774410339 0.0 0.005460107983736456
+spline 0.7533703678190774 0.0 0.007606743199021085
+spline 0.7551552753645294 0.0 0.009810552381803766
+spline 0.7574191871539074 0.0 0.01209055188824736
+spline 0.7600935483818181 0.0 0.01448162659558003
+spline 0.7631978910681858 0.0 0.01691177765213494
+spline 0.7667588698925755 0.0 0.01924806572708206
+spline 0.7707190918318468 0.0 0.02141997368888354
+spline 0.7749815921749659 0.0 0.02339214326991894
+spline 0.7794333568914672 0.0 0.02514545421350731
+spline 0.783967745347353 0.0 0.02663720722459857
+spline 0.7884754968907359 0.0 0.02783575184890968
+spline 0.7928480031988536 0.0 0.02874571442416796
+spline 0.796988404481185 0.0 0.02941391263387924
+spline 0.8008255236455628 0.0 0.02989289596479809
+spline 0.804314999663628 0.0 0.03022883612847872
+spline 0.8078115786466429 0.0 0.0304805312210689
+spline 0.811312815695765 0.0 0.03065621400352904
+spline 0.8153222735335145 0.0 0.03077508303518273
+spline 0.8198047998906985 0.0 0.03082341807144073
+spline 0.8246862868698018 0.0 0.03080314933497218
+spline 0.8298548547965006 0.0 0.03073262499151102
+spline 0.8351685715220899 0.0 0.03063952670922124
+spline 0.8404693080625683 0.0 0.03055227279220605
+spline 0.8455991269544763 0.0 0.03042521518569535
+spline 0.8504161050228456 0.0 0.0301703712778214
+spline 0.854809352942373 0.0 0.02976983204265943
+spline 0.8587154835512179 0.0 0.02930726784769075
+spline 0.8621129712229838 0.0 0.02885362203310084
+spline 0.8650110278771098 0.0 0.02844671846259944
+spline 0.8674397140620215 0.0 0.02809701597921122
+spline 0.8694426903240492 0.0 0.02780426662250869
+spline 0.871070283602627 0.0 0.02756422064507196
+spline 0.8723739570777704 0.0 0.02737109156105903
+spline 0.8734025235984095 0.0 0.02721845325182953
+spline 0.8742000001210001 0.0 0.02709999990280481
+skend
+store wingConcave
+# START OF THE CSM SCRIPT
+# restoring sketches | wing
+#============================================================================================
+restore wing
+join
+
+# defining arrays with one row and three columns
+dimension wingLE 1 3
+dimension wingUpTE 1 3
+dimension wingLowTE 1 3
+
+# initializing xmin, zmin, zmax with their opposite extremes
+set xmin @xmax
+set zmin @zmax
+set zmax @zmin
+
+# looping over nodes to find the LE
+set nNodes @nnode
+patbeg inode nNodes
+    evaluate node @ibody inode
+    IFTHEN @edata[1] LT xmin
+        set xmin @edata[1]
+        set wingLE    "xmin;@edata[2];@edata[3];"
+        set leadingNodeID inode
+    ENDIF
+patend
+
+# looping over nodes to find the TE
+patbeg inode nNodes
+    IFTHEN inode NE leadingNodeID
+        evaluate node @ibody inode
+        IFTHEN @edata[3] GT zmax
+            set zmax @edata[3]
+            set wingUpTE   "@edata[1];@edata[2];zmax;"
+        ENDIF
+
+        IFTHEN @edata[3] LT zmin
+            set zmin @edata[3]
+            set wingLowTE   "@edata[1];@edata[2];zmin;"
+        ENDIF
+    ENDIF
+patend
+
+# restoring sketches | wingConcave
+patbeg then ifzero(flapStatus,0,1)
+    # restoring sketch
+    restore wingConcave
+
+    # defining arrays for the ending nodes
+    dimension concaveEnd 1 3
+    dimension concaveBegin 1 3
+
+    # initializing xmin and xmax with their opposite extremes
+    set xmax @xmin
+    set xmin @xmax
+
+    # looping over nodes to find the ending points
+    patbeg inode @nnode
+        evaluate node @ibody inode
+        IFTHEN @edata[1] GT xmax
+            set xmax @edata[1]
+            set concaveEnd "xmax;@edata[2];@edata[3];"
+        ENDIF
+        IFTHEN @edata[1] LT xmin
+            set xmin @edata[1]
+            set concaveBegin "xmin;@edata[2];@edata[3];"
+        ENDIF
+    patend
+
+    # connecting the wing upper TE node to the ending node of the wing concave curve with line segment
+    skbeg concaveEnd[1] concaveEnd[2] concaveEnd[3]
+        linseg wingUpTE[1] wingUpTE[2] wingUpTE[3]
+    skend
+
+    # calculating the distance between the wing lower TE node and starting node of the wing concave line
+    set sum 0
+    patbeg i 3
+        set sum sum+(concaveBegin[i]-wingLowTE[i])^2
+    patend
+    set distance sqrt(sum)
+
+    IFTHEN distance GT 1e-04
+        # connecting the wing lower TE node to the starting node of the wing concave curve with line segment
+        skbeg concaveBegin[1] concaveBegin[2] concaveBegin[3]
+            linseg wingLowTE[1] wingLowTE[2] wingLowTE[3]
+        skend
+    ENDIF
+patend
+
+combine
+store wingFace
+
+# restoring sketches | flap
+#============================================================================================
+patbeg then ifzero(flapStatus,0,1)
+    restore flap
+    join
+
+    # defining arrays for the leading-edge and trailing-edge nodes
+    dimension flapLE 1 3
+    dimension flapUpTE 1 3
+    dimension flapLowTE 1 3
+
+    # initializing xmin, zmin and zmax with their opposite extremes
+    set xmin @xmax
+    set zmin @zmax
+    set zmax @zmin
+    
+    # looping over nodes to find the leading-edge node
+    set nNodes @nnode
+    patbeg inode nNodes
+        evaluate node @ibody inode
+        IFTHEN @edata[1] LT xmin
+            set xmin @edata[1]
+            set flapLE    "xmin;@edata[2];@edata[3];"
+            set leadingNodeID inode
+        ENDIF
+    patend
+
+    # looping over nodes to find the trailing-edge nodes
+    patbeg inode nNodes
+        IFTHEN inode NE leadingNodeID
+            evaluate node @ibody inode
+            IFTHEN @edata[3] GT zmax
+                set zmax @edata[3]
+                set flapUpTE   "@edata[1];@edata[2];zmax;"
+            ENDIF
+
+            IFTHEN @edata[3] LT zmin
+                set zmin @edata[3]
+                set flapLowTE   "@edata[1];@edata[2];zmin;"
+            ENDIF
+        ENDIF
+    patend
+
+    # closing the flap wire body by a line segment
+    skbeg flapLowTE[1] flapLowTE[2] flapLowTE[3]
+        linseg flapUpTE[1] flapUpTE[2] flapUpTE[3]
+    skend
+
+    # creating a face body from the wire body
+    combine
+    store flapFace
+patend
+
+# restoring sketches | slat
+#============================================================================================
+patbeg then ifzero(slatStatus,0,1)
+    # restore the front spline sketch
+    restore slatFront
+    join
+
+    # defining arrays for the leading-edge and trailing-edge nodes
+    dimension slatFrontLE 1 3 1
+    dimension slatFrontUpTE 1 3 1
+    dimension slatFrontLowTE 1 3 1
+
+    # initializing xmin, zmin and zmax with their opposite extremes
+    set xmin @xmax
+    set zmin @zmax
+    set zmax @zmin
+
+    # looping over nodes to find the leading-edge node
+    set nNodes @nnode
+    patbeg inode nNodes
+        evaluate node @ibody inode
+        IFTHEN @edata[1] LT xmin
+            set xmin @edata
+            set slatFrontLE    "xmin;@edata[2];@edata[3];"
+            set leadingNodeID inode
+        ENDIF
+    patend
+
+    patbeg inode nNodes
+        IFTHEN  inode NE  leadingNodeID
+            evaluate node @ibody inode
+            IFTHEN @edata[3] GT zmax
+                set zmax @edata[3]
+                set slatFrontUpTE   "@edata[1];@edata[2];zmax;"
+            ENDIF
+
+            IFTHEN @edata[3] LT zmin
+                set zmin @edata[3]
+                set slatFrontLowTE   "@edata[1];@edata[2];zmin;"
+            ENDIF
+        ENDIF
+    patend
+
+    # restore the back spline sketch
+    restore slatBack
+
+    # defining arrays for the trailing-edge nodes
+    dimension slatBackUpTE 1 3 1
+    dimension slatBackLowTE 1 3 1
+
+    # initializing xmin, zmin and zmax with their opposite extremes
+    set zmin @zmax
+    set zmax @zmin
+
+    # looping over nodes to find the trailing-edge nodes
+    set nNodes @nnode
+    patbeg inode nNodes
+        evaluate node @ibody inode
+        IFTHEN @edata[3] GT zmax
+            set zmax @edata[3]
+            set slatBackUpTE   "@edata[1];@edata[2];zmax;"
+        ENDIF
+
+        IFTHEN @edata[3] LT zmin
+            set zmin @edata[3]
+            set slatBackLowTE   "@edata[1];@edata[2];zmin;"
+        ENDIF
+    patend
+
+    # closing the trailing edge at the bottom side of the slat
+    skbeg slatFrontLowTE[1] slatFrontLowTE[2] slatFrontLowTE[3]
+        linseg slatBackLowTE[1] slatBackLowTE[2] slatBackLowTE[3] 
+    skend
+
+    # closing the trailing edge at the top side of the slat
+    skbeg slatFrontUpTE[1] slatFrontUpTE[2] slatFrontUpTE[3]
+        linseg slatBackUpTE[1] slatBackUpTE[2] slatBackUpTE[3]
+    skend
+
+    # creating a face body from the wire body
+    combine
+    store slatFace
+patend
+
+# restoring faces to build solid body | wing
+#============================================================================================
+restore wingFace
+extrude 0 span 0
+
+# adding edge attributes | wing
+# --------------------------------------------------------------------------------------------
+dimension ySymm 2 1
+set ySymm "0;span;"
+
+patbeg i 2
+    udparg edgeAttr attrname $edgeName  attrstr $symmetry
+    udprim edgeAttr xyzs "wingLE[1];ySymm[i];wingLE[3];wingUpTE[1];ySymm[i];wingUpTE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $symmetry
+    udprim edgeAttr xyzs "wingLE[1];ySymm[i];wingLE[3];wingLowTE[1];ySymm[i];wingLowTE[3];"
+    patbeg then ifzero(flapStatus,0,1)
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "concaveBegin[1];ySymm[i];concaveBegin[3];concaveEnd[1];ySymm[i];concaveEnd[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "wingUpTE[1];ySymm[i];wingUpTE[3];concaveEnd[1];ySymm[i];concaveEnd[3];"
+
+        IFTHEN distance GT 1e-04
+            udparg edgeAttr attrname $edgeName  attrstr $symmetry
+            udprim edgeAttr xyzs "concaveBegin[1];ySymm[i];concaveBegin[3];wingLowTE[1];ySymm[i];wingLowTE[3];"
+        ENDIF
+    patend
+patend
+
+udparg edgeAttr attrname $edgeName  attrstr $wingleadingEdge
+udprim edgeAttr xyzs "wingLE[1];wingLE[2];wingLE[3];wingLE[1];span;wingLE[3];"
+udparg edgeAttr attrname $edgeName  attrstr $wingtrailingEdge
+udprim edgeAttr xyzs "wingUpTE[1];wingUpTE[2];wingUpTE[3];wingUpTE[1];span;wingUpTE[3];"
+udparg edgeAttr attrname $edgeName  attrstr $wingtrailingEdge
+udprim edgeAttr xyzs "wingLowTE[1];wingLowTE[2];wingLowTE[3];wingLowTE[1];span;wingLowTE[3];"
+
+patbeg then ifzero(flapStatus,0,1)
+    udparg edgeAttr attrname $edgeName  attrstr $wingtrailingEdge
+    udprim edgeAttr xyzs "concaveEnd[1];concaveEnd[2];concaveEnd[3];concaveEnd[1];span;concaveEnd[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $wingtrailingEdge
+    udprim edgeAttr xyzs "concaveBegin[1];concaveBegin[2];concaveBegin[3];concaveBegin[1];span;concaveBegin[3];"
+patend
+
+store wingBody
+
+# restoring faces to build solid body | flap
+#============================================================================================
+patbeg then ifzero(flapStatus,0,1)
+    restore flapFace
+    extrude 0 span 0
+
+    # adding edge attributes | flap
+    # --------------------------------------------------------------------------------------------
+    patbeg i 2
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "flapLE[1];ySymm[i];flapLE[3];flapUpTE[1];ySymm[i];flapUpTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "flapLE[1];ySymm[i];flapLE[3];flapLowTE[1];ySymm[i];flapLowTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "flapLowTE[1];ySymm[i];flapLowTE[3];flapUpTE[1];ySymm[i];flapUpTE[3];"
+    patend
+
+    udparg edgeAttr attrname $edgeName  attrstr $flapleadingEdge
+    udprim edgeAttr xyzs "flapLE[1];flapLE[2];flapLE[3];flapLE[1];span;flapLE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $flaptrailingEdge
+    udprim edgeAttr xyzs "flapLowTE[1];flapLowTE[2];flapLowTE[3];flapLowTE[1];span;flapLowTE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $flaptrailingEdge
+    udprim edgeAttr xyzs "flapUpTE[1];flapUpTE[2];flapUpTE[3];flapUpTE[1];span;flapUpTE[3];"
+
+    rotatey flapDeflection flapDefAxis[3] flapDefAxis[1]
+    store flapBody
+patend
+
+# restoring faces to build solid body | slat
+#============================================================================================
+patbeg then ifzero(slatStatus,0,1)
+    restore slatFace
+    extrude 0 span 0
+
+    # adding edge attributes | slat
+    # --------------------------------------------------------------------------------------------
+    patbeg i 2
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "slatFrontLE[1];ySymm[i];slatFrontLE[3];slatFrontUpTE[1];ySymm[i];slatFrontUpTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "slatFrontLE[1];ySymm[i];slatFrontLE[3];slatFrontLowTE[1];ySymm[i];slatFrontLowTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "slatFrontLowTE[1];ySymm[i];slatFrontLowTE[3];slatBackLowTE[1];ySymm[i];slatBackLowTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "slatBackLowTE[1];ySymm[i];slatBackLowTE[3];slatBackUpTE[1];ySymm[i];slatBackUpTE[3];"
+        udparg edgeAttr attrname $edgeName  attrstr $symmetry
+        udprim edgeAttr xyzs "slatFrontUpTE[1];ySymm[i];slatFrontUpTE[3];slatBackUpTE[1];ySymm[i];slatBackUpTE[3];"
+    patend
+
+    udparg edgeAttr attrname $edgeName  attrstr $slatFrontLEadingEdge
+    udprim edgeAttr xyzs "slatFrontLE[1];slatFrontLE[2];slatFrontLE[3];slatFrontLE[1];span;slatFrontLE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $slattrailingEdge
+    udprim edgeAttr xyzs "slatFrontLowTE[1];slatFrontLowTE[2];slatFrontLowTE[3];slatFrontLowTE[1];span;slatFrontLowTE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $slattrailingEdge
+    udprim edgeAttr xyzs "slatFrontUpTE[1];slatFrontUpTE[2];slatFrontUpTE[3];slatFrontUpTE[1];span;slatFrontUpTE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $slattrailingEdge
+    udprim edgeAttr xyzs "slatBackLowTE[1];slatBackLowTE[2];slatBackLowTE[3];slatBackLowTE[1];span;slatBackLowTE[3];"
+    udparg edgeAttr attrname $edgeName  attrstr $slattrailingEdge
+    udprim edgeAttr xyzs "slatBackUpTE[1];slatBackUpTE[2];slatBackUpTE[3];slatBackUpTE[1];span;slatBackUpTE[3];"
+    
+    store slatBody
+patend
+
+# restoring bodies to add face and group attributes | wing
+#============================================================================================
+restore wingBody
+
+# adding face and group attributes to the entire solid body
+attribute faceName $wing
+attribute groupName $wing
+
+set nWingFaces @nface
+set sumWingArea @area
+set minArea sumWingArea
+
+# finding the face with min area | wing trailing face
+patbeg i nWingFaces
+    select face i
+    IFTHEN @area LT minArea
+        set minArea @area
+        set trailingFaceID i
+    ENDIF
+patend
+
+# adding face and group attributes to the wing trailing face
+select face trailingFaceID
+attribute faceName $wingTrailing
+attribute groupName $wing
+
+# restoring bodies to add face and group attributes | flap
+#============================================================================================
+patbeg then ifzero(flapStatus,0,1)
+    restore flapBody
+
+    # adding face and group attributes to the entire solid body
+    attribute faceName $flap
+    attribute groupName $flap
+
+    set nFlapFaces @nface
+    set sumFlapArea @area
+    set minArea sumFlapArea
+
+    # finding the face with min area | flap trailing face
+    patbeg i nFlapFaces
+        select face i
+        IFTHEN @area LT minArea
+            set minArea @area
+            set trailingFace i
+        ENDIF
+    patend
+
+    # adding face and group attributes to the flap trailing face
+    select face trailingFace
+    attribute faceName $flapTrailing
+    attribute groupName $flap
+patend
+
+# restoring bodies to add face and group attributes | slat
+#============================================================================================
+patbeg then ifzero(slatStatus,0,1)
+    restore slatBody
+
+    # adding face and group attributes to the entire solid body
+    attribute faceName $slat
+    attribute groupName $slat
+
+    set nSlatFaces @nface
+    set sumSlatArea @area
+    set minArea sumSlatArea
+    
+    # finding the face with min area | slat trailing face
+    patbeg i nSlatFaces
+        select face i
+        IFTHEN @area LT minArea
+            set minArea @area
+            set trailingFace i
+        ENDIF
+    patend
+
+    # adding face and group attributes to the slat trailing face
+    select face trailingFace
+    attribute faceName $slatTrailing
+    attribute groupName $slat
+patend
+
+END
