@@ -4,11 +4,7 @@ validation for SimulationParams
 
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import (
-    Fluid,
-    Rotation,
-    Solid,
-)
+from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,

@@ -96,7 +96,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`NavierStokesInitialCondition` class for specifying the
     :paramref:`Fluid.initial_condition`.
-
+    By default
     """
 
     type_name: Literal["NavierStokesInitialCondition"] = pd.Field(
