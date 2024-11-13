@@ -309,7 +309,7 @@ def test_cht_solver_settings_validator(
         )
 
 
-def test_transition():
+def test_transition_model_solver_settings_validator():
     transition_model_solver = TransitionModelSolver()
     assert transition_model_solver
 
