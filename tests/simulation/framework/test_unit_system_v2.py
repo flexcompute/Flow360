@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 import pydantic as pd
 import pytest
+from numpy import nan
 
 from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -487,6 +488,17 @@ def test_unit_system():
         data = VectorDataWithUnits(
             pt=None,
             vec={"value": {"value": [1, 2], "units": "wrong"}, "units": "N"},
+            ax={"value": [0, 0, 1], "units": "m"},
+            omega={"value": [1, 1, 1], "units": "rad/s"},
+        )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"NaN/Inf/None found in input array. Please ensure your input is complete.",
+    ):
+        data = VectorDataWithUnits(
+            pt=None,
+            vec={"value": [1, 1, None], "units": "N"},
             ax={"value": [0, 0, 1], "units": "m"},
             omega={"value": [1, 1, 1], "units": "rad/s"},
         )
