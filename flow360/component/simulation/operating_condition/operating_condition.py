@@ -9,6 +9,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -38,7 +39,9 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.log import log
 
 # pylint: disable=no-member
-VelocityVectorType = Union[Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr], VelocityType.Vector]
+VelocityVectorType = Union[
+    Tuple[StringExpression, StringExpression, StringExpression], VelocityType.Vector
+]
 
 
 class ThermalStateCache(Flow360BaseModel):
@@ -311,11 +314,15 @@ class AerospaceCondition(MultiConstructorBaseModel):
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
-    @context_validator(context=CASE)
     @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
     def check_valid_reference_velocity(self) -> Self:
         """Ensure reference velocity is provided when freestream velocity is 0."""
-        if self.velocity_magnitude.value == 0 and self.reference_velocity_magnitude is None:
+        if (
+            self.velocity_magnitude is not None
+            and self.velocity_magnitude.value == 0
+            and self.reference_velocity_magnitude is None
+        ):
             raise ValueError(
                 "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
             )

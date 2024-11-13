@@ -86,7 +86,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     """
 
     type: Literal["expression"] = pd.Field("expression", frozen=True)
-    constants: Optional[Dict[str, str]] = pd.Field(
+    constants: Optional[Dict[str, StringExpression]] = pd.Field(
         None, description="The expression for the initial condition."
     )
 
@@ -99,11 +99,11 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
 
     """
 
-    rho: str = pd.Field(description="Density")
-    u: str = pd.Field(description="X-direction velocity")
-    v: str = pd.Field(description="Y-direction velocity")
-    w: str = pd.Field(description="Z-direction velocity")
-    p: str = pd.Field(description="Pressure")
+    rho: StringExpression = pd.Field(description="Density")
+    u: StringExpression = pd.Field(description="X-direction velocity")
+    v: StringExpression = pd.Field(description="Y-direction velocity")
+    w: StringExpression = pd.Field(description="Z-direction velocity")
+    p: StringExpression = pd.Field(description="Pressure")
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -111,12 +111,7 @@ class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
-    """
-    :class:`HeatEquationInitialCondition` class for specifying the
-    :paramref:`Solid.initial_condition` of heat equation.
-    """
-
-    temperature: str = pd.Field(description="The initial temperature value")
+    temperature: StringExpression = pd.Field()
 
 
 class PDEModelBase(Flow360BaseModel):
@@ -185,7 +180,7 @@ class Solid(PDEModelBase):
         description="Heat equation solver settings, see "
         + ":class:`HeatEquationSolver` documentation.",
     )
-    volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(
+    volumetric_heat_source: Union[HeatSourceType, StringExpression] = pd.Field(
         0, description="The volumetric heat source."
     )
 
@@ -480,7 +475,7 @@ class PorousMedium(Flow360BaseModel):
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )
-    volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(
+    volumetric_heat_source: Optional[Union[HeatSourceType, StringExpression]] = pd.Field(
         None, description="The volumetric heat source."
     )
     # Note: Axes will always come from the entity

@@ -1,13 +1,13 @@
 """User defined dynamic model for SimulationParams"""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -52,7 +52,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Optional[Cylinder] = pd.Field(
+    output_target: Optional[Union[Cylinder, GenericVolume]] = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
