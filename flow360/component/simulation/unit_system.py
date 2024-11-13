@@ -378,7 +378,7 @@ class _DimensionedType(metaclass=ABCMeta):
             def validate(con_cls, value, *args, **kwargs):
                 """Additional validator for value"""
                 try:
-                    dimensioned_value = dim_type.validate(value, kwargs)
+                    dimensioned_value = dim_type.validate(value, **kwargs)
 
                     # Workaround to run annotated validation for numeric value of field
                     _ = _ConType(value=dimensioned_value.value)
