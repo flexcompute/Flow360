@@ -80,7 +80,9 @@ def bet_disk_convert(
         cylinder_list.append(cylinder)
         amount = number
 
-    print(f"Available BETDisks: {amount+1}")
+from flow360.log import log
+...
+    log.info(f"Available BETDisks: {amount+1}")
 
     save_to_file(bet_disk_list, cylinder_list, save)
 
