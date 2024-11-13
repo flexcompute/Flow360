@@ -316,6 +316,7 @@ class ResultCSVModel(ResultBaseModel):
 
         self._raw_values = self._read_csv_file(filename)
         self.local_file_name = filename
+        self._preprocess()
 
     def load_from_remote(self, **kwargs_download):
         """
@@ -327,11 +328,23 @@ class ResultCSVModel(ResultBaseModel):
         else:
             self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
         self._raw_values = self._read_csv_file(self.local_file_name)
+        self._preprocess()
 
-    def reload_data(self, f):
+    def _preprocess(self, filter_physical_steps_only: bool=False, include_time: bool=False):
+        """
+        run some processing after data is loaded
+        """
+        if filter_physical_steps_only is True:
+            self.filter_physical_steps_only()
+        if include_time is True:
+            self.include_time()
+
+    def reload_data(self, filter_physical_steps_only: bool=False, include_time: bool=False):
         """
         change default behaviour of data loader, reload
         """
+        self.values = self.raw_values
+        self._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
 
     def download(
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
@@ -503,8 +516,8 @@ class ResultCSVModel(ResultBaseModel):
             raise ValueError(f'Uknnown params model: {params}, allowed (Flow360Params, SimulationParams)')
 
         physical_step = self.as_dataframe()[_PHYSICAL_STEP]
-        self.values['time'] = (physical_step - physical_step[0]) * step_size
-        self.values['time_units'] = step_size.units
+        self.values[_TIME] = (physical_step - physical_step[0]) * step_size
+        self.values[_TIME_UNITS] = step_size.units
 
 
     def filter_physical_steps_only(self):
@@ -514,6 +527,7 @@ class ResultCSVModel(ResultBaseModel):
         df = self.as_dataframe()
         _, last_iter_mask = self._pseudo_step_masks(df)
         self._values = df[last_iter_mask].to_dict("list")
+
 
     @classmethod
     def _pseudo_step_masks(cls, df):
@@ -726,6 +740,13 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
         _HEAT_TRANSFER,
     ]
     _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
+
+    def _preprocess(self, filter_physical_steps_only: bool=True, include_time: bool=True):
+        """
+        run some processing after data is loaded
+        """
+        print('running this "preprocess" step')
+        super()._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
