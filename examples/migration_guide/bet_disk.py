@@ -158,7 +158,7 @@ def convert(
 
 def save_to_file(bet_disk_list, cylinder_list, save):
     """
-    Saves the information about BETDisks and Cylinders to their respective files.
+    Saving the information about BETDisks and Cylinders to their respective files.
     """
     if save is True:
         for number, bet in enumerate(bet_disk_list):
