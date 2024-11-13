@@ -118,7 +118,7 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     -------
     flow360_conversion_unit_system
         The conversion unit system for the specified dimension. This unit system allows for
-        .in_base(unit_system="flow360") conversion.
+        .in_base(unit_system="flow360_v2") conversion.
 
     Raises
     ------

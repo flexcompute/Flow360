@@ -43,63 +43,94 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
     """Boundary base with turbulence quantities"""
 
-    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(None)
+    turbulence_quantities: Optional[TurbulenceQuantitiesType] = pd.Field(
+        None,
+        description="The turbulence related quantities definition."
+        + "See :func:`TurbulenceQuantities` documentation.",
+    )
 
 
 class HeatFlux(SingleAttributeModel):
-    """Heat flux"""
+    """
+    :class:`HeatFlux` class to specify the heat flux for `Wall` boundary condition
+    via :paramref:`Wall.heat_spec`.
+    """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: Union[HeatFluxType, StringExpression] = pd.Field()
+    value: Union[HeatFluxType, StringExpression] = pd.Field(description="The heat flux value.")
 
 
 class Temperature(SingleAttributeModel):
-    """Temperature"""
+    """
+    :class:`Temperature` class to specify the temperature for `Wall` or `Inflow`
+    boundary condition via :paramref:`Wall.heat_spec`/
+    :paramref:`Inflow.spec`.
+    """
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[TemperatureType.Positive, StringExpression] = pd.Field()
+    value: Union[TemperatureType.Positive, StringExpression] = pd.Field(
+        description="The temperature value."
+    )
 
 
 class TotalPressure(SingleAttributeModel):
-    """Total pressure"""
+    """
+    :class:`TotalPressure` class to specify the total pressure for `Inflow`
+    boundary condition via :paramref:`Inflow.spec`.
+    """
 
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field()
+    value: PressureType.Positive = pd.Field(description="The total pressure value.")
 
 
 class Pressure(SingleAttributeModel):
-    """Pressure"""
+    """
+    :class:`Pressure` class to specify the pressure for `Outflow`
+    boundary condition via :paramref:`Outflow.spec`.
+    """
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field()
+    value: PressureType.Positive = pd.Field(description="The pressure value.")
 
 
 class MassFlowRate(SingleAttributeModel):
-    """Mass flow rate"""
+    """
+    :class:`MassFlowRate` class to specify the mass flow rate for `Inflow` or `Outflow`
+    boundary condition via :paramref:`Inflow.spec`/:paramref:`Outflow.spec`.
+    """
 
     type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
     # pylint: disable=no-member
-    value: MassFlowRateType.NonNegative = pd.Field()
+    value: MassFlowRateType.NonNegative = pd.Field(description="The mass flow rate.")
 
 
 class Mach(SingleAttributeModel):
-    """Mach"""
+    """
+    :class:`Mach` class to specify Mach number for the `Inflow`
+    boundary condition via :paramref:`Inflow.spec`.
+    """
 
     type_name: Literal["Mach"] = pd.Field("Mach", frozen=True)
-    value: pd.NonNegativeFloat = pd.Field()
+    value: pd.NonNegativeFloat = pd.Field(description="The Mach number.")
 
 
 class Translational(Flow360BaseModel):
-    """Translational periodicity"""
+    """
+    :class:`Translational` class to specify translational periodic
+    boundary condition via :paramref:`Periodic.spec`.
+    """
 
     type_name: Literal["Translational"] = pd.Field("Translational", frozen=True)
 
 
 class Rotational(Flow360BaseModel):
-    """Rotational periodicity"""
+    """
+    :class:`Rotational` class to specify rotational periodic
+    boundary condition via :paramref:`Periodic.spec`.
+    """
 
     type_name: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
     # pylint: disable=fixme
@@ -113,83 +144,138 @@ class Rotational(Flow360BaseModel):
 
 
 class Wall(BoundaryBase):
-    """Replace Flow360Param:
-    - NoSlipWall
-    - IsothermalWall
-    - HeatFluxWall
-    - WallFunction
-    - SolidIsothermalWall
-    - SolidAdiabaticWall
+    """
+    :class:`Wall` class defines the Wall boundary conditions below based on the input:
+        - NoSlipWall
+        - IsothermalWall
+        - HeatFluxWall
+        - WallFunction
+        - SolidIsothermalWall
+        - SolidAdiabaticWall
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Wall` boundary condition.")
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
-    use_wall_function: bool = pd.Field(False)
-    velocity: Optional[VelocityVectorType] = pd.Field(None)
-    heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(None, discriminator="type_name")
+    use_wall_function: bool = pd.Field(
+        False,
+        description="Specify if use wall functions to estimate the velocity field "
+        + "close to the solid boundaries.",
+    )
+    velocity: Optional[VelocityVectorType] = pd.Field(
+        None, description="Prescribe a tangential velocity on the wall."
+    )
+    heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(
+        None,
+        discriminator="type_name",
+        description="Specify the heat flux or temperature at the `Wall` boundary.",
+    )
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
-    """Freestream"""
+    """
+    :class:`Freestream` defines the Freestream condition.
+    """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Freestream` boundary condition.")
     type: Literal["Freestream"] = pd.Field("Freestream", frozen=True)
-    velocity: Optional[VelocityVectorType] = pd.Field(None)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
+    velocity: Optional[VelocityVectorType] = pd.Field(
+        None,
+        description="The default values are set according to the "
+        + ":paramref:`AerospaceCondition.alpha` and :paramref:`AerospaceCondition.beta` angles. "
+        + "Optionally, an expression for each of the velocity components can be specified.",
+    )
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
+        alias="surfaces",
+        description="A list of :class:`Surface` entities with "
+        + "the `Freestream` boundary condition imposed.",
+    )
 
 
 class Outflow(BoundaryBase):
-    """Replace Flow360Param:
-    - SubsonicOutflowPressure
-    - SubsonicOutflowMach
-    - MassOutflow
+    """
+    :class:`Outflow` defines the Outflow boundary conditions below based on the input:
+        - SubsonicOutflowPressure
+        - SubsonicOutflowMach
+        - MassOutflow
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Outflow` boundary condition.")
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
-    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(discriminator="type_name")
+    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(
+        discriminator="type_name",
+        description="Specify the static pressure, mass flow rate or Mach number at the `Outflow` boundary.",
+    )
 
 
 class Inflow(BoundaryBaseWithTurbulenceQuantities):
-    """Replace Flow360Param:
-    - SubsonicInflow
-    - MassInflow
+    """
+    :class:`Inflow` defines the Inflow boundary condition below based on the input:
+        - SubsonicInflow
+        - MassInflow
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Inflow` boundary condition.")
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
-    total_temperature: TemperatureType.Positive = pd.Field()
-    velocity_direction: Optional[Axis] = pd.Field(None)
-    spec: Union[TotalPressure, MassFlowRate] = pd.Field(discriminator="type_name")
+    total_temperature: TemperatureType.Positive = pd.Field(
+        description="Specify the total temperature at the `Inflow` boundary."
+    )
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description=" Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
+    )
+    spec: Union[TotalPressure, MassFlowRate] = pd.Field(
+        discriminator="type_name",
+        description="Specify the total pressure or the mass flow rate at the `Inflow` boundary.",
+    )
 
 
 class SlipWall(BoundaryBase):
-    """Slip wall"""
+    """:class:`SlipWall` class defines the SlipWall boundary condition."""
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
+        alias="surfaces",
+        description="A list of :class:`Surface` entities with "
+        + "the `SlipWall` boundary condition imposed.",
+    )
 
 
 class SymmetryPlane(BoundaryBase):
-    """Symmetry plane"""
+    """
+    :class:`SymmetryPlane` defines the `SymmetryPlane` boundary condition.
+    It is similar to :class:`SlipWall`, but the normal gradient of scalar quantities
+    are forced to be zero on the symmetry plane. Only planar surfaces are supported.
+    """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(
+        None, description="Name of the `SymmetryPlane` boundary condition."
+    )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(alias="surfaces")
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
+        alias="surfaces",
+        description="A list of :class:`Surface` entities with "
+        + "the `SymmetryPlane` boundary condition imposed.",
+    )
 
 
 class Periodic(Flow360BaseModel):
-    """Replace Flow360Param:
-    - TranslationallyPeriodic
-    - RotationallyPeriodic
+    """
+    :class:`Periodic` defines the translational or rotational periodic boundary condition.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field(None, description="Name of the `Periodic` boundary condition.")
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
-    entity_pairs: UniqueItemList[SurfacePair] = pd.Field(alias="surface_pairs")
-    spec: Union[Translational, Rotational] = pd.Field(discriminator="type_name")
+    entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
+        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
+    )
+    spec: Union[Translational, Rotational] = pd.Field(
+        discriminator="type_name",
+        description="Define the type of periodic boundary condition (translational/rotational) "
+        + "via :class:`Translational`/:class:`Rotational`.",
+    )
 
 
 SurfaceModelTypes = Union[

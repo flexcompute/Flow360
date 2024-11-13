@@ -1,7 +1,7 @@
 import json
 import os
 
-import flow360 as fl
+import flow360.v1 as fl
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     SurfaceRefinement,
