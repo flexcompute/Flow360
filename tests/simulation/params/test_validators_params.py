@@ -1,10 +1,12 @@
 import re
 import unittest
 
+import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
+from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
 from flow360.component.simulation.models.surface_models import SlipWall, Wall
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -305,6 +307,45 @@ def test_cht_solver_settings_validator(
             time_stepping=Steady(),
             outputs=[surface_output_with_residual_heat_solver],
         )
+
+
+def test_transition():
+    transition_model_solver = TransitionModelSolver()
+    assert transition_model_solver
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(transition_model_solver=transition_model_solver)],
+        )
+        assert params.models[0].transition_model_solver.N_crit == 8.15
+
+    with pytest.raises(
+        pd.ValidationError,
+        match="N_crit and turbulence_intensity_percent cannot be specified at the same time.",
+    ):
+        transition_model_solver = TransitionModelSolver(
+            update_jacobian_frequency=5,
+            equation_evaluation_frequency=10,
+            max_force_jac_update_physical_steps=10,
+            order_of_accuracy=1,
+            turbulence_intensity_percent=1.2,
+            N_crit=2,
+        )
+
+    transition_model_solver = TransitionModelSolver(
+        update_jacobian_frequency=5,
+        equation_evaluation_frequency=10,
+        max_force_jac_update_physical_steps=10,
+        order_of_accuracy=1,
+        turbulence_intensity_percent=1.2,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(transition_model_solver=transition_model_solver)],
+        )
+        assert params.models[0].transition_model_solver.N_crit == 2.3598473252999543
+        assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
 
 
 def test_duplicate_entities_in_models():
