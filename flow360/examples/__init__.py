@@ -25,5 +25,5 @@ __all__ = [
     "OM6wingUserDefinedDynamics",
     "RotatingSpheres",
     "Tutorial_2dcrm",
-    "Tutorial_BETDisk"
+    "Tutorial_BETDisk",
 ]
