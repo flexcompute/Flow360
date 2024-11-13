@@ -9,6 +9,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
@@ -49,7 +50,7 @@ class HeatFlux(SingleAttributeModel):
     """Heat flux"""
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: Union[HeatFluxType, pd.StrictStr] = pd.Field()
+    value: Union[HeatFluxType, StringExpression] = pd.Field()
 
 
 class Temperature(SingleAttributeModel):
@@ -57,7 +58,7 @@ class Temperature(SingleAttributeModel):
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[TemperatureType.Positive, pd.StrictStr] = pd.Field()
+    value: Union[TemperatureType.Positive, StringExpression] = pd.Field()
 
 
 class TotalPressure(SingleAttributeModel):

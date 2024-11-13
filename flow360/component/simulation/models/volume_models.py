@@ -136,7 +136,7 @@ class Solid(PDEModelBase):
     material: SolidMaterialTypes = pd.Field()
 
     heat_equation_solver: HeatEquationSolver = pd.Field(HeatEquationSolver())
-    volumetric_heat_source: Union[HeatSourceType, pd.StrictStr] = pd.Field(0)
+    volumetric_heat_source: Union[HeatSourceType, StringExpression] = pd.Field(0)
 
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(None)
 
@@ -336,7 +336,7 @@ class PorousMedium(Flow360BaseModel):
 
     darcy_coefficient: InverseAreaType.Point = pd.Field()
     forchheimer_coefficient: InverseLengthType.Point = pd.Field()
-    volumetric_heat_source: Optional[Union[HeatSourceType, pd.StrictStr]] = pd.Field(None)
+    volumetric_heat_source: Optional[Union[HeatSourceType, StringExpression]] = pd.Field(None)
     # Note: Axes will always come from the entity
 
     @pd.field_validator("entities", mode="after")

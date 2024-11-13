@@ -9,6 +9,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -37,7 +38,9 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.log import log
 
 # pylint: disable=no-member
-VelocityVectorType = Union[Tuple[pd.StrictStr, pd.StrictStr, pd.StrictStr], VelocityType.Vector]
+VelocityVectorType = Union[
+    Tuple[StringExpression, StringExpression, StringExpression], VelocityType.Vector
+]
 
 
 class ThermalStateCache(Flow360BaseModel):
