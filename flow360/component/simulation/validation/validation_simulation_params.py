@@ -2,8 +2,10 @@
 validation for SimulationParams
 """
 
+from typing import get_args
+
 from flow360.component.simulation.models.solver_numerics import NoneSolver
-from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import (
     Fluid,
     NavierStokesInitialCondition,
@@ -18,6 +20,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    GhostSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -268,6 +271,65 @@ def _validate_cht_has_heat_transfer(params):
                         "In `Solid` model, the initial condition needs to be specified "
                         "when the `Fluid` model uses expression as initial condition."
                     )
+
+    return params
+
+
+def _check_complete_boundary_condition_and_unknown_surface(params):
+    ## Step 1: Get all boundaries patches from asset cache
+
+    current_lvls = get_validation_levels() if get_validation_levels() else []
+    if all(level not in current_lvls for level in (ALL, CASE)):
+        return params
+
+    asset_boundary_entities = params.private_attribute_asset_cache.boundaries
+
+    if asset_boundary_entities is None or asset_boundary_entities == []:
+        raise ValueError("[Internal] Failed to retrieve asset boundaries")
+
+    asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
+
+    ## Step 2: Collect all used boundaries from the models
+    if len(params.models) == 1 and isinstance(params.models[0], Fluid):
+        raise ValueError("No boundary conditions are defined in the `models` section.")
+
+    used_boundaries = set()
+
+    for model in params.models:
+        if not isinstance(model, get_args(SurfaceModelTypes)):
+            continue
+
+        entities = []
+        # pylint: disable=protected-access
+        if hasattr(model, "entities"):
+            entities = model.entities._get_expanded_entities(create_hard_copy=False)
+        elif hasattr(model, "entity_pairs"):  # Periodic BC
+            entities = [
+                pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair
+            ]
+
+        for entity in entities:
+            if isinstance(entity, GhostSurface):
+                continue
+            used_boundaries.add(entity.name)
+
+    ## Step 3: Use set operations to find missing and unknown boundaries
+    missing_boundaries = asset_boundaries - used_boundaries
+    unknown_boundaries = used_boundaries - asset_boundaries
+
+    if missing_boundaries:
+        missing_list = ", ".join(sorted(missing_boundaries))
+        raise ValueError(
+            f"The following boundaries do not have a boundary condition: {missing_list}. "
+            "Please add them to a boundary condition model in the `models` section."
+        )
+
+    if unknown_boundaries:
+        unknown_list = ", ".join(sorted(unknown_boundaries))
+        raise ValueError(
+            f"The following boundaries are not known `Surface` "
+            f"entities but appear in the `models` section: {unknown_list}."
+        )
 
     return params
 

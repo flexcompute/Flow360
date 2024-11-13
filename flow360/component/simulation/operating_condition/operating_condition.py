@@ -314,11 +314,15 @@ class AerospaceCondition(MultiConstructorBaseModel):
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
-    @context_validator(context=CASE)
     @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
     def check_valid_reference_velocity(self) -> Self:
         """Ensure reference velocity is provided when freestream velocity is 0."""
-        if self.velocity_magnitude.value == 0 and self.reference_velocity_magnitude is None:
+        if (
+            self.velocity_magnitude is not None
+            and self.velocity_magnitude.value == 0
+            and self.reference_velocity_magnitude is None
+        ):
             raise ValueError(
                 "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
             )
