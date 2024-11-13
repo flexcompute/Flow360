@@ -161,21 +161,21 @@ def _unit_object_parser(value, unyt_types: List[type]):
     """
     Parses {'value': value, 'units': units}, into unyt_type object : unyt.unyt_quantity, unyt.unyt_array
     """
-    if isinstance(value, dict) and "units" in value:
-        if "value" in value:
-            for unyt_type in unyt_types:
-                try:
-                    return unyt_type(value["value"], value["units"], dtype=np.float64)
-                except u.exceptions.UnitParseError:
-                    pass
-                except RuntimeError:
-                    pass
-                except KeyError:
-                    pass
-        else:
-            raise TypeError(
-                f"Dimensioned type instance {value} expects a 'value' field which was not given"
-            )
+    if isinstance(value, dict) is False or "units" not in value:
+        return value
+    if "value" not in value:
+        raise TypeError(
+            f"Dimensioned type instance {value} expects a 'value' field which was not given"
+        )
+    for unyt_type in unyt_types:
+        try:
+            return unyt_type(value["value"], value["units"], dtype=np.float64)
+        except u.exceptions.UnitParseError:
+            pass
+        except RuntimeError:
+            pass
+        except KeyError:
+            pass
     return value
 
 
@@ -254,6 +254,14 @@ def _has_dimensions_validator(value, dim):
     return value
 
 
+def _nan_inf_vector_validator(value):
+    if not isinstance(value, np.ndarray):
+        return value
+    if np.ndim(value.value) > 0 and (any(np.isnan(value.value)) or any(np.isinf(value.value))):
+        raise ValueError("NaN/Inf/None found in input array. Please ensure your input is complete.")
+    return value
+
+
 def _enforce_float64(unyt_obj):
     """
     This make sure all the values are float64 to minimize floating point errors
@@ -285,7 +293,8 @@ class _DimensionedType(metaclass=ABCMeta):
     has_defaults = True
 
     @classmethod
-    def validate(cls, value):
+    # pylint: disable=unused-argument
+    def validate(cls, value, *args, **kwargs):
         """
         Validator for value
         """
@@ -358,12 +367,18 @@ class _DimensionedType(metaclass=ABCMeta):
             """Get a dynamically created metaclass representing the constraint"""
 
             class _ConType(pd.BaseModel):
-                value: Annotated[float, annotated_types.Interval(**kwargs)]
+                kwargs.pop("allow_inf_nan", None)
+                value: Annotated[
+                    float,
+                    annotated_types.Interval(
+                        **{k: v for k, v in kwargs.items() if k != "allow_inf_nan"}
+                    ),
+                ]
 
-            def validate(con_cls, value, *args):
+            def validate(con_cls, value, *args, **kwargs):
                 """Additional validator for value"""
                 try:
-                    dimensioned_value = dim_type.validate(value)
+                    dimensioned_value = dim_type.validate(value, **kwargs)
 
                     # Workaround to run annotated validation for numeric value of field
                     _ = _ConType(value=dimensioned_value.value)
@@ -411,7 +426,9 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         Utility method to generate a dimensioned type with constraints based on the pydantic confloat
         """
-        return cls._Constrained.get_class_object(cls, gt=gt, ge=ge, lt=lt, le=le)
+        return cls._Constrained.get_class_object(
+            cls, gt=gt, ge=ge, lt=lt, le=le, allow_inf_nan=allow_inf_nan
+        )
 
     # pylint: disable=invalid-name
     @classproperty
@@ -472,7 +489,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
                 return schema
 
-            def validate(vec_cls, value, *args):
+            def validate(vec_cls, value, *args, **kwargs):
                 """additional validator for value"""
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
@@ -504,6 +521,10 @@ class _DimensionedType(metaclass=ABCMeta):
                             value, vec_cls.type.dim_name, is_array=True
                         )
                     value = _unit_array_validator(value, vec_cls.type.dim)
+
+                    if kwargs.get("allow_inf_nan", False) is False:
+                        value = _nan_inf_vector_validator(value)
+
                     value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                     return value

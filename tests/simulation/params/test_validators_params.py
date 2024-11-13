@@ -1,11 +1,24 @@
+import json
 import re
 import unittest
+from typing import Literal
 
+import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
-from flow360.component.simulation.models.surface_models import SlipWall, Wall
+from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
+from flow360.component.simulation.models.surface_models import (
+    Freestream,
+    Periodic,
+    SlipWall,
+    Translational,
+    Wall,
+)
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
     Fluid,
@@ -13,6 +26,9 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     Rotation,
     Solid,
+)
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
 )
 from flow360.component.simulation.outputs.output_entities import Point, Slice
 from flow360.component.simulation.outputs.outputs import (
@@ -28,7 +44,10 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
+    ALL,
     CASE,
+    SURFACE_MESH,
+    VOLUME_MESH,
     ValidationLevelContext,
 )
 
@@ -296,6 +315,114 @@ def test_cht_solver_settings_validator(
         )
 
 
+def test_transition_model_solver_settings_validator():
+    transition_model_solver = TransitionModelSolver()
+    assert transition_model_solver
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(transition_model_solver=transition_model_solver)],
+        )
+        assert params.models[0].transition_model_solver.N_crit == 8.15
+
+    with pytest.raises(
+        pd.ValidationError,
+        match="N_crit and turbulence_intensity_percent cannot be specified at the same time.",
+    ):
+        transition_model_solver = TransitionModelSolver(
+            update_jacobian_frequency=5,
+            equation_evaluation_frequency=10,
+            max_force_jac_update_physical_steps=10,
+            order_of_accuracy=1,
+            turbulence_intensity_percent=1.2,
+            N_crit=2,
+        )
+
+    transition_model_solver = TransitionModelSolver(
+        update_jacobian_frequency=5,
+        equation_evaluation_frequency=10,
+        max_force_jac_update_physical_steps=10,
+        order_of_accuracy=1,
+        turbulence_intensity_percent=1.2,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(transition_model_solver=transition_model_solver)],
+        )
+        assert params.models[0].transition_model_solver.N_crit == 2.3598473252999543
+        assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
+
+
+def test_incomplete_BC():
+    ##:: Construct a dummy asset cache
+
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    )
+    some_interface = Surface(
+        name="some_interface", private_attribute_is_interface=True, private_attribute_tag_key="test"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="inch",
+        project_entity_info=VolumeMeshEntityInfo(
+            boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
+        ),
+    )
+    auto_farfield = AutomatedFarfield(name="my_farfield")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Wall(entities=wall_1),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        Freestream(entities=auto_farfield.farfield),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Wall(entities=[wall_1]),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        Freestream(entities=auto_farfield.farfield),
+                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
+
+
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")
@@ -327,6 +454,17 @@ def test_duplicate_entities_in_models():
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
+
+
+def test_valid_reference_velocity():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
+        ),
+    ):
+        with SI_unit_system:
+            SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=0))
 
 
 def test_output_fields_with_user_defined_fields():
@@ -433,6 +571,8 @@ def test_rotation_parent_volumes():
         axis=(0, 1, 2),
     )
 
+    my_wall = Surface(name="my_wall", private_attribute_is_interface=False)
+
     msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
     "used in any other `Rotation` model's `volumes`."
     with pytest.raises(ValueError, match=re.escape(msg)):
@@ -452,5 +592,10 @@ def test_rotation_parent_volumes():
                     Fluid(),
                     Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2),
                     Rotation(entities=[c_2], spec=AngleExpression("1+5")),
-                ]
+                    Wall(entities=[my_wall]),
+                ],
+                private_attribute_asset_cache=AssetCache(
+                    project_length_unit="cm",
+                    project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
+                ),
             )

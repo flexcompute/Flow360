@@ -380,6 +380,10 @@ class TransitionModelSolver(GenericSolverSettings):
     >>> ts = TransitionModelSolver(absolute_tolerance=1e-10)
     """
 
+    model_config = pd.ConfigDict(
+        conflicting_fields=[Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
+    )
+
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
     )
@@ -397,7 +401,7 @@ class TransitionModelSolver(GenericSolverSettings):
         4, description="Frequency at which to update the transition equation."
     )
     turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
-        1.0,
+        None,
         description=":ref:`Turbulence Intensity <TurbI>`, Range from [0.03-2.5]. "
         + "Only valid when :paramref:`N_crit` is not specified.",
     )
