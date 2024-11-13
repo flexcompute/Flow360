@@ -295,17 +295,6 @@ def test_cht_solver_settings_validator(
             outputs=[surface_output_with_residual_heat_solver],
         )
 
-    message = "In `Solid` model, the initial condition needs to be specified "
-    "when the `Fluid` model uses expression as initial condition."
-
-    # Invalid simulation params
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        _ = SimulationParams(
-            models=[fluid_model_with_initial_condition, solid_model_without_initial_condition],
-            time_stepping=Steady(),
-            outputs=[surface_output_with_residual_heat_solver],
-        )
-
 
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")

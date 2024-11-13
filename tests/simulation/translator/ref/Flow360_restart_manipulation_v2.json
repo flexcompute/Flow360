@@ -1,16 +1,22 @@
 {
-    "boundaries": {
-        "1": {
-            "type": "Freestream"
-        }
-    },
+    "boundaries": {},
     "freestream": {
-        "Mach": 0.0,
-        "MachRef": 0.69,
+        "Mach": 0.8399999999999999,
         "Temperature": 288.15,
-        "alphaAngle": -90.0,
+        "alphaAngle": 0.0,
         "betaAngle": 0.0,
-        "muRef": 4.292321046986497e-08
+        "muRef": 4.292321046986499e-08
+    },
+    "initialCondition": {
+        "constants": {
+            "factor": "1.1"
+        },
+        "p": "p",
+        "rho": "rho*factor",
+        "type": "restartManipulation",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -55,16 +61,16 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
-            "C_v1": 7.1,
-            "C_vonKarman": 0.41,
-            "C_w2": 0.3,
             "C_t3": 1.2,
             "C_t4": 0.5,
-            "C_min_rd": 10.0
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -73,25 +79,5 @@
         "relativeTolerance": 0.0,
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
-    },
-    "actuatorDisks": [
-        {
-            "center":[0.0, 0.0, 0.0],
-            "axisThrust":[0.0,0.0,1.0],
-            "thickness": 0.01,
-            "forcePerArea":{
-            "radius":[0.01, 0.05, 0.1],
-                "thrust":[0.001, 0.02, 0],
-                "circumferential":[-0.0001, -0.003, 0]
-            }
-        }
-    ],
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
     }
 }

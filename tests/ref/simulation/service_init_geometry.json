@@ -138,6 +138,14 @@
       }
     },
     "type": "Fluid",
+    "initial_condition": {
+      "type_name": "NavierStokesInitialCondition",
+      "rho": "rho",
+      "u": "u",
+      "v": "v",
+      "w": "w",
+      "p": "p"
+    },
     "navier_stokes_solver": {
       "absolute_tolerance": 1e-10,
       "relative_tolerance": 0.0,
