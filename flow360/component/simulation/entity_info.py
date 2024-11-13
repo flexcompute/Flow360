@@ -119,20 +119,27 @@ class GeometryEntityInfo(EntityInfoModel):
             entity_attribute_names = self.edge_attribute_names
             entity_full_list = self.grouped_edges
 
+        # Use the supplied one if not None
         if attribute_name is not None:
-            # pylint: disable=unsupported-membership-test,unsubscriptable-object
-            if attribute_name in entity_attribute_names:
-                # pylint: disable=no-member
-                return entity_full_list[entity_attribute_names.index(attribute_name)]
-            raise ValueError(
-                f"The given attribute_name {attribute_name} is not found"
-                f" in geometry metadata. Available: {entity_attribute_names}"
+            specified_attribute_name = attribute_name
+        else:
+            specified_attribute_name = (
+                self.face_group_tag if entity_type_name == "face" else self.edge_group_tag
             )
-        raise ValueError("Attribute name is required to get the full list of grouped entities.")
+
+            # pylint: disable=unsupported-membership-test,unsubscriptable-object
+        if specified_attribute_name in entity_attribute_names:
+            # pylint: disable=no-member
+            return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
+        raise ValueError(
+            f"The given attribute_name {attribute_name} is not found"
+            f" in geometry metadata. Available: {entity_attribute_names}"
+        )
 
     def get_boundaries(self, attribute_name: str = None) -> list:
         """
-        Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
+        Get the full list of boundaries.
+        If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
         """
         return self._get_list_of_entities(attribute_name, "face")
 
@@ -144,12 +151,24 @@ class VolumeMeshEntityInfo(EntityInfoModel):
     zones: list[GenericVolume] = pd.Field([])
     boundaries: list[Surface] = pd.Field([])
 
+    @pd.field_validator("boundaries", mode="after")
+    @classmethod
+    def check_all_surface_has_interface_indicator(cls, value):
+        """private_attribute_is_interface should have been set comming from volume mesh."""
+        for item in value:
+            if item.private_attribute_is_interface is None:
+                raise ValueError(
+                    "[INTERNAL] {item.name} is missing private_attribute_is_interface attribute!."
+                )
+        return value
+
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
-        return self.boundaries
+        # pylint: disable=not-an-iterable
+        return [item for item in self.boundaries if item.private_attribute_is_interface is False]
 
 
 class SurfaceMeshEntityInfo(EntityInfoModel):

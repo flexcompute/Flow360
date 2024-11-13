@@ -397,6 +397,46 @@ def test_simulation_to_case_json():
         ],
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "private_attribute_asset_cache": {
+            "project_length_unit": "m",
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "1",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                            ],
+                        },
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "3",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_3",
+                            ],
+                        },
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "2",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_2",
+                            ],
+                        },
+                    ]
+                ],
+            },
+        },
     }
 
     params, _, _ = validate_model(param_data, "SI", "Geometry")
@@ -461,6 +501,42 @@ def test_simulation_to_case_vm_workflow():
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "Mysurface",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
+        "private_attribute_asset_cache": {
+            "project_length_unit": None,
+            "project_entity_info": {
+                "draft_entities": [],
+                "type_name": "VolumeMeshEntityInfo",
+                "zones": [],
+                "boundaries": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "Mysurface",
+                        "private_attribute_full_name": None,
+                        "private_attribute_is_interface": False,
+                        "private_attribute_tag_key": None,
+                        "private_attribute_sub_components": [],
+                    }
+                ],
+            },
+        },
     }
 
     params, _, _ = validate_model(param_data, "SI", "Geometry")
@@ -469,7 +545,7 @@ def test_simulation_to_case_vm_workflow():
         case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
-    params, _, _ = validate_model(param_data, "SI", "VolumeMesh")
+    params, errors, _ = validate_model(param_data, "SI", "VolumeMesh")
     case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
 
@@ -510,14 +586,50 @@ def test_simulation_to_all_translation_2():
             "moment_length": {"value": 1, "units": "m"},
             "area": {"value": 1, "units": "m**2"},
         },
-        "models": [],
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "private_attribute_asset_cache": {
+            "project_length_unit": "m",
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
-                "face_ids": ["face_x"],
-                "face_group_tag": "not_used",
-                "face_attribute_names": ["not_used"],
-            }
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
+            },
         },
     }
 
