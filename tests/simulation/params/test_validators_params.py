@@ -364,7 +364,7 @@ def test_transition_model_solver_settings_validator():
         assert params.models[0].transition_model_solver.N_crit == 2.3598473252999543
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
 
-        
+
 def test_incomplete_BC():
     ##:: Construct a dummy asset cache
 
