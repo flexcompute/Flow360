@@ -15,7 +15,7 @@ from flow360.component.simulation.unit_system import AngularVelocityType, Length
 
 def bet_disk_convert(
     file: str,
-    save: Optional[bool] = pd.Field(False),
+    save: Optional[bool] = False,
     length_unit: LengthType = u.m,
     omega_unit: AngularVelocityType = u.deg / u.s,
 ):
