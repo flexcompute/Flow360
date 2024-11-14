@@ -1,7 +1,4 @@
 import flow360 as fl
-from flow360.component.simulation.operating_condition.operating_condition import (
-    operating_condition_from_mach_reynolds,
-)
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Tutorial2DCRM
 
@@ -84,7 +81,7 @@ with SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(
             moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
         ),
-        operating_condition=operating_condition_from_mach_reynolds(
+        operating_condition=fl.operating_condition_from_mach_reynolds(
             mach=0.2, reynolds=5e6, temperature=272.1, alpha=16 * u.deg, beta=0 * u.deg
         ),
         time_stepping=fl.Steady(
