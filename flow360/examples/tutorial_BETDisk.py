@@ -5,7 +5,7 @@ Tutorial_BETDisk meshing example
 from .base_test_case import BaseTestCase
 
 
-class Tutorial_BETDisk(BaseTestCase):
+class TutorialBETDisk(BaseTestCase):
     name = "tutorial_BETDisk"
 
     class url:
