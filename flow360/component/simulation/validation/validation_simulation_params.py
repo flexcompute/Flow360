@@ -6,12 +6,7 @@ from typing import get_args
 
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
-from flow360.component.simulation.models.volume_models import (
-    Fluid,
-    NavierStokesInitialCondition,
-    Rotation,
-    Solid,
-)
+from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
@@ -260,18 +255,6 @@ def _validate_cht_has_heat_transfer(params):
                         "In `Solid` model, the initial condition needs to be specified "
                         "for unsteady simulations."
                     )
-
-    for model in params.models:
-        if isinstance(model, Fluid) and isinstance(
-            model.initial_condition, NavierStokesInitialCondition
-        ):
-            for model_solid in params.models:
-                if isinstance(model_solid, Solid) and model_solid.initial_condition is None:
-                    raise ValueError(
-                        "In `Solid` model, the initial condition needs to be specified "
-                        "when the `Fluid` model uses expression as initial condition."
-                    )
-
     return params
 
 

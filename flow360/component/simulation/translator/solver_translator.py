@@ -27,6 +27,8 @@ from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     Fluid,
+    NavierStokesInitialCondition,
+    NavierStokesModifiedRestartSolution,
     PorousMedium,
     Rotation,
     Solid,
@@ -65,6 +67,7 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -771,6 +774,32 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
     return boundary
 
 
+def get_navier_stokes_initial_condition(
+    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution]
+):
+    """Translate the initial condition for NavierStokes"""
+    if is_exact_instance(initial_condition, NavierStokesInitialCondition):
+        initial_condition_dict = {
+            "type": "initialCondition",
+        }
+    elif is_exact_instance(initial_condition, NavierStokesModifiedRestartSolution):
+        initial_condition_dict = {
+            "type": "restartManipulation",
+        }
+    else:
+        raise Flow360TranslationError(
+            f"Invalid NavierStokes initial condition type: {type(initial_condition)}",
+            input_value=initial_condition,
+            location=["models"],
+        )
+    raw_dict = dump_dict(initial_condition)
+    for key in ["rho", "u", "v", "w", "p", "constants"]:
+        if key not in raw_dict:  # not set
+            continue
+        initial_condition_dict[key] = raw_dict[key]
+    return initial_condition_dict
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -923,8 +952,9 @@ def get_solver_json(
                             }
                         )
 
-            if model.initial_condition:
-                translated["initialCondition"] = dump_dict(model.initial_condition)
+            translated["initialCondition"] = get_navier_stokes_initial_condition(
+                model.initial_condition
+            )
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):

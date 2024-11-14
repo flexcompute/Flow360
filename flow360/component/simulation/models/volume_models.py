@@ -85,7 +85,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
     :paramref:`Fluid.initial_condition`.
     """
 
-    type: Literal["expression"] = pd.Field("expression", frozen=True)
+    type_name: Literal["expression"] = pd.Field("expression", frozen=True)
     constants: Optional[Dict[str, StringExpression]] = pd.Field(
         None, description="The expression for the initial condition."
     )
@@ -96,21 +96,29 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`NavierStokesInitialCondition` class for specifying the
     :paramref:`Fluid.initial_condition`.
-
+    By default
     """
 
-    rho: StringExpression = pd.Field(description="Density")
-    u: StringExpression = pd.Field(description="X-direction velocity")
-    v: StringExpression = pd.Field(description="Y-direction velocity")
-    w: StringExpression = pd.Field(description="Z-direction velocity")
-    p: StringExpression = pd.Field(description="Pressure")
+    type_name: Literal["NavierStokesInitialCondition"] = pd.Field(
+        "NavierStokesInitialCondition", frozen=True
+    )
+    rho: StringExpression = pd.Field("rho", description="Density")
+    u: StringExpression = pd.Field("u", description="X-direction velocity")
+    v: StringExpression = pd.Field("v", description="Y-direction velocity")
+    w: StringExpression = pd.Field("w", description="Z-direction velocity")
+    p: StringExpression = pd.Field("p", description="Pressure")
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
-    type: Literal["restartManipulation"] = pd.Field("restartManipulation", frozen=True)
+    type_name: Literal["NavierStokesModifiedRestartSolution"] = pd.Field(
+        "NavierStokesModifiedRestartSolution", frozen=True
+    )
 
 
 class HeatEquationInitialCondition(ExpressionInitialConditionBase):
+    type_name: Literal["HeatEquationInitialCondition"] = pd.Field(
+        "HeatEquationInitialCondition", frozen=True
+    )
     temperature: StringExpression = pd.Field()
 
 
@@ -149,10 +157,12 @@ class Fluid(PDEModelBase):
 
     material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid.")
 
-    initial_condition: Optional[
-        Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition]
-    ] = pd.Field(
-        None, discriminator="type", description="The initial condition of the fluid solver."
+    initial_condition: Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition] = (
+        pd.Field(
+            NavierStokesInitialCondition(),
+            discriminator="type_name",
+            description="The initial condition of the fluid solver.",
+        )
     )
 
     # pylint: disable=fixme

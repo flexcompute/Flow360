@@ -1,7 +1,6 @@
 {
     "BETDisks": [
         {
-            "bladeLineChord": 0.0,
             "MachNumbers": [
                 0.0
             ],
@@ -519,5 +518,13 @@
         ],
         "outputFormat": "tecplot",
         "startAverageIntegrationStep": -1
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     }
 }
