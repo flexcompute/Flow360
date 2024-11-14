@@ -6,11 +6,10 @@ containing BETDisks in the new version of Flow360.
 import json
 from typing import Optional
 
-import pydantic as pd
-
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.unit_system import AngularVelocityType, LengthType, u
+from flow360.log import log
 
 
 def bet_disk_convert(
@@ -39,8 +38,8 @@ def bet_disk_convert(
     Returns
     -------
     BETDisks, Cylinders
-        BETDisks defined using the provided file.
-        Cylinder defined using the provided file.
+        List of BETDisks defined using the provided file.
+        List of Cylinders defined using the provided file.
 
     Raises
     ------
@@ -55,7 +54,7 @@ def bet_disk_convert(
     --------
     Example usage:
 
-    >>> BETDisks = BETDisk_convert(
+    >>> BETDisks, Cylinders = bet_disk_convert(
     ...     file="xv15_bet_line_hover_good.json",
     ...     length_unit = u.ft,
     ...     save = True,
@@ -80,8 +79,6 @@ def bet_disk_convert(
         cylinder_list.append(cylinder)
         amount = number
 
-from flow360.log import log
-...
     log.info(f"Available BETDisks: {amount+1}")
 
     save_to_file(bet_disk_list, cylinder_list, save)
@@ -116,6 +113,7 @@ def convert(
             "dragCoeffs": "drag_coeffs",
             "tipGap": "tip_gap",
             "initialBladeDirection": "initial_blade_direction",
+            "bladeLineChord": "blade_line_chord",
         }
 
         keys_to_remove = [
@@ -129,7 +127,7 @@ def convert(
         cylinders = []
         for number, data in enumerate(betdisk):
             cylinder = {
-                "name": f"cylinder{number}",
+                "name": f"betcylinder{number+1}",
                 "axis": data["axisOfRotation"],
                 "center": data["centerOfRotation"] * length_unit,
                 "inner_radius": 0 * length_unit,
@@ -152,6 +150,8 @@ def convert(
             updated_data["sectional_polars"] = polars
             updated_data["omega"] = updated_data["omega"] * omega_unit
             updated_data["chord_ref"] = updated_data["chord_ref"] * length_unit
+            if "blade_line_chord" in updated_data:
+                updated_data["blade_line_chord"] = updated_data["blade_line_chord"] * length_unit
             cylinders.append(cylinder)
             betdisks.append(updated_data)
 
@@ -164,7 +164,7 @@ def save_to_file(bet_disk_list, cylinder_list, save):
     """
     if save is True:
         for number, bet in enumerate(bet_disk_list):
-            with open(f"Betdisk{number+1}.json", "w") as betdisk:
+            with open(f"betdisk{number+1}.json", "w") as betdisk:
                 betdisk.write(json.dumps(bet.model_dump(), indent=4))
-            with open(f"Cylinder{number+1}.json", "w") as cylinder:
+            with open(f"cylinder{number+1}.json", "w") as cylinder:
                 cylinder.write(json.dumps(cylinder_list[number].model_dump(), indent=4))

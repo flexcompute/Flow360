@@ -1,12 +1,12 @@
 """
-Tutorial_2dcrm meshing example
+tutorialBetDisk meshing example
 """
 
 from .base_test_case import BaseTestCase
 
 
-class Tutorial_2dcrm(BaseTestCase):
-    name = "tutorial_2dcrm"
+class TutorialBETDisk(BaseTestCase):
+    name = "tutorialBetDisk"
 
     class url:
         geometry = "local://geometry.csm"

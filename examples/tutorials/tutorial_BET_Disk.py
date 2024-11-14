@@ -1,8 +1,10 @@
+import json
+
 import flow360 as fl
 import flow360.component.simulation.units as u
 from examples.migration_guide.bet_disk import bet_disk_convert
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.examples import Tutorial_BETDisk
+from flow360.examples import TutorialBETDisk
 
 """
 In this tutorial case we are using Blade Element Theory (BET) to simulate the XV-15 rotor blade. Documentation for this tutorial is available in the link below.
@@ -13,8 +15,7 @@ https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/BETTutorial/BE
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial_BETDisk.geometry, name="Tutorial BETDisk from Python")
-# project = Project.from_cloud(project_id="prj-edc9c40f-1de9-4a7d-ac64-122a483609dc")
+project = fl.Project.from_file(TutorialBETDisk.geometry, name="Tutorial BETDisk from Python")
 geometry = project.geometry
 
 # show face and edge groupings
@@ -22,7 +23,10 @@ geometry.show_available_groupings(verbose_mode=True)
 geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
-# ask about whether to define inner_radius since by default it is assigned None and not 0
+
+with open("data/tutorial_bet_disk_input.json") as bet:
+    bet = json.load(bet)
+
 
 with SI_unit_system:
     cylinder1 = fl.Cylinder(
@@ -42,7 +46,7 @@ with SI_unit_system:
         height=5,
     )
     BETDisks, Cylinders = bet_disk_convert(
-        file=Tutorial_BETDisk.case_json, save=True, omega_unit=u.flow360_angular_velocity_unit
+        file=TutorialBETDisk.case_json, save=True, omega_unit=u.flow360_angular_velocity_unit
     )
     farfield = fl.AutomatedFarfield(name="farfield", method="auto")
     params = fl.SimulationParams(
@@ -153,7 +157,7 @@ with SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            BETDisks[0],
+            fl.BETDisk(**bet),
         ],
     )
 
