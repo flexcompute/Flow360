@@ -708,10 +708,12 @@ def test_isMRF_flag():
     my_wall = Surface(name="my_wall", private_attribute_is_interface=False)
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     timestepping_steady = Steady(max_steps=1000)
-    
-    msg = ("For model #1, the isMRF is set to False but the simulation is a steady state simulation. "
-    "This is not allowed. All rotation models should be set to MRF for a steady state simulation.")
-    
+
+    msg = (
+        "For model #1, the isMRF is set to False but the simulation is a steady state simulation. "
+    )
+    "This is not allowed. All rotation models should be set to MRF for a steady state simulation."
+
     with pytest.raises(ValueError, match=re.escape(msg)):
         with ValidationLevelContext(CASE):
             with SI_unit_system:
@@ -733,7 +735,9 @@ def test_isMRF_flag():
             test_param = SimulationParams(
                 models=[
                     Fluid(),
-                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2, isMRF=True),
+                    Rotation(
+                        entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2, isMRF=True
+                    ),
                     Rotation(entities=[c_2], spec=AngleExpression("1+5"), isMRF=False),
                     Rotation(entities=[c_3], spec=AngleExpression("3+5")),
                     Wall(entities=[my_wall]),
@@ -744,6 +748,5 @@ def test_isMRF_flag():
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
-    
+
     assert test_param.models[3].isMRF == False
-            
