@@ -378,7 +378,7 @@ class UVFshutter(Flow360BaseModel):
             return session.post(url, json=uvf_request)
 
         async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=600),
+            timeout=aiohttp.ClientTimeout(total=3600),
             headers={"Authorization": f"Bearer {self.access_token}"},
         ) as session:
             tasks = []
