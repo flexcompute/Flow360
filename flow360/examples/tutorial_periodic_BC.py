@@ -9,4 +9,4 @@ class TutorialPeriodicBC(BaseTestCase):
     name = "tutorialPeriodicBC"
 
     class url:
-        mesh = "local://volume_mesh.cgns.gz"
+        mesh = "https://simcloud-public-1.s3.amazonaws.com/tutorials/periodic_boundary_condition/periodic_boundary_condition_tu_berlin_stator_mesh.cgns.gz"
