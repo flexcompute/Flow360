@@ -99,7 +99,7 @@ with SI_unit_system:
                 ],
                 name="wall",
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="fl.Freestream"),
+            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
             fl.SlipWall(surfaces=farfield.symmetry_planes, name="slipwall"),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
