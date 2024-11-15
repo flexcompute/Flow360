@@ -62,6 +62,11 @@ class url_base(metaclass=ABCMeta):
     def surface_yaml(self):
         """surface_yaml"""
 
+    @property
+    @abstractmethod
+    def extra(self):
+        """extra"""
+
 
 class BaseTestCase(metaclass=ABCMeta):
     _solver_version = None
@@ -146,6 +151,14 @@ class BaseTestCase(metaclass=ABCMeta):
         versionPrefix = cls._get_version_prefix()
         return cls._real_path(versionPrefix, os.path.basename(cls.url.volume_json))
 
+    @classproperty
+    def _extra(cls):
+        versionPrefix = cls._get_version_prefix()
+        return {
+            key: cls._real_path(versionPrefix, os.path.basename(value))
+            for key, value in cls.url.extra.items()
+        }
+
     @classmethod
     def is_file_downloaded(cls, file):
         if not os.path.exists(file):
@@ -180,6 +193,10 @@ class BaseTestCase(metaclass=ABCMeta):
     def volume_json(cls):
         return cls.is_file_downloaded(cls._volume_json)
 
+    @classproperty
+    def extra(cls):
+        return {key: cls.is_file_downloaded(value) for key, value in cls._extra.items()}
+
     @classmethod
     def set_version(cls, version):
         cls._solver_version = version
@@ -203,3 +220,5 @@ class BaseTestCase(metaclass=ABCMeta):
             cls._get_file(cls.url.geometry, cls._geometry_filename)
         if hasattr(cls.url, "surface_json"):
             cls._get_file(cls.url.surface_json, cls._surface_json)
+        if hasattr(cls.url, "extra"):
+            cls._get_file(cls.url.extra, cls._extra)

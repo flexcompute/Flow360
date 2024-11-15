@@ -4,6 +4,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.unit_system import u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
@@ -338,7 +339,7 @@ class BETDisk(Flow360BaseModel):
         + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`.",
     )
     blade_line_chord: LengthType.NonNegative = pd.Field(
-        0,
+        0 * u.m,
         description="Dimensional chord to use if performing an unsteady BET Line simulation. "
         + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
     )

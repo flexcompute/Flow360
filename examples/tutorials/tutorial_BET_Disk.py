@@ -2,7 +2,6 @@ import json
 
 import flow360 as fl
 import flow360.component.simulation.units as u
-from examples.migration_guide.bet_disk import bet_disk_convert
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.examples import TutorialBETDisk
 
@@ -24,9 +23,7 @@ geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
 
-with open("data/tutorial_bet_disk_input.json") as bet:
-    bet = json.load(bet)
-
+bet = json.loads(open(TutorialBETDisk.extra["disk0"]).read())
 
 with SI_unit_system:
     cylinder1 = fl.Cylinder(
@@ -44,9 +41,6 @@ with SI_unit_system:
         outer_radius=4.1,
         inner_radius=0,
         height=5,
-    )
-    BETDisks, Cylinders = bet_disk_convert(
-        file=TutorialBETDisk.case_json, save=True, omega_unit=u.flow360_angular_velocity_unit
     )
     farfield = fl.AutomatedFarfield(name="farfield", method="auto")
     params = fl.SimulationParams(

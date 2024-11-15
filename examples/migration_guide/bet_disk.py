@@ -59,7 +59,7 @@ def bet_disk_convert(
     ...     length_unit = u.ft,
     ...     save = True,
     ... )
-    >>> print(json.dumps(BETDisks[0].model_dump(), indent=4))
+    >>> print(BETDisks[0])
 
     """
 

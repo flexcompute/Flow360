@@ -13,3 +13,4 @@ class TutorialBETDisk(BaseTestCase):
         surface_json = "local://surface_params.json"
         volume_json = "local://volume_params.json"
         case_json = "local://case_params.json"
+        extra = {"disk0": "disk0.json", "cylinder0": "cylinder0.json"}
