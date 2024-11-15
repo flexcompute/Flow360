@@ -69,6 +69,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
+    _check_and_add_isMRF_flag_in_volumezones,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -317,6 +318,11 @@ class SimulationParams(_ParamModelBase):
     def check_output_fields(params):
         """Check output fields and iso fields are valid"""
         return _check_output_fields(params)
+
+    @pd.model_validator(mode="after")
+    def check_and_add_isMRF_flag_in_volumezones(params):
+        """Ensure that all volume zones have isMRF flag with correct values"""
+        return _check_and_add_isMRF_flag_in_volumezones(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

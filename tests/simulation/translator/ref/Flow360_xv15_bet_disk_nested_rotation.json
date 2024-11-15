@@ -491,6 +491,7 @@
     "volumeZones": {
         "inner": {
             "modelType": "FluidDynamics",
+            "isMRF": false,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
@@ -508,6 +509,7 @@
         },
         "middle": {
             "modelType": "FluidDynamics",
+            "isMRF": false,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,

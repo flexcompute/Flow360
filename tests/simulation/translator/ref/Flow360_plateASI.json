@@ -94,6 +94,7 @@
                     0.0
                 ]
             },
+            "isMRF": false,
             "modelType": "FluidDynamics"
         }
     },

@@ -103,7 +103,7 @@ def rotation_cylinder():
 
 
 def add_plateASI_rotation_zone(param):
-    param.models.append(Rotation(entities=[rotation_cylinder()], spec=FromUserDefinedDynamics()))
+    param.models.append(Rotation(entities=[rotation_cylinder()], spec=FromUserDefinedDynamics(), isMRF=False))
 
 
 def create_plateASI_base_param(Reynolds, Mach):

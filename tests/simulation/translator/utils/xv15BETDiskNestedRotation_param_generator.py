@@ -68,6 +68,7 @@ def create_nested_rotation_param(cylinder_inner, cylinder_middle):
         volumes=[cylinder_inner],
         spec=AngularVelocity(rpm_inner * u.rpm),
         parent_volume=cylinder_middle,
+        isMRF=False
     )
     omega_middle = (
         rpm_middle
@@ -82,6 +83,7 @@ def create_nested_rotation_param(cylinder_inner, cylinder_middle):
     rotation_middle = Rotation(
         entities=[cylinder_middle],
         spec=AngleExpression(str(omega_middle.v.item()) + "*t"),
+        isMRF=False
     )
     params.models += [bet_disk, rotation_inner, rotation_middle]
     params.time_stepping = createUnsteadyTimeStepping(rpm_bet - rpm_inner - rpm_middle)

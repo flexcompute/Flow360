@@ -71,6 +71,7 @@
     },
     "volumeZones": {
         "innerRotating": {
+            "isMRF": null,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
