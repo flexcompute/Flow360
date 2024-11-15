@@ -1,12 +1,12 @@
 """
-Tutorial_30p30n meshing example
+tutorial30p30n meshing example
 """
 
 from .base_test_case import BaseTestCase
 
 
-class Tutorial_30p30n(BaseTestCase):
-    name = "tutorial_30p30n"
+class Tutorial30p30n(BaseTestCase):
+    name = "tutorial30p30n"
 
     class url:
         geometry = "local://geometry.csm"
