@@ -10,6 +10,7 @@ from .om6wing import OM6wing
 from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
 from .rotating_spheres import RotatingSpheres
 from .tutorial_2dcrm import Tutorial_2dcrm
+from .tutorial_cht_solver import TutorialCHTSolver
 
 __all__ = [
     "ActuatorDisk",
@@ -24,4 +25,5 @@ __all__ = [
     "OM6wingUserDefinedDynamics",
     "RotatingSpheres",
     "Tutorial_2dcrm",
+    "TutorialCHTSolver",
 ]
