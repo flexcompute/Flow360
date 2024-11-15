@@ -367,7 +367,7 @@ class UVFshutter(Flow360BaseModel):
     access_token: Optional[str] = None
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=600)
+        @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=3600)
         @http_interceptor
         async def _get_image_sequence(
             session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
@@ -375,7 +375,7 @@ class UVFshutter(Flow360BaseModel):
             log.debug(
                 f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {len(uvf_request)=}"
             )
-            return session.post(url, json=uvf_request)
+            return session.post(url, json=uvf_request, )
 
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=3600),
