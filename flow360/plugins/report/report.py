@@ -7,7 +7,7 @@ from typing import List, Union, Set
 
 from flow360 import Case
 from flow360.component.resource_base import Flow360Resource, AssetMetaBaseModel
-from flow360.cloud.requests import NewReportRequest
+from flow360.cloud.flow360_requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.simulation.framework.base_model import Flow360BaseModel

@@ -330,7 +330,7 @@ class ResultCSVModel(ResultBaseModel):
         self._raw_values = self._read_csv_file(self.local_file_name)
         self._preprocess()
 
-    def _preprocess(self, filter_physical_steps_only: bool=False, include_time: bool=False):
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
         run some processing after data is loaded
         """
@@ -339,12 +339,14 @@ class ResultCSVModel(ResultBaseModel):
         if include_time is True:
             self.include_time()
 
-    def reload_data(self, filter_physical_steps_only: bool=False, include_time: bool=False):
+    def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
         change default behaviour of data loader, reload
         """
         self.values = self.raw_values
-        self._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
+        self._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
     def download(
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
@@ -488,7 +490,7 @@ class ResultCSVModel(ResultBaseModel):
         raise TimeoutError(
             "Timeout: post-processing did not finish within the specified timeout period."
         )
-    
+
     def _is_physical_time_series_data(self):
         try:
             physical_step = self.values[_PHYSICAL_STEP]
@@ -498,27 +500,34 @@ class ResultCSVModel(ResultBaseModel):
 
     def include_time(self):
         if not self._is_physical_time_series_data():
-            raise ValueError('Physical time can be included only for physical time series data (unsteady simulations)')
-        
+            raise ValueError(
+                "Physical time can be included only for physical time series data (unsteady simulations)"
+            )
+
         params = self._get_params_method()
         if isinstance(params, Flow360Params):
             try:
                 step_size = params.time_stepping.time_step_size
             except KeyError:
-                raise ValueError('Cannot find time step size for this simulation. Check flow360.json file.')
+                raise ValueError(
+                    "Cannot find time step size for this simulation. Check flow360.json file."
+                )
 
-        elif    isinstance(params, SimulationParams):
+        elif isinstance(params, SimulationParams):
             try:
                 step_size = params.time_stepping.step_size
             except KeyError:
-                raise ValueError('Cannot find time step size for this simulation. Check simulation.json.')
+                raise ValueError(
+                    "Cannot find time step size for this simulation. Check simulation.json."
+                )
         else:
-            raise ValueError(f'Uknnown params model: {params}, allowed (Flow360Params, SimulationParams)')
+            raise ValueError(
+                f"Uknnown params model: {params}, allowed (Flow360Params, SimulationParams)"
+            )
 
         physical_step = self.as_dataframe()[_PHYSICAL_STEP]
         self.values[_TIME] = (physical_step - physical_step[0]) * step_size
         self.values[_TIME_UNITS] = step_size.units
-
 
     def filter_physical_steps_only(self):
         """
@@ -527,7 +536,6 @@ class ResultCSVModel(ResultBaseModel):
         df = self.as_dataframe()
         _, last_iter_mask = self._pseudo_step_masks(df)
         self._values = df[last_iter_mask].to_dict("list")
-
 
     @classmethod
     def _pseudo_step_masks(cls, df):
@@ -741,12 +749,14 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
     ]
     _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
-    def _preprocess(self, filter_physical_steps_only: bool=True, include_time: bool=True):
+    def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         """
         run some processing after data is loaded
         """
         print('running this "preprocess" step')
-        super()._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
