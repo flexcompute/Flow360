@@ -1,10 +1,10 @@
 import flow360 as fl
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import Tutorial_2dcrm
+from flow360.examples import Tutorial2DCRM
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial_2dcrm.geometry, name="Tutorial 2D CRM from Python")
+project = fl.Project.from_file(Tutorial2DCRM.geometry, name="Tutorial 2D CRM from Python")
 geometry = project.geometry
 
 # show face and edge groupings

@@ -9,9 +9,9 @@ from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
 from .rotating_spheres import RotatingSpheres
-from .tutorial_2dcrm import Tutorial_2dcrm
-from .tutorial_30p30n import Tutorial_30p30n
-from .tutorial_gaw2 import Tutorial_gaw2
+from .tutorial_2D_30p30n import Tutorial2D30p30n
+from .tutorial_2D_crm import Tutorial2DCRM
+from .tutorial_2D_gaw2 import Tutorial2DGAW2
 
 __all__ = [
     "ActuatorDisk",
@@ -25,7 +25,7 @@ __all__ = [
     "OM6wing",
     "OM6wingUserDefinedDynamics",
     "RotatingSpheres",
-    "Tutorial_2dcrm",
-    "Tutorial_30p30n",
-    "Tutorial_gaw2",
+    "Tutorial2DCRM",
+    "Tutorial2D30p30n",
+    "Tutorial2DGAW2",
 ]
