@@ -57,7 +57,7 @@ class HeatFlux(SingleAttributeModel):
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: Union[HeatFluxType, StringExpression] = pd.Field(description="The heat flux value.")
+    value: Union[StringExpression, HeatFluxType] = pd.Field(description="The heat flux value.")
 
 
 class Temperature(SingleAttributeModel):
@@ -69,7 +69,7 @@ class Temperature(SingleAttributeModel):
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[TemperatureType.Positive, StringExpression] = pd.Field(
+    value: Union[StringExpression, TemperatureType.Positive] = pd.Field(
         description="The temperature value."
     )
 
