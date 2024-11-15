@@ -4,7 +4,6 @@ from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.unit_system import u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
@@ -41,6 +40,7 @@ from flow360.component.simulation.unit_system import (
     InverseLengthType,
     LengthType,
     PressureType,
+    u,
 )
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
