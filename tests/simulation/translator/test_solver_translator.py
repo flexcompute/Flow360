@@ -21,7 +21,11 @@ from flow360.component.simulation.models.surface_models import (
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import (
+    Fluid,
+    NavierStokesInitialCondition,
+    NavierStokesModifiedRestartSolution,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -166,13 +170,16 @@ def get_om6Wing_tutorial_param():
     return param
 
 
-def translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10):
+def translate_and_compare(
+    param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False
+):
     translated = get_solver_json(param, mesh_unit=mesh_unit)
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
-    print(">>> translated = ", translated)
-    print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
-    print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
+    if debug:
+        print(">>> translated = ", translated)
+        print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
+        print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
     assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
 
 
@@ -373,4 +380,42 @@ def test_operating_condition(get_2dcrm_tutorial_param):
             converted.operating_condition.thermal_state.temperature
         ),
         4e-8 * u.flow360_viscosity_unit,
+    )
+
+
+def test_initial_condition_and_restart():
+    # 1. Default case
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Fluid(
+                    initial_condition=NavierStokesInitialCondition(
+                        constants={"not_used": "-1.1"}, rho="rho", u="u", v="v", w="w", p="p"
+                    )
+                )
+            ],
+        )
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_initial_condition_v2.json"
+    )
+
+    # 2. Restart Manipulation
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Fluid(
+                    initial_condition=NavierStokesModifiedRestartSolution(
+                        rho="rho*factor", u="u", v="v", w="w", p="p", constants={"factor": "1.1"}
+                    )
+                )
+            ],
+        )
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=True
     )

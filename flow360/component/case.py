@@ -13,12 +13,11 @@ import pydantic as pd
 import pydantic.v1 as pd_v1
 
 from .. import error_messages
-from ..cloud.requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
-from .flow360_params.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .folder import Folder
 from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
 from .resource_base import (
@@ -60,6 +59,7 @@ from .utils import (
     shared_account_confirm_proceed,
     validate_type,
 )
+from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .validator import Validator
 
 
@@ -425,7 +425,7 @@ class Case(CaseBase, Flow360Resource):
             # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
             with open(temp_file.name, "r", encoding="utf-8") as fh:
                 params_as_dict = json.load(fh)
-                params_as_dict = services.clean_params_dict(params_as_dict, "VolumeMesh")
+                params_as_dict = services.clean_params_dict(params_as_dict, None)
             with open(temp_file.name, "w", encoding="utf-8") as fh:
                 json.dump(params_as_dict, fh)
             return SimulationParams(filename=temp_file.name)

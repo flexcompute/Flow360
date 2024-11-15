@@ -57,6 +57,9 @@ class MultiConstructorBaseModel(Flow360BaseModel, metaclass=abc.ABCMeta):
                 for k, v in sig.parameters.items()
                 if v.default is not inspect.Parameter.empty
             }
+            # XXCache should not include private_attribute_id as it is not **User** input
+            kwargs.pop("private_attribute_id", None)
+
             with model_attribute_unlock(obj, "private_attribute_input_cache"):
                 obj.private_attribute_input_cache = obj.private_attribute_input_cache.__class__(
                     # Note: obj.private_attribute_input_cache should not be included here
@@ -157,9 +160,13 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
     if constructor_name is not None:
         model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
         input_kwargs = model_as_dict.get("private_attribute_input_cache")
+        # Make sure we do not generate a new ID.
+        id_kwarg = {}
+        if "private_attribute_id" in model_as_dict:
+            id_kwarg["private_attribute_id"] = model_as_dict["private_attribute_id"]
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
-            return constructor(**input_kwargs).model_dump(exclude_none=True)
+            return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
     return model_as_dict
 
 

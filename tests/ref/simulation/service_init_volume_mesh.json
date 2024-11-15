@@ -1,5 +1,5 @@
 {
-    "version": "24.11.0",
+    "version": "24.11.0b2",
     "unit_system": {
         "name": "SI"
     },
@@ -73,7 +73,7 @@
         {
             "type": "Wall",
             "entities": {
-              "stored_entities": []
+                "stored_entities": []
             },
             "name": "Wall",
             "use_wall_function": false
@@ -81,7 +81,7 @@
         {
             "type": "Freestream",
             "entities": {
-              "stored_entities": []
+                "stored_entities": []
             },
             "name": "Freestream"
         },
@@ -103,6 +103,14 @@
                         "units": "K"
                     }
                 }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
             },
             "type": "Fluid",
             "navier_stokes_solver": {
@@ -156,7 +164,7 @@
                 "rotation_correction": false
             },
             "transition_model_solver": {
-              "type_name": "None"
+                "type_name": "None"
             }
         }
     ],
@@ -193,8 +201,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
-                        "private_attribute_sub_components": [
-                        ]
+                        "private_attribute_sub_components": []
                     }
                 ]
             },

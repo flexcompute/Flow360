@@ -1,10 +1,12 @@
 import json
+import re
 
 import pytest
 
 from flow360.component.simulation import services
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -50,7 +52,43 @@ def test_validate_service():
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "Mysurface",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "user_defined_dynamics": [],
+        "private_attribute_asset_cache": {
+            "project_length_unit": None,
+            "project_entity_info": {
+                "draft_entities": [],
+                "type_name": "VolumeMeshEntityInfo",
+                "zones": [],
+                "boundaries": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "Mysurface",
+                        "private_attribute_full_name": None,
+                        "private_attribute_is_interface": False,
+                        "private_attribute_tag_key": None,
+                        "private_attribute_sub_components": [],
+                    }
+                ],
+            },
+        },
     }
 
     params_data_from_geo = params_data_from_vm
@@ -373,6 +411,7 @@ def test_front_end_JSON_with_multi_constructor():
                             {
                                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                                 "private_attribute_entity_type_name": "Box",
+                                "private_attribute_id": "hardcoded_id-1",
                                 "name": "my_box_default",
                                 "private_attribute_zone_boundary_names": {"items": []},
                                 "type_name": "Box",
@@ -385,6 +424,7 @@ def test_front_end_JSON_with_multi_constructor():
                             },
                             {
                                 "type_name": "Box",
+                                "private_attribute_id": "hardcoded_id-2",
                                 "private_attribute_constructor": "from_principal_axes",
                                 "private_attribute_input_cache": {
                                     "axes": [[0.6, 0.8, 0.0], [0.8, -0.6, 0.0]],
@@ -396,6 +436,7 @@ def test_front_end_JSON_with_multi_constructor():
                             {
                                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                                 "private_attribute_entity_type_name": "Cylinder",
+                                "private_attribute_id": "hardcoded_id-3",
                                 "name": "my_cylinder_default",
                                 "private_attribute_zone_boundary_names": {"items": []},
                                 "axis": [0.0, 1.0, 0.0],
@@ -416,6 +457,7 @@ def test_front_end_JSON_with_multi_constructor():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_id": "hardcoded_id-4",
                         "name": "automated_farfied_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
@@ -424,6 +466,51 @@ def test_front_end_JSON_with_multi_constructor():
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "private_attribute_asset_cache": {
+            "project_length_unit": "m",
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
+            },
+        },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "from_mach",
@@ -489,20 +576,58 @@ def test_generate_process_json():
             "beta": {"value": 0.0, "units": "degree"},
             # "velocity_magnitude": {"value": 0.8, "units": "km/s"},
         },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
-                "face_ids": ["face_x"],
-                "face_group_tag": "not_used",
-                "face_attribute_names": ["not_used"],
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
             },
         },
     }
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'SurfaceMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "SurfaceMesh"
@@ -519,7 +644,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'VolumeMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "VolumeMesh"
@@ -536,7 +663,9 @@ def test_generate_process_json():
 
     with pytest.raises(
         ValueError,
-        match=r"input_params must be of type SimulationParams\. Instead got: <class 'NoneType'>",
+        match=re.escape(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'Case'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+        ),
     ):
         res1, res2, res3 = services.generate_process_json(
             json.dumps(params_data), "SI", "Geometry", "Case"

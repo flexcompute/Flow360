@@ -176,5 +176,13 @@
             "zoneType": "mesh",
             "volumetricHeatSource": 0.0
         }
-    ]
+    ],
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    }
 }

@@ -55,75 +55,78 @@ class MeshingDefaults(Flow360BaseModel):
     surface_edge_growth_rate: float = ContextField(
         1.2,
         ge=1,
-        description="Global growth rate of the anisotropic layers grown from the edges.",
+        description="Growth rate of the anisotropic layers grown from the edges."
+        "This can not be overridden per edge.",
         context=SURFACE_MESH,
     )
 
     ##::    Default boundary layer settings
     boundary_layer_growth_rate: float = ContextField(
         1.2,
-        description="Default growth rate for volume prism layers.",
+        description="Default growth rate for volume prism layers."
+        " This can not be overridden per face.",
         ge=1,
         context=VOLUME_MESH,
     )
     # pylint: disable=no-member
     boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = ConditionalField(
         None,
-        description="Default first layer thickness for volumetric anisotropic layers.",
+        description="Default first layer thickness for volumetric anisotropic layers."
+        " This can be overridden with :class:`~flow360.BoundaryLayer`.",
         context=VOLUME_MESH,
     )  # Truly optional if all BL faces already have first_layer_thickness
 
     ##::    Default surface layer settings
     surface_max_edge_length: Optional[LengthType.Positive] = ConditionalField(
         None,
-        description="Default maximum edge length for surface cells.",
+        description="Default maximum edge length for surface cells."
+        " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
         context=SURFACE_MESH,
     )
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
-        description="Default maximum angular deviation in degrees. This value will restrict:"
-        "(1) The angle between a cell’s normal and its underlying surface normal"
-        "(2) The angle between a line segment’s normal and its underlying curve normal"
-        "This can not be overridden per face.",
+        description=(
+            "Default maximum angular deviation in degrees. This value will restrict:"
+            " 1. The angle between a cell’s normal and its underlying surface normal."
+            " 2. The angle between a line segment’s normal and its underlying curve normal."
+            " This can not be overridden per face."
+        ),
         context=SURFACE_MESH,
     )
 
 
 class MeshingParams(Flow360BaseModel):
     """
-    Meshing parameters for volume and/or surface mesher.
-
-    In `Simulation` this only contains what the user specifies. `Simulation` can derive and add more items according
-    to other aspects of simulation. (E.g. BETDisk volume -> ZoneRefinement)
-
-    Meshing related but may and maynot (user specified) need info from `Simulation`:
-    1. Add rotational zones.
-    2. Add default BETDisk refinement.
+    Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
     """
 
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
-        description="If refinementFactor=r is provided all spacings in refinementregions"
-        + "and first layer thickness will be adjusted to generate r-times finer mesh.",
+        description="All spacings in refinement regions"
+        + "and first layer thickness will be adjusted to generate `r`-times"
+        + " finer mesh where r is the refinement_factor value.",
     )
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
-        "Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
-        + "This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        + "However the impact on regions without close proximity is negligible.",
+        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        " However the impact on regions without close proximity is negligible.",
         context=VOLUME_MESH,
     )
 
     defaults: MeshingDefaults = pd.Field(
-        MeshingDefaults(), description="Default settings for meshing."
+        MeshingDefaults(),
+        description="Default settings for meshing."
+        " In other words the settings specified here will be applied"
+        " as a default setting for all `Surface` (s) and `Edge` (s).",
     )
 
     refinements: List[RefinementTypes] = pd.Field(
         default=[],
-        description="Additional fine-tunning for refinements.",
+        description="Additional fine-tunning for refinements on top of :paramref:`defaults`",
     )
     # Will add more to the Union
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(

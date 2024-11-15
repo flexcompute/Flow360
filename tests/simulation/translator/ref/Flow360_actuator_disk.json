@@ -85,5 +85,13 @@
                 "circumferential":[-0.0001, -0.003, 0]
             }
         }
-    ]
+    ],
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    }
 }

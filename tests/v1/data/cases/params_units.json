@@ -1,0 +1,162 @@
+{
+  "unitSystem": {
+    "name": "SI"
+  },
+  "version": "24.11.0b2",
+  "geometry": {
+    "refArea": {
+      "value": 1.0,
+      "units": "flow360_area_unit"
+    },
+    "momentCenter": {
+      "value": [
+        1,
+        2,
+        3
+      ],
+      "units": "flow360_length_unit"
+    },
+    "momentLength": {
+      "value": [
+        1.47602,
+        0.801672958512342,
+        1.47602
+      ],
+      "units": "inch"
+    },
+    "meshUnit": {
+      "value": 1.0,
+      "units": "mm"
+    }
+  },
+  "fluidProperties": {
+    "modelType": "AirDensity",
+    "temperature": {
+      "value": 288.15,
+      "units": "K"
+    },
+    "density": {
+      "value": 1.225,
+      "units": "kg/m**3"
+    }
+  },
+  "boundaries": {
+    "2": {
+      "type": "SlipWall",
+      "name": "symmetry"
+    },
+    "3": {
+      "type": "Freestream",
+      "name": "freestream"
+    },
+    "1": {
+      "type": "NoSlipWall",
+      "name": "wing",
+      "Velocity": {
+        "value": [
+          1,
+          2,
+          3
+        ],
+        "units": "km/hr"
+      }
+    }
+  },
+  "timeStepping": {
+    "maxPseudoSteps": 500,
+    "CFL": {
+      "type": "adaptive",
+      "min": 0.1,
+      "max": 10000.0,
+      "maxRelativeChange": 1.0,
+      "convergenceLimitingFactor": 0.25
+    },
+    "modelType": "Unsteady",
+    "physicalSteps": 20,
+    "timeStepSize": {
+      "value": 1.2,
+      "units": "s"
+    }
+  },
+  "freestream": {
+    "modelType": "FromVelocity",
+    "alphaAngle": 3.06,
+    "betaAngle": 0.0,
+    "velocity": {
+      "value": 286.0,
+      "units": "m/s"
+    }
+  },
+  "volumeZones": {
+    "zone2": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "modelType": "ReferenceFrame",
+        "omega": {
+          "value": 1.0471975511965976,
+          "units": "rad/s"
+        },
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "m"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "zone3": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "modelType": "ReferenceFrame",
+        "omega": {
+          "value": 60.0,
+          "units": "degree/s"
+        },
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "m"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "zone1": {
+      "modelType": "FluidDynamics",
+      "referenceFrame": {
+        "modelType": "ReferenceFrame",
+        "omega": {
+          "value": 10.0,
+          "units": "rpm"
+        },
+        "centerOfRotation": {
+          "value": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "units": "m"
+        },
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "hash": "2d7dd69275cc7663c45be9fdd5aea83347eb98727f26edf7698ec9633efe610a"
+}

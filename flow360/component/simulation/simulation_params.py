@@ -62,6 +62,7 @@ from flow360.component.simulation.validation.validation_output import (
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_cht_solver_settings,
+    _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_ddes_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
@@ -76,7 +77,13 @@ from flow360.error_messages import (
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
 
-from .validation.validation_context import SURFACE_MESH, CaseField, ContextField
+from .validation.validation_context import (
+    CASE,
+    SURFACE_MESH,
+    CaseField,
+    ContextField,
+    context_validator,
+)
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
 
@@ -162,72 +169,68 @@ class _ParamModelBase(Flow360BaseModel):
         return super().copy(update=update, **kwargs)
 
 
+# pylint: disable=too-many-public-methods
 class SimulationParams(_ParamModelBase):
-    """
-        meshing (Optional[MeshingParams]): Contains all the user specified meshing parameters that either enrich or
-        modify the existing surface/volume meshing parameters from starting points.
+    """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    -----
-        - Global settings that gets applied by default to all volumes/surfaces. However per-volume/per-surface values
-        will **always** overwrite global ones.
-
-        reference_geometry (Optional[ReferenceGeometry]): Global geometric reference values.
-        operating_condition (Optional[OperatingConditionTypes]): Global operating condition.
-    -----
-        - `volumes` and `surfaces` describes the physical problem **numerically**. Therefore `volumes` may/maynot
-        necessarily have to map to grid volume zones (e.g. BETDisk). For now `surfaces` are used exclusivly for boundary
-        conditions.
-
-        volumes (Optional[List[VolumeTypes]]): Numerics/physics defined on a volume.
-        surfaces (Optional[List[SurfaceTypes]]): Numerics/physics defined on a surface.
-    -----
-        - Other configurations that are orthogonal to all previous items.
-
-        time_stepping (Optional[Union[SteadyTimeStepping, UnsteadyTimeStepping]]): Temporal aspects of simulation.
-        user_defined_dynamics (Optional[UserDefinedDynamics]): Additional user-specified dynamics on top of the existing
-        ones or how volumes/surfaces are intertwined.
-        outputs (Optional[List[OutputTypes]]): Surface/Slice/Volume/Isosurface outputs."""
-
-    meshing: Optional[MeshingParams] = ContextField(MeshingParams(), context=SURFACE_MESH)
-    reference_geometry: Optional[ReferenceGeometry] = CaseField(None)
+    meshing: Optional[MeshingParams] = ContextField(
+        MeshingParams(),
+        context=SURFACE_MESH,
+        description="Meshing parameters. See :class:`MeshingParams` for more details.",
+    )
+    reference_geometry: Optional[ReferenceGeometry] = CaseField(
+        None,
+        description="Global geometric reference values. See :class:`ReferenceGeometry` for more details.",
+    )
     operating_condition: Optional[OperatingConditionTypes] = CaseField(
-        None, discriminator="type_name"
+        None,
+        discriminator="type_name",
+        description="Global operating condition."
+        " See :ref:`Operating condition <operating_condition>` for more details.",
     )
     #
-    """
-    meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
-    1. __getitem__ to allow [] access
-    2. __setitem__ to allow [] assignment
-    3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
-    3. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
-    """
-    models: Optional[List[ModelTypes]] = CaseField(None)
-    """
-    Below can be mostly reused with existing models 
-    """
-    time_stepping: Union[Steady, Unsteady] = CaseField(Steady(), discriminator="type_name")
-    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(None)
+
+    # meshing->edge_refinement, face_refinement, zone_refinement, volumes and surfaces should be class which has the:
+    # 1. __getitem__ to allow [] access
+    # 2. __setitem__ to allow [] assignment
+    # 3. by_name(pattern:str) to use regexpr/glob to select all zones/surfaces with matched name
+    # 4. by_type(pattern:str) to use regexpr/glob to select all zones/surfaces with matched type
+
+    models: Optional[List[ModelTypes]] = CaseField(
+        None,
+        description="Solver settings and numerical models and boundary condition settings."
+        " See :ref:`Volume models <volume_models>` and :ref:`Surface models <surface_models>` for more details.",
+    )
+    time_stepping: Union[Steady, Unsteady] = CaseField(
+        Steady(),
+        discriminator="type_name",
+        description="Time stepping settings. See :ref:`Time stepping <timeStepping>` for more details.",
+    )
+    user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(
+        None,
+        description="User defined dynamics. See :ref:`User defined dynamics <user_defined_dynamics>` for more details.",
+    )
 
     user_defined_fields: List[UserDefinedField] = CaseField(
         [], description="User defined fields that can be used in outputs."
     )
 
-    """
-    Support for user defined expression?
-    If so:
-        1. Move over the expression validation functions.
-        2. Have camelCase to snake_case naming converter for consistent user experience.
-    Limitations:
-        1. No per volume zone output. (single volume output)
-    """
-    outputs: Optional[List[OutputTypes]] = CaseField(None)
+    # Support for user defined expression?
+    # If so:
+    #    1. Move over the expression validation functions.
+    #    2. Have camelCase to snake_case naming converter for consistent user experience.
+    # Limitations:
+    #    1. No per volume zone output. (single volume output)
+    outputs: Optional[List[OutputTypes]] = CaseField(
+        None, description="Output settings. See :ref:`Outputs <outputs>` for more details."
+    )
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     # pylint: disable=arguments-differ
     def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
-        """TBD"""
+        """Internal function for non-dimensionalizing the simulation parameters"""
         if exclude is None:
             exclude = []
 
@@ -278,16 +281,14 @@ class SimulationParams(_ParamModelBase):
         return _check_cht_solver_settings(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_consistency_wall_function_and_surface_output(cls, v):
+    def check_consistency_wall_function_and_surface_output(self):
         """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
-        return _check_consistency_wall_function_and_surface_output(v)
+        return _check_consistency_wall_function_and_surface_output(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_consistency_ddes_volume_output(cls, v):
+    def check_consistency_ddes_volume_output(self):
         """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
-        return _check_consistency_ddes_volume_output(v)
+        return _check_consistency_ddes_volume_output(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
@@ -295,16 +296,20 @@ class SimulationParams(_ParamModelBase):
         return _check_duplicate_entities_in_models(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_numerical_dissipation_factor_output(cls, v):
+    def check_numerical_dissipation_factor_output(self):
         """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
-        return _check_numerical_dissipation_factor_output(v)
+        return _check_numerical_dissipation_factor_output(self)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_low_mach_preconditioner_output(cls, v):
+    def check_low_mach_preconditioner_output(self):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
-        return _check_low_mach_preconditioner_output(v)
+        return _check_low_mach_preconditioner_output(self)
+
+    @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
+    def check_complete_boundary_condition_and_unknown_surface(self):
+        """Make sure that all boundaries have been assigned with a boundary condition"""
+        return _check_complete_boundary_condition_and_unknown_surface(self)
 
     @pd.model_validator(mode="after")
     def check_output_fields(params):

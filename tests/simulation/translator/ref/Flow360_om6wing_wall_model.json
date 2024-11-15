@@ -133,5 +133,13 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     }
 }
