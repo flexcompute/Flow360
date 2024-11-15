@@ -120,6 +120,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
 
@@ -221,4 +222,5 @@ __all__ = [
     "MassFlowRate",
     "UserDefinedField",
     "operating_condition_from_mach_reynolds",
+    "VolumeMesh",
 ]
