@@ -698,7 +698,7 @@ def test_isMRF_flag():
     )
 
     c_3 = Cylinder(
-        name="stationary_cylinder",
+        name="another_cylinder",
         outer_radius=12 * u.m,
         height=13 * u.m,
         center=(0, 0, 0) * u.m,
