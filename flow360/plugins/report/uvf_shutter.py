@@ -5,6 +5,7 @@ This module is reponsible for communicating with UVF-shutter service
 import asyncio
 import os
 import time
+import json
 import zipfile
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
@@ -373,9 +374,9 @@ class UVFshutter(Flow360BaseModel):
             session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
         ) -> str:
             log.debug(
-                f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {len(uvf_request)=}"
+                f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {json.dumps(uvf_request)}, {len(uvf_request)=}"
             )
-            return session.post(url, json=uvf_request, )
+            return session.post(url, json=uvf_request)
 
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=3600),
