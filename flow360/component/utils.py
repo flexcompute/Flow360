@@ -361,9 +361,9 @@ def get_mapbc_from_ugrid(ugrid):
     """
     return associated mapbc file name from the ugrid mesh file
     """
-    mapbc = ugrid.replace(".lb8.ugrid", ".mapbc")
-    mapbc = mapbc.replace(".b8.ugrid", ".mapbc")
-    mapbc = mapbc.replace(".ugrid", ".mapbc")
+    mapbc = ugrid.lower().replace(".lb8.ugrid", ".mapbc")
+    mapbc = mapbc.lower().replace(".b8.ugrid", ".mapbc")
+    mapbc = mapbc.lower().replace(".ugrid", ".mapbc")
     return mapbc
 
 
@@ -534,6 +534,9 @@ class MeshNameParser:
     # pylint: disable=missing-function-docstring
     def is_valid_volume_mesh(self):
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
+
+    # pylint: disable=missing-function-docstring
+    def get_associated_mapbc_file_name(self):
 
     # pylint: disable=missing-function-docstring
     @staticmethod
