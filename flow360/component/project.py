@@ -156,6 +156,18 @@ class Project(pd.BaseModel):
     _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
 
     @property
+    def id(self) -> str:
+        """
+        Returns the ID of the project.
+
+        Returns
+        -------
+        str
+            The project ID.
+        """
+        return self.metadata.id
+
+    @property
     def geometry(self) -> Geometry:
         """
         Returns the geometry asset of the project. There is always only one geometry asset per project.
