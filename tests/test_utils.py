@@ -176,6 +176,7 @@ def test_mesh_name_parser_compressed_targz():
     assert parser.is_valid_volume_mesh()
     assert parser.is_compressed()
 
+
 def test_mesh_name_parser_compressed_targz_with_path():
     parser = MeshNameParser("./dir1/dir2/testMesh.lb8.ugrid.tar.gz")
     assert parser.file_name_no_compression == "./dir1/dir2/testMesh.lb8.ugrid"

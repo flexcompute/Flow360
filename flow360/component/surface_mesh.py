@@ -32,7 +32,6 @@ from .utils import (
     MeshFileFormat,
     MeshNameParser,
     UGRIDEndianness,
-    get_mapbc_from_ugrid,
     shared_account_confirm_proceed,
     validate_type,
     zstd_compress,
@@ -184,7 +183,6 @@ class SurfaceMeshDraft(ResourceDraft):
         original_compression = mesh_parser.compression
         mesh_format = mesh_parser.format
         endianness = mesh_parser.endianness
-        file_name_no_compression = mesh_parser.file_name_no_compression
 
         compression = (
             original_compression
@@ -228,15 +226,17 @@ class SurfaceMeshDraft(ResourceDraft):
             )
         submitted_mesh._complete_upload(remote_file_name)
         # upload mapbc file if it exists in the same directory
-        if mesh_format == MeshFileFormat.UGRID:
-            local_mapbc_file = get_mapbc_from_ugrid(file_name_no_compression)
-            if os.path.exists(local_mapbc_file):
-                remote_mapbc_file = f"{SURFACE_MESH_NAME_STEM_V2}.mapbc"
-                submitted_mesh._upload_file(
-                    remote_mapbc_file, local_mapbc_file, progress_callback=progress_callback
-                )
-                submitted_mesh._complete_upload(remote_mapbc_file)
-                log.info(f"The {local_mapbc_file} is found and successfully submitted")
+        if mesh_parser.is_ugrid() and os.path.isfile(mesh_parser.get_associated_mapbc_file()):
+            remote_mesh_parser = MeshNameParser(remote_file_name)
+            submitted_mesh._upload_file(
+                remote_mesh_parser.get_associated_mapbc_file(),
+                mesh_parser.get_associated_mapbc_file(),
+                progress_callback=progress_callback,
+            )
+            submitted_mesh._complete_upload(remote_mesh_parser.get_associated_mapbc_file())
+            log.info(
+                f"The {mesh_parser.get_associated_mapbc_file()} is found and successfully submitted"
+            )
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
 
