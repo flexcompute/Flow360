@@ -18,7 +18,7 @@ from flow360.component.interfaces import (
     ProjectInterface,
     VolumeMeshInterfaceV2,
 )
-from flow360.component.resource_base import Flow360Resource
+from flow360.component.resource_base import Flow360Resource, skip_submit_reminder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.outputs.output_entities import Point, Slice
 from flow360.component.simulation.primitives import Box, Cylinder, Edge, Surface
@@ -432,10 +432,12 @@ class Project(pd.BaseModel):
         root_asset = None
         root_type = cls._detect_asset_type_from_file(file)
         if root_type == RootType.GEOMETRY:
-            draft = Geometry.from_file(file, name, solver_version, length_unit, tags)
+            with skip_submit_reminder():
+                draft = Geometry.from_file(file, name, solver_version, length_unit, tags)
             root_asset = draft.submit()
         elif root_type == RootType.VOLUME_MESH:
-            draft = VolumeMeshV2.from_file(file, name, solver_version, length_unit, tags)
+            with skip_submit_reminder():
+                draft = VolumeMeshV2.from_file(file, name, solver_version, length_unit, tags)
             root_asset = draft.submit()
         if not root_asset:
             raise Flow360ValueError(f"Couldn't initialize asset from {file}")
@@ -596,14 +598,17 @@ class Project(pd.BaseModel):
 
         root_asset = self._root_asset
 
-        draft = Draft.create(
-            name=draft_name,
-            project_id=self.metadata.id,
-            source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
-            source_item_type=self.metadata.root_item_type.value if fork_from is None else "Case",
-            solver_version=solver_version if solver_version else self.solver_version,
-            fork_case=fork_from is not None,
-        ).submit()
+        with skip_submit_reminder():
+            draft = Draft.create(
+                name=draft_name,
+                project_id=self.metadata.id,
+                source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
+                source_item_type=(
+                    self.metadata.root_item_type.value if fork_from is None else "Case"
+                ),
+                solver_version=solver_version if solver_version else self.solver_version,
+                fork_case=fork_from is not None,
+            ).submit()
 
         # Check if there are any new draft entities that have been added in the params by the user
         entity_info = _set_up_param_entity_info(root_asset.entity_info, params)

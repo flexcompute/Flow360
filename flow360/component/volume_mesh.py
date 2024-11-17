@@ -360,7 +360,7 @@ class VolumeMeshDraft(ResourceDraft):
             return None
 
         info = VolumeMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         mesh = VolumeMesh(self.id)
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
@@ -421,7 +421,7 @@ class VolumeMeshDraft(ResourceDraft):
             return None
 
         info = VolumeMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         mesh = VolumeMesh(self.id)
 

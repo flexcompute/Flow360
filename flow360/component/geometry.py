@@ -206,7 +206,7 @@ class GeometryDraft(ResourceDraft):
         ##:: kick off pipeline
         geometry._webapi._complete_upload()
         log.info(f"Geometry successfully submitted: {geometry.short_description()}")
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         log.info("Waiting for geometry to be processed.")
         # uses from_cloud to ensure all metadata is ready before yielding the object
@@ -340,7 +340,7 @@ class Geometry(AssetBase):
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
-            log.info(f"    >> Tag {tag_index}: {attribute_tag}")
+            log.info(f"    >> Tag {tag_index}: {attribute_tag}. Grouping with this tag results in:")
             for index, entity in enumerate(grouped_items[tag_index]):
                 log.info(f"        >> Group {index}: {entity.name}")
                 if show_ids_in_each_group is True:

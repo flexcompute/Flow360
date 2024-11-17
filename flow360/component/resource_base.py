@@ -8,6 +8,7 @@ import shutil
 import time
 import traceback
 from abc import ABCMeta
+from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -142,6 +143,22 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
         return value
 
 
+# Global flag to track warning suppression
+_draft_submission_reminder_suppressed = False
+
+
+@contextmanager
+def skip_submit_reminder():
+    """
+    Manual override to suppress reminder in __init__
+    because we are using simualtion (or AKA V2) framework.
+    """
+    global _draft_submission_reminder_suppressed
+    _draft_submission_reminder_suppressed = True
+    yield
+    _draft_submission_reminder_suppressed = False
+
+
 class ResourceDraft(metaclass=ABCMeta):
     """
     Abstract base class for resources in draft state (before submission).
@@ -155,7 +172,9 @@ class ResourceDraft(metaclass=ABCMeta):
         # 1. This line (self.traceback)
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
-        if not UserConfig.is_suppress_submit_warning():
+        if not UserConfig.is_suppress_submit_warning() and (
+            _draft_submission_reminder_suppressed is False
+        ):
             log.info(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
