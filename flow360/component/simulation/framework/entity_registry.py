@@ -110,7 +110,8 @@ class EntityRegistry(Flow360BaseModel):
         """
         matched_entities = []
         if "*" in pattern:
-            regex_pattern = pattern.replace("*", ".*")
+            # Convert wildcard to regex pattern
+            regex_pattern = "^" + pattern.replace("*", ".*") + "$"
         else:
             regex_pattern = f"^{pattern}$"  # Exact match if no '*'
 
