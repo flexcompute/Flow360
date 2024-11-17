@@ -90,4 +90,4 @@ with fl.SI_unit_system:
         ],
     )
 
-project.run_case(params=params, name="Tutorial Periodic Boundary Condition from Python")
+project.run_case(params=params, name="Tutorial CHT Solver from Python")
