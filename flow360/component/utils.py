@@ -361,9 +361,9 @@ def get_mapbc_from_ugrid(ugrid):
     """
     return associated mapbc file name from the ugrid mesh file
     """
-    mapbc = ugrid.lower().replace(".lb8.ugrid", ".mapbc")
-    mapbc = mapbc.lower().replace(".b8.ugrid", ".mapbc")
-    mapbc = mapbc.lower().replace(".ugrid", ".mapbc")
+    mapbc = ugrid.replace(".lb8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".b8.ugrid", ".mapbc")
+    mapbc = mapbc.replace(".ugrid", ".mapbc")
     return mapbc
 
 
@@ -536,7 +536,11 @@ class MeshNameParser:
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
 
     # pylint: disable=missing-function-docstring
-    def get_associated_mapbc_file_name(self):
+    def get_associated_mapbc_file(self):
+        if not self.is_ugrid():
+            raise RuntimeError("Invalid operation to get mapbc file,  since the mesh is not in UGRID format.")
+        mapbc_file = get_mapbc_from_ugrid(self.file_name_no_compression)
+        return mapbc_file
 
     # pylint: disable=missing-function-docstring
     @staticmethod

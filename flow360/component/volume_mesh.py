@@ -955,6 +955,14 @@ class VolumeMeshDraftV2(ResourceDraft):
                 renamed_file_on_remote, self.file_name, progress_callback=progress_callback
             )
 
+        if mesh_parser.is_ugrid() and os.path.isfile(mesh_parser.get_associated_mapbc_file()):
+            remote_mesh_parser = MeshNameParser(renamed_file_on_remote)
+            volume_mesh._webapi.upload_file(
+                remote_mesh_parser.get_associated_mapbc_file(),
+                mesh_parser.get_associated_mapbc_file(),
+                progress_callback=progress_callback,
+            )
+
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
 

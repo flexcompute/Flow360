@@ -85,6 +85,7 @@ def test_mesh_name_parser_uncompressed_ugrid():
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid()
     assert not parser.is_compressed()
+    assert parser.get_associated_mapbc_file() == "testMesh.mapbc"
 
 
 def test_mesh_name_parser_ascii_ugrid():
@@ -105,6 +106,7 @@ def test_mesh_name_parser_ascii_compressed_ugrid():
     assert parser.compression == CompressionFormat.ZST
     assert parser.is_ugrid()
     assert parser.is_compressed()
+    assert parser.get_associated_mapbc_file() == "testMesh.mapbc"
 
 
 def test_mesh_name_parser_compressed_ugrid():
@@ -135,6 +137,8 @@ def test_mesh_name_parser_uncompressed_cgns():
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid() == False
     assert not parser.is_compressed()
+    with pytest.raises(RuntimeError):
+        parser.get_associated_mapbc_file()
 
 
 def test_mesh_name_parser_stl():
@@ -145,6 +149,8 @@ def test_mesh_name_parser_stl():
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid() == False
     assert not parser.is_compressed()
+    with pytest.raises(RuntimeError):
+        parser.get_associated_mapbc_file()
 
 
 def test_mesh_name_parser_compressed_stl():
@@ -169,3 +175,15 @@ def test_mesh_name_parser_compressed_targz():
     assert parser.is_valid_surface_mesh()
     assert parser.is_valid_volume_mesh()
     assert parser.is_compressed()
+
+def test_mesh_name_parser_compressed_targz_with_path():
+    parser = MeshNameParser("./dir1/dir2/testMesh.lb8.ugrid.tar.gz")
+    assert parser.file_name_no_compression == "./dir1/dir2/testMesh.lb8.ugrid"
+    assert parser.endianness == UGRIDEndianness.LITTLE
+    assert parser.format == MeshFileFormat.UGRID
+    assert parser.compression == CompressionFormat.TARGZ
+    assert parser.is_ugrid() == True
+    assert parser.is_valid_surface_mesh()
+    assert parser.is_valid_volume_mesh()
+    assert parser.is_compressed()
+    assert parser.get_associated_mapbc_file() == "./dir1/dir2/testMesh.mapbc"
