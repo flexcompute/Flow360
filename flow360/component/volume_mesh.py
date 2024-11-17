@@ -977,22 +977,25 @@ class VolumeMeshV2(AssetBase):
     _draft_class = VolumeMeshDraftV2
     _web_api_class = Flow360Resource
     _entity_info_class = VolumeMeshEntityInfo
+    _cloud_resource_type_name = "VolumeMesh"
 
     @classmethod
     # pylint: disable=redefined-builtin
-    def from_cloud(cls, id: str) -> VolumeMeshV2:
+    def from_cloud(cls, id: str, **kwargs) -> VolumeMeshV2:
         """
         Parameters
         ----------
         id : str
             ID of the volume mesh resource in the cloud
+        root_item_entity_info_type :
+        override the default entity info type
 
         Returns
         -------
         VolumeMeshV2
             Volume mesh object
         """
-        asset_obj = super().from_cloud(id)
+        asset_obj = super().from_cloud(id, **kwargs)
 
         return asset_obj
 

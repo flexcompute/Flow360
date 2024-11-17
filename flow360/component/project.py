@@ -617,16 +617,25 @@ class Project(pd.BaseModel):
             params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
+
         destination_id = draft.run_up_to_target_asset(target)
 
         self._project_webapi.patch(
+            # pylint: disable=protected-access
             json={
                 "lastOpenItemId": destination_id,
-                "lastOpenItemType": target.__name__,
+                "lastOpenItemType": target._cloud_resource_type_name,
             }
         )
 
-        destination_obj = target.from_cloud(destination_id)
+        if target is SurfaceMesh or target is VolumeMeshV2:
+            # Intermediate asset and we should enforce it to contain the entity info from root item.
+            # pylint: disable=protected-access
+            destination_obj = target.from_cloud(
+                destination_id, root_item_entity_info_type=self._root_asset._entity_info_class
+            )
+        else:
+            destination_obj = target.from_cloud(destination_id)
 
         if not run_async:
             destination_obj.wait()

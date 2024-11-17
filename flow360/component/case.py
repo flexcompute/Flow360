@@ -392,6 +392,7 @@ class Case(CaseBase, Flow360Resource):
     """
 
     _manifest_path = "visualize/manifest/manifest.json"
+    _cloud_resource_type_name = "Case"
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):

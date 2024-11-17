@@ -223,6 +223,7 @@ class Geometry(AssetBase):
     _draft_class = GeometryDraft
     _web_api_class = Flow360Resource
     _entity_info_class = GeometryEntityInfo
+    _cloud_resource_type_name = "Geometry"
 
     @property
     def face_group_tag(self):
@@ -246,9 +247,9 @@ class Geometry(AssetBase):
 
     @classmethod
     # pylint: disable=redefined-builtin
-    def from_cloud(cls, id: str):
+    def from_cloud(cls, id: str, **kwargs):
         """Create asset with the given ID"""
-        asset_obj = super().from_cloud(id)
+        asset_obj = super().from_cloud(id, **kwargs)
         # get the face tag and edge tag used.
         # pylint: disable=no-member
         if asset_obj.face_group_tag is None:
