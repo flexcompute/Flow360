@@ -191,6 +191,7 @@ class Solid(PDEModelBase):
         description="Heat equation solver settings, see "
         + ":class:`HeatEquationSolver` documentation.",
     )
+    # pylint: disable=no-member
     volumetric_heat_source: Union[StringExpression, HeatSourceType] = pd.Field(
         0 * u.W / (u.m**3), description="The volumetric heat source."
     )
