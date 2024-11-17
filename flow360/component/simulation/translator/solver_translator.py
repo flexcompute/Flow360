@@ -1093,6 +1093,14 @@ def get_solver_json(
 
     translated = translate_output(input_params, translated)
 
+    ##:: Step 5: Get user defined fields
+    translated["userDefinedFields"] = []
+    for udf in input_params.user_defined_fields:
+        udf_dict = {}
+        udf_dict["name"] = udf.name
+        udf_dict["expression"] = udf.expression
+        translated["userDefinedFields"].append(udf_dict)
+
     ##:: Step 11: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:
         translated["userDefinedDynamics"] = []

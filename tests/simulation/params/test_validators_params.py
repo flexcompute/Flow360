@@ -30,8 +30,13 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
+    Point,
+    Slice,
+)
 from flow360.component.simulation.outputs.outputs import (
+    IsosurfaceOutput,
     ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
@@ -542,6 +547,29 @@ def test_output_fields_with_user_defined_fields():
                         surfaces=[surface_1],
                     )
                 ]
+            )
+
+    msg = "In `outputs`[1]:, Cpp is not valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'not_valid_field']"
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="po",
+                        output_fields=["Cp"],
+                        probe_points=[Point(name="pt1", location=(1, 2, 3))],
+                    ),
+                    IsosurfaceOutput(
+                        name="iso",
+                        entities=[Isosurface(name="iso1", field="Cpp", iso_value=0.5)],
+                        output_fields=["primitiveVars"],
+                    ),
+                ],
+                user_defined_fields=[
+                    UserDefinedField(
+                        name="not_valid_field", expression="primitiveVars[0] *3.1415926"
+                    )
+                ],
             )
 
 

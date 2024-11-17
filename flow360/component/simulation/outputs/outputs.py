@@ -90,11 +90,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type "
         + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
-    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field(
-        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>` "
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+        "List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>` "
         + "and :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>`. "
     )
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 

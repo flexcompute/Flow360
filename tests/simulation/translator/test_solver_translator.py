@@ -33,6 +33,7 @@ from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
@@ -419,3 +420,22 @@ def test_initial_condition_and_restart():
     translate_and_compare(
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=True
     )
+
+
+def test_user_defined_field():
+    # 1. Default case
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Fluid(
+                    initial_condition=NavierStokesInitialCondition(
+                        constants={"not_used": "-1.1"}, rho="rho", u="u", v="v", w="w", p="p"
+                    )
+                )
+            ],
+            user_defined_fields=[UserDefinedField(name="CpT", expression="C-p*T")],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_udf.json")
