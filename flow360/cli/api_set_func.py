@@ -1,3 +1,4 @@
+"""Helper function to set up the API key for the user."""
 from click.testing import CliRunner
 
 from flow360.cli.app import configure
