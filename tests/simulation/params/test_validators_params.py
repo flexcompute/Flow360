@@ -719,7 +719,11 @@ def test_noninertial_reference_frame_model_flag():
                 SimulationParams(
                     models=[
                         Fluid(),
-                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), noninertial_reference_frame_model=False),
+                        Rotation(
+                            entities=[c_1],
+                            spec=AngleExpression("1+2"),
+                            noninertial_reference_frame_model=False,
+                        ),
                         Wall(entities=[my_wall]),
                     ],
                     time_stepping=timestepping_steady,
@@ -735,9 +739,16 @@ def test_noninertial_reference_frame_model_flag():
                 models=[
                     Fluid(),
                     Rotation(
-                        entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2, noninertial_reference_frame_model=True
+                        entities=[c_1],
+                        spec=AngleExpression("1+2"),
+                        parent_volume=c_2,
+                        noninertial_reference_frame_model=True,
                     ),
-                    Rotation(entities=[c_2], spec=AngleExpression("1+5"), noninertial_reference_frame_model=False),
+                    Rotation(
+                        entities=[c_2],
+                        spec=AngleExpression("1+5"),
+                        noninertial_reference_frame_model=False,
+                    ),
                     Rotation(entities=[c_3], spec=AngleExpression("3+5")),
                     Wall(entities=[my_wall]),
                 ],
