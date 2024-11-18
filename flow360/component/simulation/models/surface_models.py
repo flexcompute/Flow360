@@ -165,7 +165,7 @@ class Wall(BoundaryBase):
         None, description="Prescribe a tangential velocity on the wall."
     )
     heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(
-        None,
+        HeatFlux("0"),
         discriminator="type_name",
         description="Specify the heat flux or temperature at the `Wall` boundary.",
     )

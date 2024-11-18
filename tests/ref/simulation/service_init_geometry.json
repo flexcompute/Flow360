@@ -103,7 +103,11 @@
       ]
     },
     "name": "Wall",
-    "use_wall_function": false
+    "use_wall_function": false,
+    "heat_spec": {
+      "value":"0",
+      "type_name": "HeatFlux"
+    }
   },
   {
     "type": "Freestream",
