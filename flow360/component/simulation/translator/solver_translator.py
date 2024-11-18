@@ -715,6 +715,14 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
     return output
 
 
+def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
+    """If the boundary model has turbulence quantities, add it to the boundary dict"""
+    if model.turbulence_quantities is not None:
+        boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
+        replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
+    return boundary
+
+
 # pylint: disable=too-many-branches
 def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
     """Boundary translator"""
@@ -740,9 +748,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
-        if model.turbulence_quantities is not None:
-            boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
-            replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
+        boundary = _append_turbulence_quantities_to_dict(model, model_dict, boundary)
     elif isinstance(model, Outflow):
         if isinstance(model.spec, Pressure):
             boundary["type"] = "SubsonicOutflowPressure"
@@ -750,9 +756,11 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
                 model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
             )
         elif isinstance(model.spec, Mach):
-            pass
+            boundary["type"] = "SubsonicOutflowMach"
+            boundary["MachNumber"] = model_dict["spec"]["value"]
         elif isinstance(model.spec, MassFlowRate):
-            pass
+            boundary["type"] = "MassOutflow"
+            boundary["massFlowRate"] = model_dict["spec"]["value"]
     elif isinstance(model, Periodic):
         boundary["type"] = (
             "TranslationallyPeriodic"
@@ -765,9 +773,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "Freestream"
         if model.velocity is not None:
             boundary["velocity"] = list(model_dict["velocity"])
-        if model.turbulence_quantities is not None:
-            boundary["turbulenceQuantities"] = model_dict["turbulenceQuantities"]
-            replace_dict_key(boundary["turbulenceQuantities"], "typeName", "modelType")
+        boundary = _append_turbulence_quantities_to_dict(model, model_dict, boundary)
     elif isinstance(model, SymmetryPlane):
         boundary["type"] = "SymmetryPlane"
 
