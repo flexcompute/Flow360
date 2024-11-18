@@ -64,10 +64,8 @@ with fl.SI_unit_system:
             ),
             fl.Wall(
                 surfaces=[
-                    volume_mesh["fluid/vane_ss"],
-                    volume_mesh["fluid/vane_ps"],
-                    volume_mesh["fluid/bladeFillet_ss"],
-                    volume_mesh["fluid/bladeFillet_ps"],
+                    volume_mesh["fluid/vane_*"],  # fluid/vane_ss and vane_ps
+                    volume_mesh["fluid/bladeFillet_*"],  # fluid/bladeFillet_ss and bladeFillet_ps
                     volume_mesh["fluid/shroud"],
                     volume_mesh["fluid/hub"],
                 ]
