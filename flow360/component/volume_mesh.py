@@ -965,7 +965,10 @@ class VolumeMeshDraftV2(ResourceDraft):
                     progress_callback=progress_callback,
                 )
             else:
-                log.warning(f"The expected mapbc file {expected_local_mapbc_file} specifying user-specified boundary names doesn't exist.")
+                log.warning(
+                    f"The expected mapbc file {expected_local_mapbc_file} specifying "
+                    "user-specified boundary names doesn't exist."
+                )
 
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
