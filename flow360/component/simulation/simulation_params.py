@@ -61,7 +61,7 @@ from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
-    _check_and_add_is_mrf_flag_in_volumezones,
+    _check_and_add_noninertial_reference_frame_flag,
     _check_cht_solver_settings,
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_ddes_volume_output,
@@ -322,7 +322,7 @@ class SimulationParams(_ParamModelBase):
     @pd.model_validator(mode="after")
     def check_and_add_is_mrf_flag_in_volumezones(params):
         """Ensure that all volume zones have isMRF flag with correct values"""
-        return _check_and_add_is_mrf_flag_in_volumezones(params)
+        return _check_and_add_noninertial_reference_frame_flag(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

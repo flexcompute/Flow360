@@ -679,7 +679,7 @@ def test_meshing_validator_dual_context():
     assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
     assert errors[0]["loc"] == ("meshing",)
 
-def test_isMRF_flag():
+def test_noninertial_reference_frame_model_flag():
 
     c_1 = Cylinder(
         name="inner_rotating_cylinder",
@@ -709,10 +709,9 @@ def test_isMRF_flag():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     timestepping_steady = Steady(max_steps=1000)
 
-    msg = (
-        "For model #1, the isMRF is set to False but the simulation is a steady state simulation. "
-    )
-    "This is not allowed. All rotation models should be set to MRF for a steady state simulation."
+    msg = "For model #1, the noninertial_reference_frame_model is set to False but "
+    "the simulation is a steady state simulation. This is not allowed. All rotation models "
+    "should have this be true for a steady state simulation."
 
     with pytest.raises(ValueError, match=re.escape(msg)):
         with ValidationLevelContext(CASE):
@@ -720,7 +719,7 @@ def test_isMRF_flag():
                 SimulationParams(
                     models=[
                         Fluid(),
-                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), isMRF=False),
+                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), noninertial_reference_frame_model=False),
                         Wall(entities=[my_wall]),
                     ],
                     time_stepping=timestepping_steady,
@@ -736,9 +735,9 @@ def test_isMRF_flag():
                 models=[
                     Fluid(),
                     Rotation(
-                        entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2, isMRF=True
+                        entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_2, noninertial_reference_frame_model=True
                     ),
-                    Rotation(entities=[c_2], spec=AngleExpression("1+5"), isMRF=False),
+                    Rotation(entities=[c_2], spec=AngleExpression("1+5"), noninertial_reference_frame_model=False),
                     Rotation(entities=[c_3], spec=AngleExpression("3+5")),
                     Wall(entities=[my_wall]),
                 ],
@@ -749,4 +748,4 @@ def test_isMRF_flag():
                 ),
             )
 
-    assert test_param.models[3].isMRF == False
+    assert test_param.models[3].noninertial_reference_frame_model == False

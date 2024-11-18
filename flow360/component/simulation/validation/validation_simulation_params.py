@@ -346,16 +346,16 @@ def _check_parent_volume_is_rotating(models):
     return models
 
 
-def _check_and_add_is_mrf_flag_in_volumezones(params):
+def _check_and_add_noninertial_reference_frame_flag(params):
 
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
 
-    is_mrf_default_value = True
+    noninertial_reference_frame_default_value = True
     is_steady = True
     if isinstance(params.time_stepping, Unsteady):
-        is_mrf_default_value = False
+        noninertial_reference_frame_default_value = False
         is_steady = False
 
     models = params.models
@@ -364,14 +364,14 @@ def _check_and_add_is_mrf_flag_in_volumezones(params):
         if isinstance(model, Rotation) is False:
             continue
 
-        if model.isMRF is None:
-            model.isMRF = is_mrf_default_value
+        if model.noninertial_reference_frame_model is None:
+            model.noninertial_reference_frame_model = noninertial_reference_frame_default_value
 
-        if model.isMRF is False and is_steady is True:
+        if model.noninertial_reference_frame_model is False and is_steady is True:
             raise ValueError(
-                f"For model #{model_index}, the isMRF is set to False but the simulation is a steady state "
-                "simulation. This is not allowed. All rotation models should be set to MRF for a steady state"
-                " simulation."
+                f"For model #{model_index}, the noninertial_reference_frame_model is set to False but "
+                "the simulation is a steady state simulation. This is not allowed. All rotation models "
+                "should have this be true for a steady state simulation."
             )
 
     return params

@@ -75,7 +75,7 @@ def create_NestedCylindersSRF_param(srf_cylinder):
                 Wall(surfaces=[inner_wall], use_wall_function=False),
                 Wall(surfaces=[outer_wall], use_wall_function=False, velocity=[0.0, 0.0, 0.0]),
                 Freestream(entities=[my_freestream]),
-                Rotation(entities=[srf_cylinder], spec=AngularVelocity(812.31 * u.rpm), isMRF=True),
+                Rotation(entities=[srf_cylinder], spec=AngularVelocity(812.31 * u.rpm), noninertial_reference_frame_model=True),
             ],
             time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=2000),
             outputs=[
