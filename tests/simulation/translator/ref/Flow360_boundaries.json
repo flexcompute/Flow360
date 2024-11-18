@@ -24,9 +24,6 @@
         "p": "p",
         "rho": "rho",
         "type": "initialCondition",
-        "constants": {
-            "not_used": "-1.1"
-        },
         "u": "u",
         "v": "v",
         "w": "w"
