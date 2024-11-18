@@ -398,9 +398,7 @@ class GhostSurface(_SurfaceEntityBase):
 # pylint: disable=missing-class-docstring
 @final
 class GhostSphere(GhostSurface):
-    type_name: Literal["GhostSphere"] = pd.Field(
-        "GhostSphere", frozen=True
-    )
+    type_name: Literal["GhostSphere"] = pd.Field("GhostSphere", frozen=True)
     center: List = pd.Field(alias="center")
     max_radius: PositiveFloat = pd.Field(alias="maxRadius")
 
