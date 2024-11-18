@@ -85,7 +85,7 @@ def test_mesh_name_parser_uncompressed_ugrid():
     assert parser.compression == CompressionFormat.NONE
     assert parser.is_ugrid()
     assert not parser.is_compressed()
-    assert parser.get_associated_mapbc_file() == "testMesh.mapbc"
+    assert parser.get_associated_mapbc_filename() == "testMesh.mapbc"
 
 
 def test_mesh_name_parser_ascii_ugrid():
@@ -106,7 +106,7 @@ def test_mesh_name_parser_ascii_compressed_ugrid():
     assert parser.compression == CompressionFormat.ZST
     assert parser.is_ugrid()
     assert parser.is_compressed()
-    assert parser.get_associated_mapbc_file() == "testMesh.mapbc"
+    assert parser.get_associated_mapbc_filename() == "testMesh.mapbc"
 
 
 def test_mesh_name_parser_compressed_ugrid():
@@ -138,7 +138,7 @@ def test_mesh_name_parser_uncompressed_cgns():
     assert parser.is_ugrid() == False
     assert not parser.is_compressed()
     with pytest.raises(RuntimeError):
-        parser.get_associated_mapbc_file()
+        parser.get_associated_mapbc_filename()
 
 
 def test_mesh_name_parser_stl():
@@ -150,7 +150,7 @@ def test_mesh_name_parser_stl():
     assert parser.is_ugrid() == False
     assert not parser.is_compressed()
     with pytest.raises(RuntimeError):
-        parser.get_associated_mapbc_file()
+        parser.get_associated_mapbc_filename()
 
 
 def test_mesh_name_parser_compressed_stl():
@@ -187,4 +187,4 @@ def test_mesh_name_parser_compressed_targz_with_path():
     assert parser.is_valid_surface_mesh()
     assert parser.is_valid_volume_mesh()
     assert parser.is_compressed()
-    assert parser.get_associated_mapbc_file() == "./dir1/dir2/testMesh.mapbc"
+    assert parser.get_associated_mapbc_filename() == "./dir1/dir2/testMesh.mapbc"

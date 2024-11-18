@@ -536,7 +536,7 @@ class MeshNameParser:
         return self.format in [MeshFileFormat.UGRID, MeshFileFormat.CGNS]
 
     # pylint: disable=missing-function-docstring
-    def get_associated_mapbc_file(self):
+    def get_associated_mapbc_filename(self):
         if not self.is_ugrid():
             raise RuntimeError(
                 "Invalid operation to get mapbc file,  since the mesh is not in UGRID format."

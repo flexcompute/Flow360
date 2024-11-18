@@ -226,16 +226,16 @@ class SurfaceMeshDraft(ResourceDraft):
             )
         submitted_mesh._complete_upload(remote_file_name)
         # upload mapbc file if it exists in the same directory
-        if mesh_parser.is_ugrid() and os.path.isfile(mesh_parser.get_associated_mapbc_file()):
+        if mesh_parser.is_ugrid() and os.path.isfile(mesh_parser.get_associated_mapbc_filename()):
             remote_mesh_parser = MeshNameParser(remote_file_name)
             submitted_mesh._upload_file(
-                remote_mesh_parser.get_associated_mapbc_file(),
-                mesh_parser.get_associated_mapbc_file(),
+                remote_mesh_parser.get_associated_mapbc_filename(),
+                mesh_parser.get_associated_mapbc_filename(),
                 progress_callback=progress_callback,
             )
-            submitted_mesh._complete_upload(remote_mesh_parser.get_associated_mapbc_file())
+            submitted_mesh._complete_upload(remote_mesh_parser.get_associated_mapbc_filename())
             log.info(
-                f"The {mesh_parser.get_associated_mapbc_file()} is found and successfully submitted"
+                f"The {mesh_parser.get_associated_mapbc_filename()} is found and successfully submitted"
             )
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
         return submitted_mesh
