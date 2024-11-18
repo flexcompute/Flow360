@@ -194,15 +194,19 @@ class Air(MaterialBase):
 
 class SolidMaterial(MaterialBase):
     """
-    Solid material base
+    Represents the solid material properties for heat transfer volume.
     """
 
     type: Literal["solid"] = pd.Field("solid", frozen=True)
-    name: str = pd.Field(frozen=True)
-    thermal_conductivity: ThermalConductivityType.Positive = pd.Field(frozen=True)
-    density: Optional[DensityType.Positive] = pd.Field(None, frozen=True)
+    name: str = pd.Field(frozen=True, description="Name of the solid material.")
+    thermal_conductivity: ThermalConductivityType.Positive = pd.Field(
+        frozen=True, description="Thermal conductivity of the material."
+    )
+    density: Optional[DensityType.Positive] = pd.Field(
+        None, frozen=True, description="Density of the material."
+    )
     specific_heat_capacity: Optional[SpecificHeatCapacityType.Positive] = pd.Field(
-        None, frozen=True
+        None, frozen=True, description="Specific heat capacity of the material."
     )
 
 
