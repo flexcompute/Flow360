@@ -447,8 +447,7 @@ class Case(CaseBase, Flow360Resource):
 
             if errors is not None:
                 raise Flow360ValidationError(
-                    "Error found in simulation params. The param may be created by an incompatible version.",
-                    errors,
+                    f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
                 )
 
             return param
