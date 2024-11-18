@@ -398,7 +398,7 @@ class GhostSurface(_SurfaceEntityBase):
 # pylint: disable=missing-class-docstring
 @final
 class GhostSphere(GhostSurface):
-    private_attribute_entity_type_name: Literal["GhostSphere"] = pd.Field(
+    type_name: Literal["GhostSphere"] = pd.Field(
         "GhostSphere", frozen=True
     )
     center: List = pd.Field(alias="center")
