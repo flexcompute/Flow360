@@ -4,6 +4,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
@@ -190,8 +191,9 @@ class Solid(PDEModelBase):
         description="Heat equation solver settings, see "
         + ":class:`HeatEquationSolver` documentation.",
     )
-    volumetric_heat_source: Union[HeatSourceType, StringExpression] = pd.Field(
-        0, description="The volumetric heat source."
+    # pylint: disable=no-member
+    volumetric_heat_source: Union[StringExpression, HeatSourceType] = pd.Field(
+        0 * u.W / (u.m**3), description="The volumetric heat source."
     )
 
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(
@@ -485,7 +487,7 @@ class PorousMedium(Flow360BaseModel):
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )
-    volumetric_heat_source: Optional[Union[HeatSourceType, StringExpression]] = pd.Field(
+    volumetric_heat_source: Optional[Union[StringExpression, HeatSourceType]] = pd.Field(
         None, description="The volumetric heat source."
     )
     # Note: Axes will always come from the entity
