@@ -10,8 +10,11 @@ from .om6wing import OM6wing
 from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
 from .rotating_spheres import RotatingSpheres
 from .tutorial_2dcrm import Tutorial_2dcrm
+from .tutorial_auto_meshing_internal_flow import TutorailAutoMeshingInternalFlow
 from .tutorial_cht_solver import TutorialCHTSolver
+from .tutorial_dynamic_derivatives import TutorailDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
+from .tutorial_RANS_xv15 import TutorailRANSXv15
 
 __all__ = [
     "ActuatorDisk",
@@ -28,4 +31,6 @@ __all__ = [
     "Tutorial_2dcrm",
     "TutorialCHTSolver",
     "TutorialPeriodicBC",
+    "TutorailAutoMeshingInternalFlow",
+    "TutorailDynamicDerivatives",
 ]
