@@ -68,7 +68,10 @@ with fl.SI_unit_system:
             fl.Freestream(
                 surfaces=volume_mesh["fluid/farfield"],
             ),
-            fl.Wall(surfaces=volume_mesh["solid/adiabatic"]),
+            fl.Wall(
+                surfaces=volume_mesh["solid/adiabatic"],
+                heat_spec=fl.HeatFlux(0 * fl.u.W / fl.u.m**2),
+            ),
         ],
         outputs=[
             fl.VolumeOutput(
