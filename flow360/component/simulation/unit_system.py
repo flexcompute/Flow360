@@ -1388,7 +1388,7 @@ class UnitSystem(pd.BaseModel):
     def __enter__(self):
         _lock.acquire()
         if self._verbose:
-            log.info(f"using: {self.system_repr()} unit system")
+            log.info(f"using: {self.system_repr()} unit system for unit inference.")
         unit_system_manager.set_current(self)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
