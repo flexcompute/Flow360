@@ -20,7 +20,12 @@ from flow360.component.simulation.models.turbulence_quantities import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     VelocityVectorType,
 )
-from flow360.component.simulation.primitives import GhostSurface, Surface, SurfacePair
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSurface,
+    Surface,
+    SurfacePair,
+)
 from flow360.component.simulation.unit_system import (
     HeatFluxType,
     MassFlowRateType,
@@ -57,7 +62,7 @@ class HeatFlux(SingleAttributeModel):
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: Union[HeatFluxType, StringExpression] = pd.Field(description="The heat flux value.")
+    value: Union[StringExpression, HeatFluxType] = pd.Field(description="The heat flux value.")
 
 
 class Temperature(SingleAttributeModel):
@@ -69,7 +74,7 @@ class Temperature(SingleAttributeModel):
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[TemperatureType.Positive, StringExpression] = pd.Field(
+    value: Union[StringExpression, TemperatureType.Positive] = pd.Field(
         description="The temperature value."
     )
 
@@ -254,7 +259,7 @@ class SymmetryPlane(BoundaryBase):
         None, description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="A list of :class:`Surface` entities with "
         + "the `SymmetryPlane` boundary condition imposed.",

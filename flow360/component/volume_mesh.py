@@ -955,6 +955,21 @@ class VolumeMeshDraftV2(ResourceDraft):
                 renamed_file_on_remote, self.file_name, progress_callback=progress_callback
             )
 
+        if mesh_parser.is_ugrid():
+            expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
+            if os.path.isfile(expected_local_mapbc_file):
+                remote_mesh_parser = MeshNameParser(renamed_file_on_remote)
+                volume_mesh._webapi._upload_file(
+                    remote_mesh_parser.get_associated_mapbc_filename(),
+                    mesh_parser.get_associated_mapbc_filename(),
+                    progress_callback=progress_callback,
+                )
+            else:
+                log.warning(
+                    f"The expected mapbc file {expected_local_mapbc_file} specifying "
+                    "user-specified boundary names doesn't exist."
+                )
+
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
 
