@@ -674,7 +674,7 @@ class Rotation(Flow360BaseModel):
     )
     noninertial_reference_frame_model: Optional[bool] = pd.Field(
         None,
-        description="Flag to specify whether the noninertial referene frame model (MRF) is "
+        description="Flag to specify whether the noninertial referene frame model is "
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
