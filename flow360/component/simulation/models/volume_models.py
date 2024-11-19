@@ -35,6 +35,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
+    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
@@ -261,24 +262,30 @@ class ActuatorDisk(Flow360BaseModel):
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
+# pylint: disable=no-member
 class BETDiskTwist(Flow360BaseModel):
     """:class:`BETDiskTwist` class for setting up the :paramref:`BETDisk.twists`."""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
-    twist: Optional[float] = pd.Field(
+    radius: Optional[LengthType.NonNegative] = pd.Field(
+        None, description="A list of radial locations."
+    )
+    twist: Optional[AngleType] = pd.Field(
         None,
-        description="The twist in degrees as a function of radial location. "
+        description="The twist angle as a function of radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
 
 
+# pylint: disable=no-member
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class for setting up the :paramref:`BETDisk.chords`."""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
-    chord: Optional[float] = pd.Field(
+    radius: Optional[LengthType.NonNegative] = pd.Field(
+        None, description="A list of radial locations."
+    )
+    chord: Optional[LengthType.NonNegative] = pd.Field(
         None,
         description="The blade chord as a function of the radial location. "
         + "Entries in the list must already be sorted by radius.",
@@ -362,9 +369,9 @@ class BETDisk(Flow360BaseModel):
         description="Reynolds numbers associated with the airfoil polars "
         + "provided in :class:`BETDiskSectionalPolar`."
     )
-    alphas: List[float] = pd.Field(
+    alphas: List[AngleType] = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":class:`BETDiskSectionalPolar` in degrees."
+        + ":class:`BETDiskSectionalPolar`."
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
@@ -378,7 +385,7 @@ class BETDisk(Flow360BaseModel):
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
         + ":paramref:`sectional_radiuses`."
     )
-    sectional_radiuses: List[float] = pd.Field(
+    sectional_radiuses: List[LengthType.NonNegative] = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
     )
