@@ -367,7 +367,8 @@ class SurfaceMesh(Flow360Resource):
         self._info = SurfaceMeshMeta(**resp)
 
     @classmethod
-    def from_cloud(cls, surface_mesh_id: str):
+    # pylint: disable=unused-argument
+    def from_cloud(cls, surface_mesh_id: str, **kwargs):
         """
         Get surface mesh from cloud
         :param surface_mesh_id:
