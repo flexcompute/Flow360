@@ -43,7 +43,7 @@ with fl.SI_unit_system:
             max_pseudo_steps=35,
             steps=600,
             step_size=0.5 / 600 * fl.u.s,
-            CFL=fl.AdaptiveCFL(convergence_limiting_factor=0.25),
+            CFL=fl.AdaptiveCFL(),
         ),
         outputs=[
             fl.VolumeOutput(
@@ -75,6 +75,8 @@ with fl.SI_unit_system:
                 navier_stokes_solver=fl.NavierStokesSolver(
                     absolute_tolerance=1e-9,
                     linear_solver=fl.LinearSolver(max_iterations=35),
+                    limit_velocity=True,
+                    limit_pressure_density=True,
                 ),
                 turbulence_model_solver=fl.SpalartAllmaras(
                     absolute_tolerance=1e-8,
