@@ -50,6 +50,7 @@ from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     BETDisk,
     Fluid,
+    HeatEquationInitialCondition,
     NavierStokesInitialCondition,
     PorousMedium,
     Rotation,
@@ -273,6 +274,7 @@ with SI_unit_system:
                     specific_heat_capacity=1.0 * u.J / u.kg / u.K,
                     density=1.0 * u.kg / u.m**3,
                 ),
+                initial_condition=HeatEquationInitialCondition(temperature="1"),
             ),
             Inflow(
                 surfaces=[my_inflow1],
