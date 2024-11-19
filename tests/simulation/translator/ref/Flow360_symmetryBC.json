@@ -71,7 +71,7 @@
     "boundaries": {
         "fluid/wall": {
             "type": "NoSlipWall",
-            "heatFlux": "0"
+            "heatFlux": 0.0
         },
         "fluid/symmetry": {
             "type": "SymmetryPlane"

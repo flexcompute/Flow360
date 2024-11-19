@@ -20,7 +20,7 @@
         },
         "6": {
             "type": "NoSlipWall",
-            "heatFlux": "0"
+            "heatFlux": 0.0
         },
         "7": {
             "type": "SlipWall"

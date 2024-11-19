@@ -109,7 +109,7 @@
         },
         "plateBlock/noSlipWall": {
             "type": "NoSlipWall",
-            "heatFlux": "0"
+            "heatFlux": 0.0
         }
     },
     "volumeOutput": {

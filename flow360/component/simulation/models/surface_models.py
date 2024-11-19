@@ -7,6 +7,7 @@ from typing import Literal, Optional, Union
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
@@ -169,8 +170,9 @@ class Wall(BoundaryBase):
     velocity: Optional[VelocityVectorType] = pd.Field(
         None, description="Prescribe a tangential velocity on the wall."
     )
+    # pylint: disable=no-member
     heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(
-        HeatFlux("0"),
+        HeatFlux(0 * u.W / u.m**2),
         discriminator="type_name",
         description="Specify the heat flux or temperature at the `Wall` boundary.",
     )
