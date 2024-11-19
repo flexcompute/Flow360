@@ -618,7 +618,10 @@ def bet_disk_translator(model: BETDisk):
     model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
     model_dict["alphas"] = [alpha.to("degree").value.item() for alpha in model.alphas]
     model_dict["twists"] = [
-        {"radius": bet_twist.radius, "twist": bet_twist.twist.to("degree").value.item()}
+        {
+            "radius": bet_twist.radius.value.item(),
+            "twist": bet_twist.twist.to("degree").value.item(),
+        }
         for bet_twist in model.twists
     ]
     disk_param = {
