@@ -272,7 +272,7 @@ class BETDiskTwist(Flow360BaseModel):
     )
     twist: Optional[AngleType] = pd.Field(
         None,
-        description="The twist in degrees as a function of radial location. "
+        description="The twist angle as a function of radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
 
@@ -371,7 +371,7 @@ class BETDisk(Flow360BaseModel):
     )
     alphas: List[AngleType] = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":class:`BETDiskSectionalPolar` in degrees."
+        + ":class:`BETDiskSectionalPolar`."
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
