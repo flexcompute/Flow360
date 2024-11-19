@@ -369,9 +369,8 @@ def _check_and_add_noninertial_reference_frame_flag(params):
 
         if model.noninertial_reference_frame_model is False and is_steady is True:
             raise ValueError(
-                f"For model #{model_index}, the noninertial_reference_frame_model is set to False but "
-                "the simulation is a steady state simulation. This is not allowed. All rotation models "
-                "should have this be true for a steady state simulation."
+                f"For model #{model_index}, the noninertial_reference_frame_model may not be set to False "
+                "for steady state simulations."
             )
 
     return params

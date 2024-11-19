@@ -709,9 +709,8 @@ def test_noninertial_reference_frame_model_flag():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     timestepping_steady = Steady(max_steps=1000)
 
-    msg = "For model #1, the noninertial_reference_frame_model is set to False but "
-    "the simulation is a steady state simulation. This is not allowed. All rotation models "
-    "should have this be true for a steady state simulation."
+    msg = "For model #1, the noninertial_reference_frame_model may not be set to False for "
+    "steady state simulations."
 
     with pytest.raises(ValueError, match=re.escape(msg)):
         with ValidationLevelContext(CASE):
