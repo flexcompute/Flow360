@@ -179,7 +179,7 @@ def rotation_translator(model: Rotation):
     """Rotation translator"""
     volume_zone = {
         "modelType": "FluidDynamics",
-        "isMRF": model.noninertial_reference_frame_model,
+        "isNonInertialReferenceFrameModel": model.noninertial_reference_frame_model,
         "referenceFrame": {},
     }
     if model.parent_volume is not None:

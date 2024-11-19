@@ -42,7 +42,7 @@
     },
     "volumeZones": {
         "blk-1": {
-            "isMRF": true,
+            "isNonInertialReferenceFrameModel": true,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
