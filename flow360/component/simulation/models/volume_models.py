@@ -267,7 +267,7 @@ class BETDiskTwist(Flow360BaseModel):
     """:class:`BETDiskTwist` class for setting up the :paramref:`BETDisk.twists`."""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[LengthType.Positive] = pd.Field(
+    radius: Optional[LengthType.NonNegative] = pd.Field(
         None, description="A list of radial locations."
     )
     twist: Optional[AngleType] = pd.Field(
@@ -282,10 +282,10 @@ class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class for setting up the :paramref:`BETDisk.chords`."""
 
     # TODO: Use dimensioned values, why optional?
-    radius: Optional[LengthType.Positive] = pd.Field(
+    radius: Optional[LengthType.NonNegative] = pd.Field(
         None, description="A list of radial locations."
     )
-    chord: Optional[LengthType.Positive] = pd.Field(
+    chord: Optional[LengthType.NonNegative] = pd.Field(
         None,
         description="The blade chord as a function of the radial location. "
         + "Entries in the list must already be sorted by radius.",
@@ -385,7 +385,7 @@ class BETDisk(Flow360BaseModel):
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
         + ":paramref:`sectional_radiuses`."
     )
-    sectional_radiuses: List[LengthType.Positive] = pd.Field(
+    sectional_radiuses: List[LengthType.NonNegative] = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
     )

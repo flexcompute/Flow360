@@ -29,7 +29,7 @@ def _check_bet_disk_alphas_in_order(value, info: ValidationInfo):
 def _check_has_duplicate_in_one_radial_list(radial_list):
     existing_radius = set()
     for item in radial_list:
-        radius = item.radius
+        radius = item.radius.value.item()
         if radius not in existing_radius:
             existing_radius.add(radius)
         else:
