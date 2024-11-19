@@ -24,7 +24,6 @@ from flow360.component.interfaces import BaseInterface
 from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
-from flow360.user_config import UserConfig
 
 
 # pylint: disable=R0801
@@ -155,8 +154,6 @@ class ResourceDraft(metaclass=ABCMeta):
         # 1. This line (self.traceback)
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
-        if not UserConfig.is_suppress_submit_warning():
-            log.info(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
     def id(self):
