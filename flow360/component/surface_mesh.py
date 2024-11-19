@@ -282,6 +282,8 @@ class SurfaceMesh(Flow360Resource):
     Surface mesh component
     """
 
+    _cloud_resource_type_name = "SurfaceMesh"
+
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
