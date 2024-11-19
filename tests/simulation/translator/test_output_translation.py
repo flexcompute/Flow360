@@ -783,6 +783,7 @@ def aeroacoustic_output_config():
             "observers": [[0.002, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
+            "permeableSurfaces": [],
         },
     )
 
