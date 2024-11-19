@@ -167,7 +167,7 @@ class SurfaceMeshDraft(ResourceDraft):
             )
         resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
         info = SurfaceMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
         log.info(f"SurfaceMesh successfully submitted: {submitted_mesh.short_description()}")
@@ -202,7 +202,7 @@ class SurfaceMeshDraft(ResourceDraft):
 
         resp = RestApi(SurfaceMeshInterface.endpoint).post(req.dict())
         info = SurfaceMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         submitted_mesh = SurfaceMesh(self.id)
 
@@ -281,6 +281,8 @@ class SurfaceMesh(Flow360Resource):
     """
     Surface mesh component
     """
+
+    _cloud_resource_type_name = "SurfaceMesh"
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
@@ -365,7 +367,8 @@ class SurfaceMesh(Flow360Resource):
         self._info = SurfaceMeshMeta(**resp)
 
     @classmethod
-    def from_cloud(cls, surface_mesh_id: str):
+    # pylint: disable=unused-argument
+    def from_cloud(cls, surface_mesh_id: str, **kwargs):
         """
         Get surface mesh from cloud
         :param surface_mesh_id:
