@@ -546,7 +546,8 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         target: AssetOrResource,
         draft_name: str = None,
-        fork_from: Case = None,
+        fork_from: Optional[Case] = None,
+        fork_with_mesh: Optional[VolumeMeshV2] = None,
         run_async: bool = True,
         solver_version: str = None,
     ):
@@ -561,8 +562,10 @@ class Project(pd.BaseModel):
             The target asset or resource to run the simulation against.
         draft_name : str, optional
             The name of the draft to create for the simulation run (default is None).
-        fork : bool, optional
-            Indicates if the simulation should fork the existing case (default is False).
+        fork_from : Case, optional
+            Which Case we should fork from (if fork).
+        fork_with_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpoalte parent case results to this mesh before running solver.
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
 
@@ -603,6 +606,7 @@ class Project(pd.BaseModel):
             source_item_type=self.metadata.root_item_type.value if fork_from is None else "Case",
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
+            fork_case_volume_mesh_id=fork_with_mesh.id if fork_with_mesh else None,
         ).submit()
 
         # Check if there are any new draft entities that have been added in the params by the user
@@ -720,7 +724,8 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "Case",
         run_async: bool = True,
-        fork_from: Case = None,
+        fork_from: Optional[Case] = None,
+        fork_with_mesh: Optional[VolumeMeshV2] = None,
         solver_version: str = None,
     ):
         """
@@ -736,10 +741,18 @@ class Project(pd.BaseModel):
             Whether to run the case asynchronously (default is True).
         fork_from : Case, optional
             Which Case we should fork from (if fork).
+        fork_with_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpoalte parent case results to this mesh before running solver.
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
+
+        if fork_from is None and fork_with_mesh is not None:
+            raise Flow360ValueError(
+                "Forking with mesh interpolation can only be used when forking a case."
+            )
+
         self._case_cache.add_asset(
             self._run(
                 params=params,
@@ -747,6 +760,7 @@ class Project(pd.BaseModel):
                 draft_name=name,
                 run_async=run_async,
                 fork_from=fork_from,
+                fork_with_mesh=fork_with_mesh,
                 solver_version=solver_version,
             )
         )

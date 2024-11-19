@@ -39,6 +39,9 @@ class DraftPostRequest(pd.BaseModel):
     ] = pd.Field(serialization_alias="sourceItemType")
     solver_version: str = pd.Field(serialization_alias="solverVersion")
     fork_case: bool = pd.Field(serialization_alias="forkCase")
+    fork_case_volume_mesh_id: Optional[str] = pd.Field(
+        None, serialization_alias="forkCaseVolumeMeshId"
+    )
 
     @pd.field_validator("name", mode="after")
     @classmethod
@@ -64,6 +67,7 @@ class DraftDraft(ResourceDraft):
         ],
         solver_version: str,
         fork_case: bool,
+        fork_case_volume_mesh_id: Optional[str] = None,
     ):
         self._request = DraftPostRequest(
             name=name,
@@ -72,6 +76,7 @@ class DraftDraft(ResourceDraft):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            fork_case_volume_mesh_id=fork_case_volume_mesh_id,
         )
         ResourceDraft.__init__(self)
 
@@ -113,6 +118,7 @@ class Draft(Flow360Resource):
         ] = None,
         solver_version: str = None,
         fork_case: bool = None,
+        fork_case_volume_mesh_id: str = None,
     ) -> DraftDraft:
         """Create a new instance of DraftDraft"""
         return DraftDraft(
@@ -122,6 +128,7 @@ class Draft(Flow360Resource):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            fork_case_volume_mesh_id=fork_case_volume_mesh_id,
         )
 
     @classmethod
