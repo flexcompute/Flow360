@@ -465,8 +465,8 @@ def test_get_entities(
     registry.register(Surface(name="BB"))
     registry.register(Surface(name="CC_ground"))
     items = registry.find_by_naming_pattern("*ground", enforce_output_as_list=True)
-    print(items)
     assert len(items) == 1
+    assert items[0].name == "CC_ground"
 
 
 def test_entities_input_interface(my_volume_mesh1):

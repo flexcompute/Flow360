@@ -5,11 +5,9 @@ Flow360 base Model
 import os
 import re
 import shutil
-import threading
 import time
 import traceback
 from abc import ABCMeta
-from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -26,7 +24,6 @@ from flow360.component.interfaces import BaseInterface
 from flow360.component.utils import is_valid_uuid, validate_type
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
-from flow360.user_config import UserConfig
 
 
 # pylint: disable=R0801
@@ -144,27 +141,6 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
         return value
 
 
-# Thread-local storage for suppression state
-_thread_local = threading.local()
-
-
-@contextmanager
-def skip_submit_reminder():
-    """
-    Manual override to suppress reminder in __init__
-    because we are using simualtion (or AKA V2) framework.
-    """
-    if not hasattr(_thread_local, "submission_reminder_suppressed"):
-        _thread_local.submission_reminder_suppressed = False
-
-    previous_state = _thread_local.submission_reminder_suppressed
-    _thread_local.submission_reminder_suppressed = True
-    try:
-        yield
-    finally:
-        _thread_local.submission_reminder_suppressed = previous_state
-
-
 class ResourceDraft(metaclass=ABCMeta):
     """
     Abstract base class for resources in draft state (before submission).
@@ -178,9 +154,6 @@ class ResourceDraft(metaclass=ABCMeta):
         # 1. This line (self.traceback)
         # 2. Call of this init
         self.traceback = traceback.format_stack()[:-2]
-        skip_warning_due_to_v2 = getattr(_thread_local, "submission_reminder_suppressed", False)
-        if not UserConfig.is_suppress_submit_warning() and (skip_warning_due_to_v2 is False):
-            log.info(error_messages.submit_reminder(self.__class__.__name__))
 
     @property
     def id(self):
