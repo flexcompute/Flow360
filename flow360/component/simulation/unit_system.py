@@ -510,11 +510,11 @@ class _DimensionedType(metaclass=ABCMeta):
                                 f"arg '{value}' needs to be a collection of {length} values"
                             )
                     if not vec_cls.allow_zero_component and any(item == 0 for item in value):
-                        raise ValueError(f"arg '{value}' cannot have zero components")
+                        raise ValueError(f"arg '{value}' cannot have zero component")
                     if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
                     if not vec_cls.allow_negative_value and any(item < 0 for item in value):
-                        raise ValueError(f"arg '{value}' cannot have negative values")
+                        raise ValueError(f"arg '{value}' cannot have negative value")
 
                     if vec_cls.type.has_defaults:
                         value = _unit_inference_validator(
@@ -569,7 +569,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def Point(self):
         """
-        Vector value which accepts zero-vectors
+        Vector value which accepts zero components
         """
         return self._VectorType.get_class_object(self)
 
@@ -577,7 +577,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def Vector(self):
         """
-        Vector value which accepts zero-vectors
+        Vector value which accepts zero components
         """
         return self._VectorType.get_class_object(self)
 
@@ -585,7 +585,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def PositiveVector(self):
         """
-        Vector value which accepts positive-vectors
+        Vector value which only accepts positive components
         """
         return self._VectorType.get_class_object(
             self, allow_zero_component=False, allow_negative_value=False
@@ -595,7 +595,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def Direction(self):
         """
-        Vector value which does not accept zero-vectors
+        Vector value which does not accept zero components
         """
         return self._VectorType.get_class_object(self, allow_zero_norm=False)
 
@@ -603,7 +603,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def Axis(self):
         """
-        Vector value which does not accept zero-vectors
+        Vector value which does not accept zero components
         """
         return self._VectorType.get_class_object(self, allow_zero_norm=False)
 

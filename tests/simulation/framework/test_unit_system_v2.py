@@ -450,7 +450,10 @@ def test_unit_system():
             omega=(1, 1, 1) * u.rad / u.s,
             lp=(1, 1, 1) * u.m,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"arg '\[0 0 0\] m/s' cannot have zero norm",
+    ):
         data = VectorDataWithUnits(
             pt=(1, 1, 1) * u.m,
             vec=(0, 0, 0) * u.m / u.s,
@@ -467,7 +470,7 @@ def test_unit_system():
         lp=(1, 1, 1) * u.m,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"arg '\[0 0 0\] m' cannot have zero norm"):
         data = VectorDataWithUnits(
             pt=(1, 1, 1) * u.m,
             vec=(1, 1, 1) * u.m / u.s,
@@ -484,7 +487,7 @@ def test_unit_system():
         lp=(1, 1, 1) * u.m,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"arg '\[0 1 1\] rad/s' cannot have zero component"):
         data = VectorDataWithUnits(
             pt=(1, 1, 1) * u.m,
             vec=(1, 1, 1) * u.m / u.s,
@@ -501,7 +504,7 @@ def test_unit_system():
         lp=(1, 1, 1) * u.m,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"arg '\[1 1 0\] m' cannot have zero component"):
         data = VectorDataWithUnits(
             pt=(1, 1, 1) * u.m,
             vec=(1, 1, 1) * u.m / u.s,
@@ -589,7 +592,7 @@ def test_unit_system():
     assert all(coord == -1 * u.rad for coord in data.l_arr)
     assert all(coord == 0 * u.m for coord in data.l_arr_nonneg)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"arg '\[ 0  0  0 -1\] m' cannot have negative value"):
         data = ArrayDataWithUnits(
             l_arr=[-1, -1, -1, -1] * u.rad,
             l_arr_nonneg=[0, 0, 0, -1] * u.m,

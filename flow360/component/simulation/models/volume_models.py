@@ -264,9 +264,8 @@ class ActuatorDisk(Flow360BaseModel):
 class BETDiskTwist(Flow360BaseModel):
     """:class:`BETDiskTwist` class for setting up the :paramref:`BETDisk.twists`."""
 
-    radius: LengthType.NonNegative = pd.Field(None, description="A list of radial locations.")
+    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
     twist: AngleType = pd.Field(
-        None,
         description="The twist angle as a function of radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
@@ -276,9 +275,8 @@ class BETDiskTwist(Flow360BaseModel):
 class BETDiskChord(Flow360BaseModel):
     """:class:`BETDiskChord` class for setting up the :paramref:`BETDisk.chords`."""
 
-    radius: LengthType.NonNegative = pd.Field(None, description="A list of radial locations.")
+    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
     chord: LengthType.NonNegative = pd.Field(
-        None,
         description="The blade chord as a function of the radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
