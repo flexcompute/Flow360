@@ -91,8 +91,8 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
-        "List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>` "
-        + "and :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>`. "
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`"
+        + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
