@@ -135,7 +135,7 @@ class TimeAverageVolumeOutput(VolumeOutput):
     """
     :class:`TimeAverageVolumeOutput` class for time average volume output settings.
     Caveats:
-    The solver only accepts exactly the same set of :paramref:`output_fields` (is shared)
+    The solver only accepts exactly the same set of :py:attr:`output_fields` (is shared)
     between :class:`VolumeOutput` and :class:`TimeAverageVolumeOutput`.
     Also let's not worry about allowing entities here as it is not supported by solver anyway.
 
