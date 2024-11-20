@@ -126,7 +126,7 @@ class MeshingParams(Flow360BaseModel):
 
     refinements: List[RefinementTypes] = pd.Field(
         default=[],
-        description="Additional fine-tunning for refinements on top of :paramref:`defaults`",
+        description="Additional fine-tunning for refinements on top of :py:attr:`defaults`",
     )
     # Will add more to the Union
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(

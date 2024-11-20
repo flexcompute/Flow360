@@ -185,7 +185,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :paramref:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -232,7 +232,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
     velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :paramref:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
     )
     thermal_state: ThermalState = pd.Field(
@@ -242,7 +242,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     )
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
-        description="Reference velocity magnitude. Is required when :paramref:`velocity_magnitude` is 0.",
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
     )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
