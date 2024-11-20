@@ -65,7 +65,8 @@ class Isosurface(_OutputItemBase):
 
     field: Union[IsoSurfaceFieldNames, str] = pd.Field(
         description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
-        + ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`."
+        ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`,"
+        " :code:`nuHat` or one of scalar field defined in :class:`UserDefinedField`."
     )
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
