@@ -132,5 +132,8 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
         match=r"BETDisk with name 'diskABC': \(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 18, but the third dimension of lift_coeffs is 17.",
     ):
         bet_disk.name = "diskABC"
-        bet_disk.alphas.append(bet_disk.alphas[-1])
+
+        alphas_value = bet_disk.alphas.value.tolist()
+        alphas_value.append(bet_disk.alphas[-1])
+        bet_disk.alphas = alphas_value * bet_disk.alphas.units
         BETDisk.model_validate(bet_disk)

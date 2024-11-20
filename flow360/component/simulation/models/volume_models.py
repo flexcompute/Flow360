@@ -361,7 +361,7 @@ class BETDisk(Flow360BaseModel):
         description="Reynolds numbers associated with the airfoil polars "
         + "provided in :class:`BETDiskSectionalPolar`."
     )
-    alphas: List[AngleType] = pd.Field(
+    alphas: AngleType.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
         + ":class:`BETDiskSectionalPolar`."
     )

@@ -355,8 +355,7 @@ def _createBETPolars():
 
 
 def createBETDiskSteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
-    alphas = np.arange(-16, 18, 2, dtype=int)
-    alphas = [alpha * u.deg for alpha in alphas]
+    alphas = np.arange(-16, 18, 2, dtype=int).tolist()
     sectional_radiuses, sectional_polars = _createBETPolars()
     twists, chords = _createBETTwistsAndChords(pitch_in_degree)
     with imperial_unit_system:
@@ -371,7 +370,7 @@ def createBETDiskSteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
             reynolds_numbers=reynolds_numbers,
             twists=twists,
             chords=chords,
-            alphas=alphas,
+            alphas=alphas * u.deg,
             sectional_radiuses=sectional_radiuses * u.inch,
             sectional_polars=sectional_polars,
         )
