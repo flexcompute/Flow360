@@ -78,6 +78,12 @@ class VectorDataWithUnits(pd.BaseModel):
     vec: Union[VelocityType.Direction, ForceType.Point] = pd.Field()
     ax: LengthType.Axis = pd.Field()
     omega: AngularVelocityType.Moment = pd.Field()
+    lp: LengthType.PositiveVector = pd.Field()
+
+
+class ArrayDataWithUnits(Flow360BaseModel):
+    l_arr: AngleType.Array = pd.Field()
+    l_arr_nonneg: LengthType.NonNegativeArray = pd.Field()
 
 
 class Flow360DataWithUnits(Flow360BaseModel):
@@ -184,6 +190,7 @@ def test_flow360_unit_arithmetic():
         vec=(1, 1, 1) * u.flow360_velocity_unit,
         ax=(1, 1, 1) * u.flow360_length_unit,
         omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
+        lp=(1, 1, 1) * u.flow360_length_unit,
     )
 
     with u.flow360_unit_system:
@@ -192,6 +199,7 @@ def test_flow360_unit_arithmetic():
             vec=(1, 1, 1),
             ax=(1, 1, 1),
             omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
+            lp=(1, 1, 1),
         )
     assert data == data_flow360
 
@@ -200,6 +208,23 @@ def test_flow360_unit_arithmetic():
 
     with pytest.raises(TypeError):
         data.vec + (1, 1, 1) * u.m / u.s
+
+    data = ArrayDataWithUnits(
+        l_arr=[1, 1, 1, 1] * u.flow360_angle_unit,
+        l_arr_nonneg=[1, 0, 0, 0] * u.flow360_length_unit,
+    )
+
+    with u.flow360_unit_system:
+        data_flow360 = ArrayDataWithUnits(
+            l_arr=[1, 1, 1, 1] * u.flow360_angle_unit, l_arr_nonneg=[1, 0, 0, 0]
+        )
+    assert data == data_flow360
+
+    with pytest.raises(TypeError):
+        data.l_arr + [1, 1, 1, 1] * u.rad
+
+    with pytest.raises(TypeError):
+        data.l_arr_nonneg + [1, 1, 1, 1] * u.m
 
 
 def test_unit_system():
@@ -405,12 +430,14 @@ def test_unit_system():
         vec=(1, 1, 1) * u.m / u.s,
         ax=(1, 1, 1) * u.m,
         omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
     )
 
     assert all(coord == 1 * u.m for coord in data.pt)
     assert all(coord == 1 * u.m / u.s for coord in data.vec)
     assert all(coord == 1 * u.m for coord in data.ax)
     assert all(coord == 1 * u.rad / u.s for coord in data.omega)
+    assert all(coord == 1 * u.m for coord in data.lp)
 
     with pytest.raises(
         ValueError,
@@ -421,6 +448,7 @@ def test_unit_system():
             vec=(1, 0, 0) * u.m / u.s,
             ax=(1, 1, 1) * u.m,
             omega=(1, 1, 1) * u.rad / u.s,
+            lp=(1, 1, 1) * u.m,
         )
     with pytest.raises(ValueError):
         data = VectorDataWithUnits(
@@ -428,6 +456,7 @@ def test_unit_system():
             vec=(0, 0, 0) * u.m / u.s,
             ax=(1, 1, 1) * u.m,
             omega=(1, 1, 1) * u.rad / u.s,
+            lp=(1, 1, 1) * u.m,
         )
 
     data = VectorDataWithUnits(
@@ -435,6 +464,7 @@ def test_unit_system():
         vec=(1, 0, 0) * u.m / u.s,
         ax=(1, 1, 1) * u.m,
         omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
     )
 
     with pytest.raises(ValueError):
@@ -443,6 +473,7 @@ def test_unit_system():
             vec=(1, 1, 1) * u.m / u.s,
             ax=(0, 0, 0) * u.m,
             omega=(1, 1, 1) * u.rad / u.s,
+            lp=(1, 1, 1) * u.m,
         )
 
     data = VectorDataWithUnits(
@@ -450,6 +481,7 @@ def test_unit_system():
         vec=(1, 1, 1) * u.m / u.s,
         ax=(1, 0, 0) * u.m,
         omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
     )
 
     with pytest.raises(ValueError):
@@ -458,6 +490,24 @@ def test_unit_system():
             vec=(1, 1, 1) * u.m / u.s,
             ax=(1, 1, 1) * u.m,
             omega=(0, 1, 1) * u.rad / u.s,
+            lp=(1, 1, 1) * u.m,
+        )
+
+    data = VectorDataWithUnits(
+        pt=(1, 1, 1) * u.m,
+        vec=(1, 1, 1) * u.m / u.s,
+        ax=(1, 0, 0) * u.m,
+        omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
+    )
+
+    with pytest.raises(ValueError):
+        data = VectorDataWithUnits(
+            pt=(1, 1, 1) * u.m,
+            vec=(1, 1, 1) * u.m / u.s,
+            ax=(1, 0, 0) * u.m,
+            omega=(1, 1, 1) * u.rad / u.s,
+            lp=(1, 1, 0) * u.m,
         )
 
     data = VectorDataWithUnits(
@@ -465,6 +515,7 @@ def test_unit_system():
         vec=(1, 1, 1) * u.m / u.s,
         ax=(1, 0, 0) * u.m,
         omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
     )
 
     data = VectorDataWithUnits(
@@ -472,6 +523,7 @@ def test_unit_system():
         vec=(1, 1, 1) * u.N,
         ax=(1, 0, 0) * u.m,
         omega=(1, 1, 1) * u.rad / u.s,
+        lp=(1, 1, 1) * u.m,
     )
 
     data = VectorDataWithUnits(
@@ -479,6 +531,7 @@ def test_unit_system():
         vec={"value": [1, 1, 1], "units": "N"},
         ax={"value": [0, 0, 1], "units": "m"},
         omega={"value": [1, 1, 1], "units": "rad/s"},
+        lp={"value": [1, 1, 1], "units": "m"},
     )
 
     with pytest.raises(
@@ -490,6 +543,7 @@ def test_unit_system():
             vec={"value": {"value": [1, 2], "units": "wrong"}, "units": "N"},
             ax={"value": [0, 0, 1], "units": "m"},
             omega={"value": [1, 1, 1], "units": "rad/s"},
+            lp={"value": [1, 1, 1], "units": "m"},
         )
 
     with pytest.raises(
@@ -501,25 +555,63 @@ def test_unit_system():
             vec={"value": [1, 1, None], "units": "N"},
             ax={"value": [0, 0, 1], "units": "m"},
             omega={"value": [1, 1, 1], "units": "rad/s"},
+            lp={"value": [1, 1, 1], "units": "m"},
         )
 
     with u.SI_unit_system:
         # Note that for union types the first element of union that passes validation is inferred!
         data = VectorDataWithUnits(
-            pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm
+            pt=(1, 1, 1), vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm, lp=(1, 1, 1)
         )
 
         assert all(coord == 1 * u.m for coord in data.pt)
         assert all(coord == 1 * u.m / u.s for coord in data.vec)
         assert all(coord == 1 * u.m for coord in data.ax)
         assert all(coord == 1 * u.rpm for coord in data.omega)
+        assert all(coord == 1 * u.m for coord in data.lp)
 
-        data = VectorDataWithUnits(pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm)
+        data = VectorDataWithUnits(
+            pt=None, vec=(1, 1, 1), ax=(1, 1, 1), omega=(1, 1, 1) * u.rpm, lp=(1, 1, 1)
+        )
 
         assert data.pt is None
         assert all(coord == 1 * u.m / u.s for coord in data.vec)
         assert all(coord == 1 * u.m for coord in data.ax)
         assert all(coord == 1 * u.rpm for coord in data.omega)
+        assert all(coord == 1 * u.m for coord in data.lp)
+
+    # Array data
+    data = ArrayDataWithUnits(
+        l_arr=[-1, -1, -1, -1] * u.rad,
+        l_arr_nonneg=[0, 0, 0, 0] * u.m,
+    )
+
+    assert all(coord == -1 * u.rad for coord in data.l_arr)
+    assert all(coord == 0 * u.m for coord in data.l_arr_nonneg)
+
+    with pytest.raises(ValueError):
+        data = ArrayDataWithUnits(
+            l_arr=[-1, -1, -1, -1] * u.rad,
+            l_arr_nonneg=[0, 0, 0, -1] * u.m,
+        )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"NaN/Inf/None found in input array. Please ensure your input is complete.",
+    ):
+        data = ArrayDataWithUnits(
+            l_arr={"value": [-1, -1, -1, None], "units": "rad"},
+            l_arr_nonneg={"value": [1, 1, 1, 1], "units": "m"},
+        )
+
+    with u.SI_unit_system:
+        data = ArrayDataWithUnits(
+            l_arr=[-1, -1, -1, -1] * u.rad,
+            l_arr_nonneg=[1, 1, 1, 1],
+        )
+
+        assert all(coord == -1 * u.rad for coord in data.l_arr)
+        assert all(coord == 1 * u.m for coord in data.l_arr_nonneg)
 
 
 def test_optionals_and_unions():

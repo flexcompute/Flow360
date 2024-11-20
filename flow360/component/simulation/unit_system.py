@@ -561,7 +561,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def NonNegativeArray(self):
         """
-        Array value which accepts any length
+        Array value which accepts nonnegative with any length
         """
         return self._VectorType.get_class_object(self, length=None, allow_negative_value=False)
 
@@ -585,7 +585,7 @@ class _DimensionedType(metaclass=ABCMeta):
     @classproperty
     def PositiveVector(self):
         """
-        Vector value which accepts zero-vectors
+        Vector value which accepts positive-vectors
         """
         return self._VectorType.get_class_object(
             self, allow_zero_component=False, allow_negative_value=False
