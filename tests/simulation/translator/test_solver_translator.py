@@ -15,6 +15,10 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Mach,
+    MassFlowRate,
+    Outflow,
+    Pressure,
     SlipWall,
     Wall,
 )
@@ -439,3 +443,39 @@ def test_user_defined_field():
             user_defined_fields=[UserDefinedField(name="CpT", expression="C-p*T")],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_udf.json")
+
+
+def test_boundaries():
+    operating_condition = AerospaceCondition.from_mach(
+        mach=0.84,
+    )
+    mass_flow_rate = (
+        0.2
+        * operating_condition.thermal_state.speed_of_sound
+        * 1
+        * u.m
+        * u.m
+        * operating_condition.thermal_state.density
+    )
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=operating_condition,
+            models=[
+                Outflow(
+                    name="outflow-1",
+                    surfaces=Surface(name="boundary_name_E"),
+                    spec=Pressure(operating_condition.thermal_state.pressure * 0.9),
+                ),
+                Outflow(
+                    name="outflow-2",
+                    surfaces=Surface(name="boundary_name_H"),
+                    spec=MassFlowRate(mass_flow_rate),
+                ),
+                Outflow(
+                    name="outflow-3",
+                    surfaces=Surface(name="boundary_name_F"),
+                    spec=Mach(0.3),
+                ),
+            ],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")

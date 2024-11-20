@@ -32,6 +32,7 @@ class AssetBase(metaclass=ABCMeta):
     _web_api_class: type[Flow360Resource] = None
     _entity_info_class: type[EntityInfoModel] = None
     _entity_info: EntityInfoModel = None
+    _cloud_resource_type_name: str = None
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None]):
@@ -71,7 +72,12 @@ class AssetBase(metaclass=ABCMeta):
         return self._webapi.short_description()
 
     @classmethod
-    def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj):
+    def _from_supplied_entity_info(
+        cls,
+        simulation_dict: dict,
+        asset_obj,
+        root_item_entity_info_type: Union[None, type[EntityInfoModel]],
+    ):
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -89,7 +95,10 @@ class AssetBase(metaclass=ABCMeta):
         # Note: This should be addressed when we design the new project client interface.
         remove_properties_by_name(entity_info, "_id")
         # pylint: disable=protected-access
-        asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
+        if root_item_entity_info_type is None:
+            asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
+        else:
+            asset_obj._entity_info = root_item_entity_info_type.model_validate(entity_info)
         return asset_obj
 
     @classmethod
@@ -128,12 +137,20 @@ class AssetBase(metaclass=ABCMeta):
         return cls._meta_class
 
     @classmethod
-    def from_cloud(cls, id: str):
-        """Create asset with the given ID"""
+    def from_cloud(cls, id: str, **kwargs):
+        """
+        Create asset with the given ID.
+
+        if root_item_entity_info_type is not None then the current asset
+        is not the project root asset and should store the given entity info type instead
+        """
         asset_obj = cls(id)
+        root_item_entity_info_type = kwargs.get("root_item_entity_info_type", None)
         # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
-        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
+        asset_obj = cls._from_supplied_entity_info(
+            simulation_dict, asset_obj, root_item_entity_info_type
+        )
         return asset_obj
 
     @classmethod
@@ -191,7 +208,7 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id), None)
         return asset_obj
 
     def wait(self, timeout_minutes=60):
