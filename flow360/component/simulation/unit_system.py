@@ -468,7 +468,7 @@ class _DimensionedType(metaclass=ABCMeta):
         def get_class_object(
             cls,
             dim_type,
-            allow_zero_coord=True,
+            allow_zero_component=True,
             allow_zero_norm=True,
             allow_negative_value=True,
             length=3,
@@ -509,8 +509,8 @@ class _DimensionedType(metaclass=ABCMeta):
                             raise TypeError(
                                 f"arg '{value}' needs to be a collection of {length} values"
                             )
-                    if not vec_cls.allow_zero_coord and any(item == 0 for item in value):
-                        raise ValueError(f"arg '{value}' cannot have zero coordinate values")
+                    if not vec_cls.allow_zero_component and any(item == 0 for item in value):
+                        raise ValueError(f"arg '{value}' cannot have zero components")
                     if not vec_cls.allow_zero_norm and all(item == 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
                     if not vec_cls.allow_negative_value and any(item < 0 for item in value):
@@ -540,7 +540,7 @@ class _DimensionedType(metaclass=ABCMeta):
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
-            cls_obj.allow_zero_coord = allow_zero_coord
+            cls_obj.allow_zero_component = allow_zero_component
             cls_obj.allow_negative_value = allow_negative_value
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
@@ -556,6 +556,14 @@ class _DimensionedType(metaclass=ABCMeta):
         Array value which accepts any length
         """
         return self._VectorType.get_class_object(self, length=None)
+
+    # pylint: disable=invalid-name
+    @classproperty
+    def NonNegativeArray(self):
+        """
+        Array value which accepts any length
+        """
+        return self._VectorType.get_class_object(self, length=None, allow_negative_value=False)
 
     # pylint: disable=invalid-name
     @classproperty
@@ -579,7 +587,9 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         Vector value which accepts zero-vectors
         """
-        return self._VectorType.get_class_object(self, allow_negative_value=False)
+        return self._VectorType.get_class_object(
+            self, allow_zero_component=False, allow_negative_value=False
+        )
 
     # pylint: disable=invalid-name
     @classproperty
@@ -604,7 +614,7 @@ class _DimensionedType(metaclass=ABCMeta):
         Vector value which does not accept zero values in coordinates
         """
         return self._VectorType.get_class_object(
-            self, allow_zero_norm=False, allow_zero_coord=False
+            self, allow_zero_norm=False, allow_zero_component=False
         )
 
 

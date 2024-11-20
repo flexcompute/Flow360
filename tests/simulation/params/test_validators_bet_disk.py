@@ -97,7 +97,9 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
         match=r"BETDisk with name 'diskABC': the length of sectional_radiuses \(7\) is not the same as that of sectional_polars \(6\).",
     ):
         bet_disk.name = "diskABC"
-        bet_disk.sectional_radiuses.append(bet_disk.sectional_radiuses[-1])
+        sectional_radiuses_value = bet_disk.sectional_radiuses.value.tolist()
+        sectional_radiuses_value.append(bet_disk.sectional_radiuses[-1])
+        bet_disk.sectional_radiuses = sectional_radiuses_value * bet_disk.sectional_radiuses.units
         BETDisk.model_validate(bet_disk)
 
 
