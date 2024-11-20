@@ -54,7 +54,7 @@ from flow360.component.types import Axis
 
 class AngleExpression(SingleAttributeModel):
     """
-    :class:`AngleExpression` class for define the angle expression for :paramref:`Rotation.spec`.
+    :class:`AngleExpression` class for define the angle expression for :py:attr:`Rotation.spec`.
     """
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
@@ -65,7 +65,7 @@ class AngleExpression(SingleAttributeModel):
 
 class AngularVelocity(SingleAttributeModel):
     """
-    :class:`AngularVelocity` class to define the angular velocity for :paramref:`Rotation.spec`.
+    :class:`AngularVelocity` class to define the angular velocity for :py:attr:`Rotation.spec`.
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
@@ -75,7 +75,7 @@ class AngularVelocity(SingleAttributeModel):
 class FromUserDefinedDynamics(Flow360BaseModel):
     """
     :class:`FromUserDefinedDynamics` class to define the rotation
-    controlled by user defined dynamics for :paramref:`Rotation.spec`.
+    controlled by user defined dynamics for :py:attr:`Rotation.spec`.
     """
 
     type_name: Literal["FromUserDefinedDynamics"] = pd.Field("FromUserDefinedDynamics", frozen=True)
@@ -84,7 +84,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """
     :class:`ExpressionInitialCondition` class for specifying the intial conditions of
-    :paramref:`Fluid.initial_condition`.
+    :py:attr:`Fluid.initial_condition`.
     """
 
     type_name: Literal["expression"] = pd.Field("expression", frozen=True)
@@ -97,7 +97,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`NavierStokesInitialCondition` class for specifying the
-    :paramref:`Fluid.initial_condition`.
+    :py:attr:`Fluid.initial_condition`.
     By default
     """
 
@@ -262,7 +262,7 @@ class ActuatorDisk(Flow360BaseModel):
 
 # pylint: disable=no-member
 class BETDiskTwist(Flow360BaseModel):
-    """:class:`BETDiskTwist` class for setting up the :paramref:`BETDisk.twists`."""
+    """:class:`BETDiskTwist` class for setting up the :py:attr:`BETDisk.twists`."""
 
     radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
     twist: AngleType = pd.Field(
@@ -273,7 +273,7 @@ class BETDiskTwist(Flow360BaseModel):
 
 # pylint: disable=no-member
 class BETDiskChord(Flow360BaseModel):
-    """:class:`BETDiskChord` class for setting up the :paramref:`BETDisk.chords`."""
+    """:class:`BETDiskChord` class for setting up the :py:attr:`BETDisk.chords`."""
 
     radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
     chord: LengthType.NonNegative = pd.Field(
@@ -283,14 +283,14 @@ class BETDiskChord(Flow360BaseModel):
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
-    """:class:`BETDiskSectionalPolar` class for setting up :paramref:`BETDisk.sectional_polars`
+    """:class:`BETDiskSectionalPolar` class for setting up :py:attr:`BETDisk.sectional_polars`
     for :class:`BETDisk`. There are two variables, “lift_coeffs” and “drag_coeffs”,
     need to be set up as 3D arrays (implemented as nested lists).
-    The first index of the array corresponds to the :paramref:`BETDisk.mach_numbers`
+    The first index of the array corresponds to the :py:attr:`BETDisk.mach_numbers`
     of the specified polar data.
-    The second index of the array corresponds to the :paramref:`BETDisk.reynolds_numbers`
+    The second index of the array corresponds to the :py:attr:`BETDisk.reynolds_numbers`
     of the polar data.
-    The third index corresponds to the :paramref:`BETDisk.alphas`.
+    The third index corresponds to the :py:attr:`BETDisk.alphas`.
     The value specifies the lift or drag coefficient, respectively.
     """
 
@@ -373,7 +373,7 @@ class BETDisk(Flow360BaseModel):
     )
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
-        + ":paramref:`sectional_radiuses`."
+        + ":py:attr:`sectional_radiuses`."
     )
     sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
