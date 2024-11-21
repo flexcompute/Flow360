@@ -6,7 +6,7 @@
             {
                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_entity_type_name": "Cylinder",
-                "private_attribute_id": "b7bd3121-11fa-48ec-aa40-f1f94c2b3086",
+                "private_attribute_id": "75c4aff3-2e81-4104-9f8e-42b84841979a",
                 "name": "betcylinder1",
                 "private_attribute_zone_boundary_names": {
                     "items": []
@@ -67,1178 +67,3473 @@
         1.0
     ],
     "alphas": [
-        -180.0,
-        -179.0,
-        -178.0,
-        -177.0,
-        -176.0,
-        -175.0,
-        -174.0,
-        -173.0,
-        -172.0,
-        -171.0,
-        -170.0,
-        -169.0,
-        -168.0,
-        -167.0,
-        -166.0,
-        -165.0,
-        -164.0,
-        -163.0,
-        -162.0,
-        -161.0,
-        -160.0,
-        -159.0,
-        -158.0,
-        -157.0,
-        -156.0,
-        -155.0,
-        -154.0,
-        -153.0,
-        -152.0,
-        -151.0,
-        -150.0,
-        -149.0,
-        -148.0,
-        -147.0,
-        -146.0,
-        -145.0,
-        -144.0,
-        -143.0,
-        -142.0,
-        -141.0,
-        -140.0,
-        -139.0,
-        -138.0,
-        -137.0,
-        -136.0,
-        -135.0,
-        -134.0,
-        -133.0,
-        -132.0,
-        -131.0,
-        -130.0,
-        -129.0,
-        -128.0,
-        -127.0,
-        -126.0,
-        -125.0,
-        -124.0,
-        -123.0,
-        -122.0,
-        -121.0,
-        -120.0,
-        -119.0,
-        -118.0,
-        -117.0,
-        -116.0,
-        -115.0,
-        -114.0,
-        -113.0,
-        -112.0,
-        -111.0,
-        -110.0,
-        -109.0,
-        -108.0,
-        -107.0,
-        -106.0,
-        -105.0,
-        -104.0,
-        -103.0,
-        -102.0,
-        -101.0,
-        -100.0,
-        -99.0,
-        -98.0,
-        -97.0,
-        -96.0,
-        -95.0,
-        -94.0,
-        -93.0,
-        -92.0,
-        -91.0,
-        -90.0,
-        -89.0,
-        -88.0,
-        -87.0,
-        -86.0,
-        -85.0,
-        -84.0,
-        -83.0,
-        -82.0,
-        -81.0,
-        -80.0,
-        -79.0,
-        -78.0,
-        -77.0,
-        -76.0,
-        -75.0,
-        -74.0,
-        -73.0,
-        -72.0,
-        -71.0,
-        -70.0,
-        -69.0,
-        -68.0,
-        -67.0,
-        -66.0,
-        -65.0,
-        -64.0,
-        -63.0,
-        -62.0,
-        -61.0,
-        -60.0,
-        -59.0,
-        -58.0,
-        -57.0,
-        -56.0,
-        -55.0,
-        -54.0,
-        -53.0,
-        -52.0,
-        -51.0,
-        -50.0,
-        -49.0,
-        -48.0,
-        -47.0,
-        -46.0,
-        -45.0,
-        -44.0,
-        -43.0,
-        -42.0,
-        -41.0,
-        -40.0,
-        -39.0,
-        -38.0,
-        -37.0,
-        -36.0,
-        -35.0,
-        -34.0,
-        -33.0,
-        -32.0,
-        -31.0,
-        -30.0,
-        -29.0,
-        -28.0,
-        -27.0,
-        -26.0,
-        -25.0,
-        -24.0,
-        -23.0,
-        -22.0,
-        -21.0,
-        -20.0,
-        -19.0,
-        -18.0,
-        -17.0,
-        -16.0,
-        -15.0,
-        -14.0,
-        -13.0,
-        -12.0,
-        -11.0,
-        -10.0,
-        -9.0,
-        -8.0,
-        -7.0,
-        -6.0,
-        -5.0,
-        -4.0,
-        -3.0,
-        -2.0,
-        -1.0,
-        0.0,
-        1.0,
-        2.0,
-        3.0,
-        4.0,
-        5.0,
-        6.0,
-        7.0,
-        8.0,
-        9.0,
-        10.0,
-        11.0,
-        12.0,
-        13.0,
-        14.0,
-        15.0,
-        16.0,
-        17.0,
-        18.0,
-        19.0,
-        20.0,
-        21.0,
-        22.0,
-        23.0,
-        24.0,
-        25.0,
-        26.0,
-        27.0,
-        28.0,
-        29.0,
-        30.0,
-        31.0,
-        32.0,
-        33.0,
-        34.0,
-        35.0,
-        36.0,
-        37.0,
-        38.0,
-        39.0,
-        40.0,
-        41.0,
-        42.0,
-        43.0,
-        44.0,
-        45.0,
-        46.0,
-        47.0,
-        48.0,
-        49.0,
-        50.0,
-        51.0,
-        52.0,
-        53.0,
-        54.0,
-        55.0,
-        56.0,
-        57.0,
-        58.0,
-        59.0,
-        60.0,
-        61.0,
-        62.0,
-        63.0,
-        64.0,
-        65.0,
-        66.0,
-        67.0,
-        68.0,
-        69.0,
-        70.0,
-        71.0,
-        72.0,
-        73.0,
-        74.0,
-        75.0,
-        76.0,
-        77.0,
-        78.0,
-        79.0,
-        80.0,
-        81.0,
-        82.0,
-        83.0,
-        84.0,
-        85.0,
-        86.0,
-        87.0,
-        88.0,
-        89.0,
-        90.0,
-        91.0,
-        92.0,
-        93.0,
-        94.0,
-        95.0,
-        96.0,
-        97.0,
-        98.0,
-        99.0,
-        100.0,
-        101.0,
-        102.0,
-        103.0,
-        104.0,
-        105.0,
-        106.0,
-        107.0,
-        108.0,
-        109.0,
-        110.0,
-        111.0,
-        112.0,
-        113.0,
-        114.0,
-        115.0,
-        116.0,
-        117.0,
-        118.0,
-        119.0,
-        120.0,
-        121.0,
-        122.0,
-        123.0,
-        124.0,
-        125.0,
-        126.0,
-        127.0,
-        128.0,
-        129.0,
-        130.0,
-        131.0,
-        132.0,
-        133.0,
-        134.0,
-        135.0,
-        136.0,
-        137.0,
-        138.0,
-        139.0,
-        140.0,
-        141.0,
-        142.0,
-        143.0,
-        144.0,
-        145.0,
-        146.0,
-        147.0,
-        148.0,
-        149.0,
-        150.0,
-        151.0,
-        152.0,
-        153.0,
-        154.0,
-        155.0,
-        156.0,
-        157.0,
-        158.0,
-        159.0,
-        160.0,
-        161.0,
-        162.0,
-        163.0,
-        164.0,
-        165.0,
-        166.0,
-        167.0,
-        168.0,
-        169.0,
-        170.0,
-        171.0,
-        172.0,
-        173.0,
-        174.0,
-        175.0,
-        176.0,
-        177.0,
-        178.0,
-        179.0,
-        180.0
+        {
+            "value": -180.0,
+            "units": "degree"
+        },
+        {
+            "value": -179.0,
+            "units": "degree"
+        },
+        {
+            "value": -178.0,
+            "units": "degree"
+        },
+        {
+            "value": -177.0,
+            "units": "degree"
+        },
+        {
+            "value": -176.0,
+            "units": "degree"
+        },
+        {
+            "value": -175.0,
+            "units": "degree"
+        },
+        {
+            "value": -174.0,
+            "units": "degree"
+        },
+        {
+            "value": -173.0,
+            "units": "degree"
+        },
+        {
+            "value": -172.0,
+            "units": "degree"
+        },
+        {
+            "value": -171.0,
+            "units": "degree"
+        },
+        {
+            "value": -170.0,
+            "units": "degree"
+        },
+        {
+            "value": -169.0,
+            "units": "degree"
+        },
+        {
+            "value": -168.0,
+            "units": "degree"
+        },
+        {
+            "value": -167.0,
+            "units": "degree"
+        },
+        {
+            "value": -166.0,
+            "units": "degree"
+        },
+        {
+            "value": -165.0,
+            "units": "degree"
+        },
+        {
+            "value": -164.0,
+            "units": "degree"
+        },
+        {
+            "value": -163.0,
+            "units": "degree"
+        },
+        {
+            "value": -162.0,
+            "units": "degree"
+        },
+        {
+            "value": -161.0,
+            "units": "degree"
+        },
+        {
+            "value": -160.0,
+            "units": "degree"
+        },
+        {
+            "value": -159.0,
+            "units": "degree"
+        },
+        {
+            "value": -158.0,
+            "units": "degree"
+        },
+        {
+            "value": -157.0,
+            "units": "degree"
+        },
+        {
+            "value": -156.0,
+            "units": "degree"
+        },
+        {
+            "value": -155.0,
+            "units": "degree"
+        },
+        {
+            "value": -154.0,
+            "units": "degree"
+        },
+        {
+            "value": -153.0,
+            "units": "degree"
+        },
+        {
+            "value": -152.0,
+            "units": "degree"
+        },
+        {
+            "value": -151.0,
+            "units": "degree"
+        },
+        {
+            "value": -150.0,
+            "units": "degree"
+        },
+        {
+            "value": -149.0,
+            "units": "degree"
+        },
+        {
+            "value": -148.0,
+            "units": "degree"
+        },
+        {
+            "value": -147.0,
+            "units": "degree"
+        },
+        {
+            "value": -146.0,
+            "units": "degree"
+        },
+        {
+            "value": -145.0,
+            "units": "degree"
+        },
+        {
+            "value": -144.0,
+            "units": "degree"
+        },
+        {
+            "value": -143.0,
+            "units": "degree"
+        },
+        {
+            "value": -142.0,
+            "units": "degree"
+        },
+        {
+            "value": -141.0,
+            "units": "degree"
+        },
+        {
+            "value": -140.0,
+            "units": "degree"
+        },
+        {
+            "value": -139.0,
+            "units": "degree"
+        },
+        {
+            "value": -138.0,
+            "units": "degree"
+        },
+        {
+            "value": -137.0,
+            "units": "degree"
+        },
+        {
+            "value": -136.0,
+            "units": "degree"
+        },
+        {
+            "value": -135.0,
+            "units": "degree"
+        },
+        {
+            "value": -134.0,
+            "units": "degree"
+        },
+        {
+            "value": -133.0,
+            "units": "degree"
+        },
+        {
+            "value": -132.0,
+            "units": "degree"
+        },
+        {
+            "value": -131.0,
+            "units": "degree"
+        },
+        {
+            "value": -130.0,
+            "units": "degree"
+        },
+        {
+            "value": -129.0,
+            "units": "degree"
+        },
+        {
+            "value": -128.0,
+            "units": "degree"
+        },
+        {
+            "value": -127.0,
+            "units": "degree"
+        },
+        {
+            "value": -126.0,
+            "units": "degree"
+        },
+        {
+            "value": -125.0,
+            "units": "degree"
+        },
+        {
+            "value": -124.0,
+            "units": "degree"
+        },
+        {
+            "value": -123.0,
+            "units": "degree"
+        },
+        {
+            "value": -122.0,
+            "units": "degree"
+        },
+        {
+            "value": -121.0,
+            "units": "degree"
+        },
+        {
+            "value": -120.0,
+            "units": "degree"
+        },
+        {
+            "value": -119.0,
+            "units": "degree"
+        },
+        {
+            "value": -118.0,
+            "units": "degree"
+        },
+        {
+            "value": -117.0,
+            "units": "degree"
+        },
+        {
+            "value": -116.0,
+            "units": "degree"
+        },
+        {
+            "value": -115.0,
+            "units": "degree"
+        },
+        {
+            "value": -114.0,
+            "units": "degree"
+        },
+        {
+            "value": -113.0,
+            "units": "degree"
+        },
+        {
+            "value": -112.0,
+            "units": "degree"
+        },
+        {
+            "value": -111.0,
+            "units": "degree"
+        },
+        {
+            "value": -110.0,
+            "units": "degree"
+        },
+        {
+            "value": -109.0,
+            "units": "degree"
+        },
+        {
+            "value": -108.0,
+            "units": "degree"
+        },
+        {
+            "value": -107.0,
+            "units": "degree"
+        },
+        {
+            "value": -106.0,
+            "units": "degree"
+        },
+        {
+            "value": -105.0,
+            "units": "degree"
+        },
+        {
+            "value": -104.0,
+            "units": "degree"
+        },
+        {
+            "value": -103.0,
+            "units": "degree"
+        },
+        {
+            "value": -102.0,
+            "units": "degree"
+        },
+        {
+            "value": -101.0,
+            "units": "degree"
+        },
+        {
+            "value": -100.0,
+            "units": "degree"
+        },
+        {
+            "value": -99.0,
+            "units": "degree"
+        },
+        {
+            "value": -98.0,
+            "units": "degree"
+        },
+        {
+            "value": -97.0,
+            "units": "degree"
+        },
+        {
+            "value": -96.0,
+            "units": "degree"
+        },
+        {
+            "value": -95.0,
+            "units": "degree"
+        },
+        {
+            "value": -94.0,
+            "units": "degree"
+        },
+        {
+            "value": -93.0,
+            "units": "degree"
+        },
+        {
+            "value": -92.0,
+            "units": "degree"
+        },
+        {
+            "value": -91.0,
+            "units": "degree"
+        },
+        {
+            "value": -90.0,
+            "units": "degree"
+        },
+        {
+            "value": -89.0,
+            "units": "degree"
+        },
+        {
+            "value": -88.0,
+            "units": "degree"
+        },
+        {
+            "value": -87.0,
+            "units": "degree"
+        },
+        {
+            "value": -86.0,
+            "units": "degree"
+        },
+        {
+            "value": -85.0,
+            "units": "degree"
+        },
+        {
+            "value": -84.0,
+            "units": "degree"
+        },
+        {
+            "value": -83.0,
+            "units": "degree"
+        },
+        {
+            "value": -82.0,
+            "units": "degree"
+        },
+        {
+            "value": -81.0,
+            "units": "degree"
+        },
+        {
+            "value": -80.0,
+            "units": "degree"
+        },
+        {
+            "value": -79.0,
+            "units": "degree"
+        },
+        {
+            "value": -78.0,
+            "units": "degree"
+        },
+        {
+            "value": -77.0,
+            "units": "degree"
+        },
+        {
+            "value": -76.0,
+            "units": "degree"
+        },
+        {
+            "value": -75.0,
+            "units": "degree"
+        },
+        {
+            "value": -74.0,
+            "units": "degree"
+        },
+        {
+            "value": -73.0,
+            "units": "degree"
+        },
+        {
+            "value": -72.0,
+            "units": "degree"
+        },
+        {
+            "value": -71.0,
+            "units": "degree"
+        },
+        {
+            "value": -70.0,
+            "units": "degree"
+        },
+        {
+            "value": -69.0,
+            "units": "degree"
+        },
+        {
+            "value": -68.0,
+            "units": "degree"
+        },
+        {
+            "value": -67.0,
+            "units": "degree"
+        },
+        {
+            "value": -66.0,
+            "units": "degree"
+        },
+        {
+            "value": -65.0,
+            "units": "degree"
+        },
+        {
+            "value": -64.0,
+            "units": "degree"
+        },
+        {
+            "value": -63.0,
+            "units": "degree"
+        },
+        {
+            "value": -62.0,
+            "units": "degree"
+        },
+        {
+            "value": -61.0,
+            "units": "degree"
+        },
+        {
+            "value": -60.0,
+            "units": "degree"
+        },
+        {
+            "value": -59.0,
+            "units": "degree"
+        },
+        {
+            "value": -58.0,
+            "units": "degree"
+        },
+        {
+            "value": -57.0,
+            "units": "degree"
+        },
+        {
+            "value": -56.0,
+            "units": "degree"
+        },
+        {
+            "value": -55.0,
+            "units": "degree"
+        },
+        {
+            "value": -54.0,
+            "units": "degree"
+        },
+        {
+            "value": -53.0,
+            "units": "degree"
+        },
+        {
+            "value": -52.0,
+            "units": "degree"
+        },
+        {
+            "value": -51.0,
+            "units": "degree"
+        },
+        {
+            "value": -50.0,
+            "units": "degree"
+        },
+        {
+            "value": -49.0,
+            "units": "degree"
+        },
+        {
+            "value": -48.0,
+            "units": "degree"
+        },
+        {
+            "value": -47.0,
+            "units": "degree"
+        },
+        {
+            "value": -46.0,
+            "units": "degree"
+        },
+        {
+            "value": -45.0,
+            "units": "degree"
+        },
+        {
+            "value": -44.0,
+            "units": "degree"
+        },
+        {
+            "value": -43.0,
+            "units": "degree"
+        },
+        {
+            "value": -42.0,
+            "units": "degree"
+        },
+        {
+            "value": -41.0,
+            "units": "degree"
+        },
+        {
+            "value": -40.0,
+            "units": "degree"
+        },
+        {
+            "value": -39.0,
+            "units": "degree"
+        },
+        {
+            "value": -38.0,
+            "units": "degree"
+        },
+        {
+            "value": -37.0,
+            "units": "degree"
+        },
+        {
+            "value": -36.0,
+            "units": "degree"
+        },
+        {
+            "value": -35.0,
+            "units": "degree"
+        },
+        {
+            "value": -34.0,
+            "units": "degree"
+        },
+        {
+            "value": -33.0,
+            "units": "degree"
+        },
+        {
+            "value": -32.0,
+            "units": "degree"
+        },
+        {
+            "value": -31.0,
+            "units": "degree"
+        },
+        {
+            "value": -30.0,
+            "units": "degree"
+        },
+        {
+            "value": -29.0,
+            "units": "degree"
+        },
+        {
+            "value": -28.0,
+            "units": "degree"
+        },
+        {
+            "value": -27.0,
+            "units": "degree"
+        },
+        {
+            "value": -26.0,
+            "units": "degree"
+        },
+        {
+            "value": -25.0,
+            "units": "degree"
+        },
+        {
+            "value": -24.0,
+            "units": "degree"
+        },
+        {
+            "value": -23.0,
+            "units": "degree"
+        },
+        {
+            "value": -22.0,
+            "units": "degree"
+        },
+        {
+            "value": -21.0,
+            "units": "degree"
+        },
+        {
+            "value": -20.0,
+            "units": "degree"
+        },
+        {
+            "value": -19.0,
+            "units": "degree"
+        },
+        {
+            "value": -18.0,
+            "units": "degree"
+        },
+        {
+            "value": -17.0,
+            "units": "degree"
+        },
+        {
+            "value": -16.0,
+            "units": "degree"
+        },
+        {
+            "value": -15.0,
+            "units": "degree"
+        },
+        {
+            "value": -14.0,
+            "units": "degree"
+        },
+        {
+            "value": -13.0,
+            "units": "degree"
+        },
+        {
+            "value": -12.0,
+            "units": "degree"
+        },
+        {
+            "value": -11.0,
+            "units": "degree"
+        },
+        {
+            "value": -10.0,
+            "units": "degree"
+        },
+        {
+            "value": -9.0,
+            "units": "degree"
+        },
+        {
+            "value": -8.0,
+            "units": "degree"
+        },
+        {
+            "value": -7.0,
+            "units": "degree"
+        },
+        {
+            "value": -6.0,
+            "units": "degree"
+        },
+        {
+            "value": -5.0,
+            "units": "degree"
+        },
+        {
+            "value": -4.0,
+            "units": "degree"
+        },
+        {
+            "value": -3.0,
+            "units": "degree"
+        },
+        {
+            "value": -2.0,
+            "units": "degree"
+        },
+        {
+            "value": -1.0,
+            "units": "degree"
+        },
+        {
+            "value": 0.0,
+            "units": "degree"
+        },
+        {
+            "value": 1.0,
+            "units": "degree"
+        },
+        {
+            "value": 2.0,
+            "units": "degree"
+        },
+        {
+            "value": 3.0,
+            "units": "degree"
+        },
+        {
+            "value": 4.0,
+            "units": "degree"
+        },
+        {
+            "value": 5.0,
+            "units": "degree"
+        },
+        {
+            "value": 6.0,
+            "units": "degree"
+        },
+        {
+            "value": 7.0,
+            "units": "degree"
+        },
+        {
+            "value": 8.0,
+            "units": "degree"
+        },
+        {
+            "value": 9.0,
+            "units": "degree"
+        },
+        {
+            "value": 10.0,
+            "units": "degree"
+        },
+        {
+            "value": 11.0,
+            "units": "degree"
+        },
+        {
+            "value": 12.0,
+            "units": "degree"
+        },
+        {
+            "value": 13.0,
+            "units": "degree"
+        },
+        {
+            "value": 14.0,
+            "units": "degree"
+        },
+        {
+            "value": 15.0,
+            "units": "degree"
+        },
+        {
+            "value": 16.0,
+            "units": "degree"
+        },
+        {
+            "value": 17.0,
+            "units": "degree"
+        },
+        {
+            "value": 18.0,
+            "units": "degree"
+        },
+        {
+            "value": 19.0,
+            "units": "degree"
+        },
+        {
+            "value": 20.0,
+            "units": "degree"
+        },
+        {
+            "value": 21.0,
+            "units": "degree"
+        },
+        {
+            "value": 22.0,
+            "units": "degree"
+        },
+        {
+            "value": 23.0,
+            "units": "degree"
+        },
+        {
+            "value": 24.0,
+            "units": "degree"
+        },
+        {
+            "value": 25.0,
+            "units": "degree"
+        },
+        {
+            "value": 26.0,
+            "units": "degree"
+        },
+        {
+            "value": 27.0,
+            "units": "degree"
+        },
+        {
+            "value": 28.0,
+            "units": "degree"
+        },
+        {
+            "value": 29.0,
+            "units": "degree"
+        },
+        {
+            "value": 30.0,
+            "units": "degree"
+        },
+        {
+            "value": 31.0,
+            "units": "degree"
+        },
+        {
+            "value": 32.0,
+            "units": "degree"
+        },
+        {
+            "value": 33.0,
+            "units": "degree"
+        },
+        {
+            "value": 34.0,
+            "units": "degree"
+        },
+        {
+            "value": 35.0,
+            "units": "degree"
+        },
+        {
+            "value": 36.0,
+            "units": "degree"
+        },
+        {
+            "value": 37.0,
+            "units": "degree"
+        },
+        {
+            "value": 38.0,
+            "units": "degree"
+        },
+        {
+            "value": 39.0,
+            "units": "degree"
+        },
+        {
+            "value": 40.0,
+            "units": "degree"
+        },
+        {
+            "value": 41.0,
+            "units": "degree"
+        },
+        {
+            "value": 42.0,
+            "units": "degree"
+        },
+        {
+            "value": 43.0,
+            "units": "degree"
+        },
+        {
+            "value": 44.0,
+            "units": "degree"
+        },
+        {
+            "value": 45.0,
+            "units": "degree"
+        },
+        {
+            "value": 46.0,
+            "units": "degree"
+        },
+        {
+            "value": 47.0,
+            "units": "degree"
+        },
+        {
+            "value": 48.0,
+            "units": "degree"
+        },
+        {
+            "value": 49.0,
+            "units": "degree"
+        },
+        {
+            "value": 50.0,
+            "units": "degree"
+        },
+        {
+            "value": 51.0,
+            "units": "degree"
+        },
+        {
+            "value": 52.0,
+            "units": "degree"
+        },
+        {
+            "value": 53.0,
+            "units": "degree"
+        },
+        {
+            "value": 54.0,
+            "units": "degree"
+        },
+        {
+            "value": 55.0,
+            "units": "degree"
+        },
+        {
+            "value": 56.0,
+            "units": "degree"
+        },
+        {
+            "value": 57.0,
+            "units": "degree"
+        },
+        {
+            "value": 58.0,
+            "units": "degree"
+        },
+        {
+            "value": 59.0,
+            "units": "degree"
+        },
+        {
+            "value": 60.0,
+            "units": "degree"
+        },
+        {
+            "value": 61.0,
+            "units": "degree"
+        },
+        {
+            "value": 62.0,
+            "units": "degree"
+        },
+        {
+            "value": 63.0,
+            "units": "degree"
+        },
+        {
+            "value": 64.0,
+            "units": "degree"
+        },
+        {
+            "value": 65.0,
+            "units": "degree"
+        },
+        {
+            "value": 66.0,
+            "units": "degree"
+        },
+        {
+            "value": 67.0,
+            "units": "degree"
+        },
+        {
+            "value": 68.0,
+            "units": "degree"
+        },
+        {
+            "value": 69.0,
+            "units": "degree"
+        },
+        {
+            "value": 70.0,
+            "units": "degree"
+        },
+        {
+            "value": 71.0,
+            "units": "degree"
+        },
+        {
+            "value": 72.0,
+            "units": "degree"
+        },
+        {
+            "value": 73.0,
+            "units": "degree"
+        },
+        {
+            "value": 74.0,
+            "units": "degree"
+        },
+        {
+            "value": 75.0,
+            "units": "degree"
+        },
+        {
+            "value": 76.0,
+            "units": "degree"
+        },
+        {
+            "value": 77.0,
+            "units": "degree"
+        },
+        {
+            "value": 78.0,
+            "units": "degree"
+        },
+        {
+            "value": 79.0,
+            "units": "degree"
+        },
+        {
+            "value": 80.0,
+            "units": "degree"
+        },
+        {
+            "value": 81.0,
+            "units": "degree"
+        },
+        {
+            "value": 82.0,
+            "units": "degree"
+        },
+        {
+            "value": 83.0,
+            "units": "degree"
+        },
+        {
+            "value": 84.0,
+            "units": "degree"
+        },
+        {
+            "value": 85.0,
+            "units": "degree"
+        },
+        {
+            "value": 86.0,
+            "units": "degree"
+        },
+        {
+            "value": 87.0,
+            "units": "degree"
+        },
+        {
+            "value": 88.0,
+            "units": "degree"
+        },
+        {
+            "value": 89.0,
+            "units": "degree"
+        },
+        {
+            "value": 90.0,
+            "units": "degree"
+        },
+        {
+            "value": 91.0,
+            "units": "degree"
+        },
+        {
+            "value": 92.0,
+            "units": "degree"
+        },
+        {
+            "value": 93.0,
+            "units": "degree"
+        },
+        {
+            "value": 94.0,
+            "units": "degree"
+        },
+        {
+            "value": 95.0,
+            "units": "degree"
+        },
+        {
+            "value": 96.0,
+            "units": "degree"
+        },
+        {
+            "value": 97.0,
+            "units": "degree"
+        },
+        {
+            "value": 98.0,
+            "units": "degree"
+        },
+        {
+            "value": 99.0,
+            "units": "degree"
+        },
+        {
+            "value": 100.0,
+            "units": "degree"
+        },
+        {
+            "value": 101.0,
+            "units": "degree"
+        },
+        {
+            "value": 102.0,
+            "units": "degree"
+        },
+        {
+            "value": 103.0,
+            "units": "degree"
+        },
+        {
+            "value": 104.0,
+            "units": "degree"
+        },
+        {
+            "value": 105.0,
+            "units": "degree"
+        },
+        {
+            "value": 106.0,
+            "units": "degree"
+        },
+        {
+            "value": 107.0,
+            "units": "degree"
+        },
+        {
+            "value": 108.0,
+            "units": "degree"
+        },
+        {
+            "value": 109.0,
+            "units": "degree"
+        },
+        {
+            "value": 110.0,
+            "units": "degree"
+        },
+        {
+            "value": 111.0,
+            "units": "degree"
+        },
+        {
+            "value": 112.0,
+            "units": "degree"
+        },
+        {
+            "value": 113.0,
+            "units": "degree"
+        },
+        {
+            "value": 114.0,
+            "units": "degree"
+        },
+        {
+            "value": 115.0,
+            "units": "degree"
+        },
+        {
+            "value": 116.0,
+            "units": "degree"
+        },
+        {
+            "value": 117.0,
+            "units": "degree"
+        },
+        {
+            "value": 118.0,
+            "units": "degree"
+        },
+        {
+            "value": 119.0,
+            "units": "degree"
+        },
+        {
+            "value": 120.0,
+            "units": "degree"
+        },
+        {
+            "value": 121.0,
+            "units": "degree"
+        },
+        {
+            "value": 122.0,
+            "units": "degree"
+        },
+        {
+            "value": 123.0,
+            "units": "degree"
+        },
+        {
+            "value": 124.0,
+            "units": "degree"
+        },
+        {
+            "value": 125.0,
+            "units": "degree"
+        },
+        {
+            "value": 126.0,
+            "units": "degree"
+        },
+        {
+            "value": 127.0,
+            "units": "degree"
+        },
+        {
+            "value": 128.0,
+            "units": "degree"
+        },
+        {
+            "value": 129.0,
+            "units": "degree"
+        },
+        {
+            "value": 130.0,
+            "units": "degree"
+        },
+        {
+            "value": 131.0,
+            "units": "degree"
+        },
+        {
+            "value": 132.0,
+            "units": "degree"
+        },
+        {
+            "value": 133.0,
+            "units": "degree"
+        },
+        {
+            "value": 134.0,
+            "units": "degree"
+        },
+        {
+            "value": 135.0,
+            "units": "degree"
+        },
+        {
+            "value": 136.0,
+            "units": "degree"
+        },
+        {
+            "value": 137.0,
+            "units": "degree"
+        },
+        {
+            "value": 138.0,
+            "units": "degree"
+        },
+        {
+            "value": 139.0,
+            "units": "degree"
+        },
+        {
+            "value": 140.0,
+            "units": "degree"
+        },
+        {
+            "value": 141.0,
+            "units": "degree"
+        },
+        {
+            "value": 142.0,
+            "units": "degree"
+        },
+        {
+            "value": 143.0,
+            "units": "degree"
+        },
+        {
+            "value": 144.0,
+            "units": "degree"
+        },
+        {
+            "value": 145.0,
+            "units": "degree"
+        },
+        {
+            "value": 146.0,
+            "units": "degree"
+        },
+        {
+            "value": 147.0,
+            "units": "degree"
+        },
+        {
+            "value": 148.0,
+            "units": "degree"
+        },
+        {
+            "value": 149.0,
+            "units": "degree"
+        },
+        {
+            "value": 150.0,
+            "units": "degree"
+        },
+        {
+            "value": 151.0,
+            "units": "degree"
+        },
+        {
+            "value": 152.0,
+            "units": "degree"
+        },
+        {
+            "value": 153.0,
+            "units": "degree"
+        },
+        {
+            "value": 154.0,
+            "units": "degree"
+        },
+        {
+            "value": 155.0,
+            "units": "degree"
+        },
+        {
+            "value": 156.0,
+            "units": "degree"
+        },
+        {
+            "value": 157.0,
+            "units": "degree"
+        },
+        {
+            "value": 158.0,
+            "units": "degree"
+        },
+        {
+            "value": 159.0,
+            "units": "degree"
+        },
+        {
+            "value": 160.0,
+            "units": "degree"
+        },
+        {
+            "value": 161.0,
+            "units": "degree"
+        },
+        {
+            "value": 162.0,
+            "units": "degree"
+        },
+        {
+            "value": 163.0,
+            "units": "degree"
+        },
+        {
+            "value": 164.0,
+            "units": "degree"
+        },
+        {
+            "value": 165.0,
+            "units": "degree"
+        },
+        {
+            "value": 166.0,
+            "units": "degree"
+        },
+        {
+            "value": 167.0,
+            "units": "degree"
+        },
+        {
+            "value": 168.0,
+            "units": "degree"
+        },
+        {
+            "value": 169.0,
+            "units": "degree"
+        },
+        {
+            "value": 170.0,
+            "units": "degree"
+        },
+        {
+            "value": 171.0,
+            "units": "degree"
+        },
+        {
+            "value": 172.0,
+            "units": "degree"
+        },
+        {
+            "value": 173.0,
+            "units": "degree"
+        },
+        {
+            "value": 174.0,
+            "units": "degree"
+        },
+        {
+            "value": 175.0,
+            "units": "degree"
+        },
+        {
+            "value": 176.0,
+            "units": "degree"
+        },
+        {
+            "value": 177.0,
+            "units": "degree"
+        },
+        {
+            "value": 178.0,
+            "units": "degree"
+        },
+        {
+            "value": 179.0,
+            "units": "degree"
+        },
+        {
+            "value": 180.0,
+            "units": "degree"
+        }
     ],
     "twists": [
         {
-            "radius": 0.0,
-            "twist": 90.0
-        },
-        {
-            "radius": 0.3429,
-            "twist": 56.2993654
-        },
-        {
-            "radius": 0.3731982249,
-            "twist": 55.90015115
-        },
-        {
-            "radius": 0.4034964117,
-            "twist": 55.5258044
-        },
-        {
-            "radius": 0.43379459849999996,
-            "twist": 55.15098875
-        },
-        {
-            "radius": 0.46409282339999997,
-            "twist": 54.77597653
-        },
-        {
-            "radius": 0.4943910102,
-            "twist": 54.40279393
-        },
-        {
-            "radius": 0.5246892351,
-            "twist": 54.02971606
-        },
-        {
-            "radius": 0.5549874218999999,
-            "twist": 53.57210806
-        },
-        {
-            "radius": 0.5852856468,
-            "twist": 53.0669369
-        },
-        {
-            "radius": 0.6155838336,
-            "twist": 52.56586713
-        },
-        {
-            "radius": 0.6458820585,
-            "twist": 52.07673162
-        },
-        {
-            "radius": 0.6761802834,
-            "twist": 51.57820841
-        },
-        {
-            "radius": 0.7064784702000001,
-            "twist": 51.05712139
-        },
-        {
-            "radius": 0.7367766951000001,
-            "twist": 50.51536871
-        },
-        {
-            "radius": 0.7670748819,
-            "twist": 50.04061821
-        },
-        {
-            "radius": 0.7973730687,
-            "twist": 49.54450126
-        },
-        {
-            "radius": 0.8276712936,
-            "twist": 49.03355633
-        },
-        {
-            "radius": 0.8579694804,
-            "twist": 48.5016259
-        },
-        {
-            "radius": 0.8882677053,
-            "twist": 48.02882793
-        },
-        {
-            "radius": 0.9185659302,
-            "twist": 47.55746594
-        },
-        {
-            "radius": 0.9488641170000001,
-            "twist": 47.01189771
-        },
-        {
-            "radius": 0.9850810245000001,
-            "twist": 46.34790195
-        },
-        {
-            "radius": 1.021297932,
-            "twist": 45.65541795
-        },
-        {
-            "radius": 1.0575148395,
-            "twist": 44.93563486
-        },
-        {
-            "radius": 1.093731747,
-            "twist": 44.29045202
-        },
-        {
-            "radius": 1.1299486545,
-            "twist": 43.55566024
-        },
-        {
-            "radius": 1.1661655620000002,
-            "twist": 43.07742255
-        },
-        {
-            "radius": 1.2023824695,
-            "twist": 42.57380248
-        },
-        {
-            "radius": 1.2385994151,
-            "twist": 42.042932
-        },
-        {
-            "radius": 1.2748163226,
-            "twist": 41.54818934
-        },
-        {
-            "radius": 1.3110332301,
-            "twist": 40.99165701
-        },
-        {
-            "radius": 1.3472501376000001,
-            "twist": 40.38141523
-        },
-        {
-            "radius": 1.3834670451,
-            "twist": 39.79861329
-        },
-        {
-            "radius": 1.4196839526,
-            "twist": 39.09205288
-        },
-        {
-            "radius": 1.4559008601,
-            "twist": 38.40689616
-        },
-        {
-            "radius": 1.4921177676,
-            "twist": 37.7925814
-        },
-        {
-            "radius": 1.5283346751,
-            "twist": 37.25281195
-        },
-        {
-            "radius": 1.5645515826,
-            "twist": 36.85601106
-        },
-        {
-            "radius": 1.6007684901,
-            "twist": 36.56237954
-        },
-        {
-            "radius": 1.6369853976,
-            "twist": 36.20215724
-        },
-        {
-            "radius": 1.6732023051,
-            "twist": 35.81975959
-        },
-        {
-            "radius": 1.7094192126,
-            "twist": 35.38123368
-        },
-        {
-            "radius": 1.7456361201000001,
-            "twist": 34.93543843
-        },
-        {
-            "radius": 1.7818530276,
-            "twist": 34.46973313
-        },
-        {
-            "radius": 1.8180699731999999,
-            "twist": 33.95027672
-        },
-        {
-            "radius": 1.8542868807000001,
-            "twist": 33.49087019
-        },
-        {
-            "radius": 1.8905037882,
-            "twist": 32.9320927
-        },
-        {
-            "radius": 1.9267206957,
-            "twist": 32.68931427
-        },
-        {
-            "radius": 1.9629376032,
-            "twist": 32.46143433
-        },
-        {
-            "radius": 1.9991545107,
-            "twist": 32.19517899
-        },
-        {
-            "radius": 2.0353714182,
-            "twist": 31.88327723
-        },
-        {
-            "radius": 2.0715883256999996,
-            "twist": 31.5324515
-        },
-        {
-            "radius": 2.1078052332,
-            "twist": 31.2345365
-        },
-        {
-            "radius": 2.1440221407,
-            "twist": 30.92581594
-        },
-        {
-            "radius": 2.1802390482,
-            "twist": 30.59857672
-        },
-        {
-            "radius": 2.2164559557,
-            "twist": 30.26124354
-        },
-        {
-            "radius": 2.2526728632,
-            "twist": 29.95040607
-        },
-        {
-            "radius": 2.2888897707,
-            "twist": 29.67913033
-        },
-        {
-            "radius": 2.3251066782,
-            "twist": 29.43840505
-        },
-        {
-            "radius": 2.3613235857,
-            "twist": 29.2017325
-        },
-        {
-            "radius": 2.3975405313,
-            "twist": 28.96415297
-        },
-        {
-            "radius": 2.4337574388000003,
-            "twist": 28.70707846
-        },
-        {
-            "radius": 2.4699743463,
-            "twist": 28.45000396
-        },
-        {
-            "radius": 2.5061912538,
-            "twist": 28.19292945
-        },
-        {
-            "radius": 2.5424081613,
-            "twist": 27.95897557
-        },
-        {
-            "radius": 2.5786250688,
-            "twist": 27.79372658
-        },
-        {
-            "radius": 2.6148419763,
-            "twist": 27.62847758
-        },
-        {
-            "radius": 2.6510588838,
-            "twist": 27.35744372
-        },
-        {
-            "radius": 2.6872757913,
-            "twist": 27.11128708
-        },
-        {
-            "radius": 2.7234926988,
-            "twist": 26.86152163
-        },
-        {
-            "radius": 2.7597096063000004,
-            "twist": 26.58085783
-        },
-        {
-            "radius": 2.7959265138,
-            "twist": 26.29147712
-        },
-        {
-            "radius": 2.8321434213,
-            "twist": 25.99911955
-        },
-        {
-            "radius": 2.8683603288,
-            "twist": 25.73949208
-        },
-        {
-            "radius": 2.9045772362999998,
-            "twist": 25.48889818
-        },
-        {
-            "radius": 2.9407941438,
-            "twist": 25.23615342
-        },
-        {
-            "radius": 2.9770110894,
-            "twist": 24.98330201
-        },
-        {
-            "radius": 3.0132279969,
-            "twist": 24.7304506
-        },
-        {
-            "radius": 3.0494449044,
-            "twist": 24.47861119
-        },
-        {
-            "radius": 3.0856618119,
-            "twist": 24.22888737
-        },
-        {
-            "radius": 3.1218787194,
-            "twist": 23.97916355
-        },
-        {
-            "radius": 3.1580956269,
-            "twist": 23.72943974
-        },
-        {
-            "radius": 3.1943125344,
-            "twist": 23.47971592
-        },
-        {
-            "radius": 3.2305294419,
-            "twist": 23.26425848
-        },
-        {
-            "radius": 3.2667463494,
-            "twist": 23.07021275
-        },
-        {
-            "radius": 3.3029632569,
-            "twist": 22.87616702
-        },
-        {
-            "radius": 3.3391801644,
-            "twist": 22.68212128
-        },
-        {
-            "radius": 3.3753970719,
-            "twist": 22.46826828
-        },
-        {
-            "radius": 3.4116139793999998,
-            "twist": 22.25271382
-        },
-        {
-            "radius": 3.4478308869000003,
-            "twist": 22.03715936
-        },
-        {
-            "radius": 3.4840477944000003,
-            "twist": 21.82137129
-        },
-        {
-            "radius": 3.5202647019,
-            "twist": 21.60210051
-        },
-        {
-            "radius": 3.5564816475,
-            "twist": 21.38282973
-        },
-        {
-            "radius": 3.592698555,
-            "twist": 21.20012762
-        },
-        {
-            "radius": 3.6289154625,
-            "twist": 21.03244856
-        },
-        {
-            "radius": 3.66513237,
-            "twist": 20.83649276
-        },
-        {
-            "radius": 3.7013492775,
-            "twist": 20.61057765
-        },
-        {
-            "radius": 3.7375661850000004,
-            "twist": 20.39062103
-        },
-        {
-            "radius": 3.7737830925,
-            "twist": 20.18289043
-        },
-        {
-            "radius": 3.81,
-            "twist": 19.97515983
+            "radius": {
+                "value": 0.0,
+                "units": "m"
+            },
+            "twist": {
+                "value": 90.0,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.3429,
+                "units": "m"
+            },
+            "twist": {
+                "value": 56.2993654,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.3731982249,
+                "units": "m"
+            },
+            "twist": {
+                "value": 55.90015115,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.4034964117,
+                "units": "m"
+            },
+            "twist": {
+                "value": 55.5258044,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.43379459849999996,
+                "units": "m"
+            },
+            "twist": {
+                "value": 55.15098875,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.46409282339999997,
+                "units": "m"
+            },
+            "twist": {
+                "value": 54.77597653,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.4943910102,
+                "units": "m"
+            },
+            "twist": {
+                "value": 54.40279393,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5246892351,
+                "units": "m"
+            },
+            "twist": {
+                "value": 54.02971606,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5549874218999999,
+                "units": "m"
+            },
+            "twist": {
+                "value": 53.57210806,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5852856468,
+                "units": "m"
+            },
+            "twist": {
+                "value": 53.0669369,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6155838336,
+                "units": "m"
+            },
+            "twist": {
+                "value": 52.56586713,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6458820585,
+                "units": "m"
+            },
+            "twist": {
+                "value": 52.07673162,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6761802834,
+                "units": "m"
+            },
+            "twist": {
+                "value": 51.57820841,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7064784702000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 51.05712139,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7367766951000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 50.51536871,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7670748819,
+                "units": "m"
+            },
+            "twist": {
+                "value": 50.04061821,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7973730687,
+                "units": "m"
+            },
+            "twist": {
+                "value": 49.54450126,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8276712936,
+                "units": "m"
+            },
+            "twist": {
+                "value": 49.03355633,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8579694804,
+                "units": "m"
+            },
+            "twist": {
+                "value": 48.5016259,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8882677053,
+                "units": "m"
+            },
+            "twist": {
+                "value": 48.02882793,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9185659302,
+                "units": "m"
+            },
+            "twist": {
+                "value": 47.55746594,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9488641170000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 47.01189771,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9850810245000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 46.34790195,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.021297932,
+                "units": "m"
+            },
+            "twist": {
+                "value": 45.65541795,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.0575148395,
+                "units": "m"
+            },
+            "twist": {
+                "value": 44.93563486,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.093731747,
+                "units": "m"
+            },
+            "twist": {
+                "value": 44.29045202,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.1299486545,
+                "units": "m"
+            },
+            "twist": {
+                "value": 43.55566024,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.1661655620000002,
+                "units": "m"
+            },
+            "twist": {
+                "value": 43.07742255,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2023824695,
+                "units": "m"
+            },
+            "twist": {
+                "value": 42.57380248,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2385994151,
+                "units": "m"
+            },
+            "twist": {
+                "value": 42.042932,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2748163226,
+                "units": "m"
+            },
+            "twist": {
+                "value": 41.54818934,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3110332301,
+                "units": "m"
+            },
+            "twist": {
+                "value": 40.99165701,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3472501376000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 40.38141523,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3834670451,
+                "units": "m"
+            },
+            "twist": {
+                "value": 39.79861329,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4196839526,
+                "units": "m"
+            },
+            "twist": {
+                "value": 39.09205288,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4559008601,
+                "units": "m"
+            },
+            "twist": {
+                "value": 38.40689616,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4921177676,
+                "units": "m"
+            },
+            "twist": {
+                "value": 37.7925814,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.5283346751,
+                "units": "m"
+            },
+            "twist": {
+                "value": 37.25281195,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.5645515826,
+                "units": "m"
+            },
+            "twist": {
+                "value": 36.85601106,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6007684901,
+                "units": "m"
+            },
+            "twist": {
+                "value": 36.56237954,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6369853976,
+                "units": "m"
+            },
+            "twist": {
+                "value": 36.20215724,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6732023051,
+                "units": "m"
+            },
+            "twist": {
+                "value": 35.81975959,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7094192126,
+                "units": "m"
+            },
+            "twist": {
+                "value": 35.38123368,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7456361201000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 34.93543843,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7818530276,
+                "units": "m"
+            },
+            "twist": {
+                "value": 34.46973313,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8180699731999999,
+                "units": "m"
+            },
+            "twist": {
+                "value": 33.95027672,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8542868807000001,
+                "units": "m"
+            },
+            "twist": {
+                "value": 33.49087019,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8905037882,
+                "units": "m"
+            },
+            "twist": {
+                "value": 32.9320927,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9267206957,
+                "units": "m"
+            },
+            "twist": {
+                "value": 32.68931427,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9629376032,
+                "units": "m"
+            },
+            "twist": {
+                "value": 32.46143433,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9991545107,
+                "units": "m"
+            },
+            "twist": {
+                "value": 32.19517899,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.0353714182,
+                "units": "m"
+            },
+            "twist": {
+                "value": 31.88327723,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.0715883256999996,
+                "units": "m"
+            },
+            "twist": {
+                "value": 31.5324515,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1078052332,
+                "units": "m"
+            },
+            "twist": {
+                "value": 31.2345365,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1440221407,
+                "units": "m"
+            },
+            "twist": {
+                "value": 30.92581594,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1802390482,
+                "units": "m"
+            },
+            "twist": {
+                "value": 30.59857672,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2164559557,
+                "units": "m"
+            },
+            "twist": {
+                "value": 30.26124354,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2526728632,
+                "units": "m"
+            },
+            "twist": {
+                "value": 29.95040607,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2888897707,
+                "units": "m"
+            },
+            "twist": {
+                "value": 29.67913033,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3251066782,
+                "units": "m"
+            },
+            "twist": {
+                "value": 29.43840505,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3613235857,
+                "units": "m"
+            },
+            "twist": {
+                "value": 29.2017325,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3975405313,
+                "units": "m"
+            },
+            "twist": {
+                "value": 28.96415297,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.4337574388000003,
+                "units": "m"
+            },
+            "twist": {
+                "value": 28.70707846,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.4699743463,
+                "units": "m"
+            },
+            "twist": {
+                "value": 28.45000396,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5061912538,
+                "units": "m"
+            },
+            "twist": {
+                "value": 28.19292945,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5424081613,
+                "units": "m"
+            },
+            "twist": {
+                "value": 27.95897557,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5786250688,
+                "units": "m"
+            },
+            "twist": {
+                "value": 27.79372658,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6148419763,
+                "units": "m"
+            },
+            "twist": {
+                "value": 27.62847758,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6510588838,
+                "units": "m"
+            },
+            "twist": {
+                "value": 27.35744372,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6872757913,
+                "units": "m"
+            },
+            "twist": {
+                "value": 27.11128708,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7234926988,
+                "units": "m"
+            },
+            "twist": {
+                "value": 26.86152163,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7597096063000004,
+                "units": "m"
+            },
+            "twist": {
+                "value": 26.58085783,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7959265138,
+                "units": "m"
+            },
+            "twist": {
+                "value": 26.29147712,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.8321434213,
+                "units": "m"
+            },
+            "twist": {
+                "value": 25.99911955,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.8683603288,
+                "units": "m"
+            },
+            "twist": {
+                "value": 25.73949208,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9045772362999998,
+                "units": "m"
+            },
+            "twist": {
+                "value": 25.48889818,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9407941438,
+                "units": "m"
+            },
+            "twist": {
+                "value": 25.23615342,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9770110894,
+                "units": "m"
+            },
+            "twist": {
+                "value": 24.98330201,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0132279969,
+                "units": "m"
+            },
+            "twist": {
+                "value": 24.7304506,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0494449044,
+                "units": "m"
+            },
+            "twist": {
+                "value": 24.47861119,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0856618119,
+                "units": "m"
+            },
+            "twist": {
+                "value": 24.22888737,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1218787194,
+                "units": "m"
+            },
+            "twist": {
+                "value": 23.97916355,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1580956269,
+                "units": "m"
+            },
+            "twist": {
+                "value": 23.72943974,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1943125344,
+                "units": "m"
+            },
+            "twist": {
+                "value": 23.47971592,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.2305294419,
+                "units": "m"
+            },
+            "twist": {
+                "value": 23.26425848,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.2667463494,
+                "units": "m"
+            },
+            "twist": {
+                "value": 23.07021275,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3029632569,
+                "units": "m"
+            },
+            "twist": {
+                "value": 22.87616702,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3391801644,
+                "units": "m"
+            },
+            "twist": {
+                "value": 22.68212128,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3753970719,
+                "units": "m"
+            },
+            "twist": {
+                "value": 22.46826828,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4116139793999998,
+                "units": "m"
+            },
+            "twist": {
+                "value": 22.25271382,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4478308869000003,
+                "units": "m"
+            },
+            "twist": {
+                "value": 22.03715936,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4840477944000003,
+                "units": "m"
+            },
+            "twist": {
+                "value": 21.82137129,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.5202647019,
+                "units": "m"
+            },
+            "twist": {
+                "value": 21.60210051,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.5564816475,
+                "units": "m"
+            },
+            "twist": {
+                "value": 21.38282973,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.592698555,
+                "units": "m"
+            },
+            "twist": {
+                "value": 21.20012762,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.6289154625,
+                "units": "m"
+            },
+            "twist": {
+                "value": 21.03244856,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.66513237,
+                "units": "m"
+            },
+            "twist": {
+                "value": 20.83649276,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7013492775,
+                "units": "m"
+            },
+            "twist": {
+                "value": 20.61057765,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7375661850000004,
+                "units": "m"
+            },
+            "twist": {
+                "value": 20.39062103,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7737830925,
+                "units": "m"
+            },
+            "twist": {
+                "value": 20.18289043,
+                "units": "degree"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.81,
+                "units": "m"
+            },
+            "twist": {
+                "value": 19.97515983,
+                "units": "degree"
+            }
         }
     ],
     "chords": [
         {
-            "radius": 0.0,
-            "chord": 0.0
-        },
-        {
-            "radius": 0.3429,
-            "chord": 0.4494840642
-        },
-        {
-            "radius": 0.3731982249,
-            "chord": 0.4448054223
-        },
-        {
-            "radius": 0.4034964117,
-            "chord": 0.4401267804
-        },
-        {
-            "radius": 0.43379459849999996,
-            "chord": 0.43544810040000004
-        },
-        {
-            "radius": 0.46409282339999997,
-            "chord": 0.43076945850000004
-        },
-        {
-            "radius": 0.4943910102,
-            "chord": 0.4260907785
-        },
-        {
-            "radius": 0.5246892351,
-            "chord": 0.4214121366
-        },
-        {
-            "radius": 0.5549874218999999,
-            "chord": 0.41673349470000004
-        },
-        {
-            "radius": 0.5852856468,
-            "chord": 0.4120548147
-        },
-        {
-            "radius": 0.6155838336,
-            "chord": 0.4073761728
-        },
-        {
-            "radius": 0.6458820585,
-            "chord": 0.4026974928
-        },
-        {
-            "radius": 0.6761802834,
-            "chord": 0.39801885090000005
-        },
-        {
-            "radius": 0.7064784702000001,
-            "chord": 0.3933401709
-        },
-        {
-            "radius": 0.7367766951000001,
-            "chord": 0.388661529
-        },
-        {
-            "radius": 0.7670748819,
-            "chord": 0.3839828871
-        },
-        {
-            "radius": 0.7973730687,
-            "chord": 0.3793042071
-        },
-        {
-            "radius": 0.8276712936,
-            "chord": 0.3746255652
-        },
-        {
-            "radius": 0.8579694804,
-            "chord": 0.3699468852
-        },
-        {
-            "radius": 0.8882677053,
-            "chord": 0.36526824329999996
-        },
-        {
-            "radius": 0.9185659302,
-            "chord": 0.36058960139999996
-        },
-        {
-            "radius": 0.9488641170000001,
-            "chord": 0.3559109214
-        },
-        {
-            "radius": 0.9850810245000001,
-            "chord": 0.3559084449
-        },
-        {
-            "radius": 1.021297932,
-            "chord": 0.35590596840000005
-        },
-        {
-            "radius": 1.0575148395,
-            "chord": 0.35590349190000004
-        },
-        {
-            "radius": 1.093731747,
-            "chord": 0.35590097730000003
-        },
-        {
-            "radius": 1.1299486545,
-            "chord": 0.3558985008
-        },
-        {
-            "radius": 1.1661655620000002,
-            "chord": 0.3558960243
-        },
-        {
-            "radius": 1.2023824695,
-            "chord": 0.3558935478
-        },
-        {
-            "radius": 1.2385994151,
-            "chord": 0.3558910713
-        },
-        {
-            "radius": 1.2748163226,
-            "chord": 0.35588855669999997
-        },
-        {
-            "radius": 1.3110332301,
-            "chord": 0.3558860802
-        },
-        {
-            "radius": 1.3472501376000001,
-            "chord": 0.3558836037
-        },
-        {
-            "radius": 1.3834670451,
-            "chord": 0.3558811272
-        },
-        {
-            "radius": 1.4196839526,
-            "chord": 0.3558786507
-        },
-        {
-            "radius": 1.4559008601,
-            "chord": 0.3558761361
-        },
-        {
-            "radius": 1.4921177676,
-            "chord": 0.3558736596
-        },
-        {
-            "radius": 1.5283346751,
-            "chord": 0.3558711831
-        },
-        {
-            "radius": 1.5645515826,
-            "chord": 0.35586870660000003
-        },
-        {
-            "radius": 1.6007684901,
-            "chord": 0.3558662301
-        },
-        {
-            "radius": 1.6369853976,
-            "chord": 0.3558637155
-        },
-        {
-            "radius": 1.6732023051,
-            "chord": 0.355861239
-        },
-        {
-            "radius": 1.7094192126,
-            "chord": 0.35585876250000004
-        },
-        {
-            "radius": 1.7456361201000001,
-            "chord": 0.355856286
-        },
-        {
-            "radius": 1.7818530276,
-            "chord": 0.3558538095
-        },
-        {
-            "radius": 1.8180699731999999,
-            "chord": 0.3558512949
-        },
-        {
-            "radius": 1.8542868807000001,
-            "chord": 0.35584881840000004
-        },
-        {
-            "radius": 1.8905037882,
-            "chord": 0.35584634190000003
-        },
-        {
-            "radius": 1.9267206957,
-            "chord": 0.3558438654
-        },
-        {
-            "radius": 1.9629376032,
-            "chord": 0.3558413889
-        },
-        {
-            "radius": 1.9991545107,
-            "chord": 0.3558388743
-        },
-        {
-            "radius": 2.0353714182,
-            "chord": 0.3558363978
-        },
-        {
-            "radius": 2.0715883256999996,
-            "chord": 0.35583392129999997
-        },
-        {
-            "radius": 2.1078052332,
-            "chord": 0.3558314448
-        },
-        {
-            "radius": 2.1440221407,
-            "chord": 0.3558289683
-        },
-        {
-            "radius": 2.1802390482,
-            "chord": 0.3558264537
-        },
-        {
-            "radius": 2.2164559557,
-            "chord": 0.3558239772
-        },
-        {
-            "radius": 2.2526728632,
-            "chord": 0.3558215007
-        },
-        {
-            "radius": 2.2888897707,
-            "chord": 0.3558190242
-        },
-        {
-            "radius": 2.3251066782,
-            "chord": 0.3558165477
-        },
-        {
-            "radius": 2.3613235857,
-            "chord": 0.3558140331
-        },
-        {
-            "radius": 2.3975405313,
-            "chord": 0.3558115566
-        },
-        {
-            "radius": 2.4337574388000003,
-            "chord": 0.3558090801
-        },
-        {
-            "radius": 2.4699743463,
-            "chord": 0.3558066036
-        },
-        {
-            "radius": 2.5061912538,
-            "chord": 0.35580412710000003
-        },
-        {
-            "radius": 2.5424081613,
-            "chord": 0.35580161250000003
-        },
-        {
-            "radius": 2.5786250688,
-            "chord": 0.355799136
-        },
-        {
-            "radius": 2.6148419763,
-            "chord": 0.3557966595
-        },
-        {
-            "radius": 2.6510588838,
-            "chord": 0.35579418300000004
-        },
-        {
-            "radius": 2.6872757913,
-            "chord": 0.3557917065
-        },
-        {
-            "radius": 2.7234926988,
-            "chord": 0.3557891919
-        },
-        {
-            "radius": 2.7597096063000004,
-            "chord": 0.3557867154
-        },
-        {
-            "radius": 2.7959265138,
-            "chord": 0.3557842389
-        },
-        {
-            "radius": 2.8321434213,
-            "chord": 0.3557817624
-        },
-        {
-            "radius": 2.8683603288,
-            "chord": 0.35577928589999996
-        },
-        {
-            "radius": 2.9045772362999998,
-            "chord": 0.35577677129999996
-        },
-        {
-            "radius": 2.9407941438,
-            "chord": 0.3557742948
-        },
-        {
-            "radius": 2.9770110894,
-            "chord": 0.3557718183
-        },
-        {
-            "radius": 3.0132279969,
-            "chord": 0.35576934179999997
-        },
-        {
-            "radius": 3.0494449044,
-            "chord": 0.3557668653
-        },
-        {
-            "radius": 3.0856618119,
-            "chord": 0.3557643507
-        },
-        {
-            "radius": 3.1218787194,
-            "chord": 0.3557618742
-        },
-        {
-            "radius": 3.1580956269,
-            "chord": 0.3557593977
-        },
-        {
-            "radius": 3.1943125344,
-            "chord": 0.3557569212
-        },
-        {
-            "radius": 3.2305294419,
-            "chord": 0.3557544447
-        },
-        {
-            "radius": 3.2667463494,
-            "chord": 0.35575196820000005
-        },
-        {
-            "radius": 3.3029632569,
-            "chord": 0.3557494536
-        },
-        {
-            "radius": 3.3391801644,
-            "chord": 0.35574697710000003
-        },
-        {
-            "radius": 3.3753970719,
-            "chord": 0.3557445006
-        },
-        {
-            "radius": 3.4116139793999998,
-            "chord": 0.35574202410000005
-        },
-        {
-            "radius": 3.4478308869000003,
-            "chord": 0.35573954760000004
-        },
-        {
-            "radius": 3.4840477944000003,
-            "chord": 0.35573703300000004
-        },
-        {
-            "radius": 3.5202647019,
-            "chord": 0.3557345565
-        },
-        {
-            "radius": 3.5564816475,
-            "chord": 0.35573208
-        },
-        {
-            "radius": 3.592698555,
-            "chord": 0.3557296035
-        },
-        {
-            "radius": 3.6289154625,
-            "chord": 0.355727127
-        },
-        {
-            "radius": 3.66513237,
-            "chord": 0.3557246124
-        },
-        {
-            "radius": 3.7013492775,
-            "chord": 0.3557221359
-        },
-        {
-            "radius": 3.7375661850000004,
-            "chord": 0.3557196594
-        },
-        {
-            "radius": 3.7737830925,
-            "chord": 0.3557171829
-        },
-        {
-            "radius": 3.81,
-            "chord": 0.3557147064
+            "radius": {
+                "value": 0.0,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.0,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.3429,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4494840642,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.3731982249,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4448054223,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.4034964117,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4401267804,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.43379459849999996,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.43544810040000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.46409282339999997,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.43076945850000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.4943910102,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4260907785,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5246892351,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4214121366,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5549874218999999,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.41673349470000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.5852856468,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4120548147,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6155838336,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4073761728,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6458820585,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.4026974928,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.6761802834,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.39801885090000005,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7064784702000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3933401709,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7367766951000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.388661529,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7670748819,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3839828871,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.7973730687,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3793042071,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8276712936,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3746255652,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8579694804,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3699468852,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.8882677053,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.36526824329999996,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9185659302,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.36058960139999996,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9488641170000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3559109214,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 0.9850810245000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3559084449,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.021297932,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35590596840000005,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.0575148395,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35590349190000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.093731747,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35590097730000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.1299486545,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558985008,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.1661655620000002,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558960243,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2023824695,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558935478,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2385994151,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558910713,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.2748163226,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35588855669999997,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3110332301,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558860802,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3472501376000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558836037,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.3834670451,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558811272,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4196839526,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558786507,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4559008601,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558761361,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.4921177676,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558736596,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.5283346751,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558711831,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.5645515826,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35586870660000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6007684901,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558662301,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6369853976,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558637155,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.6732023051,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.355861239,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7094192126,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35585876250000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7456361201000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.355856286,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.7818530276,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558538095,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8180699731999999,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558512949,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8542868807000001,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35584881840000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.8905037882,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35584634190000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9267206957,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558438654,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9629376032,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558413889,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 1.9991545107,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558388743,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.0353714182,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558363978,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.0715883256999996,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35583392129999997,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1078052332,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558314448,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1440221407,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558289683,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.1802390482,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558264537,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2164559557,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558239772,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2526728632,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558215007,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.2888897707,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558190242,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3251066782,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558165477,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3613235857,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558140331,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.3975405313,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558115566,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.4337574388000003,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558090801,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.4699743463,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3558066036,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5061912538,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35580412710000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5424081613,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35580161250000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.5786250688,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.355799136,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6148419763,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557966595,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6510588838,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35579418300000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.6872757913,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557917065,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7234926988,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557891919,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7597096063000004,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557867154,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.7959265138,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557842389,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.8321434213,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557817624,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.8683603288,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35577928589999996,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9045772362999998,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35577677129999996,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9407941438,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557742948,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 2.9770110894,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557718183,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0132279969,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35576934179999997,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0494449044,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557668653,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.0856618119,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557643507,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1218787194,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557618742,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1580956269,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557593977,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.1943125344,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557569212,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.2305294419,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557544447,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.2667463494,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35575196820000005,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3029632569,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557494536,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3391801644,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35574697710000003,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.3753970719,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557445006,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4116139793999998,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35574202410000005,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4478308869000003,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35573954760000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.4840477944000003,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35573703300000004,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.5202647019,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557345565,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.5564816475,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.35573208,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.592698555,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557296035,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.6289154625,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.355727127,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.66513237,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557246124,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7013492775,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557221359,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7375661850000004,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557196594,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.7737830925,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557171829,
+                "units": "m"
+            }
+        },
+        {
+            "radius": {
+                "value": 3.81,
+                "units": "m"
+            },
+            "chord": {
+                "value": 0.3557147064,
+                "units": "m"
+            }
         }
     ],
     "sectional_polars": [
@@ -15874,10 +18169,25 @@
         }
     ],
     "sectional_radiuses": [
-        0.3429,
-        0.6477,
-        1.9431,
-        3.048,
-        3.81
+        {
+            "value": 0.3429,
+            "units": "m"
+        },
+        {
+            "value": 0.6477,
+            "units": "m"
+        },
+        {
+            "value": 1.9431,
+            "units": "m"
+        },
+        {
+            "value": 3.048,
+            "units": "m"
+        },
+        {
+            "value": 3.81,
+            "units": "m"
+        }
     ]
 }

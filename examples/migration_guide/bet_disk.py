@@ -8,7 +8,7 @@ from typing import Optional
 
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
-from flow360.component.simulation.unit_system import AngularVelocityType, LengthType, u
+from flow360.component.simulation.unit_system import AngularVelocityType, LengthType, AngleType, u
 from flow360.log import log
 
 
@@ -16,6 +16,7 @@ def bet_disk_convert(
     file: str,
     save: Optional[bool] = False,
     length_unit: LengthType = u.m,
+    angle_unit: AngleType = u.deg,
     omega_unit: AngularVelocityType = u.deg / u.s,
 ):
     """
@@ -66,6 +67,7 @@ def bet_disk_convert(
     betdisks, cylinders = convert(
         file,
         length_unit,
+        angle_unit,
         omega_unit,
     )
     bet_disk_list = []
@@ -89,6 +91,7 @@ def bet_disk_convert(
 def convert(
     file,
     length_unit,
+    angle_unit,
     omega_unit,
 ):
     """
@@ -134,11 +137,30 @@ def convert(
                 "outer_radius": data["radius"] * length_unit,
                 "height": data["thickness"] * length_unit,
             }
+            
             updated_data = {
                 key_mapping.get(key, key): value
                 for key, value in data.items()
                 if key not in keys_to_remove
             }
+
+            alphas = []
+            for alpha in updated_data["alphas"]:
+                alpha = alpha * angle_unit
+                alphas.append(alpha)
+
+            twists = []
+            for twist in updated_data["twists"]:
+                twist["radius"] = twist["radius"] * length_unit
+                twist["twist"] = twist["twist"] * angle_unit
+                twists.append(twist)
+
+            chords = []
+            for chord in updated_data["chords"]:
+                chord["radius"] = chord["radius"] * length_unit
+                chord["chord"] = chord["chord"] * length_unit
+                chords.append(chord)
+
             polars = []
             for items in updated_data["sectional_polars"]:
                 polar = {
@@ -147,11 +169,23 @@ def convert(
                     if key not in keys_to_remove
                 }
                 polars.append(polar)
+
+            radiuses = []
+            for radius in updated_data["sectional_radiuses"]:
+                radius = radius * length_unit
+                radiuses.append(radius)
+
+            updated_data["alphas"] = alphas
+            updated_data["twists"] = twists
+            updated_data["chords"] = chords
             updated_data["sectional_polars"] = polars
+            updated_data["sectional_radiuses"] = radiuses
             updated_data["omega"] = updated_data["omega"] * omega_unit
             updated_data["chord_ref"] = updated_data["chord_ref"] * length_unit
+
             if "blade_line_chord" in updated_data:
                 updated_data["blade_line_chord"] = updated_data["blade_line_chord"] * length_unit
+
             cylinders.append(cylinder)
             betdisks.append(updated_data)
 
