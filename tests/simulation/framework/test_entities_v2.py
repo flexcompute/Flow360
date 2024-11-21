@@ -940,9 +940,7 @@ def test_box_validation():
             name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
         )
 
-    with pytest.raises(
-        ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative values")
-    ):
+    with pytest.raises(ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative value")):
         Box(
             name="box6",
             center=(0, 0, 0) * u.m,
@@ -952,7 +950,7 @@ def test_box_validation():
         )
 
     with pytest.raises(
-        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative values")
+        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative value")
     ):
         Box(
             name="box6",
