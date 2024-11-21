@@ -151,44 +151,31 @@ def convert(
                 if key not in keys_to_remove
             }
 
-            alphas = []
-            for alpha in updated_data["alphas"]:
-                alpha = alpha * angle_unit
-                alphas.append(alpha)
+            updated_data["twists"] = [
+                {"radius": twist["radius"] * length_unit, "twist": twist["twist"] * angle_unit}
+                for twist in updated_data["twists"]
+            ]
 
-            twists = []
-            for twist in updated_data["twists"]:
-                twist["radius"] = twist["radius"] * length_unit
-                twist["twist"] = twist["twist"] * angle_unit
-                twists.append(twist)
+            updated_data["chords"] = [
+                {"radius": chord["radius"] * length_unit, "chord": chord["chord"] * length_unit}
+                for chord in updated_data["chords"]
+            ]
 
-            chords = []
-            for chord in updated_data["chords"]:
-                chord["radius"] = chord["radius"] * length_unit
-                chord["chord"] = chord["chord"] * length_unit
-                chords.append(chord)
-
-            polars = []
-            for items in updated_data["sectional_polars"]:
-                polar = {
+            updated_data["sectional_polars"] = [
+                {
                     key_mapping.get(key, key): value
-                    for key, value in items.items()
+                    for key, value in polars.items()
                     if key not in keys_to_remove
                 }
-                polars.append(polar)
+                for polars in updated_data["sectional_polars"]
+            ]
 
-            radiuses = []
-            for radius in updated_data["sectional_radiuses"]:
-                radius = radius * length_unit
-                radiuses.append(radius)
-
-            updated_data["alphas"] = alphas
-            updated_data["twists"] = twists
-            updated_data["chords"] = chords
-            updated_data["sectional_polars"] = polars
-            updated_data["sectional_radiuses"] = radiuses
+            updated_data["alphas"] = [alpha * angle_unit for alpha in updated_data["alphas"]]
             updated_data["omega"] = updated_data["omega"] * omega_unit
             updated_data["chord_ref"] = updated_data["chord_ref"] * length_unit
+            updated_data["sectional_radiuses"] = [
+                radius * length_unit for radius in updated_data["sectional_radiuses"]
+            ]
 
             if "blade_line_chord" in updated_data:
                 updated_data["blade_line_chord"] = updated_data["blade_line_chord"] * length_unit
