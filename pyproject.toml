@@ -61,6 +61,7 @@ sphinx_design = {version="*", optional = true}
 sphinx_toolbox = {version="*", optional = true}
 sphinx_paramlinks = {version="*", optional = true}
 numpydoc = "^1.8.0"
+numexpr = "^2.10.1"
 
 
 [tool.poetry.group.dev.dependencies]

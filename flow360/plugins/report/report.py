@@ -3,7 +3,7 @@ Report generation interface
 """
 
 import os
-from typing import List, Union, Set
+from typing import List, Union, Set, Optional
 
 from flow360 import Case
 from flow360.component.resource_base import Flow360Resource, AssetMetaBaseModel
@@ -36,7 +36,12 @@ from pylatex import (
     PageStyle,
     Section,
     Subsection,
+    HugeText,
+    LargeText,
+    StandAloneGraphic,
+    Center, MediumText
 )
+from flow360.plugins.report.utils import RequirementItem
 
 
 class Report(Flow360Resource):
@@ -129,6 +134,8 @@ class ReportTemplate(Flow360BaseModel):
 
     Parameters
     ----------
+    title: str, optional
+        Title of report, shown on the first page
     items : List[Union[Summary, Inputs, Table, Chart2D, Chart3D]]
         A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart.
         The `type` field acts as a discriminator for differentiating item types.
@@ -136,7 +143,8 @@ class ReportTemplate(Flow360BaseModel):
         Flag indicating whether to include a case-by-case analysis in the report.
     """
 
-    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type")
+    title: Optional[str] = None
+    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type_name")
     include_case_by_case: bool = False
 
     @model_validator(mode="after")
@@ -182,47 +190,47 @@ class ReportTemplate(Flow360BaseModel):
 
     def _define_preamble(self, doc, landscape):
         # Package info
-        doc.packages.append(Package("float"))
-        doc.packages.append(Package("caption"))
-        doc.packages.append(
-            Package("graphicx")
-        )  # Included here as it's sometimes not included automatically when needed
-        doc.packages.append(Package("placeins"))  # For FloatBarrier
-        doc.packages.append(Package("xcolor", options="table"))  # For coloring inc Table
-        # doc.packages.append(Package("opensans", options="default"))  # For changing font
-
-        geometry_options = ["a4paper", "margin=1in"]
+        geometry_options = ["a4paper", "margin=0.7in"]
         if landscape:
             geometry_options.append("landscape")
-        doc.packages.append(Package("geometry", options=geometry_options))
 
-    def _make_title(self, doc):
+        packages = [
+            Package("float"),
+            Package("caption"),
+            Package("graphicx"),
+            Package("placeins"),
+            Package("xcolor", options="table"),
+            Package("geometry", options=geometry_options)
+        ]
+        for package in packages:
+            doc.packages.append(package)
 
-        # Title page
-        # NOTE: using NewLine inside a titlepage causes centering to fail. MUST use "\\" instead.
+    def _make_title(self, doc, title: str=None):
+        NewLine = NoEscape(r"\\") # pylatex NewLine() is causing problems with centering
+
         doc.append(Command("begin", "titlepage"))
-        doc.append(Command("centering"))
 
-        # Title
-        doc.append(Command("vspace*{3cm}"))
-        doc.append(Command("huge", "Flow 360 Report"))
-        doc.append(NoEscape(r"\\"))
+        with doc.create(Center()):
+            doc.append(NoEscape(r"\vspace*{3cm}"))
 
-        # Date
-        doc.append(Command("large", NoEscape(r"\today")))  # Current date
-        doc.append(NoEscape(r"\\"))
+            doc.append(HugeText("Flow360 Report"))
+            doc.append(NewLine)           
+            doc.append(NoEscape(r"\vspace{1cm}"))
 
-        # Image
-        doc.append(
-            NoEscape(
-                r"\includegraphics[width=0.4\textwidth]{"
-                + os.path.join(os.path.dirname(__file__), "img", "flow360.png")
-                + "}"
-            )
-        )
+            if title is not None:
+                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + title + "}")))
+                doc.append(NewLine)
+            doc.append(NoEscape(r"\vspace{2cm}"))
+
+            doc.append(MediumText(NoEscape(r"\textcolor{gray}{\today}")))
+            doc.append(NewLine)
+
+            doc.append(NoEscape(r"\vfill"))
+            doc.append(StandAloneGraphic(os.path.join(os.path.dirname(__file__), "img", "flow360.png"), image_options=NoEscape(r"width=0.15\textwidth")))
+
         doc.append(Command("end", "titlepage"))
 
-    def get_requirements(self):
+    def get_requirements(self)->List[RequirementItem]:
         """
         Collects and returns unique requirements from all items.
 
@@ -306,13 +314,13 @@ class ReportTemplate(Flow360BaseModel):
         os.makedirs(data_storage, exist_ok=True)
         doc = Document(document_options=["10pt"])
         self._define_preamble(doc, landscape)
-        self._make_title(doc)
+        self._make_title(doc, self.title)
 
         doc.append(NewPage())
 
         # Preamble info
         doc.preamble.append(self._create_header_footer())
-        doc.preamble.append(NoEscape(r"\setlength{\headheight}{20pt}"))
+        doc.preamble.append(NoEscape(r"\setlength{\headheight}{15pt}"))
         doc.preamble.append(NoEscape(r"\addtolength{\topmargin}{-5pt}"))
 
         doc.preamble.append(

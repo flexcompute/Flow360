@@ -9,7 +9,7 @@ import tempfile
 import time
 import uuid
 from enum import Enum
-from itertools import chain
+from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
@@ -316,7 +316,6 @@ class ResultCSVModel(ResultBaseModel):
 
         self._raw_values = self._read_csv_file(filename)
         self.local_file_name = filename
-        self._preprocess()
 
     def load_from_remote(self, **kwargs_download):
         """
@@ -328,22 +327,22 @@ class ResultCSVModel(ResultBaseModel):
         else:
             self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
         self._raw_values = self._read_csv_file(self.local_file_name)
-        self._preprocess()
 
     def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
         run some processing after data is loaded
         """
-        if filter_physical_steps_only is True:
-            self.filter_physical_steps_only()
-        if include_time is True:
-            self.include_time()
+        if self._is_physical_time_series_data() is True:
+            if filter_physical_steps_only is True:
+                self.filter_physical_steps_only()
+            if include_time is True:
+                self.include_time()
 
     def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
         change default behaviour of data loader, reload
         """
-        self.values = self.raw_values
+        self._values = self.raw_values
         self._preprocess(
             filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
@@ -398,6 +397,9 @@ class ResultCSVModel(ResultBaseModel):
         res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
         return res_str
 
+    def update(self, df: pandas.DataFrame):
+        self._values = df.to_dict("list")
+
     @property
     def values(self):
         """
@@ -411,6 +413,7 @@ class ResultCSVModel(ResultBaseModel):
 
         if self._values is None:
             self._values = self.raw_values
+            self._preprocess()
         return self._values
 
     def to_base(self, base: str):
@@ -499,7 +502,7 @@ class ResultCSVModel(ResultBaseModel):
             return False
 
     def include_time(self):
-        if not self._is_physical_time_series_data():
+        if self._is_physical_time_series_data() is False:
             raise ValueError(
                 "Physical time can be included only for physical time series data (unsteady simulations)"
             )
@@ -533,9 +536,12 @@ class ResultCSVModel(ResultBaseModel):
         """
         filters data to contain only last pseudo step data for every physical step
         """
+        if self._is_physical_time_series_data() is False:
+            log.warning('Filtering out physical steps only but there is only one step in this simulation.')
+        
         df = self.as_dataframe()
         _, last_iter_mask = self._pseudo_step_masks(df)
-        self._values = df[last_iter_mask].to_dict("list")
+        self.update(df[last_iter_mask])
 
     @classmethod
     def _pseudo_step_masks(cls, df):
@@ -643,6 +649,7 @@ class TotalForcesResultCSVModel(ResultCSVModel):
 class PerEntityResultCSVModel(ResultCSVModel):
     _variables: List[str] = []
     _x_columns: List[str] = []
+    _filter_when_zero = []
     _entities: List[str] = None
 
     @property
@@ -707,12 +714,20 @@ class PerEntityResultCSVModel(ResultCSVModel):
         self._filtered_sum()
         self._averages = None
 
+    def _remove_zero_rows(self, df: pandas.DataFrame)->pandas.DataFrame:
+        headers = [f"{x}_{y}" for x, y in product(self.entities, self._filter_when_zero) if f"{x}_{y}" in df.keys()]
+        if len(headers)>0:
+            df = df[df[headers].apply(lambda row: not all(row == 0), axis=1)]
+        return df
+
     def _filtered_sum(self):
         df = self.as_dataframe()
+        df = self._remove_zero_rows(df)
         for variable in self._variables:
             new_col_name = "total" + variable
             regex_pattern = rf"^(?!total).*{variable}$"
-            self._values[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
+            df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
+        self.update(df)
 
 
 class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
@@ -753,7 +768,6 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
         """
         run some processing after data is loaded
         """
-        print('running this "preprocess" step')
         super()._preprocess(
             filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
@@ -773,6 +787,7 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     )
 
     _variables: List[str] = [_CUMULATIVE_CD_CURVE, _CD_PER_LENGTH]
+    _filter_when_zero = [_CD_PER_LENGTH]
     _x_columns: List[str] = [_X]
 
 
@@ -784,6 +799,7 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     )
 
     _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
+    _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
     _x_columns: List[str] = [_Y]
 
 

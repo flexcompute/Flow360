@@ -354,7 +354,7 @@ class UVFshutter(Flow360BaseModel):
     data_storage : str, default="."
         Path to the directory where data will be stored.
     url : str
-        URL endpoint for the shutter service, defaults to "https://shutter-api-development.{Env.current.domain}".
+        URL endpoint for the shutter service, defaults to "https://shutter-api.{Env.current.domain}".
     use_cache : bool
         Whether to force generate data or use cached data
     """
@@ -362,7 +362,7 @@ class UVFshutter(Flow360BaseModel):
     cases: List[Any]
     data_storage: str = "."
     url: str = pd.Field(
-        default_factory=lambda: f"https://shutter-api-development.{Env.current.domain}"
+        default_factory=lambda: f"https://shutter-api.{Env.current.domain}"
     )
     use_cache: bool = True
     access_token: Optional[str] = None

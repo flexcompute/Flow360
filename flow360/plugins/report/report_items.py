@@ -10,16 +10,19 @@ import matplotlib.image as mpimg
 import numpy as np
 import unyt
 from flow360 import Case
-from flow360.component.simulation.framework.base_model import Flow360BaseModel, Conflicts
+from flow360.component.results import case_results
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
     Delta,
+    DataItem,
     Tabulary,
     _requirements_mapping,
     data_from_path,
     get_requirements_from_data_path,
     get_root_path,
+    OperationTypes
 )
 from flow360.log import log
 from flow360.plugins.report.uvf_shutter import (
@@ -42,8 +45,6 @@ from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
-    NonNegativeFloat,
-    PositiveFloat,
     field_validator,
     model_validator,
     StringConstraints,
@@ -100,16 +101,16 @@ class Summary(ReportItem):
 
     Parameters
     ----------
-    text : str
+    text : str, optional
         The main content or text of the summary.
-    type : Literal["Summary"], default="Summary"
+    type_name : Literal["Summary"], default="Summary"
         Indicates that this item is of type "Summary"; this field is immutable.
     _requirements : List[str], default=[]
         List of specific requirements associated with the summary item.
     """
 
-    text: str
-    type: Literal["Summary"] = Field("Summary", frozen=True)
+    text: Optional[str] = None
+    type_name: Literal["Summary"] = Field("Summary", frozen=True)
     _requirements: List[str] = []
 
     # pylint: disable=too-many-arguments
@@ -122,7 +123,8 @@ class Summary(ReportItem):
         """
         section = context.section_func("Summary")
         context.doc.append(section)
-        context.doc.append(f"{self.text}\n")
+        if self.text is not None:
+            context.doc.append(f"{self.text}\n")
         Table(data=["name"], section_title=None, headers=["Case Name"]).get_doc_item(context)
 
 
@@ -131,7 +133,7 @@ class Inputs(ReportItem):
     Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
     """
 
-    type: Literal["Inputs"] = Field("Inputs", frozen=True)
+    type_name: Literal["Inputs"] = Field("Inputs", frozen=True)
     _requirements: List[str] = [_requirements_mapping["params"]]
 
     # pylint: disable=too-many-arguments
@@ -146,14 +148,12 @@ class Inputs(ReportItem):
             data=[
                 "params/version",
                 "params/operating_condition/velocity_magnitude",
-                "params/operating_condition/alpha",
                 "params/time_stepping/type_name",
             ],
             section_title="Inputs",
             headers=[
                 "Version",
                 "Velocity",
-                "Alpha",
                 "Time stepping",
             ],
         ).get_doc_item(context)
@@ -171,14 +171,14 @@ class Table(ReportItem):
         The title of the table section.
     headers : Union[list[str], None], optional
         List of column headers for the table, default is None.
-    type : Literal["Table"], default="Table"
+    type_name : Literal["Table"], default="Table"
         Specifies the type of report item as "Table"; this field is immutable.
     """
 
-    data: list[Union[str, Delta]]
+    data: list[Union[str, Delta, DataItem]]
     section_title: Union[str, None]
     headers: Union[list[str], None] = None
-    type: Literal["Table"] = Field("Table", frozen=True)
+    type_name: Literal["Table"] = Field("Table", frozen=True)
 
     @model_validator(mode="after")
     def _check_custom_heading_count(self) -> None:
@@ -218,7 +218,7 @@ class Table(ReportItem):
             field_titles = [bold("Case No.")]
             if self.headers is None:
                 for path in self.data:
-                    if isinstance(path, Delta):
+                    if isinstance(path, (Delta, DataItem)):
                         field = path
                     else:
                         field = path.split("/")[-1]
@@ -332,7 +332,7 @@ class Chart(ReportItem):
         """
 
         # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
-        minipage_size = 0.98 / self.items_in_row if self.items_in_row != 1 else 0.7
+        minipage_size = 0.95 / self.items_in_row if self.items_in_row != 1 else 0.7
         doc.append(NoEscape(r"\begin{figure}[h!]"))
         doc.append(NoEscape(r"\centering"))
 
@@ -452,32 +452,6 @@ class PlotModel(BaseModel):
         return fig
 
 
-class Average(Flow360BaseModel):
-    start_step: Optional[NonNegativeInt] = None
-    end_step: Optional[NonNegativeInt] = None
-    start_time: Optional[NonNegativeFloat] = None
-    end_time: Optional[NonNegativeFloat] = None
-    fraction: Optional[PositiveFloat] = Field(None, le=1)
-
-    model_config = pd.ConfigDict(
-        conflicting_fields=[
-            Conflicts(field1="start_step", field2="start_time"),
-            Conflicts(field1="start_step", field2="fraction"),
-            Conflicts(field1="start_time", field2="fraction"),
-            Conflicts(field1="end_step", field2="end_time"),
-            Conflicts(field1="end_step", field2="fraction"),
-            Conflicts(field1="end_time", field2="fraction"),
-        ],
-        require_one_of=["start_step", "start_time", "fraction"],
-    )
-
-    def calculate(self, data, cases):
-        pass
-
-
-OperationTypes = Union[Average]
-
-
 class Chart2D(Chart):
     """
     Represents a 2D chart within a report, plotting x and y data.
@@ -492,16 +466,20 @@ class Chart2D(Chart):
         Background type for the chart; set to "geometry" or None.
     _requirements : List[str]
         Internal list of requirements associated with the chart.
-    type : Literal["Chart2D"], default="Chart2D"
+    type_name : Literal["Chart2D"], default="Chart2D"
         Specifies the type of report item as "Chart2D"; this field is immutable.
+    exclude : Optional[List[str]]
+        List of boundaries to exclude from data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
     """
 
-    x: Union[str, Delta]
-    y: Union[str, Delta]
+    x: Union[str, Delta, DataItem]
+    y: Union[str, Delta, DataItem]
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
-    type: Literal["Chart2D"] = Field("Chart2D", frozen=True)
-    operation: Optional[Union[List[OperationTypes], OperationTypes]] = None
+    type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+    operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
+    exclude: Optional[List[str]] = None
 
     def get_requirements(self):
         """
@@ -549,7 +527,7 @@ class Chart2D(Chart):
             x_data = [data.value for data in x_data]
             x_label += f" [{x_unit}]"
 
-        if self._check_dimensions_consistency(y_data):
+        if self._check_dimensions_consistency(y_data) is True:
             y_unit = y_data[0].units
             y_data = [data.value for data in y_data]
             y_label += f" [{y_unit}]"
@@ -571,6 +549,18 @@ class Chart2D(Chart):
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label
         )
+
+        component = x_label
+        for i, data in enumerate(x_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(exclude=self.exclude)
+                x_data[i] = data.values[component]
+
+        component = y_label
+        for i, data in enumerate(y_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(exclude=self.exclude)
+                y_data[i] = data.values[component]
 
         background_png = None
         if self.background == "geometry":
@@ -594,7 +584,7 @@ class Chart2D(Chart):
                     f"background={self.background} can be only used with x == x_slicing_force_distribution/X OR x == y_slicing_force_distribution/Y"
                 )
             background = Chart3D(
-                show="boundaries", camera=camera, fig_name="background_" + self.fig_name
+                show="boundaries", camera=camera, fig_name="background_" + self.fig_name, exclude=self.exclude
             )
             background_png = background._get_images([cases[0]], context)[0]
 
@@ -690,6 +680,8 @@ class Chart3D(Chart):
         Camera settings: camera position, look at, up.
     show : UvfObjectTypes
         Type of object to display in the 3D chart.
+    exclude : List[str], optional
+        Exclude boundaries from screenshot, 
     """
 
     field: Optional[SurfaceFieldNames] = None
@@ -697,7 +689,29 @@ class Chart3D(Chart):
     limits: Optional[Tuple[float, float]] = None
     is_log_scale: bool = False
     show: UvfObjectTypes
-    type: Literal["Chart3D"] = Field("Chart3D", frozen=True)
+    exclude: Optional[List[str]] = None
+    include: Optional[List[str]] = None
+    type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
+
+    def _get_uvf_exclude_visibility(self):
+        if self.exclude is not None:
+            return [
+                ActionPayload(
+                    action="set-object-visibility",
+                    payload=SetObjectVisibilityPayload(object_ids=self.exclude, visibility=False),
+                )
+            ]
+        return []
+
+    def _get_uvf_include_visibility(self):
+        if self.include is not None:
+            return [
+                ActionPayload(
+                    action="set-object-visibility",
+                    payload=SetObjectVisibilityPayload(object_ids=self.include, visibility=True),
+                )
+            ]
+        return []
 
     def _get_uvf_qcriterion_script(
         self,
@@ -713,7 +727,10 @@ class Chart3D(Chart):
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
-            ),
+            )
+        ]
+        script += self._get_uvf_exclude_visibility()
+        script += [
             ActionPayload(
                 action="focus", payload=FocusPayload(object_ids=["boundaries"], zoom=1.5)
             ),
@@ -771,6 +788,7 @@ class Chart3D(Chart):
                 ),
             ),
         ]
+        script += self._get_uvf_exclude_visibility()
 
         if field is None:
             pass
@@ -797,6 +815,54 @@ class Chart3D(Chart):
 
         return script
 
+
+    def _get_shutter_slice_script(
+        self,
+        script: List = None,
+        field: str = None,
+        limits: Tuple[float, float] = None,
+        is_log_scale: bool = None,
+    ):
+        if script is None:
+            script = []
+
+        script += [
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(
+                    object_ids=["boundaries", "qcriterion"], visibility=False
+                ),
+            ),
+        ]
+        script += self._get_uvf_exclude_visibility()
+        script += self._get_uvf_include_visibility()
+
+        if field is None:
+            pass
+            # get geometry id?
+        else:
+            script += [
+                ActionPayload(
+                    action="set-field",
+                    payload=SetFieldPayload(
+                        object_id="slices",
+                        field_name=field,
+                        min_max=limits,
+                        is_log_scale=is_log_scale,
+                    ),
+                )
+            ]
+            if field == "CfVec":
+                script += [
+                    ActionPayload(
+                        action="set-lic",
+                        payload=SetLICPayload(object_id="slices", visibility=True),
+                    )
+                ]
+
+        return script
+
+
     def _get_uvf_request(self, fig_name, case: Case):
 
         if self.show == "qcriterion":
@@ -808,7 +874,9 @@ class Chart3D(Chart):
                 field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
             )
         elif self.show == "slices":
-            raise NotImplementedError("Slices not implemented yet")
+            script = self._get_shutter_slice_script(
+                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+            )
         else:
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
 
@@ -822,7 +890,7 @@ class Chart3D(Chart):
         path_prefix = case.get_cloud_path_prefix()
         if self.field is None and self.show == "boundaries":
             log.debug(
-                "Not implemented: getting geometry resource for showing geoemtry. Currently using case resource."
+                "Not implemented: getting geometry resource for showing geometry. Currently using case resource."
             )
             # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
             # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")

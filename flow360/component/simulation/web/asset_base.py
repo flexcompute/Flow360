@@ -17,9 +17,10 @@ from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
+    AssetMetaBaseModelV2
 )
 from flow360.component.simulation.entity_info import EntityInfoModel
-from flow360.component.utils import remove_properties_by_name, validate_type
+from flow360.component.utils import remove_properties_by_name, validate_type, _local_download_overwrite
 from flow360.log import log
 
 
@@ -46,12 +47,16 @@ class AssetBase(metaclass=ABCMeta):
             meta_class=self._meta_class,
             id=id,
         )
-        # get the project id according to resource id
-        resp = self._webapi.get()
-        project_id = resp["projectId"]
-        solver_version = resp["solverVersion"]
-        self.project_id: str = project_id
-        self.solver_version: str = solver_version
+
+
+    @property
+    def project_id(self):
+        return self.info.project_id
+    
+    @property
+    def solver_version(self):
+        return self.info.solver_version
+    
 
     @classmethod
     # pylint: disable=protected-access
@@ -69,9 +74,17 @@ class AssetBase(metaclass=ABCMeta):
             generates short description of resource (name, id, status)
         """
         return self._webapi.short_description()
+    
+    @property
+    def name(self):
+        """
+        returns name of resource
+        """
+        return self.info.name
+
 
     @classmethod
-    def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj):
+    def _from_supplied_entity_info(cls, simulation_dict: dict, asset_obj)->AssetBase:
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -173,7 +186,7 @@ class AssetBase(metaclass=ABCMeta):
         )
 
     @classmethod
-    def _from_local_storage(cls, asset_id: str = None, local_storage_path=""):
+    def _from_local_storage(cls, asset_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2=None):
         """
         Create asset from local storage
         :param asset_id: ID of the asset
@@ -181,27 +194,15 @@ class AssetBase(metaclass=ABCMeta):
         :return: asset object
         """
 
-        # pylint: disable=not-callable
-        def _local_download_file(
-            file_name: str,
-            to_file: str = None,
-            to_folder: str = ".",
-        ):
-            expected_local_file = os.path.join(local_storage_path, file_name)
-            if not os.path.exists(expected_local_file):
-                raise RuntimeError(
-                    f"File {expected_local_file} not found. Make sure the file exists when using "
-                    + "VolumeMeshV2.from_local_storage()."
-                )
-            new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
-            if new_local_file != expected_local_file:
-                shutil.copy(expected_local_file, new_local_file)
-
+        _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
         _local_download_file(file_name="simulation.json", to_folder=local_storage_path)
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj._webapi._download_file = _local_download_file
+        if meta_data is not None:
+            asset_obj._webapi._set_meta(meta_data)
         return asset_obj
 
     def wait(self, timeout_minutes=60):

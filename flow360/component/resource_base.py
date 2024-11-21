@@ -6,12 +6,13 @@ import os
 import re
 import shutil
 import time
+import json
 import traceback
 from abc import ABCMeta
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from typing import List, Optional, Union
 
 import pydantic as pd_v2
@@ -125,13 +126,15 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
     name: str = pd_v2.Field()
     user_id: str = pd_v2.Field(alias="userId")
     id: str = pd_v2.Field()
-    solver_version: str = pd_v2.Field(alias="solverVersion")
+    solver_version: Optional[str] = pd_v2.Field(None, alias="solverVersion")
+    project_id: Optional[str] = pd_v2.Field(None, alias="projectId")
     status: Flow360Status = pd_v2.Field()
-    tags: List[str] = pd_v2.Field([])
-    created_at: str = pd_v2.Field(alias="createdAt")
-    updated_at: datetime = pd_v2.Field(alias="updatedAt")
+    tags: Optional[List[str]] = pd_v2.Field([])
+    created_at: Optional[str] = pd_v2.Field(None, alias="createdAt")
+    updated_at: Optional[datetime] = pd_v2.Field(None, alias="updatedAt")
     updated_by: Optional[str] = pd_v2.Field(None, alias="updatedBy")
-    deleted: bool = pd_v2.Field()
+    deleted: Optional[bool] = None
+    cloud_path_prefix: Optional[str] = None
 
     model_config = pd_v2.ConfigDict(extra="allow", frozen=True)
 
@@ -372,6 +375,18 @@ class Flow360Resource(RestApi):
             progress_callback=progress_callback,
             **kwargs,
         )
+
+
+    def _parse_json_from_cloud(self, filename)->dict:
+        """
+        returns simulation params
+        """
+        with NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
+            self._download_file(filename, to_file=temp_file.name, log_error=False, verbose=False)
+            with open(temp_file.name, "r", encoding="utf-8") as fh:
+                data_as_dict = json.load(fh)
+        return data_as_dict
+
 
     def _upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """

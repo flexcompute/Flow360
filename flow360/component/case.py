@@ -414,20 +414,20 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            try:
-                self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
-            except CloudFileNotFoundError as err:
-                raise Flow360ValueError(
-                    "Simulation params not found for this case. It is likely it was created with old interface"
-                ) from err
+        
+        try:
+            params_as_dict = self._parse_json_from_cloud("simulation.json")
+        except CloudFileNotFoundError as err:
+            raise Flow360ValueError(
+                "Simulation params not found for this case. It is likely it was created with old interface"
+            ) from err
 
-            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-            with open(temp_file.name, "r", encoding="utf-8") as fh:
-                params_as_dict = json.load(fh)
-                params_as_dict = services.clean_params_dict(params_as_dict, None)
+        # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
+        params_as_dict = services.clean_params_dict(params_as_dict, None)
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
             with open(temp_file.name, "w", encoding="utf-8") as fh:
-                json.dump(params_as_dict, fh)
+                json.dump(params_as_dict, fh, indent=4)
             return SimulationParams(filename=temp_file.name)
 
     @property
@@ -498,6 +498,19 @@ class Case(CaseBase, Flow360Resource):
         returns metadata info for case
         """
         return super().info
+
+    @property
+    def volume_mesh(self)-> 'VolumeMeshV2':
+        """
+        returns volume mesh
+        """
+        from_cache = self.local_resource_cache[self.volume_mesh_id]
+        if from_cache is not None:
+            return from_cache
+        else:
+            from .volume_mesh import VolumeMeshV2
+            return VolumeMeshV2(self.volume_mesh_id)
+
 
     @property
     def volume_mesh_id(self):
@@ -652,7 +665,6 @@ class Case(CaseBase, Flow360Resource):
             An instance of `Case` with data loaded from local storage.
         """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
-        # we don't know if the status is completed, but if we load from local, we can assume
         case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
         case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
