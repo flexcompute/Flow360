@@ -11,6 +11,8 @@ from .om6wing_user_defined_dynamics import OM6wingUserDefinedDynamics
 from .rotating_spheres import RotatingSpheres
 from .tutorial_2D_crm import Tutorial2DCRM
 from .tutorial_bet_disk import TutorialBETDisk
+from .tutorial_cht_solver import TutorialCHTSolver
+from .tutorial_periodic_BC import TutorialPeriodicBC
 
 __all__ = [
     "ActuatorDisk",
@@ -26,4 +28,6 @@ __all__ = [
     "RotatingSpheres",
     "Tutorial2DCRM",
     "TutorialBETDisk",
+    "TutorialCHTSolver",
+    "TutorialPeriodicBC",
 ]

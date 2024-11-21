@@ -460,6 +460,14 @@ def test_get_entities(
     assert my_cylinder1 in all_box_entities
     assert my_cylinder2 in all_box_entities
 
+    registry = EntityRegistry()
+    registry.register(Surface(name="AA_ground_close"))
+    registry.register(Surface(name="BB"))
+    registry.register(Surface(name="CC_ground"))
+    items = registry.find_by_naming_pattern("*ground", enforce_output_as_list=True)
+    assert len(items) == 1
+    assert items[0].name == "CC_ground"
+
 
 def test_entities_input_interface(my_volume_mesh1):
     # 1. Using reference of single asset entity

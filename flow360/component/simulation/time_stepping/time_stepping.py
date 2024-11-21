@@ -30,7 +30,7 @@ class RampCFL(Flow360BaseModel):
     )
     ramp_steps: Optional[pd.PositiveInt] = pd.Field(
         None,
-        description="Number of pseudo steps before reaching :paramref:`RampCFL.final` within 1 physical step.",
+        description="Number of pseudo steps before reaching :py:attr:`RampCFL.final` within 1 physical step.",
     )
 
     @classmethod
@@ -63,7 +63,7 @@ class AdaptiveCFL(Flow360BaseModel):
     max_relative_change: Optional[pd.PositiveFloat] = pd.Field(
         None,
         description="The maximum allowable relative change of CFL (%) at each pseudo step. "
-        + "In unsteady simulations, the value of :paramref:`AdaptiveCFL.max_relative_change` "
+        + "In unsteady simulations, the value of :py:attr:`AdaptiveCFL.max_relative_change` "
         + "is updated automatically depending on how well the solver converges in each physical step.",
     )
     convergence_limiting_factor: Optional[pd.PositiveFloat] = pd.Field(
