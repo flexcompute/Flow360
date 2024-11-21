@@ -25,7 +25,7 @@ with SI_unit_system:
         for i, outer_radius in enumerate([1.1, 2.2, 3.3, 4.5])
     ]
     cylinder5 = fl.Cylinder(
-        name="cylinder5", axis=[0, 1, 0], center=[0.7, 0.5, 0], outer_radius=6.5, height=10
+        name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=10
     )
     farfield = fl.AutomatedFarfield(name="farfield", method="quasi-3d")
     params = fl.SimulationParams(
