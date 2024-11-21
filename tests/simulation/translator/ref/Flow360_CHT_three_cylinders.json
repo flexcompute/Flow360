@@ -7,24 +7,28 @@
             "type": "SlipWall"
         },
         "solid-1/adiabatic-1": {
-            "type": "SolidAdiabaticWall"
+            "type": "SolidIsofluxWall",
+            "heatFlux": 0.0
         },
         "solid-1/isothermal-1": {
             "temperature": 1.214645,
             "type": "SolidIsothermalWall"
         },
         "solid-2/adiabatic-2": {
-            "type": "SolidAdiabaticWall"
+            "type": "SolidIsofluxWall",
+            "heatFlux": 0.0
         },
         "solid-2/isothermal-2": {
             "temperature": 1.214645,
             "type": "SolidIsothermalWall"
         },
         "solid-3/adiabatic-3": {
-            "type": "SolidAdiabaticWall"
+            "type": "SolidIsofluxWall",
+            "heatFlux": 0.0
         },
         "solid-4/adiabatic-4": {
-            "type": "SolidAdiabaticWall"
+            "type": "SolidIsofluxWall",
+            "heatFlux": 0.0
         }
     },
     "freestream": {

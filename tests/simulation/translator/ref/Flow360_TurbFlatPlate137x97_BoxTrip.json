@@ -19,7 +19,8 @@
             "type": "SymmetryPlane"
         },
         "6": {
-            "type": "NoSlipWall"
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
         },
         "7": {
             "type": "SlipWall"
