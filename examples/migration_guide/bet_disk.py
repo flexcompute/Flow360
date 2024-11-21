@@ -170,12 +170,10 @@ def convert(
                 for polars in updated_data["sectional_polars"]
             ]
 
-            updated_data["alphas"] = [alpha * angle_unit for alpha in updated_data["alphas"]]
+            updated_data["alphas"] = updated_data["alphas"] * angle_unit
             updated_data["omega"] = updated_data["omega"] * omega_unit
             updated_data["chord_ref"] = updated_data["chord_ref"] * length_unit
-            updated_data["sectional_radiuses"] = [
-                radius * length_unit for radius in updated_data["sectional_radiuses"]
-            ]
+            updated_data["sectional_radiuses"] = updated_data["sectional_radiuses"] * length_unit
 
             if "blade_line_chord" in updated_data:
                 updated_data["blade_line_chord"] = updated_data["blade_line_chord"] * length_unit
