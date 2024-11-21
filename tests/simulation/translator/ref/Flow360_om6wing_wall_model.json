@@ -1,7 +1,8 @@
 {
     "boundaries": {
         "1": {
-            "type": "WallFunction"
+            "type": "WallFunction",
+            "heatFlux": 0.0
         },
         "2": {
             "type": "SlipWall"

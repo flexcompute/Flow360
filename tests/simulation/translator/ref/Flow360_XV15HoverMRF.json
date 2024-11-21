@@ -89,7 +89,8 @@
     },
     "boundaries": {
         "innerRotating/blade": {
-            "type": "NoSlipWall"
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
         },
         "farField/farField": {
             "type": "Freestream"
