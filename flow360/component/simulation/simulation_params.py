@@ -313,7 +313,7 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def check_output_fields(params):
-        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        """Check output fields and iso fields are valid"""
         return _check_output_fields(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
