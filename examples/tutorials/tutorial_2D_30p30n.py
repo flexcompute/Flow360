@@ -1,17 +1,10 @@
 import flow360 as fl
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import Tutorial30p30n
-
-"""
-In this tutorial case we are looking at a 3-element airfoil, which is a cross-section of the NASA CRM-HL configuration. Documentation for this tutorial is available in the link below.
-
-https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/Multielement_Configuration/Multielement_Configuration.html
-"""
-
+from flow360.examples import Tutorial2D30p30n
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial30p30n.geometry, name="Tutorial 2D 30p30n from Python")
+project = fl.Project.from_file(Tutorial2D30p30n.geometry, name="Tutorial 2D 30p30n from Python")
 geometry = project.geometry
 
 # show face and edge groupings
