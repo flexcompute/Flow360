@@ -8,7 +8,12 @@ from typing import Optional
 
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
-from flow360.component.simulation.unit_system import AngularVelocityType, LengthType, AngleType, u
+from flow360.component.simulation.unit_system import (
+    AngleType,
+    AngularVelocityType,
+    LengthType,
+    u,
+)
 from flow360.log import log
 
 
@@ -33,6 +38,8 @@ def bet_disk_convert(
         Choose whether to save the output to a file/files.
     length_unit : LengthType, optional
         BETDisk parameters length unit. Default is u.m
+    angle_unit: AngleType, optional
+        BETDisk parameters angle unit. Default is u.deg
     omega_unit : AngularVelocityType, optional
         BETDisk omega's unit. Default is u.deg / u.s.
 
@@ -137,7 +144,7 @@ def convert(
                 "outer_radius": data["radius"] * length_unit,
                 "height": data["thickness"] * length_unit,
             }
-            
+
             updated_data = {
                 key_mapping.get(key, key): value
                 for key, value in data.items()
