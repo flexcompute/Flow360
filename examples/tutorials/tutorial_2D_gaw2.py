@@ -30,7 +30,7 @@ with SI_unit_system:
     farfield = fl.AutomatedFarfield(name="farfield", method="quasi-3d")
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
-            defaults=MeshingDefaults(
+            defaults=fl.MeshingDefaults(
                 surface_edge_growth_rate=1.17,
                 surface_max_edge_length=1.1,
                 curvature_resolution_angle=12 * u.deg,
