@@ -1,88 +1,206 @@
 {
-    "geometry": {
-        "refArea": 0.01,
-        "momentCenter": [0.25,0,0],
-        "momentLength": [1,1,1]
-    },
-    "volumeOutput": {
-        "outputFormat": "tecplot",
-        "primitiveVars": true,
-        "vorticity": true,
-        "residualNavierStokes": true,
-        "residualTurbulence": true,
-        "T": false,
-        "s": false,
-        "Cp": true,
-        "Mach": true,
-        "qcriterion": true,
-        "mut": true,
-        "VelocityRelative": false,
-        "nuHat": false,
-        "mutRatio": false
-    },
-    "surfaceOutput": {
-        "outputFormat": "tecplot",
-        "primitiveVars": true,
-        "Cp": true,
-        "Cf": true,
-        "CfVec": true,
-        "yPlus": true,
-        "wallDistance": false
-    },
-    "navierStokesSolver": {
-        "absoluteTolerance": 1e-11,
-        "relativeTolerance": 1e-2,
-        "linearIterations": 35,
-        "kappaMUSCL": 0.33,
-        "orderOfAccuracy": 2,
-        "updateJacobianFrequency": 4,
-        "equationEvalFrequency": 1
-    },
-    "turbulenceModelSolver": {
-        "modelType": "SpalartAllmaras",
-        "absoluteTolerance": 1e-10,
-        "relativeTolerance": 1e-2,
-        "linearIterations": 25,
-        "kappaMUSCL": -1,
-        "orderOfAccuracy": 2,
-        "updateJacobianFrequency": 4,
-        "equationEvalFrequency": 1
-    },
-    "freestream": {
-        "Reynolds": 5.00000e+06,
-        "Mach": 2.00000e-01,
-        "Temperature": 2.7210000e+02,
-        "alphaAngle": 16,
-        "betaAngle": 0
-    },
-    "boundaries": {
-        "fluid/symmetric-1": {
-            "type": "SlipWall"
-        },
-        "fluid/symmetric-2": {
-            "type": "SlipWall"
-        },
-        "fluid/flap": {
-            "type": "NoSlipWall"
-        },
-        "fluid/slat": {
-            "type": "NoSlipWall"
-        },
-        "fluid/wing": {
-            "type": "NoSlipWall"
-        },
-        "fluid/farfield": {
-            "type": "Freestream"
-        }
-    },
-    "timeStepping": {
-        "maxPhysicalSteps": 1,
-        "timeStepSize": "inf",
-        "maxPseudoSteps": 3000,
-        "CFL": {
-            "initial": 20,
-            "final": 300,
-            "rampSteps": 500
-        }
-    }
+	"geometry": {
+		"refArea": 0.01,
+		"momentCenter": [
+			0.25,
+			0.005,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"freestream": {
+		"alphaAngle": 16,
+		"betaAngle": 0,
+		"Mach": 0.19999999999999998,
+		"Temperature": 272.09999999999997,
+		"muRef": 4e-8
+	},
+	"timeStepping": {
+		"CFL": {
+			"type": "ramp",
+			"initial": 20,
+			"final": 300,
+			"rampSteps": 500
+		},
+		"physicalSteps": 1,
+		"orderOfAccuracy": 2,
+		"maxPseudoSteps": 3000,
+		"timeStepSize": "inf"
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-11,
+		"relativeTolerance": 0,
+		"orderOfAccuracy": 2,
+		"linearSolver": {
+			"maxIterations": 35
+		},
+		"CFLMultiplier": 1,
+		"kappaMUSCL": 0.33,
+		"numericalDissipationFactor": 1,
+		"limitVelocity": false,
+		"limitPressureDensity": false,
+		"lowMachPreconditioner": false,
+		"updateJacobianFrequency": 4,
+		"maxForceJacUpdatePhysicalSteps": 0,
+		"modelType": "Compressible",
+		"equationEvalFrequency": 1
+	},
+	"turbulenceModelSolver": {
+		"absoluteTolerance": 1e-10,
+		"relativeTolerance": 0,
+		"orderOfAccuracy": 2,
+		"linearSolver": {
+			"maxIterations": 25
+		},
+		"CFLMultiplier": 2,
+		"DDES": false,
+		"gridSizeForLES": "maxEdgeLength",
+		"reconstructionGradientLimiter": 0.5,
+		"quadraticConstitutiveRelation": false,
+		"updateJacobianFrequency": 4,
+		"maxForceJacUpdatePhysicalSteps": 0,
+		"rotationCorrection": false,
+		"equationEvalFrequency": 1,
+		"modelType": "SpalartAllmaras",
+		"modelConstants": {
+			"C_DES": 0.72,
+			"C_d": 8,
+			"C_cb1": 0.1355,
+			"C_cb2": 0.622,
+			"C_sigma": 0.6666666666666666,
+			"C_v1": 7.1,
+			"C_vonKarman": 0.41,
+			"C_w2": 0.3,
+			"C_t3": 1.2,
+			"C_t4": 0.5,
+			"C_min_rd": 10
+		}
+	},
+	"initialCondition": {
+		"type": "initialCondition",
+		"rho": "rho",
+		"u": "u",
+		"v": "v",
+		"w": "w",
+		"p": "p"
+	},
+	"boundaries": {
+		"wing": {
+			"type": "NoSlipWall"
+		},
+		"flap": {
+			"type": "NoSlipWall"
+		},
+		"slat": {
+			"type": "NoSlipWall"
+		},
+		"wingTrailing": {
+			"type": "NoSlipWall"
+		},
+		"flapTrailing": {
+			"type": "NoSlipWall"
+		},
+		"slatTrailing": {
+			"type": "NoSlipWall"
+		},
+		"__farfield_zone_name_not_properly_set_yet/farfield": {
+			"type": "Freestream"
+		},
+		"__farfield_zone_name_not_properly_set_yet/symmetric-1": {
+			"type": "SlipWall"
+		},
+		"__farfield_zone_name_not_properly_set_yet/symmetric-2": {
+			"type": "SlipWall"
+		}
+	},
+	"volumeOutput": {
+		"outputFields": [
+			"primitiveVars",
+			"vorticity",
+			"residualNavierStokes",
+			"residualTurbulence",
+			"Cp",
+			"Mach",
+			"qcriterion",
+			"mut"
+		],
+		"outputFormat": "paraview",
+		"computeTimeAverages": false,
+		"animationFrequency": -1,
+		"animationFrequencyOffset": 0,
+		"animationFrequencyTimeAverage": -1,
+		"animationFrequencyTimeAverageOffset": 0,
+		"startAverageIntegrationStep": -1
+	},
+	"surfaceOutput": {
+		"outputFields": [],
+		"outputFormat": "paraview",
+		"computeTimeAverages": false,
+		"animationFrequency": -1,
+		"animationFrequencyOffset": 0,
+		"surfaces": {
+			"wingTrailing": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			},
+			"wing": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			},
+			"flapTrailing": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			},
+			"flap": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			},
+			"slatTrailing": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			},
+			"slat": {
+				"outputFields": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus"
+				]
+			}
+		},
+		"writeSingleFile": false,
+		"animationFrequencyTimeAverage": -1,
+		"animationFrequencyTimeAverageOffset": 0,
+		"startAverageIntegrationStep": -1
+	}
 }
