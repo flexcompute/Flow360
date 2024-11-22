@@ -26,7 +26,6 @@ from flow360.component.simulation.unit_system import (
     DensityType,
     LengthType,
     PressureType,
-    SI_unit_system,
     TemperatureType,
     VelocityType,
     ViscosityType,
