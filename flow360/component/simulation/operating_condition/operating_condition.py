@@ -411,6 +411,9 @@ def operating_condition_from_mach_reynolds(
 
     """
 
+    if temperature == 288.15 * u.K:
+        log.info("Default value of 288.15 K will be used as temperature.")
+
     material = Air(
         dynamic_viscosity=Sutherland(
             reference_temperature=temperature,
@@ -424,6 +427,10 @@ def operating_condition_from_mach_reynolds(
     density = reynolds * material.get_dynamic_viscosity(temperature) / (velocity * grid_unit)
 
     thermal_state = ThermalState(temperature=temperature, density=density, material=material)
+
+    log.info(
+        """Density and viscosity were calculated based on input data, ThermalState will be automatically created."""
+    )
 
     # pylint: disable=no-value-for-parameter
     return AerospaceCondition.from_mach(
