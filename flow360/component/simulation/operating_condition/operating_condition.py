@@ -355,7 +355,7 @@ def operating_condition_from_mach_reynolds(
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
-    grid_unit: LengthType.Positive = 1 * u.m,
+    project_length_unit: LengthType.Positive = 1 * u.m,
 ) -> AerospaceCondition:
     """
     Create an `AerospaceCondition` from Mach number and Reynolds number.
@@ -378,8 +378,8 @@ def operating_condition_from_mach_reynolds(
         Sideslip angle. Default is 0 degrees.
     reference_mach : PositiveFloat, optional
         Reference Mach number. Default is None.
-    grid_unit: LengthType.Positive, optional
-        Project length unit. Defualt is 1 m
+    project_length_unit: LengthType.Positive, optional
+        Project length unit. Defualt is 1 m.
 
     Returns
     -------
@@ -404,6 +404,7 @@ def operating_condition_from_mach_reynolds(
     ...     alpha=2.0 * u.deg,
     ...     beta=0.0 * u.deg,
     ...     reference_mach=0.85,
+    ...     project_length_unit=1 * u.mm,
     ... )
     >>> print(condition)
     AerospaceCondition(...)
@@ -423,7 +424,9 @@ def operating_condition_from_mach_reynolds(
 
     velocity = mach * material.get_speed_of_sound(temperature)
 
-    density = reynolds * material.get_dynamic_viscosity(temperature) / (velocity * grid_unit)
+    density = (
+        reynolds * material.get_dynamic_viscosity(temperature) / (velocity * project_length_unit)
+    )
 
     thermal_state = ThermalState(temperature=temperature, density=density, material=material)
 
