@@ -273,6 +273,7 @@ class Chart(ReportItem):
     select_indices: Optional[List[NonNegativeInt]] = None
     separate_plots: Optional[bool] = None
     force_new_page: bool = False
+    caption: Optional[str] = ""
 
     @model_validator(mode="after")
     def _check_chart_args(self) -> None:
@@ -498,7 +499,7 @@ class Chart2D(Chart):
             indicating a logarithmic plot; False otherwise.
         """
         root_path = get_root_path(self.y)
-        return root_path == "nonlinear_residuals"
+        return root_path.startswith("nonlinear_residuals")
 
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
@@ -684,7 +685,7 @@ class Chart3D(Chart):
         Exclude boundaries from screenshot, 
     """
 
-    field: Optional[SurfaceFieldNames] = None
+    field: Optional[Union[SurfaceFieldNames,str]] = None
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     is_log_scale: bool = False
@@ -936,13 +937,11 @@ class Chart3D(Chart):
         img_list = self._get_images(cases, context)
 
         if self.items_in_row is not None:
-            fig_caption = "Chart3D Row"
-            self._add_row_figure(context.doc, img_list, fig_caption)
+            self._add_row_figure(context.doc, img_list, self.caption)
 
         else:
             for filename in img_list:
-                fig_caption = "Chart 3D"
-                self._add_figure(context.doc, filename, fig_caption)
+                self._add_figure(context.doc, filename, self.caption)
 
         # Stops figures floating away from their sections
         context.doc.append(NoEscape(r"\FloatBarrier"))
