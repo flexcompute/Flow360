@@ -60,7 +60,8 @@
     },
     "boundaries": {
         "blk-1/Cylinder": {
-            "type": "NoSlipWall"
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
         },
         "blk-1/OuterWall": {
             "type": "NoSlipWall",
@@ -68,7 +69,8 @@
                 0.0,
                 0.0,
                 0.0
-            ]
+            ],
+            "heatFlux": 0.0
         },
         "blk-1/InletOutlet": {
             "type": "Freestream"
@@ -124,5 +126,6 @@
         "u": "u",
         "v": "v",
         "w": "w"
-    }
+    },
+    "userDefinedFields":[]
 }
