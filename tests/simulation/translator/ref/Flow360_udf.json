@@ -1,18 +1,5 @@
 {
-    "boundaries": {
-        "boundary_name_E": {
-            "type": "SubsonicOutflowPressure",
-            "staticPressureRatio": 0.9
-        },
-        "boundary_name_H": {
-            "type": "MassOutflow",
-            "massFlowRate": 0.2
-        },
-        "boundary_name_F": {
-            "type": "SubsonicOutflowMach",
-            "MachNumber": 0.3
-        }
-    },
+    "boundaries": {},
     "freestream": {
         "Mach": 0.8399999999999999,
         "Temperature": 288.15,
@@ -24,6 +11,9 @@
         "p": "p",
         "rho": "rho",
         "type": "initialCondition",
+        "constants": {
+            "not_used": "-1.1"
+        },
         "u": "u",
         "v": "v",
         "w": "w"
@@ -90,5 +80,10 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "userDefinedFields": []
+    "userDefinedFields": [
+        {
+            "name": "CpT",
+            "expression": "C-p*T"
+        }
+    ]
 }

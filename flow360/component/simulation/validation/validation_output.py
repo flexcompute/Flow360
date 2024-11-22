@@ -65,4 +65,18 @@ def _check_output_fields(params):
                     f"In `outputs`[{output_index}]:, {item} is not valid output field name. "
                     f"Allowed fields are {allowed_items}."
                 )
+
+        if output.output_type == "IsosurfaceOutput":
+            # using the 1st item as all items have same field definition as the 1st one.
+            allowed_items = (
+                extract_literal_values(output.entities.items[0].model_fields["field"].annotation)
+                + additional_fields
+            )
+            for entity in output.entities.items:
+                if entity.field not in allowed_items:
+                    raise ValueError(
+                        f"In `outputs`[{output_index}]:, {entity.field} is not valid iso field name. "
+                        f"Allowed fields are {allowed_items}."
+                    )
+
     return params

@@ -30,6 +30,7 @@ from typing import List, Literal, get_args, get_origin
 # Low-Mach preconditioner factor
 CommonFieldNames = Literal[
     "Cp",
+    "Cpt",
     "gradW",
     "kOmega",
     "Mach",
