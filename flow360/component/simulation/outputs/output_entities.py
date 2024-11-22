@@ -13,15 +13,7 @@ from flow360.component.types import Axis
 # pylint: disable=duplicate-code
 # inlined from v1 module to avoid circular import
 IsoSurfaceFieldNames = Literal[
-    "p",
-    "rho",
-    "Mach",
-    "qcriterion",
-    "s",
-    "T",
-    "Cp",
-    "mut",
-    "nuHat",
+    "p", "rho", "Mach", "qcriterion", "s", "T", "Cp", "mut", "nuHat", "Cpt"
 ]
 
 
