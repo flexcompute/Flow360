@@ -26,6 +26,7 @@ from flow360.component.simulation.unit_system import (
     DensityType,
     LengthType,
     PressureType,
+    SI_unit_system,
     TemperatureType,
     VelocityType,
     ViscosityType,
@@ -355,6 +356,7 @@ def operating_condition_from_mach_reynolds(
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
+    grid_unit: LengthType.Positive = 1 * u.m,
 ) -> AerospaceCondition:
     """
     Create an `AerospaceCondition` from Mach number and Reynolds number.
@@ -377,6 +379,8 @@ def operating_condition_from_mach_reynolds(
         Sideslip angle. Default is 0 degrees.
     reference_mach : PositiveFloat, optional
         Reference Mach number. Default is None.
+    grid_unit: LengthType.Positive, optional
+        Project length unit. Defualt is 1 m
 
     Returns
     -------
@@ -407,16 +411,19 @@ def operating_condition_from_mach_reynolds(
 
     """
 
-    thermal_state = ThermalState(
-        temperature=temperature,
-        material=Air(
-            dynamic_viscosity=Sutherland(
-                reference_temperature=temperature,
-                reference_viscosity=(mach / reynolds) * u.flow360_viscosity_unit,
-                effective_temperature=110.4 * u.K,
-            )
-        ),
+    material = Air(
+        dynamic_viscosity=Sutherland(
+            reference_temperature=temperature,
+            reference_viscosity=1.716e-5 * u.Pa * u.s,
+            effective_temperature=110.4 * u.K,
+        )
     )
+
+    velocity = mach * material.get_speed_of_sound(temperature)
+
+    density = reynolds * material.get_dynamic_viscosity(temperature) / (velocity * grid_unit)
+
+    thermal_state = ThermalState(temperature=temperature, density=density, material=material)
 
     # pylint: disable=no-value-for-parameter
     return AerospaceCondition.from_mach(
