@@ -118,6 +118,7 @@ from flow360.component.simulation.time_stepping.time_stepping import (
 from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
+    CGS_unit_system
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -142,6 +143,7 @@ __all__ = [
     "SimulationParams",
     "SI_unit_system",
     "imperial_unit_system",
+    "CGS_unit_system",
     "services",
     "MeshingParams",
     "MeshingDefaults",
