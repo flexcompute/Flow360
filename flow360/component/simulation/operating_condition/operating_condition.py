@@ -414,13 +414,7 @@ def operating_condition_from_mach_reynolds(
     if temperature == 288.15 * u.K:
         log.info("Default value of 288.15 K will be used as temperature.")
 
-    material = Air(
-        dynamic_viscosity=Sutherland(
-            reference_temperature=temperature,
-            reference_viscosity=1.716e-5 * u.Pa * u.s,
-            effective_temperature=110.4 * u.K,
-        )
-    )
+    material = Air()
 
     velocity = mach * material.get_speed_of_sound(temperature)
 
