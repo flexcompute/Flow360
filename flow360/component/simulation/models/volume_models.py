@@ -447,11 +447,11 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     -------
 
     Define :class:`BETDiskSectionalPolar` at one single radial location.
-    :code:`lift_coeffs` and :code:`drag_coeffs` are lists with the dimension of 4 x 1 x 360, corresponding to
-    4 :py:attr:`BETDisk.mach_numbers` by 1 :py:attr:`BETDisk.reynolds_numbers` by 360 :py:attr:`BETDisk.alphas`.
+    :code:`lift_coeffs` and :code:`drag_coeffs` are lists with the dimension of 3 x 2 x 2, corresponding to
+    3 :py:attr:`BETDisk.mach_numbers` by 2 :py:attr:`BETDisk.reynolds_numbers` by 2 :py:attr:`BETDisk.alphas`.
 
-    >>> lift_coeffs = [[[...],[...],[...],[...]]],
-    >>> drag_coeffs =  [[[...],[...],[...],[...]]],
+    >>> lift_coeffs = [[[0.1, 0.2], [0.3, 0.4]], [[0.5, 0.6], [0.7, 0.8]], [[0.9, 1.0], [1.1, 1.2]]]
+    >>> drag_coeffs = [[[0.01, 0.02], [0.03, 0.04]], [[0.05, 0.06], [0.07, 0.08]], [[0.09, 0.1], [0.11, 0.12]]]
     >>> fl.BETDiskSectionalPolar(
     ...     lift_coeffs=lift_coeffs,
     ...     drag_coeffs=drag_coeffs
