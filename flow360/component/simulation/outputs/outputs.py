@@ -33,7 +33,38 @@ from flow360.component.simulation.validation.validation_output import (
 
 
 class UserDefinedField(Flow360BaseModel):
-    """Defines additional fields that can be used as output variables"""
+    """
+
+    Defines additional fields that can be used as output variables.
+
+
+    Example
+    -------
+
+    - Compute :code:`Mach` using :class:`UserDefinedField`
+      (Showcase use, already supported in :ref:`Output Fields <UniversalVariablesV2>`):
+
+    >>> fl.UserDefinedField(
+    ...     name="Mach_UDF",
+    ...     expression="double Mach = sqrt(primitiveVars[1] * primitiveVars[1] + "
+    ...     + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
+    ...     + " / sqrt(gamma * primitiveVars[4] / primitiveVars[0]);",
+    ... )
+
+
+    - Compute :code:`PressureForce` using :class:`UserDefinedField`:
+
+    >>> fl.UserDefinedField(
+    ...     name="PressureForce",
+    ...     expression="double p = primitiveVars[4] - pressureFreestream; "
+    ...     + "PressureForce[0] = p * rotationModel_nodeNormals[0]; "
+    ...     + "PressureForce[1] = p * rotationModel_nodeNormals[1]; "
+    ...     + "PressureForce[2] = p * rotationModel_nodeNormals[2];",
+    ... )
+
+    ====
+
+    """
 
     type_name: Literal["UserDefinedField"] = pd.Field("UserDefinedField", frozen=True)
     name: str = pd.Field(description="The name of the output field.")
@@ -72,7 +103,33 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings):
-    """:class:`SurfaceOutput` class for surface output settings."""
+    """
+
+    :class:`SurfaceOutput` class for surface output settings.
+
+    Example
+    -------
+
+    - Define :class:`SurfaceOutput` on all surfaces of the geometry
+      using naming pattern :code:`"*"`.
+
+    >>> fl.SurfaceOutput(
+    ...     entities=[geometry['*']],,
+    ...     output_format="paraview",
+    ...     output_fields=["vorticity", "T"],
+    ... )
+
+    - Define :class:`SurfaceOutput` on the selected surfaces of the volume_mesh
+      using name pattern :code:`"fluid/inflow*"`.
+
+    >>> fl.SurfaceOutput(
+    ...     entities=[volume_mesh["fluid/inflow*"]],,
+    ...     output_format="paraview",
+    ...     output_fields=["vorticity", "T"],
+    ... )
+
+    ====
+    """
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
@@ -100,14 +157,37 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """
     :class:`TimeAverageSurfaceOutput` class for time average surface output settings.
-    Caveats:
-    Solver side only accept exactly the same set of output_fields (is shared) between
-    VolumeOutput and TimeAverageVolumeOutput.
 
-    Notes
-    -----
-        Old `computeTimeAverages` can be infered when user is explicitly using for
-        example `TimeAverageSurfaceOutput`.
+    Warnings
+    --------
+
+    The solver only accepts exactly the same set of :py:attr:`output_fields`
+    (is shared) between :class:`SurfaceOutput` and :class:`TimeAverageSurfaceOutput`.
+
+    Note
+    ----
+    Old `computeTimeAverages` can be infered when user is explicitly using for
+    example :class:`TimeAverageSurfaceOutput`.
+
+    Example
+    -------
+
+    Calculate the average value starting from the :math:`4^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+
+    >>> fl.TimeAverageSurfaceOutput(
+    ...     output_format=["primitiveVars"],
+    ...     output_fields=restart_output_fields,
+    ...     entities=[
+    ...         volume_mesh["VOLUME/LEFT"],
+    ...         volume_mesh["VOLUME/RIGHT"],
+    ...     ],
+    ...     start_step=4,
+    ...     frequency=10,
+    ...     frequency_offset=14,
+    ... )
+
+    ====
     """
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
@@ -119,7 +199,19 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
 
 
 class VolumeOutput(_AnimationAndFileFormatSettings):
-    """:class:`VolumeOutput` class for volume output settings."""
+    """
+    :class:`VolumeOutput` class for volume output settings.
+
+    Example
+    -------
+
+    >>> fl.VolumeOutput(
+    ...     output_format="paraview",
+    ...     output_fields=["Mach", "vorticity", "T"],
+    ... )
+
+    ====
+    """
 
     name: Optional[str] = pd.Field(None, description="Name of the `VolumeOutput`.")
     output_fields: UniqueItemList[Union[VolumeFieldNames, str]] = pd.Field(
@@ -133,15 +225,34 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
 class TimeAverageVolumeOutput(VolumeOutput):
     """
     :class:`TimeAverageVolumeOutput` class for time average volume output settings.
-    Caveats:
+
+    Warnings
+    --------
+
     The solver only accepts exactly the same set of :py:attr:`output_fields` (is shared)
     between :class:`VolumeOutput` and :class:`TimeAverageVolumeOutput`.
     Also let's not worry about allowing entities here as it is not supported by solver anyway.
 
-    Notes
-    -----
-        Old `computeTimeAverages` can be infered when user is explicitly using for example
-        `TimeAverageSurfaceOutput`.
+    Note
+    ----
+    Old `computeTimeAverages` can be infered when user is explicitly using for example
+    :class:`TimeAverageVolumeOutput`.
+
+    Example
+    -------
+
+    Calculate the average value starting from the :math:`4^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+
+    >>> fl.TimeAverageVolumeOutput(
+    ...     output_format="paraview",
+    ...     output_fields=["primitiveVars"],
+    ...     start_step=4,
+    ...     frequency=10,
+    ...     frequency_offset=14,
+    ... )
+
+    ====
     """
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
@@ -153,7 +264,26 @@ class TimeAverageVolumeOutput(VolumeOutput):
 
 
 class SliceOutput(_AnimationAndFileFormatSettings):
-    """:class:`SliceOutput` class for slice output settings."""
+    """
+    :class:`SliceOutput` class for slice output settings.
+
+    Example
+    -------
+
+    >>> fl.SliceOutput(
+    ...     slices=[
+    ...         fl.Slice(
+    ...             name="Slice_1",
+    ...             normal=(0, 1, 0),
+    ...             origin=(0, 0.56, 0)*fl.u.m
+    ...         ),
+    ...     ],
+    ...     output_format="paraview",
+    ...     output_fields=["vorticity", "T"],
+    ... )
+
+    ====
+    """
 
     name: Optional[str] = pd.Field(None, description="Name of the `SliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
@@ -169,7 +299,31 @@ class SliceOutput(_AnimationAndFileFormatSettings):
 
 
 class TimeAverageSliceOutput(SliceOutput):
-    """:class:`TimeAverageSliceOutput` class for time average slice output settings."""
+    """
+
+    :class:`TimeAverageSliceOutput` class for time average slice output settings.
+
+    Example
+    -------
+
+    Calculate the average value starting from the :math:`4^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+
+    >>> fl.TimeAverageSliceOutput(
+    ...     entities=[
+    ...         fl.Slice(name="Slice_1",
+    ...             origin=(0, 0, 0) * fl.u.m,
+    ...             normal=(0, 0, 1),
+    ...         )
+    ...     ],
+    ...     output_fields=["s", "T"],
+    ...     start_step=4,
+    ...     frequency=10,
+    ...     frequency_offset=14,
+    ... )
+
+    ====
+    """
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging."
@@ -178,7 +332,36 @@ class TimeAverageSliceOutput(SliceOutput):
 
 
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
-    """:class:`IsosurfaceOutput` class for isosurface output settings."""
+    """
+
+    :class:`IsosurfaceOutput` class for isosurface output settings.
+
+    Example
+    -------
+
+    Define the :class:`IsosurfaceOutput` of :code:`qcriterion` on two isosurfaces:
+
+    - :code:`Isosurface_T_0.1` has the :py:attr:`~Isosurface.iso_value` of :code:`T` to be 0.1;
+    - :code:`Isosurface_p_0.5` has the :py:attr:`~Isosurface.iso_value` of :code:`p` to be 0.5.
+
+    >>> fl.IsosurfaceOutput(
+    ...     isosurfaces=[
+    ...         fl.Isosurface(
+    ...             name="Isosurface_T_0.1",
+    ...             iso_value=0.1,
+    ...             field="T",
+    ...         ),
+    ...         fl.Isosurface(
+    ...             name="Isosurface_p_0.5",
+    ...             iso_value=0.5,
+    ...             field="p",
+    ...         ),
+    ...     ],
+    ...     output_fields=["qcriterion"],
+    ... )
+
+    ====
+    """
 
     name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`.")
     entities: UniqueItemList[Isosurface] = pd.Field(
@@ -193,7 +376,21 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 
 
 class SurfaceIntegralOutput(Flow360BaseModel):
-    """:class:`SurfaceIntegralOutput` class for surface integral output settings."""
+    """
+
+    :class:`SurfaceIntegralOutput` class for surface integral output settings.
+
+    Example
+    -------
+
+    >>> fl.SurfaceIntegralOutput(
+    ...     name="surface_integral",
+    ...     output_fields=["primitiveVars", "vorticity"],
+    ...     entities=[volume_mesh["fluid/inflow"], volume_mesh["fluid/outflow"]],
+    ... )
+
+    ====
+    """
 
     name: str = pd.Field()
 
@@ -210,7 +407,55 @@ class SurfaceIntegralOutput(Flow360BaseModel):
 
 
 class ProbeOutput(Flow360BaseModel):
-    """:class:`ProbeOutput` class for probe monitor output settings."""
+    """
+    :class:`ProbeOutput` class for setting output data probed at monitor points.
+
+    Example
+    -------
+
+    - Define :class:`ProbeOutput` on multiple monitor points.
+
+    >>> fl.ProbeOutput(
+    ...     name="probe_group_points",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...     ],
+    ...     output_fields=["primitiveVars"],
+    ... )
+
+
+    - Define :class:`ProbeOutput` on monitor points along the line.
+      :code:`Line_1` is from (1,0,0) to (1.5,0,0) and has 6 monitor points.
+      :code:`Line_2` is from (-1,0,0) to (-1.5,0,0) and has 3 monitor points.
+
+    >>> fl.ProbeOutput(
+    ...     name="probe_group_lines",
+    ...     entities=[
+    ...         fl.PointArray(
+    ...             name="Line_1",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=6,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_2",
+    ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=3,
+    ...         ),
+    ...     ],
+    ...     output_fields=["primitiveVars"],
+    ... )
+
+    ====
+    """
 
     name: str = pd.Field(description="Name of the monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
@@ -226,8 +471,9 @@ class ProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
-    def load_point_location_from_file(self, file_path: str):
-        """Load probe point locations from a file."""
+    @classmethod
+    def load_point_location_from_file(cls, file_path: str):
+        """Load probe point locations from a file. (Not implemented yet)"""
         raise NotImplementedError("Not implemented yet.")
 
     @pd.field_validator("entities", mode="after")
@@ -239,8 +485,56 @@ class ProbeOutput(Flow360BaseModel):
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
-    :class:`SurfaceProbeOutput` class for surface probe monitor output settings.
-    The monitor location will be projected to the surface closest to the point.
+    :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
+    The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
+    closest to the point. The probed results on the projected point is output.
+
+    Example
+    -------
+
+    - Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
+      with multiple monitor points.
+
+    >>> fl.SurfaceProbeOutput(
+    ...     name="surface_probe_group_points",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...     ],
+    ...     target_surfaces=[
+    ...         geometry["wall"],
+    ...     ],
+    ...     output_fields=["heatFlux", "T"],
+    ... )
+
+
+    - Define :class:`SurafceProbeOutput` on the :code:`volume_mesh["fluid/wall"]` surface
+      with monitor points along the line.
+      :code:`Line_surface` is from (1,0,0) to (1,0,-10) and has 11 monitor points.
+
+    >>> fl.SurfaceProbeOutput(
+    ...     name="surface_probe_group_lines",
+    ...     entities=[
+    ...         fl.PointArray(
+    ...             name="Line_surface",
+    ...             start=[1.0, 0.0, 0.0] * fl.u.m,
+    ...             end=[1.0, 0.0, -10.0] * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...     ],
+    ...     target_surfaces=[
+    ...         volume_mesh["fluid/wall"],
+    ...     ],
+    ...     output_fields=["heatFlux", "T"],
+    ... )
+
+    ====
     """
 
     name: str = pd.Field(description="Name of the surface monitor group.")
@@ -326,7 +620,22 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
 
 
 class AeroAcousticOutput(Flow360BaseModel):
-    """:class:`AeroAcousticOutput` class for aeroacoustic output settings."""
+    """
+
+    :class:`AeroAcousticOutput` class for aeroacoustic output settings.
+
+    Example
+    -------
+
+    >>> fl.AeroAcousticOutput(
+    ...     observers=[
+    ...         [0.0, 0.0, 1.75] * fl.u.m,
+    ...         [0.0, 0.3, 1.725] * fl.u.m,
+    ...     ],
+    ... )
+
+    ====
+    """
 
     name: Optional[str] = pd.Field(None, description="Name of the `AeroAcousticOutput`.")
     patch_type: Literal["solid"] = pd.Field("solid", frozen=True)

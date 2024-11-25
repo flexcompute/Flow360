@@ -11,7 +11,41 @@ from flow360.component.simulation.primitives import Cylinder, GenericVolume, Sur
 
 
 class UserDefinedDynamic(Flow360BaseModel):
-    """:class:`UserDefinedDynamic` class for defining the user defined dynamics inputs."""
+    """
+    :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
+
+    Example
+    -------
+
+    >>> fl.UserDefinedDynamic(
+    ...    name="dynamicTheta",
+    ...    input_vars=["momentY"],
+    ...    constants={
+    ...        "I": 0.443768309310345,
+    ...        "zeta": zeta,
+    ...        "K": K,
+    ...        "omegaN": omegaN,
+    ...        "theta0": theta0,
+    ...    },
+    ...    output_vars={
+    ...        "omegaDot": "state[0];",
+    ...        "omega": "state[1];",
+    ...        "theta": "state[2];",
+    ...    },
+    ...    state_vars_initial_value=[str(initOmegaDot), "0.0", str(initTheta)],
+    ...    update_law=[
+    ...        "if (pseudoStep == 0) (momentY - K * ( state[2] - theta0 ) "
+    ...         + "- 2 * zeta * omegaN * I *state[1] ) / I; else state[0];",
+    ...        "if (pseudoStep == 0) state[1] + state[0] * timeStepSize; else state[1];",
+    ...        "if (pseudoStep == 0) state[2] + state[1] * timeStepSize; else state[2];",
+    ...    ],
+    ...    input_boundary_patches=volume_mesh["plateBlock/noSlipWall"],
+    ...    output_target=volume_mesh["plateBlock"],
+    ... )
+
+    ====
+
+    """
 
     name: str = pd.Field(description="Name of the dynamics defined by the user.")
     input_vars: List[str] = pd.Field(

@@ -55,6 +55,19 @@ class ThermalStateCache(Flow360BaseModel):
 class ThermalState(MultiConstructorBaseModel):
     """
     Represents the thermal state of a fluid with specific properties.
+
+    Example
+    -------
+
+    >>> fl.ThermalState(
+    ...     temperature=300 * fl.u.K,
+    ...     density=1.225 * fl.u.kg / fl.u.m**3,
+    ...     material=fl.Air(
+    ...         dynamic_viscosity=1.0634e-05 * fl.u.Pa * fl.u.s
+    ...     )
+    ... )
+
+    ====
     """
 
     # pylint: disable=fixme
@@ -177,6 +190,22 @@ class GenericReferenceConditionCache(Flow360BaseModel):
 class GenericReferenceCondition(MultiConstructorBaseModel):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
+
+    Example
+    -------
+
+    Define :class:`GenericReferenceCondition` with :py:meth:`from_mach`:
+
+    >>> fl.GenericReferenceCondition.from_mach(
+    ...     mach=0.2,
+    ...     thermal_state=ThermalState(),
+    ... )
+
+    Define :class:`GenericReferenceCondition` with :py:attr:`velocity_magnitude`:
+
+    >>> fl.GenericReferenceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+
+    ====
     """
 
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
@@ -225,6 +254,24 @@ class AerospaceCondition(MultiConstructorBaseModel):
     """
     Operating condition for aerospace applications. Defines both reference parameters used to compute nondimensional
     coefficients in postprocessing and the default :class:`Freestream` boundary condition for the simulation.
+
+    Example
+    -------
+
+    -  Define :class:`AerospaceCondition` with :py:meth:`from_mach`:
+
+    >>> fl.AerospaceCondition.from_mach(
+    ...     mach=0,
+    ...     alpha=-90 * fl.u.deg,
+    ...     thermal_state=fl.ThermalState(),
+    ...     reference_mach=0.69,
+    ... )
+
+    -  Define :class:`AerospaceCondition` with :py:attr:`velocity_magnitude`:
+
+    >>> fl.AerospaceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+
+    ====
     """
 
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
@@ -390,8 +437,8 @@ def operating_condition_from_mach_reynolds(
     ValueError
         If required parameters are missing or calculations cannot be performed.
 
-    Examples
-    --------
+    Example
+    -------
     Example usage:
 
     >>> condition = operating_condition_from_mach_reynolds(

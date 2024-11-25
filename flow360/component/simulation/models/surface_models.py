@@ -60,6 +60,13 @@ class HeatFlux(SingleAttributeModel):
     """
     :class:`HeatFlux` class to specify the heat flux for `Wall` boundary condition
     via :py:attr:`Wall.heat_spec`.
+
+    Example
+    -------
+
+    >>> fl.HeatFlux(value = 1.0 * fl.u.W/fl.u.m**2)
+
+    ====
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
@@ -71,6 +78,13 @@ class Temperature(SingleAttributeModel):
     :class:`Temperature` class to specify the temperature for `Wall` or `Inflow`
     boundary condition via :py:attr:`Wall.heat_spec`/
     :py:attr:`Inflow.spec`.
+
+    Example
+    -------
+
+    >>> fl.Temperature(value = 350 * fl.u.K)
+
+    ====
     """
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
@@ -84,6 +98,13 @@ class TotalPressure(SingleAttributeModel):
     """
     :class:`TotalPressure` class to specify the total pressure for `Inflow`
     boundary condition via :py:attr:`Inflow.spec`.
+
+    Example
+    -------
+
+    >>> fl.TotalPressure(value = 1.04e6 * fl.u.Pa)
+
+    ====
     """
 
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
@@ -95,6 +116,13 @@ class Pressure(SingleAttributeModel):
     """
     :class:`Pressure` class to specify the pressure for `Outflow`
     boundary condition via :py:attr:`Outflow.spec`.
+
+    Example
+    -------
+
+    >>> fl.TotalPressure(value = 1.01e6 * fl.u.Pa)
+
+    ====
     """
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
@@ -106,6 +134,13 @@ class MassFlowRate(SingleAttributeModel):
     """
     :class:`MassFlowRate` class to specify the mass flow rate for `Inflow` or `Outflow`
     boundary condition via :py:attr:`Inflow.spec`/:py:attr:`Outflow.spec`.
+
+    Example
+    -------
+
+    >>> fl.MassFlowRate(value = 123 * fl.u.lb / fl.u.s)
+
+    ====
     """
 
     type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
@@ -117,6 +152,13 @@ class Mach(SingleAttributeModel):
     """
     :class:`Mach` class to specify Mach number for the `Inflow`
     boundary condition via :py:attr:`Inflow.spec`.
+
+    Example
+    -------
+
+    >>> fl.Mach(value = 0.5)
+
+    ====
     """
 
     type_name: Literal["Mach"] = pd.Field("Mach", frozen=True)
@@ -127,6 +169,7 @@ class Translational(Flow360BaseModel):
     """
     :class:`Translational` class to specify translational periodic
     boundary condition via :py:attr:`Periodic.spec`.
+
     """
 
     type_name: Literal["Translational"] = pd.Field("Translational", frozen=True)
@@ -151,13 +194,47 @@ class Rotational(Flow360BaseModel):
 
 class Wall(BoundaryBase):
     """
-    :class:`Wall` class defines the Wall boundary conditions below based on the input:
-        - NoSlipWall
-        - IsothermalWall
-        - HeatFluxWall
-        - WallFunction
-        - SolidIsothermalWall
-        - SolidAdiabaticWall
+    :class:`Wall` class defines the :code:`Wall` boundary condition based on the inputs.
+    By default, :code:`NoSlipWall` is defined for the surface of **Fluid** zone, and
+    :code:`SolidAdiabaticWall` is defined for the surface of **Solid** zone.
+
+    Example
+    -------
+
+
+    - Define the :code:`WallFunction` boundary condition:
+
+    >>> fl.Wall(
+    ...     entities=geometry["wall_function"],
+    ...     use_wall_function=True,
+    ... )
+
+    - Define the :code:`IsothermalWall` boundary condition on the surfaces of **Fluid** zone
+      with the name pattern of :code:`"fluid/isothermal-*"`:
+
+    >>> fl.Wall(
+    ...     entities=volume_mesh["fluid/isothermal-*"],
+    ...     heat_spec=fl.Temperature(350 * fl.u.K),
+    ... )
+
+    - Define the :code:`SolidIsofluxWall` boundary condition on the surfaces of **Solid** zone
+      with the name pattern of :code:`"solid/isoflux-*"`:
+
+    >>> fl.Wall(
+    ...     entities=volume_mesh["solid/isoflux-*"],
+    ...     heat_spec=fl.Temperature(350 * fl.u.K),
+    ... )
+
+
+    - Define the :code:`SolidIsothermalWall` boundary condition on the surfaces of **Solid** zone
+      with the name pattern of :code:`"solid/isothermal-*"`:
+
+    >>> fl.Wall(
+    ...     entities=volume_mesh["solid/isothermal-*"],
+    ...     heat_spec=fl.Temperature(350 * fl.u.K),
+    ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Wall` boundary condition.")
@@ -180,7 +257,29 @@ class Wall(BoundaryBase):
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
     """
-    :class:`Freestream` defines the Freestream condition.
+    :class:`Freestream` defines the :code:`Freestream` condition.
+
+    Example
+    -------
+
+    - Define :class:`Freestream` boundary condition with velocity:
+
+    >>> fl.Freestream(
+    ...     surfaces=[volume_mesh["blk-1/zblocks"],
+    ...               volume_mesh["blk-1/xblocks"]],
+    ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
+    ... )
+
+    - Define :class:`Freestream` boundary condition with modified turbulence quantities:
+
+    >>> fl.Freestream(
+    ...     entities=[volume_mesh['freestream']],
+    ...     turbulence_quantities= fl.TurbulenceQuantities(
+    ...         modified_viscosity_ratio=10,
+    ...     )
+    ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Freestream` boundary condition.")
@@ -200,10 +299,32 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
 
 class Outflow(BoundaryBase):
     """
-    :class:`Outflow` defines the Outflow boundary conditions below based on the input:
-        - SubsonicOutflowPressure
-        - SubsonicOutflowMach
-        - MassOutflow
+    :class:`Outflow` defines the Outflow boundary conditions based on the input :py:attr:`spec`.
+
+    Example
+    -------
+    - Define :code:`SubsonicOutflowPressure` boundary condition:
+
+    >>> fl.Outflow(
+    ...     surfaces=volume_mesh["fluid/outlet"],
+    ...     spec=fl.Pressure(value = 0.99e6 * fl.u.Pa)
+    ... )
+
+    - Define :code:`SubsonicOutflowMach` boundary condition:
+
+    >>> fl.Outflow(
+    ...     surfaces=volume_mesh["fluid/outlet"],
+    ...     spec=fl.Mach(value = 0.2)
+    ... )
+
+    - Define :code:`MassOutflow` boundary condition:
+
+    >>> fl.Outflow(
+    ...     surfaces=volume_mesh["fluid/outlet"],
+    ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s)
+    ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Outflow` boundary condition.")
@@ -216,9 +337,38 @@ class Outflow(BoundaryBase):
 
 class Inflow(BoundaryBaseWithTurbulenceQuantities):
     """
-    :class:`Inflow` defines the Inflow boundary condition below based on the input:
-        - SubsonicInflow
-        - MassInflow
+    :class:`Inflow` defines the :code:`Inflow` boundary condition based on the input :py:attr:`spec`.
+
+    Example
+    -------
+
+    - Define :code:`SubsonicInflow` boundary condition:
+
+    >>> fl.Inflow(
+    ...     entities=[geometry["inflow"]],
+    ...     total_temperature=300 * fl.u.K,
+    ...     spec=fl.TotalPressure(1.028e6 * fl.u.Pa),
+    ... )
+
+    - Define :code:`MassInflow` boundary condition:
+
+    >>> fl.Inflow(
+    ...     entities=[volume_mesh["fluid/inflow"]],
+    ...     total_temperature=300 * fl.u.K,
+    ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s),
+    ... )
+
+    - Define :code:`Inflow` boundary condition with modified turbulence quantities:
+
+    >>> fl.Inflow(
+    ...     entities=[volume_mesh["fluid/inflow"]],
+    ...     turbulence_quantities= fl.TurbulenceQuantities(
+    ...         turbulent_kinetic_energy=2e-8 * fl.ThermalState().speed_of_sound**2,
+    ...         specific_dissipation_rate=3.0 * fl.ThermalState().speed_of_sound / fl.u.m,
+    ...     )
+    ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Inflow` boundary condition.")
@@ -239,7 +389,18 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
 
 
 class SlipWall(BoundaryBase):
-    """:class:`SlipWall` class defines the SlipWall boundary condition."""
+    """:class:`SlipWall` class defines the :code:`SlipWall` boundary condition.
+
+    Example
+    -------
+
+    Define :class:`SlipWall` boundary condition at entities with name pattern of
+    :code:`"*/slipWall"` in the volume mesh.
+
+    >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
+
+    ====
+    """
 
     name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
@@ -252,9 +413,16 @@ class SlipWall(BoundaryBase):
 
 class SymmetryPlane(BoundaryBase):
     """
-    :class:`SymmetryPlane` defines the `SymmetryPlane` boundary condition.
+    :class:`SymmetryPlane` defines the :code:`SymmetryPlane` boundary condition.
     It is similar to :class:`SlipWall`, but the normal gradient of scalar quantities
-    are forced to be zero on the symmetry plane. Only planar surfaces are supported.
+    are forced to be zero on the symmetry plane. **Only planar surfaces are supported.**
+
+    Example
+    -------
+
+    >>> fl.SymmetryPlane(entities=volume_mesh["fluid/symmetry"])
+
+    ====
     """
 
     name: Optional[str] = pd.Field(
@@ -271,6 +439,29 @@ class SymmetryPlane(BoundaryBase):
 class Periodic(Flow360BaseModel):
     """
     :class:`Periodic` defines the translational or rotational periodic boundary condition.
+
+    Example
+    -------
+
+    - Define a translationally periodic boundary condition using :class:`Translational`:
+
+    >>> fl.Periodic(
+    ...     surface_pairs=[
+    ...         (volume_mesh["VOLUME/BOTTOM"], volume_mesh["VOLUME/TOP"]),
+    ...         (volume_mesh["VOLUME/RIGHT"], volume_mesh["VOLUME/LEFT"]),
+    ...     ],
+    ...     spec=fl.Translational(),
+    ... )
+
+    - Define a rotationally periodic boundary condition using :class:`Rotational`:
+
+    >>> fl.Periodic(
+    ...     surface_pairs=[(volume_mesh["VOLUME/PERIODIC-1"],
+    ...         volume_mesh["VOLUME/PERIODIC-2"])],
+    ...     spec=fl.Rotational()
+    ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Periodic` boundary condition.")
