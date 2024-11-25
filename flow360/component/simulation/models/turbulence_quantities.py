@@ -255,7 +255,7 @@ def TurbulenceQuantities(
     -------
 
     >>> fl.TurbulenceQuantities(modified_viscosity_ratio=10)
-    
+
     ====
     """
     non_none_arg_count = sum(arg is not None for arg in locals().values())
