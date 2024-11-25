@@ -267,6 +267,16 @@ def test_cht_solver_settings_validator(
         volumetric_heat_source="0",
         initial_condition=HeatEquationInitialCondition(temperature="10;"),
     )
+    solid_model_without_density = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=SolidMaterial(
+            name="aluminum_without_density",
+            thermal_conductivity=235 * u.kg / u.s**3 * u.m / u.K,
+            specific_heat_capacity=903 * u.m**2 / u.s**2 / u.K,
+        ),
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10;"),
+    )
     surface_output_with_residual_heat_solver = SurfaceOutput(
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
@@ -297,12 +307,23 @@ def test_cht_solver_settings_validator(
             outputs=[surface_output_with_residual_heat_solver],
         )
 
-    message = "In `Solid` model -> material, the heat capacity needs to be specified for unsteady simulations."
+    message = (
+        "In `Solid` model -> material, both specific_heat_capacity and density need to be specified "
+        "for unsteady simulations."
+    )
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[fluid_model, solid_model_without_specific_heat_capacity],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model, solid_model_without_density],
             time_stepping=timestepping_unsteady,
             outputs=[surface_output_with_residual_heat_solver],
         )

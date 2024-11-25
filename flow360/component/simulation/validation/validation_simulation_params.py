@@ -245,9 +245,12 @@ def _validate_cht_has_heat_transfer(params):
     if isinstance(time_stepping, Unsteady):
         for model_solid in params.models:
             if isinstance(model_solid, Solid):
-                if model_solid.material.specific_heat_capacity is None:
+                if (
+                    model_solid.material.specific_heat_capacity is None
+                    or model_solid.material.density is None
+                ):
                     raise ValueError(
-                        "In `Solid` model -> material, the heat capacity needs to be specified "
+                        "In `Solid` model -> material, both specific_heat_capacity and density need to be specified "
                         "for unsteady simulations."
                     )
                 if model_solid.initial_condition is None:
