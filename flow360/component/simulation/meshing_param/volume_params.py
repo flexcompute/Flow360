@@ -98,6 +98,22 @@ class RotationCylinder(CylindricalRefinementBase):
                 "Only single instance is allowed in entities for each RotationCylinder."
             )
         return values
+    
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_cylinder_name_length(cls, values):
+        """
+        [CAPABILITY-LIMITATION]
+        Multiple instances in the entities is not allowed.
+        Because enclosed_entities will almost certain be different.
+        `enclosed_entities` is planned to be auto_populated in the future.
+        """
+        # pylint: disable=protected-access
+        if len(values._get_expanded_entities(expect_supplied_registry=False)) > 1:
+            raise ValueError(
+                "Only single instance is allowed in entities for each RotationCylinder."
+            )
+        return values
 
 
 class AutomatedFarfield(Flow360BaseModel):

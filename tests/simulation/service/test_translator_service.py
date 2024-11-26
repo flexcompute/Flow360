@@ -75,7 +75,9 @@ def test_simulation_to_surface_meshing_json():
     }
 
     start_time = time.time()
-    params, _, _ = validate_model(param_data, "SI", "Geometry", SURFACE_MESH)
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=SURFACE_MESH
+    )
     simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     end_time = time.time()
     execution_time = end_time - start_time
@@ -201,7 +203,9 @@ def test_simulation_to_volume_meshing_json():
         "version": "24.2.0",
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry", VOLUME_MESH)
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=VOLUME_MESH
+    )
 
     sm_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
     assert sm_json["farfield"]["type"] == "auto"
@@ -439,7 +443,7 @@ def test_simulation_to_case_json():
         },
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
 
     simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
@@ -539,13 +543,13 @@ def test_simulation_to_case_vm_workflow():
         },
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
 
     with pytest.raises(ValueError):
         case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
-    params, errors, _ = validate_model(param_data, "SI", "VolumeMesh")
+    params, errors, _ = validate_model(params_as_dict=param_data, root_item_type="VolumeMesh")
     case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
 
@@ -633,7 +637,7 @@ def test_simulation_to_all_translation_2():
         },
     }
 
-    params, _, _ = validate_model(params_as_dict, "SI", "Geometry")
+    params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
 
     surface_json, hash = simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     print(surface_json)
