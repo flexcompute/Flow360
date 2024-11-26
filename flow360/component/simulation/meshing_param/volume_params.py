@@ -107,7 +107,9 @@ class RotationCylinder(CylindricalRefinementBase):
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
-        max_cylinder_name_length = 32 - 14
+
+        cgns_max_zone_name_length = 32
+        max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
         for entity in values.stored_entities:
             if len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
