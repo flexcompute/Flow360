@@ -444,7 +444,14 @@ class Case(CaseBase, Flow360Resource):
                         "Unit system not found in the simulation params. Corrupted file."
                     )
 
-            param, errors, _ = services.validate_model(params_as_dict, unit_system_name, None)
+            param, errors, _ = services.validate_model(
+                params_as_dict=params_as_dict,
+                unit_system_name=unit_system_name,
+                root_item_type=None,  # So that we do not pop out meshing part of params
+                #                       (in case user wants to reuse the meshing part)
+                validation_level=None,  # We are getting an validated(cloud) param.
+                #                         There is no need for 2nd layer validation
+            )
 
             if errors is not None:
                 raise Flow360ValidationError(
