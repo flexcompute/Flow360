@@ -54,7 +54,8 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
 def test_limit_cylinder_entity_name_length_in_rotataion_cylinder():
     with pytest.raises(
         pd.ValidationError,
-        match="The name of the `Cylinder` entity in `RotationCylinder` cannot exceed 18 characters.",
+        match=r"The name \(very_long_cylinder_name\) of `Cylinder` entity in `RotationCylinder`"
+        + " exceeds 18 characters limit.",
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
