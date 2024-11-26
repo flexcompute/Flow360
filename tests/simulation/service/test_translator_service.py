@@ -611,6 +611,7 @@ def test_simulation_to_all_translation_2():
                 "use_wall_function": False,
             }
         ],
+        "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {

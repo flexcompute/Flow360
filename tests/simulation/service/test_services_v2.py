@@ -70,6 +70,7 @@ def test_validate_service():
             }
         ],
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
             "project_length_unit": None,
             "project_entity_info": {
@@ -144,11 +145,10 @@ def test_validate_error():
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
 
     excpected_errors = [
         {
@@ -211,6 +211,7 @@ def test_validate_multiple_errors():
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
@@ -274,6 +275,7 @@ def test_validate_errors():
             ],
             "defaults": {"surface_edge_growth_rate": 1.2},
         },
+        "unit_system": {"name": "SI"},
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
