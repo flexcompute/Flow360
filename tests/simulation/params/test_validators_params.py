@@ -308,8 +308,8 @@ def test_cht_solver_settings_validator(
         )
 
     message = (
-        "In `Solid` model -> material, both specific_heat_capacity and density need to be specified "
-        "for unsteady simulations."
+        "In `Solid` model -> material, both `specific_heat_capacity` and `density` "
+        "need to be specified for unsteady simulations."
     )
 
     # Invalid simulation params
