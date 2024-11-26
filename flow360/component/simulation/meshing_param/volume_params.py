@@ -99,6 +99,22 @@ class RotationCylinder(CylindricalRefinementBase):
             )
         return values
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_cylinder_name_length(cls, values):
+        """
+        Check the name length for the cylinder entities due to the 32-character
+        limitation of all data structure names and labels in CGNS format.
+        The current prefix is 'rotatingBlock-' with 14 characters.
+        """
+        # pylint: disable=protected-access
+        for entity in values.stored_entities:
+            if len(entity.name) > 18:
+                raise ValueError(
+                    "The name of the `Cylinder` entity in `RotationCylinder` cannot exceed 18 characters."
+                )
+        return values
+
 
 class AutomatedFarfield(Flow360BaseModel):
     """
