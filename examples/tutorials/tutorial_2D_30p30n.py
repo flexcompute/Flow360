@@ -79,7 +79,7 @@ with SI_unit_system:
             ],
         ),
         reference_geometry=fl.ReferenceGeometry(
-            moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
+            moment_center=[0.25, 0, 0], moment_length=[1, 1, 1], area=0.01
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
             mach=0.17, reynolds=1.71e06, temperature=288.16, alpha=8.5 * u.deg, beta=0 * u.deg
