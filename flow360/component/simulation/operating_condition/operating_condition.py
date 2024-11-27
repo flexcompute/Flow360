@@ -16,7 +16,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 from flow360.component.simulation.models.material import (
     Air,
     FluidMaterialTypes,
-    Sutherland,
 )
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
