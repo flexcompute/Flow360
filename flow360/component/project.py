@@ -532,7 +532,7 @@ class Project(pd.BaseModel):
                 "Project not initialized - use Project.from_file or Project.from_cloud"
             )
 
-    def _get_asset_from_cloud(self, tree):
+    def _get_asset_from_cloud(self):
         self._check_initialized()
         root_id = self.metadata.root_item_id
         tree = self._project_webapi.get(method="tree")
