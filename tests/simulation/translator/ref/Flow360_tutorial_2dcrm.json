@@ -1,105 +1,105 @@
 {
-	"geometry": {
-		"refArea": 0.01,
-		"momentCenter": [
-			0.25,
-			0.005,
-			0
-		],
-		"momentLength": [
-			1,
-			1,
-			1
-		]
-	},
-	"freestream": {
-		"alphaAngle": 16,
-		"betaAngle": 0,
-		"Mach": 0.19999999999999998,
-		"Temperature": 272.1,
-		"muRef": 4e-08
-	},
-	"timeStepping": {
+    "geometry": {
+        "refArea": 0.01,
+        "momentCenter": [
+            0.25,
+            0.005,
+            0.0
+        ],
+        "momentLength": [
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "freestream": {
+        "alphaAngle": 16.0,
+        "betaAngle": 0.0,
+        "Mach": 0.19999999999999998,
+        "Temperature": 272.09999999999997,
+        "muRef": 4e-08
+    },
+    "timeStepping": {
         "CFL": {
-            "convergenceLimitingFactor": 0.25,
+            "type": "adaptive",
+            "min": 0.1,
             "max": 10000.0,
             "maxRelativeChange": 1.0,
-            "min": 0.1,
-            "type": "adaptive"
+            "convergenceLimitingFactor": 0.25
         },
-        "maxPseudoSteps": 2000,
-        "orderOfAccuracy": 2,
         "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 2000,
         "timeStepSize": "inf"
     },
-	"navierStokesSolver": {
-        "CFLMultiplier": 1.0,
+    "navierStokesSolver": {
         "absoluteTolerance": 1e-10,
-        "equationEvalFrequency": 1,
-        "kappaMUSCL": -1.0,
-        "limitPressureDensity": false,
-        "limitVelocity": false,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
         "linearSolver": {
             "maxIterations": 30
         },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
         "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "Compressible",
-        "numericalDissipationFactor": 1.0,
-        "orderOfAccuracy": 2,
-        "relativeTolerance": 0.0,
-        "updateJacobianFrequency": 4
+        "equationEvalFrequency": 1
     },
-	"turbulenceModelSolver": {
-        "CFLMultiplier": 2.0,
-        "DDES": false,
+    "turbulenceModelSolver": {
         "absoluteTolerance": 1e-08,
-        "equationEvalFrequency": 4,
-        "gridSizeForLES": "maxEdgeLength",
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
         "linearSolver": {
             "maxIterations": 20
         },
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "gridSizeForLES": "maxEdgeLength",
+        "reconstructionGradientLimiter": 0.5,
+        "quadraticConstitutiveRelation": false,
+        "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
+        "rotationCorrection": false,
+        "equationEvalFrequency": 4,
+        "modelType": "SpalartAllmaras",
         "modelConstants": {
             "C_DES": 0.72,
+            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
-            "C_d": 8.0,
-            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
-            "C_t3": 1.2,
-            "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
-            "C_w2": 0.3
-        },
-        "modelType": "SpalartAllmaras",
-        "orderOfAccuracy": 2,
-        "quadraticConstitutiveRelation": false,
-        "reconstructionGradientLimiter": 0.5,
-        "relativeTolerance": 0.0,
-        "rotationCorrection": false,
-        "updateJacobianFrequency": 4
+            "C_w2": 0.3,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_min_rd": 10.0
+        }
     },
-	"boundaries": {
-		"1": {
-			"type": "NoSlipWall",
-            "heatFlux": 0.0
-		},
-		"2": {
-			"type": "SlipWall"
-		},
-		"3": {
-			"type": "Freestream"
-		}
-	},
     "initialCondition": {
-        "p": "p",
-        "rho": "rho",
         "type": "initialCondition",
+        "rho": "rho",
         "u": "u",
         "v": "v",
-        "w": "w"
+        "w": "w",
+        "p": "p"
     },
-    "userDefinedFields":[]
+    "boundaries": {
+        "1": {
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
+        },
+        "2": {
+            "type": "SlipWall"
+        },
+        "3": {
+            "type": "Freestream"
+        }
+    },
+    "userDefinedFields": []
 }

@@ -11,12 +11,12 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import imperial_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system
 
 
 @pytest.fixture()
 def get_2dcrm_tutorial_param():
-    with imperial_unit_system:
+    with SI_unit_system:
         my_wall = Surface(name="1")
         my_symmetry_plane = Surface(name="2")
         my_freestream = Surface(name="3")
