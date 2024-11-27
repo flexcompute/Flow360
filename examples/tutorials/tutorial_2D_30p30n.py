@@ -4,6 +4,8 @@ from flow360.examples import Tutorial2D30p30n
 
 fl.Env.preprod.active()
 
+Tutorial2D30p30n.get_files()
+
 project = fl.Project.from_file(Tutorial2D30p30n.geometry, name="Tutorial 2D 30p30n from Python")
 geometry = project.geometry
 
@@ -56,21 +58,15 @@ with SI_unit_system:
                     name="trailing",
                     max_edge_length=0.36,
                     faces=[
-                        geometry["wingTrailing"],
-                        geometry["flapTrailing"],
-                        geometry["slatTrailing"],
+                        geometry["*Trailing"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
                     name="edges",
                     method=fl.HeightBasedRefinement(value=0.0007),
                     edges=[
-                        geometry["wingtrailingEdge"],
-                        geometry["wingleadingEdge"],
-                        geometry["flaptrailingEdge"],
-                        geometry["flapleadingEdge"],
-                        geometry["slattrailingEdge"],
-                        geometry["slatFrontLEadingEdge"],
+                        geometry["*trailingEdge"],
+                        geometry["*leadingEdge"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
@@ -90,12 +86,7 @@ with SI_unit_system:
         models=[
             fl.Wall(
                 surfaces=[
-                    geometry["wing"],
-                    geometry["flap"],
-                    geometry["slat"],
-                    geometry["wingTrailing"],
-                    geometry["flapTrailing"],
-                    geometry["slatTrailing"],
+                    geometry["*"],
                 ],
                 name="wall",
             ),
