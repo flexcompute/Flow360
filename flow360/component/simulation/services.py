@@ -46,7 +46,10 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
     unit_system_manager,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import (
+    get_unit_system_name_from_simulation_params_dict,
+    model_attribute_unlock,
+)
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     SURFACE_MESH,
@@ -206,8 +209,8 @@ def get_default_params(
 
 
 def validate_model(
+    *,
     params_as_dict,
-    unit_system_name,
     root_item_type: Literal["Geometry", "VolumeMesh"],
     validation_level: Literal[
         "SurfaceMesh", "VolumeMesh", "Case", "All"
@@ -220,8 +223,6 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
-    unit_system_name : str
-        The unit system name to initialize.
     root_item_type : Literal["Geometry", "VolumeMesh"]
         The root item type for validation.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], optional
@@ -236,6 +237,7 @@ def validate_model(
     validation_warnings : list or None
         A list of validation warnings if any occurred.
     """
+    unit_system_name = get_unit_system_name_from_simulation_params_dict(params_as_dict)
     unit_system = init_unit_system(
         unit_system_name
     )  # Initialize unit system (to be implemented when supported)
@@ -497,8 +499,8 @@ def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str
 
 
 def generate_process_json(
+    *,
     simulation_json: str,
-    unit_system_name: Literal["SI", "CGS", "Imperial", "Flow360"],
     root_item_type: Literal["Geometry", "VolumeMesh"],
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
 ):
@@ -512,8 +514,6 @@ def generate_process_json(
     ----------
     simulation_json : str
         The JSON string containing simulation parameters.
-    unit_system_name : Literal["SI", "CGS", "Imperial", "Flow360"]
-        The name of the unit system to be used (e.g., "SI", "CGS", "Imperial", "Flow360").
     root_item_type : Literal["Geometry", "VolumeMesh"]
         The root item type for the simulation (e.g., "Geometry", "VolumeMesh").
     up_to : Literal["SurfaceMesh", "VolumeMesh", "Case"]
@@ -536,7 +536,9 @@ def generate_process_json(
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
     params, errors, _ = validate_model(
-        params_as_dict, unit_system_name, root_item_type, validation_level=validation_level
+        params_as_dict=params_as_dict,
+        root_item_type=root_item_type,
+        validation_level=validation_level,
     )
 
     if errors is not None:
