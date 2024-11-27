@@ -209,6 +209,7 @@ def get_default_params(
 
 
 def validate_model(
+    *,
     params_as_dict,
     root_item_type: Literal["Geometry", "VolumeMesh"],
     validation_level: Literal[
@@ -498,6 +499,7 @@ def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str
 
 
 def generate_process_json(
+    *,
     simulation_json: str,
     root_item_type: Literal["Geometry", "VolumeMesh"],
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
