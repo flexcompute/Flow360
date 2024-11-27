@@ -14,6 +14,8 @@ https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/BETTutorial/BE
 
 fl.Env.preprod.active()
 
+TutorialBETDisk.get_files()
+
 project = fl.Project.from_file(TutorialBETDisk.geometry, name="Tutorial BETDisk from Python")
 geometry = project.geometry
 

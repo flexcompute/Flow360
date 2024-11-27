@@ -1,10 +1,13 @@
 import flow360 as fl
+from flow360.component.simulation.operating_condition.operating_condition import (
+    operating_condition_from_mach_reynolds,
+)
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import Tutorial2DCRM
+from flow360.examples import Tutorial_2dcrm
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial2DCRM.geometry, name="Tutorial 2D CRM from Python")
+project = fl.Project.from_file(Tutorial_2dcrm.geometry, name="Tutorial 2D CRM from Python")
 geometry = project.geometry
 
 # show face and edge groupings
@@ -16,7 +19,7 @@ geometry.group_edges_by_tag("edgeName")
 with SI_unit_system:
     cylinders = [
         fl.Cylinder(
-            name=f"cylinder{i+1}",
+            name=f"cylinder{i}",
             axis=[0, 1, 0],
             center=[0.7, 0.5, 0],
             outer_radius=outer_radius,
@@ -25,7 +28,7 @@ with SI_unit_system:
         for i, outer_radius in enumerate([1.1, 2.2, 3.3, 4.5])
     ]
     cylinder5 = fl.Cylinder(
-        name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=10
+        name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=1.0
     )
     farfield = fl.AutomatedFarfield(name="farfield", method="quasi-3d")
     params = fl.SimulationParams(
@@ -81,7 +84,7 @@ with SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(
             moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
+        operating_condition=operating_condition_from_mach_reynolds(
             mach=0.2, reynolds=5e6, temperature=272.1, alpha=16 * u.deg, beta=0 * u.deg
         ),
         time_stepping=fl.Steady(
@@ -99,7 +102,7 @@ with SI_unit_system:
                 ],
                 name="wall",
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
+            fl.Freestream(surfaces=farfield.farfield, name="fl.Freestream"),
             fl.SlipWall(surfaces=farfield.symmetry_planes, name="slipwall"),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
