@@ -706,7 +706,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         )
 
         headers = _filter_headers_by_prefix(
-            self._raw_values.keys(), include_resolved, exclude_resolved
+            self.raw_values.keys(), include_resolved, exclude_resolved
         )
         self._values = {
             key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]

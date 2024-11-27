@@ -10,6 +10,9 @@ import zipfile
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
 from urllib.parse import urljoin
+from collections import defaultdict
+import reprlib
+
 
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
@@ -25,16 +28,17 @@ from flow360.log import log
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-class UVFShutterRequestBaseModel(Flow360BaseModel):
+class ShutterRequestBaseModel(Flow360BaseModel):
     """
     Base model for UVF shutter requests
     """
 
-    def model_dump_json(self, **kwargs):
-        return super().model_dump_json(by_alias=True, **kwargs)
+    # def model_dump_json(self, **kwargs):
+    #     return super().model_dump_json(by_alias=True, **kwargs)
 
 
-UvfObjectTypes = Literal["slices", "qcriterion", "boundaries", "edges"]
+
+ShutterObjectTypes = Literal["slices", "qcriterion", "boundaries", "edges"]
 
 
 class Resource(Flow360BaseModel):
@@ -52,6 +56,9 @@ class Resource(Flow360BaseModel):
     path_prefix: str
     id: str
     type: str = "case"
+
+    model_config = Flow360BaseModel.model_config.copy()
+    model_config.update({"frozen": True})
 
 
 class Resolution(Flow360BaseModel):
@@ -82,6 +89,8 @@ class Settings(Flow360BaseModel):
 
     resolution: Resolution = Resolution()
 
+    model_config = Flow360BaseModel.model_config.copy()
+    model_config.update({"frozen": True})
 
 class SetObjectVisibilityPayload(Flow360BaseModel):
     """
@@ -95,7 +104,7 @@ class SetObjectVisibilityPayload(Flow360BaseModel):
         Boolean indicating the visibility state.
     """
 
-    object_ids: List[Union[UvfObjectTypes, str]]
+    object_ids: List[Union[ShutterObjectTypes, str]]
     visibility: bool
 
 
@@ -105,7 +114,7 @@ class SetFieldPayload(Flow360BaseModel):
 
     Parameters
     ----------
-    object_id : UvfObjectTypes
+    object_id : ShutterObjectTypes
         Identifier of the object for field setting.
     field_name : str
         Name of the field to modify.
@@ -113,7 +122,7 @@ class SetFieldPayload(Flow360BaseModel):
         Minimum and maximum values for the field.
     """
 
-    object_id: UvfObjectTypes
+    object_id: ShutterObjectTypes
     field_name: str
     min_max: Tuple[float, float]
     is_log_scale: bool
@@ -125,13 +134,13 @@ class SetLICPayload(Flow360BaseModel):
 
     Parameters
     ----------
-    object_id : UvfObjectTypes
+    object_id : ShutterObjectTypes
         Object identifier for which LIC will be set.
     visibility : bool
         Boolean indicating the visibility state.
     """
 
-    object_id: Union[UvfObjectTypes, str]
+    object_id: Union[ShutterObjectTypes, str]
     visibility: bool
 
 
@@ -191,11 +200,11 @@ class ResetFieldPayload(Flow360BaseModel):
 
     Parameters
     ----------
-    object_id : UvfObjectTypes
+    object_id : ShutterObjectTypes
         Identifier of the object for which the field is reset.
     """
 
-    object_id: UvfObjectTypes
+    object_id: ShutterObjectTypes
 
 
 class FocusPayload(Flow360BaseModel):
@@ -204,13 +213,13 @@ class FocusPayload(Flow360BaseModel):
 
     Parameters
     ----------
-    object_id : UvfObjectTypes
+    object_id : ShutterObjectTypes
         Identifier of the object for which the field is reset.
     zoom: pd.PositiveFloat
         Zoom multiplier can be used to add padding, default 1
     """
 
-    object_ids: List[Union[UvfObjectTypes, str]]
+    object_ids: List[Union[ShutterObjectTypes, str]]
     zoom: Optional[pd.PositiveFloat] = 1
 
 
@@ -301,7 +310,7 @@ def http_interceptor(func):
     async def wrapper(*args, **kwargs):
         """A wrapper function"""
 
-        log.debug(f"call: {func.__name__}({args}, {kwargs})")
+        log.debug(f"call: {func.__name__}({reprlib.repr(args)}, {reprlib.repr(kwargs)})")
         start_time = time.time()
 
         async with await func(*args, **kwargs) as resp:
@@ -343,14 +352,210 @@ def http_interceptor(func):
     return wrapper
 
 
-class UVFshutter(Flow360BaseModel):
+
+def combine(model_a, model_b, key_to_combine, eq: callable):
+    if eq(model_a, model_b):
+        attr_a = getattr(model_a, key_to_combine)
+        attr_b = getattr(model_b, key_to_combine)
+
+        if isinstance(attr_a, list) and isinstance(attr_b, list):
+            combined_attr = attr_a + attr_b
+            new_model = model_a.copy(update={key_to_combine: combined_attr})
+            return new_model, True
+        else:
+            raise TypeError(f"The attribute '{key_to_combine}' is not a list in both models.")
+
+    return model_a, False
+
+
+
+class ShutterBatchService:
+    """
+    Service to collect and process UVF shutter requests.
+    """
+
+    def __init__(self, data_storage=".", shutter_url=None, shutter_access_token=None):
+        self.data_storage = data_storage
+        self.shutter_url = shutter_url
+        self.shutter_access_token = shutter_access_token
+        self.requests = defaultdict(list)
+
+    def _merge_similar_scenes(self, resource, new_scenes):
+        stored_scenes: List[Scene] = self.requests.get(resource, [])
+        for scene in new_scenes:
+            appended = False
+            eq = lambda a,b: a.name == b.name and a.settings == b.settings
+            for i, stored_scene in enumerate(stored_scenes):
+                combined_scene, appended = combine(stored_scene, scene, 'script', eq)
+                if appended:
+                    stored_scenes[i] = combined_scene
+                    break
+            if appended is False:
+                stored_scenes.append(scene.copy())
+        return stored_scenes
+    
+
+    def _merge_visibility_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
+        """
+        Merges consecutive 'set-object-visibility' actions with the same 'visibility' value.
+        Does not merge actions if there are other actions (like 'screenshot') in between.
+        """
+        merged_actions = []
+        last_visibility_action = None
+        last_visibility_action_index = -1
+
+        for action_index, action in enumerate(actions):
+            if action.action == 'set-object-visibility':
+                payload = action.payload
+                if not isinstance(payload, SetObjectVisibilityPayload):
+                    raise TypeError("Payload must be of type SetObjectVisibilityPayload")
+
+                if last_visibility_action and action_index == last_visibility_action_index + 1:
+                    if payload.visibility == last_visibility_action.payload.visibility:
+                        combined_object_ids = set(last_visibility_action.payload.object_ids) | set(payload.object_ids)
+                        last_visibility_action.payload.object_ids = list(combined_object_ids)
+                        continue
+
+                if last_visibility_action:
+                    merged_actions.append(last_visibility_action)
+                last_visibility_action = action.copy()
+                last_visibility_action_index = action_index
+            else:
+                if last_visibility_action:
+                    merged_actions.append(last_visibility_action)
+                    last_visibility_action = None
+                merged_actions.append(action)
+
+        if last_visibility_action:
+            merged_actions.append(last_visibility_action)
+
+        return merged_actions
+
+
+    def _remove_redundant_visibility_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
+        """
+        Optimizes 'set-object-visibility' actions by removing redundant actions and sequences.
+
+        Rules:
+        - If a 'set-object-visibility' action with the same 'object_ids' and 'visibility' has already occurred,
+        remove the subsequent duplicate action.
+        - If a sequence of 'set-object-visibility' actions (regardless of other actions in between) is repeated
+        later in the action list with the same 'object_ids' and 'visibility', remove the latter sequence.
+        - Other action types are preserved and ignored in this optimization.
+
+        Note:
+        - This function assumes that the order of actions is important and preserves the order of other actions.
+        """
+        optimized_actions = []
+        visibility_sequence = []
+        current_sequence = []
+
+        for action in actions:
+            if action.action == 'set-object-visibility':
+                payload = action.payload
+                if not isinstance(payload, SetObjectVisibilityPayload):
+                    raise TypeError("Payload must be of type SetObjectVisibilityPayload")
+                current_sequence.append(action)
+            else:
+                if current_sequence:
+                    sequence_key = tuple(
+                        (tuple(sorted(a.payload.object_ids)), a.payload.visibility) for a in current_sequence
+                    )
+                    if sequence_key != visibility_sequence:
+                        visibility_sequence = sequence_key
+                        optimized_actions.extend(current_sequence)
+                    current_sequence = []
+                optimized_actions.append(action)
+
+        if current_sequence:
+            sequence_key = tuple(
+                (tuple(sorted(a.payload.object_ids)), a.payload.visibility) for a in current_sequence
+            )
+            if sequence_key != visibility_sequence:
+                optimized_actions.extend(current_sequence)
+
+        return optimized_actions
+
+
+    def _remove_redundant_set_field_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
+        """
+        Removes redundant 'set-field' actions when the payload has not changed between calls.
+
+        Rules:
+        - If a 'set-field' action has the same payload as the previous one and no intervening actions affect the field settings,
+        remove the latter 'set-field' action.
+        - Other action types are preserved and ignored in this optimization unless they affect the field settings.
+
+        Note:
+        - This function assumes that the order of actions is important and preserves the order of other actions.
+        """
+        optimized_actions = []
+        last_set_field_payload = None
+
+        field_affecting_actions = {'reset-field', 'set-field'}
+
+        for action in actions:
+            if action.action == 'set-field':
+                payload = action.payload
+                if not isinstance(payload, SetFieldPayload):
+                    raise TypeError("Payload must be of type SetFieldPayload")
+
+                if last_set_field_payload == payload:
+                    continue
+                else:
+                    last_set_field_payload = payload
+            elif action.action in field_affecting_actions:
+                last_set_field_payload = None
+            optimized_actions.append(action)
+
+        return optimized_actions
+
+
+
+
+    def add_request(self, request: ScenesData):
+        stored_scenes = self._merge_similar_scenes(request.resource, request.scenes)
+
+        for stored_scene in stored_scenes:
+            stored_scene.script = self._merge_visibility_actions(stored_scene.script)
+
+        for stored_scene in stored_scenes:
+            stored_scene.script = self._remove_redundant_visibility_actions(stored_scene.script)
+            
+        for stored_scene in stored_scenes:
+            stored_scene.script = self._remove_redundant_set_field_actions(stored_scene.script)
+
+
+        self.requests[request.resource] = stored_scenes
+
+
+    def get_batch_requests(self):
+        return [ScenesData(resource=resource, scenes=scenes) for resource, scenes in self.requests.items()]
+
+
+    def process_requests(self, context):
+        """
+        Processes the collected requests by grouping and combining them.
+        """
+
+        context_data = {
+            "data_storage": context.data_storage,
+            "url": context.shutter_url,
+            "access_token": context.shutter_access_token,
+        }
+        context_data = {k: v for k, v in context_data.items() if v is not None}
+        img_files = Shutter(**context_data).get_images("None", self.get_batch_requests())
+        return img_files
+
+
+
+
+class Shutter(Flow360BaseModel):
     """
     Model representing UVF shutter request data and configuration settings.
 
     Parameters
     ----------
-    cases : List[Any]
-        List of case objects associated with the UVF shutter.
     data_storage : str, default="."
         Path to the directory where data will be stored.
     url : str
@@ -359,7 +564,6 @@ class UVFshutter(Flow360BaseModel):
         Whether to force generate data or use cached data
     """
 
-    cases: List[Any]
     data_storage: str = "."
     url: str = pd.Field(
         default_factory=lambda: f"https://shutter-api.{Env.current.domain}"
@@ -368,28 +572,31 @@ class UVFshutter(Flow360BaseModel):
     access_token: Optional[str] = None
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        @backoff.on_exception(backoff.expo, Flow360WebNotAvailableError, max_time=3600)
+        @backoff.on_exception(lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600)
         @http_interceptor
         async def _get_image_sequence(
-            session: aiohttp.client.ClientSession, url: str, uvf_request: list[dict]
+            session: aiohttp.client.ClientSession, url: str, shutter_request: list[dict]
         ) -> str:
             log.debug(
-                f"sending request to uvf-shutter: {url=}, {type(uvf_request)=}, {json.dumps(uvf_request)}, {len(uvf_request)=}"
+                f"sending request to uvf-shutter: {url=}, {type(shutter_request)=}, {len(json.dumps(shutter_request))=}"
             )
-            return session.post(url, json=uvf_request)
+            return session.post(url, json=shutter_request)
 
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=3600),
             headers={"Authorization": f"Bearer {self.access_token}"},
         ) as session:
             tasks = []
-            for _, _, uvf_request in screenshots:
+            for _, _, shutter_request in screenshots:
                 tasks.append(
                     _get_image_sequence(
                         session=session,
                         url=urljoin(self.url, "/sequence/run"),
-                        uvf_request=uvf_request,
+                        shutter_request=shutter_request,
                     )
+                )
+                log.debug(
+                    f"request to shutter: {json.dumps(shutter_request)}"
                 )
 
             responses = await asyncio.gather(*tasks, return_exceptions=True)
@@ -442,7 +649,7 @@ class UVFshutter(Flow360BaseModel):
             img_full_path = os.path.join(img_folder, img_name)
             if not os.path.exists(img_full_path) or self.use_cache is False:
                 screenshots.append(
-                    (case_id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True))
+                    (case_id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True))
                 )
             else:
                 log.debug(f"File: {img_name=} exists in cache, reusing.")

@@ -75,8 +75,6 @@ class GeometryMeta(AssetMetaBaseModelV2):
     GeometryMeta component
     """
 
-    project_id: str = pd.Field(alias="projectId")
-    deleted: bool = pd.Field()
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
@@ -294,7 +292,7 @@ class Geometry(AssetBase):
         )
 
     @classmethod
-    def from_local_storage(cls, geometry_id: str = None, local_storage_path="") -> Geometry:
+    def from_local_storage(cls, geometry_id: str = None, local_storage_path="", meta_data: GeometryMeta=None) -> Geometry:
         """
         Parameters
         ----------
@@ -311,7 +309,7 @@ class Geometry(AssetBase):
         """
 
         return super()._from_local_storage(
-            asset_id=geometry_id, local_storage_path=local_storage_path
+            asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data
         )
 
     def _show_avaliable_entity_groups(

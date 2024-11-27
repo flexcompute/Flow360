@@ -1,0 +1,172 @@
+
+
+import os
+import posixpath
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
+from pylatex import (
+    Command,
+    Document,
+    Foot,
+    Head,
+    NewPage,
+    NoEscape,
+    Package,
+    PageStyle,
+    Section,
+    Subsection,
+    HugeText,
+    LargeText,
+    StandAloneGraphic,
+    Center, MediumText,
+    MiniPage
+)
+from pylatex.utils import bold
+from flow360.plugins.report.utils import font_definition
+
+
+
+
+
+class ReportDoc():
+
+    def __init__(self, title, landscape=True) -> None:
+        self._doc = Document(document_options=["10pt"])
+        self._define_preamble(self._doc, landscape)
+        self._create_custom_page_style(self._doc)
+        self._title_page_style(self._doc)
+        self._make_title(self._doc, title)
+        self.doc.change_document_style("customstyle")
+
+
+    @property
+    def doc(self):
+        return self._doc
+
+    def _define_preamble(self, doc, landscape):
+        # Package info
+        geometry_options = [
+            "a4paper", 
+            "margin=0.5in",
+            "bottom=0.7in",
+            "includefoot"
+            ]
+        if landscape:
+            geometry_options.append("landscape")
+
+        packages = [
+            Package("float"),
+            Package("caption"),
+            Package("graphicx"),
+            Package("placeins"),
+            Package("xcolor", options="table"),
+            Package("geometry", options=geometry_options),
+            Package("tikz"),
+            Package('fontspec'),
+            Package('colortbl'),
+            Package('array'),
+            NoEscape(r'\usepackage{eso-pic}'),
+            Package("fancyhdr")
+        ]
+        for package in packages:
+            doc.packages.append(package)
+
+        doc.preamble.append(NoEscape(r'\definecolor{customgray}{HTML}{E0E2E7}'))
+        doc.preamble.append(NoEscape(r'\definecolor{labelgray}{HTML}{F4F5F7}'))
+        doc.preamble.append(
+            NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{labelgray}{#1 #2} }")
+        )
+        doc.preamble.append(
+            NoEscape(
+                r"\captionsetup{position=bottom, font=large, labelformat=graybox, "
+                r"labelsep=none, justification=raggedright, singlelinecheck=false}"
+            )
+        )
+        doc.preamble.append(NoEscape(font_definition))
+        self._table_settings(doc)
+        self._background(doc)
+
+    def _table_settings(self, doc):
+        doc.preamble.append(NoEscape(r'\setlength{\tabcolsep}{12pt}'))
+        doc.preamble.append(NoEscape(r'\renewcommand{\arraystretch}{2}'))
+        doc.append(NoEscape(r'\arrayrulecolor{customgray}'))
+        doc.preamble.append(NoEscape(r'''
+            \newcolumntype{C}{>{\columncolor{white}}c}
+        '''))
+
+    def _background(self, doc):
+        background_file = posixpath.join(os.path.dirname(__file__), 'img', 'background.pdf').replace('\\', '/')
+        if not os.path.isfile(background_file):
+            raise FileNotFoundError(f"Background image not found at path: {background_file}")
+
+        background_latex = r'''
+        \AddToShipoutPictureBG{
+            \begin{tikzpicture}[remember picture, overlay]
+                \node[anchor=north east] at (current page.north east) {
+                    \includegraphics[width=\textwidth]{''' + background_file + r'''}
+                };
+            \end{tikzpicture}
+        }
+        '''
+        doc.preamble.append(NoEscape(background_latex))
+
+    def _create_custom_page_style(self, doc) -> PageStyle:
+        page_style = PageStyle("customstyle")
+        padding = r'\vspace{10pt}'
+
+        doc.preamble.append(NoEscape(r'\setlength{\footskip}{40pt}'))  # Adjust as needed
+
+        with page_style.create(Foot("C")) as footer:
+            footer.append(NoEscape(r'\textcolor{customgray}{\rule{\textwidth}{0.5pt}}'))
+            footer.append(NoEscape(r'\\'))
+            footer.append(NoEscape(padding))
+            with footer.create(MiniPage(width=NoEscape(r"\textwidth"), align='c')) as footer_content:
+                with footer_content.create(MiniPage(width=NoEscape(r"0.33\textwidth"), align='l')) as url:
+                    url.append(NoEscape(r'\hspace{1em}'))
+                    url.append(NoEscape(r'FLEXCOMPUTE.COM'))
+                    url.append(NoEscape(r'\hspace{1em}'))
+
+                with footer_content.create(MiniPage(width=NoEscape(r"0.33\textwidth"), align='c')) as logo1:
+                    logo1.append(StandAloneGraphic(
+                        image_options="height=18pt", 
+                        filename=os.path.join(os.path.dirname(__file__), "img", "flow360_logo_grey.pdf")
+                    ))
+
+
+                with footer_content.create(MiniPage(width=NoEscape(r"0.33\textwidth"), align='r')) as page_num:
+                    page_num.append(NoEscape(r"\thepage"))
+            footer.append(NoEscape(padding))
+        doc.preamble.append(page_style)
+
+    def _title_page_style(self, doc) -> PageStyle:
+        page_style = PageStyle("titlestyle")
+        with page_style.create(Foot("C")) as footer:
+            with footer.create(MiniPage(width=NoEscape(r"\textwidth"), align='c')) as footer_content:
+                footer_content.append(StandAloneGraphic(image_options="height=25pt", filename=os.path.join(os.path.dirname(__file__), "img", "cover_logo.pdf")))
+        doc.preamble.append(page_style)
+
+    def _make_title(self, doc, title: str=None):
+        NewLine = NoEscape(r"\\") # pylatex NewLine() is causing problems with centering
+        doc.append(NoEscape(r'\thispagestyle{titlestyle}'))
+
+        doc.append(NoEscape(r"\vspace*{\fill}"))
+
+        with doc.create(Center()):
+            doc.append(HugeText(bold("Flow360 Report")))
+            doc.append(NewLine)           
+            doc.append(NoEscape(r"\vspace{1cm}"))
+
+            if title is not None:
+                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + title + "}")))
+                doc.append(NewLine)
+            doc.append(NoEscape(r"\vspace{2cm}"))
+
+            doc.append(MediumText(NoEscape(r"\textcolor{gray}{\today}")))
+            doc.append(NewLine)
+
+        doc.append(NoEscape(r"\vspace*{\fill}"))  
+        doc.append(NewPage())
+
+    def generate_pdf(self, filename):
+        self.doc.generate_pdf(filename, compiler='xelatex', clean_tex=False)
+

@@ -3,6 +3,7 @@ Report generation interface
 """
 
 import os
+import posixpath
 from typing import List, Union, Set, Optional
 
 from flow360 import Case
@@ -21,6 +22,7 @@ from flow360.plugins.report.report_items import (
     Table,
     FileNameStr,
 )
+from flow360.plugins.report.uvf_shutter import ShutterBatchService
 from pydantic import Field, validate_call, model_validator
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
@@ -39,9 +41,12 @@ from pylatex import (
     HugeText,
     LargeText,
     StandAloneGraphic,
-    Center, MediumText
+    Center, MediumText,
+    MiniPage
 )
-from flow360.plugins.report.utils import RequirementItem
+from pylatex.utils import bold
+from flow360.plugins.report.utils import RequirementItem, font_definition
+from flow360.plugins.report.report_doc import ReportDoc
 
 
 class Report(Flow360Resource):
@@ -167,68 +172,26 @@ class ReportTemplate(Flow360BaseModel):
                 used_fig_names.add(fig_name)
         return model
 
-    def _create_header_footer(self) -> PageStyle:
-        header = PageStyle("header")
 
-        with header.create(Head("R")):
-            header.append(
-                NoEscape(
-                    r"\includegraphics[width=2cm]{"
-                    f"{os.path.join(os.path.dirname(__file__), 'img', 'flow360.png')}"
-                    "}"
-                )
-            )
+    def _generate_shutter_screenshots(self, context: ReportContext):
+        service = ShutterBatchService()
 
-        # Footer date and page number
-        with header.create(Foot("R")):
-            header.append(NoEscape(r"\thepage"))
+        for chart in self.items:
+            if isinstance(chart, Chart3D):
+                for case in context.cases:
+                    if not chart._fig_exist(case.id, context.data_storage):
+                        req = chart._get_shutter_request(case)
+                        service.add_request(req)
+            elif isinstance(chart, Chart2D):
+                chart3d, reference_case = chart.get_background_chart3D(context.cases)
+                if chart3d is not None:
+                    if not chart3d._fig_exist(reference_case.id, context.data_storage):
+                        req = chart3d._get_shutter_request(reference_case)
+                        if req is not None:
+                            service.add_request(req)
+        
+        service.process_requests(context)
 
-        with header.create(Foot("L")):
-            header.append(NoEscape(r"\today"))
-
-        return header
-
-    def _define_preamble(self, doc, landscape):
-        # Package info
-        geometry_options = ["a4paper", "margin=0.7in"]
-        if landscape:
-            geometry_options.append("landscape")
-
-        packages = [
-            Package("float"),
-            Package("caption"),
-            Package("graphicx"),
-            Package("placeins"),
-            Package("xcolor", options="table"),
-            Package("geometry", options=geometry_options)
-        ]
-        for package in packages:
-            doc.packages.append(package)
-
-    def _make_title(self, doc, title: str=None):
-        NewLine = NoEscape(r"\\") # pylatex NewLine() is causing problems with centering
-
-        doc.append(Command("begin", "titlepage"))
-
-        with doc.create(Center()):
-            doc.append(NoEscape(r"\vspace*{3cm}"))
-
-            doc.append(HugeText("Flow360 Report"))
-            doc.append(NewLine)           
-            doc.append(NoEscape(r"\vspace{1cm}"))
-
-            if title is not None:
-                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + title + "}")))
-                doc.append(NewLine)
-            doc.append(NoEscape(r"\vspace{2cm}"))
-
-            doc.append(MediumText(NoEscape(r"\textcolor{gray}{\today}")))
-            doc.append(NewLine)
-
-            doc.append(NoEscape(r"\vfill"))
-            doc.append(StandAloneGraphic(os.path.join(os.path.dirname(__file__), "img", "flow360.png"), image_options=NoEscape(r"width=0.15\textwidth")))
-
-        doc.append(Command("end", "titlepage"))
 
     def get_requirements(self)->List[RequirementItem]:
         """
@@ -285,7 +248,7 @@ class ReportTemplate(Flow360BaseModel):
         self,
         filename: FileNameStr,
         cases: list[Case],
-        landscape: bool = False,
+        landscape: bool = True,
         data_storage: str = ".",
         use_cache: bool = True,
         shutter_url: str = None,
@@ -312,48 +275,31 @@ class ReportTemplate(Flow360BaseModel):
         None
         """
         os.makedirs(data_storage, exist_ok=True)
-        doc = Document(document_options=["10pt"])
-        self._define_preamble(doc, landscape)
-        self._make_title(doc, self.title)
+        report_doc = ReportDoc(title=self.title, landscape=landscape)
 
-        doc.append(NewPage())
-
-        # Preamble info
-        doc.preamble.append(self._create_header_footer())
-        doc.preamble.append(NoEscape(r"\setlength{\headheight}{15pt}"))
-        doc.preamble.append(NoEscape(r"\addtolength{\topmargin}{-5pt}"))
-
-        doc.preamble.append(
-            NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{gray!20}{#1 #2} }")
-        )
-        doc.preamble.append(
-            NoEscape(
-                r"\captionsetup{position=bottom, font=large, labelformat=graybox, "
-                r"labelsep=none, justification=raggedright, singlelinecheck=false}"
-            )
-        )
-
-        doc.change_document_style("header")
 
         context = ReportContext(
             cases=cases,
-            doc=doc,
+            doc=report_doc.doc,
             data_storage=data_storage,
             shutter_url=shutter_url,
             shutter_access_token=shutter_access_token,
         )
+
+        self._generate_shutter_screenshots(context)
+
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
             item.get_doc_item(context)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
-            with doc.create(Section("Appendix", numbering=False)):
+            with report_doc.doc.create(Section("Appendix", numbering=False)):
                 for case in cases:
-                    with doc.create(Section(f"Case: {case.id}")):
+                    with report_doc.doc.create(Section(f"Case: {case.id}")):
                         case_context = ReportContext(
                             cases=[case],
-                            doc=doc,
+                            doc=report_doc.doc,
                             section_func=Subsection,
                             case_by_case=True,
                             data_storage=data_storage,
@@ -372,4 +318,5 @@ class ReportTemplate(Flow360BaseModel):
                             item.get_doc_item(case_context)
 
         # Generate the PDF
-        doc.generate_pdf(os.path.join(data_storage, filename), clean_tex=False)
+        # doc.generate_pdf(os.path.join(data_storage, filename), clean_tex=False)
+        report_doc.generate_pdf(os.path.join(data_storage, filename))

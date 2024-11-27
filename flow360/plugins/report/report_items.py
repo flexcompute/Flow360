@@ -1,9 +1,10 @@
 """
 Module containg detailed report items
 """
+from __future__ import annotations
 
 import os
-from typing import List, Literal, Optional, Tuple, Union, Annotated, Callable
+from typing import List, Literal, Optional, Tuple, Union, Annotated
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -33,12 +34,13 @@ from flow360.plugins.report.uvf_shutter import (
     SetFieldPayload,
     SetObjectVisibilityPayload,
     TakeScreenshotPayload,
-    UvfObjectTypes,
-    UVFshutter,
+    ShutterObjectTypes,
+    Shutter,
     FocusPayload,
     SetCameraPayload,
     Camera,
     SetLICPayload,
+    ResetFieldPayload,
 )
 import pydantic as pd
 from pydantic import (
@@ -125,7 +127,7 @@ class Summary(ReportItem):
         context.doc.append(section)
         if self.text is not None:
             context.doc.append(f"{self.text}\n")
-        Table(data=["name"], section_title=None, headers=["Case Name"]).get_doc_item(context)
+        Table(data=["name", "id"], section_title=None, headers=["Case Name", "Id"]).get_doc_item(context)
 
 
 class Inputs(ReportItem):
@@ -215,7 +217,7 @@ class Table(ReportItem):
             table.add_hline()
 
             # Manage column headings
-            field_titles = [bold("Case No.")]
+            field_titles = ["Case No."]
             if self.headers is None:
                 for path in self.data:
                     if isinstance(path, (Delta, DataItem)):
@@ -223,11 +225,11 @@ class Table(ReportItem):
                     else:
                         field = path.split("/")[-1]
 
-                    field_titles.append(bold(str(field)))
+                    field_titles.append(str(field))
             else:
-                field_titles.extend([bold(heading) for heading in self.headers])
+                field_titles.extend([heading for heading in self.headers])
 
-            table.append(Command("rowcolor", "gray!20"))
+            table.append(Command("rowcolor", "labelgray"))
             table.add_row(field_titles)
             table.add_hline()
 
@@ -319,8 +321,17 @@ class Chart(ReportItem):
 
         return cases
 
+    def _fig_exist(self, id, data_storage='.'):
+        img_folder = os.path.join(data_storage, id)
+        img_name = self.fig_name + ".png"
+        img_full_path = os.path.join(img_folder, img_name)
+        if os.path.exists(img_full_path):
+            log.debug(f"File: {img_name=} exists in cache, reusing.")
+            return True
+        return False
+
     def _add_figure(self, doc: Document, file_name, caption):
-        fig = Figure(position="h!")
+        fig = Figure(position="!ht")
         fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
         fig.add_caption(caption)
         doc.append(fig)
@@ -333,9 +344,8 @@ class Chart(ReportItem):
         """
 
         # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
-        minipage_size = 0.95 / self.items_in_row if self.items_in_row != 1 else 0.7
+        minipage_size = 0.86 / self.items_in_row if self.items_in_row != 1 else 0.8
         doc.append(NoEscape(r"\begin{figure}[h!]"))
-        doc.append(NoEscape(r"\centering"))
 
         # Build list of indices to combine into rows
         indices = list(range(len(img_list)))
@@ -540,7 +550,7 @@ class Chart2D(Chart):
             not isinstance(data, list) for data in y_data
         )
 
-    def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
+    def _load_data(self, cases):
         x_label = self.x.split("/")[-1]
         y_label = self.y.split("/")[-1]
 
@@ -563,7 +573,39 @@ class Chart2D(Chart):
                 data.filter(exclude=self.exclude)
                 y_data[i] = data.values[component]
 
+        return x_data, y_data, x_label, y_label
+
+
+    def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
+        x_data, y_data, x_label, y_label = self._load_data(cases)
+        background = self._get_background_chart(x_data)
         background_png = None
+        if background is not None:
+            background_png = background._get_images([cases[0]], context)[0]
+
+        if self._is_multiline_data(x_data, y_data):
+            # every case is one point, eg CL/CD plot
+            return PlotModel(
+                x_data=[float(data) for data in x_data],
+                y_data=[float(data) for data in y_data],
+                x_label=x_label,
+                y_label=y_label,
+                style="o-",
+                backgroung_png=background_png,
+            )
+
+        return PlotModel(
+            x_data=x_data,
+            y_data=y_data,
+            x_label=x_label,
+            y_label=y_label,
+            legend=[case.name for case in cases],
+            is_log=self.is_log_plot(),
+            backgroung_png=background_png,
+        )
+    
+
+    def _get_background_chart(self, x_data):
         if self.background == "geometry":
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
             if self.x == "x_slicing_force_distribution/X":
@@ -587,28 +629,15 @@ class Chart2D(Chart):
             background = Chart3D(
                 show="boundaries", camera=camera, fig_name="background_" + self.fig_name, exclude=self.exclude
             )
-            background_png = background._get_images([cases[0]], context)[0]
+            return background
+        return None
+    
 
-        if self._is_multiline_data(x_data, y_data):
-            # every case is one point, eg CL/CD plot
-            return PlotModel(
-                x_data=[float(data) for data in x_data],
-                y_data=[float(data) for data in y_data],
-                x_label=x_label,
-                y_label=y_label,
-                style="o-",
-                backgroung_png=background_png,
-            )
+    def get_background_chart3D(self, cases)->Tuple[Chart3D, Case]:
+        x_data, y_data, x_label, y_label = self._load_data(cases)
+        reference_case = cases[0]
+        return self._get_background_chart(x_data), reference_case
 
-        return PlotModel(
-            x_data=x_data,
-            y_data=y_data,
-            x_label=x_label,
-            y_label=y_label,
-            legend=[case.name for case in cases],
-            is_log=self.is_log_plot(),
-            backgroung_png=background_png,
-        )
 
     def _get_figures(self, cases, context: ReportContext):
         file_names = []
@@ -679,7 +708,7 @@ class Chart3D(Chart):
         Optional limits for the field values, specified as a tuple (min, max).
     camera: Camera
         Camera settings: camera position, look at, up.
-    show : UvfObjectTypes
+    show : ShutterObjectTypes
         Type of object to display in the 3D chart.
     exclude : List[str], optional
         Exclude boundaries from screenshot, 
@@ -689,12 +718,12 @@ class Chart3D(Chart):
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     is_log_scale: bool = False
-    show: UvfObjectTypes
+    show: ShutterObjectTypes
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
-    def _get_uvf_exclude_visibility(self):
+    def _get_shutter_exclude_visibility(self):
         if self.exclude is not None:
             return [
                 ActionPayload(
@@ -704,7 +733,7 @@ class Chart3D(Chart):
             ]
         return []
 
-    def _get_uvf_include_visibility(self):
+    def _get_shutter_include_visibility(self):
         if self.include is not None:
             return [
                 ActionPayload(
@@ -714,7 +743,7 @@ class Chart3D(Chart):
             ]
         return []
 
-    def _get_uvf_qcriterion_script(
+    def _get_shutter_qcriterion_script(
         self,
         script: List = None,
         field: str = None,
@@ -726,15 +755,22 @@ class Chart3D(Chart):
 
         script += [
             ActionPayload(
+                action="reset-field",
+                payload=ResetFieldPayload(
+                    object_id="boundaries",
+                ),
+            ),
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(object_ids=["qcriterion", "boundaries"], visibility=True),
+            ),
+            ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
             )
         ]
-        script += self._get_uvf_exclude_visibility()
+        script += self._get_shutter_exclude_visibility()
         script += [
-            ActionPayload(
-                action="focus", payload=FocusPayload(object_ids=["boundaries"], zoom=1.5)
-            ),
             ActionPayload(
                 action="set-field",
                 payload=SetFieldPayload(
@@ -747,7 +783,7 @@ class Chart3D(Chart):
         ]
         return script
 
-    def _get_uvf_screenshot_script(self, script, screenshot_name):
+    def _get_shutter_screenshot_script(self, script, screenshot_name):
         script += [
             ActionPayload(
                 action="take-screenshot",
@@ -756,7 +792,7 @@ class Chart3D(Chart):
         ]
         return script
 
-    def _get_uvf_set_camera(self, script, camera: Camera):
+    def _get_shutter_set_camera(self, script, camera: Camera):
         script += [
             ActionPayload(
                 action="set-camera",
@@ -771,7 +807,7 @@ class Chart3D(Chart):
         ]
         return script
 
-    def _get_uvf_boundary_script(
+    def _get_shutter_boundary_script(
         self,
         script: List = None,
         field: str = None,
@@ -781,15 +817,25 @@ class Chart3D(Chart):
         if script is None:
             script = []
 
+        if self.include is not None:
+            script += self._get_shutter_include_visibility()
+        else:
+            script += [
+                ActionPayload(
+                    action="set-object-visibility",
+                    payload=SetObjectVisibilityPayload(
+                        object_ids=["boundaries"], visibility=True
+                    ),
+                )]
         script += [
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(
                     object_ids=["slices", "qcriterion"], visibility=False
                 ),
-            ),
+            )
         ]
-        script += self._get_uvf_exclude_visibility()
+        script += self._get_shutter_exclude_visibility()
 
         if field is None:
             pass
@@ -831,12 +877,12 @@ class Chart3D(Chart):
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(
-                    object_ids=["boundaries", "qcriterion"], visibility=False
+                    object_ids=["boundaries", "qcriterion", "slices"], visibility=False
                 ),
             ),
         ]
-        script += self._get_uvf_exclude_visibility()
-        script += self._get_uvf_include_visibility()
+        script += self._get_shutter_exclude_visibility()
+        script += self._get_shutter_include_visibility()
 
         if field is None:
             pass
@@ -864,14 +910,14 @@ class Chart3D(Chart):
         return script
 
 
-    def _get_uvf_request(self, fig_name, case: Case):
+    def _get_shutter_request(self, case: Case):
 
         if self.show == "qcriterion":
-            script = self._get_uvf_qcriterion_script(
+            script = self._get_shutter_qcriterion_script(
                 field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
             )
         elif self.show == "boundaries":
-            script = self._get_uvf_boundary_script(
+            script = self._get_shutter_boundary_script(
                 field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
             )
         elif self.show == "slices":
@@ -881,11 +927,11 @@ class Chart3D(Chart):
         else:
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
 
-        script = self._get_uvf_set_camera(script, self.camera)
+        script = self._get_shutter_set_camera(script, self.camera)
         if self.camera.dimension is None:
             script = self._get_focus_camera(script)
 
-        script = self._get_uvf_screenshot_script(script=script, screenshot_name=fig_name)
+        script = self._get_shutter_screenshot_script(script=script, screenshot_name=self.fig_name)
 
         scene = Scene(name="my-scene", script=script)
         path_prefix = case.get_cloud_path_prefix()
@@ -898,16 +944,16 @@ class Chart3D(Chart):
         resource = Resource(path_prefix=path_prefix, id=case.id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
+        
 
     def get_requirements(self):
         """get requirements"""
         return []
 
     def _get_images(self, cases: List[Case], context: ReportContext):
-        fig_name = self.fig_name
-        uvf_requests = []
+        shutter_requests = []
         for case in cases:
-            uvf_requests.append(self._get_uvf_request(fig_name, case))
+            shutter_requests.append(self._get_shutter_request(case))
 
         context_data = {
             "data_storage": context.data_storage,
@@ -915,7 +961,7 @@ class Chart3D(Chart):
             "access_token": context.shutter_access_token,
         }
         context_data = {k: v for k, v in context_data.items() if v is not None}
-        img_files = UVFshutter(cases=cases, **context_data).get_images(fig_name, uvf_requests)
+        img_files = Shutter(**context_data).get_images(self.fig_name, shutter_requests)
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases]

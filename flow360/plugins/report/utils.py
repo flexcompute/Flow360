@@ -1,9 +1,10 @@
 """
-report item
+report utils, utils.py
 """
 from  __future__ import annotations
 from abc import ABCMeta, abstractmethod
-
+import os
+import posixpath
 from numbers import Number
 from typing import Any, List, Optional, Literal, Union, Annotated
 
@@ -27,8 +28,8 @@ class RequirementItem(pd.BaseModel):
     resource_type: Literal['case', 'volume_mesh', 'surface_mesh', 'geometry'] = 'case'
     filename: str
 
-    class Config:
-        frozen = True
+    model_config = {"frozen": True}
+
 
 # pylint: disable=protected-access
 _requirements_mapping = {
@@ -528,3 +529,18 @@ class Tabulary(Tabular):
             text.
         """
         super().__init__(*args, start_arguments=width_argument, **kwargs)
+
+
+
+here = os.path.dirname(os.path.abspath(__file__))
+font_path = posixpath.join(here, 'fonts/')
+font_definition = r'''
+\setmainfont{TWKEverett}[
+    Path = ''' + font_path + r''',
+    Extension = .otf,
+    UprightFont = *-Regular,
+    ItalicFont = *-RegularItalic,
+    BoldFont = *-Bold,
+    BoldItalicFont = *-BoldItalic,
+]
+'''
