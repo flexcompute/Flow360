@@ -1,10 +1,12 @@
 import flow360 as fl
 from flow360.component.simulation.unit_system import SI_unit_system, u
-from flow360.examples import Tutorial_2dcrm
+from flow360.examples import Tutorial2D30p30n
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file(Tutorial_2dcrm.geometry, name="Tutorial 2D CRM from Python")
+Tutorial2D30p30n.get_files()
+
+project = fl.Project.from_file(Tutorial2D30p30n.geometry, name="Tutorial 2D 30p30n from Python")
 geometry = project.geometry
 
 # show face and edge groupings
@@ -35,7 +37,7 @@ with SI_unit_system:
                 surface_max_edge_length=1.1,
                 curvature_resolution_angle=12 * u.deg,
                 boundary_layer_growth_rate=1.17,
-                boundary_layer_first_layer_thickness=1.8487111e-06,
+                boundary_layer_first_layer_thickness=4.9536767e-06,
             ),
             refinement_factor=1.35,
             gap_treatment_strength=0.5,
@@ -56,21 +58,15 @@ with SI_unit_system:
                     name="trailing",
                     max_edge_length=0.36,
                     faces=[
-                        geometry["wingTrailing"],
-                        geometry["flapTrailing"],
-                        geometry["slatTrailing"],
+                        geometry["*Trailing"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
                     name="edges",
                     method=fl.HeightBasedRefinement(value=0.0007),
                     edges=[
-                        geometry["wingtrailingEdge"],
-                        geometry["wingleadingEdge"],
-                        geometry["flaptrailingEdge"],
-                        geometry["flapleadingEdge"],
-                        geometry["slattrailingEdge"],
-                        geometry["slatFrontLEadingEdge"],
+                        geometry["*trailingEdge"],
+                        geometry["*leadingEdge"],
                     ],
                 ),
                 fl.SurfaceEdgeRefinement(
@@ -79,10 +75,10 @@ with SI_unit_system:
             ],
         ),
         reference_geometry=fl.ReferenceGeometry(
-            moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
+            moment_center=[0.25, 0, 0], moment_length=[1, 1, 1], area=0.01
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            mach=0.2, reynolds=5e6, temperature=272.1, alpha=16 * u.deg, beta=0 * u.deg
+            mach=0.17, reynolds=1.71e06, temperature=288.16, alpha=8.5 * u.deg, beta=0 * u.deg
         ),
         time_stepping=fl.Steady(
             max_steps=3000, CFL=fl.RampCFL(initial=20, final=300, ramp_steps=500)
@@ -90,12 +86,7 @@ with SI_unit_system:
         models=[
             fl.Wall(
                 surfaces=[
-                    geometry["wing"],
-                    geometry["flap"],
-                    geometry["slat"],
-                    geometry["wingTrailing"],
-                    geometry["flapTrailing"],
-                    geometry["slatTrailing"],
+                    geometry["*"],
                 ],
                 name="wall",
             ),
@@ -116,7 +107,7 @@ with SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
+                name="VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "vorticity",
@@ -129,7 +120,7 @@ with SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
+                name="SurfaceOutput",
                 surfaces=geometry["*"],
                 output_fields=["primitiveVars", "Cp", "Cf", "CfVec", "yPlus"],
             ),
@@ -137,4 +128,4 @@ with SI_unit_system:
     )
 
 
-project.run_case(params=params, name="Case of tutorial 2D CRM from Python")
+project.run_case(params=params, name="Case of tutorial 2D 30p30n from Python")
