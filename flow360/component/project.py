@@ -36,7 +36,13 @@ from flow360.component.utils import (
     match_file_pattern,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import (
+    Flow360DuplicateAssetError,
+    Flow360FileError,
+    Flow360ValueError,
+    Flow360WebError,
+)
+from flow360.log import log
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -708,16 +714,19 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
-        self._surface_mesh_cache.add_asset(
-            self._run(
-                params=params,
-                target=SurfaceMesh,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=None,
-                solver_version=solver_version,
+        try:
+            self._surface_mesh_cache.add_asset(
+                self._run(
+                    params=params,
+                    target=SurfaceMesh,
+                    draft_name=name,
+                    run_async=run_async,
+                    fork_from=None,
+                    solver_version=solver_version,
+                )
             )
-        )
+        except Flow360DuplicateAssetError:
+            log.warning("We already generated this Surface Mesh in the project.")
 
     @pd.validate_call
     def generate_volume_mesh(
@@ -751,16 +760,19 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry root asset"
             )
-        self._volume_mesh_cache.add_asset(
-            self._run(
-                params=params,
-                target=VolumeMeshV2,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=None,
-                solver_version=solver_version,
+        try:
+            self._volume_mesh_cache.add_asset(
+                self._run(
+                    params=params,
+                    target=VolumeMeshV2,
+                    draft_name=name,
+                    run_async=run_async,
+                    fork_from=None,
+                    solver_version=solver_version,
+                )
             )
-        )
+        except Flow360DuplicateAssetError:
+            log.warning("We already generated this Volume Mesh in the project.")
 
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     def run_case(
@@ -788,13 +800,16 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
-        self._case_cache.add_asset(
-            self._run(
-                params=params,
-                target=Case,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=fork_from,
-                solver_version=solver_version,
+        try:
+            self._case_cache.add_asset(
+                self._run(
+                    params=params,
+                    target=Case,
+                    draft_name=name,
+                    run_async=run_async,
+                    fork_from=fork_from,
+                    solver_version=solver_version,
+                )
             )
-        )
+        except Flow360DuplicateAssetError:
+            log.warning("We already submitted this Case in the project.")

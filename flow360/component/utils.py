@@ -18,6 +18,7 @@ from ..cloud.s3_utils import get_local_filename_and_create_folders
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
 from ..exceptions import (
+    Flow360DuplicateAssetError,
     Flow360FileError,
     Flow360RuntimeError,
     Flow360TypeError,
@@ -671,7 +672,16 @@ class ProjectAssetCache(Generic[AssetT]):
         ----------
         asset : AssetT
             The asset to add. Must have a unique `id` attribute.
+
+        Raises
+        ------
+        Flow360DuplicateAssetError
+            If the specified `asset_id` already exists in the cache.
         """
+        if not self.asset_cache.get(asset.id, None):
+            raise Flow360DuplicateAssetError(
+                f"{asset._cloud_resource_type_name}:{asset.id} already exists in the project."
+            )
         self.asset_cache[asset.id] = asset
         self.current_asset_id = asset.id
 
