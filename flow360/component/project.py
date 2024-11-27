@@ -3,6 +3,7 @@
 # pylint: disable=no-member
 # To be honest I do not know why pylint is insistent on treating
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
+import datetime
 import json
 from enum import Enum
 from typing import Iterable, List, Optional, Union
@@ -514,6 +515,7 @@ class Project(pd.BaseModel):
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
+        project._get_asset_from_cloud()
         return project
 
     def _check_initialized(self):
@@ -529,6 +531,31 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Project not initialized - use Project.from_file or Project.from_cloud"
             )
+
+    def _get_asset_from_cloud(self, tree):
+        self._check_initialized()
+        root_id = self.metadata.root_item_id
+        tree = self._project_webapi.get(method="tree")
+        if tree["records"]:
+            records = sorted(
+                tree["records"],
+                key=lambda d: datetime.datetime.strptime(d["updatedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
+            )
+            for record in records:
+                if record["id"] == root_id:
+                    continue
+                if record["type"] == "SurfaceMesh":
+                    self._surface_mesh_cache.add_asset(
+                        SurfaceMesh.from_cloud(surface_mesh_id=record["id"])
+                    )
+                if record["type"] == "VolumeMesh":
+                    self._volume_mesh_cache.add_asset(
+                        VolumeMeshV2.from_cloud(
+                            id=record["id"], root_item_entity_info_type=GeometryEntityInfo
+                        )
+                    )
+                if record["type"] == "Case":
+                    self._case_cache.add_asset(Case.from_cloud(case_id=record["id"]))
 
     def _get_root_simulation_json(self):
         """
