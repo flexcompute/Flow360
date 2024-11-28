@@ -12,6 +12,7 @@ from .rotating_spheres import RotatingSpheres
 from .tutorial_2D_30p30n import Tutorial2D30p30n
 from .tutorial_2D_crm import Tutorial2DCRM
 from .tutorial_2D_gaw2 import Tutorial2DGAW2
+from .tutorial_bet_disk import TutorialBETDisk
 from .tutorial_cht_solver import TutorialCHTSolver
 from .tutorial_periodic_BC import TutorialPeriodicBC
 
@@ -30,6 +31,7 @@ __all__ = [
     "Tutorial2DCRM",
     "Tutorial2D30p30n",
     "Tutorial2DGAW2",
+    "TutorialBETDisk",
     "TutorialCHTSolver",
     "TutorialPeriodicBC",
 ]
