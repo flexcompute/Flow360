@@ -284,12 +284,8 @@ def test_mach_reynodls_op_cond():
         beta=0.0 * u.deg,
         project_length_unit=u.m,
     )
-    assertions.assertAlmostEqual(
-        condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5
-    )
-    assertions.assertAlmostEqual(
-        condition.thermal_state.density.value, 1.31452332
-    )
+    assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = operating_condition_from_mach_reynolds(
