@@ -679,6 +679,7 @@ class ProjectAssetCache(Generic[AssetT]):
             If the specified `asset_id` already exists in the cache.
         """
         if not self.asset_cache.get(asset.id, None):
+            # pylint: disable=protected-access,no-member
             raise Flow360DuplicateAssetError(
                 f"{asset._cloud_resource_type_name}:{asset.id} already exists in the project."
             )

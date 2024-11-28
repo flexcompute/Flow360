@@ -194,7 +194,10 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
 
 def get_entity_info_type_from_str(entity_type: str) -> EntityInfoModel:
     """Get EntityInfo type from the asset type from the project tree"""
+    entity_info_type = None
     if entity_type == "Geometry":
-        return GeometryEntityInfo
+        entity_info_type = GeometryEntityInfo
     if entity_type == "VolumeMesh":
-        return VolumeMeshEntityInfo
+        entity_info_type = VolumeMeshEntityInfo
+
+    return entity_info_type
