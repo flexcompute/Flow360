@@ -42,6 +42,7 @@ from flow360.component.simulation.unit_system import (
     InverseLengthType,
     LengthType,
     PressureType,
+    u,
 )
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
@@ -337,7 +338,7 @@ class BETDisk(Flow360BaseModel):
         + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`.",
     )
     blade_line_chord: LengthType.NonNegative = pd.Field(
-        0,
+        0 * u.m,
         description="Dimensional chord to use if performing an unsteady BET Line simulation. "
         + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
     )
