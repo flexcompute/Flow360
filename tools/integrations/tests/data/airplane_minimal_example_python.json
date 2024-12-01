@@ -2,7 +2,7 @@
     "unit_system": {
         "name": "SI"
     },
-    "version": "24.11.0b5",
+    "version": "24.11.0",
     "meshing": {
         "farfield": "auto",
         "refinement_factor": 1.0,
