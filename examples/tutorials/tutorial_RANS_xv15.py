@@ -17,27 +17,28 @@ with fl.SI_unit_system:
     rotation_zone.center = (0, 0, 0) * fl.u.m
     rotation_zone.axis = (0, 0, -1)
     farfield = fl.AutomatedFarfield(name="farfield")
+    thermal_state = fl.ThermalState(
+        temperature=288.15,
+        material=fl.Air(
+            dynamic_viscosity=fl.Sutherland(
+                reference_temperature=288.15,
+                reference_viscosity=4.29279e-8 * fl.u.flow360_viscosity_unit,
+                effective_temperature=110.4,
+            )
+        ),
+    )
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
             moment_center=(0, 0, 0),
             moment_length=(3.81, 3.81, 3.81),
             area=45.604,
         ),
-        operating_condition=fl.AerospaceCondition.from_mach(
-            mach=0.0146972,
-            reference_mach=0.7,
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=5.0 * fl.u.m / fl.u.s,
+            reference_velocity_magnitude=0.7 * thermal_state.speed_of_sound,
             alpha=-90 * fl.u.deg,
             beta=0 * fl.u.deg,
-            thermal_state=fl.ThermalState(
-                temperature=288.15,
-                material=fl.Air(
-                    dynamic_viscosity=fl.Sutherland(
-                        reference_temperature=288.15,
-                        reference_viscosity=4.29279e-8 * fl.u.flow360_viscosity_unit,
-                        effective_temperature=110.4,
-                    )
-                ),
-            ),
+            thermal_state=thermal_state,
         ),
         time_stepping=fl.Unsteady(
             max_pseudo_steps=35,
