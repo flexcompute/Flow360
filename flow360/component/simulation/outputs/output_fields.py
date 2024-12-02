@@ -119,7 +119,7 @@ IsoSurfaceFieldNames = Literal[
     "s",
     "T",
     "Cp",
-    "Cpt"
+    "Cpt",
     "mut",
     "nuHat",
 ]
