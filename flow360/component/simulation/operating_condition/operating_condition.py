@@ -347,11 +347,13 @@ OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 def operating_condition_from_mach_reynolds(
     mach: pd.NonNegativeFloat,
     reynolds: pd.PositiveFloat,
+    project_length_unit: LengthType.Positive = pd.Field(
+        description="The Length unit of the project."
+    ),
     temperature: TemperatureType.Positive = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
-    project_length_unit: LengthType.Positive = 1 * u.m,
 ) -> AerospaceCondition:
     """
     Create an `AerospaceCondition` from Mach number and Reynolds number.
@@ -366,6 +368,8 @@ def operating_condition_from_mach_reynolds(
         Freestream Mach number (must be non-negative).
     reynolds : PositiveFloat
         Freestream Reynolds number defined with mesh unit (must be positive).
+    project_length_unit: LengthType.Positive
+        Project length unit.
     temperature : TemperatureType.Positive, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
@@ -374,8 +378,6 @@ def operating_condition_from_mach_reynolds(
         Sideslip angle. Default is 0 degrees.
     reference_mach : PositiveFloat, optional
         Reference Mach number. Default is None.
-    project_length_unit: LengthType.Positive, optional
-        Project length unit. Defualt is 1 m.
 
     Returns
     -------
@@ -396,11 +398,11 @@ def operating_condition_from_mach_reynolds(
     >>> condition = operating_condition_from_mach_reynolds(
     ...     mach=0.85,
     ...     reynolds=1e6,
+    ...     project_length_unit=1 * u.mm,
     ...     temperature=288.15 * u.K,
     ...     alpha=2.0 * u.deg,
     ...     beta=0.0 * u.deg,
     ...     reference_mach=0.85,
-    ...     project_length_unit=1 * u.mm,
     ... )
     >>> print(condition)
     AerospaceCondition(...)
@@ -418,7 +420,7 @@ def operating_condition_from_mach_reynolds(
         reynolds * material.get_dynamic_viscosity(temperature) / (velocity * project_length_unit)
     )
 
-    thermal_state = ThermalState(temperature=temperature, density=density, material=material)
+    thermal_state = ThermalState(temperature=temperature, density=density)
 
     log.info(
         """Density and viscosity were calculated based on input data, ThermalState will be automatically created."""
