@@ -13,9 +13,9 @@ project = fl.Project.from_file(
 volume_mesh = project.volume_mesh
 
 with fl.SI_unit_system:
-    rotation_cylinder = volume_mesh["innerRotating"]
-    rotation_cylinder.center = (0, 0, 0) * fl.u.m
-    rotation_cylinder.axis = (0, 0, -1)
+    rotation_zone = volume_mesh["innerRotating"]
+    rotation_zone.center = (0, 0, 0) * fl.u.m
+    rotation_zone.axis = (0, 0, -1)
     farfield = fl.AutomatedFarfield(name="farfield")
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
@@ -87,8 +87,8 @@ with fl.SI_unit_system:
                 ),
             ),
             fl.Rotation(
-                volumes=rotation_cylinder,
-                spec=fl.AngularVelocity(20 * math.pi * fl.u.rad / fl.u.s),
+                volumes=rotation_zone,
+                spec=fl.AngularVelocity(600 * fl.u.rpm),
             ),
             fl.Freestream(surfaces=volume_mesh["farField/farField"], name="Freestream"),
             fl.Wall(surfaces=volume_mesh["innerRotating/blade"], name="NoSlipWall"),
