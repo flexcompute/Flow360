@@ -1,7 +1,8 @@
 {
     "boundaries": {
         "1": {
-            "type": "NoSlipWall"
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
         },
         "2": {
             "type": "SlipWall"
@@ -179,5 +180,6 @@
         "u": "u",
         "v": "v",
         "w": "w"
-    }
+    },
+    "userDefinedFields":[]
 }

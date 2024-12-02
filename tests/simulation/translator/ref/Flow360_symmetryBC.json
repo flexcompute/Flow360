@@ -70,7 +70,8 @@
     },
     "boundaries": {
         "fluid/wall": {
-            "type": "NoSlipWall"
+            "type": "NoSlipWall",
+            "heatFlux": 0.0
         },
         "fluid/symmetry": {
             "type": "SymmetryPlane"
@@ -121,5 +122,6 @@
         "u": "u",
         "v": "v",
         "w": "w"
-    }
+    },
+    "userDefinedFields":[]
 }

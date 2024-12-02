@@ -30,8 +30,13 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
+    Point,
+    Slice,
+)
 from flow360.component.simulation.outputs.outputs import (
+    IsosurfaceOutput,
     ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
@@ -262,6 +267,16 @@ def test_cht_solver_settings_validator(
         volumetric_heat_source="0",
         initial_condition=HeatEquationInitialCondition(temperature="10;"),
     )
+    solid_model_without_density = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=SolidMaterial(
+            name="aluminum_without_density",
+            thermal_conductivity=235 * u.kg / u.s**3 * u.m / u.K,
+            specific_heat_capacity=903 * u.m**2 / u.s**2 / u.K,
+        ),
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10;"),
+    )
     surface_output_with_residual_heat_solver = SurfaceOutput(
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
@@ -292,12 +307,23 @@ def test_cht_solver_settings_validator(
             outputs=[surface_output_with_residual_heat_solver],
         )
 
-    message = "In `Solid` model -> material, the heat capacity needs to be specified for unsteady simulations."
+    message = (
+        "In `Solid` model -> material, both `specific_heat_capacity` and `density` "
+        "need to be specified for unsteady simulations."
+    )
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[fluid_model, solid_model_without_specific_heat_capacity],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model, solid_model_without_density],
             time_stepping=timestepping_unsteady,
             outputs=[surface_output_with_residual_heat_solver],
         )
@@ -470,7 +496,7 @@ def test_valid_reference_velocity():
 def test_output_fields_with_user_defined_fields():
     surface_1 = Surface(name="some_random_surface")
     # 1: No user defined fields
-    msg = "In `outputs`[0]:, not_valid_field is not valid output field name. Allowed fields are ['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
+    msg = "In `outputs`[0]:, not_valid_field is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -490,7 +516,7 @@ def test_output_fields_with_user_defined_fields():
             ],
         )
 
-    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'Cpt', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
+    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -542,6 +568,29 @@ def test_output_fields_with_user_defined_fields():
                         surfaces=[surface_1],
                     )
                 ]
+            )
+
+    msg = "In `outputs`[1]:, Cpp is not valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            _ = SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="po",
+                        output_fields=["Cp"],
+                        probe_points=[Point(name="pt1", location=(1, 2, 3))],
+                    ),
+                    IsosurfaceOutput(
+                        name="iso",
+                        entities=[Isosurface(name="iso1", field="Cpp", iso_value=0.5)],
+                        output_fields=["primitiveVars"],
+                    ),
+                ],
+                user_defined_fields=[
+                    UserDefinedField(
+                        name="not_valid_field", expression="primitiveVars[0] *3.1415926"
+                    )
+                ],
             )
 
 
