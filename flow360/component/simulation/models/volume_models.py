@@ -56,6 +56,7 @@ from flow360.component.types import Axis
 class AngleExpression(SingleAttributeModel):
     """
     :class:`AngleExpression` class for define the angle expression for :py:attr:`Rotation.spec`.
+    The result of the expression is assumed to be in radians.
     """
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
