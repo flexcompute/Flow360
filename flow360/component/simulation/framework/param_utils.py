@@ -64,9 +64,7 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(
-                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
-            )
+            expanded_entities = field._get_expanded_entities(create_hard_copy=False)
             for entity in expanded_entities if expanded_entities else []:
                 registry.register(entity)
 
@@ -95,9 +93,7 @@ def _update_entity_full_name(
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(
-                supplied_registry=None, expect_supplied_registry=False, create_hard_copy=False
-            )
+            expanded_entities = field._get_expanded_entities(create_hard_copy=False)
             for entity in expanded_entities if expanded_entities else []:
                 if isinstance(entity, target_entity_type):
                     entity._update_entity_info_with_metadata(volume_mesh_meta_data)

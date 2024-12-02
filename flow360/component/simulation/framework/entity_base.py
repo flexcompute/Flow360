@@ -138,7 +138,7 @@ class _EntityListMeta(_CombinedMeta):
             entity_types = (entity_types,)
         union_type = Union[entity_types]
         annotations = {
-            "stored_entities": Optional[List[union_type]]
+            "stored_entities": List[union_type]
         }  # Make sure it is somewhat consistent with the EntityList class
         new_cls = type(
             f"{cls.__name__}[{','.join([t.__name__ for t in entity_types])}]",
@@ -325,30 +325,28 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     """
 
-    stored_entities: Optional[List] = pd.Field()
+    stored_entities: List = pd.Field()
 
     @classmethod
-    def _get_valid_entity_types(cls):
+    def _get_valid_entity_types(cls) -> list[type]:
         """Get the list of types that the entity list can accept."""
         entity_field_type = cls.__annotations__.get("stored_entities")
 
         if entity_field_type is not None:
-            # Handle Optional[List[Union[xxxx]]]
-            origin = get_origin(entity_field_type)
-            if origin is Union:
-                args = get_args(entity_field_type)
-                for arg in args:
+            # Handle Optional or Union types
+            if get_origin(entity_field_type) is Union:
+                # Check if one of the Union's arguments is List
+                for arg in get_args(entity_field_type):
                     if get_origin(arg) is list:
                         entity_field_type = arg
                         break
 
-            if hasattr(entity_field_type, "__origin__") and entity_field_type.__origin__ is list:
-                valid_types = get_args(entity_field_type)[0]
-                if hasattr(valid_types, "__origin__") and valid_types.__origin__ is Union:
-                    valid_types = get_args(valid_types)
-                else:
-                    valid_types = (valid_types,)
-                return valid_types
+            # Handle List[Union[...]]
+            if get_origin(entity_field_type) is list:
+                valid_types = get_args(entity_field_type)[0]  # Extract the inner type
+                if get_origin(valid_types) is Union:
+                    return [cls for cls in get_args(valid_types) if isinstance(cls, type)]
+                return [valid_types]
         raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
 
     @classmethod
@@ -368,13 +366,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         """
         Flatten List[EntityBase] and put into stored_entities.
         """
-        # Note:
-        # 1. str comes from Param. These will be expanded before submission
-        #    as the user may change Param which affects implicit entities (farfield existence patch for example).
-        # 2. The List[EntityBase], comes from the Assets.
-        # 3. EntityBase comes from direct specification of entity in the list.
         entities_to_store = []
         valid_types = cls._get_valid_entity_types()
+
         if isinstance(input_data, list):  # A list of entities
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
@@ -419,9 +413,8 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     def _get_expanded_entities(
         self,
-        supplied_registry=None,
-        expect_supplied_registry: bool = True,
-        create_hard_copy: bool = True,
+        *,
+        create_hard_copy: bool,
     ) -> List[EntityBase]:
         """
         Processes `stored_entities` to resolve any naming patterns into actual entity
@@ -444,32 +437,11 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         if entities is None:
             return None
 
-        # pylint: disable=protected-access
-        valid_types = self.__class__._get_valid_entity_types()
-
         expanded_entities = []
 
         # pylint: disable=not-an-iterable
         for entity in entities:
-            if isinstance(entity, str):
-                # Expand from supplied registry
-                if supplied_registry is None:
-                    if expect_supplied_registry is False:
-                        continue
-                    raise ValueError(
-                        f"Internal error, registry is not supplied for entity ({entity}) expansion."
-                    )
-                # Expand based on naming pattern registered in the Registry
-                pattern_matched_entities = supplied_registry.find_by_naming_pattern(entity)
-                # Filter pattern matched entities by valid types
-                expanded_entities.extend(
-                    [
-                        e
-                        for e in pattern_matched_entities
-                        if isinstance(e, tuple(valid_types)) and e not in expanded_entities
-                    ]
-                )
-            elif entity not in expanded_entities:
+            if entity not in expanded_entities:
                 # Direct entity references are simply appended if they are of a valid type
                 expanded_entities.append(entity)
 
@@ -487,12 +459,11 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         return expanded_entities
 
     # pylint: disable=arguments-differ
-    def preprocess(self, supplied_registry=None, **kwargs):
+    def preprocess(self, **kwargs):
         """
         Expand and overwrite self.stored_entities in preparation for submissin/serialization.
         Should only be called as late as possible to incoperate all possible changes.
         """
-        self.stored_entities = self._get_expanded_entities(
-            supplied_registry, create_hard_copy=False
-        )
-        return super().preprocess(self, **kwargs)
+        self.stored_entities = self._get_expanded_entities(create_hard_copy=False)
+        print(">>> kwargs = ", kwargs)
+        return super().preprocess(**kwargs)

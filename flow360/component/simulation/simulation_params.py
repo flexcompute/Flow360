@@ -229,7 +229,7 @@ class SimulationParams(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
+    def preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
         """Internal function for non-dimensionalizing the simulation parameters"""
         if exclude is None:
             exclude = []
@@ -239,8 +239,8 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
+                return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
+        return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")

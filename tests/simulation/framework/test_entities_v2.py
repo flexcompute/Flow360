@@ -192,16 +192,6 @@ class TempWallBC(Flow360BaseModel):
     entities: EntityList[Surface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
 
 
-def _get_supplementary_registry(far_field_type: str):
-    """
-    Given the supplied partly validated dict (values), populate the supplementary registry
-    """
-    _supplementary_registry = EntityRegistry()
-    if far_field_type == "auto":
-        _supplementary_registry.register(TempSurface(name="farfield"))
-    return _supplementary_registry
-
-
 class TempRotation(Flow360BaseModel):
     entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
     parent_volume: Optional[Union[GenericVolume, str]] = pd.Field(None)
@@ -228,9 +218,8 @@ class TempSimulationParam(_ParamModelBase):
         Supply self._supplementary_registry to the construction of
         TempFluidDynamics etc so that the class can perform proper validation
         """
-        _supplementary_registry = _get_supplementary_registry(self.far_field_type)
         for model in self.models:
-            model.entities.preprocess(supplied_registry=_supplementary_registry, mesh_unit=1 * u.m)
+            model.entities.preprocess(mesh_unit=1 * u.m)
 
         return self
 
@@ -367,50 +356,12 @@ def test_copying_entity(my_cylinder1):
 
 
 def test_entities_expansion(my_cylinder1, my_box_zone1):
-    # 0. No supplied registry but trying to use str
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Internal error, registry is not supplied for entity (Box*) expansion."),
-    ):
-        expanded_entities = TempFluidDynamics(
-            entities=["Box*", my_cylinder1, my_box_zone1]
-        ).entities._get_expanded_entities()
-
-    # 1. No supplied registry
     expanded_entities = TempFluidDynamics(
-        entities=[my_cylinder1, my_box_zone1]
-    ).entities._get_expanded_entities()
+        entities=[my_cylinder1, my_cylinder1, my_box_zone1]
+    ).entities._get_expanded_entities(create_hard_copy=False)
     assert my_cylinder1 in expanded_entities
     assert my_box_zone1 in expanded_entities
     assert len(expanded_entities) == 2
-
-    # 2. With supplied registry and has implicit duplicates
-    _supplementary_registry = EntityRegistry()
-    _supplementary_registry.register(
-        Box.from_principal_axes(
-            name="Implicitly_generated_Box_zone1",
-            axes=((-1, 0, 0), (0, 1, 0)),
-            center=(32, 2, 3) * u.cm,
-            size=(0.1, 0.01, 0.001) * u.cm,
-        )
-    )
-    _supplementary_registry.register(
-        Box.from_principal_axes(
-            name="Implicitly_generated_Box_zone2",
-            axes=((0, 0, 1), (1, 1, 0)),
-            center=(31, 2, 3) * u.cm,
-            size=(0.1, 0.01, 0.001) * u.cm,
-        )
-    )
-    expanded_entities = TempFluidDynamics(
-        entities=[my_cylinder1, my_box_zone1, "*Box*"]
-    ).entities._get_expanded_entities(_supplementary_registry)
-    selected_entity_names = [entity.name for entity in expanded_entities]
-    assert "Implicitly_generated_Box_zone1" in selected_entity_names
-    assert "Implicitly_generated_Box_zone2" in selected_entity_names
-    assert "zone/Box1" in selected_entity_names
-    assert "zone/Cylinder1" in selected_entity_names
-    assert len(selected_entity_names) == 4  # 2 new boxes, 1 cylinder, 1 box
 
 
 def test_by_reference_registry(my_cylinder2):
@@ -434,7 +385,9 @@ def test_by_reference_registry(my_cylinder2):
 
 
 def test_by_value_expansion(my_cylinder2):
-    expanded_entities = TempFluidDynamics(entities=[my_cylinder2]).entities._get_expanded_entities()
+    expanded_entities = TempFluidDynamics(entities=[my_cylinder2]).entities._get_expanded_entities(
+        create_hard_copy=True
+    )
     my_cylinder2.height = 1012 * u.cm
     for entity in expanded_entities:
         if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
@@ -473,7 +426,7 @@ def test_entities_input_interface(my_volume_mesh1):
     # 1. Using reference of single asset entity
     expanded_entities = TempFluidDynamics(
         entities=my_volume_mesh1["zone*"]
-    ).entities._get_expanded_entities()
+    ).entities._get_expanded_entities(create_hard_copy=True)
     assert len(expanded_entities) == 3
     assert expanded_entities == my_volume_mesh1["zone*"]
 
@@ -484,39 +437,34 @@ def test_entities_input_interface(my_volume_mesh1):
             "Type(<class 'int'>) of input to `entities` (1) is not valid. Expected str or entity instance."
         ),
     ):
-        expanded_entities = TempFluidDynamics(entities=1).entities._get_expanded_entities()
+        expanded_entities = TempFluidDynamics(entities=1).entities._get_expanded_entities(
+            create_hard_copy=True
+        )
     # 3. test empty list
     with pytest.raises(
         ValueError,
         match=re.escape("Invalid input type to `entities`, list is empty."),
     ):
-        expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities()
+        expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities(
+            create_hard_copy=True
+        )
 
     # 4. test None
-    expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities()
-    assert expanded_entities is None
-
-    # 5. test non-existing entity
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Failed to find any matching entity with ['Non_existing_volume']. Please check the input to entities."
+            "Input should be a valid list [type=list_type, input_value=None, input_type=NoneType]"
         ),
     ):
-        expanded_entities = TempFluidDynamics(
-            entities=["Non_existing_volume"]
-        ).entities._get_expanded_entities(EntityRegistry())
+        expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities(
+            create_hard_copy=True
+        )
 
     with pytest.raises(
         ValueError,
         match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
     ):
         my_volume_mesh1["asdf"]
-
-
-def test_skipped_entities():
-    TempFluidDynamics()
-    assert TempFluidDynamics().entities.stored_entities is None
 
 
 def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
@@ -533,7 +481,7 @@ def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
                         my_volume_mesh1["*zone*"],
                     ]
                 ),
-                TempWallBC(surfaces=[my_volume_mesh1["*"], "*", "farfield"]),
+                TempWallBC(surfaces=[my_volume_mesh1["*"]]),
             ],
         )
 
@@ -553,8 +501,7 @@ def test_entire_worklfow(my_cylinder1, my_volume_mesh1):
     assert "surface_1" in wall_entity_names
     assert "surface_2" in wall_entity_names
     assert "surface_3" in wall_entity_names
-    assert "farfield" in wall_entity_names
-    assert len(wall_entity_names) == 4
+    assert len(wall_entity_names) == 3
 
 
 def test_multiple_param_creation_and_asset_registry(
@@ -572,7 +519,7 @@ def test_multiple_param_creation_and_asset_registry(
                         my_volume_mesh1["*"],
                     ]
                 ),
-                TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
+                TempWallBC(surfaces=[my_volume_mesh1["*"]]),
             ],
         )
 
@@ -600,7 +547,7 @@ def test_multiple_param_creation_and_asset_registry(
                         my_volume_mesh2["*"],
                     ]
                 ),
-                TempWallBC(surfaces=[my_volume_mesh2["*"], "*"]),
+                TempWallBC(surfaces=[my_volume_mesh2["*"]]),
             ],
         )
 
@@ -632,7 +579,7 @@ def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_me
                         my_volume_mesh1["*"],
                     ]
                 ),
-                TempWallBC(surfaces=[my_volume_mesh1["*"], "*"]),
+                TempWallBC(surfaces=[my_volume_mesh1["*"]]),
             ],
         )
     my_cylinder1.center = (3, 2, 1) * u.m
@@ -803,7 +750,7 @@ def test_entities_merging_logic(my_volume_mesh_with_interface):
     )
 
     assert (
-        len(my_param.models[0].entities._get_expanded_entities()) == 3
+        len(my_param.models[0].entities._get_expanded_entities(create_hard_copy=True)) == 3
     )  # 1 cylinder, 2 generic zones
     assert isinstance(target_entity_param_reg, Cylinder)
 
