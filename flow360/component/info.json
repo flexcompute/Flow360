@@ -1,0 +1,88 @@
+{
+    "userId": "AIDAXWCOWJGJJBXX543AQ",
+    "id": "prj-dc708f0d-f89f-4228-be44-3a8da700a4c2",
+    "name": "Tutorial 2D CRM from Python",
+    "tags": [],
+    "parentFolderId": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
+    "deleted": False,
+    "description": "",
+    "icon": None,
+    "statistics": {
+        "Geometry": {
+            "count": 1,
+            "successCount": 1,
+            "runningCount": 0,
+            "divergedCount": 0,
+            "errorCount": 0
+        },
+        "SurfaceMesh": {
+            "count": 1,
+            "successCount": 1,
+            "runningCount": 0,
+            "divergedCount": 0,
+            "errorCount": 0
+        },
+        "VolumeMesh": {
+            "count": 2,
+            "successCount": 2,
+            "runningCount": 0,
+            "divergedCount": 0,
+            "errorCount": 0
+        },
+        "Case": {
+            "count": 2,
+            "successCount": 2,
+            "runningCount": 0,
+            "divergedCount": 0,
+            "errorCount": 0
+        }
+    },
+    "parentFolders": [
+        {
+            "type": "Folder",
+            "userId": "AIDAXWCOWJGJJBXX543AQ",
+            "name": "ROOT.FLOW360",
+            "tags": [],
+            "id": "ROOT.FLOW360",
+            "parentFolderId": None,
+            "parentFolders": None,
+            "createdAt": "2023-09-01T09: 14: 15.293797Z",
+            "updatedAt": "2023-09-01T09: 14: 15.293797Z"
+        },
+        {
+            "type": "Folder",
+            "userId": "AIDAXWCOWJGJJBXX543AQ",
+            "name": "tutorials",
+            "tags": [],
+            "id": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
+            "parentFolderId": "ROOT.FLOW360",
+            "parentFolders": None,
+            "createdAt": "2024-10-15T08: 42: 46.036068Z",
+            "updatedAt": "2024-10-15T08: 42: 46.036068Z"
+        }
+    ],
+    "viewed": True,
+    "lastOpenDraftId": "dft-968a2cf8-0b38-4dc3-a56e-05309650b282",
+    "lastOpenItemId": "vm-010ee1e5-4f3f-4ab7-aa29-001572dbb2ee",
+    "lastOpenItemType": "VolumeMesh",
+    "latestItemId": "case-22a058df-8f7d-4091-9c99-927fb67384b2",
+    "latestItemType": "Case",
+    "rootItemId": "geo-6cd9ba2c-2683-4ab4-8230-ac1ed7662561",
+    "rootItemType": "Geometry",
+    "createdAt": "2024-11-06T13: 57: 32.199Z",
+    "updatedAt": "2024-11-27T15: 27: 15.443Z",
+    "createdBy": "AIDAXWCOWJGJJBXX543AQ",
+    "updatedBy": "AIDAXWCOWJGJJBXX543AQ",
+    "canOpen": True,
+    "rootItemStatus": "processed",
+    "rootItemUploadedAt": "2024-11-06T13: 57: 48.892Z",
+    "rootItemVisualizationStatus": None,
+    "rootItemUploadStatus": "success",
+    "copyStatus": "notCopy",
+    "copyFromResourceCount": 0,
+    "copiedResourceCount": 0,
+    "rootItemDisplayStatus": "completed"
+}
+
+"lastOpenDraftId": "draft-e6cf57bd-07bc-43af-b107-a5e689dfd979",
+"rootItemId": "some_random_id_to_skip_getting_its_status"
