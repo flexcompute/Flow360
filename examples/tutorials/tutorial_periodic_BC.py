@@ -33,6 +33,7 @@ with fl.SI_unit_system:
     operating_condition = fl.operating_condition_from_mach_reynolds(
         mach=0.13989,
         reynolds=3200,
+        project_length_unit=1 * fl.u.m,
         temperature=298.25 * fl.u.K,
     )
     params = fl.SimulationParams(

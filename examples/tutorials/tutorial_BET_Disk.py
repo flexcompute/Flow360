@@ -1,8 +1,6 @@
 import json
 
 import flow360 as fl
-import flow360.component.simulation.units as u
-from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.examples import TutorialBETDisk
 
 """
@@ -27,7 +25,7 @@ geometry.group_edges_by_tag("edgeName")
 
 bet = json.loads(open(TutorialBETDisk.extra["disk0"]).read())
 
-with SI_unit_system:
+with fl.SI_unit_system:
     cylinder1 = fl.Cylinder(
         name="cylinder1",
         axis=[1, 0, 0],
@@ -50,7 +48,7 @@ with SI_unit_system:
             defaults=fl.MeshingDefaults(
                 surface_edge_growth_rate=1.2,
                 surface_max_edge_length=0.5,
-                curvature_resolution_angle=30 * u.deg,
+                curvature_resolution_angle=30 * fl.u.deg,
                 boundary_layer_growth_rate=1.15,
                 boundary_layer_first_layer_thickness=1e-06,
             ),
@@ -96,14 +94,14 @@ with SI_unit_system:
         ),
         operating_condition=fl.AerospaceCondition.from_mach(
             mach=0.182,
-            alpha=5 * u.deg,
-            beta=0 * u.deg,
+            alpha=5 * fl.u.deg,
+            beta=0 * fl.u.deg,
             thermal_state=fl.ThermalState(
                 temperature=288.15,
                 material=fl.Air(
                     dynamic_viscosity=fl.Sutherland(
                         reference_temperature=288.15,
-                        reference_viscosity=4.29166e-08 * u.flow360_viscosity_unit,
+                        reference_viscosity=4.29166e-08 * fl.u.flow360_viscosity_unit,
                         effective_temperature=110.4,
                     )
                 ),

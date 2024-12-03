@@ -1,5 +1,4 @@
 import flow360 as fl
-from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Tutorial2DCRM
 
 fl.Env.preprod.active()
@@ -15,7 +14,7 @@ geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
 
-with SI_unit_system:
+with fl.SI_unit_system:
     cylinders = [
         fl.Cylinder(
             name=f"cylinder{i+1}",
@@ -35,7 +34,7 @@ with SI_unit_system:
             defaults=fl.MeshingDefaults(
                 surface_edge_growth_rate=1.17,
                 surface_max_edge_length=1.1,
-                curvature_resolution_angle=12 * u.deg,
+                curvature_resolution_angle=12 * fl.u.deg,
                 boundary_layer_growth_rate=1.17,
                 boundary_layer_first_layer_thickness=1.8487111e-06,
             ),
@@ -78,7 +77,12 @@ with SI_unit_system:
             moment_center=[0.25, 0, 0], moment_length=[1, 1, 1], area=0.01
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            mach=0.2, reynolds=5e6, temperature=272.1, alpha=16 * u.deg, beta=0 * u.deg
+            mach=0.2,
+            reynolds=5e6,
+            project_length_unit=1 * fl.u.m,
+            temperature=272.1,
+            alpha=16 * fl.u.deg,
+            beta=0 * fl.u.deg,
         ),
         time_stepping=fl.Steady(
             max_steps=3000, CFL=fl.RampCFL(initial=20, final=300, ramp_steps=500)
