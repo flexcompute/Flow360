@@ -2,8 +2,8 @@ import flow360 as fl
 
 fl.Env.preprod.active()
 
-#project = fl.Project.from_file("wing_tetra.8M.lb8.ugrid", name="UDD om6wing from python")
-project = fl.Project.from_cloud(project_id="prj-07341264-d803-4b3f-a4a6-1f44c8e61a13")
+project = fl.Project.from_file("wing_tetra.8M.lb8.ugrid", name="UDD om6wing from python")
+#project = fl.Project.from_cloud(project_id="prj-07341264-d803-4b3f-a4a6-1f44c8e61a13")
 
 volume_mesh = project.volume_mesh
 
@@ -26,6 +26,7 @@ with fl.SI_unit_system:
         operating_condition=fl.operating_condition_from_mach_reynolds(
             reynolds=14623131.63393764,
             mach=0.84,
+            project_length_unit=1 * fl.u.m,
             temperature=297.78,
             alpha=3.06 * fl.u.deg,
             beta=0 * fl.u.deg
