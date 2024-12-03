@@ -93,7 +93,7 @@ class RotationCylinder(CylindricalRefinementBase):
         `enclosed_entities` is planned to be auto_populated in the future.
         """
         # pylint: disable=protected-access
-        if len(values._get_expanded_entities(expect_supplied_registry=False)) > 1:
+        if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each RotationCylinder."
             )

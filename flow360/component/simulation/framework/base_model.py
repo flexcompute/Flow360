@@ -611,7 +611,8 @@ class Flow360BaseModel(pd.BaseModel):
 
     def preprocess(
         self,
-        params,
+        *,
+        params=None,
         mesh_unit=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
@@ -654,7 +655,7 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
-                    params,
+                    params=params,
                     mesh_unit=mesh_unit,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
@@ -663,7 +664,7 @@ class Flow360BaseModel(pd.BaseModel):
                 for i, item in enumerate(value):
                     if isinstance(item, Flow360BaseModel):
                         solver_values[property_name][i] = item.preprocess(
-                            params,
+                            params=params,
                             mesh_unit=mesh_unit,
                             required_by=[*required_by, loc_name, f"{i}"],
                             exclude=exclude,
