@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from typing import List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
@@ -9,6 +9,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import (
+    EntityBase,
     EntityList,
     MergeConflictError,
     _merge_objects,
@@ -183,18 +184,16 @@ class TempSurface(_SurfaceEntityBase):
 
 
 class TempFluidDynamics(Flow360BaseModel):
-    entities: EntityList[GenericVolume, Box, Cylinder, str] = pd.Field(
-        alias="volumes", default=None
-    )
+    entities: EntityList[GenericVolume, Box, Cylinder] = pd.Field(alias="volumes", default=None)
 
 
 class TempWallBC(Flow360BaseModel):
-    entities: EntityList[Surface, TempSurface, str] = pd.Field(alias="surfaces", default=[])
+    entities: EntityList[Surface, TempSurface] = pd.Field(alias="surfaces", default=[])
 
 
 class TempRotation(Flow360BaseModel):
-    entities: EntityList[GenericVolume, Cylinder, str] = pd.Field(alias="volumes")
-    parent_volume: Optional[Union[GenericVolume, str]] = pd.Field(None)
+    entities: EntityList[GenericVolume, Cylinder] = pd.Field(alias="volumes")
+    parent_volume: Optional[Union[GenericVolume]] = pd.Field(None)
 
 
 class TempUserDefinedDynamic(Flow360BaseModel):
@@ -353,6 +352,82 @@ def test_copying_entity(my_cylinder1):
 
 
 ##:: ---------------- EntityList/Registry tests ----------------
+
+
+def test_EntityList_discrimination():
+    class ConfusingEntity1(EntityBase):
+        some_value: int = pd.Field(1, gt=1)
+        private_attribute_entity_type_name: Literal["ConfusingEntity1"] = pd.Field(
+            "ConfusingEntity1", frozen=True
+        )
+        private_attribute_registry_bucket_name: Literal["UnitTestEntityType"] = pd.Field(
+            "UnitTestEntityType", frozen=True
+        )
+
+    class ConfusingEntity2(EntityBase):
+        some_value: int = pd.Field(1, gt=2)
+        private_attribute_entity_type_name: Literal["ConfusingEntity2"] = pd.Field(
+            "ConfusingEntity2", frozen=True
+        )
+        private_attribute_registry_bucket_name: Literal["UnitTestEntityType"] = pd.Field(
+            "UnitTestEntityType", frozen=True
+        )
+
+    class MyModel(Flow360BaseModel):
+        entities: EntityList[ConfusingEntity1, ConfusingEntity2] = pd.Field()
+
+    # Ensure EntityList is looking for the discriminator
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Unable to extract tag using discriminator 'private_attribute_entity_type_name'"
+        ),
+    ):
+        MyModel(
+            **{
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "name": "I should be deserialize as ConfusingEntity1",
+                            "some_value": 1,
+                        }
+                    ],
+                }
+            }
+        )
+
+    # Ensure EntityList is only trying to validate against ConfusingEntity1
+    try:
+        MyModel(
+            **{
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "name": "I should be deserialize as ConfusingEntity1",
+                            "private_attribute_entity_type_name": "ConfusingEntity1",
+                            "some_value": 1,
+                        }
+                    ],
+                }
+            }
+        )
+    except pd.ValidationError as err:
+        validation_errors = err.errors()
+    # Without discrimination, above deserialization would have failed both
+    # ConfusingEntitys' checks and result in 3 errors:
+    # 1. some_value is less than 1 (from ConfusingEntity1)
+    # 2. some_value is less than 2 (from ConfusingEntity2)
+    # 3. private_attribute_entity_type_name is incorrect (from ConfusingEntity2)
+    # But now we enforce Pydantic to only check against ConfusingEntity1
+    assert validation_errors[0]["msg"] == "Input should be greater than 1"
+    assert validation_errors[0]["loc"] == (
+        "entities",
+        "stored_entities",
+        0,
+        "ConfusingEntity1",
+        "some_value",
+    )
+    assert len(validation_errors) == 1
 
 
 def test_entities_expansion(my_cylinder1, my_box_zone1):

@@ -6,7 +6,7 @@ import copy
 import uuid
 from abc import ABCMeta
 from numbers import Number
-from typing import List, Optional, Union, get_args, get_origin
+from typing import Annotated, List, Optional, Union, get_args, get_origin
 
 import numpy as np
 import pydantic as pd
@@ -136,7 +136,9 @@ class _EntityListMeta(_CombinedMeta):
         """
         if not isinstance(entity_types, tuple):
             entity_types = (entity_types,)
-        union_type = Union[entity_types]
+        union_type = Annotated[
+            Union[entity_types], pd.Field(discriminator="private_attribute_entity_type_name")
+        ]
         annotations = {
             "stored_entities": List[union_type]
         }  # Make sure it is somewhat consistent with the EntityList class
@@ -145,6 +147,11 @@ class _EntityListMeta(_CombinedMeta):
             (cls,),
             {"__annotations__": annotations},
         )
+        # Note:
+        # Printing the stored_entities's discriminator will be None but
+        # that FieldInfo->discriminator seems to be just for show.
+        # It seems Pydantic use the discriminator inside the annotation
+        # instead so the above should trigger the discrimination during deserialization.
         return new_cls
 
 
@@ -328,26 +335,36 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     stored_entities: List = pd.Field()
 
     @classmethod
-    def _get_valid_entity_types(cls) -> list[type]:
-        """Get the list of types that the entity list can accept."""
+    def _get_valid_entity_types(cls):
         entity_field_type = cls.__annotations__.get("stored_entities")
 
-        if entity_field_type is not None:
-            # Handle Optional or Union types
-            if get_origin(entity_field_type) is Union:
-                # Check if one of the Union's arguments is List
-                for arg in get_args(entity_field_type):
-                    if get_origin(arg) is list:
-                        entity_field_type = arg
-                        break
+        if entity_field_type is None:
+            raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
 
-            # Handle List[Union[...]]
-            if get_origin(entity_field_type) is list:
-                valid_types = get_args(entity_field_type)[0]  # Extract the inner type
-                if get_origin(valid_types) is Union:
-                    return [cls for cls in get_args(valid_types) if isinstance(cls, type)]
-                return [valid_types]
-        raise TypeError("Internal error, the metaclass for EntityList is not properly set.")
+        # Handle List[...]
+        if get_origin(entity_field_type) in (list, List):
+            inner_type = get_args(entity_field_type)[0]  # Extract the inner type
+        else:
+            # Not a List, handle other cases or raise an error
+            raise TypeError("Expected 'stored_entities' to be a List.")
+
+        # Handle Annotated[...]
+        if get_origin(inner_type) is Annotated:
+            annotated_args = get_args(inner_type)
+            if len(annotated_args) > 0:
+                actual_type = annotated_args[0]  # The actual type inside Annotated
+            else:
+                raise TypeError("Annotated type has no arguments.")
+        else:
+            actual_type = inner_type
+
+        # Handle Union[...]
+        if get_origin(actual_type) is Union:
+            valid_types = [arg for arg in get_args(actual_type) if isinstance(arg, type)]
+            return valid_types
+        if isinstance(actual_type, type):
+            return [actual_type]
+        raise TypeError("Cannot extract valid entity types.")
 
     @classmethod
     def _valid_individual_input(cls, input_data):
@@ -465,5 +482,4 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         Should only be called as late as possible to incoperate all possible changes.
         """
         self.stored_entities = self._get_expanded_entities(create_hard_copy=False)
-        print(">>> kwargs = ", kwargs)
         return super().preprocess(**kwargs)
