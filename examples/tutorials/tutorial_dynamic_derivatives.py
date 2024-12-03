@@ -62,20 +62,10 @@ with fl.SI_unit_system:
             moment_length=[1, 1, 1],
             area=2,
         ),
-        operating_condition=fl.AerospaceCondition.from_mach(
+        operating_condition=fl.operating_condition_from_mach_reynolds(
+            reynolds=3.4229727884228057e6,
             mach=0.1469317682550648,
-            alpha=0 * fl.u.deg,
-            beta=0 * fl.u.deg,
-            thermal_state=fl.ThermalState(
-                temperature=288.15,
-                material=fl.Air(
-                    dynamic_viscosity=fl.Sutherland(
-                        reference_temperature=288.15,
-                        reference_viscosity=4.2925193198151646e-8 * fl.u.flow360_viscosity_unit,
-                        effective_temperature=110.4,
-                    )
-                ),
-            ),
+            project_length_unit=1 * fl.u.m,
         ),
         time_stepping=fl.Steady(
             max_steps=10000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
