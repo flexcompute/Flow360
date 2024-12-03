@@ -1,11 +1,11 @@
 import flow360 as fl
-from flow360.examples import TutorailRANSXv15
+from flow360.examples import TutorialRANSXv15
 
 fl.Env.preprod.active()
 
-TutorailRANSXv15.get_files()
+TutorialRANSXv15.get_files()
 project = fl.Project.from_file(
-    TutorailRANSXv15.mesh_filename,
+    TutorialRANSXv15.mesh_filename,
     name="Tutorial Time-accurate RANS CFD on XV-15 from Python",
 )
 volume_mesh = project.volume_mesh

@@ -17,7 +17,7 @@ from .tutorial_bet_disk import TutorialBETDisk
 from .tutorial_cht_solver import TutorialCHTSolver
 from .tutorial_dynamic_derivatives import TutorailDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
-from .tutorial_RANS_xv15 import TutorailRANSXv15
+from .tutorial_RANS_xv15 import TutorialRANSXv15
 
 __all__ = [
     "ActuatorDisk",
@@ -39,5 +39,5 @@ __all__ = [
     "TutorialPeriodicBC",
     "TutorailAutoMeshingInternalFlow",
     "TutorailDynamicDerivatives",
-    "TutorailRANSXv15",
+    "TutorialRANSXv15",
 ]
