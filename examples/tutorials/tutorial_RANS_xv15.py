@@ -1,5 +1,3 @@
-import math
-
 import flow360 as fl
 from flow360.examples import TutorailRANSXv15
 
@@ -16,7 +14,6 @@ with fl.SI_unit_system:
     rotation_zone = volume_mesh["innerRotating"]
     rotation_zone.center = (0, 0, 0) * fl.u.m
     rotation_zone.axis = (0, 0, -1)
-    farfield = fl.AutomatedFarfield(name="farfield")
     thermal_state = fl.ThermalState(
         temperature=288.15,
         material=fl.Air(
