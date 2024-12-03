@@ -28,24 +28,10 @@ from pydantic import Field, validate_call, model_validator
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
 from pylatex import (
-    Command,
-    Document,
-    Foot,
-    Head,
-    NewPage,
-    NoEscape,
-    Package,
-    PageStyle,
     Section,
     Subsection,
-    HugeText,
-    LargeText,
-    StandAloneGraphic,
-    Center, MediumText,
-    MiniPage
 )
-from pylatex.utils import bold
-from flow360.plugins.report.utils import RequirementItem, font_definition
+from flow360.plugins.report.utils import RequirementItem
 from flow360.plugins.report.report_doc import ReportDoc
 
 

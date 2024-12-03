@@ -22,7 +22,8 @@ from pylatex import (
     MiniPage
 )
 from pylatex.utils import bold
-from flow360.plugins.report.utils import font_definition
+from flow360.plugins.report.utils import detect_latex_compiler, font_definition
+from flow360.log import log
 
 
 
@@ -31,6 +32,16 @@ from flow360.plugins.report.utils import font_definition
 class ReportDoc():
 
     def __init__(self, title, landscape=True) -> None:
+        self.compiler, self.compiler_args = detect_latex_compiler()
+
+        self.use_xelatex = self.compiler == 'xelatex'
+        if self.use_xelatex:
+            log.info("Using 'xelatex' as the LaTeX compiler.") # preferred for styling
+        else:
+            log.warning(f"Using '{self.compiler}' as the LaTeX compiler.")
+            log.warning("Warning: 'xelatex' is not available. Some font-related features may be disabled.")
+
+
         self._doc = Document(document_options=["10pt"])
         self._define_preamble(self._doc, landscape)
         self._create_custom_page_style(self._doc)
@@ -62,12 +73,14 @@ class ReportDoc():
             Package("xcolor", options="table"),
             Package("geometry", options=geometry_options),
             Package("tikz"),
-            Package('fontspec'),
             Package('colortbl'),
             Package('array'),
             NoEscape(r'\usepackage{eso-pic}'),
             Package("fancyhdr")
         ]
+        if self.use_xelatex:
+            packages.append(Package("fontspec"))
+
         for package in packages:
             doc.packages.append(package)
 
@@ -82,9 +95,12 @@ class ReportDoc():
                 r"labelsep=none, justification=raggedright, singlelinecheck=false}"
             )
         )
-        doc.preamble.append(NoEscape(font_definition))
+        if self.use_xelatex:
+            doc.preamble.append(NoEscape(font_definition))
+
         self._table_settings(doc)
         self._background(doc)
+
 
     def _table_settings(self, doc):
         doc.preamble.append(NoEscape(r'\setlength{\tabcolsep}{12pt}'))
@@ -168,5 +184,7 @@ class ReportDoc():
         doc.append(NewPage())
 
     def generate_pdf(self, filename):
-        self.doc.generate_pdf(filename, compiler='xelatex', clean_tex=False)
+        self.doc.generate_pdf(filename, compiler=self.compiler, compiler_args=self.compiler_args, clean_tex=False)
+        log.info(f"PDF '{filename}.pdf' generated successfully using '{self.compiler}'.")
+
 

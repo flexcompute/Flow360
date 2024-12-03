@@ -4,6 +4,7 @@ report utils, utils.py
 from  __future__ import annotations
 from abc import ABCMeta, abstractmethod
 import os
+import shutil
 import posixpath
 from numbers import Number
 from typing import Any, List, Optional, Literal, Union, Annotated
@@ -77,6 +78,23 @@ def get_requirements_from_data_path(data_path)->List[RequirementItem]:
             raise ValueError(f"Unknown result type: {item}")
     return list(requirements)
 
+
+def detect_latex_compiler():
+    """
+    Detects available LaTeX compilers on the system.
+    Returns:
+        compiler (str), compiler_args (list[str]): Name of the LaTeX compiler ('xelatex', 'latexmk', 'pdflatex').
+    Raises:
+        RuntimeError: If no LaTeX compiler is found.
+    """
+    preferred_compilers = [('xelatex', []), ('latexmk', ['--pdf']), ('pdflatex', [])]
+    for compiler, compiler_args in preferred_compilers:
+        if shutil.which(compiler):
+            return compiler, compiler_args
+    # If no compiler is found, raise an error
+    raise RuntimeError(
+        "No LaTeX compiler found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX)."
+    )
 
 
 def check_landscape(doc):
@@ -327,6 +345,7 @@ class Expression(GenericOperation):
         """
         # Extract variable names from the expression
         variables = cls.get_variables(expr)
+        print(variables)
         
         # Check for missing variables in the dataframe
         missing_vars = variables - set(df.columns)
