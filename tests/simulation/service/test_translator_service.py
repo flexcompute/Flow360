@@ -29,6 +29,7 @@ from flow360.component.simulation.services import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.component.simulation.validation.validation_context import (
+    CASE,
     SURFACE_MESH,
     VOLUME_MESH,
 )
@@ -479,6 +480,29 @@ def test_simulation_to_case_json():
         ],
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
+        "meshing": {
+            "refinement_factor": 1,
+            "defaults": {
+                "surface_edge_growth_rate": 1.2,
+                "boundary_layer_first_layer_thickness": {"value": 0.001, "units": "m"},
+                "boundary_layer_growth_rate": 1.2,
+                "curvature_resolution_angle": {"value": 10, "units": "degree"},
+                "surface_max_edge_length": {"value": 0.15, "units": "m"},
+            },
+            "refinements": [],
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "type": "AutomatedFarfield",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfied_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
+        },
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {
@@ -521,8 +545,7 @@ def test_simulation_to_case_json():
         },
     }
 
-    params, err, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
-    print("errors: ", err)
+    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
     simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
@@ -621,14 +644,18 @@ def test_simulation_to_case_vm_workflow():
         },
     }
 
-    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=CASE
+    )
 
     with pytest.raises(ValueError):
-        case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
+        case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
-    params, errors, _ = validate_model(params_as_dict=param_data, root_item_type="VolumeMesh")
-    case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="VolumeMesh", validation_level=CASE
+    )
+    case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
 
 

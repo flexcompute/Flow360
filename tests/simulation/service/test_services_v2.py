@@ -4,13 +4,10 @@ import re
 import pytest
 
 from flow360.component.simulation import services
-from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
-from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.validation.validation_context import (
+    CASE,
     SURFACE_MESH,
     VOLUME_MESH,
-    ValidationLevelContext,
 )
 from tests.utils import compare_dict_to_ref, compare_values
 
@@ -106,7 +103,7 @@ def test_validate_service():
     assert errors is None
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_vm, root_item_type="VolumeMesh"
+        params_as_dict=params_data_from_vm, root_item_type="VolumeMesh", validation_level=CASE
     )
 
     assert errors is None
@@ -164,7 +161,7 @@ def test_validate_error():
         {
             "loc": ("meshing", "farfield"),
             "type": "extra_forbidden",
-            "ctx": {"relevant_for": ["SurfaceMesh"]},
+            "ctx": {"relevant_for": ["SurfaceMesh", "VolumeMesh"]},
         },
     ]
     assert len(errors) == len(excpected_errors)
@@ -225,7 +222,7 @@ def test_validate_multiple_errors():
         {
             "loc": ("meshing", "farfield"),
             "type": "extra_forbidden",
-            "ctx": {"relevant_for": ["SurfaceMesh"]},
+            "ctx": {"relevant_for": ["SurfaceMesh", "VolumeMesh"]},
         },
         {
             "loc": ("reference_geometry", "area", "value"),
@@ -372,7 +369,9 @@ def test_validate_init_data_vm_workflow_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
-    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="VolumeMesh")
+    _, errors, _ = services.validate_model(
+        params_as_dict=data, root_item_type="VolumeMesh", validation_level=CASE
+    )
 
     excpected_errors = [
         {
