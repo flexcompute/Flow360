@@ -11,6 +11,7 @@ import toml
 from flow360.cli import dict_utils
 
 home = expanduser("~")
+# pylint: disable=invalid-name
 config_file = f"{home}/.flow360/config.toml"
 
 if os.path.exists(config_file):

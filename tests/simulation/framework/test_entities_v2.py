@@ -460,6 +460,14 @@ def test_get_entities(
     assert my_cylinder1 in all_box_entities
     assert my_cylinder2 in all_box_entities
 
+    registry = EntityRegistry()
+    registry.register(Surface(name="AA_ground_close"))
+    registry.register(Surface(name="BB"))
+    registry.register(Surface(name="CC_ground"))
+    items = registry.find_by_naming_pattern("*ground", enforce_output_as_list=True)
+    assert len(items) == 1
+    assert items[0].name == "CC_ground"
+
 
 def test_entities_input_interface(my_volume_mesh1):
     # 1. Using reference of single asset entity
@@ -932,9 +940,7 @@ def test_box_validation():
             name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
         )
 
-    with pytest.raises(
-        ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative values")
-    ):
+    with pytest.raises(ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative value")):
         Box(
             name="box6",
             center=(0, 0, 0) * u.m,
@@ -944,7 +950,7 @@ def test_box_validation():
         )
 
     with pytest.raises(
-        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative values")
+        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative value")
     ):
         Box(
             name="box6",

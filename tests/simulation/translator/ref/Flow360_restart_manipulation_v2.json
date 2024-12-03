@@ -79,5 +79,6 @@
         "relativeTolerance": 0.0,
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
-    }
+    },
+    "userDefinedFields":[]
 }

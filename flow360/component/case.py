@@ -337,7 +337,7 @@ class CaseDraft(CaseBase, ResourceDraft):
             path=f"volumemeshes/{volume_mesh_id}/case",
         )
         info = CaseMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
 
         self._submitted_case = Case(self.id)
@@ -391,6 +391,9 @@ class Case(CaseBase, Flow360Resource):
     Case component
     """
 
+    _manifest_path = "visualize/manifest/manifest.json"
+    _cloud_resource_type_name = "Case"
+
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
@@ -423,12 +426,16 @@ class Case(CaseBase, Flow360Resource):
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-        params_as_dict = services.clean_params_dict(params_as_dict, None)
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict, root_item_type=None
+        )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            with open(temp_file.name, "w", encoding="utf-8") as fh:
-                json.dump(params_as_dict, fh, indent=4)
-            return SimulationParams(filename=temp_file.name)
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
+            )
+
+        return param
 
     @property
     def params(self) -> Union[Flow360Params, SimulationParams]:

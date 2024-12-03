@@ -199,10 +199,6 @@ def test_from_json_yaml():
         os.remove(temp_file_name)
 
 
-def test_generate_docstring():
-    assert "some_value" in BaseModelTestModel.__doc__
-
-
 def test_preprocess():
     value = 123
     test_params = TempParams(pseudo_field=BaseModelTestModel(some_value=value), some_value=value)

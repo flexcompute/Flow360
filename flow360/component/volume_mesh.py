@@ -361,7 +361,7 @@ class VolumeMeshDraft(ResourceDraft):
             return None
 
         info = VolumeMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         mesh = VolumeMesh(self.id)
         log.info(f"VolumeMesh successfully submitted: {mesh.short_description()}")
@@ -422,7 +422,7 @@ class VolumeMeshDraft(ResourceDraft):
             return None
 
         info = VolumeMeshMeta(**resp)
-        # setting _id will disable "remember to submit draft" warning message
+        # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
         mesh = VolumeMesh(self.id)
 
@@ -966,6 +966,21 @@ class VolumeMeshDraftV2(ResourceDraft):
                 renamed_file_on_remote, self.file_name, progress_callback=progress_callback
             )
 
+        if mesh_parser.is_ugrid():
+            expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
+            if os.path.isfile(expected_local_mapbc_file):
+                remote_mesh_parser = MeshNameParser(renamed_file_on_remote)
+                volume_mesh._webapi._upload_file(
+                    remote_mesh_parser.get_associated_mapbc_filename(),
+                    mesh_parser.get_associated_mapbc_filename(),
+                    progress_callback=progress_callback,
+                )
+            else:
+                log.warning(
+                    f"The expected mapbc file {expected_local_mapbc_file} specifying "
+                    "user-specified boundary names doesn't exist."
+                )
+
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
 
@@ -989,22 +1004,25 @@ class VolumeMeshV2(AssetBase):
     _web_api_class = Flow360Resource
     _entity_info_class = VolumeMeshEntityInfo
     _mesh_stats_file = 'meshStats.json'
+    _cloud_resource_type_name = "VolumeMesh"
 
     @classmethod
     # pylint: disable=redefined-builtin
-    def from_cloud(cls, id: str) -> VolumeMeshV2:
+    def from_cloud(cls, id: str, **kwargs) -> VolumeMeshV2:
         """
         Parameters
         ----------
         id : str
             ID of the volume mesh resource in the cloud
+        root_item_entity_info_type :
+        override the default entity info type
 
         Returns
         -------
         VolumeMeshV2
             Volume mesh object
         """
-        asset_obj = super().from_cloud(id)
+        asset_obj = super().from_cloud(id, **kwargs)
 
         return asset_obj
 

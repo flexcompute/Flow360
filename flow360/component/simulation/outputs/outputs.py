@@ -90,11 +90,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type "
         + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
-    output_fields: UniqueItemList[SurfaceFieldNames] = pd.Field(
-        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>` "
-        + "and :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>`. "
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`"
+        + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field()
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
 
@@ -135,7 +134,7 @@ class TimeAverageVolumeOutput(VolumeOutput):
     """
     :class:`TimeAverageVolumeOutput` class for time average volume output settings.
     Caveats:
-    The solver only accepts exactly the same set of :paramref:`output_fields` (is shared)
+    The solver only accepts exactly the same set of :py:attr:`output_fields` (is shared)
     between :class:`VolumeOutput` and :class:`TimeAverageVolumeOutput`.
     Also let's not worry about allowing entities here as it is not supported by solver anyway.
 

@@ -325,5 +325,6 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         "refinementFactor": 1.0,
         "farfield": {"type": "user-defined"},
         "volume": {"firstLayerThickness": 100.0, "growthRate": 1.2, "gapTreatmentStrength": 0.0},
+        "faces": {},
     }
     assert sorted(translated.items()) == sorted(reference.items())
