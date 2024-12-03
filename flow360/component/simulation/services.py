@@ -380,9 +380,11 @@ def _populate_error_context(error: dict):
     """
     ctx = error.get("ctx")
     if isinstance(ctx, dict):
-        for field_name, field in ctx.items():
+        for field_name, context in ctx.items():
             try:
-                error["ctx"][field_name] = str(field)
+                error["ctx"][field_name] = (
+                    [str(item) for item in context] if isinstance(context, list) else str(context)
+                )
             except Exception:  # pylint: disable=broad-exception-caught
                 error["ctx"][field_name] = "<couldn't stringify>"
     else:

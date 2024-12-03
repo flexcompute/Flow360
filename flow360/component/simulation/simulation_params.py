@@ -80,8 +80,9 @@ from flow360.version import __version__
 from .validation.validation_context import (
     CASE,
     SURFACE_MESH,
+    VOLUME_MESH,
     CaseField,
-    ContextField,
+    ConditionalField,
     context_validator,
 )
 
@@ -173,11 +174,12 @@ class _ParamModelBase(Flow360BaseModel):
 class SimulationParams(_ParamModelBase):
     """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    meshing: Optional[MeshingParams] = ContextField(
-        MeshingParams(),
-        context=SURFACE_MESH,
-        description="Meshing parameters. See :class:`MeshingParams` for more details.",
+    meshing: Optional[MeshingParams] = ConditionalField(
+        None,
+        context=[SURFACE_MESH, VOLUME_MESH],
+        description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
+
     reference_geometry: Optional[ReferenceGeometry] = CaseField(
         None,
         description="Global geometric reference values. See :class:`ReferenceGeometry` for more details.",

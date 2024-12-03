@@ -70,8 +70,8 @@ def _test_with_given_context_and_data(context, data: dict, expected_errors):
 def test_no_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
     _test_with_given_context_and_data(None, test_data1, excpected_errors)
 
@@ -79,9 +79,9 @@ def test_no_context_validate():
 def test_with_sm_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": ["SurfaceMesh"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     _test_with_given_context_and_data(validation_context.SURFACE_MESH, test_data1, excpected_errors)
@@ -90,9 +90,9 @@ def test_with_sm_context_validate():
 def test_with_vm_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     _test_with_given_context_and_data(validation_context.VOLUME_MESH, test_data1, excpected_errors)
@@ -101,10 +101,10 @@ def test_with_vm_context_validate():
 def test_with_case_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     _test_with_given_context_and_data(validation_context.CASE, test_data1, excpected_errors)
@@ -113,12 +113,12 @@ def test_with_case_context_validate():
 def test_with_all_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
-        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
-        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": ["SurfaceMesh"]}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
+        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     _test_with_given_context_and_data(validation_context.ALL, test_data1, excpected_errors)
@@ -127,10 +127,10 @@ def test_with_all_context_validate():
 def test_with_sm_and_vm_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
-        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": ["SurfaceMesh"]}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     try:
@@ -151,12 +151,12 @@ def test_with_sm_and_vm_context_validate():
 def test_with_sm_and_vm_and_case_context_validate():
     excpected_errors = [
         {"loc": ("m", "a"), "type": "missing"},
-        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": "SurfaceMesh"}},
-        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
-        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("m", "b"), "type": "missing", "ctx": {"relevant_for": ["SurfaceMesh"]}},
+        {"loc": ("m", "c"), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
+        {"loc": ("m", "d"), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("d",), "type": "model_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("e",), "type": "model_attributes_type", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     try:
@@ -196,7 +196,7 @@ def test_correct_context_validate():
 
 def test_without_context_validate_not_required():
     excpected_errors = [
-        {"loc": ("e",), "type": "float_parsing", "ctx": {"relevant_for": "Case"}},
+        {"loc": ("e",), "type": "float_parsing", "ctx": {"relevant_for": ["Case"]}},
     ]
 
     try:
@@ -213,8 +213,8 @@ def test_without_context_validate_not_required():
 
 def test_without_context_validate_not_required_2():
     excpected_errors = [
-        {"loc": ("d", "a"), "type": "string_type", "ctx": {"relevant_for": "Case"}},
-        {"loc": ("d", "c"), "type": "string_type", "ctx": {"relevant_for": "VolumeMesh"}},
+        {"loc": ("d", "a"), "type": "string_type", "ctx": {"relevant_for": ["Case"]}},
+        {"loc": ("d", "c"), "type": "string_type", "ctx": {"relevant_for": ["VolumeMesh"]}},
     ]
     _test_with_given_context_and_data(None, test_data3, excpected_errors)
 
@@ -226,7 +226,7 @@ def test_with_context_validate_required():
 
     # Become invalid when validating against VOLUME_MESH
     excpected_errors = [
-        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": "VolumeMesh"}},
+        {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
     ]
     try:
         with validation_context.ValidationLevelContext(validation_context.VOLUME_MESH):

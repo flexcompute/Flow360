@@ -154,17 +154,17 @@ def test_validate_error():
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
-            "ctx": {"relevant_for": "VolumeMesh"},
+            "ctx": {"relevant_for": ["VolumeMesh"]},
         },
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "missing",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
         {
             "loc": ("meshing", "farfield"),
             "type": "extra_forbidden",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
     ]
     assert len(errors) == len(excpected_errors)
@@ -220,17 +220,17 @@ def test_validate_multiple_errors():
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "value_error",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
         {
             "loc": ("meshing", "farfield"),
             "type": "extra_forbidden",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
         {
             "loc": ("reference_geometry", "area", "value"),
             "type": "greater_than",
-            "ctx": {"relevant_for": "Case"},
+            "ctx": {"relevant_for": ["Case"]},
         },
     ]
     assert len(errors) == len(excpected_errors)
@@ -315,17 +315,17 @@ def test_validate_init_data_errors():
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
-            "ctx": {"relevant_for": "VolumeMesh"},
+            "ctx": {"relevant_for": ["VolumeMesh"]},
         },
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "missing",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
         {
             "loc": ("operating_condition", "velocity_magnitude"),
             "type": "missing",
-            "ctx": {"relevant_for": "Case"},
+            "ctx": {"relevant_for": ["Case"]},
         },
     ]
 
@@ -351,12 +351,12 @@ def test_validate_init_data_for_sm_and_vm_errors():
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
-            "ctx": {"relevant_for": "VolumeMesh"},
+            "ctx": {"relevant_for": ["VolumeMesh"]},
         },
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "missing",
-            "ctx": {"relevant_for": "SurfaceMesh"},
+            "ctx": {"relevant_for": ["SurfaceMesh"]},
         },
     ]
 
@@ -378,7 +378,7 @@ def test_validate_init_data_vm_workflow_errors():
         {
             "loc": ("operating_condition", "velocity_magnitude"),
             "type": "missing",
-            "ctx": {"relevant_for": "Case"},
+            "ctx": {"relevant_for": ["Case"]},
         },
     ]
 
@@ -619,7 +619,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'SurfaceMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -638,7 +638,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'VolumeMesh'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -657,7 +657,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': 'Case'}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(

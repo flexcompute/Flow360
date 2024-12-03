@@ -268,9 +268,16 @@ class Flow360BaseModel(pd.BaseModel):
 
         conditionally_required = cls._get_field_context(info, "conditionally_required")
         relevant_for = cls._get_field_context(info, "relevant_for")
+
+        all_relevant_levels = ()
+        if isinstance(relevant_for, list):
+            all_relevant_levels = tuple(relevant_for + [validation_context.ALL])
+        else:
+            all_relevant_levels = (relevant_for, validation_context.ALL)
+
         if (
             conditionally_required is True
-            and any(lvl in (relevant_for, validation_context.ALL) for lvl in validation_levels)
+            and any(lvl in all_relevant_levels for lvl in validation_levels)
             and value is None
         ):
             raise pd.ValidationError.from_exception_data(
@@ -295,7 +302,10 @@ class Flow360BaseModel(pd.BaseModel):
                 for i, error in enumerate(validation_errors):
                     ctx = error.get("ctx", {})
                     if ctx.get("relevant_for") is None:
-                        ctx["relevant_for"] = relevant_for
+                        # Enforce the relevant_for to be a list for consistency
+                        ctx["relevant_for"] = (
+                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
+                        )
                     validation_errors[i]["ctx"] = ctx
             raise pd.ValidationError.from_exception_data(
                 title=cls.__class__.__name__, line_errors=validation_errors

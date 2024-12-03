@@ -648,3 +648,17 @@ def test_rotation_parent_volumes():
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
+
+
+def test_meshing_validator_dual_context():
+    errors = None
+    try:
+        with SI_unit_system:
+            with ValidationLevelContext(VOLUME_MESH):
+                SimulationParams(meshing=None)
+    except pd.ValidationError as err:
+        errors = err.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] == "missing"
+    assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
+    assert errors[0]["loc"] == ("meshing",)
