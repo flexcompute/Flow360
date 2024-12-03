@@ -1,7 +1,4 @@
 import flow360 as fl
-from flow360 import u
-
-fl.Env.preprod.active()
 
 my_project = fl.Project.from_cloud("PROJECT_ID_HERE")
 # Applicable for projects with Geometry being the starting point.
@@ -24,7 +21,7 @@ with fl.SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(),
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=105,  # Changed
-            alpha=10 * u.deg,  # Changed
+            alpha=10 * fl.u.deg,  # Changed
         ),
         time_stepping=fl.Steady(max_steps=1000),
         models=[

@@ -1,13 +1,11 @@
 import math
 
 import flow360 as fl
-from flow360.examples import TutorailDynamicDerivatives
+from flow360.examples import TutorialDynamicDerivatives
 
-fl.Env.preprod.active()
-
-TutorailDynamicDerivatives.get_files()
+TutorialDynamicDerivatives.get_files()
 project = fl.Project.from_file(
-    TutorailDynamicDerivatives.geometry,
+    TutorialDynamicDerivatives.geometry,
     name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
 )
 geometry = project.geometry

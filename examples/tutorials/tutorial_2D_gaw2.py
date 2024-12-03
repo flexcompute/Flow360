@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import Tutorial2DGAW2
 
-fl.Env.preprod.active()
-
 Tutorial2DGAW2.get_files()
 
 project = fl.Project.from_file(Tutorial2DGAW2.geometry, name="Tutorial 2D GA(W)-2 from Python")

@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import TutorialPeriodicBC
 
-fl.Env.preprod.active()
-
 TutorialPeriodicBC.get_files()
 project = fl.Project.from_file(
     TutorialPeriodicBC.mesh_filename, name="Tutorial Periodic Boundary Condition from Python"

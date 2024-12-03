@@ -3,15 +3,6 @@ import json
 import flow360 as fl
 from flow360.examples import TutorialBETDisk
 
-"""
-In this tutorial case we are using Blade Element Theory (BET) to simulate the XV-15 rotor blade. Documentation for this tutorial is available in the link below.
-
-https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/BETTutorial/BETTutorial.html
-"""
-
-
-fl.Env.preprod.active()
-
 TutorialBETDisk.get_files()
 
 project = fl.Project.from_file(TutorialBETDisk.geometry, name="Tutorial BETDisk from Python")

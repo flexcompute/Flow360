@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import TutorialCHTSolver
 
-fl.Env.preprod.active()
-
 TutorialCHTSolver.get_files()
 project = fl.Project.from_file(
     TutorialCHTSolver.mesh_filename, name="Tutorial CHT Solver from Python"

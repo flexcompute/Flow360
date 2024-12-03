@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import Tutorial2DCRM
 
-fl.Env.preprod.active()
-
 Tutorial2DCRM.get_files()
 
 project = fl.Project.from_file(Tutorial2DCRM.geometry, name="Tutorial 2D CRM from Python")
