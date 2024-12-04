@@ -9,6 +9,10 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
@@ -419,6 +423,12 @@ def test_incomplete_BC():
         with ValidationLevelContext(ALL):
             with SI_unit_system:
                 SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
                     models=[
                         Fluid(),
                         Wall(entities=wall_1),
@@ -437,6 +447,12 @@ def test_incomplete_BC():
         with ValidationLevelContext(ALL):
             with SI_unit_system:
                 SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
                     models=[
                         Fluid(),
                         Wall(entities=[wall_1]),
@@ -648,3 +664,17 @@ def test_rotation_parent_volumes():
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
+
+
+def test_meshing_validator_dual_context():
+    errors = None
+    try:
+        with SI_unit_system:
+            with ValidationLevelContext(VOLUME_MESH):
+                SimulationParams(meshing=None)
+    except pd.ValidationError as err:
+        errors = err.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] == "missing"
+    assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
+    assert errors[0]["loc"] == ("meshing",)

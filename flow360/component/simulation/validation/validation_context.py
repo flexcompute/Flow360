@@ -103,7 +103,14 @@ def ContextField(
 
 # pylint: disable=invalid-name
 def ConditionalField(
-    default=None, *, context: Literal["SurfaceMesh", "VolumeMesh", "Case"] = None, **kwargs
+    default=None,
+    *,
+    context: Union[
+        None,
+        Literal["SurfaceMesh", "VolumeMesh", "Case"],
+        List[Literal["SurfaceMesh", "VolumeMesh", "Case"]],
+    ] = None,
+    **kwargs,
 ):
     """
     Creates a field with conditional context validation requirements.
@@ -112,8 +119,12 @@ def ConditionalField(
     ----------
     default : any, optional
         The default value for the field.
-    context : str, optional
-        Specifies the scenario for which this field is relevant. The relevant_for=context is included in error->ctx
+    context : Union[
+        None, Literal['SurfaceMesh', 'VolumeMesh', 'Case'],
+        List[Literal['SurfaceMesh', 'VolumeMesh', 'Case']]
+    ], optional
+        Specifies the context(s) in which this field is relevant. This value is
+        included in the validation error context (`ctx`) as `relevant_for`.
     **kwargs : dict
         Additional keyword arguments passed to Pydantic's Field.
 

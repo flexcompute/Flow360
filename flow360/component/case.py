@@ -431,7 +431,7 @@ class Case(CaseBase, Flow360Resource):
                 params_as_dict: dict = json.load(fh)
 
             param, errors, _ = services.validate_model(
-                params_as_dict=params_as_dict, root_item_type=None
+                params_as_dict=params_as_dict, root_item_type=None, validation_level=None
             )
 
             if errors is not None:
