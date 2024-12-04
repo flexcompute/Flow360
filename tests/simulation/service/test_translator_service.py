@@ -46,8 +46,20 @@ def test_simulation_to_surface_meshing_json():
                 {
                     "entities": {
                         "stored_entities": [
-                            {"name": "wingLeadingEdge"},
-                            {"name": "wingTrailingEdge"},
+                            {
+                                "private_attribute_registry_bucket_name": "EdgeEntityType",
+                                "private_attribute_entity_type_name": "Edge",
+                                "name": "wingLeadingEdge",
+                                "private_attribute_tag_key": "edgeId",
+                                "private_attribute_sub_components": ["body0001_edge0001"],
+                            },
+                            {
+                                "private_attribute_registry_bucket_name": "EdgeEntityType",
+                                "private_attribute_entity_type_name": "Edge",
+                                "name": "wingTrailingEdge",
+                                "private_attribute_tag_key": "edgeId",
+                                "private_attribute_sub_components": ["body0001_edge0002"],
+                            },
                         ]
                     },
                     "method": {"type": "height", "value": {"units": "cm", "value": 0.03}},
@@ -55,7 +67,22 @@ def test_simulation_to_surface_meshing_json():
                 },
                 {
                     "entities": {
-                        "stored_entities": [{"name": "rootAirfoilEdge"}, {"name": "tipAirfoilEdge"}]
+                        "stored_entities": [
+                            {
+                                "private_attribute_registry_bucket_name": "EdgeEntityType",
+                                "private_attribute_entity_type_name": "Edge",
+                                "name": "rootAirfoilEdge",
+                                "private_attribute_tag_key": "edgeId",
+                                "private_attribute_sub_components": ["body0001_edge0003"],
+                            },
+                            {
+                                "private_attribute_registry_bucket_name": "EdgeEntityType",
+                                "private_attribute_entity_type_name": "Edge",
+                                "name": "tipAirfoilEdge",
+                                "private_attribute_tag_key": "edgeId",
+                                "private_attribute_sub_components": ["body0001_edge0004"],
+                            },
+                        ]
                     },
                     "method": {"type": "projectAnisoSpacing"},
                     "refinement_type": "SurfaceEdgeRefinement",
@@ -75,7 +102,9 @@ def test_simulation_to_surface_meshing_json():
     }
 
     start_time = time.time()
-    params, _, _ = validate_model(param_data, "SI", "Geometry", SURFACE_MESH)
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=SURFACE_MESH
+    )
     simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     end_time = time.time()
     execution_time = end_time - start_time
@@ -116,6 +145,7 @@ def test_simulation_to_volume_meshing_json():
                                 "center": {"units": "m", "value": [0.7, -1.0, 0.0]},
                                 "height": {"units": "m", "value": 2.0},
                                 "name": "cylinder_1",
+                                "private_attribute_entity_type_name": "Cylinder",
                                 "outer_radius": {"units": "m", "value": 1.1},
                             }
                         ]
@@ -131,6 +161,7 @@ def test_simulation_to_volume_meshing_json():
                                 "center": {"units": "m", "value": [0.7, -1.0, 0.0]},
                                 "height": {"units": "m", "value": 2.0},
                                 "name": "cylinder_2",
+                                "private_attribute_entity_type_name": "Cylinder",
                                 "outer_radius": {"units": "m", "value": 2.2},
                             }
                         ]
@@ -146,6 +177,7 @@ def test_simulation_to_volume_meshing_json():
                                 "center": {"units": "m", "value": [0.7, -1.0, 0.0]},
                                 "height": {"units": "m", "value": 2.0},
                                 "name": "cylinder_3",
+                                "private_attribute_entity_type_name": "Cylinder",
                                 "outer_radius": {"units": "m", "value": 3.3},
                             }
                         ]
@@ -161,6 +193,7 @@ def test_simulation_to_volume_meshing_json():
                                 "center": {"units": "m", "value": [0.7, -1.0, 0.0]},
                                 "height": {"units": "m", "value": 2.0},
                                 "name": "cylinder_4",
+                                "private_attribute_entity_type_name": "Cylinder",
                                 "outer_radius": {"units": "m", "value": 4.5},
                             }
                         ]
@@ -176,6 +209,7 @@ def test_simulation_to_volume_meshing_json():
                                 "center": {"units": "m", "value": [2.0, -1.0, 0.0]},
                                 "height": {"units": "m", "value": 14.5},
                                 "name": "outter_cylinder",
+                                "private_attribute_entity_type_name": "Cylinder",
                                 "outer_radius": {"units": "m", "value": 6.5},
                             }
                         ]
@@ -201,7 +235,9 @@ def test_simulation_to_volume_meshing_json():
         "version": "24.2.0",
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry", VOLUME_MESH)
+    params, _, _ = validate_model(
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=VOLUME_MESH
+    )
 
     sm_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
     assert sm_json["farfield"]["type"] == "auto"
@@ -263,14 +299,41 @@ def test_simulation_to_case_json():
                 },
             },
             {
-                "entities": {"stored_entities": [{"name": "1"}]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "1",
+                        },
+                    ]
+                },
                 "type": "Wall",
                 "use_wall_function": False,
                 "velocity": {"value": [0, 1, 2], "units": "m/s"},
             },
-            {"entities": {"stored_entities": [{"name": "2"}]}, "type": "SlipWall"},
             {
-                "entities": {"stored_entities": [{"name": "3"}]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "2",
+                        },
+                    ]
+                },
+                "type": "SlipWall",
+            },
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "3",
+                        },
+                    ]
+                },
                 "type": "Freestream",
             },
         ],
@@ -308,6 +371,7 @@ def test_simulation_to_case_json():
                     "stored_entities": [
                         {
                             "name": "sliceName_1",
+                            "private_attribute_entity_type_name": "Slice",
                             "normal": [0.0, 1.0, 0.0],
                             "origin": {"units": "m", "value": [0.0, 0.56413, 0.0]},
                         }
@@ -331,7 +395,25 @@ def test_simulation_to_case_json():
                 "output_type": "SliceOutput",
             },
             {
-                "entities": {"stored_entities": [{"name": "1"}, {"name": "2"}, {"name": "3"}]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "1",
+                        },
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "2",
+                        },
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "3",
+                        },
+                    ]
+                },
                 "frequency": -1,
                 "frequency_offset": 0,
                 "output_fields": {"items": ["nuHat"]},
@@ -439,8 +521,8 @@ def test_simulation_to_case_json():
         },
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
-
+    params, err, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
+    print("errors: ", err)
     simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
@@ -539,13 +621,13 @@ def test_simulation_to_case_vm_workflow():
         },
     }
 
-    params, _, _ = validate_model(param_data, "SI", "Geometry")
+    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
 
     with pytest.raises(ValueError):
         case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
-    params, errors, _ = validate_model(param_data, "SI", "VolumeMesh")
+    params, errors, _ = validate_model(params_as_dict=param_data, root_item_type="VolumeMesh")
     case_json, hash = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
     print(case_json)
 
@@ -607,6 +689,7 @@ def test_simulation_to_all_translation_2():
                 "use_wall_function": False,
             }
         ],
+        "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {
@@ -633,7 +716,7 @@ def test_simulation_to_all_translation_2():
         },
     }
 
-    params, _, _ = validate_model(params_as_dict, "SI", "Geometry")
+    params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
 
     surface_json, hash = simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     print(surface_json)

@@ -108,6 +108,7 @@ SliceFieldNames = VolumeFieldNames
 # Entropy
 # Temperature
 # Coefficient of pressure
+# Total pressure coefficient
 # Turbulent viscosity
 # Spalart-Almaras variable
 IsoSurfaceFieldNames = Literal[
@@ -118,6 +119,7 @@ IsoSurfaceFieldNames = Literal[
     "s",
     "T",
     "Cp",
+    "Cpt",
     "mut",
     "nuHat",
 ]

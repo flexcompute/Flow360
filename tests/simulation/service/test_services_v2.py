@@ -70,6 +70,7 @@ def test_validate_service():
             }
         ],
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
             "project_length_unit": None,
             "project_entity_info": {
@@ -99,13 +100,13 @@ def test_validate_service():
     }
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_geo, unit_system_name="SI", root_item_type="Geometry"
+        params_as_dict=params_data_from_geo, root_item_type="Geometry"
     )
 
     assert errors is None
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_vm, unit_system_name="SI", root_item_type="VolumeMesh"
+        params_as_dict=params_data_from_vm, root_item_type="VolumeMesh"
     )
 
     assert errors is None
@@ -144,11 +145,10 @@ def test_validate_error():
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
 
     excpected_errors = [
         {
@@ -211,11 +211,10 @@ def test_validate_multiple_errors():
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
         },
         "user_defined_dynamics": [],
+        "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
 
     excpected_errors = [
         {
@@ -276,11 +275,10 @@ def test_validate_errors():
             ],
             "defaults": {"surface_edge_growth_rate": 1.2},
         },
+        "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
     json.dumps(errors)
 
 
@@ -311,9 +309,7 @@ def test_validate_init_data_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    _, errors, _ = services.validate_model(
-        params_as_dict=data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="Geometry")
 
     excpected_errors = [
         {
@@ -347,7 +343,6 @@ def test_validate_init_data_for_sm_and_vm_errors():
     )
     _, errors, _ = services.validate_model(
         params_as_dict=data,
-        unit_system_name="SI",
         root_item_type="Geometry",
         validation_level=[SURFACE_MESH, VOLUME_MESH],
     )
@@ -377,9 +372,7 @@ def test_validate_init_data_vm_workflow_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
-    _, errors, _ = services.validate_model(
-        params_as_dict=data, unit_system_name="SI", root_item_type="VolumeMesh"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="VolumeMesh")
 
     excpected_errors = [
         {
@@ -531,13 +524,13 @@ def test_front_end_JSON_with_multi_constructor():
     }
 
     simulation_param, errors, _ = services.validate_model(
-        params_as_dict=params_data, unit_system_name="SI", root_item_type="Geometry"
+        params_as_dict=params_data, root_item_type="Geometry"
     )
     assert errors is None
     with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
         ref_data = json.load(f)
         ref_param, err, _ = services.validate_model(
-            params_as_dict=ref_data, unit_system_name="SI", root_item_type="Geometry"
+            params_as_dict=ref_data, root_item_type="Geometry"
         )
         assert err is None
 
@@ -630,12 +623,12 @@ def test_generate_process_json():
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
-            json.dumps(params_data), "SI", "Geometry", "SurfaceMesh"
+            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
         )
 
     params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
-        json.dumps(params_data), "SI", "Geometry", "SurfaceMesh"
+        simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
     )
 
     assert res1 is not None
@@ -649,12 +642,12 @@ def test_generate_process_json():
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
-            json.dumps(params_data), "SI", "Geometry", "VolumeMesh"
+            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
         )
 
     params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
-        json.dumps(params_data), "SI", "Geometry", "VolumeMesh"
+        simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
     )
 
     assert res1 is not None
@@ -668,12 +661,12 @@ def test_generate_process_json():
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
-            json.dumps(params_data), "SI", "Geometry", "Case"
+            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="Case"
         )
 
     params_data["operating_condition"]["velocity_magnitude"] = {"value": 0.8, "units": "km/s"}
     res1, res2, res3 = services.generate_process_json(
-        json.dumps(params_data), "SI", "Geometry", "Case"
+        simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="Case"
     )
 
     assert res1 is not None
