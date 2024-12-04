@@ -248,23 +248,24 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["rotorDisks"].extend(rotor_disk_refinement)
         rotor_disk_names = [item["name"] for item in rotor_disk_refinement]
 
-        faces_aniso_setting = translate_setting_and_apply_to_all_entities(
-            meshing_params.refinements,
-            BoundaryLayer,
-            boundary_layer_translator,
-            to_list=False,
-        )
+    faces_aniso_setting = translate_setting_and_apply_to_all_entities(
+        meshing_params.refinements,
+        BoundaryLayer,
+        boundary_layer_translator,
+        to_list=False,
+    )
 
-        faces_passive_setting = translate_setting_and_apply_to_all_entities(
-            meshing_params.refinements,
-            PassiveSpacing,
-            passive_spacing_translator,
-            to_list=False,
-        )
+    faces_passive_setting = translate_setting_and_apply_to_all_entities(
+        meshing_params.refinements,
+        PassiveSpacing,
+        passive_spacing_translator,
+        to_list=False,
+    )
 
-        translated["faces"] = {}
-        translated["faces"].update(faces_aniso_setting)
-        translated["faces"].update(faces_passive_setting)
+    translated["faces"] = {}
+    translated["faces"].update(faces_aniso_setting)
+    translated["faces"].update(faces_passive_setting)
+
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,

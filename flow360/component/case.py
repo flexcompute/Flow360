@@ -429,22 +429,10 @@ class Case(CaseBase, Flow360Resource):
             # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
             with open(temp_file.name, "r", encoding="utf-8") as fh:
                 params_as_dict: dict = json.load(fh)
-                # >> Get the unit system stored in the params.
-                # We do not really need this because all values in params are dimensioned and should not depend
-                # on the unit system anymore.
-                unit_system_name = None
-                for unit_system_key in ["unitSystem", "unit_system"]:
-                    unit_system_dict = params_as_dict.get(unit_system_key, None)
-                    if unit_system_dict is not None:
-                        unit_system_name = unit_system_dict.get("name", None)
-                        break
 
-                if unit_system_name is None:
-                    raise KeyError(
-                        "Unit system not found in the simulation params. Corrupted file."
-                    )
-
-            param, errors, _ = services.validate_model(params_as_dict, unit_system_name, None)
+            param, errors, _ = services.validate_model(
+                params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+            )
 
             if errors is not None:
                 raise Flow360ValidationError(

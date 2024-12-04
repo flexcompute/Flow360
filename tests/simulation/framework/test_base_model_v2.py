@@ -22,17 +22,17 @@ class BaseModelTestModel(Flow360BaseModel):
 
     model_config = pd.ConfigDict(include_hash=True)
 
-    def preprocess(self, params, **kwargs):
+    def preprocess(self, **kwargs):
         self.some_value *= 2
-        return super().preprocess(self, **kwargs)
+        return super().preprocess(**kwargs)
 
 
 class TempParams(Flow360BaseModel):
     some_value: pd.StrictFloat
     pseudo_field: BaseModelTestModel
 
-    def preprocess(self, params, **kwargs):
-        return super().preprocess(self, mesh_unit=1 * u.cm, **kwargs)
+    def preprocess(self, **kwargs):
+        return super().preprocess(mesh_unit=1 * u.cm, **kwargs)
 
 
 class BaseModelWithConflictFields(Flow360BaseModel):
@@ -43,7 +43,7 @@ class BaseModelWithConflictFields(Flow360BaseModel):
         conflicting_fields=[Conflicts(field1="some_value1", field2="some_value2")]
     )
 
-    def preprocess(self, params, **kwargs):
+    def preprocess(self, **kwargs):
         self.some_value1 *= 2
         return super().preprocess(self, **kwargs)
 
@@ -199,13 +199,9 @@ def test_from_json_yaml():
         os.remove(temp_file_name)
 
 
-def test_generate_docstring():
-    assert "some_value" in BaseModelTestModel.__doc__
-
-
 def test_preprocess():
     value = 123
     test_params = TempParams(pseudo_field=BaseModelTestModel(some_value=value), some_value=value)
-    test_params = test_params.preprocess(test_params)
+    test_params = test_params.preprocess(params=test_params)
     assert test_params.some_value == value
     assert test_params.pseudo_field.some_value == value * 2

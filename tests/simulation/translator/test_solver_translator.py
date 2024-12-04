@@ -37,6 +37,7 @@ from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
@@ -360,20 +361,20 @@ def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
 
 def test_2dcrm_tutorial(get_2dcrm_tutorial_param):
     param = get_2dcrm_tutorial_param
-    translate_and_compare(param, mesh_unit=1 * u.ft, ref_json_file="Flow360_tutorial_2dcrm.json")
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
 
 
 def test_operating_condition(get_2dcrm_tutorial_param):
-    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.ft)
+    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.m)
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
-    assertions.assertEqual(
-        converted.operating_condition.thermal_state.dynamic_viscosity,
-        4e-8 * u.flow360_viscosity_unit,
+    assertions.assertAlmostEqual(
+        converted.operating_condition.thermal_state.dynamic_viscosity.value,
+        4.0121618e-08,
     )
     assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
-    assertions.assertEqual(
+    assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.material.dynamic_viscosity.reference_viscosity.value,
-        4e-8,
+        4.0121618e-08,
     )
     assertions.assertEqual(
         converted.operating_condition.thermal_state.material.dynamic_viscosity.effective_temperature,
@@ -383,7 +384,7 @@ def test_operating_condition(get_2dcrm_tutorial_param):
         converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
             converted.operating_condition.thermal_state.temperature
         ),
-        4e-8 * u.flow360_viscosity_unit,
+        4e-8,
     )
 
 
@@ -423,6 +424,25 @@ def test_initial_condition_and_restart():
     translate_and_compare(
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=True
     )
+
+
+def test_user_defined_field():
+    # 1. Default case
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Fluid(
+                    initial_condition=NavierStokesInitialCondition(
+                        constants={"not_used": "-1.1"}, rho="rho", u="u", v="v", w="w", p="p"
+                    )
+                )
+            ],
+            user_defined_fields=[UserDefinedField(name="CpT", expression="C-p*T")],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_udf.json")
 
 
 def test_boundaries():

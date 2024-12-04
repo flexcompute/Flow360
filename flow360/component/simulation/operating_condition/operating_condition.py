@@ -13,11 +13,7 @@ from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import (
-    Air,
-    FluidMaterialTypes,
-    Sutherland,
-)
+from flow360.component.simulation.models.material import Air, FluidMaterialTypes
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -185,7 +181,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :paramref:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -232,7 +228,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
     velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :paramref:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
     )
     thermal_state: ThermalState = pd.Field(
@@ -242,7 +238,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     )
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
-        description="Reference velocity magnitude. Is required when :paramref:`velocity_magnitude` is 0.",
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
     )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
@@ -351,6 +347,9 @@ OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
 def operating_condition_from_mach_reynolds(
     mach: pd.NonNegativeFloat,
     reynolds: pd.PositiveFloat,
+    project_length_unit: LengthType.Positive = pd.Field(
+        description="The Length unit of the project."
+    ),
     temperature: TemperatureType.Positive = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
@@ -369,6 +368,8 @@ def operating_condition_from_mach_reynolds(
         Freestream Mach number (must be non-negative).
     reynolds : PositiveFloat
         Freestream Reynolds number defined with mesh unit (must be positive).
+    project_length_unit: LengthType.Positive
+        Project length unit.
     temperature : TemperatureType.Positive, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
@@ -397,6 +398,7 @@ def operating_condition_from_mach_reynolds(
     >>> condition = operating_condition_from_mach_reynolds(
     ...     mach=0.85,
     ...     reynolds=1e6,
+    ...     project_length_unit=1 * u.mm,
     ...     temperature=288.15 * u.K,
     ...     alpha=2.0 * u.deg,
     ...     beta=0.0 * u.deg,
@@ -407,15 +409,21 @@ def operating_condition_from_mach_reynolds(
 
     """
 
-    thermal_state = ThermalState(
-        temperature=temperature,
-        material=Air(
-            dynamic_viscosity=Sutherland(
-                reference_temperature=temperature,
-                reference_viscosity=(mach / reynolds) * u.flow360_viscosity_unit,
-                effective_temperature=110.4 * u.K,
-            )
-        ),
+    if temperature == 288.15 * u.K:
+        log.info("Default value of 288.15 K will be used as temperature.")
+
+    material = Air()
+
+    velocity = mach * material.get_speed_of_sound(temperature)
+
+    density = (
+        reynolds * material.get_dynamic_viscosity(temperature) / (velocity * project_length_unit)
+    )
+
+    thermal_state = ThermalState(temperature=temperature, density=density)
+
+    log.info(
+        """Density and viscosity were calculated based on input data, ThermalState will be automatically created."""
     )
 
     # pylint: disable=no-value-for-parameter

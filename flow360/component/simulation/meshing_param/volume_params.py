@@ -93,10 +93,29 @@ class RotationCylinder(CylindricalRefinementBase):
         `enclosed_entities` is planned to be auto_populated in the future.
         """
         # pylint: disable=protected-access
-        if len(values._get_expanded_entities(expect_supplied_registry=False)) > 1:
+        if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each RotationCylinder."
             )
+        return values
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_cylinder_name_length(cls, values):
+        """
+        Check the name length for the cylinder entities due to the 32-character
+        limitation of all data structure names and labels in CGNS format.
+        The current prefix is 'rotatingBlock-' with 14 characters.
+        """
+
+        cgns_max_zone_name_length = 32
+        max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
+        for entity in values.stored_entities:
+            if len(entity.name) > max_cylinder_name_length:
+                raise ValueError(
+                    f"The name ({entity.name}) of `Cylinder` entity in `RotationCylinder` "
+                    + f"exceeds {max_cylinder_name_length} characters limit."
+                )
         return values
 
 

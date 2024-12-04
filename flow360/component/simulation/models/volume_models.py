@@ -35,12 +35,14 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
+    AngleType,
     AngularVelocityType,
     HeatSourceType,
     InverseAreaType,
     InverseLengthType,
     LengthType,
     PressureType,
+    u,
 )
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
@@ -53,7 +55,8 @@ from flow360.component.types import Axis
 
 class AngleExpression(SingleAttributeModel):
     """
-    :class:`AngleExpression` class for define the angle expression for :paramref:`Rotation.spec`.
+    :class:`AngleExpression` class for define the angle expression for :py:attr:`Rotation.spec`.
+    The result of the expression is assumed to be in radians.
     """
 
     type_name: Literal["AngleExpression"] = pd.Field("AngleExpression", frozen=True)
@@ -64,7 +67,7 @@ class AngleExpression(SingleAttributeModel):
 
 class AngularVelocity(SingleAttributeModel):
     """
-    :class:`AngularVelocity` class to define the angular velocity for :paramref:`Rotation.spec`.
+    :class:`AngularVelocity` class to define the angular velocity for :py:attr:`Rotation.spec`.
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
@@ -74,7 +77,7 @@ class AngularVelocity(SingleAttributeModel):
 class FromUserDefinedDynamics(Flow360BaseModel):
     """
     :class:`FromUserDefinedDynamics` class to define the rotation
-    controlled by user defined dynamics for :paramref:`Rotation.spec`.
+    controlled by user defined dynamics for :py:attr:`Rotation.spec`.
     """
 
     type_name: Literal["FromUserDefinedDynamics"] = pd.Field("FromUserDefinedDynamics", frozen=True)
@@ -83,7 +86,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """
     :class:`ExpressionInitialCondition` class for specifying the intial conditions of
-    :paramref:`Fluid.initial_condition`.
+    :py:attr:`Fluid.initial_condition`.
     """
 
     type_name: Literal["expression"] = pd.Field("expression", frozen=True)
@@ -96,7 +99,7 @@ class ExpressionInitialConditionBase(Flow360BaseModel):
 class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`NavierStokesInitialCondition` class for specifying the
-    :paramref:`Fluid.initial_condition`.
+    :py:attr:`Fluid.initial_condition`.
     By default
     """
 
@@ -208,8 +211,6 @@ class ForcePerArea(Flow360BaseModel):
     Example
     -------
     >>> fpa = ForcePerArea(radius=[0, 1], thrust=[1, 1], circumferential=[1, 1]) # doctest: +SKIP
-
-    TODO: Use dimensioned values
     """
 
     # pylint: disable=no-member
@@ -261,46 +262,44 @@ class ActuatorDisk(Flow360BaseModel):
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
+# pylint: disable=no-member
 class BETDiskTwist(Flow360BaseModel):
-    """:class:`BETDiskTwist` class for setting up the :paramref:`BETDisk.twists`."""
+    """:class:`BETDiskTwist` class for setting up the :py:attr:`BETDisk.twists`."""
 
-    # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
-    twist: Optional[float] = pd.Field(
-        None,
-        description="The twist in degrees as a function of radial location. "
+    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
+    twist: AngleType = pd.Field(
+        description="The twist angle as a function of radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
 
 
+# pylint: disable=no-member
 class BETDiskChord(Flow360BaseModel):
-    """:class:`BETDiskChord` class for setting up the :paramref:`BETDisk.chords`."""
+    """:class:`BETDiskChord` class for setting up the :py:attr:`BETDisk.chords`."""
 
-    # TODO: Use dimensioned values, why optional?
-    radius: Optional[float] = pd.Field(None, description="A list of radial locations.")
-    chord: Optional[float] = pd.Field(
-        None,
+    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
+    chord: LengthType.NonNegative = pd.Field(
         description="The blade chord as a function of the radial location. "
         + "Entries in the list must already be sorted by radius.",
     )
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
-    """:class:`BETDiskSectionalPolar` class for setting up :paramref:`BETDisk.sectional_polars`
+    """:class:`BETDiskSectionalPolar` class for setting up :py:attr:`BETDisk.sectional_polars`
     for :class:`BETDisk`. There are two variables, “lift_coeffs” and “drag_coeffs”,
     need to be set up as 3D arrays (implemented as nested lists).
-    The first index of the array corresponds to the :paramref:`BETDisk.mach_numbers`
+    The first index of the array corresponds to the :py:attr:`BETDisk.mach_numbers`
     of the specified polar data.
-    The second index of the array corresponds to the :paramref:`BETDisk.reynolds_numbers`
+    The second index of the array corresponds to the :py:attr:`BETDisk.reynolds_numbers`
     of the polar data.
-    The third index corresponds to the :paramref:`BETDisk.alphas`.
+    The third index corresponds to the :py:attr:`BETDisk.alphas`.
     The value specifies the lift or drag coefficient, respectively.
     """
 
-    lift_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+    lift_coeffs: List[List[List[float]]] = pd.Field(
         description="The 3D arrays specifying the list coefficient."
     )
-    drag_coeffs: Optional[List[List[List[float]]]] = pd.Field(
+    drag_coeffs: List[List[List[float]]] = pd.Field(
         description="The 3D arrays specifying the drag coefficient."
     )
 
@@ -340,7 +339,7 @@ class BETDisk(Flow360BaseModel):
         + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`.",
     )
     blade_line_chord: LengthType.NonNegative = pd.Field(
-        0,
+        0 * u.m,
         description="Dimensional chord to use if performing an unsteady BET Line simulation. "
         + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
     )
@@ -362,9 +361,9 @@ class BETDisk(Flow360BaseModel):
         description="Reynolds numbers associated with the airfoil polars "
         + "provided in :class:`BETDiskSectionalPolar`."
     )
-    alphas: List[float] = pd.Field(
+    alphas: AngleType.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":class:`BETDiskSectionalPolar` in degrees."
+        + ":class:`BETDiskSectionalPolar`."
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
@@ -376,9 +375,9 @@ class BETDisk(Flow360BaseModel):
     )
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
-        + ":paramref:`sectional_radiuses`."
+        + ":py:attr:`sectional_radiuses`."
     )
-    sectional_radiuses: List[float] = pd.Field(
+    sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
     )

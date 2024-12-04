@@ -616,6 +616,14 @@ def bet_disk_entity_info_serializer(volume):
 def bet_disk_translator(model: BETDisk):
     """BET disk translator"""
     model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
+    model_dict["alphas"] = [alpha.to("degree").value.item() for alpha in model.alphas]
+    model_dict["twists"] = [
+        {
+            "radius": bet_twist.radius.value.item(),
+            "twist": bet_twist.twist.to("degree").value.item(),
+        }
+        for bet_twist in model.twists
+    ]
     disk_param = {
         "rotationDirectionRule": model_dict["rotationDirectionRule"],
         "numberOfBlades": model_dict["numberOfBlades"],
@@ -1098,6 +1106,14 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
+
+    ##:: Step 5: Get user defined fields
+    translated["userDefinedFields"] = []
+    for udf in input_params.user_defined_fields:
+        udf_dict = {}
+        udf_dict["name"] = udf.name
+        udf_dict["expression"] = udf.expression
+        translated["userDefinedFields"].append(udf_dict)
 
     ##:: Step 11: Get user defined dynamics
     if input_params.user_defined_dynamics is not None:
