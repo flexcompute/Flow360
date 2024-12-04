@@ -209,7 +209,6 @@
   }
 ],
 "time_stepping": {
-  "order_of_accuracy": 2,
   "type_name": "Steady",
   "max_steps": 2000,
   "CFL": {

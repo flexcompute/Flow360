@@ -877,7 +877,7 @@ def get_solver_json(
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": 1,
-            "orderOfAccuracy": ts.order_of_accuracy,
+            "orderOfAccuracy": 2,  # Solver always want to read this even if it is steady... Setting dummy value here.
             "maxPseudoSteps": ts.max_steps,
             "timeStepSize": "inf",
         }
