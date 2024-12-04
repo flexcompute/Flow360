@@ -34,6 +34,7 @@ from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     MeshNameParser,
     ProjectAssetCache,
+    get_short_asset_id,
     match_file_pattern,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
@@ -160,6 +161,7 @@ class ProjectTreeNode(pd.BaseModel):
     asset_name: str = pd.Field()
     asset_type: str = pd.Field()
     parent_id: Union[str, None] = pd.Field(None)
+    case_mesh_id: Union[str, None] = pd.Field(None)
     children: List = pd.Field([])
 
     def __str__(self):
@@ -177,6 +179,11 @@ class ProjectTreeNode(pd.BaseModel):
         """Add a child asset of the current asset"""
         self.children.append(child)
         return child
+
+    @property
+    def short_id(self) -> str:
+        """Compute short asset id"""
+        return get_short_asset_id(self.asset_id)
 
 
 class ProjectTree(pd.BaseModel):
@@ -205,12 +212,17 @@ class ProjectTree(pd.BaseModel):
                 parent_id = asset.info.geometry_id
             if isinstance(asset, Case):
                 parent_id = asset.info.case_mesh_id
+        case_mesh_id = None
+        if isinstance(asset, Case):
+            case_mesh_id = asset.info.case_mesh_id
+
         new_node = ProjectTreeNode(
             asset_id=asset.info.id,
             asset_name=asset.info.name,
             # pylint: disable=protected-access
             asset_type=asset._cloud_resource_type_name,
             parent_id=parent_id,
+            case_mesh_id=case_mesh_id,
         )
         if not new_node.parent_id:
             self.root = new_node
@@ -221,6 +233,9 @@ class ProjectTree(pd.BaseModel):
             if node.asset_id == new_node.parent_id:
                 node.add_child(child=new_node)
         self.nodes.update({new_node.asset_id: new_node})
+        for node in self.nodes.values():
+            if node.case_mesh_id and self.has_node(node.case_mesh_id):
+                node.case_mesh_id = None
 
     def has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
@@ -654,7 +669,7 @@ class Project(pd.BaseModel):
         ----------
         destination_obj : AssetOrResource
             The destination asset after submitting a job. If provided, only assets along
-            the path to this asset will be fetched. 
+            the path to this asset will be fetched.
         """
 
         self._check_initialized()
@@ -687,8 +702,9 @@ class Project(pd.BaseModel):
         Parameters
         ----------
         asset_records : List
-            List of asset record. 
+            List of asset record.
         """
+
         def parse_datetime(dt_str, fmt="%Y-%m-%dT%H:%M:%S.%fZ"):
             try:
                 return datetime.datetime.strptime(dt_str, fmt)
@@ -730,7 +746,8 @@ class Project(pd.BaseModel):
         """
 
         self._get_asset_from_cloud()
-        def chunkstring(long_str, str_length=None):
+
+        def chunkstring(long_str:str, str_length:str=None, last_line_threshold:float = 0.2):
             if not str_length:
                 return long_str
             lines = (i.strip() for i in long_str.splitlines())
@@ -738,12 +755,18 @@ class Project(pd.BaseModel):
             for line in lines:
                 str_chunk = (line[0 + i : str_length + i] for i in range(0, len(line), str_length))
                 for chunk in str_chunk:
+                    if len(chunk) <= int(last_line_threshold * str_length):
+                        output_str = output_str.rstrip("\n")
                     output_str += f"{chunk}\n"
-            return output_str
+            return output_str.rstrip("\n")
 
         PrettyPrintTree(
-            lambda x: x.children,
-            lambda x: chunkstring(long_str=str(x), str_length=str_length),
+            get_children=lambda x: x.children,
+            get_val=lambda x: chunkstring(long_str=str(x), str_length=str_length),
+            get_label=lambda x: chunkstring(
+                long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_id),
+                str_length=str_length,
+            ) if x.case_mesh_id else None,
             color="",
             border=True,
             orientation=PrettyPrintTree.Horizontal if is_horizontal else PrettyPrintTree.Vertical,
