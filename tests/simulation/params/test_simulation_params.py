@@ -32,6 +32,7 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
+    operating_condition_from_mach_muref,
     operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
@@ -291,5 +292,26 @@ def test_mach_reynodls_op_cond():
         condition = operating_condition_from_mach_reynolds(
             mach=0.2,
             reynolds=0,
+            temperature=288.15 * u.K,
+        )
+
+
+def test_mach_muref_op_cond():
+
+    condition = operating_condition_from_mach_muref(
+        mach=0.2,
+        mu_ref=4e-8,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+        project_length_unit=u.m,
+    )
+    assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        condition = operating_condition_from_mach_muref(
+            mach=0.2,
+            mu_ref=0,
             temperature=288.15 * u.K,
         )
