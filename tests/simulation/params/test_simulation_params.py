@@ -275,7 +275,7 @@ def test_subsequent_param_with_different_unit_system(get_the_param):
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
 
 
-def test_mach_reynodls_op_cond():
+def test_mach_reynolds_op_cond():
 
     condition = operating_condition_from_mach_reynolds(
         mach=0.2,
