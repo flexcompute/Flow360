@@ -112,7 +112,7 @@ def is_valid_uuid(id, allow_none=False):
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 
 
-def get_short_asset_id(full_asset_id:str, num_character:int=7) -> str:
+def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
     """Generate the short asset id given the minimum number of the characters excluding hyphen and prefix"""
     full_asset_split = full_asset_id.split("-")
     short_id = full_asset_split[0]

@@ -1,6 +1,6 @@
 """Project interface for setting up and running simulations"""
 
-# pylint: disable=no-member
+# pylint: disable=no-member, too-many-lines
 # To be honest I do not know why pylint is insistent on treating
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
 import datetime
@@ -747,7 +747,7 @@ class Project(pd.BaseModel):
 
         self._get_asset_from_cloud()
 
-        def chunkstring(long_str:str, str_length:str=None, last_line_threshold:float = 0.2):
+        def chunkstring(long_str: str, str_length: str = None, last_line_threshold: float = 0.2):
             if not str_length:
                 return long_str
             lines = (i.strip() for i in long_str.splitlines())
@@ -763,10 +763,14 @@ class Project(pd.BaseModel):
         PrettyPrintTree(
             get_children=lambda x: x.children,
             get_val=lambda x: chunkstring(long_str=str(x), str_length=str_length),
-            get_label=lambda x: chunkstring(
-                long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_id),
-                str_length=str_length,
-            ) if x.case_mesh_id else None,
+            get_label=lambda x: (
+                chunkstring(
+                    long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_id),
+                    str_length=str_length,
+                )
+                if x.case_mesh_id
+                else None
+            ),
             color="",
             border=True,
             orientation=PrettyPrintTree.Horizontal if is_horizontal else PrettyPrintTree.Vertical,
