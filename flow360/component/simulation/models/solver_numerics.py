@@ -262,7 +262,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(
         0,
         description="For physical steps less than the input value, the jacobian matrix is "
-        + "updated every pseudo-step overriding the :paramref:`update_jacobian_frequency` value.",
+        + "updated every pseudo-step overriding the :py:attr:`update_jacobian_frequency` value.",
     )
 
     linear_solver: LinearSolver = pd.Field(
@@ -403,13 +403,13 @@ class TransitionModelSolver(GenericSolverSettings):
     turbulence_intensity_percent: Optional[pd.confloat(ge=0.03, le=2.5)] = pd.Field(
         None,
         description=":ref:`Turbulence Intensity <TurbI>`, Range from [0.03-2.5]. "
-        + "Only valid when :paramref:`N_crit` is not specified.",
+        + "Only valid when :py:attr:`N_crit` is not specified.",
     )
     # pylint: disable=invalid-name
     N_crit: Optional[pd.confloat(ge=1.0, le=11.0)] = pd.Field(
         None,
         description=":ref:`Critical Amplification Factor <NCrit>`, Range from [1-11]. "
-        + "Only valid when :paramref:`turbulence_intensity_percent` is not specified.",
+        + "Only valid when :py:attr:`turbulence_intensity_percent` is not specified.",
     )
     update_jacobian_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which the jacobian is updated."
@@ -417,7 +417,7 @@ class TransitionModelSolver(GenericSolverSettings):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(
         0,
         description="For physical steps less than the input value, the jacobian matrix "
-        + "is updated every pseudo-step overriding the :paramref:`update_jacobian_frequency` value.",
+        + "is updated every pseudo-step overriding the :py:attr:`update_jacobian_frequency` value.",
     )
 
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(

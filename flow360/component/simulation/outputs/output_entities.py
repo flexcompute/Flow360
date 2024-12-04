@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal
+from typing import Literal, Union
 
 import pydantic as pd
 
@@ -13,15 +13,7 @@ from flow360.component.types import Axis
 # pylint: disable=duplicate-code
 # inlined from v1 module to avoid circular import
 IsoSurfaceFieldNames = Literal[
-    "p",
-    "rho",
-    "Mach",
-    "qcriterion",
-    "s",
-    "T",
-    "Cp",
-    "mut",
-    "nuHat",
+    "p", "rho", "Mach", "qcriterion", "s", "T", "Cp", "mut", "nuHat", "Cpt"
 ]
 
 
@@ -63,9 +55,10 @@ class Slice(_SliceEntityBase):
 class Isosurface(_OutputItemBase):
     """:class:`Isosurface` class for defining an isosurface for :class:`~flow360.IsosurfaceOutput`."""
 
-    field: Literal[IsoSurfaceFieldNames] = pd.Field(
+    field: Union[IsoSurfaceFieldNames, str] = pd.Field(
         description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
-        + ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`, :code:`nuHat`."
+        ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`,"
+        " :code:`nuHat` or one of scalar field defined in :class:`UserDefinedField`."
     )
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?

@@ -113,7 +113,6 @@ class Flow360BaseModel(pd.BaseModel):
         if need_to_rebuild is True:
             cls.model_rebuild(force=True)
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
-        cls._generate_docstring()
 
     model_config = ConfigDict(
         ##:: Pydantic kwargs
@@ -269,9 +268,16 @@ class Flow360BaseModel(pd.BaseModel):
 
         conditionally_required = cls._get_field_context(info, "conditionally_required")
         relevant_for = cls._get_field_context(info, "relevant_for")
+
+        all_relevant_levels = ()
+        if isinstance(relevant_for, list):
+            all_relevant_levels = tuple(relevant_for + [validation_context.ALL])
+        else:
+            all_relevant_levels = (relevant_for, validation_context.ALL)
+
         if (
             conditionally_required is True
-            and any(lvl in (relevant_for, validation_context.ALL) for lvl in validation_levels)
+            and any(lvl in all_relevant_levels for lvl in validation_levels)
             and value is None
         ):
             raise pd.ValidationError.from_exception_data(
@@ -296,7 +302,10 @@ class Flow360BaseModel(pd.BaseModel):
                 for i, error in enumerate(validation_errors):
                     ctx = error.get("ctx", {})
                     if ctx.get("relevant_for") is None:
-                        ctx["relevant_for"] = relevant_for
+                        # Enforce the relevant_for to be a list for consistency
+                        ctx["relevant_for"] = (
+                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
+                        )
                     validation_errors[i]["ctx"] = ctx
             raise pd.ValidationError.from_exception_data(
                 title=cls.__class__.__name__, line_errors=validation_errors
@@ -543,96 +552,6 @@ class Flow360BaseModel(pd.BaseModel):
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
-    # Clashes with list append and is not used anywhere
-    # def append(self, params: Flow360BaseModel, overwrite: bool = False):
-    #     """append parametrs to the model
-
-    #     Parameters
-    #     ----------
-    #     params : Flow360BaseModel
-    #         Flow360BaseModel parameters to be appended
-    #     overwrite : bool, optional
-    #         Whether to overwrite if key exists, by default False
-    #     """
-    #     additional_config = params.model_dump(exclude_unset=True, exclude_none=True)
-    #     for key, value in additional_config.items():
-    #         if self.key and not overwrite:
-    #             log.warning(
-    #                 f'"{key}" already exist in the original model, skipping. Use overwrite=True to overwrite values.'
-    #             )
-    #             continue
-    #         is_frozen = self.model_fields[key].frozen
-    #         if is_frozen is None or is_frozen is False:
-    #             setattr(self, key, value)
-
-    @classmethod
-    def _generate_docstring(cls) -> str:
-        """Generates a docstring for a Flow360 model and saves it to the __doc__ of the class."""
-
-        # store the docstring in here
-        doc = ""
-
-        # if the model already has a docstring, get the first lines and save the rest
-        original_docstrings = []
-        if cls.__doc__:
-            original_docstrings = cls.__doc__.split("\n\n")
-            class_description = original_docstrings.pop(0)
-            doc += class_description
-        original_docstrings = "\n\n".join(original_docstrings)
-
-        # create the list of parameters (arguments) for the model
-        doc += "\n\n    Parameters\n    ----------\n"
-        for field_name, field in cls.model_fields.items():
-            # ignore the type tag
-            if field_name == TYPE_TAG_STR or field_name.startswith("private_attribute"):
-                continue
-
-            # get data type
-            data_type = field.annotation
-
-            # get default values
-            default_val = field.get_default()
-            if "=" in str(default_val):
-                # handle cases where default values are pydantic models
-                default_val = f"{default_val.__class__.__name__}({default_val})"
-                default_val = (", ").join(default_val.split(" "))
-
-            # make first line: name : type = default
-            default_str = "" if field.is_required() else f" = {default_val}"
-            doc += f"    {field_name} : {data_type}{default_str}\n"
-
-            # pylint: disable=fixme
-            # TODO: Add units now does not work.
-            # add units (if present)
-            units = None
-            if field.json_schema_extra is not None:
-                units = field.json_schema_extra.get("units")
-            if units is not None:
-                doc += "        "
-                if isinstance(units, (tuple, list)):
-                    unitstr = "("
-                    for unit in units:
-                        unitstr += str(unit)
-                        unitstr += ", "
-                    unitstr = unitstr[:-2]
-                    unitstr += ")"
-                else:
-                    unitstr = units
-                doc += f"[units = {unitstr}].  "
-
-            # add description
-            description_str = field.description
-            if description_str is not None:
-                doc += f"        {description_str}\n"
-
-        # add in remaining things in the docs
-        if original_docstrings:
-            doc += "\n"
-            doc += original_docstrings
-
-        doc += "\n"
-        cls.__doc__ = doc
-
     # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _convert_dimensions_to_solver(
         self,
@@ -702,7 +621,8 @@ class Flow360BaseModel(pd.BaseModel):
 
     def preprocess(
         self,
-        params,
+        *,
+        params=None,
         mesh_unit=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
@@ -745,7 +665,7 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
-                    params,
+                    params=params,
                     mesh_unit=mesh_unit,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
@@ -754,7 +674,7 @@ class Flow360BaseModel(pd.BaseModel):
                 for i, item in enumerate(value):
                     if isinstance(item, Flow360BaseModel):
                         solver_values[property_name][i] = item.preprocess(
-                            params,
+                            params=params,
                             mesh_unit=mesh_unit,
                             required_by=[*required_by, loc_name, f"{i}"],
                             exclude=exclude,

@@ -80,8 +80,9 @@ from flow360.version import __version__
 from .validation.validation_context import (
     CASE,
     SURFACE_MESH,
+    VOLUME_MESH,
     CaseField,
-    ContextField,
+    ConditionalField,
     context_validator,
 )
 
@@ -173,11 +174,12 @@ class _ParamModelBase(Flow360BaseModel):
 class SimulationParams(_ParamModelBase):
     """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    meshing: Optional[MeshingParams] = ContextField(
-        MeshingParams(),
-        context=SURFACE_MESH,
-        description="Meshing parameters. See :class:`MeshingParams` for more details.",
+    meshing: Optional[MeshingParams] = ConditionalField(
+        None,
+        context=[SURFACE_MESH, VOLUME_MESH],
+        description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
+
     reference_geometry: Optional[ReferenceGeometry] = CaseField(
         None,
         description="Global geometric reference values. See :class:`ReferenceGeometry` for more details.",
@@ -229,7 +231,7 @@ class SimulationParams(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit, exclude: list = None) -> SimulationParams:
+    def preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
         """Internal function for non-dimensionalizing the simulation parameters"""
         if exclude is None:
             exclude = []
@@ -239,8 +241,8 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
-        return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
+                return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
+        return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
@@ -313,7 +315,7 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def check_output_fields(params):
-        """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
+        """Check output fields and iso fields are valid"""
         return _check_output_fields(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:

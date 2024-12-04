@@ -7,6 +7,7 @@ from typing import Literal, Optional, Union
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
@@ -58,7 +59,7 @@ class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
 class HeatFlux(SingleAttributeModel):
     """
     :class:`HeatFlux` class to specify the heat flux for `Wall` boundary condition
-    via :paramref:`Wall.heat_spec`.
+    via :py:attr:`Wall.heat_spec`.
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
@@ -68,8 +69,8 @@ class HeatFlux(SingleAttributeModel):
 class Temperature(SingleAttributeModel):
     """
     :class:`Temperature` class to specify the temperature for `Wall` or `Inflow`
-    boundary condition via :paramref:`Wall.heat_spec`/
-    :paramref:`Inflow.spec`.
+    boundary condition via :py:attr:`Wall.heat_spec`/
+    :py:attr:`Inflow.spec`.
     """
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
@@ -82,7 +83,7 @@ class Temperature(SingleAttributeModel):
 class TotalPressure(SingleAttributeModel):
     """
     :class:`TotalPressure` class to specify the total pressure for `Inflow`
-    boundary condition via :paramref:`Inflow.spec`.
+    boundary condition via :py:attr:`Inflow.spec`.
     """
 
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
@@ -93,7 +94,7 @@ class TotalPressure(SingleAttributeModel):
 class Pressure(SingleAttributeModel):
     """
     :class:`Pressure` class to specify the pressure for `Outflow`
-    boundary condition via :paramref:`Outflow.spec`.
+    boundary condition via :py:attr:`Outflow.spec`.
     """
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
@@ -104,7 +105,7 @@ class Pressure(SingleAttributeModel):
 class MassFlowRate(SingleAttributeModel):
     """
     :class:`MassFlowRate` class to specify the mass flow rate for `Inflow` or `Outflow`
-    boundary condition via :paramref:`Inflow.spec`/:paramref:`Outflow.spec`.
+    boundary condition via :py:attr:`Inflow.spec`/:py:attr:`Outflow.spec`.
     """
 
     type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
@@ -115,7 +116,7 @@ class MassFlowRate(SingleAttributeModel):
 class Mach(SingleAttributeModel):
     """
     :class:`Mach` class to specify Mach number for the `Inflow`
-    boundary condition via :paramref:`Inflow.spec`.
+    boundary condition via :py:attr:`Inflow.spec`.
     """
 
     type_name: Literal["Mach"] = pd.Field("Mach", frozen=True)
@@ -125,7 +126,7 @@ class Mach(SingleAttributeModel):
 class Translational(Flow360BaseModel):
     """
     :class:`Translational` class to specify translational periodic
-    boundary condition via :paramref:`Periodic.spec`.
+    boundary condition via :py:attr:`Periodic.spec`.
     """
 
     type_name: Literal["Translational"] = pd.Field("Translational", frozen=True)
@@ -134,7 +135,7 @@ class Translational(Flow360BaseModel):
 class Rotational(Flow360BaseModel):
     """
     :class:`Rotational` class to specify rotational periodic
-    boundary condition via :paramref:`Periodic.spec`.
+    boundary condition via :py:attr:`Periodic.spec`.
     """
 
     type_name: Literal["Rotational"] = pd.Field("Rotational", frozen=True)
@@ -169,8 +170,9 @@ class Wall(BoundaryBase):
     velocity: Optional[VelocityVectorType] = pd.Field(
         None, description="Prescribe a tangential velocity on the wall."
     )
-    heat_spec: Optional[Union[HeatFlux, Temperature]] = pd.Field(
-        None,
+    # pylint: disable=no-member
+    heat_spec: Union[HeatFlux, Temperature] = pd.Field(
+        HeatFlux(0 * u.W / u.m**2),
         discriminator="type_name",
         description="Specify the heat flux or temperature at the `Wall` boundary.",
     )
@@ -186,7 +188,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     velocity: Optional[VelocityVectorType] = pd.Field(
         None,
         description="The default values are set according to the "
-        + ":paramref:`AerospaceCondition.alpha` and :paramref:`AerospaceCondition.beta` angles. "
+        + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
     entities: EntityList[Surface, GhostSurface] = pd.Field(

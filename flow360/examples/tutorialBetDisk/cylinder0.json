@@ -1,0 +1,35 @@
+{
+    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+    "private_attribute_entity_type_name": "Cylinder",
+    "private_attribute_id": "f1b8bbbd-9503-43fe-833b-3a3166506076",
+    "name": "betcylinder1",
+    "private_attribute_zone_boundary_names": {
+        "items": []
+    },
+    "private_attribute_full_name": null,
+    "axis": [
+        -1.0,
+        0.0,
+        0.0
+    ],
+    "center": {
+        "value": [
+            -2.0,
+            5.0,
+            0.0
+        ],
+        "units": "m"
+    },
+    "height": {
+        "value": 0.4572,
+        "units": "m"
+    },
+    "inner_radius": {
+        "value": 0.0,
+        "units": "m"
+    },
+    "outer_radius": {
+        "value": 3.81,
+        "units": "m"
+    }
+}

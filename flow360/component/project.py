@@ -156,6 +156,18 @@ class Project(pd.BaseModel):
     _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
 
     @property
+    def id(self) -> str:
+        """
+        Returns the ID of the project.
+
+        Returns
+        -------
+        str
+            The project ID.
+        """
+        return self.metadata.id
+
+    @property
     def geometry(self) -> Geometry:
         """
         Returns the geometry asset of the project. There is always only one geometry asset per project.
@@ -603,7 +615,7 @@ class Project(pd.BaseModel):
             name=draft_name,
             project_id=self.metadata.id,
             source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
-            source_item_type=self.metadata.root_item_type.value if fork_from is None else "Case",
+            source_item_type=(self.metadata.root_item_type.value if fork_from is None else "Case"),
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
             fork_case_volume_mesh_id=fork_with_mesh.id if fork_with_mesh else None,
@@ -616,16 +628,25 @@ class Project(pd.BaseModel):
             params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
+
         destination_id = draft.run_up_to_target_asset(target)
 
         self._project_webapi.patch(
+            # pylint: disable=protected-access
             json={
                 "lastOpenItemId": destination_id,
-                "lastOpenItemType": target.__name__,
+                "lastOpenItemType": target._cloud_resource_type_name,
             }
         )
 
-        destination_obj = target.from_cloud(destination_id)
+        if target is SurfaceMesh or target is VolumeMeshV2:
+            # Intermediate asset and we should enforce it to contain the entity info from root item.
+            # pylint: disable=protected-access
+            destination_obj = target.from_cloud(
+                destination_id, root_item_entity_info_type=self._root_asset._entity_info_class
+            )
+        else:
+            destination_obj = target.from_cloud(destination_id)
 
         if not run_async:
             destination_obj.wait()

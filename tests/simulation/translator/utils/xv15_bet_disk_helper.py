@@ -333,10 +333,10 @@ def _createBETTwistsAndChords(pitch_in_degree):
     chords = []
     with imperial_unit_system:
         for radius, twist in zip(radial_loc_for_twist, radial_twists_curr):
-            betDiskTwist = BETDiskTwist(radius=radius, twist=twist)
+            betDiskTwist = BETDiskTwist(radius=radius * u.inch, twist=twist * u.deg)
             twists.append(betDiskTwist)
         for radius, chord in zip(radial_loc_for_chord, radial_chords):
-            betDiskChord = BETDiskChord(radius=radius, chord=chord)
+            betDiskChord = BETDiskChord(radius=radius * u.inch, chord=chord * u.inch)
             chords.append(betDiskChord)
     return twists, chords
 
@@ -355,7 +355,7 @@ def _createBETPolars():
 
 
 def createBETDiskSteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
-    alphas = np.arange(-16, 18, 2, dtype=int)
+    alphas = np.arange(-16, 18, 2, dtype=int).tolist()
     sectional_radiuses, sectional_polars = _createBETPolars()
     twists, chords = _createBETTwistsAndChords(pitch_in_degree)
     with imperial_unit_system:
@@ -370,8 +370,8 @@ def createBETDiskSteady(cylinder_entity: Cylinder, pitch_in_degree, rpm):
             reynolds_numbers=reynolds_numbers,
             twists=twists,
             chords=chords,
-            alphas=alphas.tolist(),
-            sectional_radiuses=sectional_radiuses,
+            alphas=alphas * u.deg,
+            sectional_radiuses=sectional_radiuses * u.inch,
             sectional_polars=sectional_polars,
         )
     return betDisk

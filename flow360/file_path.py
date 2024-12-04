@@ -9,4 +9,5 @@ Module Attributes:
 import os
 
 home = os.path.expanduser("~")
+# pylint: disable=invalid-name
 flow360_dir = f"{home}/.flow360/"

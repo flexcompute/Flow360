@@ -4,6 +4,7 @@ This module is flow360 for simulation based models
 
 from flow360.accounts_utils import Accounts
 from flow360.component.case import Case
+from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
@@ -29,6 +30,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
@@ -114,6 +116,7 @@ from flow360.component.simulation.time_stepping.time_stepping import (
     Unsteady,
 )
 from flow360.component.simulation.unit_system import (
+    CGS_unit_system,
     SI_unit_system,
     imperial_unit_system,
 )
@@ -140,6 +143,7 @@ __all__ = [
     "SimulationParams",
     "SI_unit_system",
     "imperial_unit_system",
+    "CGS_unit_system",
     "services",
     "MeshingParams",
     "MeshingDefaults",
@@ -223,4 +227,6 @@ __all__ = [
     "UserDefinedField",
     "operating_condition_from_mach_reynolds",
     "VolumeMesh",
+    "UserDefinedFarfield",
+    "Geometry",
 ]
