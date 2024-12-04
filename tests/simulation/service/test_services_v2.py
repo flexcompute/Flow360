@@ -44,7 +44,6 @@ def test_validate_service():
             "area": {"value": 1.0, "units": "m**2"},
         },
         "time_stepping": {
-            "order_of_accuracy": 2,
             "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
@@ -136,7 +135,6 @@ def test_validate_error():
             "area": {"value": 1.0, "units": "m**2"},
         },
         "time_stepping": {
-            "order_of_accuracy": 2,
             "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},
@@ -202,7 +200,6 @@ def test_validate_multiple_errors():
             "area": {"value": -10.0, "units": "m**2"},
         },
         "time_stepping": {
-            "order_of_accuracy": 2,
             "type_name": "Steady",
             "max_steps": 10,
             "CFL": {"type": "ramp", "initial": 1.5, "final": 1.5, "ramp_steps": 5},

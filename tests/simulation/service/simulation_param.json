@@ -529,7 +529,6 @@
             "type": "adaptive"
         },
         "max_steps": 2000,
-        "order_of_accuracy": 2,
         "type_name": "Steady"
     },
     "unit_system": {
