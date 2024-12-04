@@ -489,9 +489,9 @@ def operating_condition_from_mach_muref(
     --------
     Example usage:
 
-    >>> condition = operating_condition_from_mach_reynolds(
+    >>> condition = operating_condition_from_mach_muref(
     ...     mach=0.85,
-    ...     muRef=4.291e-8,
+    ...     mu_ref=4.291e-8,
     ...     project_length_unit=1 * u.mm,
     ...     temperature=288.15 * u.K,
     ...     alpha=2.0 * u.deg,
