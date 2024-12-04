@@ -440,7 +440,7 @@ def operating_condition_from_mach_reynolds(
 @pd.validate_call
 def operating_condition_from_mach_muref(
     mach: pd.NonNegativeFloat,
-    muRef: pd.PositiveFloat,
+    mu_ref: pd.PositiveFloat,
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
@@ -509,7 +509,7 @@ def operating_condition_from_mach_muref(
     material = Air()
 
     density = material.get_dynamic_viscosity(temperature) / (
-        muRef * material.get_speed_of_sound(temperature) * project_length_unit
+        mu_ref * material.get_speed_of_sound(temperature) * project_length_unit
     )
 
     thermal_state = ThermalState(temperature=temperature, density=density)
