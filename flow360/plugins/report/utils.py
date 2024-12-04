@@ -4,6 +4,7 @@ report utils, utils.py
 from  __future__ import annotations
 from abc import ABCMeta, abstractmethod
 import os
+import re
 import shutil
 import posixpath
 from numbers import Number
@@ -174,6 +175,11 @@ def get_root_path(data_path):
     return None
 
 
+def split_path(path):
+    # Split the path using both '/' and '.' as separators
+    path_components = [comp for comp in re.split(r'[/.]', path) if comp]
+    return path_components
+
 # pylint: disable=too-many-return-statements
 def data_from_path(
     case: Case, path: str, cases: list[Case] = None, case_by_case: bool = False
@@ -221,7 +227,7 @@ def data_from_path(
 
 
     # Split path into components
-    path_components = path.split("/")
+    path_components = split_path(path)
 
     def _search_path(case: Case, component: str) -> Any:
         """
@@ -290,7 +296,7 @@ def data_from_path(
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
     @abstractmethod
-    def calculate(self, data, cases, new_variable_name):
+    def calculate(self, data, case, cases, variables, new_variable_name):
         pass
 
 
@@ -315,7 +321,7 @@ class Average(GenericOperation):
         require_one_of=["start_step", "start_time", "fraction"],
     )
 
-    def calculate(self, data, cases, new_variable_name):
+    def calculate(self, data, case, cases, variables, new_variable_name):
         if isinstance(data, case_results.ResultCSVModel):
             if self.fraction is None:
                 raise NotImplementedError(f'Only "fraction" average method implemented.')
@@ -325,10 +331,14 @@ class Average(GenericOperation):
         raise NotImplementedError(f'{self.__class__.__name__} not implemented for data type: {type(data)=}')
 
 
+class Variable(Flow360BaseModel):
+    name: str
+    data: str
+
+
 class Expression(GenericOperation):
     expr: str
     type_name: Literal['Expression'] = pd.Field('Expression', frozen=True)
-
 
     @classmethod
     def get_variables(cls, expr):
@@ -338,24 +348,30 @@ class Expression(GenericOperation):
         tree = ast.parse(expr, mode='eval')
         return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
 
+
     @classmethod
-    def evaluate_expression(cls, df, expr, new_variable_name):
+    def evaluate_expression(cls, df, expr, variables: List[Variable], new_variable_name, case):
         """
         Evaluate the expression on the dataframe and add the result as a new column.
         """
-        # Extract variable names from the expression
-        variables = cls.get_variables(expr)
-        print(variables)
-        
-        # Check for missing variables in the dataframe
-        missing_vars = variables - set(df.columns)
+        expr_variables = cls.get_variables(expr)        
+        missing_vars = expr_variables - set(df.columns)
+        found_variables = set()
+        for missing_var in missing_vars:
+            try:
+                if variables is not None:
+                    for v in variables:
+                        if missing_var == v.name:
+                            df[missing_var] = data_from_path(case, v.data)
+                            found_variables.add(missing_var)
+            except Exception as e:
+                log.warning(e)
+        missing_vars -= found_variables
         if missing_vars:
             raise ValueError(f"The following variables are missing in the dataframe: {', '.join(missing_vars)}")
         
-        # Prepare the local dictionary for numexpr
-        local_dict = {var: df[var].values for var in variables}
+        local_dict = {var: df[var].values for var in expr_variables}
         
-        # Evaluate the expression safely
         try:
             result = ne.evaluate(expr, local_dict)
         except Exception as e:
@@ -365,18 +381,15 @@ class Expression(GenericOperation):
         return df
 
 
-
-    def calculate(self, data, cases, new_variable_name):
-        log.debug(f"evaluating expression {self.expr}")
+    def calculate(self, data, case, cases, variables, new_variable_name):
+        log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
         if isinstance(data, case_results.SurfaceForcesResultCSVModel):
-            df = self.evaluate_expression(data.as_dataframe(), self.expr, new_variable_name)
+            df = self.evaluate_expression(data.as_dataframe(), self.expr, variables, new_variable_name, case)
             data.update(df)
             return data, cases, data.values
 
         raise NotImplementedError(f'{self.__class__.__name__} not implemented for data type: {type(data)=}')
-
-
 
 
 
@@ -431,7 +444,7 @@ class Delta(pd.BaseModel):
 
     def __str__(self):
         if isinstance(self.data, str):
-            data_str = self.data.split('/')[-1]
+            data_str = split_path(self.data)[-1]
         else:
             data_str = str(self.data)
         return f"Delta {data_str}"
@@ -456,6 +469,7 @@ class DataItem(pd.BaseModel):
     title: Optional[str] = None
     exclude: Optional[List[str]] = None
     operations: Optional[List[OperationTypes]] = None
+    variables: Optional[List[Variable]] = None
     type_name: Literal["DataItem"] = pd.Field("DataItem", frozen=True)
 
     @pd.model_validator(mode='before')
@@ -472,7 +486,7 @@ class DataItem(pd.BaseModel):
         source = data_from_path(case, self.data)
 
         if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            full_path = self.data.split("/")
+            full_path = split_path(self.data)
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
             variable_name = None
             if len(full_path) == 1:
@@ -519,7 +533,7 @@ class DataItem(pd.BaseModel):
             source, new_variable_name = self._preprocess_data(case)
             if len(self.operations) > 0:
                 for opr in self.operations:
-                    source, cases, result = opr.calculate(source, cases, new_variable_name)
+                    source, cases, result = opr.calculate(source, case, cases, self.variables, new_variable_name)
                 return result[new_variable_name]
 
             return source
@@ -528,7 +542,7 @@ class DataItem(pd.BaseModel):
     def __str__(self):
         if self.title is not None:
             return self.title
-        return self.data.split('/')[-1]
+        return split_path(self.data)[-1]
 
 
 

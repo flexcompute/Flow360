@@ -23,7 +23,8 @@ from flow360.plugins.report.utils import (
     data_from_path,
     get_requirements_from_data_path,
     get_root_path,
-    OperationTypes
+    OperationTypes,
+    split_path
 )
 from flow360.log import log
 from flow360.plugins.report.uvf_shutter import (
@@ -223,7 +224,7 @@ class Table(ReportItem):
                     if isinstance(path, (Delta, DataItem)):
                         field = path
                     else:
-                        field = path.split("/")[-1]
+                        field = split_path(path)[-1]
 
                     field_titles.append(str(field))
             else:
@@ -336,7 +337,7 @@ class Chart(ReportItem):
         fig.add_caption(caption)
         doc.append(fig)
 
-    def _add_row_figure(self, doc: Document, img_list: list[str], fig_caption: str):
+    def _add_row_figure(self, doc: Document, img_list: list[str], fig_caption: str, sub_fig_captions: List[str]=None):
         """
         Build a figure from SubFigures which displays images in rows
 
@@ -352,6 +353,8 @@ class Chart(ReportItem):
         idx_list = [
             indices[i : i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)
         ]
+        if sub_fig_captions is None:
+            sub_fig_captions = range(1, len(img_list) + 1)
         for row_idx in idx_list:
             for idx in row_idx:
                 sub_fig = SubFigure(position="t", width=NoEscape(rf"{minipage_size}\textwidth"))
@@ -359,7 +362,7 @@ class Chart(ReportItem):
 
                 # Stop caption for single subfigures - happens when include_case_by_case
                 if self.items_in_row != 1:
-                    sub_fig.add_caption(idx)
+                    sub_fig.add_caption(sub_fig_captions[idx])
 
                 doc.append(sub_fig)
                 doc.append(NoEscape(r"\hfill"))
@@ -551,8 +554,8 @@ class Chart2D(Chart):
         )
 
     def _load_data(self, cases):
-        x_label = self.x.split("/")[-1]
-        y_label = self.y.split("/")[-1]
+        x_label = split_path(self.x)[-1]
+        y_label = split_path(self.y)[-1]
 
         x_data = [data_from_path(case, self.x, cases) for case in cases]
         y_data = [data_from_path(case, self.y, cases) for case in cases]
@@ -983,7 +986,7 @@ class Chart3D(Chart):
         img_list = self._get_images(cases, context)
 
         if self.items_in_row is not None:
-            self._add_row_figure(context.doc, img_list, self.caption)
+            self._add_row_figure(context.doc, img_list, self.caption, sub_fig_captions=[case.name for case in cases])
 
         else:
             for filename in img_list:

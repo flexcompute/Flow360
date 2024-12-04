@@ -6,6 +6,7 @@ Case component
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from typing import Any, Iterator, List, Optional, Union
 
@@ -674,7 +675,8 @@ class Case(CaseBase, Flow360Resource):
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
         case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
-        case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
+        case._results = CaseResultsModel(case=case)
+        case.results.set_local_storage(local_storage_path, keep_remote_structure=True)
         return case
 
     # pylint: disable=too-many-arguments
@@ -1011,6 +1013,16 @@ class CaseResultsModel(pd.BaseModel):
         return self.case._download_file(
             file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
+
+    def set_local_storage(self, local_storage: str, keep_remote_structure: bool=False):
+        for field_name in self.model_fields:
+            value = getattr(self, field_name)
+            if isinstance(value, ResultBaseModel):
+                if keep_remote_structure is True:
+                    # pylint: disable=protected-access,no-member
+                    value.local_storage = os.path.dirname(os.path.join(local_storage, value._remote_path()))
+                else:
+                    value.local_storage = local_storage
 
 
 class CaseList(Flow360ResourceListBase):
