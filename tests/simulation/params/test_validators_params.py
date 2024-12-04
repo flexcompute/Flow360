@@ -9,6 +9,10 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
@@ -267,6 +271,16 @@ def test_cht_solver_settings_validator(
         volumetric_heat_source="0",
         initial_condition=HeatEquationInitialCondition(temperature="10;"),
     )
+    solid_model_without_density = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=SolidMaterial(
+            name="aluminum_without_density",
+            thermal_conductivity=235 * u.kg / u.s**3 * u.m / u.K,
+            specific_heat_capacity=903 * u.m**2 / u.s**2 / u.K,
+        ),
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10;"),
+    )
     surface_output_with_residual_heat_solver = SurfaceOutput(
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
@@ -297,12 +311,23 @@ def test_cht_solver_settings_validator(
             outputs=[surface_output_with_residual_heat_solver],
         )
 
-    message = "In `Solid` model -> material, the heat capacity needs to be specified for unsteady simulations."
+    message = (
+        "In `Solid` model -> material, both `specific_heat_capacity` and `density` "
+        "need to be specified for unsteady simulations."
+    )
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[fluid_model, solid_model_without_specific_heat_capacity],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+        )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[fluid_model, solid_model_without_density],
             time_stepping=timestepping_unsteady,
             outputs=[surface_output_with_residual_heat_solver],
         )
@@ -398,6 +423,12 @@ def test_incomplete_BC():
         with ValidationLevelContext(ALL):
             with SI_unit_system:
                 SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
                     models=[
                         Fluid(),
                         Wall(entities=wall_1),
@@ -416,6 +447,12 @@ def test_incomplete_BC():
         with ValidationLevelContext(ALL):
             with SI_unit_system:
                 SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
                     models=[
                         Fluid(),
                         Wall(entities=[wall_1]),
@@ -627,3 +664,17 @@ def test_rotation_parent_volumes():
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
+
+
+def test_meshing_validator_dual_context():
+    errors = None
+    try:
+        with SI_unit_system:
+            with ValidationLevelContext(VOLUME_MESH):
+                SimulationParams(meshing=None)
+    except pd.ValidationError as err:
+        errors = err.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] == "missing"
+    assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
+    assert errors[0]["loc"] == ("meshing",)

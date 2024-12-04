@@ -18,9 +18,7 @@ data = services.get_default_params(
 
 
 def run_validation(data):
-    _, errors, _ = services.validate_model(
-        params_as_dict=data, unit_system_name="SI", root_item_type="Geometry"
-    )
+    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="Geometry")
 
 
 result = timeit(lambda: run_validation(data), number=10)

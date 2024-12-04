@@ -932,6 +932,8 @@ class VolumeMeshDraftV2(ResourceDraft):
         req_dict = req.dict()
         resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req_dict)
         info = VolumeMeshMetaV2(**resp)
+        # setting _id will disable "WARNING: You have not submitted..." warning message
+        self._id = info.id
         renamed_file_on_remote = info.file_name
 
         volume_mesh = VolumeMeshV2(info.id)

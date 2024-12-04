@@ -16,7 +16,7 @@ with open("./data/large_simulation.json", "r") as f:
 end_time = time.time()
 print(f"Execution time: {end_time - start_time} seconds [json.load()]")
 start_time = time.time()
-params, _, _ = validate_model(params_as_dict, "SI", "Geometry")
+params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
 end_time = time.time()
 print(f"Execution time: {end_time - start_time} seconds [validate_model]")
 _, hash = simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
@@ -31,7 +31,7 @@ def translation_wrapper():
 
 
 def validation_wrapper():
-    _, _, _ = validate_model(params_as_dict, "SI", "Geometry")
+    _, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
 
 
 cProfile.run("translation_wrapper()", "profile_translator.prof")
