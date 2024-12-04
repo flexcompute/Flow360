@@ -1,5 +1,6 @@
-import flow360 as fl
 import math
+
+import flow360 as fl
 
 fl.Env.dev.active()
 
