@@ -58,9 +58,7 @@ class ThermalState(MultiConstructorBaseModel):
     >>> fl.ThermalState(
     ...     temperature=300 * fl.u.K,
     ...     density=1.225 * fl.u.kg / fl.u.m**3,
-    ...     material=fl.Air(
-    ...         dynamic_viscosity=1.0634e-05 * fl.u.Pa * fl.u.s
-    ...     )
+    ...     material=fl.Air()
     ... )
 
     ====
