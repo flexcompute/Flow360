@@ -1,6 +1,5 @@
 """Time stepping setting for simulation"""
 
-from abc import ABCMeta
 from typing import Literal, Optional, Union
 
 import pydantic as pd
@@ -105,15 +104,7 @@ class AdaptiveCFL(Flow360BaseModel):
         return cls(max=1e4, convergence_limiting_factor=0.25, max_relative_change=1)
 
 
-class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
-    """
-    Base class for time stepping component
-    """
-
-    order_of_accuracy: Literal[1, 2] = pd.Field(2)
-
-
-class Steady(BaseTimeStepping):
+class Steady(Flow360BaseModel):
     """
     :class:`Steady` class for specifying steady simulation.
 
@@ -152,7 +143,7 @@ class Steady(BaseTimeStepping):
         return values
 
 
-class Unsteady(BaseTimeStepping):
+class Unsteady(Flow360BaseModel):
     """
     :class:`Unsteady` class for specifying unsteady simulation.
 
@@ -183,6 +174,7 @@ class Unsteady(BaseTimeStepping):
         default=AdaptiveCFL.default_unsteady(),
         description="CFL settings within each physical step.",
     )
+    order_of_accuracy: Literal[1, 2] = pd.Field(2, description="Temporal order of accuracy.")
 
     @pd.model_validator(mode="before")
     @classmethod
