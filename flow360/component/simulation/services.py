@@ -215,6 +215,7 @@ def validate_model(
     validation_level: Literal[
         "SurfaceMesh", "VolumeMesh", "Case", "All"
     ] = ALL,  # Fix implicit string concatenation
+    treat_as_file: bool=False
 ) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
     """
     Validate a params dict against the pydantic model.
@@ -250,9 +251,12 @@ def validate_model(
 
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        with unit_system:
-            with ValidationLevelContext(validation_level):
-                validated_param = SimulationParams(**params_as_dict)
+        with ValidationLevelContext(validation_level):
+            if treat_as_file is True:
+                validated_param = SimulationParams(file_content=params_as_dict)
+            else:
+                with unit_system:
+                    validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

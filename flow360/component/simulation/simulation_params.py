@@ -117,7 +117,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         return kwargs
 
-    def _init_no_context(self, filename, **kwargs):
+    def _init_no_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
         """
@@ -127,7 +127,10 @@ class _ParamModelBase(Flow360BaseModel):
                 "unit context must not be used."
             )
 
-        model_dict = self._handle_file(filename=filename, **kwargs)
+        if filename is not None:
+            model_dict = self._handle_file(filename=filename, **kwargs)
+        else:
+            model_dict = self._handle_dict(**file_content)
 
         version = model_dict.pop("version", None)
         unit_system = model_dict.get("unit_system")
@@ -154,9 +157,9 @@ class _ParamModelBase(Flow360BaseModel):
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
     # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
-    def __init__(self, filename: str = None, **kwargs):
-        if filename is not None:
-            self._init_no_context(filename, **kwargs)
+    def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
+        if filename is not None or file_content is not None:
+            self._init_no_context(filename, file_content, **kwargs)
         else:
             self._init_with_context(**kwargs)
 
