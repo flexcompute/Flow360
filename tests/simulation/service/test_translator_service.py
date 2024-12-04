@@ -470,7 +470,6 @@ def test_simulation_to_case_json():
             "CFL": {"final": 200.0, "initial": 5.0, "ramp_steps": 40, "type": "ramp"},
             "max_steps": 2000,
             "type_name": "Steady",
-            "order_of_accuracy": 2,
         },
         "user_defined_fields": [
             {
