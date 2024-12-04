@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Iterable, List, Optional, Union
 
 import pydantic as pd
+from PrettyPrint import PrettyPrintTree
 
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
@@ -137,6 +138,109 @@ _VolumeMeshCache = ProjectAssetCache[VolumeMeshV2]
 _CaseCache = ProjectAssetCache[Case]
 
 
+class ProjectTreeNode(pd.BaseModel):
+    """
+    ProjectTreeNode class containing the info of an asset item in a project tree.
+
+    Attributes
+    ----------
+    asset_id : str
+        ID of the asset.
+    asset_name : str
+        Name of the asset.
+    asset_type : str
+        Type of the asset.
+    parent_id : str
+        ID of the parent asset.
+    children : List
+        List of the child assets of the current asset.
+    """
+
+    asset_id: str = pd.Field()
+    asset_name: str = pd.Field()
+    asset_type: str = pd.Field()
+    parent_id: Union[str, None] = pd.Field(None)
+    children: List = pd.Field([])
+
+    def __str__(self):
+        """__str__ function to define the output info when printing a project tree in the terminal"""
+
+        full_id = self.asset_id
+        full_id_split = full_id.split("-")
+        short_id = full_id_split[0] + "-" + full_id_split[1][:7]
+
+        return f"""{self.asset_type}
+            name: {self.asset_name}
+            id: {short_id}"""
+
+    def add_child(self, child):
+        """Add a child asset of the current asset"""
+        self.children.append(child)
+        return child
+
+
+class ProjectTree(pd.BaseModel):
+    """
+    ProjectTree class containing the project tree.
+
+    Attributes
+    ----------
+    root : ProjectTreeNode
+        Root item of the project.
+    nodes : dict[str, ProjectTreeNode]
+        Dict of all nodes in the project tree.
+    """
+
+    root: ProjectTreeNode = pd.Field(None)
+    nodes: dict[str, ProjectTreeNode] = pd.Field({})
+
+    def add_node(self, asset: AssetOrResource):
+        """Add new node to the tree"""
+        if self.has_node(asset_id=asset.id):
+            return
+
+        parent_id = asset.info.parent_id
+        if not parent_id:
+            if isinstance(asset, SurfaceMesh):
+                parent_id = asset.info.geometry_id
+            if isinstance(asset, Case):
+                parent_id = asset.info.case_mesh_id
+        new_node = ProjectTreeNode(
+            asset_id=asset.info.id,
+            asset_name=asset.info.name,
+            # pylint: disable=protected-access
+            asset_type=asset._cloud_resource_type_name,
+            parent_id=parent_id,
+        )
+        if not new_node.parent_id:
+            self.root = new_node
+
+        for node in self.nodes.values():
+            if node.parent_id == new_node.asset_id:
+                new_node.add_child(child=node)
+            if node.asset_id == new_node.parent_id:
+                node.add_child(child=new_node)
+        self.nodes.update({new_node.asset_id: new_node})
+
+    def has_node(self, asset_id: str) -> bool:
+        """Use asset_id to check if the asset already exists in the project tree"""
+        if asset_id in self.nodes.keys():
+            return True
+        return False
+
+    def get_full_asset_id(self, query_id: str) -> str:
+        """Use asset_id to check if the asset already exists in the project tree"""
+        query_id_split = query_id.split("-")
+        if len(query_id_split) >= 2 and len(query_id_split[1]) >= 7:
+            for asset_id in self.nodes.keys():
+                if asset_id.startswith(query_id):
+                    return asset_id
+            raise Flow360ValueError(
+                "This asset does not exist in this project. Please check the query_id."
+            )
+        raise Flow360ValueError("The input asset ID is too short to retrive the correct asset.")
+
+
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
@@ -150,6 +254,7 @@ class Project(pd.BaseModel):
     """
 
     metadata: ProjectMeta = pd.Field()
+    project_tree: ProjectTree = pd.Field(ProjectTree())
     solver_version: str = pd.Field(frozen=True)
 
     _root_asset: Union[Geometry, VolumeMeshV2] = pd.PrivateAttr(None)
@@ -222,7 +327,7 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesh assets are only present in projects initialized from geometry."
             )
-
+        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._surface_mesh_cache.get_asset(asset_id)
 
     @property
@@ -271,7 +376,7 @@ class Project(pd.BaseModel):
                 )
 
             return self._root_asset
-
+        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._volume_mesh_cache.get_asset(asset_id)
 
     @property
@@ -312,6 +417,7 @@ class Project(pd.BaseModel):
             The case asset.
         """
         self._check_initialized()
+        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._case_cache.get_asset(asset_id)
 
     @property
@@ -472,6 +578,7 @@ class Project(pd.BaseModel):
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
+        project.project_tree.add_node(root_asset)
         return project
 
     @classmethod
@@ -521,6 +628,7 @@ class Project(pd.BaseModel):
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
+        project.project_tree.add_node(root_asset)
         project._get_asset_from_cloud()
         return project
 
@@ -538,30 +646,110 @@ class Project(pd.BaseModel):
                 "Project not initialized - use Project.from_file or Project.from_cloud"
             )
 
-    def _get_asset_from_cloud(self):
+    def _get_asset_from_cloud(self, destination_obj: AssetOrResource = None):
+        """
+        Get asset info from cloud to update asset cache and build project tree.
+
+        Parameters
+        ----------
+        destination_obj : AssetOrResource
+            The destination asset after submitting a job. If provided, only assets along
+            the path to this asset will be fetched. 
+        """
+
         self._check_initialized()
-        root_id = self.metadata.root_item_id
-        tree = self._project_webapi.get(method="tree")
-        if tree["records"]:
-            records = sorted(
-                tree["records"],
-                key=lambda d: datetime.datetime.strptime(d["updatedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"),
+        asset_records = []
+        if destination_obj:
+            resp = self._project_webapi.get(
+                method="path",
+                params={
+                    "itemId": destination_obj.id,
+                    # pylint: disable=protected-access
+                    "itemType": destination_obj._cloud_resource_type_name,
+                },
             )
-            for record in records:
-                if record["id"] == root_id:
+            for key, val in resp.items():
+                if not val:
                     continue
-                if record["type"] == "SurfaceMesh":
-                    self._surface_mesh_cache.add_asset(
-                        SurfaceMesh.from_cloud(surface_mesh_id=record["id"])
-                    )
-                if record["type"] == "VolumeMesh":
-                    self._volume_mesh_cache.add_asset(
-                        VolumeMeshV2.from_cloud(
-                            id=record["id"], root_item_entity_info_type=GeometryEntityInfo
-                        )
-                    )
-                if record["type"] == "Case":
-                    self._case_cache.add_asset(Case.from_cloud(case_id=record["id"]))
+                if key == "cases":
+                    asset_records += resp["cases"]
+                    continue
+                asset_records.append(val)
+        else:
+            resp = self._project_webapi.get(method="tree")
+            asset_records = resp["records"]
+        self._update_asset_cache_and_project_tree(asset_records=asset_records)
+
+    def _update_asset_cache_and_project_tree(self, asset_records: List):
+        """
+        Update asset cache and project tree based on the input list of asset records.
+
+        Parameters
+        ----------
+        asset_records : List
+            List of asset record. 
+        """
+        def parse_datetime(dt_str, fmt="%Y-%m-%dT%H:%M:%S.%fZ"):
+            try:
+                return datetime.datetime.strptime(dt_str, fmt)
+            except ValueError:
+                return datetime.datetime.strptime(dt_str, fmt.replace("%S.%f", "%S"))
+
+        asset_records = sorted(
+            asset_records,
+            key=lambda d: parse_datetime(d["updatedAt"]),
+        )
+
+        for record in asset_records:
+            if self.project_tree.has_node(asset_id=record["id"]):
+                continue
+            if record["type"] == "SurfaceMesh":
+                new_asset = SurfaceMesh.from_cloud(surface_mesh_id=record["id"])
+                self._surface_mesh_cache.add_asset(asset=new_asset)
+            if record["type"] == "VolumeMesh":
+                new_asset = VolumeMeshV2.from_cloud(
+                    id=record["id"], root_item_entity_info_type=GeometryEntityInfo
+                )
+                self._volume_mesh_cache.add_asset(asset=new_asset)
+            if record["type"] == "Case":
+                new_asset = Case.from_cloud(case_id=record["id"])
+                self._case_cache.add_asset(asset=new_asset)
+            self.project_tree.add_node(asset=new_asset)
+
+    def print_project_tree(self, str_length: int = 20, is_horizontal: bool = False):
+        """Print the project tree to the terminal.
+
+        Parameters
+        ----------
+        str_length : str
+            The maximum number of characters in each line.
+
+        is_horizontal : bool
+            Choose if the project tree is printed in horizontal or vertical direction.
+
+        """
+
+        self._get_asset_from_cloud()
+        def chunkstring(long_str, str_length=None):
+            if not str_length:
+                return long_str
+            lines = (i.strip() for i in long_str.splitlines())
+            output_str = ""
+            for line in lines:
+                str_chunk = (line[0 + i : str_length + i] for i in range(0, len(line), str_length))
+                for chunk in str_chunk:
+                    output_str += f"{chunk}\n"
+            return output_str
+
+        PrettyPrintTree(
+            lambda x: x.children,
+            lambda x: chunkstring(long_str=str(x), str_length=str_length),
+            color="",
+            border=True,
+            orientation=PrettyPrintTree.Horizontal if is_horizontal else PrettyPrintTree.Vertical,
+        )(
+            self.project_tree.root,
+        )
 
     def _get_root_simulation_json(self):
         """
@@ -679,6 +867,8 @@ class Project(pd.BaseModel):
 
         if not run_async:
             destination_obj.wait()
+
+        self._get_asset_from_cloud(destination_obj=destination_obj)
 
         return destination_obj
 

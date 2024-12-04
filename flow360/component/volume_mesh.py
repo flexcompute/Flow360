@@ -801,6 +801,7 @@ class VolumeMeshStatusV2(Enum):
     UPLOADING = "uploading"
     UPLOADED = "uploaded"
     COMPLETED = "completed"
+    PENDING = "pending"
 
     def is_final(self):
         """
