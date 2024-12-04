@@ -2,13 +2,12 @@ import flow360 as fl
 
 fl.Env.preprod.active()
 
-project = fl.Project.from_file("wing_tetra.8M.lb8.ugrid", name="UDD om6wing from python")
+project = fl.Project.from_file("wing_tetra.1.lb8.ugrid", name="UDD om6wing from python")
 #project = fl.Project.from_cloud(project_id="prj-07341264-d803-4b3f-a4a6-1f44c8e61a13")
 
 volume_mesh = project.volume_mesh
 
 with fl.SI_unit_system:
-    slice = fl.Slice(name="y-slice", normal=[0, 1, 0], origin=[0, 0, 0])
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
             area=1.15315084119231,
@@ -16,7 +15,7 @@ with fl.SI_unit_system:
             moment_length=[1.4760179762198, 0.801672958512342, 1.4760179762198],
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=14623131.63393764,
+            reynolds=14.6e6,
             mach=0.84,
             project_length_unit=1 * fl.u.m,
             temperature=297.78,
@@ -24,21 +23,12 @@ with fl.SI_unit_system:
             beta=0 * fl.u.deg,
         ),
         models=[
-            fl.Fluid(
-                navier_stokes_solver=fl.NavierStokesSolver(
-                    linear_solver=fl.LinearSolver(max_iterations=35),
-                    limit_pressure_density=True,
-                ),
-                turbulence_model_solver=fl.SpalartAllmaras(
-                    linear_solver=fl.LinearSolver(max_iterations=25)
-                ),
-            ),
             fl.Wall(surfaces=[volume_mesh["1"]]),
             fl.SlipWall(surfaces=[volume_mesh["2"]]),
             fl.Freestream(surfaces=[volume_mesh["3"]]),
         ],
         time_stepping=fl.Steady(
-            max_steps=6500, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
+            max_steps=2000,
         ),
         user_defined_dynamics=[
             fl.UserDefinedDynamic(
@@ -46,7 +36,7 @@ with fl.SI_unit_system:
                 input_vars=["CL"],
                 constants={"CLTarget": 0.4, "Kp": 0.2, "Ki": 0.002},
                 output_vars={"alphaAngle": "if (pseudoStep > 500) state[0]; else alphaAngle;"},
-                state_vars_initial_value=["alphaAngle", "0"],
+                state_vars_initial_value=["alphaAngle", "0.0"],
                 update_law=[
                     "if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
                     "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];",
@@ -58,8 +48,6 @@ with fl.SI_unit_system:
             fl.VolumeOutput(
                 output_fields=[
                     "vorticity",
-                    "residualNavierStokes",
-                    "residualTurbulence",
                     "Cp",
                     "mut",
                     "qcriterion",
@@ -74,22 +62,6 @@ with fl.SI_unit_system:
                     "Cf",
                     "CfVec",
                     "yPlus",
-                    "wallDistance",
-                    "Mach",
-                    "residualTurbulence",
-                ],
-            ),
-            fl.SliceOutput(
-                slices=[slice],
-                output_fields=[
-                    "primitiveVars",
-                    "vorticity",
-                    "T",
-                    "s",
-                    "Cp",
-                    "mut",
-                    "mutRatio",
-                    "Mach",
                 ],
             ),
         ],
