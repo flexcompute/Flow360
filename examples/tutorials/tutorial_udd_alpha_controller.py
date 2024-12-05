@@ -1,9 +1,9 @@
 import flow360 as fl
+from flow360.examples import TutorialUDDAlphaController
 
-fl.Env.preprod.active()
+TutorialUDDAlphaController.get_files()
 
-project = fl.Project.from_file("wing_tetra.1.lb8.ugrid", name="UDD om6wing from python")
-#project = fl.Project.from_cloud(project_id="prj-07341264-d803-4b3f-a4a6-1f44c8e61a13")
+project = fl.Project.from_file(TutorialUDDAlphaController.mesh_filename, name="Tutorial UDD alpha controller from Python")
 
 volume_mesh = project.volume_mesh
 
@@ -67,4 +67,4 @@ with fl.SI_unit_system:
         ],
     )
 
-project.run_case(params=params, name="UDD om6wing from python")
+project.run_case(params=params, name="Case of tutorial UDD alpha controller from Python")

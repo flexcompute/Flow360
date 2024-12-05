@@ -1,9 +1,11 @@
 import flow360 as fl
+from flow360.examples import TutorialUDDForcesMoments
+
+TutorialUDDForcesMoments.get_files()
 
 project = fl.Project.from_file(
-    "UDD_FM_airplane.csm", name="Tutorial UDD forces and moments from Python"
+    TutorialUDDForcesMoments.geometry, name="Tutorial UDD forces and moments from Python"
 )
-#project = fl.Project.from_cloud(project_id="prj-2224af9b-ef92-4d7d-bac3-e4c010acbe33")
 geometry = project.geometry
 
 geometry.show_available_groupings()
@@ -42,12 +44,6 @@ with fl.SI_unit_system:
             volume_zones=[farfield]
         ),
         reference_geometry=fl.ReferenceGeometry(area=60, moment_center=[5.7542, 0, 0], moment_length=[1, 1, 1]),
-        # operating_condition=fl.operating_condition_from_mach_reynolds(
-        #     reynolds=3.42e6,
-        #     mach=0.147,
-        #     project_length_unit=1 * fl.u.m,
-        #     alpha=10 * fl.u.deg,
-        # ),
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=50,
             alpha=10 * fl.u.deg,
